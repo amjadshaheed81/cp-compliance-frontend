@@ -1,0 +1,31 @@
+body, html {
+    height: 100%;
+  }
+.container-fluid-login {
+    height: 100vh;
+  }
+  .row {
+    height: 100%;
+  }
+  .col {
+    height: 100%;
+  }
+  .left-panel {
+    background-color: #384BD3; /* Change the color as per your choice */
+    color: white;
+    padding: 50px;
+  }
+  .right-panel {
+    padding: 50px;
+  }
+  .login-title{
+    font: Montserrat;
+    font-weight: 700;
+    size: 33px;
+    line-height: 45px;
+    color:#212B36;
+    text-transform: capitalize;
+  }
+  .login-submit{
+    background-color: #384BD3;
+  }
