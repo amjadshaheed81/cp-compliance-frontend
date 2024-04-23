@@ -19,8 +19,9 @@
   }
   .nav-item {
     color: #fff;
-    font-weight: 600;
+    font-weight: 300;
     font-size: 12px;
+    letter-spacing: 1px;
   }
   hr{
     color: #fff;

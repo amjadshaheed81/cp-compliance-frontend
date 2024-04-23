@@ -1,6 +1,8 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import logo from "./../../images/logo-sign.png";
+import userImg from "./../../images/user-default.png";
+
 import "./Sidebar.css";
 const Sidebar = () => {
   return (
@@ -8,8 +10,11 @@ const Sidebar = () => {
       {/* <!-- Sidebar --> */}
       <div class="sidebar">
         <ul class="nav flex-column text-center">
-          <li style={{ marginBottom: 20, marginTop: 20}}>
+          <li style={{ marginBottom: 10, marginTop: 20}}>
             <img src={logo} height={30} width={30} className="img img-responsive" alt="side logo"/>
+          </li>
+          <li style={{ marginBottom: 10, marginTop: 10}}>
+            <img src={userImg} height={40} width={40} className="img img-responsive" alt="side logo"/>
           </li>
           <li class="nav-item">General</li>
           <li class="nav-item">
