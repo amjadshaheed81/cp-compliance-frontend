@@ -252,25 +252,25 @@ const AddSite = ({ addSite }) => {
                     </div>
                     <div className="col-md-12">
                       <div class="mb-3">
-                        <label for="streetViewURL" class="form-label">
+                        <label for="streetViewUrl" class="form-label">
                           Street View URL <i class="fas fa-info-circle"></i>
                         </label>
                         <input
                           type="text"
-                          name="streetViewURL"
+                          name="streetViewUrl"
                           class="form-control"
-                          id="streetViewURL"
-                          {...register("streetViewURL", {
+                          id="streetViewUrl"
+                          {...register("streetViewUrl", {
                             required: {
                               value: true,
                               message: "required",
                             },
                           })}
                         />
-                        {errors?.streetViewURL && (
+                        {errors?.streetViewUrl && (
                           <InputError
-                            message={errors?.streetViewURL?.message}
-                            key={errors?.streetViewURL?.message}
+                            message={errors?.streetViewUrl?.message}
+                            key={errors?.streetViewUrl?.message}
                           />
                         )}
                       </div>

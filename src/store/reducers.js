@@ -1,13 +1,21 @@
 // reducers.js
-import { LOGIN_SUCCESS, LOGOUT_SUCCESS, LOGIN_FAILURE } from "./actionTypes";
+import {
+  LOGIN_SUCCESS,
+  LOGOUT_SUCCESS,
+  LOGIN_FAILURE,
+  ADD_SITE_FAILURE,
+  ADD_SITE_SUCCESS,
+} from "./actionTypes";
 
 // Retrieve authentication data from browser storage
 const storedUserData = localStorage.getItem("userData");
 const initialState = {
   products: [],
+  site: [],
   isLoggedIn: !!storedUserData,
   user: storedUserData ? JSON.parse(storedUserData) : null,
   error: "",
+  success: "",
 };
 
 const rootReducer = (state = initialState, action) => {
@@ -26,10 +34,16 @@ const rootReducer = (state = initialState, action) => {
         user: null,
         error: "",
       };
-    case LOGIN_FAILURE:
+    case LOGIN_FAILURE || ADD_SITE_FAILURE:
       return {
         ...state,
         error: action.payload,
+      };
+    case ADD_SITE_SUCCESS:
+      return {
+        ...state,
+        site: [...state.site, action.payload],
+        success: "Successfully added site",
       };
     default:
       return state;
