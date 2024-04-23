@@ -2,9 +2,14 @@ import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import logo from "./../../images/logo-sign.png";
 import userImg from "./../../images/user-default.png";
-
+import { useNavigate } from "react-router-dom";
 import "./Sidebar.css";
+
 const Sidebar = () => {
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  }
   return (
     <Fragment>
       {/* <!-- Sidebar --> */}
@@ -47,15 +52,10 @@ const Sidebar = () => {
               <i class="fas fa-solid fa-bell"></i>
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <i class="fas fa-cog"></i>
-            </a>
-          </li>
           <hr />
           <li class="nav-item">Site</li>
           <li class="nav-item">
-            <a class="nav-link" href="/add-site">
+            <a class="nav-link" onClick={() => goTo('/add-site')}>
               <i class="fas fa-plus"></i>
             </a>
           </li>
