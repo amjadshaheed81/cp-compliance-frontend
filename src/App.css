@@ -1,12 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
 html {
   scroll-behavior: smooth;
 }
 body {
-  font-family: sans-serif;
+  font-family: Jost, sans-serif !important;
+  font-style: normal;
+  font-weight: normal;
+  font-display: auto;
+  src: url("./fonts/la-brands-400.eot");
+  src: url("./fonts/la-brands-400.eot?#iefix") format("embedded-opentype"), url("./fonts/la-brands-400.woff2") format("woff2"), url("./fonts/la-brands-400.woff") format("woff"), url("./fonts/la-brands-400.ttf") format("truetype"), url("./fonts/la-brands-400.svg#lineawesome") format("svg");
+
   margin: 0;
   padding: 0;
 }
 a {
   color: #384BD3 !important;
   text-decoration: none;
+}
+h1, h2, h3, h4, h5, h6 {
+  -webkit-font-smoothing: antialiased;
+}
+.content {
+  margin-left: 5%;
 }

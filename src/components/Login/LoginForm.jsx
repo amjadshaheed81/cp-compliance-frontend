@@ -22,7 +22,7 @@ const LoginForm = ({ login }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    navigate('/dashboard')
+    navigate("/dashboard");
     // login('email, password);
   };
 
@@ -31,14 +31,12 @@ const LoginForm = ({ login }) => {
       <div className="container-fluid container-fluid-login">
         <div className="row">
           <div className="col-md-6 left-panel text-center">
-            <img src={logoImage} />
-            {/* <h2>Welcome Back!</h2>
-            <p>Please login to your account.</p> */}
+            <img src={logoImage} alt="login left panel logo" />
           </div>
           <div className="col-md-6 right-panel">
             <form onSubmit={handleSubmit}>
               <div className="text-center mb-4">
-                <img src={logo} />
+                <img src={logo} alt="main cpc portal logo" />
               </div>
               <h2 className="mb-2 login-title">
                 Sign In to Unite Property Management Suite
@@ -74,7 +72,11 @@ const LoginForm = ({ login }) => {
                 </button>
               </div>
               <div className="mt-2 text-center">
-                <p><small>Forgot Password? <a href="#">Click here</a></small></p>
+                <p>
+                  <small>
+                    Forgot Password? <a href="#">Click here</a>
+                  </small>
+                </p>
               </div>
             </form>
           </div>

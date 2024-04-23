@@ -1,0 +1,7 @@
+.header-nav > li.nav-item {
+    color: var(--bs-nav-link-color) !important;
+    font-size: large;
+}
+.header-nav .nav-link {
+    color: var(--bs-nav-link-color) !important;
+}

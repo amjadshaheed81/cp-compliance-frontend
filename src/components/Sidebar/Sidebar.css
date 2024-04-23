@@ -1,0 +1,27 @@
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 5%;
+    height: 100%;
+    background-color: #343a40;
+    /* padding-top: 70px; */
+  }
+  .sidebar ul.nav flex-column {
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+  .sidebar ul.nav li a {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: x-large;
+  }
+  .nav-item {
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  hr{
+    color: #fff;
+  }

@@ -3,17 +3,18 @@ import { connect } from "react-redux";
 import Header from "../../Header/Header";
 import Sidebar from "../../Sidebar/Sidebar";
 
-const Dashboard = () => {
+const AddSite = () => {
   return (
     <Fragment>
       <Sidebar />
       <div class="content">
         <Header />
+
         <div class="container-fluid">
           <h2>Welcome</h2>
           <h5>Smantha</h5>
           <div className="row">
-            <div className="col-md-12">Dashboard</div>
+            <div className="col-md-12">Add Site</div>
           </div>
         </div>
       </div>
@@ -21,4 +22,4 @@ const Dashboard = () => {
   );
 };
 
-export default connect(null, {})(Dashboard);
+export default connect(null, {})(AddSite);
