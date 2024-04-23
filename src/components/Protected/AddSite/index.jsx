@@ -1,10 +1,41 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
+import { useForm } from "react-hook-form";
 import Header from "../../Header/Header";
 import Sidebar from "../../Sidebar/Sidebar";
-import "./AddSite.css";
+import { addSite } from "../../../store/thunk/site";
 
-const AddSite = () => {
+import "./AddSite.css";
+import { InputError } from "../../common/InputError";
+
+const AddSite = ({ addSite }) => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+    getValues,
+  } = useForm({
+    defaultValues: {
+      name: "",
+      jobDescription: "",
+      roleType: "",
+      hours: "",
+      rateph: "",
+      experience: "",
+      qualification: "",
+      nvqLevel: "",
+      vacancy: "",
+      stdate: "",
+      enddate: "",
+      site: "",
+      shift: "",
+      choosedays: "",
+    },
+  });
+  const submitSite = (data) => {
+    addSite(data);
+  };
   return (
     <Fragment>
       <Sidebar />
@@ -17,7 +48,7 @@ const AddSite = () => {
             <div className="col-md-8 bg-light">
               <div className="row">
                 <p class="fs-6 mt-2 border-bottom">Property Detail</p>
-                <form className="p-2">
+                <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
                     <div className="col-md-12">
                       <div class="mb-3">
@@ -29,7 +60,19 @@ const AddSite = () => {
                           name="siteName"
                           class="form-control"
                           id="siteName"
+                          {...register("siteName", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.siteName && (
+                          <InputError
+                            message={errors?.siteName?.message}
+                            key={errors?.siteName?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -42,7 +85,19 @@ const AddSite = () => {
                           name="address1"
                           class="form-control"
                           id="address1"
+                          {...register("address1", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.address1 && (
+                          <InputError
+                            message={errors?.address1?.message}
+                            key={errors?.address1?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -55,7 +110,19 @@ const AddSite = () => {
                           name="address2"
                           class="form-control"
                           id="address2"
+                          {...register("address2", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.address2 && (
+                          <InputError
+                            message={errors?.address2?.message}
+                            key={errors?.address2?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -68,7 +135,19 @@ const AddSite = () => {
                           name="city"
                           class="form-control"
                           id="city"
+                          {...register("city", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.city && (
+                          <InputError
+                            message={errors?.city?.message}
+                            key={errors?.city?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -81,7 +160,19 @@ const AddSite = () => {
                           name="area"
                           class="form-control"
                           id="area"
+                          {...register("area", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.area && (
+                          <InputError
+                            message={errors?.area?.message}
+                            key={errors?.area?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-12">
@@ -94,7 +185,19 @@ const AddSite = () => {
                           name="postCode"
                           class="form-control"
                           id="postCode"
+                          {...register("postCode", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.postCode && (
+                          <InputError
+                            message={errors?.postCode?.message}
+                            key={errors?.postCode?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -107,33 +210,69 @@ const AddSite = () => {
                           name="country"
                           class="form-control"
                           id="country"
+                          {...register("country", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.country && (
+                          <InputError
+                            message={errors?.country?.message}
+                            key={errors?.country?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-12">
                       <div class="mb-3">
                         <label for="mapViewUrl" class="form-label">
-                          Map View URL
+                          Map View URL <i class="fas fa-info-circle"></i>
                         </label>
                         <input
                           type="text"
                           name="mapViewUrl"
                           class="form-control"
                           id="mapViewUrl"
+                          {...register("mapViewUrl", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.mapViewUrl && (
+                          <InputError
+                            message={errors?.mapViewUrl?.message}
+                            key={errors?.mapViewUrl?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-12">
                       <div class="mb-3">
                         <label for="streetViewURL" class="form-label">
-                          Street View URL
+                          Street View URL <i class="fas fa-info-circle"></i>
                         </label>
                         <input
                           type="text"
                           name="streetViewURL"
                           class="form-control"
                           id="streetViewURL"
+                          {...register("streetViewURL", {
+                            required: {
+                              value: true,
+                              message: "required",
+                            },
+                          })}
                         />
+                        {errors?.streetViewURL && (
+                          <InputError
+                            message={errors?.streetViewURL?.message}
+                            key={errors?.streetViewURL?.message}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -158,4 +297,4 @@ const AddSite = () => {
   );
 };
 
-export default connect(null, {})(AddSite);
+export default connect(null, { addSite })(AddSite);
