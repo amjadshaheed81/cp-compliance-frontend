@@ -9,6 +9,7 @@ import LoginForm from "./components/Login/LoginForm";
 import Dashboard from "./components/Protected/Dashboard";
 import AddSite from "./components/Protected/AddSite";
 import Sites from "./components/Protected/Sites";
+import ForgotPassword from "./components/ForgotPassword/ForgotPassword";
 const hashHistory = createHashHistory();
 
 const App = () => {
@@ -19,6 +20,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<LoginForm />} />
             <Route path="/login" element={<LoginForm />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-site" element={<AddSite />} />
             <Route path="/sites" element={<Sites />} />

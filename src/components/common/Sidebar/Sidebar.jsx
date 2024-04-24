@@ -1,7 +1,7 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
-import logo from "./../../images/logo-sign.png";
-import userImg from "./../../images/user-default.png";
+import logo from "./../../../images/logo-sign.png";
+import userImg from "./../../../images/user-default.png";
 import { useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 

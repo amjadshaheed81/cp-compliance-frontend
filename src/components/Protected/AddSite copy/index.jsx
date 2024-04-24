@@ -1,13 +1,14 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
+import Sidebar from "../../common/Sidebar/Sidebar";
+import Header from "../../common/Header/Header";
 import { addSite } from "../../../store/thunk/site";
+
+import "./AddSite.css";
 import { InputError } from "../../common/InputError";
 import Success from "../../common/Alert/Success";
 import Error from "../../common/Alert/Error";
-import Sidebar from "../../common/Sidebar/Sidebar";
-import Header from "../../common/Header/Header";
-import "./AddSite.css";
 
 const AddSite = ({ success, error, addSite }) => {
   console.log("error", error);

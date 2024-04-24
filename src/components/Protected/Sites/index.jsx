@@ -1,7 +1,7 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
-import Header from "../../Header/Header";
-import Sidebar from "../../Sidebar/Sidebar";
+import Sidebar from "../../common/Sidebar/Sidebar";
+import Header from "../../common/Header/Header";
 
 const Sites = ({ success, error }) => {
   return (

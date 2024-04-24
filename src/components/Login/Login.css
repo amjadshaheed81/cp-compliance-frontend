@@ -16,7 +16,7 @@ body, html {
     padding: 50px;
   }
   .right-panel {
-    padding: 50px;
+    padding: 8%;
   }
   .login-title{
     font: Montserrat;
@@ -29,3 +29,6 @@ body, html {
   .login-submit{
     background-color: #384BD3;
   }
+  label {
+    font-weight: 500;
+}

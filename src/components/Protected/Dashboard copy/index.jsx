@@ -7,14 +7,14 @@ const Dashboard = () => {
   return (
     <Fragment>
       <Sidebar />
+      {/* 
+  <!-- Page Content --> */}
       <div class="content">
         <Header />
-        <div class="container-fluid">
+
+        <div class="container">
           <h2>Welcome</h2>
           <h5>Smantha</h5>
-          <div className="row">
-            <div className="col-md-12">Dashboard</div>
-          </div>
         </div>
       </div>
     </Fragment>
