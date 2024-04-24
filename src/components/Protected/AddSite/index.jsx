@@ -12,6 +12,17 @@ import Error from "../../common/Alert/Error";
 
 const AddSite = ({ success, error, addSite }) => {
   console.log("error", error);
+  const defaultValues = {
+    address1: "",
+    address2: "",
+    area: "",
+    city: "",
+    country: "",
+    mapViewUrl: "",
+    postCode: "",
+    siteName: "",
+    streetViewURL: "",
+  };
   const {
     register,
     handleSubmit,
@@ -19,20 +30,11 @@ const AddSite = ({ success, error, addSite }) => {
     formState: { errors },
     getValues,
   } = useForm({
-    defaultValues: {
-      address1: "",
-      address2: "",
-      area: "",
-      city: "",
-      country: "",
-      mapViewUrl: "",
-      postCode: "",
-      siteName: "",
-      streetViewURL: "",
-    },
+    defaultValues,
   });
   const submitSite = (data) => {
     addSite(data);
+    reset(defaultValues);
   };
   return (
     <Fragment>
