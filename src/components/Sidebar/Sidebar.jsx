@@ -59,6 +59,11 @@ const Sidebar = () => {
               <i class="fas fa-plus"></i>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" onClick={() => goTo('/sites')}>
+              <i class="fas fa-solid fa-list"></i>
+            </a>
+          </li>
         </ul>
       </div>
     </Fragment>
