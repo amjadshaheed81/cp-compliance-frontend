@@ -7,8 +7,11 @@ import { addSite } from "../../../store/thunk/site";
 
 import "./AddSite.css";
 import { InputError } from "../../common/InputError";
+import Success from "../../common/Alert/Success";
+import Error from "../../common/Alert/Error";
 
-const AddSite = ({ addSite }) => {
+const AddSite = ({ success, error, addSite }) => {
+  console.log("error", error);
   const {
     register,
     handleSubmit,
@@ -271,6 +274,10 @@ const AddSite = ({ addSite }) => {
                       </div>
                     </div>
                   </div>
+                  <div>
+                    {success && <Success msg={success} />}
+                    {error && <Error msg={error} />}
+                  </div>
                   <div class="float-end">
                     <button type="button" class="btn btn-light mb-3 mr-4">
                       Cancel
@@ -291,5 +298,8 @@ const AddSite = ({ addSite }) => {
     </Fragment>
   );
 };
-
-export default connect(null, { addSite })(AddSite);
+const mapStateToProps = (state) => ({
+  success: state.success,
+  error: state.error,
+});
+export default connect(mapStateToProps, { addSite })(AddSite);

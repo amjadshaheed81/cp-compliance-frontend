@@ -19,6 +19,9 @@ const initialState = {
 };
 
 const rootReducer = (state = initialState, action) => {
+  console.log("action", action);
+  console.log("state", state);
+  
   switch (action.type) {
     case LOGIN_SUCCESS:
       return {
@@ -33,17 +36,26 @@ const rootReducer = (state = initialState, action) => {
         isLoggedIn: false,
         user: null,
         error: "",
+        success: "",
       };
-    case LOGIN_FAILURE || ADD_SITE_FAILURE:
+    case LOGIN_FAILURE:
       return {
         ...state,
         error: action.payload,
+        success: "",
+      };
+    case ADD_SITE_FAILURE:
+      return {
+        ...state,
+        error: action.payload,
+        success: "",
       };
     case ADD_SITE_SUCCESS:
       return {
         ...state,
         site: [...state.site, action.payload],
         success: "Successfully added site",
+        error: "",
       };
     default:
       return state;

@@ -10,10 +10,12 @@ export const addSite = (formData) => {
           type: ADD_SITE_SUCCESS,
           payload: userData,
         });
+        console.log('try');
       } catch (error) {
+        console.log('catch');
         dispatch({
           type: ADD_SITE_FAILURE,
-          payload: error.message,
+          payload: "Something wend wrong while adding site. Please try again.",
         });
       }
     };
