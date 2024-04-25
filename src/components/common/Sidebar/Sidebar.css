@@ -20,9 +20,10 @@
   }
   .nav-item {
     color: #fff;
-    font-weight: 300;
-    font-size: 12px;
+    font-weight: 400;
+    font-size: 13px;
     letter-spacing: 1px;
+    line-height: 1rem;
   }
   hr{
     color: #fff;
