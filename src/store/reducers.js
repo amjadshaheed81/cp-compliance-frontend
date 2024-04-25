@@ -5,6 +5,8 @@ import {
   LOGIN_FAILURE,
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
+  GET_SITES_SUCCESS,
+  GET_SITES_FAILURE,
 } from "./actionTypes";
 
 // Retrieve authentication data from browser storage
@@ -12,6 +14,7 @@ const storedUserData = localStorage.getItem("userData");
 const initialState = {
   products: [],
   site: [],
+  sites: [],
   isLoggedIn: !!storedUserData,
   user: storedUserData ? JSON.parse(storedUserData) : null,
   error: "",
@@ -53,9 +56,21 @@ const rootReducer = (state = initialState, action) => {
     case ADD_SITE_SUCCESS:
       return {
         ...state,
-        site: [...state.site, action.payload],
         success: "Successfully added site",
         error: "",
+      };
+    case GET_SITES_SUCCESS:
+      return {
+        ...state,
+        sites: action.payload,
+        success: "",
+        error: "",
+      };
+    case GET_SITES_FAILURE:
+      return {
+        ...state,
+        success: "",
+        error: action.payload,
       };
     default:
       return state;
