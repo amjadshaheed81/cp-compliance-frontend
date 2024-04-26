@@ -8,6 +8,7 @@ import Error from "../../common/Alert/Error";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import "./AddSite.css";
+import { Validation } from "../../../Constant/Validation";
 
 const AddSite = ({ success, error, addSite }) => {
   console.log("error", error);
@@ -62,7 +63,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("siteName", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} site name`,
                             },
                           })}
                         />
@@ -87,7 +88,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("address1", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} addess on line 1`,
                             },
                           })}
                         />
@@ -112,7 +113,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("address2", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} addess on line 2`,
                             },
                           })}
                         />
@@ -137,7 +138,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("city", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} city`,
                             },
                           })}
                         />
@@ -162,7 +163,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("area", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} your area`,
                             },
                           })}
                         />
@@ -187,7 +188,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("postCode", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} your city post code`,
                             },
                           })}
                         />
@@ -212,7 +213,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("country", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} country`,
                             },
                           })}
                         />
@@ -237,7 +238,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("mapViewUrl", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} map view link`,
                             },
                           })}
                         />
@@ -262,7 +263,7 @@ const AddSite = ({ success, error, addSite }) => {
                           {...register("streetViewUrl", {
                             required: {
                               value: true,
-                              message: "required",
+                              message: `${Validation.REQUIRED} street view url`,
                             },
                           })}
                         />
