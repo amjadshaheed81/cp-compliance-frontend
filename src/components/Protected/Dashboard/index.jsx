@@ -2,6 +2,7 @@ import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
+import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 
 const Dashboard = () => {
   return (
@@ -10,11 +11,7 @@ const Dashboard = () => {
       <div class="content">
         <Header />
         <div class="container-fluid">
-          <h2>Welcome</h2>
-          <h5>Smantha</h5>
-          <div className="row">
-            <div className="col-md-12">Dashboard</div>
-          </div>
+          <BreadCrumHeader header={"Welcome"} page={"Home"} />
         </div>
       </div>
     </Fragment>

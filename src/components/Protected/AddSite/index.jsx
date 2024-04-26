@@ -9,6 +9,7 @@ import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import "./AddSite.css";
 import { Validation } from "../../../Constant/Validation";
+import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 
 const AddSite = ({ success, error, addSite }) => {
   console.log("error", error);
@@ -42,7 +43,7 @@ const AddSite = ({ success, error, addSite }) => {
       <div class="content">
         <Header />
         <div class="container-fluid">
-          <h4 role="heading">Create New Site</h4>
+          <BreadCrumHeader header={'Create New Site'} page={'New Site'}/>
           {/* row start*/}
           <div className="row p-2">
             <div className="col-md-8 bg-light">

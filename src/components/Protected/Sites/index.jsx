@@ -3,6 +3,7 @@ import { connect } from "react-redux";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import { getSites } from "../../../store/thunk/site";
+import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 
 const Sites = ({ success, error, getSites, sites }) => {
   useEffect(() => {
@@ -14,7 +15,7 @@ const Sites = ({ success, error, getSites, sites }) => {
       <div class="content">
         <Header />
         <div class="container-fluid">
-          <h4 role="heading">Portfolio Management</h4>
+          <BreadCrumHeader header={'Portfolio Management'} page={'Portfolio'}/>
           {/* row start*/}
           <div className="row p-2"></div>
           <div className="col-md-12">
