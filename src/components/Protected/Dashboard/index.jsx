@@ -3,6 +3,11 @@ import { connect } from "react-redux";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import DashboardActions from "./DashboardActions";
+import "./Dashboard.css";
+import DashboardNotification from "./DashboardNotification";
+import DashboardTender from "./DashboardTender";
+import DashboardActiveProjects from "./DashboardActiveProjects";
 
 const Dashboard = () => {
   return (
@@ -52,46 +57,18 @@ const Dashboard = () => {
               </div>
             </div>
             <div class="col">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Active Projects</h5>
-                  <p class="card-text">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  </p>
-                </div>
-              </div>
+              <DashboardActiveProjects />
             </div>
           </div>
           <div class="row mt-4">
             <div class="col">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Actions</h5>
-                  <p class="card-text">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  </p>
-                </div>
-              </div>
+              <DashboardActions />
             </div>
             <div class="col">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Notifications</h5>
-                  <p class="card-text">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  </p>
-                </div>
-              </div>
+              <DashboardNotification />
             </div>
             <div class="col">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Tender &amp; Quotes</h5>
-                  <p class="card-text">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  </p>
-                </div>
-              </div>
+              <DashboardTender />
             </div>
           </div>
         </div>
