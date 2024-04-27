@@ -4,8 +4,8 @@ import "./BreadCrumHeader.css";
 const BreadCrumHeader = ({ header, page }) => {
   return (
     <Fragment>
-      <div class="d-flex bd-highlight mb-3">
-        <div class="p-2 bd-highlight">
+      <div class="d-flex bd-highlight">
+        <div class="pt-2 bd-highlight">
           <h4>{header}</h4>
         </div>
         <div class="ms-auto p-2 bd-highlight">
