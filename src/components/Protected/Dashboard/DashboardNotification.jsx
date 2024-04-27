@@ -33,6 +33,10 @@ const DashboardNotification = () => {
                 <td>Recieved quote from supplier A</td>
                 <td>31 Dec 24</td>
               </tr>
+              <tr>
+                <td>Recieved quote from supplier A</td>
+                <td>31 Dec 24</td>
+              </tr>
             </tbody>
           </table>
         </div>

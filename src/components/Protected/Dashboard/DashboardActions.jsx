@@ -42,6 +42,16 @@ const DashboardActions = () => {
                 <td>Joe B</td>
                 <td>31 Dec 24</td>
                 <td>
+                  <div class="bg-warning text-light rounded-1 p-1" role="alert">
+                    In Progress
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>Action B</td>
+                <td>Joe B</td>
+                <td>31 Dec 24</td>
+                <td>
                   <div class="bg-success text-light rounded-1 p-1" role="alert">
                     Completed
                   </div>

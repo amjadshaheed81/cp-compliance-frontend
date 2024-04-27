@@ -8,6 +8,8 @@ import "./Dashboard.css";
 import DashboardNotification from "./DashboardNotification";
 import DashboardTender from "./DashboardTender";
 import DashboardActiveProjects from "./DashboardActiveProjects";
+import DashboardEventCalendar from "./DashboardEventCalendar";
+import DashboardRiskScore from "./DashboardRiskScore";
 
 const Dashboard = () => {
   return (
@@ -37,24 +39,10 @@ const Dashboard = () => {
           </div>
           <div class="row">
             <div class="col">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Risk Scorecard</h5>
-                  <p class="card-text">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  </p>
-                </div>
-              </div>
+              <DashboardRiskScore />
             </div>
             <div class="col">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Event Calendar</h5>
-                  <p class="card-text">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  </p>
-                </div>
-              </div>
+              <DashboardEventCalendar />
             </div>
             <div class="col">
               <DashboardActiveProjects />

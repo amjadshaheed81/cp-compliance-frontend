@@ -52,6 +52,38 @@ const DashboardActiveProjects = () => {
                 &#8364;	3000
                 </td>
               </tr>
+              <tr>
+                <td>Project D</td>
+                <td>01 Jan 24</td>
+                <td>31 May 24</td>
+                <td>
+                &#8364;	3000
+                </td>
+              </tr>
+              <tr>
+                <td>Project D</td>
+                <td>01 Jan 24</td>
+                <td>31 May 24</td>
+                <td>
+                &#8364;	3000
+                </td>
+              </tr>
+              <tr>
+                <td>Project D</td>
+                <td>01 Jan 24</td>
+                <td>31 May 24</td>
+                <td>
+                &#8364;	3000
+                </td>
+              </tr>
+              <tr>
+                <td>Project D</td>
+                <td>01 Jan 24</td>
+                <td>31 May 24</td>
+                <td>
+                &#8364;	3000
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
