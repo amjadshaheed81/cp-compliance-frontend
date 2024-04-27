@@ -32,7 +32,7 @@ const Sites = ({ success, error, getSites, sites }) => {
               <tbody>
                 {sites?.length === 0 && (
                   <tr>
-                    <td>No Sites found</td>
+                    <td colSpan={5}>No Sites found</td>
                   </tr>
                 )}
                 {sites?.map((itm, i) => (
