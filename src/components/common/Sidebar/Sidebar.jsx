@@ -23,7 +23,7 @@ const Sidebar = () => {
           </li>
           <li class="nav-item">General</li>
           <li class="nav-item">
-            <a class="nav-link active" href="/dashboard">
+            <a class="nav-link active" onClick={() => goTo('/dashboard')}>
               <i class="fas fa-home"></i>
             </a>
           </li>

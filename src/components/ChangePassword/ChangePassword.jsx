@@ -1,29 +1,16 @@
 // components/Login/LoginForm.js
 import React, { Fragment, useState } from "react";
 import { connect } from "react-redux";
-import { login } from "../../store/thunks";
 import logoImage from "../../images/login-left.png";
 import logo from "../../images/logo.png";
 import { useNavigate } from "react-router-dom";
-import "./ForgotPassword.css";
+import "./ChangePassword.css";
 
-const ForgotPassword = ({ login }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const ChangePassword = ({}) => {
   const navigate = useNavigate();
-
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
-  };
-
-  const handlePasswordChange = (e) => {
-    setPassword(e.target.value);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    navigate("/dashboard");
-    // login('email, password);
+    navigate("/login");
   };
 
   return (
@@ -34,29 +21,40 @@ const ForgotPassword = ({ login }) => {
             <img src={logoImage} alt="login left panel logo" />
           </div>
           <div className="col-md-6 right-panel bg-white">
-            <button className="btn btn-small btn-default back-btn"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/login");
-            }}
-            >Back</button>
+            <button
+              className="btn btn-small btn-default back-btn"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/login");
+              }}
+            >
+              Back
+            </button>
             <form onSubmit={handleSubmit}>
               <div className="text-center mb-4">
                 <img src={logo} alt="main cpc portal logo" />
               </div>
-              <h2 className="mb-2">Reset Password</h2>
+              <h2 className="mb-2">Change Password</h2>
               <small>
-                Enter your email address to recieve a password reset link.
+                Change the password for your account ending with
+                xxxx06@gmail.com
               </small>
               <div className="form-group mt-2">
-                <label for="email">Email</label>
+                <label for="email">Password</label>
                 <input
-                  type="text"
+                  type="password"
                   className="form-control"
-                  id="email"
-                  value={email}
-                  placeholder="Enter your email"
-                  onChange={handleEmailChange}
+                  id="password"
+                  placeholder="6+ Characters, 1 Capital letter"
+                />
+              </div>
+              <div className="form-group mt-2">
+                <label for="email">Re-enter Password</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  id="rePassword"
+                  placeholder="6+ Characters, 1 Capital letter"
                 />
               </div>
               <div className="form-group mt-2">
@@ -64,7 +62,7 @@ const ForgotPassword = ({ login }) => {
                   type="submit"
                   className="btn btn-primary rounded w-100 login-submit"
                 >
-                  Send Password Rest Link
+                  Send New Password
                 </button>
               </div>
             </form>
@@ -75,4 +73,4 @@ const ForgotPassword = ({ login }) => {
   );
 };
 
-export default connect(null, { login })(ForgotPassword);
+export default connect(null, {})(ChangePassword);

@@ -43,11 +43,11 @@ const AddSite = ({ success, error, addSite }) => {
       <div class="content">
         <Header />
         <div class="container-fluid">
-          <BreadCrumHeader header={'Create New Site'} page={'New Site'}/>
+          <BreadCrumHeader header={"Create New Site"} page={"New Site"} />
           {/* row start*/}
           <div className="row p-2">
-            <div className="col-md-8 bg-light">
-              <div className="row">
+            <div className="col-md-8">
+              <div className="row bg-white">
                 <p class="fs-6 mt-2 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
@@ -276,19 +276,21 @@ const AddSite = ({ success, error, addSite }) => {
                         )}
                       </div>
                     </div>
-                  </div>
-                  <div>
-                    {success && <Success msg={success} />}
-                    {error && <Error msg={error} />}
-                  </div>
-                  <div class="float-end">
-                    <button type="button" class="btn btn-light mb-3 mr-4">
-                      Cancel
-                    </button>
-                    &nbsp; &nbsp;
-                    <button type="submit" class="btn btn-primary mb-3 mr-4">
-                      Submit
-                    </button>
+                    <div className="col-md-12">
+                      <div>
+                        {success && <Success msg={success} />}
+                        {error && <Error msg={error} />}
+                      </div>
+                      <div class="float-end">
+                        <button type="button" class="btn btn-light mb-3 mr-4">
+                          Cancel
+                        </button>
+                        &nbsp; &nbsp;
+                        <button type="submit" class="btn btn-primary mb-3 mr-4">
+                          Submit
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </form>
               </div>

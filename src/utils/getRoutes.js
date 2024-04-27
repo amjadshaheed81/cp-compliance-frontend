@@ -1,3 +1,4 @@
+import ChangePassword from "../components/ChangePassword/ChangePassword";
 import ForgotPassword from "../components/ForgotPassword/ForgotPassword";
 import LoginForm from "../components/Login/LoginForm";
 import PageNotFound from "../components/PageNotFound/PageNotFound";
@@ -19,6 +20,10 @@ export const getRoutes = () => {
     {
       path: "/forgot-password",
       element: <ForgotPassword />,
+    },
+    {
+      path: "/change-password",
+      element: <ChangePassword />,
     },
     {
       path: "/dashboard",

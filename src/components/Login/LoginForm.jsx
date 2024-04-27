@@ -33,7 +33,7 @@ const LoginForm = ({ login }) => {
           <div className="col-md-6 left-panel text-center">
             <img src={logoImage} alt="login left panel logo" />
           </div>
-          <div className="col-md-6 right-panel">
+          <div className="col-md-6 right-panel bg-white">
             <form onSubmit={handleSubmit}>
               <div className="text-center mb-4">
                 <img src={logo} alt="main cpc portal logo" />
