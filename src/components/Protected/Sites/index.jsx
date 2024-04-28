@@ -2,20 +2,51 @@ import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
-import { getSites } from "../../../store/thunk/site";
+import { getSites, deleteSite } from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import Swal from "sweetalert2";
 
-const Sites = ({ success, error, getSites, sites }) => {
+const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   useEffect(() => {
     getSites();
   }, []);
+  const deleteSiteById = (id) => {
+    console.log("id===>", id);
+    Swal.fire({
+      title: "Do you want to delete site?",
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire("Saved!", "", "success");
+        const res = await deleteSite(id);
+        if (res === "Success") {
+          Swal.fire({
+            icon: "success",
+            title: "Success...",
+            text: "Site has been successfully deleted",
+          });
+          getSites();
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "Something went wrong while deleting site. Please try again!",
+          });
+        }
+      } else if (result.isDenied) {
+        Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  };
   return (
     <Fragment>
       <Sidebar />
       <div class="content">
         <Header />
         <div class="container-fluid">
-          <BreadCrumHeader header={'Portfolio Management'} page={'Portfolio'}/>
+          <BreadCrumHeader header={"Portfolio Management"} page={"Portfolio"} />
           {/* row start*/}
           <div className="row p-2"></div>
           <div className="col-md-12">
@@ -49,8 +80,16 @@ const Sites = ({ success, error, getSites, sites }) => {
                       <span class="badge bg-success p-2 m-1">1</span>
                     </th>
                     <th scope="col">
-                      <i class="fas fa-pen"></i> &nbsp;
-                      <i class="fas fa-trash"></i>
+                      <button className="btn btn-sm btn-light">
+                        <i class="fas fa-pen"></i>
+                      </button>{" "}
+                      &nbsp;
+                      <button
+                        className="btn btn-sm btn-light text-danger"
+                        onClick={() => deleteSiteById(1)}
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
                     </th>
                   </tr>
                 ))}
@@ -68,4 +107,4 @@ const mapStateToProps = (state) => ({
   error: state.error,
   sites: state.sites,
 });
-export default connect(mapStateToProps, { getSites })(Sites);
+export default connect(mapStateToProps, { getSites, deleteSite })(Sites);

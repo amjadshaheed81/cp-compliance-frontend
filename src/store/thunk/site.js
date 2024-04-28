@@ -1,4 +1,4 @@
-import { get, post } from "../../api";
+import { del, get, post } from "../../api";
 import {
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
@@ -20,6 +20,18 @@ export const addSite = (formData) => {
         type: ADD_SITE_FAILURE,
         payload: "Something wend wrong while adding site. Please try again.",
       });
+    }
+  };
+};
+
+export const deleteSite = (id) => {
+  return async () => {
+    try {
+      const url = `/api/siteservice/site/${id}`;
+      await del(url);
+      return 'Success';
+    } catch (error) {
+      return 'Error';
     }
   };
 };
