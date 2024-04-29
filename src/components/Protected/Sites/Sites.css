@@ -1,0 +1,17 @@
+span.badge.bg-danger.p-2.m-1.risk-span {
+    width: 28px;
+    background: #D34053 !important;
+}
+span.badge.bg-warning.p-2.m-1.risk-span {
+    width: 30px;
+    background: #FFA70B;
+}
+
+span.badge.bg-info.p-2.m-1.risk-span {
+    width: 30px;
+    background: #F3CC65;
+}
+span.badge.bg-success.p-2.m-1.risk-span {
+    width: 30px;
+    background: #0FCF7E;
+}

@@ -4,7 +4,9 @@ import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import { getSites, deleteSite } from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import "./Sites.css";
 
 const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   useEffect(() => {
@@ -40,6 +42,10 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
       }
     });
   };
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
   return (
     <Fragment>
       <Sidebar />
@@ -47,6 +53,27 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
         <Header />
         <div class="container-fluid">
           <BreadCrumHeader header={"Portfolio Management"} page={"Portfolio"} />
+          {/*  */}
+          {/*  */}
+          <div class="d-flex bd-highlight">
+            <div class="pt-2 bd-highlight ">
+              {/* <input type="text" placeholder="Search for site"/> &nbsp;
+              <select>
+                <option value={'All'}>All</option>
+              </select>&nbsp; */}
+              <button className="btn btn-sm btn-light bg-white text-primary">
+                <i class="fas fa-download"></i>&nbsp; Export
+              </button>
+            </div>
+            <div class="ms-auto p-2 bd-highlight">
+              <button
+                className="btn btn-sm btn-primary text-white"
+                onClick={() => goTo("/add-site")}
+              >
+                <i className="fas fa-plus"></i>&nbsp; Create New Site
+              </button>
+            </div>
+          </div>
           {/* row start*/}
           <div className="row p-2"></div>
           <div className="col-md-12">
@@ -74,10 +101,10 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
                       <span class="badge rounded-pill bg-success">Open</span>
                     </th>
                     <th scope="col">
-                      <span class="badge bg-danger p-2 m-1">1</span>
-                      <span class="badge bg-warning p-2 m-1">1</span>
-                      <span class="badge bg-info p-2 m-1">1</span>
-                      <span class="badge bg-success p-2 m-1">1</span>
+                    <span class="badge bg-danger p-2 m-1 risk-span">1</span>
+                      <span class="badge bg-warning p-2 m-1 risk-span">1</span>
+                      <span class="badge bg-info p-2 m-1 risk-span">1</span>
+                      <span class="badge bg-success p-2 m-1 risk-span">1</span>
                     </th>
                     <th scope="col">
                       <button className="btn btn-sm btn-light">
