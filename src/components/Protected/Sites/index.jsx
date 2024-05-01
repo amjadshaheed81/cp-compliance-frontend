@@ -12,17 +12,17 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   useEffect(() => {
     getSites();
   }, []);
-  const deleteSiteById = (id) => {
-    console.log("id===>", id);
+  const deleteSiteById = (itm) => {
+    console.log("itm===>", itm);
     Swal.fire({
-      title: "Do you want to delete site?",
+      title: `Do you want to delete ${itm?.siteName}`,
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
         Swal.fire("Saved!", "", "success");
-        const res = await deleteSite(id);
+        const res = await deleteSite(itm?.id);
         if (res === "Success") {
           Swal.fire({
             icon: "success",
@@ -113,7 +113,7 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
                       &nbsp;
                       <button
                         className="btn btn-sm btn-light text-danger"
-                        onClick={() => deleteSiteById(1)}
+                        onClick={() => deleteSiteById(itm)}
                       >
                         <i class="fas fa-trash"></i>
                       </button>
