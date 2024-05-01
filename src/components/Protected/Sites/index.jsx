@@ -21,7 +21,6 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        Swal.fire("Saved!", "", "success");
         const res = await deleteSite(itm?.id);
         if (res === "Success") {
           Swal.fire({
@@ -101,7 +100,7 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
                       <span class="badge rounded-pill bg-success">Open</span>
                     </th>
                     <th scope="col">
-                    <span class="badge bg-danger p-2 m-1 risk-span">1</span>
+                      <span class="badge bg-danger p-2 m-1 risk-span">1</span>
                       <span class="badge bg-warning p-2 m-1 risk-span">1</span>
                       <span class="badge bg-info p-2 m-1 risk-span">1</span>
                       <span class="badge bg-success p-2 m-1 risk-span">1</span>
