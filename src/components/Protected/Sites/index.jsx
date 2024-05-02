@@ -1,5 +1,6 @@
-import React, { Fragment, useEffect } from "react";
+import React, { useState, Fragment, useEffect } from "react";
 import { connect } from "react-redux";
+import { CSVLink } from "react-csv";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import { getSites, deleteSite } from "../../../store/thunk/site";
@@ -9,6 +10,8 @@ import Swal from "sweetalert2";
 import "./Sites.css";
 
 const Sites = ({ success, error, getSites, sites, deleteSite }) => {
+  const [filterSite, setFilterSite] = useState([sites]);
+  
   useEffect(() => {
     getSites();
   }, []);
@@ -45,6 +48,27 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   const goTo = (link) => {
     navigate(link);
   };
+  const searchSite = (event) => {
+    const value = event?.target?.value;
+    if (value) {
+      const list = filterSite?.filter((x) =>
+        String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
+      );
+      setFilterSite(list);
+    } else {
+      setFilterSite(sites);
+    }
+  };
+  const searchSitesWithStatus = (option) => {
+    if (option) {
+      const list = filterSite?.filter((x) =>
+        String(x?.status).toLowerCase().includes(String(option).toLowerCase())
+      );
+      setFilterSite(list);
+    } else {
+      setFilterSite(sites);
+    }
+  };
   return (
     <Fragment>
       <Sidebar />
@@ -56,13 +80,15 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
           {/*  */}
           <div class="d-flex bd-highlight">
             <div class="pt-2 bd-highlight ">
-              {/* <input type="text" placeholder="Search for site"/> &nbsp;
-              <select>
-                <option value={'All'}>All</option>
-              </select>&nbsp; */}
-              <button className="btn btn-sm btn-light bg-white text-primary">
-                <i class="fas fa-download"></i>&nbsp; Export
-              </button>
+              <input type="text" placeholder="Search for site" onChange={searchSite} /> &nbsp;
+              <select name="status" id="status" value={sites}
+                onChange={searchSitesWithStatus}>
+                <option value="status">Status</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+                <option value="sold">Sold</option>
+              </select>&nbsp;
+              <CSVLink className="btn btn-sm btn-light bg-white text-primary" data={sites}><i class="fas fa-download"></i>Export</CSVLink>
             </div>
             <div class="ms-auto p-2 bd-highlight">
               <button
@@ -87,12 +113,12 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
                 </tr>
               </thead>
               <tbody>
-                {sites?.length === 0 && (
+                {filterSite?.length === 0 && (
                   <tr>
                     <td colSpan={5}>No Sites found</td>
                   </tr>
                 )}
-                {sites?.map((itm, i) => (
+                {filterSite?.map((itm, i) => (
                   <tr key={i}>
                     <th scope="col">{itm?.siteName}</th>
                     <th scope="col">{itm?.address1}</th>
