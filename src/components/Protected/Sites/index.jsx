@@ -10,8 +10,8 @@ import Swal from "sweetalert2";
 import "./Sites.css";
 
 const Sites = ({ success, error, getSites, sites, deleteSite }) => {
-  const [filterSite, setFilterSite] = useState([sites]);
-  
+  const [filterSite, setFilterSite] = useState(sites);
+
   useEffect(() => {
     getSites();
   }, []);
@@ -80,15 +80,38 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
           {/*  */}
           <div class="d-flex bd-highlight">
             <div class="pt-2 bd-highlight ">
-              <input type="text" placeholder="Search for site" onChange={searchSite} /> &nbsp;
-              <select name="status" id="status" value={sites}
-                onChange={searchSitesWithStatus}>
-                <option value="status">Status</option>
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
-                <option value="sold">Sold</option>
-              </select>&nbsp;
-              <CSVLink className="btn btn-sm btn-light bg-white text-primary" data={sites}><i class="fas fa-download"></i>Export</CSVLink>
+              <div class="row">
+                <div class="col">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search site"
+                    onChange={searchSite}
+                  />
+                </div>
+                <div class="col">
+                  <select
+                    name="status"
+                    className="form-control"
+                    id="status"
+                    value={sites}
+                    onChange={searchSitesWithStatus}
+                  >
+                    <option value="status">Status</option>
+                    <option value="open">Open</option>
+                    <option value="closed">Closed</option>
+                    <option value="sold">Sold</option>
+                  </select>
+                </div>
+                <div className="col">
+                  <CSVLink
+                    className="btn btn-sm btn-light bg-white text-primary"
+                    data={sites}
+                  >
+                    <i class="fas fa-download"></i>Export
+                  </CSVLink>
+                </div>
+              </div>
             </div>
             <div class="ms-auto p-2 bd-highlight">
               <button
