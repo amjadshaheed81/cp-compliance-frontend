@@ -29,7 +29,7 @@ const DashboardRiskScore = () => {
   return (
     <Fragment>
       <div class="card">
-        <div class="card-body p-2">
+        <div class="card-body p-2" style={{zIndex:"1"}}>
           <div class="d-flex bd-highlight p-0">
             <div class="bd-highlight">
               <h5 class="card-title">Risk Scorecard</h5>

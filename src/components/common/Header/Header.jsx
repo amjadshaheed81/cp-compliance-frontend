@@ -1,47 +1,72 @@
 import "./Header.css";
-import React, { Fragment } from "react";
+import React, { useState, Fragment } from "react";
+import GridViewIcon from '@mui/icons-material/GridView';
+import { AppBar, Toolbar, IconButton, Menu, MenuItem } from '@mui/material';
+import { AccountCircle, ArrowDropDown } from '@mui/icons-material';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { connect } from "react-redux";
 
 const Header = () => {
-  return (
-    <Fragment>
-      <nav class="navbar navbar-expand-lg border">
-        <div class="container-fluid">
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarColor01"
-            aria-controls="navbarColor01"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
+  const [anchorEl, setAnchorEl] = useState(null);
 
-          <div class="collapse navbar-collapse" id="navbarColor01">
-            <ul class="navbar-nav me-auto">&nbsp;</ul>
-            <ul className="nav flex-row d-flex header-nav">
-              <li class="nav-item">
-                <a class="nav-link active" href="#">
-                  <i class="fas fa-th-large"></i>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" href="#">
-                  <i class="fas fa fa-bell" aria-hidden="true"></i>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" href="#">
-                  <i class="fas fa-sign-out-alt"></i>
-                </a>
-              </li>
-            </ul>
-          </div>
+  const handleMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  return (
+    <AppBar position="static" style={{ backgroundColor: 'white', top: '0', left: '70px', zIndex: '-1' }}>
+      <Toolbar>
+        <div style={{ flexGrow: 1 }}></div>{/* Empty div to push user icon to right */}
+        <div class="nav-icon">
+        <div className='icon'>
+          <GridViewIcon className="grid-icon" />
         </div>
-      </nav>
-    </Fragment>
+        <div className='icon'>
+          <NotificationsNoneIcon className="grid-icon" />
+        </div>
+        <div className='icon'>
+          <LogoutIcon className="grid-icon" />
+        </div>
+        <div>
+        <IconButton
+          size="large"
+          aria-label="account of current user"
+          aria-controls="menu-appbar"
+          aria-haspopup="true"
+          onClick={handleMenu}
+          color="inherit"
+          style={{marginRight:'40px'}}
+        >
+          <AccountCircle style={{ color: 'grey' }} />
+          <ArrowDropDown className="grid-icon" />
+        </IconButton>
+        <Menu
+          id="menu-appbar"
+          anchorEl={anchorEl}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          keepMounted
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          open={Boolean(anchorEl)}
+          onClose={handleClose}
+        >
+          <MenuItem onClick={handleClose}>Profile</MenuItem>
+          <MenuItem onClick={handleClose}>My account</MenuItem>
+          <MenuItem onClick={handleClose}>Logout</MenuItem>
+        </Menu>
+        </div>
+        </div>
+      </Toolbar>
+    </AppBar>
   );
 };
 
