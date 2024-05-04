@@ -4,11 +4,13 @@ import {
   ADD_SITE_SUCCESS,
   GET_SITES_SUCCESS,
   GET_SITES_FAILURE,
+  FILTER_SITES,
 } from "./../actionTypes";
 
 const initialState = {
   site: [],
   sites: [],
+  filterSite: [],
   error: "",
   success: "",
 };
@@ -34,6 +36,7 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         sites: action.payload,
+        filterSite: action.payload,
         success: "",
         error: "",
       };
@@ -42,6 +45,13 @@ const reducer = (state = initialState, action) => {
         ...state,
         success: "",
         error: action.payload,
+      };
+    case FILTER_SITES:
+      return {
+        ...state,
+        filterSite: action.payload,
+        success: "",
+        error: "",
       };
     default:
       return state;

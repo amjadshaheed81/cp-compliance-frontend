@@ -3,20 +3,17 @@ import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
-import { getSites, deleteSite } from "../../../store/thunk/site";
+import { getSites, deleteSite, setFilterSite } from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Sites.css";
 
-const Sites = ({ success, error, getSites, sites, deleteSite }) => {
-  const [filterSite, setFilterSite] = useState(sites);
-
+const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite }) => {
   useEffect(() => {
     getSites();
   }, []);
   const deleteSiteById = (itm) => {
-    console.log("itm===>", itm);
     Swal.fire({
       title: `Do you want to delete ${itm?.siteName}`,
       showDenyButton: false,
@@ -51,7 +48,7 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   const searchSite = (event) => {
     const value = event?.target?.value;
     if (value) {
-      const list = filterSite?.filter((x) =>
+      const list = sites?.filter((x) =>
         String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
       );
       setFilterSite(list);
@@ -61,7 +58,7 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   };
   const searchSitesWithStatus = (option) => {
     if (option) {
-      const list = filterSite?.filter((x) =>
+      const list = sites?.filter((x) =>
         String(x?.status).toLowerCase().includes(String(option).toLowerCase())
       );
       setFilterSite(list);
@@ -182,5 +179,6 @@ const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
   sites: state.site.sites,
+  filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { getSites, deleteSite })(Sites);
+export default connect(mapStateToProps, { getSites, deleteSite, setFilterSite })(Sites);

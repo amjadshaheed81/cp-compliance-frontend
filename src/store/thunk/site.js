@@ -2,6 +2,8 @@ import { del, get, post } from "../../api";
 import {
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
+  FILTER_SITES,
+  FILTER_SITES_FAILURE,
   GET_SITES_FAILURE,
   GET_SITES_SUCCESS,
 } from "../actionTypes";
@@ -49,6 +51,22 @@ export const getSites = () => {
       dispatch({
         type: GET_SITES_FAILURE,
         payload: "Something wend wrong while fetching site. Please try again.",
+      });
+    }
+  };
+};
+
+export const setFilterSite = (siteList) => {
+  return async (dispatch) => {
+    try {
+      dispatch({
+        type: FILTER_SITES,
+        payload: siteList,
+      });
+    } catch (error) {
+      dispatch({
+        type: FILTER_SITES_FAILURE,
+        payload: "Something wend wrong while filtering sites. Please try again.",
       });
     }
   };
