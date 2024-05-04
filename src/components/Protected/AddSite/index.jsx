@@ -304,7 +304,7 @@ const AddSite = ({ success, error, addSite }) => {
   );
 };
 const mapStateToProps = (state) => ({
-  success: state.success,
-  error: state.error,
+  success: state.site.success,
+  error: state.site.error,
 });
 export default connect(mapStateToProps, { addSite })(AddSite);

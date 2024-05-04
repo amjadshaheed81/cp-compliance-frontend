@@ -105,10 +105,11 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
                 </div>
                 <div className="col">
                   <CSVLink
+                    filename={'site-lists'}
                     className="btn btn-sm btn-light bg-white text-primary"
                     data={sites}
                   >
-                    <i class="fas fa-download"></i>Export
+                    <i class="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
                 </div>
               </div>
@@ -178,8 +179,8 @@ const Sites = ({ success, error, getSites, sites, deleteSite }) => {
   );
 };
 const mapStateToProps = (state) => ({
-  success: state.success,
-  error: state.error,
-  sites: state.sites,
+  success: state.site.success,
+  error: state.site.error,
+  sites: state.site.sites,
 });
 export default connect(mapStateToProps, { getSites, deleteSite })(Sites);

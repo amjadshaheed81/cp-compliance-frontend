@@ -18,13 +18,13 @@ body {
   height: 100%;
 }
 
-.content {
+/* .content {
   width: calc(100% - 50px);
   margin-left: auto;
   padding: 15px;
   height: 100%;
   word-break: break-word;
-}
+} */
 
 .sidebar {
   position: fixed;
