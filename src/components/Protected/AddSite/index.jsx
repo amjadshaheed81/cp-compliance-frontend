@@ -1,6 +1,7 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import { addSite } from "../../../store/thunk/site";
 import { InputError } from "../../common/InputError";
 import Success from "../../common/Alert/Success";
@@ -10,6 +11,10 @@ import Header from "../../common/Header/Header";
 import "./AddSite.css";
 import { Validation } from "../../../Constant/Validation";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import userDefault from '../../../images/user-default.png';
+import GoogleMap from "./GoogleMap";
+import LocalDetails from "./LocalDetails";
+import KeyContacts from "./KeyContacts";
 
 const AddSite = ({ success, error, addSite }) => {
   console.log("error", error);
@@ -37,6 +42,9 @@ const AddSite = ({ success, error, addSite }) => {
     addSite(data);
     reset(defaultValues);
   };
+  const handleFileSelect = async (event) => {
+    
+  };
   return (
     <Fragment>
       <Sidebar />
@@ -45,7 +53,7 @@ const AddSite = ({ success, error, addSite }) => {
         <div class="container-fluid">
           <BreadCrumHeader header={"Create New Site"} page={"New Site"} />
           {/* row start*/}
-          <div className="row p-2">
+          <div className="row p-2" style={{backgroundColor: 'white'}}>
             <div className="col-md-8">
               <div className="row bg-white">
                 <p class="fs-6 mt-2 border-bottom">Property Detail</p>
@@ -287,7 +295,7 @@ const AddSite = ({ success, error, addSite }) => {
                         </button>
                         &nbsp; &nbsp;
                         <button type="submit" class="btn btn-primary mb-3 mr-4">
-                          Submit
+                          Save
                         </button>
                       </div>
                     </div>
@@ -295,9 +303,47 @@ const AddSite = ({ success, error, addSite }) => {
                 </form>
               </div>
             </div>
-            <div className="col-md-4"></div>
+            <div className="col-md-4">
+              <div className="pic-container pic-medium pic-circle">
+                <img
+                  className="pic"
+                  src={userDefault}
+                  alt=""
+                  width='64px'
+                  height='64px'
+                />
+              <span>Upload your site photo</span>
+              <div>
+                <button className="del-btn" style={{backgroundColor: 'white'}} >Delete</button>
+              </div>
+              </div>
+              <div className="uploading-outer" style={{backgroundColor: '#f1f5f9'}}>
+                <div className="uploadPhotoButton">
+                  <FileUploadOutlinedIcon style={{color:'blue',fontSize: '50px', marginLeft: '9rem'}}/>  
+                  <input
+                    {...register("photo")}
+                    className="uploadButton-input"
+                    type="file"
+                    name="photo"
+                    accept="image/*, application/pdf"
+                    id="photo"
+                    onChange={handleFileSelect}
+                  />
+                  <label for="photo" style={{ color: 'blue', marginLeft: '2.5rem'}} class="btn" >Click to upload</label>
+                  <span>or drag and drop</span>
+                  <p style={{ marginLeft: '6rem'}}>SVG, PNG, JPG or GIF</p>
+                  <p style={{ marginLeft: '6rem'}}>(max 800 * 800 px)</p>
+                </div>
+              </div>
+              <div className="map">
+              {/* To Uncomment when API_KEY is available */}
+              {/* <GoogleMap /> */}
+              </div>
+            </div>
           </div>
           {/* row end*/}
+          <LocalDetails />
+          <KeyContacts />
         </div>
       </div>
     </Fragment>
