@@ -153,7 +153,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite }) => {
                       <span class="badge bg-success p-2 m-1 risk-span">1</span>
                     </th>
                     <th scope="col">
-                      <button className="btn btn-sm btn-light">
+                      <button className="btn btn-sm btn-light" onClick={() => goTo("/update-site")}>
                         <i class="fas fa-pen"></i>
                       </button>{" "}
                       &nbsp;

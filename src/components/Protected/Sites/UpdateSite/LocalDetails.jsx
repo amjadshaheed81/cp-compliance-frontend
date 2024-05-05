@@ -1,7 +1,7 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { InputError } from "../../common/InputError";
-import { Validation } from "../../../Constant/Validation";
+import { InputError } from "../../../common/InputError";
+import { Validation } from "../../../../Constant/Validation";
 
 const LocalDetails = () => {
     const {
@@ -17,7 +17,7 @@ const LocalDetails = () => {
     };
     return (
         <>
-            <div class="row" style={{ backgroundColor: 'white', zIndex: '1'}}>
+            <div class="row p-2 bg-white">
                 <div class="col-md-8">
                     <h2 class="fs-6 mt-4 border-bottom">Local Details</h2>
                     <form className="p-2" onSubmit={handleSubmit(submitSite)}>

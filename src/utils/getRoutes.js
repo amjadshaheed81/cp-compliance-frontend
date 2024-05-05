@@ -2,9 +2,10 @@ import ChangePassword from "../components/ChangePassword/ChangePassword";
 import ForgotPassword from "../components/ForgotPassword/ForgotPassword";
 import LoginForm from "../components/Login/LoginForm";
 import PageNotFound from "../components/PageNotFound/PageNotFound";
-import AddSite from "../components/Protected/AddSite";
 import Dashboard from "../components/Protected/Dashboard";
 import Sites from "../components/Protected/Sites";
+import AddSite from "../components/Protected/Sites/AddSite";
+import UpdateSite from "../components/Protected/Sites/UpdateSite";
 
 export const getRoutes = () => {
   return [
@@ -32,6 +33,10 @@ export const getRoutes = () => {
     {
       path: "/add-site",
       element: <AddSite />,
+    },
+    {
+      path: "/update-site",
+      element: <UpdateSite />,
     },
     {
       path: "/sites",
