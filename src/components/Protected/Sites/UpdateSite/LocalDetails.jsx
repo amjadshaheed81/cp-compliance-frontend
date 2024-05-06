@@ -70,7 +70,7 @@ const LocalDetails = ({
               <div className="col-md-6">
                 <div class="mb-3">
                   <label for="Council" class="form-label">
-                    Liverpool Council
+                    Local Authority
                   </label>
                   <input
                     type="text"
@@ -110,7 +110,6 @@ const LocalDetails = ({
                     // value={sites}
                     // onChange={searchSitesWithStatus}
                   >
-                    <option value="">Select</option>
                     <option value="status">Status</option>
                     <option value="open">Open</option>
                     <option value="closed">Closed</option>

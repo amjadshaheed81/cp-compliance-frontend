@@ -24,7 +24,7 @@ const AddSite = ({ siteId, updateSiteImage, success, error, addSite }) => {
     mapViewUrl: "",
     postCode: "",
     siteName: "",
-    streetViewURL: "",
+    streetViewUrl: "",
   };
   const {
     register,
