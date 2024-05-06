@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { InputError } from "../../../common/InputError";
 import { Validation } from "../../../../Constant/Validation";
@@ -18,13 +18,42 @@ const LocalDetails = ({
   error,
   timingSuccess,
   timingError,
+  updateSite,
 }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm({});
   const timingForm = useForm();
+  useEffect(() => {
+    console.log("updateSite ===>", updateSite);
+    if (updateSite) {
+      reset({
+        localAuthority: updateSite?.localAuthority,
+        status: updateSite?.status,
+        clientResponsibility: updateSite?.clientResponsibility,
+      });
+      timingForm.reset({
+        monStartTime: updateSite?.monStartTime,
+        tuesStartTime: updateSite?.tuesStartTime,
+        wedStartTime: updateSite?.wedStartTime,
+        thurStartTime: updateSite?.thurStartTime,
+        friStartTime: updateSite?.friStartTime,
+        satStartTime: updateSite?.satStartTime,
+        sunStartTime: updateSite?.sunStartTime,
+        monEndTime: updateSite?.monEndTime,
+        tuesEndTime: updateSite?.tuesEndTime,
+        wedEndTime: updateSite?.wedEndTime,
+        thurEndTime: updateSite?.thurEndTime,
+        friEndTime: updateSite?.friEndTime,
+        satEndTime: updateSite?.satEndTime,
+        sunEndTime: updateSite?.sunEndTime,
+      });
+    }
+  }, [updateSite]);
+
   const submitLocalDetails = (data) => {
     console.log("data", data);
     updateLocalDetails({ siteId, ...data });
@@ -305,6 +334,7 @@ const mapStateToProps = (state) => ({
   error: state.site.localDetailsError,
   timingSuccess: state.site.timingSuccess,
   timingError: state.site.timingError,
+  updateSite: state.site.updateSite,
 });
 export default connect(mapStateToProps, { updateLocalDetails, updateTimings })(
   LocalDetails
