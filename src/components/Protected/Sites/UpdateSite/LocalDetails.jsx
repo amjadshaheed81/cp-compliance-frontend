@@ -11,7 +11,6 @@ import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
 
 const LocalDetails = ({
-  siteId,
   updateLocalDetails,
   updateTimings,
   success,
@@ -56,10 +55,10 @@ const LocalDetails = ({
 
   const submitLocalDetails = (data) => {
     console.log("data", data);
-    updateLocalDetails({ siteId, ...data });
+    updateLocalDetails({ siteId: updateSite?.id, ...data });
   };
   const submitOpeningTiming = (data) => {
-    updateTimings({ id: siteId, ...data });
+    updateTimings({ id: updateSite?.id, ...data });
   };
   return (
     <>

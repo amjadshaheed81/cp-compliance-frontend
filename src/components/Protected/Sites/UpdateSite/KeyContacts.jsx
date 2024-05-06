@@ -1,4 +1,6 @@
-const KeyContacts = ({ siteId }) => {
+import { connect } from "react-redux";
+
+const KeyContacts = ({ updateSite }) => {
   return (
     <>
       <div class="row p-2 bg-white">
@@ -42,4 +44,10 @@ const KeyContacts = ({ siteId }) => {
     </>
   );
 };
-export default KeyContacts;
+
+const mapStateToProps = (state) => ({
+  success: state.site.localDetailsSuccess,
+  error: state.site.localDetailsError,
+  updateSite: state.site.updateSite,
+});
+export default connect(mapStateToProps, {})(KeyContacts);

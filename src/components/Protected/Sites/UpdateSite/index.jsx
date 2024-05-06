@@ -367,7 +367,7 @@ const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
           </div>
           {/* row end*/}
           <LocalDetails />
-          <KeyContacts siteId={updateSite}/>
+          <KeyContacts />
         </div>
       </div>
     </Fragment>
