@@ -2,7 +2,7 @@ import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { addSite } from "../../../../store/thunk/site";
+import { addSite, updateSiteImage } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -13,7 +13,7 @@ import { Validation } from "../../../../Constant/Validation";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 
-const AddSite = ({ success, error, addSite }) => {
+const AddSite = ({ siteId, updateSiteImage, success, error, addSite }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -39,7 +39,9 @@ const AddSite = ({ success, error, addSite }) => {
     addSite(data);
     reset(defaultValues);
   };
-  const handleFileSelect = async (event) => {};
+  const handleFileSelect = async (event,siteId) => {
+    updateSiteImage(event, siteId);
+  };
   return (
     <Fragment>
       <Sidebar />
@@ -333,13 +335,13 @@ const AddSite = ({ success, error, addSite }) => {
                     {...register("photo")}
                     className="uploadButton-input"
                     type="file"
-                    name="photo"
+                    name="siteImage"
                     accept="image/*, application/pdf"
-                    id="photo"
-                    onChange={handleFileSelect}
+                    id="siteImage"
+                    onChange={(e) => handleFileSelect(e, siteId)}
                   />
                   <label
-                    for="photo"
+                    htmlFor="siteImage"
                     style={{ color: "blue", marginLeft: "2.5rem" }}
                     class="btn"
                   >
@@ -361,4 +363,4 @@ const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
 });
-export default connect(mapStateToProps, { addSite })(AddSite);
+export default connect(mapStateToProps, { addSite, updateSiteImage })(AddSite);

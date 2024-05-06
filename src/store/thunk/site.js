@@ -1,4 +1,4 @@
-import { del, get, post, put } from "../../api";
+import { del, get, post, put, uploadPhoto } from "../../api";
 import {
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
@@ -13,6 +13,8 @@ import {
   UPDATE_SITE_SUCCESS,
   UPDATE_TIMINIG_FAILURE,
   UPDATE_TIMINIG_SUCCESS,
+  UPDATE_SITE_IMAGE_SUCCESS,
+  UPDATE_SITE_IMAGE_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData) => {
@@ -48,6 +50,35 @@ export const updateSiteDetail = (formData) => {
       dispatch({
         type: UPDATE_SITE_FAILURE,
         payload: "Something wend wrong while updating site. Please try again.",
+      });
+    }
+  };
+};
+
+export const updateSiteImage = (data, siteId) => {
+  console.log('form data', data);
+  console.log('siteId', siteId);
+  return async (dispatch) => {
+    const formData = new FormData();
+    const file = data.e.target.files[0];
+    // const file_size = formData.target.files[0].size;
+    formData.append("file", file);
+    formData.append("fileName", `site-photo`);
+    try {
+      console.log('inside');
+      const url = `/api/siteservice/site/${siteId}/upload`;
+      const { status } = await uploadPhoto(url, formData);
+      console.log('status ===>', status);
+      if (status === 202) {
+        dispatch({
+          type: UPDATE_SITE_IMAGE_SUCCESS,
+          payload: 'Site Image has been updated successully',
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: UPDATE_SITE_IMAGE_FAILURE,
+        payload: "Something went wrong while updating site image. Please try again.",
       });
     }
   };

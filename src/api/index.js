@@ -80,3 +80,12 @@ export function put(url, data) {
     headers: getHeaders(),
   });
 }
+export function uploadPhoto(url, formData) {
+  configAxios();
+  return axiosInstance({
+    method: "POST",
+    url,
+    data: formData,
+    headers: {...getHeaders(), 'Content-Type': `multipart/form-data`},
+  });
+}

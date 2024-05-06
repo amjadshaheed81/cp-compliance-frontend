@@ -2,7 +2,7 @@ import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { updateSiteDetail } from "../../../../store/thunk/site";
+import { updateSiteDetail, updateSiteImage } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -16,7 +16,7 @@ import GoogleMap from "./GoogleMap";
 import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 
-const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
+const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -48,7 +48,9 @@ const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
     updateSiteDetail(data);
     reset(defaultValues);
   };
-  const handleFileSelect = async (event) => {};
+  const handleFileSelect = async (event) => {
+    updateSiteImage(event, siteId);
+  };
   return (
     <Fragment>
       <Sidebar />
@@ -339,24 +341,24 @@ const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
                     }}
                   />
                   <input
-                    {...register("photo")}
+                    {...register("siteImage")}
                     className="uploadButton-input"
                     type="file"
-                    name="photo"
+                    name="siteImage"
                     accept="image/*, application/pdf"
-                    id="photo"
+                    id="siteImage"
                     onChange={handleFileSelect}
                   />
                   <label
-                    for="photo"
+                    htmlFor="siteImage"
                     style={{ color: "blue", marginLeft: "2.5rem" }}
                     class="btn"
                   >
                     Click to upload
-                  </label>
                   <span>or drag and drop</span>
                   <p style={{ marginLeft: "6rem" }}>SVG, PNG, JPG or GIF</p>
                   <p style={{ marginLeft: "6rem" }}>(max 800 * 800 px)</p>
+                  </label>
                 </div>
               </div>
               <div className="map">
