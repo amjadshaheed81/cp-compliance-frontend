@@ -1,8 +1,8 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { addSite } from "../../../../store/thunk/site";
+import { updateSiteDetail } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -16,7 +16,7 @@ import GoogleMap from "./GoogleMap";
 import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 
-const AddSite = ({ success, error, addSite }) => {
+const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -38,8 +38,12 @@ const AddSite = ({ success, error, addSite }) => {
   } = useForm({
     defaultValues,
   });
+  useEffect(() => {
+    console.log('updateSite ===>', updateSite);
+    reset(updateSite);
+  }, []);
   const submitSite = (data) => {
-    addSite(data);
+    updateSiteDetail(data);
     reset(defaultValues);
   };
   const handleFileSelect = async (event) => {};
@@ -360,15 +364,16 @@ const AddSite = ({ success, error, addSite }) => {
             </div>
           </div>
           {/* row end*/}
-          <LocalDetails />
-          <KeyContacts />
+          <LocalDetails siteId={updateSite?.id}/>
+          <KeyContacts siteId={updateSite?.id}/>
         </div>
       </div>
     </Fragment>
   );
 };
 const mapStateToProps = (state) => ({
+  updateSite: state.site.updateSite,
   success: state.site.success,
   error: state.site.error,
 });
-export default connect(mapStateToProps, { addSite })(AddSite);
+export default connect(mapStateToProps, { updateSiteDetail })(UpdateSite);

@@ -1,4 +1,4 @@
-const KeyContacts = () => {
+const KeyContacts = ({ siteId }) => {
   return (
     <>
       <div class="row p-2 bg-white">

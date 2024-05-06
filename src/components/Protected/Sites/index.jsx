@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
-import { getSites, deleteSite, setFilterSite } from "../../../store/thunk/site";
+import { getSites, deleteSite, setFilterSite, updateSite } from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -153,7 +153,10 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite }) => {
                       <span class="badge bg-success p-2 m-1 risk-span">1</span>
                     </th>
                     <th scope="col">
-                      <button className="btn btn-sm btn-light" onClick={() => goTo("/update-site")}>
+                      <button className="btn btn-sm btn-light" onClick={() => {
+                        updateSite(itm)
+                        goTo("/update-site")
+                      }}>
                         <i class="fas fa-pen"></i>
                       </button>{" "}
                       &nbsp;
@@ -181,4 +184,4 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { getSites, deleteSite, setFilterSite })(Sites);
+export default connect(mapStateToProps, { getSites, deleteSite, setFilterSite, updateSite })(Sites);

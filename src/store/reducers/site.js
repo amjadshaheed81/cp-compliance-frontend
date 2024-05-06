@@ -5,12 +5,16 @@ import {
   GET_SITES_SUCCESS,
   GET_SITES_FAILURE,
   FILTER_SITES,
+  UPDATE_SITE_SUCCESS,
+  UPDATE_SITE_FAILURE,
+  UPDATE_SITE,
 } from "./../actionTypes";
 
 const initialState = {
   site: [],
   sites: [],
   filterSite: [],
+  updateSite: {},
   error: "",
   success: "",
 };
@@ -53,6 +57,25 @@ const reducer = (state = initialState, action) => {
         success: "",
         error: "",
       };
+    case UPDATE_SITE:
+      return {
+        ...state,
+        updateSite: action.payload,
+        success: "",
+        error: "",
+      };
+    case UPDATE_SITE_SUCCESS:
+      return {
+        ...state,
+        success: action.payload,
+        error: "",
+      };
+    case UPDATE_SITE_FAILURE:
+        return {
+          ...state,
+          success: "",
+          error: action.payload,
+        };
     default:
       return state;
   }
