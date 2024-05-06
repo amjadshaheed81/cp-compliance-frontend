@@ -40,8 +40,10 @@ const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
   });
   useEffect(() => {
     console.log('updateSite ===>', updateSite);
-    reset(updateSite);
-  }, []);
+    if(updateSite) {
+      reset(updateSite);
+    }
+  }, [updateSite]);
   const submitSite = (data) => {
     updateSiteDetail(data);
     reset(defaultValues);
