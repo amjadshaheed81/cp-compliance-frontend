@@ -154,8 +154,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite }) => {
                     </th>
                     <th scope="col">
                       <button className="btn btn-sm btn-light" onClick={() => {
-                        updateSite(itm)
-                        goTo("/update-site")
+                        updateSite(itm, goTo);
                       }}>
                         <i class="fas fa-pen"></i>
                       </button>{" "}

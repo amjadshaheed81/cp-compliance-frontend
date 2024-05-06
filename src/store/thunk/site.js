@@ -96,13 +96,15 @@ export const setFilterSite = (siteList) => {
   };
 };
 
-export const updateSite = (itm) => {
+export const updateSite = (itm, goTo) => {
+  console.log('===>', itm);
   return async (dispatch) => {
     try {
       dispatch({
         type: UPDATE_SITE,
         payload: itm,
       });
+      goTo("/update-site")
     } catch (error) {
       dispatch({
         type: UPDATE_SITE_FAILURE,
