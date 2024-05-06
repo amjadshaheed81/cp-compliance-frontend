@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Sites.css";
 
-const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite }) => {
+const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSite }) => {
   useEffect(() => {
     getSites();
   }, []);
@@ -154,7 +154,10 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite }) => {
                     </th>
                     <th scope="col">
                       <button className="btn btn-sm btn-light" onClick={() => {
-                        updateSite(itm, goTo);
+                        setTimeout(() => {
+                          goTo('/update-site');
+                        }, 1000);
+                        updateSite(itm);
                       }}>
                         <i class="fas fa-pen"></i>
                       </button>{" "}

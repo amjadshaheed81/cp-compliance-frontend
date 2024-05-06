@@ -96,19 +96,20 @@ export const setFilterSite = (siteList) => {
   };
 };
 
-export const updateSite = (itm, goTo) => {
-  console.log('===>', itm);
+
+export const updateSite = (itm) => {
   return async (dispatch) => {
     try {
       dispatch({
         type: UPDATE_SITE,
         payload: itm,
       });
-      goTo("/update-site")
     } catch (error) {
+      console.log('===>',error);
       dispatch({
         type: UPDATE_SITE_FAILURE,
-        payload: "Something wend wrong while updating sites. Please try again.",
+        payload:
+          "Something wend wrong while filtering sites. Please try again.",
       });
     }
   };
