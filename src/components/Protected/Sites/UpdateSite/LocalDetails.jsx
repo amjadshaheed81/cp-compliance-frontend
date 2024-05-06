@@ -2,25 +2,27 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { InputError } from "../../../common/InputError";
 import { Validation } from "../../../../Constant/Validation";
+import { connect } from "react-redux";
+import { updateLocalDetails } from "./../../../../store/thunk/site";
+import Success from "../../../common/Alert/Success";
+import Error from "../../../common/Alert/Error";
 
-const LocalDetails = ({ siteId }) => {
+const LocalDetails = ({ siteId, updateLocalDetails, success, error }) => {
   const {
     register,
     handleSubmit,
-    // reset,
     formState: { errors },
-    // getValues,
   } = useForm({});
-  const submitSite = (data) => {
-    // addSite(data);
-    // reset(defaultValues);
+  const submitLocalDetails = (data) => {
+    console.log("data", data);
+    updateLocalDetails({ siteId, ...data });
   };
   return (
     <>
       <div class="row p-2 bg-white">
         <div class="col-md-8">
           <h2 class="fs-6 mt-4 border-bottom">Local Details</h2>
-          <form className="p-2" onSubmit={handleSubmit(submitSite)}>
+          <form className="p-2" onSubmit={handleSubmit(submitLocalDetails)}>
             <div className="row">
               <div className="col-md-6">
                 <div class="mb-3">
@@ -29,20 +31,20 @@ const LocalDetails = ({ siteId }) => {
                   </label>
                   <input
                     type="text"
-                    name="council"
+                    name="localAuthority"
                     class="form-control"
-                    id="council"
-                    {...register("council", {
+                    id="localAuthority"
+                    {...register("localAuthority", {
                       required: {
                         value: true,
                         message: `${Validation.REQUIRED} Council`,
                       },
                     })}
                   />
-                  {errors?.council && (
+                  {errors?.localAuthority && (
                     <InputError
-                      message={errors?.council?.message}
-                      key={errors?.council?.message}
+                      message={errors?.localAuthority?.message}
+                      key={errors?.localAuthority?.message}
                     />
                   )}
                 </div>
@@ -56,7 +58,7 @@ const LocalDetails = ({ siteId }) => {
                     name="status"
                     className="form-control"
                     id="status"
-                    {...register("councilStatus", {
+                    {...register("status", {
                       required: {
                         value: true,
                         message: `${Validation.REQUIRED} Status`,
@@ -71,10 +73,10 @@ const LocalDetails = ({ siteId }) => {
                     <option value="closed">Closed</option>
                     <option value="sold">Sold</option>
                   </select>
-                  {errors?.councilStatus && (
+                  {errors?.status && (
                     <InputError
-                      message={errors?.councilStatus?.message}
-                      key={errors?.councilStatus?.message}
+                      message={errors?.status?.message}
+                      key={errors?.status?.message}
                     />
                   )}
                 </div>
@@ -92,6 +94,10 @@ const LocalDetails = ({ siteId }) => {
                   </label>
                 </div>
               </fieldset>
+            </div>
+            <div>
+              {success && <Success msg={success} />}
+              {error && <Error msg={error} />}
             </div>
             <div class="float-end">
               <button type="button" class="btn btn-light mb-3 mr-4">
@@ -199,4 +205,9 @@ const LocalDetails = ({ siteId }) => {
     </>
   );
 };
-export default LocalDetails;
+
+const mapStateToProps = (state) => ({
+  success: state.site.localDetailsSuccess,
+  error: state.site.localDetailsError,
+});
+export default connect(mapStateToProps, { updateLocalDetails })(LocalDetails);

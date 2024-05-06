@@ -8,6 +8,8 @@ import {
   GET_SITES_SUCCESS,
   UPDATE_SITE,
   UPDATE_SITE_FAILURE,
+  UPDATE_SITE_LOCAL_DETAILS,
+  UPDATE_SITE_LOCAL_DETAILS_FAILURE,
   UPDATE_SITE_SUCCESS,
 } from "../actionTypes";
 
@@ -43,6 +45,26 @@ export const updateSiteDetail = (formData) => {
     } catch (error) {
       dispatch({
         type: UPDATE_SITE_FAILURE,
+        payload: "Something wend wrong while updating site. Please try again.",
+      });
+    }
+  };
+};
+
+export const updateLocalDetails = (formData) => {
+  // const {id, ...data} = formData;
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/updateLocalDetails";
+      const res = await put(url, formData);
+      console.log('res ===>', res);
+      dispatch({
+        type: UPDATE_SITE_LOCAL_DETAILS,
+        payload: "Local details has been updated successfully.",
+      });
+    } catch (error) {
+      dispatch({
+        type: UPDATE_SITE_LOCAL_DETAILS_FAILURE,
         payload: "Something wend wrong while updating site. Please try again.",
       });
     }
