@@ -10,6 +10,8 @@ import {
   UPDATE_SITE,
   UPDATE_SITE_LOCAL_DETAILS,
   UPDATE_SITE_LOCAL_DETAILS_FAILURE,
+  UPDATE_TIMINIG_SUCCESS,
+  UPDATE_TIMINIG_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -21,6 +23,8 @@ const initialState = {
   success: "",
   localDetailsSuccess: "",
   localDetailsError: "",
+  updateError: "",
+  updateSuccess: "",
 };
 
 const reducer = (state = initialState, action) => {
@@ -35,6 +39,10 @@ const reducer = (state = initialState, action) => {
         success: "",
         localDetailsSuccess: "",
         localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+        updateError: "",
+        updateSuccess: "",
       };
     case ADD_SITE_SUCCESS:
       return {
@@ -43,6 +51,10 @@ const reducer = (state = initialState, action) => {
         error: "",
         localDetailsSuccess: "",
         localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+        updateError: "",
+        updateSuccess: "",
       };
     case GET_SITES_SUCCESS:
       return {
@@ -53,6 +65,10 @@ const reducer = (state = initialState, action) => {
         error: "",
         localDetailsSuccess: "",
         localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+        updateError: "",
+        updateSuccess: "",
       };
     case GET_SITES_FAILURE:
       return {
@@ -61,6 +77,10 @@ const reducer = (state = initialState, action) => {
         error: action.payload,
         localDetailsSuccess: "",
         localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+        updateError: "",
+        updateSuccess: "",
       };
     case FILTER_SITES:
       return {
@@ -70,6 +90,10 @@ const reducer = (state = initialState, action) => {
         error: "",
         localDetailsSuccess: "",
         localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+        updateError: "",
+        updateSuccess: "",
       };
     case UPDATE_SITE:
       return {
@@ -79,39 +103,83 @@ const reducer = (state = initialState, action) => {
         error: "",
         localDetailsSuccess: "",
         localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+        updateError: "",
+        updateSuccess: "",
       };
     case UPDATE_SITE_SUCCESS:
       return {
         ...state,
-        success: action.payload,
+        success: "",
+        error: "",
+        updateError: "",
+        updateSuccess: action.payload,
+        localDetailsSuccess: "",
+        localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+      };
+    case UPDATE_SITE_FAILURE:
+      return {
+        ...state,
+        success: "",
+        error: "",
+        updateError: action.payload,
+        updateSuccess: "",
+        localDetailsSuccess: "",
+        localDetailsError: "",
+        timingSuccess: "",
+        timingError: "",
+      };
+    case UPDATE_SITE_LOCAL_DETAILS:
+      return {
+        ...state,
+        success: "",
+        error: "",
+        updateError: "",
+        updateSuccess: "",
+        timingSuccess: "",
+        timingError: "",
+        localDetailsSuccess: action.payload,
+        localDetailsError: "",
+      };
+    case UPDATE_SITE_LOCAL_DETAILS_FAILURE:
+      return {
+        ...state,
+        success: "",
+        error: "",
+        localDetailsSuccess: "",
+        updateError: "",
+        updateSuccess: "",
+        timingSuccess: "",
+        timingError: "",
+        localDetailsError: action.payload,
+      };
+    case UPDATE_TIMINIG_SUCCESS:
+      return {
+        ...state,
+        success: "",
         error: "",
         localDetailsSuccess: "",
         localDetailsError: "",
+        updateError: "",
+        updateSuccess: "",
+        timingSuccess: action.payload,
+        timingError: "",
       };
-    case UPDATE_SITE_FAILURE:
-        return {
-          ...state,
-          success: "",
-          error: action.payload,
-          localDetailsSuccess: "",
-          localDetailsError: "",
-        };
-    case UPDATE_SITE_LOCAL_DETAILS:
-        return {
-          ...state,
-          success: "",
-          error: "",
-          localDetailsSuccess: action.payload,
-          localDetailsError: "",
-        };
-    case UPDATE_SITE_LOCAL_DETAILS_FAILURE:
-        return {
-          ...state,
-          success: "",
-          error: "",
-          localDetailsSuccess: "",
-          localDetailsError: action.payload,
-        };
+    case UPDATE_TIMINIG_FAILURE:
+      return {
+        ...state,
+        success: "",
+        error: "",
+        localDetailsSuccess: "",
+        localDetailsError: "",
+        timingSuccess: "",
+        updateError: "",
+        updateSuccess: "",
+        timingError: action.payload,
+      };
     default:
       return state;
   }

@@ -375,7 +375,7 @@ const UpdateSite = ({ success, error, updateSite, updateSiteDetail }) => {
 };
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
-  success: state.site.success,
-  error: state.site.error,
+  success: state.site.updateSuccess,
+  error: state.site.updateError,
 });
 export default connect(mapStateToProps, { updateSiteDetail })(UpdateSite);

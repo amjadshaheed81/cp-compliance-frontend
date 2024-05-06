@@ -11,6 +11,8 @@ import {
   UPDATE_SITE_LOCAL_DETAILS,
   UPDATE_SITE_LOCAL_DETAILS_FAILURE,
   UPDATE_SITE_SUCCESS,
+  UPDATE_TIMINIG_FAILURE,
+  UPDATE_TIMINIG_SUCCESS,
 } from "../actionTypes";
 
 export const addSite = (formData) => {
@@ -35,7 +37,7 @@ export const updateSiteDetail = (formData) => {
   // const {id, ...data} = formData;
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/site";
+      const url = "/api/siteservice/updateSite";
       const res = await put(url, formData);
       console.log('res ===>', res);
       dispatch({
@@ -66,6 +68,25 @@ export const updateLocalDetails = (formData) => {
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS_FAILURE,
         payload: "Something wend wrong while updating site. Please try again.",
+      });
+    }
+  };
+};
+
+export const updateTimings = (formData) => {
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/updateTimings";
+      const res = await put(url, formData);
+      console.log('res ===>', res);
+      dispatch({
+        type: UPDATE_TIMINIG_SUCCESS,
+        payload: "Site Timings has been updated successfully.",
+      });
+    } catch (error) {
+      dispatch({
+        type: UPDATE_TIMINIG_FAILURE,
+        payload: "Something wend wrong while updating site timing. Please try again.",
       });
     }
   };
