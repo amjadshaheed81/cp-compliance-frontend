@@ -49,7 +49,8 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
     const value = event?.target?.value;
     if (value) {
       const list = sites?.filter((x) =>
-        String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
+        (String(x?.siteName).toLowerCase().includes(String(value).toLowerCase()) || 
+        String(x?.address1).toLowerCase().includes(String(value).toLowerCase()))
       );
       setFilterSite(list);
     } else {
