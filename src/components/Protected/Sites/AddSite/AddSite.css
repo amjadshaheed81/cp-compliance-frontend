@@ -20,12 +20,6 @@ p.fs-6.mt-2.border-bottom {
 .grid-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    margin-left: 1rem;
-  }
-  
-  .grid-item {
-    /* padding: 10px; */
-    margin-left: -3rem;
   }
   
   .grid-container .grid-item input {

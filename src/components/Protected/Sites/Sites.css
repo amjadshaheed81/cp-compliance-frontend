@@ -15,3 +15,6 @@ span.badge.bg-success.p-2.m-1.risk-span {
     width: 30px;
     background: #0FCF7E !important;
 }
+.contact-input{
+    width: -webkit-fill-available;
+}

@@ -154,8 +154,10 @@ const LocalDetails = ({
         </div>
         <div class="col-md-4">
           <h2 class="fs-6 mt-4 border-bottom">Opening Timings</h2>
-          <span style={{ marginLeft: "5.5rem" }}>Start</span>
-          <span style={{ marginLeft: "4.5rem" }}>End</span>
+          <div style={{display: 'flex', justifyContent: 'space-evenly'}}>
+          <span>Start</span>
+          <span>End</span>
+          </div>
           <form
             className="p-2"
             onSubmit={timingForm.handleSubmit(submitOpeningTiming)}
@@ -230,7 +232,7 @@ const LocalDetails = ({
                   <input
                     type="time"
                     className="form-control"
-                    style={{ marginLeft: "3rem" }}
+                    style={{ marginLeft: "2.5rem" }}
                     {...timingForm.register("thurStartTime")}
                   />
                 </div>
@@ -251,7 +253,7 @@ const LocalDetails = ({
                   <input
                     type="time"
                     className="form-control"
-                    style={{ marginLeft: "3rem" }}
+                    style={{ marginLeft: "4rem" }}
                     {...timingForm.register("friStartTime")}
                   />
                 </div>
@@ -272,7 +274,7 @@ const LocalDetails = ({
                   <input
                     type="time"
                     className="form-control"
-                    style={{ marginLeft: "3rem" }}
+                    style={{ marginLeft: "3.5rem" }}
                     {...timingForm.register("satStartTime")}
                   />
                 </div>
@@ -320,7 +322,7 @@ const LocalDetails = ({
                 Save
               </button>
             </div>
-          </form>
+          </form>          
         </div>
       </div>
     </>

@@ -5,33 +5,35 @@ const KeyContacts = ({ updateSite }) => {
     <>
       <div class="row p-2 bg-white">
         <h2 class="fs-6 mt-4 border-bottom">Key Contacts</h2>
-        <div style={{ display: "flex", justifyContent: "space-evenly" }}>
-          <div class="grid-item" style={{ marginLeft: "-13rem" }}>
-            First Name
-          </div>
-          <div class="grid-item">Last Name</div>
-          <div class="grid-item">Phone</div>
-          <div class="grid-item">Email</div>
-          <div class="grid-item">Role</div>
+        <div class='col-md-2'>
+          <label htmlFor="fname">First Name</label>
+          <input class="contact-input form-control"type="text" />
         </div>
-        <div class="contact-grid-container">
-          <div class="contact-grid-item">
-            <input class="" type="text" />
-          </div>
-          <div class="grid-item">
-            <input type="text" />
-          </div>
-          <div class="grid-item">
-            <input type="text" />
-          </div>
-          <div class="grid-item">
-            <input type="text" />
-          </div>
-          <div class="grid-item">
-            <input type="text" />
-          </div>
+        <div class='col-md-2'>
+          <label htmlFor="fname">Last Name</label>
+          <input class="contact-input form-control"type="text" />
         </div>
-        <div class="float-end">
+        <div class='col-md-2'>
+        <label htmlFor="fname">Phone</label>
+          <input class="contact-input form-control"type="phone" />
+        </div>
+        <div class='col-md-2'>
+        <label htmlFor="fname">Email</label>
+          <input class="contact-input form-control"type="email" />
+        </div>
+        <div class='col-md-2'>
+        <label htmlFor="fname">Role</label>
+          <input class="contact-input form-control"type="text" />
+        </div>
+        <div class='col-md-2'>
+        <button
+          className="btn btn-sm btn-light text-danger mt-4"
+          // onClick={() => deleteSiteById(itm)}
+        >
+          <i class="fas fa-trash"></i>
+        </button>
+        </div>
+        <div class="pt-4">
           <button type="button" class="btn btn-light mb-3 mr-4">
             Add Row
           </button>
