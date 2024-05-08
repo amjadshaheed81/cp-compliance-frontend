@@ -15,6 +15,8 @@ import {
   UPDATE_TIMINIG_SUCCESS,
   UPDATE_SITE_IMAGE_SUCCESS,
   UPDATE_SITE_IMAGE_FAILURE,
+  GET_KEY_CONTACTS,
+  GET_KEY_CONTACTS_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData) => {
@@ -29,7 +31,7 @@ export const addSite = (formData) => {
     } catch (error) {
       dispatch({
         type: ADD_SITE_FAILURE,
-        payload: "Something wend wrong while adding site. Please try again.",
+        payload: "Something went wrong while adding site. Please try again.",
       });
     }
   };
@@ -49,7 +51,7 @@ export const updateSiteDetail = (formData) => {
     } catch (error) {
       dispatch({
         type: UPDATE_SITE_FAILURE,
-        payload: "Something wend wrong while updating site. Please try again.",
+        payload: "Something went wrong while updating site. Please try again.",
       });
     }
   };
@@ -98,7 +100,7 @@ export const updateLocalDetails = (formData) => {
     } catch (error) {
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS_FAILURE,
-        payload: "Something wend wrong while updating site. Please try again.",
+        payload: "Something went wrong while updating site. Please try again.",
       });
     }
   };
@@ -117,7 +119,7 @@ export const updateTimings = (formData) => {
     } catch (error) {
       dispatch({
         type: UPDATE_TIMINIG_FAILURE,
-        payload: "Something wend wrong while updating site timing. Please try again.",
+        payload: "Something went wrong while updating site timing. Please try again.",
       });
     }
   };
@@ -147,7 +149,7 @@ export const getSites = () => {
     } catch (error) {
       dispatch({
         type: GET_SITES_FAILURE,
-        payload: "Something wend wrong while fetching site. Please try again.",
+        payload: "Something went wrong while fetching site. Please try again.",
       });
     }
   };
@@ -164,7 +166,7 @@ export const setFilterSite = (siteList) => {
       dispatch({
         type: FILTER_SITES_FAILURE,
         payload:
-          "Something wend wrong while filtering sites. Please try again.",
+          "Something went wrong while filtering sites. Please try again.",
       });
     }
   };
@@ -183,7 +185,58 @@ export const updateSite = (itm) => {
       dispatch({
         type: UPDATE_SITE_FAILURE,
         payload:
-          "Something wend wrong while filtering sites. Please try again.",
+          "Something went wrong while filtering sites. Please try again.",
+      });
+    }
+  };
+};
+
+
+export const deleteKeyContact = (id) => {
+  return async () => {
+    try {
+      const url = `/api/siteservice/keyContacts/${id}`;
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
+export const getKeyContact = (id) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/siteservice/keyContacts/${id}`;
+      const keyContactList = await get(url);
+      dispatch({
+        type: GET_KEY_CONTACTS,
+        payload: keyContactList,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_KEY_CONTACTS_FAILURE,
+        payload: "Something went wrong while fetching key contacts. Please try again.",
+      });
+    }
+  };
+};
+export const addKeyContact = (formData, id) => {
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/updateKeyContacts";
+      const userData = await put(url, formData);
+      if(userData?.status === 200) {
+        const url = `/api/siteservice/keyContacts/${id}`;
+        const keyContactList = await get(url);
+        dispatch({
+          type: GET_KEY_CONTACTS,
+          payload: keyContactList,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: ADD_SITE_FAILURE,
+        payload: "Something went wrong while adding site. Please try again.",
       });
     }
   };

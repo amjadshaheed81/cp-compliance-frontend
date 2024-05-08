@@ -14,6 +14,8 @@ import {
   UPDATE_TIMINIG_FAILURE,
   UPDATE_SITE_IMAGE_SUCCESS,
   UPDATE_SITE_IMAGE_FAILURE,
+  GET_KEY_CONTACTS,
+  GET_KEY_CONTACTS_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -21,14 +23,16 @@ const initialState = {
   sites: [],
   filterSite: [],
   updateSite: {},
+  keyContacts: [],
   error: "",
   success: "",
   localDetailsSuccess: "",
   localDetailsError: "",
   updateError: "",
   updateSuccess: "",
-  updateSiteImageSuccess: '',
-  updateSiteImageFailure: '',
+  updateSiteImageSuccess: "",
+  updateSiteImageFailure: "",
+  keyContactsFailure: "",
 };
 
 const reducer = (state = initialState, action) => {
@@ -59,8 +63,8 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateError: "",
         updateSuccess: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case GET_SITES_SUCCESS:
       return {
@@ -75,8 +79,8 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateError: "",
         updateSuccess: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case GET_SITES_FAILURE:
       return {
@@ -89,8 +93,8 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateError: "",
         updateSuccess: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case FILTER_SITES:
       return {
@@ -104,8 +108,8 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateError: "",
         updateSuccess: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE:
       return {
@@ -119,8 +123,8 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateError: "",
         updateSuccess: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE_SUCCESS:
       return {
@@ -133,8 +137,8 @@ const reducer = (state = initialState, action) => {
         localDetailsError: "",
         timingSuccess: "",
         timingError: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE_FAILURE:
       return {
@@ -147,8 +151,8 @@ const reducer = (state = initialState, action) => {
         localDetailsError: "",
         timingSuccess: "",
         timingError: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE_LOCAL_DETAILS:
       return {
@@ -161,8 +165,8 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         localDetailsSuccess: action.payload,
         localDetailsError: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE_LOCAL_DETAILS_FAILURE:
       return {
@@ -175,8 +179,8 @@ const reducer = (state = initialState, action) => {
         timingSuccess: "",
         timingError: "",
         localDetailsError: action.payload,
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_TIMINIG_SUCCESS:
       return {
@@ -189,8 +193,8 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         timingSuccess: action.payload,
         timingError: "",
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_TIMINIG_FAILURE:
       return {
@@ -203,8 +207,8 @@ const reducer = (state = initialState, action) => {
         updateError: "",
         updateSuccess: "",
         timingError: action.payload,
-        updateSiteImageSuccess: '',
-        updateSiteImageFailure: '',
+        updateSiteImageSuccess: "",
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE_IMAGE_SUCCESS:
       return {
@@ -218,7 +222,7 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         timingError: "",
         updateSiteImageSuccess: action.payload,
-        updateSiteImageFailure: '',
+        updateSiteImageFailure: "",
       };
     case UPDATE_SITE_IMAGE_FAILURE:
       return {
@@ -233,6 +237,17 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: action.payload,
+      };
+    case GET_KEY_CONTACTS:
+      return {
+        ...state,
+        keyContactsFailure: "",
+        keyContacts: action.payload,
+      };
+    case GET_KEY_CONTACTS_FAILURE:
+      return {
+        ...state,
+        keyContactsFailure: action.payload,
       };
     default:
       return state;
