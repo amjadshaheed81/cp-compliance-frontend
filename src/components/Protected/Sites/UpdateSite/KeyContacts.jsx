@@ -31,7 +31,7 @@ const KeyContacts = ({
   };
   const deleteKeyContactClick = (itm) => {
     console.log(itm);
-    deleteKeyContactClick(itm?.id);
+    deleteKeyContact(itm?.id);
   };
   const addKeyContactClick = () => {
     const data = {
@@ -77,7 +77,7 @@ const KeyContacts = ({
                 </td>
               </tr>
             ))}
-            <form className="p-2" onSubmit={handleSubmit(submitKeyContact)}>
+            {/* <form className="p-2" onSubmit={handleSubmit(submitKeyContact)}> */}
               <tr>
                 <td>
                   <input
@@ -112,7 +112,7 @@ const KeyContacts = ({
                 </td>
                 <td>&nbsp;</td>
               </tr>
-            </form>
+            {/* </form> */}
           </tbody>
         </table>
         <div>{keyContactsFailure && <Error msg={keyContactsFailure} />}</div>
