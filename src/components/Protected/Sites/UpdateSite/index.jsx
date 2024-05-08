@@ -16,7 +16,7 @@ import GoogleMap from "./GoogleMap";
 import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 
-const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail }) => {
+const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, updateSiteImage }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -49,6 +49,7 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail }) =>
     reset(defaultValues);
   };
   const handleFileSelect = async (event) => {
+    let siteId = updateSite?.id;
     updateSiteImage(event, siteId);
   };
   return (
@@ -355,10 +356,10 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail }) =>
                     class="btn"
                   >
                     Click to upload
+                  </label>
                   <span>or drag and drop</span>
                   <p style={{ marginLeft: "6rem" }}>SVG, PNG, JPG or GIF</p>
                   <p style={{ marginLeft: "6rem" }}>(max 800 * 800 px)</p>
-                  </label>
                 </div>
               </div>
               <div className="map">
@@ -380,4 +381,4 @@ const mapStateToProps = (state) => ({
   success: state.site.updateSuccess,
   error: state.site.updateError,
 });
-export default connect(mapStateToProps, { updateSiteDetail })(UpdateSite);
+export default connect(mapStateToProps, { updateSiteDetail, updateSiteImage })(UpdateSite);

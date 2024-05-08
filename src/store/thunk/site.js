@@ -62,7 +62,7 @@ export const updateSiteImage = (data, siteId) => {
   console.log('siteId', siteId);
   return async (dispatch) => {
     const formData = new FormData();
-    const file = data.e.target.files[0];
+    const file = data.target.files[0];
     // const file_size = formData.target.files[0].size;
     formData.append("file", file);
     formData.append("fileName", `site-photo`);

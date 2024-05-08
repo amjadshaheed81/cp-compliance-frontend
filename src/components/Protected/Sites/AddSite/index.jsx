@@ -2,7 +2,7 @@ import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { addSite, updateSiteImage } from "../../../../store/thunk/site";
+import { addSite, updateSiteImage,updateSite } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -13,7 +13,7 @@ import { Validation } from "../../../../Constant/Validation";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 
-const AddSite = ({ siteId, updateSiteImage, success, error, addSite }) => {
+const AddSite = ({ updateSite, updateSiteImage, success, error, addSite }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -39,7 +39,8 @@ const AddSite = ({ siteId, updateSiteImage, success, error, addSite }) => {
     addSite(data);
     reset(defaultValues);
   };
-  const handleFileSelect = async (event,siteId) => {
+  const handleFileSelect = async (event) => {
+    let siteId = updateSite?.id;
     updateSiteImage(event, siteId);
   };
   return (
@@ -338,7 +339,7 @@ const AddSite = ({ siteId, updateSiteImage, success, error, addSite }) => {
                     name="siteImage"
                     accept="image/*, application/pdf"
                     id="siteImage"
-                    onChange={(e) => handleFileSelect(e, siteId)}
+                    onChange={handleFileSelect}
                   />
                   <label
                     htmlFor="siteImage"
@@ -362,5 +363,6 @@ const AddSite = ({ siteId, updateSiteImage, success, error, addSite }) => {
 const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
+  updateSite: state.site.updateSite,
 });
-export default connect(mapStateToProps, { addSite, updateSiteImage })(AddSite);
+export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage })(AddSite);
