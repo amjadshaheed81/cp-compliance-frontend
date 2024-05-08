@@ -42,7 +42,7 @@ const KeyContacts = ({
       email: getValues("email"),
       actionManager: getValues("actionManager"),
     };
-    const formData = [...keyContacts, ...data];
+    const formData = [...keyContacts, {...data}];
     addKeyContact(formData, updateSite?.id);
   };
   return (
