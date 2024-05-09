@@ -15,6 +15,7 @@ import userDefault from "../../../../images/user-default.png";
 import GoogleMap from "./GoogleMap";
 import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
+import SiteChart from "./SiteChart";
 
 const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, updateSiteImage }) => {
   console.log("error", error);
@@ -371,6 +372,7 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, upda
           {/* row end*/}
           <LocalDetails />
           <KeyContacts />
+          <SiteChart />
         </div>
       </div>
     </Fragment>

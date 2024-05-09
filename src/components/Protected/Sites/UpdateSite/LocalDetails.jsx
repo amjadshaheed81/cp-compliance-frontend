@@ -94,7 +94,7 @@ const LocalDetails = ({
               </div>
               <div className="col-md-6">
                 <div class="mb-3">
-                  <label for="status" class="form-label">
+                  <label htmlFor="status" class="form-label">
                     Status
                   </label>
                   <select
