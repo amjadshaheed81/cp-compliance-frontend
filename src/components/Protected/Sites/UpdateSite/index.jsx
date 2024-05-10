@@ -323,8 +323,7 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, upda
                 <span>Upload your site photo</span>
                 <div>
                   <button
-                    className="del-btn"
-                    style={{ backgroundColor: "white" }}
+                    className="btn btn-primary"
                   >
                     Delete
                   </button>

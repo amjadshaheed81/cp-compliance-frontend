@@ -10,6 +10,7 @@ import DashboardTender from "./DashboardTender";
 import DashboardActiveProjects from "./DashboardActiveProjects";
 import DashboardEventCalendar from "./DashboardEventCalendar";
 import DashboardRiskScore from "./DashboardRiskScore";
+import SearchSite from "./SearchSite";
 
 const Dashboard = () => {
   return (
@@ -17,6 +18,7 @@ const Dashboard = () => {
       <Sidebar />
       <div class="content">
         <Header />
+        <SearchSite />
         <div class="container-fluid">
           <BreadCrumHeader header={"Welcome"} page={"Home"} />
           <div class="d-flex bd-highlight p-0">
