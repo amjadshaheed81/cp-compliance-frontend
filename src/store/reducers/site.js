@@ -18,6 +18,9 @@ import {
   GET_KEY_CONTACTS_FAILURE,
   GET_SITES_BY_ID_SUCCESS,
   GET_SITES_BY_ID_FAILURE,
+  GET_ADDRESS_ON_POST_CODE,
+  GET_ADDRESS_ON_POST_CODE_FAILURE,
+  GET_ADDRESS_ON_POST_CODE_SUCCESS,
 } from "./../actionTypes";
 
 const initialState = {
@@ -264,6 +267,16 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteDetailsByFailure: "",
+      };
+      case GET_ADDRESS_ON_POST_CODE_SUCCESS:
+      return {
+        ...state,
+        getAddresOnPostCodeSuccess: action.payload,
+      };
+    case GET_ADDRESS_ON_POST_CODE_FAILURE:
+      return {
+        ...state,
+        getAddresOnPostCodeFailure: action.payload,
       };
     default:
       return state;

@@ -9,6 +9,7 @@ import {
   updateSite,
   getSites,
 } from "../../../../store/thunk/site";
+import { addSite, updateSiteImage, updateSite, handleOnPostCodeSearch } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -20,16 +21,7 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 
-const AddSite = ({
-  updateSite,
-  updateSiteImage,
-  success,
-  error,
-  addSite,
-  sites,
-  getSites,
-  currentSiteData,
-}) => {
+const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleOnPostCodeSearch }) => {
   console.log("error", error);
   const navigate = useNavigate();
   const goTo = (link) => {
@@ -62,6 +54,10 @@ const AddSite = ({
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.id;
     updateSiteImage(event, siteId);
+  };
+  const handleOnSearch = async (event) => {
+    console.log('event search', event);
+    handleOnPostCodeSearch(event);
   };
   return (
     <Fragment>
@@ -236,13 +232,24 @@ const AddSite = ({
                               message: `${Validation.REQUIRED} your city post code`,
                             },
                           })}
+                          onChange={handleOnSearch}
                         />
-                        {errors?.postCode && (
-                          <InputError
-                            message={errors?.postCode?.message}
-                            key={errors?.postCode?.message}
-                          />
-                        )}
+                        <ul className="postCodeSearchResult postCodeSearchResultSite">
+                          {/* {selectedPostCodeList?.map((itm) => (
+                            <li
+                              onClick={() => handleOnSelect(itm)}
+                              key={itm?.id}
+                            >
+                              {itm?.name}
+                            </li>
+                          ))} */}
+                        </ul>
+                          {errors?.postCode && (
+                            <InputError
+                              message={errors?.postCode?.message}
+                              key={errors?.postCode?.message}
+                            />
+                          )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -399,9 +406,13 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   sites: state.site.sites,
 });
+<<<<<<< HEAD
 export default connect(mapStateToProps, {
   updateSite,
   addSite,
   updateSiteImage,
   getSites,
 })(AddSite);
+=======
+export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage, handleOnPostCodeSearch })(AddSite);
+>>>>>>> 1a0c890 (feat/postcode-search: add postcode search)

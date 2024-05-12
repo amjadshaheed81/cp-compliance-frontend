@@ -52,7 +52,8 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
   };
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.id;
-    updateSiteImage(event, siteId);
+   const res = await updateSiteImage(event, siteId);
+   console.log('resss', res);
   };
   const handleDeleteSiteImage = async (event) => {
     let siteId = updateSite?.id;
@@ -396,8 +397,7 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
                 </div>
               </div>
               <div className="map">
-                {/* To Uncomment when API_KEY is available */}
-                {/* <GoogleMap /> */}
+                <GoogleMap />
               </div>
             </div>
           </div>
