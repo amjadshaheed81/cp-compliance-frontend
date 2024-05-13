@@ -31,7 +31,7 @@ function SearchSite({ updateSite }) {
     const searchSite = async (e) => {
         const value = e?.target?.value;
         console.log('value', value);
-        const url = `/api/siteservice/search?term=${value}`;
+        const url = `/api/siteservice/site/all?q=${value}`;
         try {
             const response = await get(url);
             if (response.includes('Unable to Fetch the Site Search Results')) {
