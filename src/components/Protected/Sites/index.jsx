@@ -62,7 +62,6 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
   const searchSitesWithStatus = (e) => {
     const val = e.target.value;
     setSelectedItem(val)
-    console.log('option', val);
     if(val === 'status'){
       setFilterSite(sites);
     }

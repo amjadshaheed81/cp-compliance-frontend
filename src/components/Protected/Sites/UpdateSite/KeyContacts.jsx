@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
 import {
@@ -23,6 +23,8 @@ const KeyContacts = ({
     getValues,
     reset,
   } = useForm({});
+  const [selectedItem, setSelectedItem] = useState("");
+
   useEffect(() => {
     getKeyContact(updateSite?.id);
   }, []);
@@ -44,6 +46,12 @@ const KeyContacts = ({
     };
     const formData = [...keyContacts, {...data}];
     addKeyContact(formData, updateSite?.id);
+    reset({
+      contactName: '',
+      phone: '',
+      email: '',
+      actionManager: '',
+    });
   };
   return (
     <>
@@ -104,11 +112,41 @@ const KeyContacts = ({
                   />
                 </td>
                 <td>
-                  <input
+                  {/* <input
                     class="contact-input form-control"
                     type="text"
                     {...register("actionManager")}
-                  />
+                  /> */}
+                  <select
+                    name="actionManager"
+                    className="contact-input form-control"
+                    id="actionManager"
+                    {...register("actionManager")}
+                    value={selectedItem}
+                    onChange={(e)=> setSelectedItem(e.target.value)}
+                  >
+                    <option value=""></option>
+                    <option value="admin">Admin</option>
+                    <option value="propertymanager">Property Manager</option>
+                    <option value="siteactionmanager">Site Action Manager</option>
+                    <option value="siteusers">Site users</option>
+                    <option value="caretaker">Care Taker</option>
+                    <option value="contractor">Contractor</option>
+                    <option value="surveyor">Surveyor</option>
+                    <option value="tradesman">Tradesman</option>
+                    <option value="electrician">Electrician</option>
+                    <option value="gasengineer">Gas Engineer</option>
+                    <option value="asbestossurveyor">Asbestos Surveyor</option>
+                    <option value="acengineer">AC Engineer</option>
+                    <option value="firedoorinstall">Fire Door Install</option>
+                    <option value="genralcompany">Genral Company</option>
+                    <option value="lift+maintainence">Lift Maintainence</option>
+                    <option value="plumber">Plumber</option>
+                    <option value="autodoormaintainence">Auto Door Maintainence</option>
+                    <option value="refusecollector">Refse Collector</option>
+                    <option value="firealarm">Fire Alarm</option>
+                    <option value="asbestossurveyor">Asbestos Surveyor</option>
+                  </select>
                 </td>
                 <td>&nbsp;</td>
               </tr>
