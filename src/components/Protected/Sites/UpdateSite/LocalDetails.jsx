@@ -107,8 +107,8 @@ const LocalDetails = ({
                         message: `${Validation.REQUIRED} Status`,
                       },
                     })}
-                    // value={sites}
-                    // onChange={searchSitesWithStatus}
+                  // value={sites}
+                  // onChange={searchSitesWithStatus}
                   >
                     <option value="status">Status</option>
                     <option value="open">Open</option>
@@ -154,161 +154,85 @@ const LocalDetails = ({
         </div>
         <div class="col-md-4">
           <h2 class="fs-6 mt-4 border-bottom">Opening Timings</h2>
-          <div style={{display: 'flex', justifyContent: 'space-evenly'}}>
-          <span>Start</span>
-          <span>End</span>
+          <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
+            <span>Start</span>
+            <span>End</span>
           </div>
           <form
             className="p-2"
             onSubmit={timingForm.handleSubmit(submitOpeningTiming)}
           >
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Mon:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    style={{ marginLeft: "3rem" }}
-                    type="time"
-                    className="form-control"
-                    {...timingForm.register("monStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    {...timingForm.register("monEndTime")}
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Tues:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("tuesStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("tuesEndTime")}
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Wed:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("wedStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("wedEndTime")}
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Thurs:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "2.5rem" }}
-                    {...timingForm.register("thurStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("thurEndTime")}
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Fri:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "4rem" }}
-                    {...timingForm.register("friStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("friEndTime")}
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Sat:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3.5rem" }}
-                    {...timingForm.register("satStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("satEndTime")}
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="mt-3" style={{ display: "flex" }}>
-              <label class="">Sun:</label>
-              <div class="grid-container">
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("sunStartTime")}
-                  />
-                </div>
-                <div class="grid-item">
-                  <input
-                    type="time"
-                    className="form-control"
-                    style={{ marginLeft: "3rem" }}
-                    {...timingForm.register("sunEndTime")}
-                  />
-                </div>
-              </div>
-            </div>
+            <table>
+              <tr>
+                <td><label class="">Mon:</label></td>
+                <td><input
+                  type="time"
+                  className="form-control"
+                  {...timingForm.register("monStartTime")} /></td>
+                <td><input {...timingForm.register("monEndTime")}
+                  type="time"
+                  className="form-control"
+                /></td>
+              </tr>
+              <tr>
+                <td><label>Tues:</label></td>
+                <td>
+                  <input type="time"
+                  className="form-control"
+                  {...timingForm.register("tuesStartTime")} />
+                </td>
+                <td>
+                  <input type="time"
+                  className="form-control"
+                  {...timingForm.register("tuesEndTime")}/>
+                </td>
+              </tr>
+              <tr>
+                <td><label>wed:</label></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("wedStartTime")} /></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("wedEndTime")}/></td>
+              </tr>
+              <tr>
+                <td><label>Thurs:</label></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("thurStartTime")} /></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("thurEndTime")} /></td>
+              </tr>
+              <tr>
+                <td><label>Fri:</label></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("friStartTime")} /></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("friEndTime")} /></td>
+              </tr>
+              <tr>
+                <td><label>Sat:</label></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("satStartTime")} /></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("satEndTime")} /></td>
+              </tr>
+              <tr>
+                <td><label>Sun:</label></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("sunStartTime")} /></td>
+                <td><input type="time"
+                  className="form-control"
+                  {...timingForm.register("sunEndTime")} /></td>
+              </tr>
+            </table>
             <div>
               {timingSuccess && <Success msg={timingSuccess} />}
               {timingError && <Error msg={timingError} />}
@@ -322,7 +246,7 @@ const LocalDetails = ({
                 Save
               </button>
             </div>
-          </form>          
+          </form>
         </div>
       </div>
     </>

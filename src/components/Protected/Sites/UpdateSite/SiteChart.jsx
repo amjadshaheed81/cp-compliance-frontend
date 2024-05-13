@@ -35,18 +35,24 @@ const SiteChart = (props) => {
                 lineBorderRadius={"10px"}
                 label={<StyledNode>Main Building</StyledNode>}
             >
-                <TreeNode label={<StyledNode>Child 1</StyledNode>}>
-                    <TreeNode label={<StyledNode>Grand Child</StyledNode>} />
+                <TreeNode label={<StyledNode>Exterior</StyledNode>}>
+                    <TreeNode label={<StyledNode>Garden</StyledNode>} />
                 </TreeNode>
-                <TreeNode label={<StyledNode>Child 2</StyledNode>}>
-                    <TreeNode label={<StyledNode>Grand Child</StyledNode>}>
-                        <TreeNode label={<StyledNode>Great Grand Child 1</StyledNode>} />
-                        <TreeNode label={<StyledNode>Great Grand Child 2</StyledNode>} />
+                <TreeNode label={<StyledNode>Interior</StyledNode>}>
+                    <TreeNode label={<StyledNode>Ground Floor</StyledNode>}>
+                        <TreeNode label={<StyledNode>Reception</StyledNode>} />
+                        <TreeNode label={<StyledNode>Concierge</StyledNode>} />
                     </TreeNode>
-                </TreeNode>
-                <TreeNode label={<StyledNode>Child 3</StyledNode>}>
-                    <TreeNode label={<StyledNode>Grand Child 1</StyledNode>} />
-                    <TreeNode label={<StyledNode>Grand Child 2</StyledNode>} />
+                    <TreeNode label={<StyledNode>First Floor</StyledNode>}>
+                        <TreeNode label={<StyledNode>Lift Lobby</StyledNode>} />
+                        <TreeNode label={<StyledNode>Office</StyledNode>} />
+                        <TreeNode label={<StyledNode>WC</StyledNode>} />
+                    </TreeNode>
+                    <TreeNode label={<StyledNode>Second Floor</StyledNode>}>
+                        <TreeNode label={<StyledNode>Lift Lobby</StyledNode>} />
+                        <TreeNode label={<StyledNode>Office</StyledNode>} />
+                        <TreeNode label={<StyledNode>WC</StyledNode>} />
+                    </TreeNode>
                 </TreeNode>
             </Tree>
             <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
