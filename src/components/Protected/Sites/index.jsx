@@ -10,6 +10,8 @@ import Swal from "sweetalert2";
 import "./Sites.css";
 
 const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSite }) => {
+  const [selectedItem, setSelectedItem] = useState("status");
+
   useEffect(() => {
     getSites();
   }, []);
@@ -57,10 +59,16 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
       setFilterSite(sites);
     }
   };
-  const searchSitesWithStatus = (option) => {
-    if (option) {
+  const searchSitesWithStatus = (e) => {
+    const val = e.target.value;
+    setSelectedItem(val)
+    console.log('option', val);
+    if(val === 'status'){
+      setFilterSite(sites);
+    }
+    if (val === 'open' || val === 'closed' || val === 'sold') {
       const list = sites?.filter((x) =>
-        String(x?.status).toLowerCase().includes(String(option).toLowerCase())
+        String(x?.status).toLowerCase().includes(String(val).toLowerCase())
       );
       setFilterSite(list);
     } else {
@@ -92,7 +100,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     name="status"
                     className="form-control"
                     id="status"
-                    value={sites}
+                    value={selectedItem}
                     onChange={searchSitesWithStatus}
                   >
                     <option value="status">Status</option>
