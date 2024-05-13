@@ -2,6 +2,7 @@ import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import { useNavigate } from "react-router-dom";
 import { addSite, updateSiteImage,updateSite } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
@@ -15,6 +16,10 @@ import userDefault from "../../../../images/user-default.png";
 
 const AddSite = ({ updateSite, updateSiteImage, success, error, addSite }) => {
   console.log("error", error);
+  const navigate = useNavigate();
+    const goTo = (link) => {
+        navigate(link);
+    };
   const defaultValues = {
     address1: "",
     address2: "",
@@ -292,7 +297,13 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite }) => {
                           Cancel
                         </button>
                         &nbsp; &nbsp;
-                        <button type="submit" class="btn btn-primary mb-3 mr-4">
+                        <button type="submit" class="btn btn-primary mb-3 mr-4"
+                        onClick={() => {
+                          setTimeout(() => {
+                              goTo('/update-site');
+                          }, 1000);
+                          updateSite(updateSite?.id);
+                      }}>
                           Save
                         </button>
                       </div>
@@ -363,5 +374,6 @@ const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
   updateSite: state.site.updateSite,
+  sites: state.site.sites,
 });
 export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage })(AddSite);
