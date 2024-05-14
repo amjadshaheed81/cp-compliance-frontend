@@ -1,9 +1,9 @@
-import React, { Fragment } from "react";
+import React, { useEffect, Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useNavigate } from "react-router-dom";
-import { addSite, updateSiteImage,updateSite } from "../../../../store/thunk/site";
+import { addSite, updateSiteImage,updateSite, getSites } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -14,7 +14,7 @@ import { Validation } from "../../../../Constant/Validation";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 
-const AddSite = ({ updateSite, updateSiteImage, success, error, addSite }) => {
+const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, getSites,currentSiteData }) => {
   console.log("error", error);
   const navigate = useNavigate();
     const goTo = (link) => {
@@ -300,10 +300,10 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite }) => {
                         <button type="submit" class="btn btn-primary mb-3 mr-4"
                         onClick={() => {
                           setTimeout(() => {
-                              goTo('/update-site');
+                              goTo('/sites');
                           }, 1000);
-                          updateSite(updateSite?.id);
-                      }}>
+                      }}
+                      >
                           Save
                         </button>
                       </div>
@@ -376,4 +376,4 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   sites: state.site.sites,
 });
-export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage })(AddSite);
+export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage, getSites })(AddSite);

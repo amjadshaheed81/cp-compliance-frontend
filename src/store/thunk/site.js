@@ -69,12 +69,12 @@ export const updateSiteImage = (data, siteId) => {
     try {
       console.log('inside');
       const url = `/api/siteservice/site/${siteId}/upload`;
-      const { status } = await uploadPhoto(url, formData);
-      console.log('status ===>', status);
-      if (status === 202) {
+      const res = await uploadPhoto(url, formData);
+      console.log('status ===>', res.status);
+      if (res.status === 200) {
         dispatch({
           type: UPDATE_SITE_IMAGE_SUCCESS,
-          payload: 'Site Image has been updated successully',
+          payload: res,
         });
       }
     } catch (error) {

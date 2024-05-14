@@ -33,6 +33,8 @@ const initialState = {
   updateSiteImageSuccess: "",
   updateSiteImageFailure: "",
   keyContactsFailure: "",
+  currentSiteData: "",
+  updateSiteImageSuccess: ""
 };
 
 const reducer = (state = initialState, action) => {
@@ -65,6 +67,7 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        currentSiteData: action.payload
       };
     case GET_SITES_SUCCESS:
       return {

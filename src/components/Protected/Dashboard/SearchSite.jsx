@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { connect } from "react-redux";
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -9,14 +9,15 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import StarOutlineIcon from '@mui/icons-material/StarOutline';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
 import { useNavigate } from "react-router-dom";
 import { get } from '../../../api';
-import { updateSite } from '../../../store/thunk/site';
+import { getSites, updateSite } from '../../../store/thunk/site';
 
-function SearchSite({ updateSite }) {
-    const [sites, setSites] = useState([]);
+function SearchSite({ updateSite,getSites,sites }) {
+    const [allSites, setSites] = useState([]);
     const [error, setError] = useState("");
     const [state, setState] = React.useState({
         top: false,
@@ -28,6 +29,11 @@ function SearchSite({ updateSite }) {
     const goTo = (link) => {
         navigate(link);
     };
+    
+    useEffect(() => {
+        getSites();
+    },[])
+    let initialSite = sites?.slice(0,5);
     const searchSite = async (e) => {
         const value = e?.target?.value;
         console.log('value', value);
@@ -38,7 +44,10 @@ function SearchSite({ updateSite }) {
                 setError("No Sites found. Please check the input");
                 setSites([]);
             }
-            else setSites(response);
+            else {
+                setSites(response);
+                initialSite = response?.slice(0,5);
+            }
             console.log("response", response);
         } catch (e) {
             setError("No Sites found. Please check the input");
@@ -60,7 +69,10 @@ function SearchSite({ updateSite }) {
         //   onKeyDown={toggleDrawer(anchor, false)}
         >
             <h4 className="m-2">Sites</h4>
-            <input type="text" className='form-control m-2' id="search" name="search" placeholder='Search for Site' onChange={searchSite} />
+            <div style={{ position: 'relative' }}>
+                <i style={{ position: 'absolute', padding: '10px', color:'lightgrey', paddingLeft: '1.5rem' }} className="fas fa-search"></i>
+                <input type="text" style={{ textAlign: 'center' }} className='form-control m-2' id="search" name="search" placeholder='Search for Site' onChange={searchSite} />
+            </div>
             <div class="ms-auto p-2 bd-highlight">
                 <button
                     className="btn btn-sm btn-primary text-white w-100"
@@ -70,9 +82,26 @@ function SearchSite({ updateSite }) {
                 </button>
             </div>
             {/* {error && <p>{error}</p>} */}
-            {sites.length === 0 && <p>{error}</p>}
+            {allSites.length === 0 && <p>{error}</p>}
             <List>
-                {sites?.map((site) => (
+                {initialSite?.map((site) => (
+                    <ListItem key={site?.id} disablePadding>
+                        <ListItemButton onClick={() => {
+                            setTimeout(() => {
+                                goTo('/update-site');
+                            }, 1000);
+                            updateSite(site);
+                        }}>
+                            <ListItemIcon>
+                            <StarOutlineIcon />
+                            </ListItemIcon>
+                            <ListItemText primary={site?.siteName} />
+                        </ListItemButton>
+                    </ListItem>
+                ))}
+            </List>
+            <List>
+                {allSites?.map((site) => (
                     <ListItem key={site?.id} disablePadding>
                         <ListItemButton onClick={() => {
                             setTimeout(() => {
@@ -127,4 +156,4 @@ const mapStateToProps = (state) => ({
     sites: state.site.sites,
     filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { updateSite })(SearchSite);
+export default connect(mapStateToProps, { updateSite,getSites })(SearchSite);

@@ -17,7 +17,7 @@ import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 import SiteChart from "./SiteChart";
 
-const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, updateSiteImage }) => {
+const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, updateSiteImage, updateSiteImageSuccess }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -315,7 +315,7 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, upda
               <div className="pic-container pic-medium pic-circle">
                 <img
                   className="pic"
-                  src={updateSite?.siteImageUrl ? updateSite?.siteImageUrl : userDefault }
+                  src={updateSiteImageSuccess ? updateSiteImageSuccess?.data?.url : userDefault }
                   alt=""
                   width="64px"
                   height="64px"
@@ -381,5 +381,6 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   success: state.site.updateSuccess,
   error: state.site.updateError,
+  updateSiteImageSuccess: state.site.updateSiteImageSuccess,
 });
 export default connect(mapStateToProps, { updateSiteDetail, updateSiteImage })(UpdateSite);
