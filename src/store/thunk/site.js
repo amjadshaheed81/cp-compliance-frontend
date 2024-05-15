@@ -17,6 +17,8 @@ import {
   UPDATE_SITE_IMAGE_FAILURE,
   GET_KEY_CONTACTS,
   GET_KEY_CONTACTS_FAILURE,
+  GET_SITES_BY_ID_SUCCESS,
+  GET_SITES_BY_ID_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData) => {
@@ -155,6 +157,24 @@ export const getSites = () => {
   };
 };
 
+export const getSiteById = (id) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/siteservice/site/${id}`;
+      const siteList = await get(url);
+      dispatch({
+        type: GET_SITES_BY_ID_SUCCESS,
+        payload: siteList,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_SITES_BY_ID_FAILURE,
+        payload: "Something went wrong while fetching site. Please try again.",
+      });
+    }
+  };
+};
+
 export const setFilterSite = (siteList) => {
   return async (dispatch) => {
     try {
@@ -238,6 +258,18 @@ export const addKeyContact = (formData, id) => {
         type: ADD_SITE_FAILURE,
         payload: "Something went wrong while adding site. Please try again.",
       });
+    }
+  };
+};
+
+export const deleteSiteImage = (id) => {
+  return async () => {
+    try {
+      const url = `/api/siteservice/site/${id}/delete`;
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
     }
   };
 };

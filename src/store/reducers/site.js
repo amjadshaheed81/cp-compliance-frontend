@@ -16,6 +16,8 @@ import {
   UPDATE_SITE_IMAGE_FAILURE,
   GET_KEY_CONTACTS,
   GET_KEY_CONTACTS_FAILURE,
+  GET_SITES_BY_ID_SUCCESS,
+  GET_SITES_BY_ID_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -251,6 +253,16 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         keyContactsFailure: action.payload,
+      };
+    case GET_SITES_BY_ID_SUCCESS:
+      return {
+        ...state,
+        siteDetailsById: action.payload,
+      };
+    case GET_SITES_BY_ID_FAILURE:
+      return {
+        ...state,
+        siteDetailsByFailure: "",
       };
     default:
       return state;

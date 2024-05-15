@@ -2,7 +2,7 @@ import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { updateSiteDetail, updateSiteImage } from "../../../../store/thunk/site";
+import { updateSiteDetail, updateSiteImage, deleteSiteImage, getSiteById } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -17,7 +17,7 @@ import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 import SiteChart from "./SiteChart";
 
-const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, updateSiteImage, updateSiteImageSuccess }) => {
+const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, updateSite, updateSiteDetail, updateSiteImage, updateSiteImageSuccess, deleteSiteImage }) => {
   console.log("error", error);
   const defaultValues = {
     address1: "",
@@ -52,6 +52,12 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, upda
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.id;
     updateSiteImage(event, siteId);
+  };
+  const handleDeleteSiteImage = async (event) => {
+    let siteId = updateSite?.id;
+    deleteSiteImage(siteId);
+    getSiteById(siteId);
+    console.log('siteDetailsById',siteDetailsById);
   };
   return (
     <Fragment>
@@ -324,6 +330,7 @@ const UpdateSite = ({ siteId, success, error, updateSite, updateSiteDetail, upda
                 <div>
                   <button
                     className="btn btn-primary"
+                    onClick={handleDeleteSiteImage}
                   >
                     Delete
                   </button>
@@ -382,5 +389,6 @@ const mapStateToProps = (state) => ({
   success: state.site.updateSuccess,
   error: state.site.updateError,
   updateSiteImageSuccess: state.site.updateSiteImageSuccess,
+  siteDetailsById: state.site.siteDetailsById,
 });
-export default connect(mapStateToProps, { updateSiteDetail, updateSiteImage })(UpdateSite);
+export default connect(mapStateToProps, { updateSiteDetail, updateSiteImage, deleteSiteImage,getSiteById })(UpdateSite);
