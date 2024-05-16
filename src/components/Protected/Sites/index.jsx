@@ -8,6 +8,7 @@ import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Sites.css";
+import SidebarNew from "../../common/Sidebar/SidebarNew";
 
 const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSite }) => {
   const [selectedItem, setSelectedItem] = useState("status");
@@ -76,7 +77,8 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
   };
   return (
     <Fragment>
-      <Sidebar />
+      {/* <Sidebar /> */}
+      <SidebarNew />
       <div class="content">
         <Header />
         <div class="container-fluid">

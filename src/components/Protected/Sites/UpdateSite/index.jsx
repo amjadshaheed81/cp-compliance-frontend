@@ -16,6 +16,7 @@ import GoogleMap from "./GoogleMap";
 import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 import SiteChart from "./SiteChart";
+import SidebarNew from "../../../common/Sidebar/SidebarNew";
 
 const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, updateSite, updateSiteDetail, updateSiteImage, updateSiteImageSuccess, deleteSiteImage }) => {
   console.log("error", error);
@@ -61,7 +62,8 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
   };
   return (
     <Fragment>
-      <Sidebar />
+      {/* <Sidebar /> */}
+      <SidebarNew />
       <div class="content">
         <Header />
         <div class="container-fluid">

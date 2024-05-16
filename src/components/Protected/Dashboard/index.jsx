@@ -11,11 +11,13 @@ import DashboardActiveProjects from "./DashboardActiveProjects";
 import DashboardEventCalendar from "./DashboardEventCalendar";
 import DashboardRiskScore from "./DashboardRiskScore";
 import SearchSite from "./SearchSite";
+import SidebarNew from "../../common/Sidebar/SidebarNew";
 
 const Dashboard = () => {
   return (
     <Fragment>
-      <Sidebar />
+      {/* <Sidebar /> */}
+      <SidebarNew />
       <div class="content">
         <Header />
         <SearchSite />

@@ -13,6 +13,7 @@ import "./AddSite.css";
 import { Validation } from "../../../../Constant/Validation";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
+import SidebarNew from "../../../common/Sidebar/SidebarNew";
 
 const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, getSites,currentSiteData }) => {
   console.log("error", error);
@@ -50,7 +51,8 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, 
   };
   return (
     <Fragment>
-      <Sidebar />
+      {/* <Sidebar /> */}
+      <SidebarNew />
       <div class="content">
         <Header />
         <div class="container-fluid">
