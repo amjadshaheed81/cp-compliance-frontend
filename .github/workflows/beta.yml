@@ -1,10 +1,10 @@
-name: DEV VM Deployment 
+name: BETA VM Deployment 
 
 on:
   workflow_dispatch:
 
 env:
-  HOST: 20.162.113.147
+  HOST: cpc-beta.ukwest.cloudapp.azure.com
   USERNAME: github-user
   PORT: 22
     
@@ -31,7 +31,7 @@ jobs:
       - name: Set outputs
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
+      
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
@@ -67,7 +67,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.BETA_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/
@@ -85,7 +85,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.BETA_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/static/
@@ -97,13 +97,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: src
-      
+
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.BETA_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/src/
