@@ -6,8 +6,38 @@ import Dashboard from "../components/Protected/Dashboard";
 import Sites from "../components/Protected/Sites";
 import AddSite from "../components/Protected/Sites/AddSite";
 import UpdateSite from "../components/Protected/Sites/UpdateSite";
-
+import Tabs from "../components/Protected/Sites/AddSite/SiteTabs"
+import SiteChart from "../components/Protected/Sites/UpdateSite/SiteChart";
+import SiteInformation from "../components/Protected/Sites/UpdateSite/SiteInformation";
 export const getRoutes = () => {
+  const tabs = [
+    {
+      label: "Basic Details",
+      Component: <AddSite />
+    },
+    {
+      label: "Floor Layout & Plan",
+      Component: <SiteChart />
+    },
+    {
+      label: "Site Information",
+      Component: <SiteInformation />
+    }
+  ];
+  const UpdateSiteTabs = [
+    {
+      label: "Basic Details",
+      Component: <UpdateSite />
+    },
+    {
+      label: "Floor Layout & Plan",
+      Component: <SiteChart />
+    },
+    {
+      label: "Site Information",
+      Component: <SiteInformation />
+    }
+  ];
   return [
     {
       path: "/",
@@ -32,11 +62,11 @@ export const getRoutes = () => {
     },
     {
       path: "/add-site",
-      element: <AddSite />,
+      element: <Tabs tabs={tabs} />,
     },
     {
       path: "/update-site",
-      element: <UpdateSite />,
+      element: <Tabs tabs={UpdateSiteTabs} />
     },
     {
       path: "/sites",
