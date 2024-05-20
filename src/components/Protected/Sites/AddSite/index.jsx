@@ -8,8 +8,8 @@ import {
   updateSiteImage,
   updateSite,
   getSites,
+  handleOnPostCodeSearch,
 } from "../../../../store/thunk/site";
-import { addSite, updateSiteImage, updateSite, handleOnPostCodeSearch } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -20,6 +20,7 @@ import { Validation } from "../../../../Constant/Validation";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
+import { get } from "../../../../api";
 
 const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleOnPostCodeSearch, getAddresOnPostCodeSuccess }) => {
   console.log("error", error);
