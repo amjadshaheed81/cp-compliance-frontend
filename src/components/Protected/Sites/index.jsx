@@ -75,6 +75,32 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
       setFilterSite(sites);
     }
   };
+  const searchSitesWithArea = (e) => {
+    const val = e.target.value;
+    setSelectedItem(val)
+    if(val === 'area'){
+      setFilterSite(sites);
+    }
+    else {
+      const list = sites?.filter((x) =>
+        String(x?.area).toLowerCase().includes(String(val).toLowerCase())
+      );
+      setFilterSite(list);
+    }
+  };
+  const searchSitesWithCity = (e) => {
+    const val = e.target.value;
+    setSelectedItem(val)
+    if(val === 'city'){
+      setFilterSite(sites);
+    }
+    else {
+      const list = sites?.filter((x) =>
+        String(x?.city).toLowerCase().includes(String(val).toLowerCase())
+      );
+      setFilterSite(list);
+    }
+  };
   return (
     <Fragment>
       {/* <Sidebar /> */}
@@ -95,6 +121,28 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     placeholder="Search site"
                     onChange={searchSite}
                   />
+                </div>
+                <div class="col">
+                  <select
+                    name="city"
+                    className="form-control"
+                    id="city"
+                    onChange={searchSitesWithCity}
+                  >
+                    <option value="city">City</option>
+                    {sites.map((site) => <option value={site.city}>{site.city}</option>)}
+                  </select>
+                </div>
+                <div class="col">
+                  <select
+                    name="area"
+                    className="form-control"
+                    id="area"
+                    onChange={searchSitesWithArea}
+                  >
+                    <option value="area">Area</option>
+                    {sites.map((site) => <option value={site.area}>{site.area}</option>)}
+                  </select>
                 </div>
                 <div class="col">
                   <select
