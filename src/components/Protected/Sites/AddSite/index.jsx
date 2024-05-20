@@ -1,4 +1,4 @@
-import React, { useEffect, Fragment } from "react";
+import React, { useState, useMemo, useEffect, Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -21,7 +21,7 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 
-const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleOnPostCodeSearch }) => {
+const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleOnPostCodeSearch, getAddresOnPostCodeSuccess }) => {
   console.log("error", error);
   const navigate = useNavigate();
   const goTo = (link) => {
@@ -44,6 +44,7 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
     reset,
     formState: { errors },
     getValues,
+    setValue,
   } = useForm({
     defaultValues,
   });
@@ -58,6 +59,23 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
   const handleOnSearch = async (event) => {
     console.log('event search', event);
     handleOnPostCodeSearch(event);
+  };
+  const handleOnSelect = async (data) => {
+    console.log("data", data);
+    try {
+      const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
+      const response = await get(url);
+      console.log("response", response);
+      setValue("postCode", response?.postcode, { shouldValidate: true });
+      setValue("address1", response?.line_2);
+      setValue("address2", response?.line_1, { shouldValidate: true });
+      setValue("city", response?.town_or_city, { shouldValidate: true });
+      setValue("area", response?.county);
+      setValue("latitude", response?.latitude);
+      setValue("longitude", response?.longitude);
+    } catch (e) {
+      console.log("error while loading postcode");
+    }
   };
   return (
     <Fragment>
@@ -226,6 +244,7 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
                           name="postCode"
                           class="form-control"
                           id="postCode"
+                          placeholder="Search Post Code"
                           {...register("postCode", {
                             required: {
                               value: true,
@@ -235,14 +254,14 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
                           onChange={handleOnSearch}
                         />
                         <ul className="postCodeSearchResult postCodeSearchResultSite">
-                          {/* {selectedPostCodeList?.map((itm) => (
+                          {getAddresOnPostCodeSuccess?.map((itm) => (
                             <li
                               onClick={() => handleOnSelect(itm)}
                               key={itm?.id}
                             >
                               {itm?.name}
                             </li>
-                          ))} */}
+                          ))}
                         </ul>
                           {errors?.postCode && (
                             <InputError
@@ -405,14 +424,12 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   updateSite: state.site.updateSite,
   sites: state.site.sites,
+  getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
 });
-<<<<<<< HEAD
 export default connect(mapStateToProps, {
   updateSite,
   addSite,
   updateSiteImage,
   getSites,
+  handleOnPostCodeSearch,
 })(AddSite);
-=======
-export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage, handleOnPostCodeSearch })(AddSite);
->>>>>>> 1a0c890 (feat/postcode-search: add postcode search)
