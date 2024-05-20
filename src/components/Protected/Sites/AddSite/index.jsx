@@ -90,6 +90,7 @@ const AddSite = ({
       setValue("area", response?.county);
       setValue("latitude", response?.latitude);
       setValue("longitude", response?.longitude);
+      setValue("country", response?.country);
       setValue("mapViewUrl", `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`);
       setValue("streetViewUrl", `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`);
       
