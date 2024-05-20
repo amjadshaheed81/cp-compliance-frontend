@@ -341,7 +341,13 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
               <div className="pic-container pic-medium pic-circle">
                 <img
                   className="pic"
-                  src={updateSiteImageSuccess ? updateSiteImageSuccess?.data?.url : userDefault }
+                  src={
+                    updateSiteImageSuccess
+                      ? updateSiteImageSuccess?.data?.url
+                      : updateSite?.siteImageUrl
+                      ? updateSite?.siteImageUrl
+                      : userDefault
+                  }
                   alt=""
                   width="64px"
                   height="64px"
