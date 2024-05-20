@@ -21,7 +21,7 @@ import {
   GET_SITES_BY_ID_FAILURE,
 } from "../actionTypes";
 
-export const addSite = (formData) => {
+export const addSite = (formData, goTo) => {
   return async (dispatch) => {
     try {
       const url = "/api/siteservice/site";
@@ -30,6 +30,9 @@ export const addSite = (formData) => {
         type: ADD_SITE_SUCCESS,
         payload: userData,
       });
+      setTimeout(()=>{
+        goTo('/update-site');
+      }, 1000);
     } catch (error) {
       dispatch({
         type: ADD_SITE_FAILURE,

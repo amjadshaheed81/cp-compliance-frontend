@@ -56,7 +56,7 @@ const AddSite = ({
     defaultValues,
   });
   const submitSite = (data) => {
-    addSite(data);
+    addSite(data, goTo);
     reset(defaultValues);
   };
   const handleFileSelect = async (event) => {
