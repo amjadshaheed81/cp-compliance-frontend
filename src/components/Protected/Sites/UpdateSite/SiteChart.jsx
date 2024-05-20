@@ -2,6 +2,10 @@ import * as React from "react";
 import styled from "@emotion/styled";
 import { Tree, TreeNode } from "react-organizational-chart";
 import { useForm } from "react-hook-form";
+import Header from "../../../common/Header/Header";
+import SidebarNew from "../../../common/Sidebar/SidebarNew";
+import UpdateFloor from "./UpdateFloor";
+import FloorMap from "./FloorMap";
 
 const StyledNode = styled.div`
   padding: 5px;
@@ -27,8 +31,8 @@ const SiteChart = (props) => {
         console.log('vales', values);
     }
     return (
-        <div style={{ textAlign: "center" }}>
-            <Title>Creating building Layout</Title>
+        <><SidebarNew /><div style={{ textAlign: "center" }}>
+            <h5 class="text-start">Creating Building Layout</h5>
             <Tree
                 lineWidth={"2px"}
                 lineColor={"green"}
@@ -58,12 +62,12 @@ const SiteChart = (props) => {
             <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
                 <div className="col-md-3">
                     <input type="text" placeholder="Node Name" className="form-control w-75" id="nodename" name="nodename"
-                    {...register("nodename", {
-                      required: {
-                        value: true,
-                        // message: `${Validation.REQUIRED} Council`,
-                      },
-                    })} />
+                        {...register("nodename", {
+                            required: {
+                                value: true,
+                                // message: `${Validation.REQUIRED} Council`,
+                            },
+                        })} />
                 </div>
                 <div className="col-md-3">
                     <select
@@ -103,7 +107,9 @@ const SiteChart = (props) => {
                     <button className="btn btn-primary" onClick={submitNode}>Add Node</button>
                 </div>
             </form>
-        </div>
+            <UpdateFloor />
+            <FloorMap />
+        </div></>
     );
 };
 export default SiteChart;

@@ -54,9 +54,8 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, 
       {/* <Sidebar /> */}
       <SidebarNew />
       <div class="content">
-        <Header />
+        {/* <Header /> */}
         <div class="container-fluid">
-          <BreadCrumHeader header={"Create New Site"} page={"New Site"} />
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
             <div className="col-md-8">

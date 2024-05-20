@@ -65,9 +65,9 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
       {/* <Sidebar /> */}
       <SidebarNew />
       <div class="content">
-        <Header />
+        {/* <Header /> */}
         <div class="container-fluid">
-          <BreadCrumHeader header={"Update Site"} page={"Update Site"} />
+          {/* <BreadCrumHeader header={"Update Site"} page={"Update Site"} /> */}
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
             <div className="col-md-8">
@@ -380,7 +380,6 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
           {/* row end*/}
           <LocalDetails />
           <KeyContacts />
-          <SiteChart />
         </div>
       </div>
     </Fragment>
