@@ -21,6 +21,7 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
+import GoogleMap from "../UpdateSite/GoogleMap";
 
 const AddSite = ({
   updateSite,
@@ -55,9 +56,12 @@ const AddSite = ({
     formState: { errors },
     getValues,
     setValue,
+    watch,
   } = useForm({
     defaultValues,
   });
+  const values = watch();
+  console.log("values ===>", values);
   const submitSite = (data) => {
     addSite(data, goTo);
     reset(defaultValues);
@@ -68,6 +72,8 @@ const AddSite = ({
   };
   const handleOnSearch = async (event) => {
     console.log("event search", event);
+    setValue("latitude", '');
+    setValue("longitude", '');
     setShowPostCodeSearch(true);
     handleOnPostCodeSearch(event);
   };
@@ -84,6 +90,9 @@ const AddSite = ({
       setValue("area", response?.county);
       setValue("latitude", response?.latitude);
       setValue("longitude", response?.longitude);
+      setValue("mapViewUrl", `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`);
+      setValue("streetViewUrl", `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`);
+      
       setShowPostCodeSearch(false);
     } catch (e) {
       console.log("error while loading postcode");
@@ -323,6 +332,7 @@ const AddSite = ({
                           name="mapViewUrl"
                           class="form-control"
                           id="mapViewUrl"
+                          disabled
                           {...register("mapViewUrl", {
                             required: {
                               value: true,
@@ -348,6 +358,7 @@ const AddSite = ({
                           name="streetViewUrl"
                           class="form-control"
                           id="streetViewUrl"
+                          disabled
                           {...register("streetViewUrl", {
                             required: {
                               value: true,
@@ -429,6 +440,9 @@ const AddSite = ({
                   <p style={{ marginLeft: "6rem" }}>(max 800 * 800 px)</p>
                 </div>
               </div>
+              {values?.latitude && values?.longitude && (
+                <GoogleMap lat={values?.latitude} long={values?.longitude} postCode={values?.postCode}/>
+              )}
             </div>
           </div>
         </div>

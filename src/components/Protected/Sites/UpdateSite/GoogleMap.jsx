@@ -1,10 +1,10 @@
 import React from 'react';
 import GoogleMapReact from 'google-map-react';
 
-const AnyReactComponent = ({ text }) => <div>{text}</div>;
+const AnyReactComponent = ({ text }) => <div><i class="fa fa-map-marker-alt text-danger"></i></div>;
 
-const GoogleMap = () => {
-  const defaultCenter = { lat: 53.3769, lng: -2.90701 }; // Default center of the map (San Francisco)
+const GoogleMap = ({lat, long, postCode}) => {
+  const defaultCenter = { lat: lat, lng: long }; // Default center of the map (San Francisco)
   const defaultZoom = 11; // Default zoom level
 
   return (
@@ -15,9 +15,9 @@ const GoogleMap = () => {
         defaultZoom={defaultZoom}
       >
         <AnyReactComponent
-          lat={53.3769}
-          lng={-2.90701}
-          text="My Marker"
+          lat={lat}
+          lng={long}
+          text={postCode}
         />
       </GoogleMapReact>
     </div>
