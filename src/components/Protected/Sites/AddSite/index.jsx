@@ -22,9 +22,18 @@ import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 
-const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleOnPostCodeSearch, getAddresOnPostCodeSuccess }) => {
+const AddSite = ({
+  updateSite,
+  updateSiteImage,
+  success,
+  error,
+  addSite,
+  handleOnPostCodeSearch,
+  getAddresOnPostCodeSuccess,
+}) => {
   console.log("error", error);
   const navigate = useNavigate();
+  const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const goTo = (link) => {
     navigate(link);
   };
@@ -58,7 +67,8 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
     updateSiteImage(event, siteId);
   };
   const handleOnSearch = async (event) => {
-    console.log('event search', event);
+    console.log("event search", event);
+    setShowPostCodeSearch(true);
     handleOnPostCodeSearch(event);
   };
   const handleOnSelect = async (data) => {
@@ -74,6 +84,7 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
       setValue("area", response?.county);
       setValue("latitude", response?.latitude);
       setValue("longitude", response?.longitude);
+      setShowPostCodeSearch(false);
     } catch (e) {
       console.log("error while loading postcode");
     }
@@ -254,7 +265,12 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
                           })}
                           onChange={handleOnSearch}
                         />
-                        <ul className="postCodeSearchResult postCodeSearchResultSite">
+                        <ul
+                          className="postCodeSearchResult postCodeSearchResultSite"
+                          style={{
+                            display: showPostCodeSearch ? "block" : "none",
+                          }}
+                        >
                           {getAddresOnPostCodeSuccess?.map((itm) => (
                             <li
                               onClick={() => handleOnSelect(itm)}
@@ -264,12 +280,12 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleO
                             </li>
                           ))}
                         </ul>
-                          {errors?.postCode && (
-                            <InputError
-                              message={errors?.postCode?.message}
-                              key={errors?.postCode?.message}
-                            />
-                          )}
+                        {errors?.postCode && (
+                          <InputError
+                            message={errors?.postCode?.message}
+                            key={errors?.postCode?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
