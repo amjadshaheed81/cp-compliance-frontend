@@ -1,4 +1,4 @@
-import React, { useEffect, Fragment } from "react";
+import React, { useState, useMemo, useEffect, Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -8,6 +8,7 @@ import {
   updateSiteImage,
   updateSite,
   getSites,
+  handleOnPostCodeSearch,
 } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
@@ -19,17 +20,9 @@ import { Validation } from "../../../../Constant/Validation";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
+import { get } from "../../../../api";
 
-const AddSite = ({
-  updateSite,
-  updateSiteImage,
-  success,
-  error,
-  addSite,
-  sites,
-  getSites,
-  currentSiteData,
-}) => {
+const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, handleOnPostCodeSearch, getAddresOnPostCodeSuccess }) => {
   console.log("error", error);
   const navigate = useNavigate();
   const goTo = (link) => {
@@ -52,6 +45,7 @@ const AddSite = ({
     reset,
     formState: { errors },
     getValues,
+    setValue,
   } = useForm({
     defaultValues,
   });
@@ -62,6 +56,27 @@ const AddSite = ({
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.id;
     updateSiteImage(event, siteId);
+  };
+  const handleOnSearch = async (event) => {
+    console.log('event search', event);
+    handleOnPostCodeSearch(event);
+  };
+  const handleOnSelect = async (data) => {
+    console.log("data", data);
+    try {
+      const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
+      const response = await get(url);
+      console.log("response", response);
+      setValue("postCode", response?.postcode, { shouldValidate: true });
+      setValue("address1", response?.line_2);
+      setValue("address2", response?.line_1, { shouldValidate: true });
+      setValue("city", response?.town_or_city, { shouldValidate: true });
+      setValue("area", response?.county);
+      setValue("latitude", response?.latitude);
+      setValue("longitude", response?.longitude);
+    } catch (e) {
+      console.log("error while loading postcode");
+    }
   };
   return (
     <Fragment>
@@ -230,19 +245,31 @@ const AddSite = ({
                           name="postCode"
                           class="form-control"
                           id="postCode"
+                          placeholder="Search Post Code"
                           {...register("postCode", {
                             required: {
                               value: true,
                               message: `${Validation.REQUIRED} your city post code`,
                             },
                           })}
+                          onChange={handleOnSearch}
                         />
-                        {errors?.postCode && (
-                          <InputError
-                            message={errors?.postCode?.message}
-                            key={errors?.postCode?.message}
-                          />
-                        )}
+                        <ul className="postCodeSearchResult postCodeSearchResultSite">
+                          {getAddresOnPostCodeSuccess?.map((itm) => (
+                            <li
+                              onClick={() => handleOnSelect(itm)}
+                              key={itm?.id}
+                            >
+                              {itm?.name}
+                            </li>
+                          ))}
+                        </ul>
+                          {errors?.postCode && (
+                            <InputError
+                              message={errors?.postCode?.message}
+                              key={errors?.postCode?.message}
+                            />
+                          )}
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -398,10 +425,12 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   updateSite: state.site.updateSite,
   sites: state.site.sites,
+  getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
 });
 export default connect(mapStateToProps, {
   updateSite,
   addSite,
   updateSiteImage,
   getSites,
+  handleOnPostCodeSearch,
 })(AddSite);

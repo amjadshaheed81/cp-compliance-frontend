@@ -32,3 +32,28 @@ p.fs-6.mt-2.border-bottom {
   /* background-color: #ffffff; */
   padding: 10px;
 }
+.postCodeSearchResult{
+  position: absolute;
+  padding-left: 0;
+  z-index: 999;
+  max-height: 15rem;
+  overflow: scroll;
+  border: 1px solid #e8f0fe;
+}
+.postCodeSearchResult::-webkit-scrollbar {
+  display: none;
+}
+.postCodeSearchResult li {
+  padding: 4px;
+  line-height: 2;
+  font-size: smaller;
+  background: #fff;
+  box-shadow: 1px 1px 2px 2px rgb(207 212 215 / 53%);
+}
+.postCodeSearchResult li:hover {
+  background-color: #e9e9e9;
+  cursor: pointer;
+}
+.postCodeSearchResultSite {
+  max-height: 10rem;
+}

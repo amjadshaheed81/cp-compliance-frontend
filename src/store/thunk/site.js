@@ -19,6 +19,8 @@ import {
   GET_KEY_CONTACTS_FAILURE,
   GET_SITES_BY_ID_SUCCESS,
   GET_SITES_BY_ID_FAILURE,
+  GET_ADDRESS_ON_POST_CODE_SUCCESS,
+  GET_ADDRESS_ON_POST_CODE_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -276,3 +278,69 @@ export const deleteSiteImage = (id) => {
     }
   };
 };
+export const handleOnPostCodeSearch = (e) => {
+  // basicDetailsForm.setValue("postcode", e?.target?.value, {
+  //   shouldValidate: true,
+  // });
+  return async (dispatch) => {
+    try {
+      console.log('address block');
+      // const url = `https://api.getaddress.io/autocomplete/l1w?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
+      const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
+      // const url = `https://maps.googleapis.com/maps/api/geocode/json?components=postal_code:EC1A 1BB|country:UK&key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo`;
+      // const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json
+      // ?input=${e?.target?.value}
+      // &types=geocode
+      // &key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all`;
+      // const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?API_KEY=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all=true`;
+      const response = await get(url);
+      console.log('address response', response);
+      const res = [];
+      response?.suggestions?.forEach((itm) => {
+        res.push({
+          id: itm?.id,
+          name: `${itm?.address}`,
+          url: `${itm?.url}`,
+        });
+      });
+      dispatch({
+        type: GET_ADDRESS_ON_POST_CODE_SUCCESS,
+        payload: res,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_ADDRESS_ON_POST_CODE_FAILURE,
+        payload: "Please enter a valid post code.",
+      });
+    }
+  };
+};
+
+// export const handleOnPostCodeSelect = async (e) => {
+//   // basicDetailsForm.setValue("postcode", e?.target?.value, {
+//   //   shouldValidate: true,
+//   // });
+//   return async (dispatch) => {
+//     try {
+//       const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?API_KEY=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all=true`;
+//       const response = await get(url);
+//       const res = [];
+//       response?.suggestions?.forEach((itm) => {
+//         res.push({
+//           id: itm?.id,
+//           name: `${itm?.address}`,
+//           url: `${itm?.url}`,
+//         });
+//       });
+//       dispatch({
+//         type: GET_ADDRESS_ON_POST_CODE_SUCCESS,
+//         payload: res,
+//       });
+//     } catch (error) {
+//       dispatch({
+//         type: GET_ADDRESS_ON_POST_CODE_FAILURE,
+//         payload: "Please enter a valid post code.",
+//       });
+//     }
+//   };
+// };
