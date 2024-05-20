@@ -180,10 +180,9 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
                         <label for="area" class="form-label">
                           Area
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="area"
-                          class="form-control"
+                          className="contact-input form-control form-select"
                           id="area"
                           {...register("area", {
                             required: {
@@ -191,7 +190,26 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
                               message: `${Validation.REQUIRED} your area`,
                             },
                           })}
-                        />
+                        >
+                          <option value="">Select</option>
+                          <option value="East Midlands">East Midlands</option>
+                          <option value="Ireland & Northern Ireland">
+                            Ireland & Northern Ireland
+                          </option>
+                          <option value="London & Eastern">
+                            London & Eastern
+                          </option>
+                          <option value="North East, Yorkshire & Humberside">
+                            North East, Yorkshire & Humberside
+                          </option>
+                          <option value="North West, Scotland">
+                            North West, Scotland
+                          </option>
+                          <option value="South East">South East</option>
+                          <option value="South West">South West</option>
+                          <option value="Wales">Wales</option>
+                          <option value="West Midlands">West Midlands</option>
+                        </select>
                         {errors?.area && (
                           <InputError
                             message={errors?.area?.message}

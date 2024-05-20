@@ -99,7 +99,7 @@ const LocalDetails = ({
                   </label>
                   <select
                     name="status"
-                    className="form-control"
+                    className="form-control form-select"
                     id="status"
                     {...register("status", {
                       required: {
@@ -110,7 +110,7 @@ const LocalDetails = ({
                   // value={sites}
                   // onChange={searchSitesWithStatus}
                   >
-                    <option value="status">Status</option>
+                    <option value="" selected disabled>Select Status</option>
                     <option value="open">Open</option>
                     <option value="closed">Closed</option>
                     <option value="sold">Sold</option>

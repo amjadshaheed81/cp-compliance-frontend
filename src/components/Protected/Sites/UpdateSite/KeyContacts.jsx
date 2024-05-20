@@ -119,7 +119,7 @@ const KeyContacts = ({
                   /> */}
                   <select
                     name="actionManager"
-                    className="contact-input form-control"
+                    className="contact-input form-control form-select"
                     id="actionManager"
                     {...register("actionManager")}
                     value={selectedItem}

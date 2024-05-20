@@ -184,7 +184,7 @@ const AddSite = ({
                         </label>
                         <select
                           name="area"
-                          className="contact-input form-control"
+                          className="contact-input form-control form-select"
                           id="area"
                           {...register("area", {
                             required: {
