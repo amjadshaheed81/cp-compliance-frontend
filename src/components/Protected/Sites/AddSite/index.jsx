@@ -3,7 +3,12 @@ import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useNavigate } from "react-router-dom";
-import { addSite, updateSiteImage,updateSite, getSites } from "../../../../store/thunk/site";
+import {
+  addSite,
+  updateSiteImage,
+  updateSite,
+  getSites,
+} from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -15,12 +20,21 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 
-const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, getSites,currentSiteData }) => {
+const AddSite = ({
+  updateSite,
+  updateSiteImage,
+  success,
+  error,
+  addSite,
+  sites,
+  getSites,
+  currentSiteData,
+}) => {
   console.log("error", error);
   const navigate = useNavigate();
-    const goTo = (link) => {
-        navigate(link);
-    };
+  const goTo = (link) => {
+    navigate(link);
+  };
   const defaultValues = {
     address1: "",
     address2: "",
@@ -168,10 +182,9 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, 
                         <label for="area" class="form-label">
                           Area
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="area"
-                          class="form-control"
+                          className="contact-input form-control"
                           id="area"
                           {...register("area", {
                             required: {
@@ -179,7 +192,26 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, 
                               message: `${Validation.REQUIRED} your area`,
                             },
                           })}
-                        />
+                        >
+                          <option value="">Select</option>
+                          <option value="East Midlands">East Midlands</option>
+                          <option value="Ireland & Northern Ireland">
+                            Ireland & Northern Ireland
+                          </option>
+                          <option value="London & Eastern">
+                            London & Eastern
+                          </option>
+                          <option value="North East, Yorkshire & Humberside">
+                            North East, Yorkshire & Humberside
+                          </option>
+                          <option value="North West, Scotland">
+                            North West, Scotland
+                          </option>
+                          <option value="South East">South East</option>
+                          <option value="South West">South West</option>
+                          <option value="Wales">Wales</option>
+                          <option value="West Midlands">West Midlands</option>
+                        </select>
                         {errors?.area && (
                           <InputError
                             message={errors?.area?.message}
@@ -298,13 +330,7 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, 
                           Cancel
                         </button>
                         &nbsp; &nbsp;
-                        <button type="submit" class="btn btn-primary mb-3 mr-4"
-                        onClick={() => {
-                          setTimeout(() => {
-                              goTo('/sites');
-                          }, 1000);
-                      }}
-                      >
+                        <button type="submit" class="btn btn-primary mb-3 mr-4">
                           Save
                         </button>
                       </div>
@@ -324,11 +350,7 @@ const AddSite = ({ updateSite, updateSiteImage, success, error, addSite, sites, 
                 />
                 <span>Upload your site photo</span>
                 <div>
-                  <button
-                    className="btn btn-primary"
-                  >
-                    Delete
-                  </button>
+                  <button className="btn btn-primary">Delete</button>
                 </div>
               </div>
               <div
@@ -377,4 +399,9 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   sites: state.site.sites,
 });
-export default connect(mapStateToProps, { updateSite, addSite, updateSiteImage, getSites })(AddSite);
+export default connect(mapStateToProps, {
+  updateSite,
+  addSite,
+  updateSiteImage,
+  getSites,
+})(AddSite);
