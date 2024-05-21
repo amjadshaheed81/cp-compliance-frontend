@@ -1,8 +1,15 @@
-import React, { Fragment, useEffect } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { updateSiteDetail, updateSiteImage, deleteSiteImage, getSiteById } from "../../../../store/thunk/site";
+import {
+  updateSiteDetail,
+  updateSiteImage,
+  deleteSiteImage,
+  getSiteById,
+  handleOnPostCodeSearch,
+  getAddresOnPostCodeSuccess,
+} from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -17,9 +24,23 @@ import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 import SiteChart from "./SiteChart";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
+import { get } from "../../../../api";
 
-const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, updateSite, updateSiteDetail, updateSiteImage, updateSiteImageSuccess, deleteSiteImage }) => {
-  console.log("error", error);
+const UpdateSite = ({
+  getAddresOnPostCodeSuccess,
+  getSiteById,
+  siteDetailsById,
+  siteId,
+  success,
+  error,
+  updateSite,
+  updateSiteDetail,
+  updateSiteImage,
+  updateSiteImageSuccess,
+  deleteSiteImage,
+  handleOnPostCodeSearch,
+}) => {
+  const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const defaultValues = {
     address1: "",
     address2: "",
@@ -37,29 +58,67 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
     reset,
     formState: { errors },
     getValues,
+    setValue,
+    watch,
   } = useForm({
     defaultValues,
   });
+  const values = watch();
+  console.log("values ===>", values);
   useEffect(() => {
-    console.log('updateSite ===>', updateSite);
-    if(updateSite) {
+    console.log("updateSite ===>", updateSite);
+    if (updateSite) {
       reset(updateSite);
     }
   }, [updateSite]);
   const submitSite = (data) => {
     updateSiteDetail(data);
-    reset(defaultValues);
+    reset(data);
   };
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.id;
-   const res = await updateSiteImage(event, siteId);
-   console.log('resss', res);
+    const res = await updateSiteImage(event, siteId);
+    console.log("resss", res);
   };
   const handleDeleteSiteImage = async (event) => {
     let siteId = updateSite?.id;
     deleteSiteImage(siteId);
     getSiteById(siteId);
-    console.log('siteDetailsById',siteDetailsById);
+    console.log("siteDetailsById", siteDetailsById);
+  };
+  const handleOnSearch = async (event) => {
+    console.log("event search", event);
+    setValue("latitude", "");
+    setValue("longitude", "");
+    setShowPostCodeSearch(true);
+    handleOnPostCodeSearch(event);
+  };
+  const handleOnSelect = async (data) => {
+    try {
+      const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
+      const response = await get(url);
+      console.log("response", response);
+      setValue("postCode", response?.postcode, { shouldValidate: true });
+      setValue("address1", response?.line_2);
+      setValue("address2", response?.line_1, { shouldValidate: true });
+      setValue("city", response?.town_or_city, { shouldValidate: true });
+      setValue("area", response?.county);
+      setValue("latitude", response?.latitude);
+      setValue("longitude", response?.longitude);
+      setValue("country", response?.country);
+      setValue(
+        "mapViewUrl",
+        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
+      );
+      setValue(
+        "streetViewUrl",
+        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
+      );
+
+      setShowPostCodeSearch(false);
+    } catch (e) {
+      console.log("error while loading postcode");
+    }
   };
   return (
     <Fragment>
@@ -203,8 +262,11 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
                           <option value="North East, Yorkshire & Humberside">
                             North East, Yorkshire & Humberside
                           </option>
-                          <option value="North West, Scotland">
-                            North West, Scotland
+                          <option value="North West">
+                            North West
+                          </option>
+                          <option value="Scotland">
+                            Scotland
                           </option>
                           <option value="South East">South East</option>
                           <option value="South West">South West</option>
@@ -235,7 +297,23 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
                               message: `${Validation.REQUIRED} your city post code`,
                             },
                           })}
+                          onChange={handleOnSearch}
                         />
+                        <ul
+                          className="postCodeSearchResult postCodeSearchResultSite"
+                          style={{
+                            display: showPostCodeSearch ? "block" : "none",
+                          }}
+                        >
+                          {getAddresOnPostCodeSuccess?.map((itm) => (
+                            <li
+                              onClick={() => handleOnSelect(itm)}
+                              key={itm?.id}
+                            >
+                              {itm?.name}
+                            </li>
+                          ))}
+                        </ul>
                         {errors?.postCode && (
                           <InputError
                             message={errors?.postCode?.message}
@@ -397,7 +475,13 @@ const UpdateSite = ({ getSiteById, siteDetailsById, siteId, success, error, upda
                 </div>
               </div>
               <div className="map">
-                <GoogleMap />
+                {values?.latitude && values?.longitude && (
+                  <GoogleMap
+                    lat={values?.latitude}
+                    long={values?.longitude}
+                    postCode={values?.postCode}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -415,5 +499,12 @@ const mapStateToProps = (state) => ({
   error: state.site.updateError,
   updateSiteImageSuccess: state.site.updateSiteImageSuccess,
   siteDetailsById: state.site.siteDetailsById,
+  getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
 });
-export default connect(mapStateToProps, { updateSiteDetail, updateSiteImage, deleteSiteImage,getSiteById })(UpdateSite);
+export default connect(mapStateToProps, {
+  updateSiteDetail,
+  updateSiteImage,
+  deleteSiteImage,
+  getSiteById,
+  handleOnPostCodeSearch,
+})(UpdateSite);

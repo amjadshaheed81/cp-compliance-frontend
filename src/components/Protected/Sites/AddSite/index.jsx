@@ -240,8 +240,11 @@ const AddSite = ({
                           <option value="North East, Yorkshire & Humberside">
                             North East, Yorkshire & Humberside
                           </option>
-                          <option value="North West, Scotland">
-                            North West, Scotland
+                          <option value="North West">
+                            North West
+                          </option>
+                          <option value="Scotland">
+                            Scotland
                           </option>
                           <option value="South East">South East</option>
                           <option value="South West">South West</option>
