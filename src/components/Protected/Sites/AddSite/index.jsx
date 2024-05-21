@@ -337,12 +337,7 @@ const AddSite = ({
                           class="form-control"
                           id="mapViewUrl"
                           disabled
-                          {...register("mapViewUrl", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} map view link`,
-                            },
-                          })}
+                          {...register("mapViewUrl")}
                         />
                         {errors?.mapViewUrl && (
                           <InputError
@@ -363,12 +358,7 @@ const AddSite = ({
                           class="form-control"
                           id="streetViewUrl"
                           disabled
-                          {...register("streetViewUrl", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} street view url`,
-                            },
-                          })}
+                          {...register("streetViewUrl")}
                         />
                         {errors?.streetViewUrl && (
                           <InputError

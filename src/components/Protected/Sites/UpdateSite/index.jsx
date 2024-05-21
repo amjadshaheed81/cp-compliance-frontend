@@ -357,12 +357,7 @@ const UpdateSite = ({
                           name="mapViewUrl"
                           class="form-control"
                           id="mapViewUrl"
-                          {...register("mapViewUrl", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} map view link`,
-                            },
-                          })}
+                          {...register("mapViewUrl")}
                         />
                         {errors?.mapViewUrl && (
                           <InputError
@@ -382,12 +377,7 @@ const UpdateSite = ({
                           name="streetViewUrl"
                           class="form-control"
                           id="streetViewUrl"
-                          {...register("streetViewUrl", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} street view url`,
-                            },
-                          })}
+                          {...register("streetViewUrl")}
                         />
                         {errors?.streetViewUrl && (
                           <InputError
