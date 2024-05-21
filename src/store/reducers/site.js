@@ -261,7 +261,8 @@ const reducer = (state = initialState, action) => {
     case GET_SITES_BY_ID_SUCCESS:
       return {
         ...state,
-        siteDetailsById: action.payload,
+        updateSiteImageSuccess: "",
+        siteDetailsById: action.payload?.data,
       };
     case GET_SITES_BY_ID_FAILURE:
       return {

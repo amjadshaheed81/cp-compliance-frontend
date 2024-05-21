@@ -76,14 +76,18 @@ const UpdateSite = ({
     reset(data);
   };
   const handleFileSelect = async (event) => {
+    console.log('updateSite ===>', updateSite);
     let siteId = updateSite?.id;
     const res = await updateSiteImage(event, siteId);
     console.log("resss", res);
+    setValue('siteImage', '');
   };
   const handleDeleteSiteImage = async (event) => {
     let siteId = updateSite?.id;
-    deleteSiteImage(siteId);
-    getSiteById(siteId);
+    const res = await deleteSiteImage(siteId);
+    if(res === 'Success') {
+      getSiteById(siteId);
+    }
     console.log("siteDetailsById", siteDetailsById);
   };
   const handleOnSearch = async (event) => {
@@ -262,12 +266,8 @@ const UpdateSite = ({
                           <option value="North East, Yorkshire & Humberside">
                             North East, Yorkshire & Humberside
                           </option>
-                          <option value="North West">
-                            North West
-                          </option>
-                          <option value="Scotland">
-                            Scotland
-                          </option>
+                          <option value="North West">North West</option>
+                          <option value="Scotland">Scotland</option>
                           <option value="South East">South East</option>
                           <option value="South West">South West</option>
                           <option value="Wales">Wales</option>
@@ -365,6 +365,7 @@ const UpdateSite = ({
                             key={errors?.mapViewUrl?.message}
                           />
                         )}
+                        e
                       </div>
                     </div>
                     <div className="col-md-12">
@@ -424,7 +425,7 @@ const UpdateSite = ({
                 <span>Upload your site photo</span>
                 <div>
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-sm btn-primary mt-2 mb-2 "
                     onClick={handleDeleteSiteImage}
                   >
                     Delete
