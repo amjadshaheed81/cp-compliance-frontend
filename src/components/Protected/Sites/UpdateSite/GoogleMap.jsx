@@ -3,8 +3,8 @@ import GoogleMapReact from 'google-map-react';
 
 const AnyReactComponent = ({ text }) => <div><i class="fa fa-map-marker-alt text-danger"></i></div>;
 
-const GoogleMap = ({lat, long, postCode}) => {
-  const defaultCenter = { lat: lat, lng: long }; // Default center of the map (San Francisco)
+const GoogleMap = ({ lat, long, postCode }) => {
+  const defaultCenter = { lat: lat, lng: long };
   const defaultZoom = 11; // Default zoom level
 
   return (

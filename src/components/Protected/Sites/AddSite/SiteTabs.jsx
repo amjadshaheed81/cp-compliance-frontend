@@ -26,44 +26,39 @@ function TabPanel(props) {
   );
 }
 
-export default function SiteTabs({ tabs }) {
+export default function SiteTabs({ tabs, isCreateSite }) {
   const [value, setValue] = React.useState(0);
-  const [viewType, setViewType] = React.useState('');
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
-  let pathName;
-useEffect(() => {
-    setViewType(window.location.hash);
- console.log('pathname', viewType);
-},[pathName])
   return (
     <>
-    <Header />
-    <Box sx={{ width: "90%", marginTop: "10rem", marginLeft:"5rem", zIndex: "-1", position: "static" }}>
-        <div style={{marginTop: "-10rem"}}>
-        {viewType.includes('add-site') && <BreadCrumHeader style={{marginTop: "-5rem"}} header={"Create New Site"} page={"New Site"} />}
-        {viewType.includes('update-site') && <BreadCrumHeader style={{marginTop: "-5rem"}} header={"View & Update Site"} page={"New Site"} />}
+      <Header />
+      <Box sx={{ width: "90%", marginTop: "10rem", marginLeft: "5rem", zIndex: "-1", position: "static" }}>
+        <div style={{ marginTop: "-10rem" }}>
+          {isCreateSite ? <BreadCrumHeader style={{ marginTop: "-5rem" }} header={"Create New Site"} page={"New Site"} /> :
+            <BreadCrumHeader style={{ marginTop: "-5rem" }} header={"View & Update Site"} page={"New Site"} />
+          }
         </div>
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          aria-label="basic tabs example"
-        >
-          {tabs.map(({ label }, i) => (
-            <Tab label={label} key={i} />
-          ))}
-        </Tabs>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            aria-label="basic tabs example"
+          >
+            {tabs.map(({ label }, i) => (
+              <Tab label={label} key={i} disabled={isCreateSite && (i === 1 || i === 2)} />
+            ))}
+          </Tabs>
+        </Box>
+        {tabs.map(({ Component }, i) => (
+          <TabPanel value={value} index={i} key={i}>
+            {Component}
+          </TabPanel>
+        ))}
       </Box>
-      {tabs.map(({ Component }, i) => (
-        <TabPanel value={value} index={i} key={i}>
-          {Component}
-        </TabPanel>
-      ))}
-    </Box>
     </>
-    
+
   );
 }

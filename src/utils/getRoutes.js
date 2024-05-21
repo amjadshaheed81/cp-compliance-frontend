@@ -62,11 +62,11 @@ export const getRoutes = () => {
     },
     {
       path: "/add-site",
-      element: <Tabs tabs={tabs} />,
+      element: <Tabs tabs={tabs} isCreateSite={true} />,
     },
     {
       path: "/update-site",
-      element: <Tabs tabs={UpdateSiteTabs} />
+      element: <Tabs tabs={UpdateSiteTabs} isCreateSite={false} />
     },
     {
       path: "/sites",
