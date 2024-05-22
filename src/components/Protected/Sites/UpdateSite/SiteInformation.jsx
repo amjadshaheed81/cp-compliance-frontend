@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { connect } from "react-redux";
 import Accordion from '@mui/material/Accordion';
 import AccordionActions from '@mui/material/AccordionActions';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -8,45 +9,101 @@ import Button from '@mui/material/Button';
 import SidebarNew from '../../../common/Sidebar/SidebarNew';
 import { yearOptions } from '../../../../utils/yearOptions';
 import { yesNoOptions } from '../../../../utils/yesNoOptions';
+import { useForm } from 'react-hook-form';
+import { Validation } from '../../../../Constant/Validation';
+import { saveSiteBuildingData } from '../../../../store/thunk/site';
 
-export default function SiteInformation() {
+const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
+    const defaultValues = {
+        buildYear: "",
+        buildingUnderClientControl: '',
+        canteenInBuilding: '',
+        dedicatedKitchenArea:''
+    };
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+        getValues,
+        setValue,
+        watch,
+    } = useForm({
+        defaultValues,
+    });
+    const saveSiteInformation = (data) => {
+        console.log('site building', data, updateSite?.id);
+        saveSiteBuildingData(data, updateSite?.id);
+    };
     return (
         <div>
             <SidebarNew />
-            <div class="row">
+            <form class="row" onSubmit={handleSubmit(saveSiteInformation)}>
                 <div class="col-md-2">
-                    <label htmlFor='buildyear' name="buildyear" id="buildyear">Year Of Build</label>
                     <div class="pt-2 pb-4">
-                        <select name="buildyear" id="buildyear" class="form-control w-100">
+                        <label htmlFor='buildYear' name="buildYear" id="buildYear">Year Of Build</label>
+
+                        <select
+                            name="buildYear"
+                            id="buildYear"
+                            class="form-control w-100"
+                            {...register("buildYear")}
+                        >
                             {yearOptions.map((year) => <option value={year.value}>{year.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label htmlFor='buildyear' name="buildyear" id="buildyear">Building Under Client Control</label>
                     <div class="pt-2 pb-4">
-                        <select name="buildyear" id="buildyear" class="form-control w-100">
+                        <label htmlFor='buildingUnderClientControl' name="buildingUnderClientControl" id="buildingUnderClientControl">Building Under Client Control</label>
+
+                        <select
+                            name="buildingUnderClientControl"
+                            id="buildingUnderClientControl"
+                            class="form-control w-100"
+                            {...register("buildingUnderClientControl")}
+                        >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label htmlFor='buildyear' name="buildyear" id="buildyear">Canteen in building</label>
                     <div class="pt-2 pb-4">
-                        <select name="buildyear" id="buildyear" class="form-control w-100">
-                        {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
+                        <label htmlFor='canteenInBuilding' name="canteenInBuilding" id="canteenInBuilding">Canteen in building</label>
+
+                        <select
+                            name="canteenInBuilding"
+                            id="canteenInBuilding"
+                            class="form-control w-100"
+                            {...register("canteenInBuilding", {
+                                required: {
+                                    value: true,
+                                    message: `${Validation.REQUIRED}`,
+                                },
+                            })}
+                        >
+                            {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label htmlFor='buildyear' name="buildyear" id="buildyear">Dedicated Kitchen Area</label>
                     <div class="pt-2 pb-4">
-                        <select name="buildyear" id="buildyear" class="form-control w-100">
-                        {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
+                        <label htmlFor='dedicatedKitchenArea' name="dedicatedKitchenArea" id="dedicatedKitchenArea">Dedicated Kitchen Area</label>
+
+                        <select
+                            name="dedicatedKitchenArea"
+                            id="dedicatedKitchenArea"
+                            class="form-control w-100"
+                            {...register("dedicatedKitchenArea")}
+                        >
+                            {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
-            </div>
+                <div class="pb-4">
+                    <button class="float-end btn btn-primary">Save</button>
+                </div>
+            </form>
             <Accordion>
                 <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
@@ -196,3 +253,12 @@ export default function SiteInformation() {
         </div>
     );
 }
+
+const mapStateToProps = (state) => ({
+    updateSite: state.site.updateSite,
+    success: state.site.updateSuccess,
+    error: state.site.updateError,
+});
+export default connect(mapStateToProps, {
+    saveSiteBuildingData,
+})(SiteInformation);

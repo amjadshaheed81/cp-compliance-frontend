@@ -21,6 +21,8 @@ import {
   GET_SITES_BY_ID_FAILURE,
   GET_ADDRESS_ON_POST_CODE_SUCCESS,
   GET_ADDRESS_ON_POST_CODE_FAILURE,
+  GET_SITE_INFORMATION,
+  GET_SITE_INFORMATION_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -344,3 +346,46 @@ export const handleOnPostCodeSearch = (e) => {
 //     }
 //   };
 // };
+export const saveSiteBuildingData = (formData, id) => {
+  const data = {
+    ...formData,
+    siteId: id
+  };
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/siteinfo";
+      const buildingData = await post(url, data);
+      if(buildingData?.status === 200) {
+        const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        const siteInformation = await get(url);
+        dispatch({
+          type: GET_SITE_INFORMATION,
+          payload: siteInformation,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: GET_SITE_INFORMATION_FAILURE,
+        payload: "Something went wrong while adding site. Please try again.",
+      });
+    }
+  };
+};
+
+export const getSiteInformation = (id) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+      const siteInformation = await get(url);
+      dispatch({
+        type: GET_SITE_INFORMATION,
+        payload: siteInformation,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_SITE_INFORMATION_FAILURE,
+        payload: "Something went wrong while fetching key contacts. Please try again.",
+      });
+    }
+  };
+};

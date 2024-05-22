@@ -9,6 +9,7 @@ import UpdateSite from "../components/Protected/Sites/UpdateSite";
 import Tabs from "../components/Protected/Sites/AddSite/SiteTabs"
 import SiteChart from "../components/Protected/Sites/UpdateSite/SiteChart";
 import SiteInformation from "../components/Protected/Sites/UpdateSite/SiteInformation";
+import Document from "../components/Protected/Sites/Documents";
 export const getRoutes = () => {
   const tabs = [
     {
@@ -71,6 +72,10 @@ export const getRoutes = () => {
     {
       path: "/sites",
       element: <Sites />,
+    },
+    {
+      path: "/documents",
+      element: <Document />,
     },
   ];
 };

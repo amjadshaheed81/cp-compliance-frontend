@@ -1,12 +1,12 @@
 import React, { Fragment } from "react";
 import "./BreadCrumHeader.css";
 
-const BreadCrumHeader = ({ header, page }) => {
+const BreadCrumHeader = ({ header, page, style }) => {
   return (
     <Fragment>
       <div class="d-flex bd-highlight">
         <div class="pt-2 bd-highlight">
-          <h4>{header}</h4>
+          <h4 style={style}>{header}</h4>
         </div>
         <div class="ms-auto p-2 bd-highlight">
           <nav aria-label="breadcrumb pt-1">

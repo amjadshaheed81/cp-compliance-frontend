@@ -137,7 +137,7 @@ export default function SidebarNew() {
                 break;
             case 'Site Details': navigate('/sites');
                 break;
-            case 'Site Documents': navigate('/sites');
+            case 'Site Documents': navigate('/documents');
                 break;
             case 'Site Projects': navigate('/sites');
                 break;
