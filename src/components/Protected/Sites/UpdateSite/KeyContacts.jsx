@@ -32,7 +32,6 @@ const KeyContacts = ({
     console.log(data);
   };
   const deleteKeyContactClick = (itm) => {
-    console.log(itm);
     deleteKeyContact(itm?.id);
   };
   const addKeyContactClick = () => {

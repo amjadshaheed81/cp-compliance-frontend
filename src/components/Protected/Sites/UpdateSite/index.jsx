@@ -64,9 +64,7 @@ const UpdateSite = ({
     defaultValues,
   });
   const values = watch();
-  console.log("values ===>", values);
   useEffect(() => {
-    console.log("updateSite ===>", updateSite);
     if (updateSite) {
       reset(updateSite);
     }
@@ -76,10 +74,8 @@ const UpdateSite = ({
     reset(data);
   };
   const handleFileSelect = async (event) => {
-    console.log('updateSite ===>', updateSite);
     let siteId = updateSite?.id;
     const res = await updateSiteImage(event, siteId);
-    console.log("resss", res);
     setValue('siteImage', '');
   };
   const handleDeleteSiteImage = async (event) => {
@@ -88,10 +84,8 @@ const UpdateSite = ({
     if(res === 'Success') {
       getSiteById(siteId);
     }
-    console.log("siteDetailsById", siteDetailsById);
   };
   const handleOnSearch = async (event) => {
-    console.log("event search", event);
     setValue("latitude", "");
     setValue("longitude", "");
     setShowPostCodeSearch(true);
@@ -101,7 +95,6 @@ const UpdateSite = ({
     try {
       const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
       const response = await get(url);
-      console.log("response", response);
       setValue("postCode", response?.postcode, { shouldValidate: true });
       setValue("address1", response?.line_2);
       setValue("address2", response?.line_1, { shouldValidate: true });

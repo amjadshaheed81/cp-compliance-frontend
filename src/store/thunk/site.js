@@ -23,6 +23,8 @@ import {
   GET_ADDRESS_ON_POST_CODE_FAILURE,
   GET_SITE_INFORMATION,
   GET_SITE_INFORMATION_FAILURE,
+  SET_SITE_INFORMATION,
+  SET_SITE_INFORMATION_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -52,7 +54,6 @@ export const updateSiteDetail = (formData) => {
     try {
       const url = "/api/siteservice/updateSite";
       const res = await put(url, formData);
-      console.log('res ===>', res);
       dispatch({
         type: UPDATE_SITE_SUCCESS,
         payload: 'Site has been updated successully',
@@ -67,8 +68,6 @@ export const updateSiteDetail = (formData) => {
 };
 
 export const updateSiteImage = (data, siteId) => {
-  console.log('form data', data);
-  console.log('siteId', siteId);
   return async (dispatch) => {
     const formData = new FormData();
     const file = data.target.files[0];
@@ -76,10 +75,8 @@ export const updateSiteImage = (data, siteId) => {
     formData.append("file", file);
     formData.append("fileName", `site-photo`);
     try {
-      console.log('inside');
       const url = `/api/siteservice/site/${siteId}/upload`;
       const res = await uploadPhoto(url, formData);
-      console.log('status ===>', res.status);
       if (res.status === 200) {
         dispatch({
           type: UPDATE_SITE_IMAGE_SUCCESS,
@@ -101,7 +98,6 @@ export const updateLocalDetails = (formData) => {
     try {
       const url = "/api/siteservice/updateLocalDetails";
       const res = await put(url, formData);
-      console.log('res ===>', res);
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS,
         payload: "Local details has been updated successfully.",
@@ -120,7 +116,6 @@ export const updateTimings = (formData) => {
     try {
       const url = "/api/siteservice/updateTimings";
       const res = await put(url, formData);
-      console.log('res ===>', res);
       dispatch({
         type: UPDATE_TIMINIG_SUCCESS,
         payload: "Site Timings has been updated successfully.",
@@ -286,7 +281,6 @@ export const handleOnPostCodeSearch = (e) => {
   // });
   return async (dispatch) => {
     try {
-      console.log('address block');
       // const url = `https://api.getaddress.io/autocomplete/l1w?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
       const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
       // const url = `https://maps.googleapis.com/maps/api/geocode/json?components=postal_code:EC1A 1BB|country:UK&key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo`;
@@ -296,7 +290,6 @@ export const handleOnPostCodeSearch = (e) => {
       // &key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all`;
       // const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?API_KEY=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all=true`;
       const response = await get(url);
-      console.log('address response', response);
       const res = [];
       response?.suggestions?.forEach((itm) => {
         res.push({
@@ -346,26 +339,26 @@ export const handleOnPostCodeSearch = (e) => {
 //     }
 //   };
 // };
-export const saveSiteBuildingData = (formData, id) => {
+export const saveSiteBuildingData = (siteId, formData) => {
   const data = {
-    ...formData,
-    siteId: id
+    formData,
+    siteId,
   };
   return async (dispatch) => {
     try {
       const url = "/api/siteservice/siteinfo";
       const buildingData = await post(url, data);
       if(buildingData?.status === 200) {
-        const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
-        const siteInformation = await get(url);
+        // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        // const siteInformation = await get(url);
         dispatch({
-          type: GET_SITE_INFORMATION,
-          payload: siteInformation,
+          type: SET_SITE_INFORMATION,
+          payload: buildingData,
         });
       }
     } catch (error) {
       dispatch({
-        type: GET_SITE_INFORMATION_FAILURE,
+        type: SET_SITE_INFORMATION_FAILURE,
         payload: "Something went wrong while adding site. Please try again.",
       });
     }
@@ -373,10 +366,12 @@ export const saveSiteBuildingData = (formData, id) => {
 };
 
 export const getSiteInformation = (id) => {
+  console.log('site information id', id);
   return async (dispatch) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
       const siteInformation = await get(url);
+      console.log('site information siteInformation', siteInformation);
       dispatch({
         type: GET_SITE_INFORMATION,
         payload: siteInformation,

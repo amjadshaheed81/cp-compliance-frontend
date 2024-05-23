@@ -23,6 +23,7 @@ import {
   GET_ADDRESS_ON_POST_CODE_SUCCESS,
   GET_SITE_INFORMATION_FAILURE,
   GET_SITE_INFORMATION,
+  SET_SITE_INFORMATION,
 } from "./../actionTypes";
 
 const initialState = {
@@ -31,6 +32,7 @@ const initialState = {
   filterSite: [],
   updateSite: {},
   keyContacts: [],
+  siteInformation:{},
   error: "",
   success: "",
   localDetailsSuccess: "",
@@ -45,8 +47,8 @@ const initialState = {
 };
 
 const reducer = (state = initialState, action) => {
-  console.log("action", action);
-  console.log("state", state);
+  // console.log("action", action);
+  // console.log("state", state);
 
   switch (action.type) {
     case ADD_SITE_FAILURE:
@@ -286,6 +288,12 @@ const reducer = (state = initialState, action) => {
         ...state,
         siteInformationFailure: "",
         siteInformation: action.payload,
+      };
+    case SET_SITE_INFORMATION:
+      return {
+        ...state,
+        siteInformationFailure: "",
+        setSiteInformation: action.payload,
       };
     case GET_SITE_INFORMATION_FAILURE:
       return {

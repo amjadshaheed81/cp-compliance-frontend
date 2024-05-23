@@ -36,7 +36,6 @@ function SearchSite({ updateSite, getSites, sites }) {
   let initialSite = sites?.slice(0, 5);
   const searchSite = async (e) => {
     const value = e?.target?.value;
-    console.log("value", value);
     const url = `/api/siteservice/site/all?q=${value}`;
     try {
       const response = await get(url);
@@ -47,7 +46,6 @@ function SearchSite({ updateSite, getSites, sites }) {
         setSites(response);
         initialSite = response?.slice(0, 5);
       }
-      console.log("response", response);
     } catch (e) {
       setError("No Sites found. Please check the input");
     }

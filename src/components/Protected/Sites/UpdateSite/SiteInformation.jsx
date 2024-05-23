@@ -11,9 +11,9 @@ import { yearOptions } from '../../../../utils/yearOptions';
 import { yesNoOptions } from '../../../../utils/yesNoOptions';
 import { useForm } from 'react-hook-form';
 import { Validation } from '../../../../Constant/Validation';
-import { saveSiteBuildingData } from '../../../../store/thunk/site';
+import { getSiteInformation, saveSiteBuildingData } from '../../../../store/thunk/site';
 
-const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
+const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation }) => {
     const defaultValues = {
         buildYear: "",
         buildingUnderClientControl: '',
@@ -31,10 +31,18 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
     } = useForm({
         defaultValues,
     });
+    React.useEffect(() => {
+        if(updateSite?.id === siteInformation?.data?.siteId) {
+            setValue('buildYear', siteInformation.data.buildYear);
+            setValue('buildingUnderClientControl', siteInformation.data.buildingUnderClientControl);
+            setValue('canteenInBuilding', siteInformation.data.canteenInBuilding);
+            setValue('dedicatedKitchenArea', siteInformation.data.dedicatedKitchenArea);
+        }
+    },[])
     const saveSiteInformation = (data) => {
-        console.log('site building', data, updateSite?.id);
-        saveSiteBuildingData(data, updateSite?.id);
+        saveSiteBuildingData(updateSite?.id, data);
     };
+    console.log('site information', siteInformation.data);
     return (
         <div>
             <SidebarNew />
@@ -42,11 +50,12 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
                 <div class="col-md-2">
                     <div class="pt-2 pb-4">
                         <label htmlFor='buildYear' name="buildYear" id="buildYear">Year Of Build</label>
-
                         <select
                             name="buildYear"
                             id="buildYear"
                             class="form-control w-100"
+                            // value={siteInformation?.buildYear}
+                            // onChange={(e)=> setValue('buildYear',e.target.value)}
                             {...register("buildYear")}
                         >
                             {yearOptions.map((year) => <option value={year.value}>{year.label}</option>)}
@@ -61,6 +70,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
                             name="buildingUnderClientControl"
                             id="buildingUnderClientControl"
                             class="form-control w-100"
+                            // value={siteInformation?.buildingUnderClientControl}
                             {...register("buildingUnderClientControl")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
@@ -75,6 +85,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
                             name="canteenInBuilding"
                             id="canteenInBuilding"
                             class="form-control w-100"
+                            // value={siteInformation?.canteenInBuilding}
                             {...register("canteenInBuilding", {
                                 required: {
                                     value: true,
@@ -94,6 +105,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData }) => {
                             name="dedicatedKitchenArea"
                             id="dedicatedKitchenArea"
                             class="form-control w-100"
+                            // value={siteInformation?.dedicatedKitchenArea}
                             {...register("dedicatedKitchenArea")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
@@ -258,7 +270,9 @@ const mapStateToProps = (state) => ({
     updateSite: state.site.updateSite,
     success: state.site.updateSuccess,
     error: state.site.updateError,
+    siteInformation: state.site.siteInformation
 });
 export default connect(mapStateToProps, {
     saveSiteBuildingData,
+    getSiteInformation,
 })(SiteInformation);

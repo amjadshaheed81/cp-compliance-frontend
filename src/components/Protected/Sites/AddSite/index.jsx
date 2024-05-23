@@ -32,7 +32,6 @@ const AddSite = ({
   handleOnPostCodeSearch,
   getAddresOnPostCodeSuccess,
 }) => {
-  console.log("error", error);
   const navigate = useNavigate();
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const goTo = (link) => {
@@ -61,7 +60,6 @@ const AddSite = ({
     defaultValues,
   });
   const values = watch();
-  console.log("values ===>", values);
   const submitSite = (data) => {
     addSite(data, goTo);
     reset(defaultValues);
@@ -71,18 +69,15 @@ const AddSite = ({
     updateSiteImage(event, siteId);
   };
   const handleOnSearch = async (event) => {
-    console.log("event search", event);
     setValue("latitude", '');
     setValue("longitude", '');
     setShowPostCodeSearch(true);
     handleOnPostCodeSearch(event);
   };
   const handleOnSelect = async (data) => {
-    console.log("data", data);
     try {
       const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
       const response = await get(url);
-      console.log("response", response);
       setValue("postCode", response?.postcode, { shouldValidate: true });
       setValue("address1", response?.line_2);
       setValue("address2", response?.line_1, { shouldValidate: true });
