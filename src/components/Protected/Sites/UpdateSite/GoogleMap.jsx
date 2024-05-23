@@ -1,7 +1,8 @@
 import React from 'react';
 import GoogleMapReact from 'google-map-react';
+import logo from "../../../../images/logo-red.png";
 
-const AnyReactComponent = ({ text }) => <div><i class="fa fa-map-marker-alt text-danger"></i></div>;
+const AnyReactComponent = ({ text }) => <div><img src={logo} height={25}/></div>;
 
 const GoogleMap = ({ lat, long, postCode }) => {
   const defaultCenter = { lat: lat, lng: long };
