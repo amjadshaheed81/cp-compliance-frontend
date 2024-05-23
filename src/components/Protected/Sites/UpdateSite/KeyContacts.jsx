@@ -31,8 +31,11 @@ const KeyContacts = ({
   const submitKeyContact = (data) => {
     console.log(data);
   };
-  const deleteKeyContactClick = (itm) => {
-    deleteKeyContact(itm?.id);
+  const deleteKeyContactClick = async (itm) => {
+    const res = await deleteKeyContact(itm?.id);
+    if (res === "Success") {
+      getKeyContact(updateSite?.id);
+    }
   };
   const addKeyContactClick = () => {
     const data = {
