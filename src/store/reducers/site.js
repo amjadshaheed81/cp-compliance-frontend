@@ -24,6 +24,8 @@ import {
   GET_SITE_INFORMATION_FAILURE,
   GET_SITE_INFORMATION,
   SET_SITE_INFORMATION,
+  SAVE_SITE_AREA_INFORMATION_FAILURE,
+  SAVE_SITE_AREA_INFORMATION,
 } from "./../actionTypes";
 
 const initialState = {
@@ -299,6 +301,16 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteInformationFailure: action.payload,
+      };
+    case SAVE_SITE_AREA_INFORMATION_FAILURE:
+      return {
+        ...state,
+        siteareainfo: action.payload,
+      };
+    case SAVE_SITE_AREA_INFORMATION:
+      return {
+        ...state,
+        siteareainfo: action.payload,
       };
     default:
       return state;

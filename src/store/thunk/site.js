@@ -25,6 +25,8 @@ import {
   GET_SITE_INFORMATION_FAILURE,
   SET_SITE_INFORMATION,
   SET_SITE_INFORMATION_FAILURE,
+  SAVE_SITE_AREA_INFORMATION_FAILURE,
+  SAVE_SITE_AREA_INFORMATION,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -380,6 +382,33 @@ export const getSiteInformation = (id) => {
       dispatch({
         type: GET_SITE_INFORMATION_FAILURE,
         payload: "Something went wrong while fetching key contacts. Please try again.",
+      });
+    }
+  };
+};
+
+export const saveAreaAndOccupancyDetails = (siteId, formData) => {
+  const data = {
+    formData,
+    siteId,
+  };
+  console.log('data', data);
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/siteareainfo";
+      const siteareainfo = await post(url, data);
+      if(siteareainfo?.status === 200) {
+        // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        // const siteInformation = await get(url);
+        dispatch({
+          type: SAVE_SITE_AREA_INFORMATION,
+          payload: siteareainfo,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_SITE_AREA_INFORMATION_FAILURE,
+        payload: "Something went wrong while adding site. Please try again.",
       });
     }
   };

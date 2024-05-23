@@ -11,9 +11,9 @@ import { yearOptions } from '../../../../utils/yearOptions';
 import { yesNoOptions } from '../../../../utils/yesNoOptions';
 import { useForm } from 'react-hook-form';
 import { Validation } from '../../../../Constant/Validation';
-import { getSiteInformation, saveSiteBuildingData } from '../../../../store/thunk/site';
+import { getSiteInformation, saveSiteBuildingData, saveAreaAndOccupancyDetails } from '../../../../store/thunk/site';
 
-const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation }) => {
+const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation, saveAreaAndOccupancyDetails }) => {
     const defaultValues = {
         buildYear: "",
         buildingUnderClientControl: '',
@@ -41,6 +41,10 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
     },[])
     const saveSiteInformation = (data) => {
         saveSiteBuildingData(updateSite?.id, data);
+    };
+    const saveAreaAndOccupancy = (data) => {
+        console.log('data', data);
+        saveAreaAndOccupancyDetails(updateSite?.id, data);
     };
     console.log('site information', siteInformation.data);
     return (
@@ -87,10 +91,10 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             class="form-control w-100"
                             // value={siteInformation?.canteenInBuilding}
                             {...register("canteenInBuilding", {
-                                required: {
-                                    value: true,
-                                    message: `${Validation.REQUIRED}`,
-                                },
+                                // required: {
+                                //     value: true,
+                                //     message: `${Validation.REQUIRED}`,
+                                // },
                             })}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
@@ -125,89 +129,180 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                     Area & Occupancy
                 </AccordionSummary>
                 <AccordionDetails>
-                    <div class="row">
+                    <form class="row" onSubmit={handleSubmit(saveAreaAndOccupancy)}>
                         <div class="col-md-2">
-                            <label htmlFor='buildArea' name="buildArea" id="buildArea">Total Building Area(Sq.m)</label>
+                            <label htmlFor='totalBuildingArea' name="totalBuildingArea" id="totalBuildingArea">Total Building Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="buildArea" id="buildArea" class="form-control" />
+                                <input type="text" name="totalBuildingArea" id="totalBuildingArea" class="form-control"
+                                {...register("totalBuildingArea", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='clientArea' name="clientArea" id="clientArea">Client Occupied Area(Sq.m)</label>
+                            <label htmlFor='clientOccupiedArea' name="clientOccupiedArea" id="clientOccupiedArea">Client Occupied Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="clientArea" id="clientArea" class="form-control" />
+                                <input type="text" name="clientOccupiedArea" id="clientOccupiedArea" class="form-control"
+                                {...register("clientOccupiedArea", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='tenantArea' name="tenantArea" id="tenantArea">Tenant Occupied Area(Sq.m)</label>
+                            <label htmlFor='tenantOccupiedArea' name="tenantOccupiedArea" id="tenantOccupiedArea">Tenant Occupied Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
-                                <input type="tenantArea" name="tenantArea" id="tenantArea" class="form-control" />
+                                <input type="tenantOccupiedArea" name="tenantOccupiedArea" id="tenantOccupiedArea" class="form-control"
+                                {...register("tenantOccupiedArea", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='maxOccu' name="maxOccu" id="maxOccu">Maximum Occupancy(Client)</label>
+                            <label htmlFor='maxOccupancy' name="maxOccupancy" id="maxOccupancy">Maximum Occupancy(Client)</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="maxOccu" id="maxOccu" class="form-control" />
+                                <input type="text" name="maxOccupancy" id="maxOccupancy" class="form-control" 
+                                {...register("maxOccupancy", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='meet' name="meet" id="meet">Meeting/Conferences Client</label>
+                            <label htmlFor='meetingClients' name="meetingClients" id="meetingClients">Meeting/Conferences Client</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="meet" id="meet" class="form-control" />
+                                <input type="text" name="meetingClients" id="meetingClients" class="form-control" 
+                                {...register("meetingClients", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='staff' name="staff" id="staff">Number Of Staff</label>
+                            <label htmlFor='numberOfStaff' name="numberOfStaff" id="numberOfStaff">Number Of Staff</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="staff" id="staff" class="form-control mt-4" />
+                                <input type="text" name="numberOfStaff" id="numberOfStaff" class="form-control mt-4" 
+                                {...register("numberOfStaff", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='tenants' name="tenants" id="tenants">Tenants in Occupation</label>
+                            <label htmlFor='tenantInOccupation' name="tenantInOccupation" id="tenantInOccupation">Tenants in Occupation</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="tenants" id="tenants" class="form-control mt-4" />
+                                <input type="text" name="tenantInOccupation" id="tenantInOccupation" class="form-control mt-4" 
+                                {...register("tenantInOccupation", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
                             <label htmlFor='tenantName' name="tenantName" id="tenantName">Name Of Tenant</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="tenantName" id="tenantName" class="form-control mt-4" />
+                                <input type="text" name="tenantName" id="tenantName" class="form-control mt-4" 
+                                {...register("tenantName", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='vacantArea' name="vacantArea" id="vacantArea">Vacant Areas in building</label>
+                            <label htmlFor='vacantAreaInBuilding' name="vacantAreaInBuilding" id="vacantAreaInBuilding">Vacant Areas in building</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="vacantArea" id="vacantArea" class="form-control" />
+                                <input type="text" name="vacantAreaInBuilding" id="vacantAreaInBuilding" class="form-control" 
+                                {...register("vacantAreaInBuilding", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='floorNos' name="floorNos" id="floorNos">Number Of Floors</label>
+                            <label htmlFor='numOfFloors' name="numOfFloors" id="numOfFloors">Number Of Floors</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="floorNos" id="floorNos" class="form-control mt-4" />
+                                <input type="text" name="numOfFloors" id="numOfFloors" class="form-control mt-4" 
+                                {...register("numOfFloors", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='carParkAbove' name="carParkAbove" id="carParkAbove">Cark Park Spaces Above Ground</label>
+                            <label htmlFor='carParkSpaceAboveGround' name="carParkSpaceAboveGround" id="carParkSpaceAboveGround">Cark Park Spaces Above Ground</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="carParkAbove" id="carParkAbove" class="form-control" />
+                                <input type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control" 
+                                {...register("carParkSpaceAboveGround", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='carParkBelow' name="carParkBelow" id="carParkBelow">Cark Park Spaces Below Ground</label>
+                            <label htmlFor='carParkSpaceBelowGround' name="carParkSpaceBelowGround" id="carParkSpaceBelowGround">Cark Park Spaces Below Ground</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="carParkBelow" id="carParkBelow" class="form-control" />
+                                <input type="text" name="carParkSpaceBelowGround" id="carParkSpaceBelowGround" class="form-control" 
+                                {...register("carParkSpaceBelowGround", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label htmlFor='basementLevelno' name="basementLevelno" id="basementLevelno">Number Of Basement Levels</label>
+                            <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Number Of Basement Levels</label>
                             <div class="pt-2 pb-2">
-                                <input type="text" name="basementLevelno" id="basementLevelno" class="form-control" />
+                                <input type="text" name="numOfBasementLevels" id="numOfBasementLevels" class="form-control" 
+                                {...register("numOfBasementLevels", {
+                                    required: {
+                                        value: true,
+                                        message: `${Validation.REQUIRED}`,
+                                    },
+                                })}
+                                />
                             </div>
                         </div>
-                    </div>
-                    <div class="float-end pb-4">
-                        <button class="btn btn-primary">Save</button>
-                    </div>
+                        <div class="pb-4">
+                        <button class="btn btn-primary float-end">Save</button>
+                        </div>
+                    </form>
                 </AccordionDetails>
             </Accordion>
             <Accordion>
@@ -275,4 +370,5 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
     saveSiteBuildingData,
     getSiteInformation,
+    saveAreaAndOccupancyDetails,
 })(SiteInformation);
