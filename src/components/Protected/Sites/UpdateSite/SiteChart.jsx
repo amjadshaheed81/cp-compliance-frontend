@@ -7,19 +7,38 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import UpdateFloor from "./UpdateFloor";
 import FloorMap from "./FloorMap";
 
-const StyledNode = styled.div`
+const InteriorExteriorStyledNode = styled.div`
+  background: #FFF7DE;
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
-  border: 1px solid red;
+  border-left: 4px solid #f3a515;
 `;
 
-const Title = styled.h2`
-  margin-top: 5rem;
-  :first-of-type {
-    margin-top: 0;
-  }
+const MainBuildingStyledNode = styled.div`
+ background: #1DCA5D0A;
+ padding: 5px;
+ border-radius: 8px;
+ display: inline-block;
+ border-left: 4px solid #1dca5d;
 `;
+
+const FloorStyledNode = styled.div`
+ background: #FFF5F4;
+ padding: 5px;
+ border-radius: 8px;
+ display: inline-block;
+ border-left: 4px solid #f34040;
+`;
+
+const OtherStyledNode = styled.div`
+ background: #F0F8FF;
+ padding: 5px;
+ border-radius: 8px;
+ display: inline-block;
+ border-left: 4px solid #3b80f2;
+`;
+
 const SiteChart = (props) => {
     const {
         register,
@@ -35,27 +54,27 @@ const SiteChart = (props) => {
             <h5 class="text-start">Creating Building Layout</h5>
             <Tree
                 lineWidth={"2px"}
-                lineColor={"green"}
+                lineColor={"grey"}
                 lineBorderRadius={"10px"}
-                label={<StyledNode>Main Building</StyledNode>}
+                label={<MainBuildingStyledNode>Main Building</MainBuildingStyledNode>}
             >
-                <TreeNode label={<StyledNode>Exterior</StyledNode>}>
-                    <TreeNode label={<StyledNode>Garden</StyledNode>} />
+                <TreeNode label={<InteriorExteriorStyledNode>Exterior</InteriorExteriorStyledNode>}>
+                    <TreeNode label={<FloorStyledNode>Garden</FloorStyledNode>} />
                 </TreeNode>
-                <TreeNode label={<StyledNode>Interior</StyledNode>}>
-                    <TreeNode label={<StyledNode>Ground Floor</StyledNode>}>
-                        <TreeNode label={<StyledNode>Reception</StyledNode>} />
-                        <TreeNode label={<StyledNode>Concierge</StyledNode>} />
+                <TreeNode label={<InteriorExteriorStyledNode>Interior</InteriorExteriorStyledNode>}>
+                    <TreeNode label={<FloorStyledNode>Ground Floor</FloorStyledNode>}>
+                        <TreeNode label={<OtherStyledNode>Reception</OtherStyledNode>} />
+                        <TreeNode label={<OtherStyledNode>Concierge</OtherStyledNode>} />
                     </TreeNode>
-                    <TreeNode label={<StyledNode>First Floor</StyledNode>}>
-                        <TreeNode label={<StyledNode>Lift Lobby</StyledNode>} />
-                        <TreeNode label={<StyledNode>Office</StyledNode>} />
-                        <TreeNode label={<StyledNode>WC</StyledNode>} />
+                    <TreeNode label={<FloorStyledNode>First Floor</FloorStyledNode>}>
+                        <TreeNode label={<OtherStyledNode>Lift Lobby</OtherStyledNode>} />
+                        <TreeNode label={<OtherStyledNode>Office</OtherStyledNode>} />
+                        <TreeNode label={<OtherStyledNode>WC</OtherStyledNode>} />
                     </TreeNode>
-                    <TreeNode label={<StyledNode>Second Floor</StyledNode>}>
-                        <TreeNode label={<StyledNode>Lift Lobby</StyledNode>} />
-                        <TreeNode label={<StyledNode>Office</StyledNode>} />
-                        <TreeNode label={<StyledNode>WC</StyledNode>} />
+                    <TreeNode label={<FloorStyledNode>Second Floor</FloorStyledNode>}>
+                        <TreeNode label={<OtherStyledNode>Lift Lobby</OtherStyledNode>} />
+                        <TreeNode label={<OtherStyledNode>Office</OtherStyledNode>} />
+                        <TreeNode label={<OtherStyledNode>WC</OtherStyledNode>} />
                     </TreeNode>
                 </TreeNode>
             </Tree>

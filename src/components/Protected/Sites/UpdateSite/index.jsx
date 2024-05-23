@@ -358,7 +358,6 @@ const UpdateSite = ({
                             key={errors?.mapViewUrl?.message}
                           />
                         )}
-                        e
                       </div>
                     </div>
                     <div className="col-md-12">
