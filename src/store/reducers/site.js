@@ -26,6 +26,8 @@ import {
   SET_SITE_INFORMATION,
   SAVE_SITE_AREA_INFORMATION_FAILURE,
   SAVE_SITE_AREA_INFORMATION,
+  GET_SITE_LAYOUT,
+  GET_SITE_LAYOUT_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -34,7 +36,7 @@ const initialState = {
   filterSite: [],
   updateSite: {},
   keyContacts: [],
-  siteInformation:{},
+  siteInformation: {},
   error: "",
   success: "",
   localDetailsSuccess: "",
@@ -45,7 +47,9 @@ const initialState = {
   updateSiteImageFailure: "",
   keyContactsFailure: "",
   currentSiteData: "",
-  updateSiteImageSuccess: ""
+  updateSiteImageSuccess: "",
+  siteLayout: [],
+  siteLayoutFailure: "",
 };
 
 const reducer = (state = initialState, action) => {
@@ -79,7 +83,7 @@ const reducer = (state = initialState, action) => {
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
         updateSite: action.payload?.data,
-        currentSiteData: action.payload
+        currentSiteData: action.payload,
       };
     case GET_SITES_SUCCESS:
       return {
@@ -275,7 +279,7 @@ const reducer = (state = initialState, action) => {
         ...state,
         siteDetailsByFailure: "",
       };
-      case GET_ADDRESS_ON_POST_CODE_SUCCESS:
+    case GET_ADDRESS_ON_POST_CODE_SUCCESS:
       return {
         ...state,
         getAddresOnPostCodeSuccess: action.payload,
@@ -311,6 +315,18 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteareainfo: action.payload,
+      };
+    case GET_SITE_LAYOUT:
+      return {
+        ...state,
+        siteLayoutFailure: "",
+        siteLayout: action.payload,
+      };
+    case GET_SITE_LAYOUT_FAILURE:
+      return {
+        ...state,
+        siteLayout: [],
+        siteLayoutFailure: action.payload,
       };
     default:
       return state;

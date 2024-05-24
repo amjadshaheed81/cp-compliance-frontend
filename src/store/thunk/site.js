@@ -27,6 +27,8 @@ import {
   SET_SITE_INFORMATION_FAILURE,
   SAVE_SITE_AREA_INFORMATION_FAILURE,
   SAVE_SITE_AREA_INFORMATION,
+  GET_SITE_LAYOUT,
+  GET_SITE_LAYOUT_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -409,6 +411,41 @@ export const saveAreaAndOccupancyDetails = (siteId, formData) => {
         type: SAVE_SITE_AREA_INFORMATION_FAILURE,
         payload: "Something went wrong while adding site. Please try again.",
       });
+    }
+  };
+};
+
+
+export const getSiteLayout = (id) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/siteservice/layout/${id}`;
+      const List = await get(url);
+      dispatch({
+        type: GET_SITE_LAYOUT,
+        payload: List,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_SITE_LAYOUT_FAILURE,
+        payload: "Something went wrong while fetching site layout. Please try again.",
+      });
+    }
+  };
+};
+
+export const addSiteLayoutNode = (formData) => {
+  console.log('formData', formData);
+  return async () => {
+    try {
+      const url = "/api/siteservice/createNode";
+      const siteareainfo = await post(url, formData);
+      console.log('siteareainfo', siteareainfo);
+      if(siteareainfo?.status === 200) {
+        getSiteLayout(formData?.siteId);
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 };
