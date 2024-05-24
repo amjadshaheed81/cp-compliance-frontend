@@ -436,13 +436,18 @@ export const getSiteLayout = (id) => {
 
 export const addSiteLayoutNode = (formData) => {
   console.log('formData', formData);
-  return async () => {
+  return async (dispatch) => {
     try {
       const url = "/api/siteservice/createNode";
       const siteareainfo = await post(url, formData);
       console.log('siteareainfo', siteareainfo);
       if(siteareainfo?.status === 200) {
-        getSiteLayout(formData?.siteId);
+        const url = `/api/siteservice/layout/${formData?.siteId}`;
+        const List = await get(url);
+        dispatch({
+          type: GET_SITE_LAYOUT,
+          payload: List,
+        });
       }
     } catch (error) {
       console.error(error);
