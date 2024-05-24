@@ -25,47 +25,29 @@ const Document = () => {
                         id="search"
                         name="search"
                         placeholder="Search for Document"
-                    // onChange={searchSite}
+                    // onChange={searchDocument}
                     />
                 </div>
                 <table class="table table-bordered f-11">
                     <thead class="table-dark">
                         <tr>
-                            <th scope="col">Action</th>
-                            <th scope="col">Owner</th>
-                            <th scope="col">End Date</th>
-                            <th scope="col">Status</th>
+                            <th scope="col">Document Name</th>
+                            <th scope="col">Uploader</th>
+                            <th scope="col">Issue Date</th>
+                            <th scope="col">Expiry Date</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Action A</td>
-                            <td>Joe B</td>
-                            <td>31 Dec 24</td>
+                        <div><i style={{color: '#384BD3'}} class="fas fa-folder fa-2x"></i><span class="p-3">Statutory Documents</span></div>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
                             <td>
-                                <div class="bg-warning text-light rounded-1 p-1" role="alert">
-                                    In Progress
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Action B</td>
-                            <td>Joe B</td>
-                            <td>31 Dec 24</td>
-                            <td>
-                                <div class="bg-warning text-light rounded-1 p-1" role="alert">
-                                    In Progress
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Action B</td>
-                            <td>Joe B</td>
-                            <td>31 Dec 24</td>
-                            <td>
-                                <div class="bg-success text-light rounded-1 p-1" role="alert">
-                                    Completed
-                                </div>
+                            <span style={{color: 'gray'}}><i class="fa fa-eye fa-2x" aria-hidden="true" size="md"></i></span>
                             </td>
                         </tr>
                     </tbody>
