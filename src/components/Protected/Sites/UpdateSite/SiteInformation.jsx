@@ -28,9 +28,8 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
         getValues,
         setValue,
         watch,
-    } = useForm({
-        defaultValues,
-    });
+    } = useForm({});
+    const siteAreaForm = useForm();
     React.useEffect(() => {
         if(updateSite?.id === siteInformation?.data?.siteId) {
             setValue('buildYear', siteInformation.data.buildYear);
@@ -129,17 +128,12 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                     Area & Occupancy
                 </AccordionSummary>
                 <AccordionDetails>
-                    <form class="row" onSubmit={handleSubmit(saveAreaAndOccupancy)}>
+                    <form class="row" onSubmit={siteAreaForm.handleSubmit(saveAreaAndOccupancy)}>
                         <div class="col-md-2">
                             <label htmlFor='totalBuildingArea' name="totalBuildingArea" id="totalBuildingArea">Total Building Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="totalBuildingArea" id="totalBuildingArea" class="form-control"
-                                {...register("totalBuildingArea", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("totalBuildingArea")}
                                 />
                             </div>
                         </div>
@@ -147,12 +141,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='clientOccupiedArea' name="clientOccupiedArea" id="clientOccupiedArea">Client Occupied Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="clientOccupiedArea" id="clientOccupiedArea" class="form-control"
-                                {...register("clientOccupiedArea", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("clientOccupiedArea")}
                                 />
                             </div>
                         </div>
@@ -160,12 +149,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantOccupiedArea' name="tenantOccupiedArea" id="tenantOccupiedArea">Tenant Occupied Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
                                 <input type="tenantOccupiedArea" name="tenantOccupiedArea" id="tenantOccupiedArea" class="form-control"
-                                {...register("tenantOccupiedArea", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("tenantOccupiedArea")}
                                 />
                             </div>
                         </div>
@@ -173,12 +157,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='maxOccupancy' name="maxOccupancy" id="maxOccupancy">Maximum Occupancy(Client)</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="maxOccupancy" id="maxOccupancy" class="form-control" 
-                                {...register("maxOccupancy", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("maxOccupancy")}
                                 />
                             </div>
                         </div>
@@ -186,12 +165,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='meetingClients' name="meetingClients" id="meetingClients">Meeting/Conferences Client</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="meetingClients" id="meetingClients" class="form-control" 
-                                {...register("meetingClients", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("meetingClients")}
                                 />
                             </div>
                         </div>
@@ -199,12 +173,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='numberOfStaff' name="numberOfStaff" id="numberOfStaff">Number Of Staff</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="numberOfStaff" id="numberOfStaff" class="form-control mt-4" 
-                                {...register("numberOfStaff", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("numberOfStaff")}
                                 />
                             </div>
                         </div>
@@ -212,12 +181,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantInOccupation' name="tenantInOccupation" id="tenantInOccupation">Tenants in Occupation</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="tenantInOccupation" id="tenantInOccupation" class="form-control mt-4" 
-                                {...register("tenantInOccupation", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("tenantInOccupation")}
                                 />
                             </div>
                         </div>
@@ -225,12 +189,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantName' name="tenantName" id="tenantName">Name Of Tenant</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="tenantName" id="tenantName" class="form-control mt-4" 
-                                {...register("tenantName", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("tenantName")}
                                 />
                             </div>
                         </div>
@@ -238,12 +197,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='vacantAreaInBuilding' name="vacantAreaInBuilding" id="vacantAreaInBuilding">Vacant Areas in building</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="vacantAreaInBuilding" id="vacantAreaInBuilding" class="form-control" 
-                                {...register("vacantAreaInBuilding", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("vacantAreaInBuilding")}
                                 />
                             </div>
                         </div>
@@ -251,12 +205,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='numOfFloors' name="numOfFloors" id="numOfFloors">Number Of Floors</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="numOfFloors" id="numOfFloors" class="form-control mt-4" 
-                                {...register("numOfFloors", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("numOfFloors")}
                                 />
                             </div>
                         </div>
@@ -264,12 +213,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='carParkSpaceAboveGround' name="carParkSpaceAboveGround" id="carParkSpaceAboveGround">Cark Park Spaces Above Ground</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control" 
-                                {...register("carParkSpaceAboveGround", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("carParkSpaceAboveGround")}
                                 />
                             </div>
                         </div>
@@ -277,12 +221,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='carParkSpaceBelowGround' name="carParkSpaceBelowGround" id="carParkSpaceBelowGround">Cark Park Spaces Below Ground</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="carParkSpaceBelowGround" id="carParkSpaceBelowGround" class="form-control" 
-                                {...register("carParkSpaceBelowGround", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("carParkSpaceBelowGround")}
                                 />
                             </div>
                         </div>
@@ -290,12 +229,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Number Of Basement Levels</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="numOfBasementLevels" id="numOfBasementLevels" class="form-control" 
-                                {...register("numOfBasementLevels", {
-                                    required: {
-                                        value: true,
-                                        message: `${Validation.REQUIRED}`,
-                                    },
-                                })}
+                                {...register("numOfBasementLevels")}
                                 />
                             </div>
                         </div>

@@ -343,7 +343,7 @@ export const handleOnPostCodeSearch = (e) => {
 // };
 export const saveSiteBuildingData = (siteId, formData) => {
   const data = {
-    formData,
+    ...formData,
     siteId,
   };
   return async (dispatch) => {
@@ -368,7 +368,6 @@ export const saveSiteBuildingData = (siteId, formData) => {
 };
 
 export const getSiteInformation = (id) => {
-  console.log('site information id', id);
   return async (dispatch) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
