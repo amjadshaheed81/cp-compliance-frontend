@@ -1,6 +1,8 @@
+import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
 
 const UpdateFloor = ({ siteLayout }) => {
+  const { register } = useForm({});
   const getFloorPlanInputs = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     return list?.map((itm) => (
@@ -8,13 +10,12 @@ const UpdateFloor = ({ siteLayout }) => {
         <td>{itm?.nodeName}</td>
         <td>
           <input
-            // {...register("siteImage")}
+            {...register(`floorImage-${itm?.id}`)}
             className="form-control"
             type="file"
-            name="siteImage"
+            name={`floorImage-${itm?.id}`}
             accept="image/*, application/pdf"
-            id="siteImage"
-            // onChange={handleFileSelect}
+            id={`floorImage-${itm?.id}`}
           />
         </td>
         <td></td>
