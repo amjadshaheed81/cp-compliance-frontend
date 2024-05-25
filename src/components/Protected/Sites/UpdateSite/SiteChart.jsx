@@ -14,35 +14,35 @@ import {
 import { useState } from "react";
 
 const InteriorExteriorStyledNode = styled.div`
-  background: #fff7de;
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #f3a515;
+  background: repeating-linear-gradient(+45deg, #fff7de 2px, #fff7de, transparent 1rem);
 `;
 
 const MainBuildingStyledNode = styled.div`
-  background: #1dca5d0a;
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #1dca5d;
+  background: repeating-linear-gradient(+45deg, #1dca5d0a 2px, #1dca5d0a, transparent 1rem);
 `;
 
 const FloorStyledNode = styled.div`
-  background: #fff5f4;
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #f34040;
+  background: repeating-linear-gradient(+45deg, #fff5f4 2px, #fff5f4, transparent 1rem);
 `;
 
 const OtherStyledNode = styled.div`
-  background: #f0f8ff;
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #3b80f2;
+  background: repeating-linear-gradient(+45deg, #f0f8ff 2px, #f0f8ff, transparent 1rem);
 `;
 
 const SiteChart = ({
