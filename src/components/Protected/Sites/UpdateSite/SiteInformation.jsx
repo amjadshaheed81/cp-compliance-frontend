@@ -12,6 +12,7 @@ import { yesNoOptions } from '../../../../utils/yesNoOptions';
 import { useForm } from 'react-hook-form';
 import { Validation } from '../../../../Constant/Validation';
 import { getSiteInformation, saveSiteBuildingData, saveAreaAndOccupancyDetails } from '../../../../store/thunk/site';
+import SafetySecurity from './SiteInformation/SafetySecurity';
 
 const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation, saveAreaAndOccupancyDetails }) => {
     const defaultValues = {
@@ -248,8 +249,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                     Safety & Security
                 </AccordionSummary>
                 <AccordionDetails>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                    malesuada lacus ex, sit amet blandit leo lobortis eget.
+                    <SafetySecurity />
                 </AccordionDetails>
             </Accordion>
             <Accordion>

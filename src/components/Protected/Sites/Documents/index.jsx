@@ -28,7 +28,7 @@ const Document = () => {
                     // onChange={searchDocument}
                     />
                 </div>
-                <table class="table table-bordered f-11">
+                <table class="table f-11">
                     <thead class="table-dark">
                         <tr>
                             <th scope="col">Document Name</th>
