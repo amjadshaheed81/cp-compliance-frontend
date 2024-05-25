@@ -369,12 +369,16 @@ export const saveSiteBuildingData = (siteId, formData) => {
   };
 };
 
-export const getSiteInformation = (id) => {
+export const getSiteInformation = (id, setValue) => {
   return async (dispatch) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
       const siteInformation = await get(url);
       console.log('site information siteInformation', siteInformation);
+      setValue('buildYear', siteInformation?.buildYear);
+      setValue('buildingUnderClientControl', siteInformation?.buildingUnderClientControl);
+      setValue('canteenInBuilding', siteInformation?.canteenInBuilding);
+      setValue('dedicatedKitchenArea', siteInformation?.dedicatedKitchenArea);
       dispatch({
         type: GET_SITE_INFORMATION,
         payload: siteInformation,

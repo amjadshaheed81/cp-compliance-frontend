@@ -35,12 +35,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
     } = useForm({});
     const siteAreaForm = useForm();
     React.useEffect(() => {
-        if(updateSite?.id === siteInformation?.data?.siteId) {
-            setValue('buildYear', siteInformation.data.buildYear);
-            setValue('buildingUnderClientControl', siteInformation.data.buildingUnderClientControl);
-            setValue('canteenInBuilding', siteInformation.data.canteenInBuilding);
-            setValue('dedicatedKitchenArea', siteInformation.data.dedicatedKitchenArea);
-        }
+        getSiteInformation(updateSite?.id, setValue);
     },[])
     const saveSiteInformation = (data) => {
         saveSiteBuildingData(updateSite?.id, data);
@@ -49,7 +44,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
         console.log('data', data);
         saveAreaAndOccupancyDetails(updateSite?.id, data);
     };
-    console.log('site information', siteInformation.data);
+    console.log('site information', siteInformation);
     return (
         <div>
             <SidebarNew />
