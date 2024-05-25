@@ -77,9 +77,9 @@ const SiteChart = ({
     const mainNode = siteLayout?.filter(
       (itm) => itm?.nodeType === "MasterNode"
     );
-    return (
+    return mainNode?.length > 0 ? (
       <MainBuildingStyledNode>{mainNode?.[0]?.nodeName}</MainBuildingStyledNode>
-    );
+    ) : null;
   };
   const getTreeNodePosition = () => {
     const positionNode = siteLayout?.filter(
@@ -88,7 +88,7 @@ const SiteChart = ({
     const childs = siteLayout?.filter(
       (itm) => itm?.parentNode === positionNode?.[0]?.id
     );
-    return (
+    return positionNode?.length > 0 ? (
       <TreeNode
         label={
           <InteriorExteriorStyledNode>
@@ -102,7 +102,7 @@ const SiteChart = ({
           />
         ))}
       </TreeNode>
-    );
+    ) : null;
   };
   const getOtherStyleNode = (node) => {
     const positionNode = siteLayout?.filter(
@@ -121,7 +121,7 @@ const SiteChart = ({
     const childs = siteLayout?.filter(
       (itm) => itm?.parentNode === positionNode?.[0]?.id
     );
-    return (
+    return positionNode?.length > 0 ? (
       <TreeNode
         label={
           <InteriorExteriorStyledNode>
@@ -130,14 +130,12 @@ const SiteChart = ({
         }
       >
         {childs?.map((itm) => (
-          <TreeNode
-            label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}
-          >
+          <TreeNode label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}>
             {getOtherStyleNode(itm)}
           </TreeNode>
         ))}
       </TreeNode>
-    );
+    ) : null;
   };
   return (
     <>
