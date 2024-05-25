@@ -59,6 +59,7 @@ const SiteChart = ({
     setValue,
   } = useForm({});
   const [parentNodeOptions, setParntNodeOptions] = useState([]);
+  const [floorOptions, setFloorOptions] = useState([]);
   const submitNode = (values) => {
     const data = {
       siteId: updateSite?.id,
@@ -66,7 +67,6 @@ const SiteChart = ({
       nodeType: values?.nodeType,
       parentNode: values?.parentNode,
     };
-    console.log("data", data);
     addSiteLayoutNode(data);
   };
   useEffect(() => {
@@ -88,7 +88,6 @@ const SiteChart = ({
     const childs = siteLayout?.filter(
       (itm) => itm?.parentNode === positionNode?.[0]?.id
     );
-    console.log("childs", childs);
     return (
       <TreeNode
         label={
@@ -105,7 +104,16 @@ const SiteChart = ({
       </TreeNode>
     );
   };
-
+  const getOtherStyleNode = (node) => {
+    const positionNode = siteLayout?.filter(
+      (itm) => itm?.parentNode === node?.id
+    );
+    return positionNode?.map((itm) => (
+      <TreeNode
+        label={<OtherStyledNode>{itm?.nodeName}</OtherStyledNode>}
+      ></TreeNode>
+    ));
+  };
   const getTreeNodePositionInterior = () => {
     const positionNode = siteLayout?.filter(
       (itm) => itm?.nodeType === "position" && itm?.nodeName === "Interior"
@@ -124,7 +132,9 @@ const SiteChart = ({
         {childs?.map((itm) => (
           <TreeNode
             label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}
-          />
+          >
+            {getOtherStyleNode(itm)}
+          </TreeNode>
         ))}
       </TreeNode>
     );
@@ -192,6 +202,7 @@ const SiteChart = ({
               })}
               onChange={(e) => {
                 setValue("nodeType", e.target.value);
+                setFloorOptions([]);
                 if (e.target.value === "position") {
                   const parentNodeId = siteLayout?.filter(
                     (itm) => itm?.nodeType === "MasterNode"
@@ -207,6 +218,10 @@ const SiteChart = ({
                   ]);
                 } else if (e.target.value === "room") {
                   setParntNodeOptions(["Reception", "Concierge", "Lift Lobby"]);
+                  const floors = siteLayout?.filter(
+                    (itm) => itm?.nodeType === "floor"
+                  );
+                  setFloorOptions(floors);
                 }
               }}
             >
@@ -252,6 +267,27 @@ const SiteChart = ({
               ))}
             </select>
           </div>
+          {floorOptions?.length > 0 && (
+            <div className="col-md-3">
+              <select
+                name="floorNode"
+                className="form-control w-75"
+                id="floorNode"
+                {...register("floorNode")}
+                onChange={(e) => {
+                  setValue("floorNode", e.target.value);
+                  setValue("parentNode", e.target.value);
+                }}
+              >
+                <option value="" disabled selected>
+                  Select Floor Node
+                </option>
+                {floorOptions?.map((itm) => (
+                  <option value={itm?.id}>{itm?.nodeName}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="col-md-3">
             <button className="btn btn-primary" type="submit">
               Add Node
