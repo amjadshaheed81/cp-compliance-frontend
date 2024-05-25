@@ -13,6 +13,9 @@ import { useForm } from 'react-hook-form';
 import { Validation } from '../../../../Constant/Validation';
 import { getSiteInformation, saveSiteBuildingData, saveAreaAndOccupancyDetails } from '../../../../store/thunk/site';
 import SafetySecurity from './SiteInformation/SafetySecurity';
+import UtilityEnergy from './SiteInformation/UtilityEnergy';
+import LiftsStairways from './SiteInformation/LiftsStairways';
+import Landscape from './SiteInformation/Landscape';
 
 const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation, saveAreaAndOccupancyDetails }) => {
     const defaultValues = {
@@ -261,8 +264,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                     Utility & Energy
                 </AccordionSummary>
                 <AccordionDetails>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                    malesuada lacus ex, sit amet blandit leo lobortis eget.
+                    <UtilityEnergy />
                 </AccordionDetails>
             </Accordion>
             <Accordion>
@@ -274,8 +276,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                     Lifts & Stairways
                 </AccordionSummary>
                 <AccordionDetails>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                    malesuada lacus ex, sit amet blandit leo lobortis eget.
+                    <LiftsStairways />
                 </AccordionDetails>
             </Accordion>
             <Accordion>
@@ -287,8 +288,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                     Landscape
                 </AccordionSummary>
                 <AccordionDetails>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                    malesuada lacus ex, sit amet blandit leo lobortis eget.
+                    <Landscape />
                 </AccordionDetails>
             </Accordion>
         </div>
