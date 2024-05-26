@@ -11,13 +11,13 @@ import { yearOptions } from '../../../../utils/yearOptions';
 import { yesNoOptions } from '../../../../utils/yesNoOptions';
 import { useForm } from 'react-hook-form';
 import { Validation } from '../../../../Constant/Validation';
-import { getSiteInformation, saveSiteBuildingData, saveAreaAndOccupancyDetails } from '../../../../store/thunk/site';
+import { getSiteInformation, saveSiteBuildingData, saveAreaAndOccupancyDetails, getAreaAndOccupancy } from '../../../../store/thunk/site';
 import SafetySecurity from './SiteInformation/SafetySecurity';
 import UtilityEnergy from './SiteInformation/UtilityEnergy';
 import LiftsStairways from './SiteInformation/LiftsStairways';
 import Landscape from './SiteInformation/Landscape';
 
-const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation, saveAreaAndOccupancyDetails }) => {
+const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, getSiteInformation, saveAreaAndOccupancyDetails, getAreaAndOccupancy }) => {
     const defaultValues = {
         buildYear: "",
         buildingUnderClientControl: '',
@@ -36,12 +36,12 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
     const siteAreaForm = useForm();
     React.useEffect(() => {
         getSiteInformation(updateSite?.id, setValue);
+        getAreaAndOccupancy(updateSite?.id, siteAreaForm.setValue);
     },[])
     const saveSiteInformation = (data) => {
         saveSiteBuildingData(updateSite?.id, data);
     };
     const saveAreaAndOccupancy = (data) => {
-        console.log('data', data);
         saveAreaAndOccupancyDetails(updateSite?.id, data);
     };
     console.log('site information', siteInformation);
@@ -132,7 +132,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='totalBuildingArea' name="totalBuildingArea" id="totalBuildingArea">Total Building Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="totalBuildingArea" id="totalBuildingArea" class="form-control"
-                                {...register("totalBuildingArea")}
+                                {...siteAreaForm.register("totalBuildingArea")}
                                 />
                             </div>
                         </div>
@@ -140,7 +140,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='clientOccupiedArea' name="clientOccupiedArea" id="clientOccupiedArea">Client Occupied Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="clientOccupiedArea" id="clientOccupiedArea" class="form-control"
-                                {...register("clientOccupiedArea")}
+                                {...siteAreaForm.register("clientOccupiedArea")}
                                 />
                             </div>
                         </div>
@@ -148,7 +148,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantOccupiedArea' name="tenantOccupiedArea" id="tenantOccupiedArea">Tenant Occupied Area(Sq.m)</label>
                             <div class="pt-2 pb-2">
                                 <input type="tenantOccupiedArea" name="tenantOccupiedArea" id="tenantOccupiedArea" class="form-control"
-                                {...register("tenantOccupiedArea")}
+                                {...siteAreaForm.register("tenantOccupiedArea")}
                                 />
                             </div>
                         </div>
@@ -156,7 +156,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='maxOccupancy' name="maxOccupancy" id="maxOccupancy">Maximum Occupancy(Client)</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="maxOccupancy" id="maxOccupancy" class="form-control" 
-                                {...register("maxOccupancy")}
+                                {...siteAreaForm.register("maxOccupancy")}
                                 />
                             </div>
                         </div>
@@ -164,7 +164,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='meetingClients' name="meetingClients" id="meetingClients">Meeting/Conferences Client</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="meetingClients" id="meetingClients" class="form-control" 
-                                {...register("meetingClients")}
+                                {...siteAreaForm.register("meetingClients")}
                                 />
                             </div>
                         </div>
@@ -172,7 +172,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='numberOfStaff' name="numberOfStaff" id="numberOfStaff">Number Of Staff</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="numberOfStaff" id="numberOfStaff" class="form-control mt-4" 
-                                {...register("numberOfStaff")}
+                                {...siteAreaForm.register("numberOfStaff")}
                                 />
                             </div>
                         </div>
@@ -180,7 +180,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantInOccupation' name="tenantInOccupation" id="tenantInOccupation">Tenants in Occupation</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="tenantInOccupation" id="tenantInOccupation" class="form-control mt-4" 
-                                {...register("tenantInOccupation")}
+                                {...siteAreaForm.register("tenantInOccupation")}
                                 />
                             </div>
                         </div>
@@ -188,7 +188,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantName' name="tenantName" id="tenantName">Name Of Tenant</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="tenantName" id="tenantName" class="form-control mt-4" 
-                                {...register("tenantName")}
+                                {...siteAreaForm.register("tenantName")}
                                 />
                             </div>
                         </div>
@@ -196,7 +196,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='vacantAreaInBuilding' name="vacantAreaInBuilding" id="vacantAreaInBuilding">Vacant Areas in building</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="vacantAreaInBuilding" id="vacantAreaInBuilding" class="form-control" 
-                                {...register("vacantAreaInBuilding")}
+                                {...siteAreaForm.register("vacantAreaInBuilding")}
                                 />
                             </div>
                         </div>
@@ -204,7 +204,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='numOfFloors' name="numOfFloors" id="numOfFloors">Number Of Floors</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="numOfFloors" id="numOfFloors" class="form-control mt-4" 
-                                {...register("numOfFloors")}
+                                {...siteAreaForm.register("numOfFloors")}
                                 />
                             </div>
                         </div>
@@ -212,7 +212,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='carParkSpaceAboveGround' name="carParkSpaceAboveGround" id="carParkSpaceAboveGround">Cark Park Spaces Above Ground</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control" 
-                                {...register("carParkSpaceAboveGround")}
+                                {...siteAreaForm.register("carParkSpaceAboveGround")}
                                 />
                             </div>
                         </div>
@@ -220,7 +220,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='carParkSpaceBelowGround' name="carParkSpaceBelowGround" id="carParkSpaceBelowGround">Cark Park Spaces Below Ground</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="carParkSpaceBelowGround" id="carParkSpaceBelowGround" class="form-control" 
-                                {...register("carParkSpaceBelowGround")}
+                                {...siteAreaForm.register("carParkSpaceBelowGround")}
                                 />
                             </div>
                         </div>
@@ -228,7 +228,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Number Of Basement Levels</label>
                             <div class="pt-2 pb-2">
                                 <input type="text" name="numOfBasementLevels" id="numOfBasementLevels" class="form-control" 
-                                {...register("numOfBasementLevels")}
+                                {...siteAreaForm.register("numOfBasementLevels")}
                                 />
                             </div>
                         </div>
@@ -300,4 +300,5 @@ export default connect(mapStateToProps, {
     saveSiteBuildingData,
     getSiteInformation,
     saveAreaAndOccupancyDetails,
+    getAreaAndOccupancy,
 })(SiteInformation);
