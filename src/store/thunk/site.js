@@ -33,6 +33,8 @@ import {
   GET_SITE_AREA_INFORMATION_FAILURE,
   SAVE_SITE_SECURITY_INFORMATION,
   SAVE_SITE_SECURITY_INFORMATION_FAILURE,
+  GET_SITE_SECURITY_INFORMATION_FAILURE,
+  GET_SITE_SECURITY_INFORMATION,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -483,27 +485,34 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
   return async (dispatch) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteSafety`;
-      const siteAreaInformation = await get(url);
-      setValue('totalBuildingArea', siteAreaInformation?.totalBuildingArea);
-      setValue('clientOccupiedArea', siteAreaInformation?.clientOccupiedArea);
-      setValue('tenantOccupiedArea', siteAreaInformation?.tenantOccupiedArea);
-      setValue('maxOccupancy', siteAreaInformation?.maxOccupancy);
-      setValue('meetingClients', siteAreaInformation?.meetingClients);
-      setValue('numberOfStaff', siteAreaInformation?.numberOfStaff);
-      setValue('tenantInOccupation', siteAreaInformation?.tenantInOccupation);
-      setValue('tenantName', siteAreaInformation?.tenantName);
-      setValue('vacantAreaInBuilding', siteAreaInformation?.vacantAreaInBuilding);
-      setValue('numOfFloors', siteAreaInformation?.numOfFloors);
-      setValue('carParkSpaceAboveGround', siteAreaInformation?.carParkSpaceAboveGround);
-      setValue('carParkSpaceBelowGround', siteAreaInformation?.carParkSpaceBelowGround);
-      setValue('numOfBasementLevels', siteAreaInformation?.numOfBasementLevels);
+      const siteSafetyInformation = await get(url);
+      setValue('extFabric', siteSafetyInformation?.extFabric);
+      setValue('extMetallicFireEscapeStaircases', siteSafetyInformation?.extMetallicFireEscapeStaircases);
+      setValue('extTimberFireEscapeStaircases', siteSafetyInformation?.extTimberFireEscapeStaircases);
+      setValue('verticalLadder', siteSafetyInformation?.verticalLadder);
+      setValue('confinedSpaces', siteSafetyInformation?.confinedSpaces);
+      setValue('accessibleUnguardedRoofAreas', siteSafetyInformation?.accessibleUnguardedRoofAreas);
+      setValue('fragileRoof', siteSafetyInformation?.fragileRoof);
+      setValue('lightingConductoreInstalltion', siteSafetyInformation?.lightingConductoreInstalltion);
+      setValue('fireAlarmSystem', siteSafetyInformation?.fireAlarmSystem);
+      setValue('firePanelLocation', siteSafetyInformation?.firePanelLocation);
+      setValue('lpgStorageOnSite', siteSafetyInformation?.lpgStorageOnSite);
+      setValue('lpgBulkStorageOnSite', siteSafetyInformation?.lpgBulkStorageOnSite);
+      setValue('hoseReels', siteSafetyInformation?.hoseReels);
+      setValue('securityGuardEmployed', siteSafetyInformation?.securityGuardEmployed);
+      setValue('internalCCTV', siteSafetyInformation?.internalCCTV);
+      setValue('externalCCTV', siteSafetyInformation?.externalCCTV);
+      setValue('automaticBarrier', siteSafetyInformation?.automaticBarrier);
+      setValue('automaticGatesSliding', siteSafetyInformation?.automaticGatesSliding);
+      setValue('automaticGatesHinged', siteSafetyInformation?.automaticGatesHinged);
+      setValue('manualSwingGates', siteSafetyInformation?.manualSwingGates);
       dispatch({
-        type: GET_SITE_AREA_INFORMATION,
-        payload: siteAreaInformation,
+        type: GET_SITE_SECURITY_INFORMATION,
+        payload: siteSafetyInformation,
       });
     } catch (error) {
       dispatch({
-        type: GET_SITE_AREA_INFORMATION_FAILURE,
+        type: GET_SITE_SECURITY_INFORMATION_FAILURE,
         payload: "Something went wrong while fetching key contacts. Please try again.",
       });
     }

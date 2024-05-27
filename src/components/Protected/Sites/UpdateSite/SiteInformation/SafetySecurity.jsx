@@ -2,9 +2,9 @@ import React from 'react';
 import { connect } from "react-redux";
 import { useForm } from 'react-hook-form';
 import { yesNoOptions } from '../../../../../utils/yesNoOptions';
-import { saveSafetyAndSecurityDetails } from '../../../../../store/thunk/site';
+import { getSafetyAndSecurityDetails, saveSafetyAndSecurityDetails } from '../../../../../store/thunk/site';
 
-const SafetySecurity = ({ updateSite, saveSafetyAndSecurityDetails }) => {
+const SafetySecurity = ({ updateSite, saveSafetyAndSecurityDetails, getSafetyAndSecurityDetails }) => {
     const {
         register,
         handleSubmit,
@@ -14,9 +14,13 @@ const SafetySecurity = ({ updateSite, saveSafetyAndSecurityDetails }) => {
         setValue,
         watch,
     } = useForm({});
+    console.log('update site ',updateSite);
+    React.useEffect(() => {
+        getSafetyAndSecurityDetails(updateSite?.siteId,setValue);
+    },[])
     const saveSafetyAndSecurity = (data) => {
         console.log('getSafetyAndSecurity', data);
-        saveSafetyAndSecurityDetails(updateSite?.id, data);
+        saveSafetyAndSecurityDetails(updateSite?.siteId, data);
     };
     return (
         <div class="container">
@@ -256,4 +260,5 @@ const mapStateToProps = (state) => ({
 });
 export default connect(mapStateToProps, {
     saveSafetyAndSecurityDetails,
+    getSafetyAndSecurityDetails,
 })(SafetySecurity);
