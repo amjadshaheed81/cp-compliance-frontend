@@ -35,14 +35,14 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
     } = useForm({});
     const siteAreaForm = useForm();
     React.useEffect(() => {
-        getSiteInformation(updateSite?.id, setValue);
-        getAreaAndOccupancy(updateSite?.id, siteAreaForm.setValue);
+        getSiteInformation(updateSite?.siteId, setValue);
+        getAreaAndOccupancy(updateSite?.siteId, siteAreaForm.setValue);
     },[])
     const saveSiteInformation = (data) => {
-        saveSiteBuildingData(updateSite?.id, data);
+        saveSiteBuildingData(updateSite?.siteId, data);
     };
     const saveAreaAndOccupancy = (data) => {
-        saveAreaAndOccupancyDetails(updateSite?.id, data);
+        saveAreaAndOccupancyDetails(updateSite?.siteId, data);
     };
     console.log('site information', siteInformation);
     return (

@@ -65,7 +65,7 @@ const AddSite = ({
     reset(defaultValues);
   };
   const handleFileSelect = async (event) => {
-    let siteId = updateSite?.id;
+    let siteId = updateSite?.siteId;
     updateSiteImage(event, siteId);
   };
   const handleOnSearch = async (event) => {

@@ -55,10 +55,10 @@ const LocalDetails = ({
 
   const submitLocalDetails = (data) => {
     console.log("data", data);
-    updateLocalDetails({ siteId: updateSite?.id, ...data });
+    updateLocalDetails({ siteId: updateSite?.siteId, ...data });
   };
   const submitOpeningTiming = (data) => {
-    updateTimings({ id: updateSite?.id, ...data });
+    updateTimings({ siteId: updateSite?.siteId, ...data });
   };
   return (
     <>

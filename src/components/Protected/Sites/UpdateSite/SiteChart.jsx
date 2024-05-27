@@ -62,7 +62,7 @@ const SiteChart = ({
   const [floorOptions, setFloorOptions] = useState([]);
   const submitNode = (values) => {
     const data = {
-      siteId: updateSite?.id,
+      siteId: updateSite?.siteId,
       nodeName: values?.typeOfNode,
       nodeType: values?.nodeType,
       parentNode: values?.parentNode,
@@ -70,7 +70,7 @@ const SiteChart = ({
     addSiteLayoutNode(data);
   };
   useEffect(() => {
-    getSiteLayout(updateSite?.id);
+    getSiteLayout(updateSite?.siteId);
   }, []);
 
   const getMainBuilding = () => {

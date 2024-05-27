@@ -26,7 +26,7 @@ const KeyContacts = ({
   const [selectedItem, setSelectedItem] = useState("");
 
   useEffect(() => {
-    getKeyContact(updateSite?.id);
+    getKeyContact(updateSite?.siteId);
   }, []);
   const submitKeyContact = (data) => {
     console.log(data);
@@ -34,20 +34,20 @@ const KeyContacts = ({
   const deleteKeyContactClick = async (itm) => {
     const res = await deleteKeyContact(itm?.id);
     if (res === "Success") {
-      getKeyContact(updateSite?.id);
+      getKeyContact(updateSite?.siteId);
     }
   };
   const addKeyContactClick = () => {
     const data = {
       id: "-1",
-      siteId: updateSite?.id,
+      siteId: updateSite?.siteId,
       contactName: getValues("contactName"),
       phone: getValues("phone"),
       email: getValues("email"),
       actionManager: getValues("actionManager"),
     };
     const formData = [...keyContacts, {...data}];
-    addKeyContact(formData, updateSite?.id);
+    addKeyContact(formData, updateSite?.siteId);
     reset({
       contactName: '',
       phone: '',

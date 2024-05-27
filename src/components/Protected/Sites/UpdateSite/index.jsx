@@ -74,12 +74,12 @@ const UpdateSite = ({
     reset(data);
   };
   const handleFileSelect = async (event) => {
-    let siteId = updateSite?.id;
+    let siteId = updateSite?.siteId;
     const res = await updateSiteImage(event, siteId);
     setValue('siteImage', '');
   };
   const handleDeleteSiteImage = async (event) => {
-    let siteId = updateSite?.id;
+    let siteId = updateSite?.siteId;
     const res = await deleteSiteImage(siteId);
     if(res === 'Success') {
       getSiteById(siteId);
