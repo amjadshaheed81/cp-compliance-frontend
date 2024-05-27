@@ -1,8 +1,10 @@
-import React from 'react'
+import React from 'react';
+import { connect } from "react-redux";
 import { useForm } from 'react-hook-form';
 import { yesNoOptions } from '../../../../../utils/yesNoOptions';
+import { saveSafetyAndSecurityDetails } from '../../../../../store/thunk/site';
 
-const SafetySecurity = () => {
+const SafetySecurity = ({ updateSite, saveSafetyAndSecurityDetails }) => {
     const {
         register,
         handleSubmit,
@@ -12,238 +14,246 @@ const SafetySecurity = () => {
         setValue,
         watch,
     } = useForm({});
-    const saveAreaAndOccupancy = (data) => {
-        console.log('saveAreaAndOccupancy', data);
+    const saveSafetyAndSecurity = (data) => {
+        console.log('getSafetyAndSecurity', data);
+        saveSafetyAndSecurityDetails(updateSite?.id, data);
     };
     return (
         <div class="container">
-            <form class="d-flex flex-wrap gap-3" onSubmit={handleSubmit(saveAreaAndOccupancy)}>
+            <form class="d-flex flex-wrap gap-3" onSubmit={handleSubmit(saveSafetyAndSecurity)}>
                 <div>
-                    <label htmlFor='totalBuildingArea' name="totalBuildingArea" id="totalBuildingArea">External Fabric</label>
+                    <label htmlFor='extFabric' name="extFabric" id="extFabric">External Fabric</label>
                     <div>
-                        <input type="text" name="totalBuildingArea" id="totalBuildingArea" class="form-control"
-                            {...register("totalBuildingArea")}
+                        <input type="text" name="extFabric" id="extFabric" class="form-control"
+                            {...register("extFabric")}
                         />
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='clientOccupiedArea' name="clientOccupiedArea" id="clientOccupiedArea">External Metallic Fire Escape Staircases</label>
+                    <label htmlFor='extMetallicFireEscapeStaircases' name="extMetallicFireEscapeStaircases" id="extMetallicFireEscapeStaircases">External Metallic Fire Escape Staircases</label>
                     <div>
-                        <input type="number" name="clientOccupiedArea" id="clientOccupiedArea" class="form-control"
-                            {...register("clientOccupiedArea")}
+                        <input type="number" name="extMetallicFireEscapeStaircases" id="extMetallicFireEscapeStaircases" class="form-control"
+                            {...register("extMetallicFireEscapeStaircases")}
                         />
                     </div>
                 </div>
                 <div >
-                    <label htmlFor='tenantOccupiedArea' name="tenantOccupiedArea" id="tenantOccupiedArea">External Timber Fire Escape Staircases</label>
+                    <label htmlFor='extTimberFireEscapeStaircases' name="extTimberFireEscapeStaircases" id="extTimberFireEscapeStaircases">External Timber Fire Escape Staircases</label>
                     <div >
-                        <input type="number" name="tenantOccupiedArea" id="tenantOccupiedArea" class="form-control"
-                            {...register("tenantOccupiedArea")}
+                        <input type="number" name="extTimberFireEscapeStaircases" id="extTimberFireEscapeStaircases" class="form-control"
+                            {...register("extTimberFireEscapeStaircases")}
                         />
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='maxOccupancy' name="maxOccupancy" id="maxOccupancy">Vertical Ladder</label>
+                    <label htmlFor='verticalLadder' name="verticalLadder" id="verticalLadder">Vertical Ladder</label>
                     <div>
-                        <input type="number" name="maxOccupancy" id="maxOccupancy" class="form-control"
-                            {...register("maxOccupancy")}
+                        <input type="number" name="verticalLadder" id="verticalLadder" class="form-control"
+                            {...register("verticalLadder")}
                         />
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='meetingClients' name="meetingClients" id="meetingClients">Confined Spaces</label>
+                    <label htmlFor='confinedSpaces' name="confinedSpaces" id="confinedSpaces">Confined Spaces</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="confinedSpaces" id="confinedSpaces" class="form-control"
+                            {...register("confinedSpaces")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numberOfStaff' name="numberOfStaff" id="numberOfStaff">Accessible Unguarded Roof Areas</label>
+                    <label htmlFor='accessibleUnguardedRoofAreas' name="accessibleUnguardedRoofAreas" id="accessibleUnguardedRoofAreas">Accessible Unguarded Roof Areas</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="accessibleUnguardedRoofAreas" id="accessibleUnguardedRoofAreas" class="form-control"
+                            {...register("accessibleUnguardedRoofAreas")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='tenantInOccupation' name="tenantInOccupation" id="tenantInOccupation">Fragile Roofs or Surfaces</label>
+                    <label htmlFor='fragileRoof' name="fragileRoof" id="fragileRoof">Fragile Roofs or Surfaces</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="fragileRoof" id="fragileRoof" class="form-control"
+                            {...register("fragileRoof")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='tenantName' name="tenantName" id="tenantName">Lighting Conductor Installation</label>
+                    <label htmlFor='lightingConductoreInstalltion' name="lightingConductoreInstalltion" id="lightingConductoreInstalltion">Lighting Conductor Installation</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="lightingConductoreInstalltion" id="lightingConductoreInstalltion" class="form-control"
+                            {...register("lightingConductoreInstalltion")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='vacantAreaInBuilding' name="vacantAreaInBuilding" id="vacantAreaInBuilding">Fire Alarm/Detection System</label>
+                    <label htmlFor='fireAlarmSystem' name="fireAlarmSystem" id="fireAlarmSystem">Fire Alarm/Detection System</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="fireAlarmSystem" id="fireAlarmSystem" class="form-control"
+                            {...register("fireAlarmSystem")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfFloors' name="numOfFloors" id="numOfFloors">Fire Panel Location</label>
+                    <label htmlFor='firePanelLocation' name="firePanelLocation" id="firePanelLocation">Fire Panel Location</label>
                     <div>
-                        <input type="text" name="numOfFloors" id="numOfFloors" class="form-control"
-                            {...register("numOfFloors")}
+                        <input type="text" name="firePanelLocation" id="firePanelLocation" class="form-control"
+                            {...register("firePanelLocation")}
                         />
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='carParkSpaceAboveGround' name="carParkSpaceAboveGround" id="carParkSpaceAboveGround">Oil/Petrol Storage on Site</label>
+                    <label htmlFor='oilStorageOnSite' name="oilStorageOnSite" id="oilStorageOnSite">Oil/Petrol Storage on Site</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="oilStorageOnSite" id="oilStorageOnSite" class="form-control"
+                            {...register("oilStorageOnSite")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='carParkSpaceBelowGround' name="carParkSpaceBelowGround" id="carParkSpaceBelowGround">LPG Storage on Site</label>
+                    <label htmlFor='lpgStorageOnSite' name="lpgStorageOnSite" id="lpgStorageOnSite">LPG Storage on Site</label>
                     <div>
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="lpgStorageOnSite" id="lpgStorageOnSite" class="form-control"
+                            {...register("lpgStorageOnSite")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">LPG Bulk Storage on Site</label>
+                    <label htmlFor='lpgBulkStorageOnSite' name="lpgBulkStorageOnSite" id="lpgBulkStorageOnSite">LPG Bulk Storage on Site</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="lpgBulkStorageOnSite" id="lpgBulkStorageOnSite" class="form-control"
+                            {...register("lpgBulkStorageOnSite")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">LPG Cylinder Storage on Site</label>
+                    <label htmlFor='sprinklerSystem' name="sprinklerSystem" id="sprinklerSystem">LPG Cylinder Storage on Site</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="sprinklerSystem" id="sprinklerSystem" class="form-control"
+                            {...register("sprinklerSystem")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Sprinkler System</label>
+                    <label htmlFor='sprinklerSystem' name="sprinklerSystem" id="sprinklerSystem">Sprinkler System</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="sprinklerSystem" id="sprinklerSystem" class="form-control"
+                            {...register("sprinklerSystem")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Hose Reels</label>
+                    <label htmlFor='hoseReels' name="hoseReels" id="hoseReels">Hose Reels</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="hoseReels" id="hoseReels" class="form-control"
+                            {...register("hoseReels")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Are Security Guards Employed</label>
+                    <label htmlFor='securityGuardEmployed' name="securityGuardEmployed" id="securityGuardEmployed">Are Security Guards Employed</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="securityGuardEmployed" id="securityGuardEmployed" class="form-control"
+                            {...register("securityGuardEmployed")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Internal CCTV</label>
+                    <label htmlFor='internalCCTV' name="internalCCTV" id="internalCCTV">Internal CCTV</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="internalCCTV" id="internalCCTV" class="form-control"
+                            {...register("internalCCTV")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">External CCTV</label>
+                    <label htmlFor='externalCCTV' name="externalCCTV" id="externalCCTV">External CCTV</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="externalCCTV" id="externalCCTV" class="form-control"
+                            {...register("externalCCTV")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Automatic Barrier</label>
+                    <label htmlFor='automaticBarrier' name="automaticBarrier" id="automaticBarrier">Automatic Barrier</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="automaticBarrier" id="automaticBarrier" class="form-control"
+                            {...register("automaticBarrier")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Automatic Gates (Sliding)</label>
+                    <label htmlFor='automaticGatesSliding' name="automaticGatesSliding" id="automaticGatesSliding">Automatic Gates (Sliding)</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="automaticGatesSliding" id="automaticGatesSliding" class="form-control"
+                            {...register("automaticGatesSliding")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Automatic Gates (Hinged)</label>
+                    <label htmlFor='automaticGatesHinged' name="automaticGatesHinged" id="automaticGatesHinged">Automatic Gates (Hinged)</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="automaticGatesHinged" id="automaticGatesHinged" class="form-control"
+                            {...register("automaticGatesHinged")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Manual Swing Gates</label>
+                    <label htmlFor='manualSwingGates' name="manualSwingGates" id="manualSwingGates">Manual Swing Gates</label>
                     <div >
-                        <select type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" class="form-control"
-                            {...register("carParkSpaceAboveGround")}
+                        <select type="text" name="manualSwingGates" id="manualSwingGates" class="form-control"
+                            {...register("manualSwingGates")}
                         >
                             {yesNoOptions.map((itm) => <option value={itm.value}>{itm.label}</option>)}
                         </select>
                     </div>
+                </div>
+                <div>
+                    <button class="btn btn-primary float-end m-3">Save</button>
                 </div>
             </form>
-            <div>
-                <button class="btn btn-primary float-end m-3">Save</button>
-            </div>
         </div>
     )
 }
 
-export default SafetySecurity
+const mapStateToProps = (state) => ({
+    updateSite: state.site.updateSite,
+    success: state.site.updateSuccess,
+    error: state.site.updateError,
+});
+export default connect(mapStateToProps, {
+    saveSafetyAndSecurityDetails,
+})(SafetySecurity);

@@ -30,6 +30,8 @@ import {
   GET_SITE_LAYOUT_FAILURE,
   GET_SITE_AREA_INFORMATION_FAILURE,
   GET_SITE_AREA_INFORMATION,
+  SAVE_SITE_SECURITY_INFORMATION_FAILURE,
+  SAVE_SITE_SECURITY_INFORMATION,
 } from "./../actionTypes";
 
 const initialState = {
@@ -327,6 +329,16 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteAreaInformation: "Something went wrong while fetching key contacts. Please try again.",
+      };
+      case SAVE_SITE_SECURITY_INFORMATION:
+      return {
+        ...state,
+        siteSecurityInfo: action.payload,
+      };
+  case SAVE_SITE_SECURITY_INFORMATION_FAILURE:
+      return {
+        ...state,
+        siteSecurityInfo: "Something went wrong while fetching key contacts. Please try again.",
       };
     case GET_SITE_LAYOUT:
       return {

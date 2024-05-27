@@ -31,6 +31,8 @@ import {
   GET_SITE_LAYOUT_FAILURE,
   GET_SITE_AREA_INFORMATION,
   GET_SITE_AREA_INFORMATION_FAILURE,
+  SAVE_SITE_SECURITY_INFORMATION,
+  SAVE_SITE_SECURITY_INFORMATION_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -424,6 +426,63 @@ export const getAreaAndOccupancy = (id, setValue) => {
   return async (dispatch) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteArea`;
+      const siteAreaInformation = await get(url);
+      setValue('totalBuildingArea', siteAreaInformation?.totalBuildingArea);
+      setValue('clientOccupiedArea', siteAreaInformation?.clientOccupiedArea);
+      setValue('tenantOccupiedArea', siteAreaInformation?.tenantOccupiedArea);
+      setValue('maxOccupancy', siteAreaInformation?.maxOccupancy);
+      setValue('meetingClients', siteAreaInformation?.meetingClients);
+      setValue('numberOfStaff', siteAreaInformation?.numberOfStaff);
+      setValue('tenantInOccupation', siteAreaInformation?.tenantInOccupation);
+      setValue('tenantName', siteAreaInformation?.tenantName);
+      setValue('vacantAreaInBuilding', siteAreaInformation?.vacantAreaInBuilding);
+      setValue('numOfFloors', siteAreaInformation?.numOfFloors);
+      setValue('carParkSpaceAboveGround', siteAreaInformation?.carParkSpaceAboveGround);
+      setValue('carParkSpaceBelowGround', siteAreaInformation?.carParkSpaceBelowGround);
+      setValue('numOfBasementLevels', siteAreaInformation?.numOfBasementLevels);
+      dispatch({
+        type: GET_SITE_AREA_INFORMATION,
+        payload: siteAreaInformation,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_SITE_AREA_INFORMATION_FAILURE,
+        payload: "Something went wrong while fetching key contacts. Please try again.",
+      });
+    }
+  };
+};
+
+export const saveSafetyAndSecurityDetails = (siteId, formData) => {
+  const data = {
+    ...formData,
+    siteId,
+  };
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/sitesecurityinfo";
+      const siteSecurityInfo = await post(url, data);
+      if(siteSecurityInfo?.status === 200) {
+        // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        // const siteInformation = await get(url);
+        dispatch({
+          type: SAVE_SITE_SECURITY_INFORMATION,
+          payload: siteSecurityInfo,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_SITE_SECURITY_INFORMATION_FAILURE,
+        payload: "Something went wrong while adding site. Please try again.",
+      });
+    }
+  };
+};
+
+export const getSafetyAndSecurityDetails = (id, setValue) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/siteservice/siteinfo/${id}?q=siteSafety`;
       const siteAreaInformation = await get(url);
       setValue('totalBuildingArea', siteAreaInformation?.totalBuildingArea);
       setValue('clientOccupiedArea', siteAreaInformation?.clientOccupiedArea);
