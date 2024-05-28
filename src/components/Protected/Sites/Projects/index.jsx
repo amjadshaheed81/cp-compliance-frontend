@@ -1,11 +1,8 @@
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import TabPanel from "../../../common/TabPanel/TabPanel";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Box from "@mui/material/Box";
 import Contractors from "./Contractors";
+import MandatoryFolders from "./MandatoryFolders";
 
 const Projects = () => {
   return (
@@ -117,36 +114,24 @@ const Projects = () => {
                 />
               </div>
             </div>
+            <MandatoryFolders />
             <div className="row mb-2" style={{ height: "auto" }}>
-              <div className="col-md-3">
-                <p>
-                  <strong>Add Mandatory Folders</strong>
-                </p>
-                <div>
-                  <button
-                    className="btn btn-sm btn-light text-primary w-100"
-                    // onClick={() => goTo("/add-site")}
-                  >
-                    <i className="fas fa-plus"></i>&nbsp; Select Folder
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="row mb-2" style={{ height: "auto" }}>
-              <div className="col-md-3">
-                <p>
-                  <strong>Add Contractor</strong>
-                </p>
-                <div>
-                  <button
-                    className="btn btn-sm btn-light text-primary w-100 mb-2"
-                    // onClick={() => goTo("/add-site")}
-                  >
-                    <i className="fas fa-plus"></i>&nbsp;Add
-                  </button>
-                </div>
-              </div>
               <Contractors />
+              <div className="col-md-12">
+                <div class="float-end">
+                  <button type="button" class="btn btn-light mb-3 mr-4">
+                    Cancel
+                  </button>
+                  &nbsp; &nbsp;
+                  <button type="button" class="btn btn-light mb-3 mr-4">
+                    Delete
+                  </button>
+                  &nbsp; &nbsp;
+                  <button type="submit" class="btn btn-primary mb-3 mr-4">
+                    Save
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

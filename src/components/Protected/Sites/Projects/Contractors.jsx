@@ -1,10 +1,31 @@
 // components/Login/LoginForm.js
 import React, { Fragment, useState } from "react";
 import { connect } from "react-redux";
+import { Box, Modal, Typography } from "@mui/material";
 
 const Contractors = ({}) => {
+  const [open, setOpen] = useState(false);
+  const handleOpen = () => {
+    setOpen(!open);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
   return (
     <Fragment>
+      <div className="col-md-3">
+        <p>
+          <strong>Add Contractor</strong>
+        </p>
+        <div>
+          <button
+            className="btn btn-sm btn-light text-primary w-100 mb-2"
+            onClick={() => handleOpen()}
+          >
+            <i className="fas fa-plus"></i>&nbsp;Add
+          </button>
+        </div>
+      </div>
       <div>
         <table class="table table-bordered f-11">
           <thead class="table-dark">
@@ -47,6 +68,21 @@ const Contractors = ({}) => {
           </tbody>
         </table>
       </div>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box>
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Text in a modal
+          </Typography>
+          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
+          </Typography>
+        </Box>
+      </Modal>
     </Fragment>
   );
 };
