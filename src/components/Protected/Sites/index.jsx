@@ -125,7 +125,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                 <div class="col">
                   <select
                     name="city"
-                    className="form-control"
+                    className="form-control form-select"
                     id="city"
                     onChange={searchSitesWithCity}
                   >
@@ -136,7 +136,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                 <div class="col">
                   <select
                     name="area"
-                    className="form-control"
+                    className="form-control form-select"
                     id="area"
                     onChange={searchSitesWithArea}
                   >
@@ -147,7 +147,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                 <div class="col">
                   <select
                     name="status"
-                    className="form-control"
+                    className="form-control form-select"
                     id="status"
                     value={selectedItem}
                     onChange={searchSitesWithStatus}

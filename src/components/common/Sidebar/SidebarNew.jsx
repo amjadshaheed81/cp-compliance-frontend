@@ -143,7 +143,7 @@ export default function SidebarNew() {
                 break;
             case 'Site Assets': navigate('/sites');
                 break;
-            case 'Site Contracts': navigate('/sites');
+            case 'Site Contracts': navigate('/site-contracts');
                 break;
             case 'Pre-Action': navigate('/sites');
                 break;
