@@ -1,12 +1,21 @@
+
+import React from 'react';
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
+import CreateFiles from "./CreateFiles";
+import BulkUpload from './BulkUpload';
+import VersionHistory from './VersionHistory';
 
 const Document = () => {
+    const [isCreateFolderModalOpen, setIsCreateFolderModalOpen ] = React.useState(false);
     return (
         <>
             <Header />
             <SidebarNew />
+            {isCreateFolderModalOpen && (
+                <CreateFiles setIsCreateFolderModalOpen={setIsCreateFolderModalOpen}/>
+            )}
             <div class='container-fluid' style={{ marginLeft: '5rem', paddingRight:'9rem' }}>
                 <BreadCrumHeader header={"Document Management"} page={"Documents"} />
                 <div class="float-end w-25" style={{ position: "relative" }}>
@@ -52,6 +61,9 @@ const Document = () => {
                         </tr>
                     </tbody>
                 </table>
+                <CreateFiles />
+                <BulkUpload />
+                <VersionHistory />
             </div>
         </>
     )
