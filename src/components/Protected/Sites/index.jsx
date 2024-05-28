@@ -130,7 +130,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     onChange={searchSitesWithCity}
                   >
                     <option value="city">City</option>
-                    {sites.map((site) => <option value={site.city}>{site.city}</option>)}
+                    {sites?.map((site) => <option value={site.city}>{site.city}</option>)}
                   </select>
                 </div>
                 <div class="col">
@@ -141,7 +141,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     onChange={searchSitesWithArea}
                   >
                     <option value="area">Area</option>
-                    {sites.map((site) => <option value={site.area}>{site.area}</option>)}
+                    {sites?.map((site) => <option value={site.area}>{site.area}</option>)}
                   </select>
                 </div>
                 <div class="col">

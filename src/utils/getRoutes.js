@@ -6,38 +6,39 @@ import Dashboard from "../components/Protected/Dashboard";
 import Sites from "../components/Protected/Sites";
 import AddSite from "../components/Protected/Sites/AddSite";
 import UpdateSite from "../components/Protected/Sites/UpdateSite";
-import Tabs from "../components/Protected/Sites/AddSite/SiteTabs"
+import Tabs from "../components/Protected/Sites/AddSite/SiteTabs";
 import SiteChart from "../components/Protected/Sites/UpdateSite/SiteChart";
 import SiteInformation from "../components/Protected/Sites/UpdateSite/SiteInformation";
 import Document from "../components/Protected/Sites/Documents";
+import Projects from "../components/Protected/Sites/Projects";
 export const getRoutes = () => {
   const tabs = [
     {
       label: "Basic Details",
-      Component: <AddSite />
+      Component: <AddSite />,
     },
     {
       label: "Floor Layout & Plan",
-      Component: <SiteChart />
+      Component: <SiteChart />,
     },
     {
       label: "Site Information",
-      Component: <SiteInformation />
-    }
+      Component: <SiteInformation />,
+    },
   ];
   const UpdateSiteTabs = [
     {
       label: "Basic Details",
-      Component: <UpdateSite />
+      Component: <UpdateSite />,
     },
     {
       label: "Floor Layout & Plan",
-      Component: <SiteChart />
+      Component: <SiteChart />,
     },
     {
       label: "Site Information",
-      Component: <SiteInformation />
-    }
+      Component: <SiteInformation />,
+    },
   ];
   return [
     {
@@ -67,7 +68,7 @@ export const getRoutes = () => {
     },
     {
       path: "/update-site",
-      element: <Tabs tabs={UpdateSiteTabs} isCreateSite={false} />
+      element: <Tabs tabs={UpdateSiteTabs} isCreateSite={false} />,
     },
     {
       path: "/sites",
@@ -76,6 +77,10 @@ export const getRoutes = () => {
     {
       path: "/documents",
       element: <Document />,
+    },
+    {
+      path: "/site-projects",
+      element: <Projects />,
     },
   ];
 };
