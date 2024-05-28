@@ -1,8 +1,31 @@
 import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
+import { uploadFloorPlan } from "./../../../../store/thunk/site";
 
-const UpdateFloor = ({ siteLayout }) => {
-  const { register } = useForm({});
+const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
+  const { register, getValues } = useForm({});
+  const sendFloorPlan = () => {
+    const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
+    let form_data = new FormData();
+    const files = [];
+    const data = [];
+    list.forEach((itm) => {
+      const file = getValues(`floorImage-${itm?.id}`);
+      console.log("===>", file)
+      if (file?.length) {
+        files.push(file?.[0]);
+        data.push({
+          nodeId: itm?.id,
+          fileName: file?.[0].name,
+        });
+      }
+    });
+    console.log("files ===>", files)
+    console.log("data ===>", data)
+    form_data.append('files', files);
+    form_data.append('floorPlans',  String(data));
+    uploadFloorPlan(form_data, updateSite?.siteId);
+  };
   const getFloorPlanInputs = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     return list?.map((itm) => (
@@ -34,6 +57,13 @@ const UpdateFloor = ({ siteLayout }) => {
         </thead>
         <tbody>{getFloorPlanInputs()}</tbody>
       </table>
+      <div className="row">
+        <div className="col-md-3">
+          <button className="btn btn-primary" onClick={() => sendFloorPlan()}>
+            Upload All
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -42,4 +72,4 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, {})(UpdateFloor);
+export default connect(mapStateToProps, { uploadFloorPlan })(UpdateFloor);

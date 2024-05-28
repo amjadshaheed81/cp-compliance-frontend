@@ -51,6 +51,16 @@ export function post(url, userData) {
   });
 }
 
+export function postFloorPlans(url, userData) {
+  configAxios();
+  return axiosInstance({
+    method: "POST",
+    url,
+    data: userData,
+    headers: {...getHeaders(), 'Content-Type': `multipart/form-data`},
+  });
+}
+
 // delete is a reserved name so don't use that
 export function del(url) {
   configAxios();

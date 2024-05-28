@@ -293,7 +293,7 @@ const SiteChart = ({
           </div>
         </form>
         <UpdateFloor />
-        <FloorMap />
+        <FloorMap siteLayout={siteLayout}/>
       </div>
     </>
   );

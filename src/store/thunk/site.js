@@ -1,4 +1,4 @@
-import { del, get, post, put, uploadPhoto } from "../../api";
+import { del, get, post, postFloorPlans, put, uploadPhoto } from "../../api";
 import {
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
@@ -546,6 +546,27 @@ export const addSiteLayoutNode = (formData) => {
       console.log('siteareainfo', siteareainfo);
       if(siteareainfo?.status === 200) {
         const url = `/api/siteservice/layout/${formData?.siteId}`;
+        const List = await get(url);
+        dispatch({
+          type: GET_SITE_LAYOUT,
+          payload: List,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+};
+
+export const uploadFloorPlan = (formData, siteId) => {
+  console.log('formData', formData);
+  return async (dispatch) => {
+    try {
+      const url = "/api/siteservice/uploadfloorplan";
+      const siteareainfo = await postFloorPlans(url, formData);
+      console.log('siteareainfo', siteareainfo);
+      if(siteareainfo?.status === 200) {
+        const url = `/api/siteservice/layout/${siteId}`;
         const List = await get(url);
         dispatch({
           type: GET_SITE_LAYOUT,
