@@ -32,6 +32,8 @@ import {
   GET_SITE_AREA_INFORMATION,
   SAVE_SITE_SECURITY_INFORMATION_FAILURE,
   SAVE_SITE_SECURITY_INFORMATION,
+  GET_DOCUMENTS_ROOT_FOLDER_FAILURE,
+  GET_DOCUMENTS_ROOT_FOLDER,
 } from "./../actionTypes";
 
 const initialState = {
@@ -351,6 +353,17 @@ const reducer = (state = initialState, action) => {
         ...state,
         siteLayout: [],
         siteLayoutFailure: action.payload,
+      };
+      //TODO: move to fileFolderReducers
+      case GET_DOCUMENTS_ROOT_FOLDER:
+      return {
+        ...state,
+        rootFolder: action.payload,
+      };
+      case GET_DOCUMENTS_ROOT_FOLDER_FAILURE:
+      return {
+        ...state,
+        rootFolderFailure: "",
       };
     default:
       return state;

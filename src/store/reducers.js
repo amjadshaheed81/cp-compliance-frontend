@@ -1,12 +1,12 @@
 import { combineReducers } from "redux";
 import login from "./reducers/login";
 import site from "./reducers/site";
-import fileFoldersReducer from "./reducers/fileFoldersReducers";
+import fileFoldersReducers from "./reducers/fileFoldersReducers";
 
 const rootReducer = combineReducers({
   login: login,
   site: site,
-  fileFoldersReducer: fileFoldersReducer,
+  fileFoldersReducers: fileFoldersReducers,
 });
 
 export default rootReducer;

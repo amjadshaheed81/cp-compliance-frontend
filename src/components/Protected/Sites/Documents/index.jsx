@@ -1,14 +1,19 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import CreateFiles from "./CreateFiles";
 import BulkUpload from './BulkUpload';
 import VersionHistory from './VersionHistory';
+import { connect } from 'react-redux';
+import { getDocumentsRootFolder } from '../../../../store/thunk/site';
 
-const Document = () => {
+const Document = ({ rootFolder, getDocumentsRootFolder }) => {
     const [isCreateFolderModalOpen, setIsCreateFolderModalOpen ] = React.useState(false);
+    useEffect(() => {
+        getDocumentsRootFolder();
+    },[])
     return (
         <>
             <Header />
@@ -49,16 +54,20 @@ const Document = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                        <div><i style={{color: '#384BD3'}} class="fas fa-folder fa-2x"></i><span class="p-3">Statutory Documents</span></div>
-                            <td>--</td>
-                            <td>--</td>
-                            <td>--</td>
-                            <td>--</td>
-                            <td>
-                            <span style={{color: 'gray'}}><i class="fa fa-eye fa-2x" aria-hidden="true" size="md"></i></span>
-                            </td>
-                        </tr>
+                        {rootFolder?.parentFolders.map((folder, index) => {
+                            return (
+                                <tr>
+                                    <div><i style={{ color: '#384BD3' }} class="fas fa-folder fa-2x"></i><span class="p-3">{folder?.name}</span></div>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td>
+                                        <span style={{ color: 'gray' }}><i class="fa fa-eye fa-2x" aria-hidden="true" size="md"></i></span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
                 <CreateFiles />
@@ -68,4 +77,10 @@ const Document = () => {
         </>
     )
 }
-export default Document;
+
+const mapStateToProps = (state) => ({
+    rootFolder: state.site.rootFolder,
+  });
+  export default connect(mapStateToProps, {
+    getDocumentsRootFolder,
+  })(Document);
