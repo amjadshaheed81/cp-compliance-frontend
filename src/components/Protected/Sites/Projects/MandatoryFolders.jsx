@@ -38,6 +38,14 @@ const MandatoryFolders = ({}) => {
             </button>
           </div>
         </div>
+        <div className="mt-2">
+          <span class="badge bg-light text-primary">
+            Key Structural Princiles <i class="fas fa-times" size="sm"></i>
+          </span>{" "}
+          <span class="badge bg-light text-primary">
+            Asbestos Removal Work <i class="fas fa-times" size="sm"></i>
+          </span>{" "}
+        </div>
       </div>
       <Modal
         open={openFolder}
@@ -89,11 +97,9 @@ const MandatoryFolders = ({}) => {
               <span class="badge bg-light text-primary">
                 Key Structural Princiles <i class="fas fa-times" size="sm"></i>
               </span>{" "}
-              &nbsp;
               <span class="badge bg-light text-primary">
                 Asbestos Removal Work <i class="fas fa-times" size="sm"></i>
               </span>{" "}
-              &nbsp;
             </div>
             <div className="col-md-12 pt-4 border-top">
               <div class="float-end">
