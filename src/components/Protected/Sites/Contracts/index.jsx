@@ -236,15 +236,11 @@ const Sites = () => {
                     setOpen(false);
                   }}
                 >
-                  Close
+                  Cancel
                 </button>
                 &nbsp; &nbsp;
-                <button type="button" class="btn btn-success mb-3 mr-4">
-                  Approve
-                </button>
-                &nbsp; &nbsp;
-                <button type="button" class="btn btn-danger mb-3 mr-4">
-                  Reject
+                <button type="button" class="btn btn-primary mb-3 mr-4">
+                  Submit
                 </button>
               </div>
             </div>
