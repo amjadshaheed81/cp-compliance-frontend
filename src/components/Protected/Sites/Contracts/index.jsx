@@ -13,7 +13,7 @@ const Sites = () => {
       <div class="content">
         <Header />
         <div class="container-fluid">
-          <BreadCrumHeader header={"Contracts"} page={"Contracs"} />
+          <BreadCrumHeader header={"Contracts"} page={"Contracts"} />
           {/*  */}
           {/*  */}
           <div class="d-flex bd-highlight">

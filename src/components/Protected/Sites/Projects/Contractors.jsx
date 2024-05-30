@@ -11,6 +11,18 @@ const Contractors = ({}) => {
   const handleClose = () => {
     setOpen(false);
   };
+  const style = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 700,
+    height: 400,
+    bgcolor: "background.paper",
+    border: "2px solid #fff",
+    boxShadow: 24,
+    p: 4,
+  };
   return (
     <Fragment>
       <div className="col-md-3">
@@ -74,13 +86,27 @@ const Contractors = ({}) => {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box>
+        <Box sx={style}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
-            Text in a modal
+            View Contract &amp; Quote
           </Typography>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-          </Typography>
+          <form class="row border-top">
+            <div class="col-md-12">
+              
+            </div>
+            <div className="col-md-12 pt-4 border-top">
+              <div class="float-end">
+                        <button type="button" class="btn btn-light mb-3 mr-4 text-primary">
+                          Cancel
+                        </button>
+                        &nbsp; &nbsp;
+                        <button type="submit" class="btn btn-primary mb-3 mr-4">
+                          Save
+                        </button>
+                      </div>
+
+              </div>
+          </form>
         </Box>
       </Modal>
     </Fragment>
