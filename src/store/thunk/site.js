@@ -44,6 +44,8 @@ import {
   GET_SITE_SECURITY_INFORMATION,
   GET_DOCUMENTS_ROOT_FOLDER,
   GET_DOCUMENTS_ROOT_FOLDER_FAILURE,
+  GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
+  GET_DOCUMENTS_SUB_FOLDER_FILES,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -642,6 +644,24 @@ export const getDocumentsRootFolder = () => {
     } catch (error) {
       dispatch({
         type: GET_DOCUMENTS_ROOT_FOLDER_FAILURE,
+        payload: "Something went wrong while fetching site. Please try again.",
+      });
+    }
+  };
+};
+
+export const getSubFilesAndFolder = (folderId) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/document/parent/${folderId}/folders`;
+      const subFolderFiles = await get(url);
+      dispatch({
+        type: GET_DOCUMENTS_SUB_FOLDER_FILES,
+        payload: subFolderFiles,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
         payload: "Something went wrong while fetching site. Please try again.",
       });
     }

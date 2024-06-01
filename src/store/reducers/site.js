@@ -34,6 +34,8 @@ import {
   SAVE_SITE_SECURITY_INFORMATION,
   GET_DOCUMENTS_ROOT_FOLDER_FAILURE,
   GET_DOCUMENTS_ROOT_FOLDER,
+  GET_DOCUMENTS_SUB_FOLDER_FILES,
+  GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -364,6 +366,16 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         rootFolderFailure: "",
+      };
+      case GET_DOCUMENTS_SUB_FOLDER_FILES:
+      return {
+        ...state,
+        subfolderFiles: action.payload,
+      };
+      case GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE:
+      return {
+        ...state,
+        subfolderFiles: "",
       };
     default:
       return state;
