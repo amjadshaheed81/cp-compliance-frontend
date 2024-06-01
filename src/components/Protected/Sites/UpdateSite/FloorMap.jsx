@@ -5,7 +5,6 @@ import Box from "@mui/material/Box";
 import { useState } from "react";
 import TabPanel from "../../../common/TabPanel/TabPanel";
 
-
 const FloorMap = ({ siteLayout }) => {
   const [tabValue, setTabValue] = useState(null);
   const handleChange = (event, newValue) => {
@@ -21,9 +20,11 @@ const FloorMap = ({ siteLayout }) => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     return list?.map((itm, newValue) => (
       <TabPanel value={tabValue} index={newValue}>
-        {itm?.floorPlanUrl
-          ? itm?.floorPlanUrl
-          : "Floor Panel file is not available"}
+        {itm?.floorPlanUrl ? (
+          <iframe src={itm?.floorPlanUrl} width="auto" height="auto"></iframe>
+        ) : (
+          "Floor Panel file is not available"
+        )}
       </TabPanel>
     ));
   };
