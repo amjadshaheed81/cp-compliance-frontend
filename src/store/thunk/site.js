@@ -1,4 +1,11 @@
-import { del, get, post, postFloorPlans, put, uploadPhoto } from "../../api";
+import {
+  del,
+  get,
+  post,
+  postMultiPartFormData,
+  put,
+  uploadPhoto,
+} from "../../api";
 import {
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
@@ -48,8 +55,8 @@ export const addSite = (formData, goTo) => {
         type: ADD_SITE_SUCCESS,
         payload: userData,
       });
-      setTimeout(()=>{
-        goTo('/update-site');
+      setTimeout(() => {
+        goTo("/update-site");
       }, 1000);
     } catch (error) {
       dispatch({
@@ -68,7 +75,7 @@ export const updateSiteDetail = (formData) => {
       const res = await put(url, formData);
       dispatch({
         type: UPDATE_SITE_SUCCESS,
-        payload: 'Site has been updated successully',
+        payload: "Site has been updated successully",
       });
     } catch (error) {
       dispatch({
@@ -98,7 +105,8 @@ export const updateSiteImage = (data, siteId) => {
     } catch (error) {
       dispatch({
         type: UPDATE_SITE_IMAGE_FAILURE,
-        payload: "Something went wrong while updating site image. Please try again.",
+        payload:
+          "Something went wrong while updating site image. Please try again.",
       });
     }
   };
@@ -135,7 +143,8 @@ export const updateTimings = (formData) => {
     } catch (error) {
       dispatch({
         type: UPDATE_TIMINIG_FAILURE,
-        payload: "Something went wrong while updating site timing. Please try again.",
+        payload:
+          "Something went wrong while updating site timing. Please try again.",
       });
     }
   };
@@ -206,7 +215,6 @@ export const setFilterSite = (siteList) => {
   };
 };
 
-
 export const updateSite = (itm) => {
   return async (dispatch) => {
     try {
@@ -215,7 +223,7 @@ export const updateSite = (itm) => {
         payload: itm,
       });
     } catch (error) {
-      console.log('===>',error);
+      console.log("===>", error);
       dispatch({
         type: UPDATE_SITE_FAILURE,
         payload:
@@ -224,7 +232,6 @@ export const updateSite = (itm) => {
     }
   };
 };
-
 
 export const deleteKeyContact = (id) => {
   return async () => {
@@ -249,7 +256,8 @@ export const getKeyContact = (id) => {
     } catch (error) {
       dispatch({
         type: GET_KEY_CONTACTS_FAILURE,
-        payload: "Something went wrong while fetching key contacts. Please try again.",
+        payload:
+          "Something went wrong while fetching key contacts. Please try again.",
       });
     }
   };
@@ -259,7 +267,7 @@ export const addKeyContact = (formData, id) => {
     try {
       const url = "/api/siteservice/updateKeyContacts";
       const userData = await put(url, formData);
-      if(userData?.status === 200) {
+      if (userData?.status === 200) {
         const url = `/api/siteservice/keyContacts/${id}`;
         const keyContactList = await get(url);
         dispatch({
@@ -294,7 +302,7 @@ export const handleOnPostCodeSearch = (e) => {
   return async (dispatch) => {
     try {
       // const url = `https://api.getaddress.io/autocomplete/l1w?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
-      const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
+      const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
       // const url = `https://maps.googleapis.com/maps/api/geocode/json?components=postal_code:EC1A 1BB|country:UK&key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo`;
       // const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json
       // ?input=${e?.target?.value}
@@ -360,7 +368,7 @@ export const saveSiteBuildingData = (siteId, formData) => {
     try {
       const url = "/api/siteservice/siteinfo";
       const buildingData = await post(url, data);
-      if(buildingData?.status === 200) {
+      if (buildingData?.status === 200) {
         // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -382,11 +390,14 @@ export const getSiteInformation = (id, setValue) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
       const siteInformation = await get(url);
-      console.log('site information siteInformation', siteInformation);
-      setValue('buildYear', siteInformation?.buildYear);
-      setValue('buildingUnderClientControl', siteInformation?.buildingUnderClientControl);
-      setValue('canteenInBuilding', siteInformation?.canteenInBuilding);
-      setValue('dedicatedKitchenArea', siteInformation?.dedicatedKitchenArea);
+      console.log("site information siteInformation", siteInformation);
+      setValue("buildYear", siteInformation?.buildYear);
+      setValue(
+        "buildingUnderClientControl",
+        siteInformation?.buildingUnderClientControl
+      );
+      setValue("canteenInBuilding", siteInformation?.canteenInBuilding);
+      setValue("dedicatedKitchenArea", siteInformation?.dedicatedKitchenArea);
       dispatch({
         type: GET_SITE_INFORMATION,
         payload: siteInformation,
@@ -394,7 +405,8 @@ export const getSiteInformation = (id, setValue) => {
     } catch (error) {
       dispatch({
         type: GET_SITE_INFORMATION_FAILURE,
-        payload: "Something went wrong while fetching key contacts. Please try again.",
+        payload:
+          "Something went wrong while fetching key contacts. Please try again.",
       });
     }
   };
@@ -409,7 +421,7 @@ export const saveAreaAndOccupancyDetails = (siteId, formData) => {
     try {
       const url = "/api/siteservice/siteareainfo";
       const siteareainfo = await post(url, data);
-      if(siteareainfo?.status === 200) {
+      if (siteareainfo?.status === 200) {
         // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -431,19 +443,28 @@ export const getAreaAndOccupancy = (id, setValue) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteArea`;
       const siteAreaInformation = await get(url);
-      setValue('totalBuildingArea', siteAreaInformation?.totalBuildingArea);
-      setValue('clientOccupiedArea', siteAreaInformation?.clientOccupiedArea);
-      setValue('tenantOccupiedArea', siteAreaInformation?.tenantOccupiedArea);
-      setValue('maxOccupancy', siteAreaInformation?.maxOccupancy);
-      setValue('meetingClients', siteAreaInformation?.meetingClients);
-      setValue('numberOfStaff', siteAreaInformation?.numberOfStaff);
-      setValue('tenantInOccupation', siteAreaInformation?.tenantInOccupation);
-      setValue('tenantName', siteAreaInformation?.tenantName);
-      setValue('vacantAreaInBuilding', siteAreaInformation?.vacantAreaInBuilding);
-      setValue('numOfFloors', siteAreaInformation?.numOfFloors);
-      setValue('carParkSpaceAboveGround', siteAreaInformation?.carParkSpaceAboveGround);
-      setValue('carParkSpaceBelowGround', siteAreaInformation?.carParkSpaceBelowGround);
-      setValue('numOfBasementLevels', siteAreaInformation?.numOfBasementLevels);
+      setValue("totalBuildingArea", siteAreaInformation?.totalBuildingArea);
+      setValue("clientOccupiedArea", siteAreaInformation?.clientOccupiedArea);
+      setValue("tenantOccupiedArea", siteAreaInformation?.tenantOccupiedArea);
+      setValue("maxOccupancy", siteAreaInformation?.maxOccupancy);
+      setValue("meetingClients", siteAreaInformation?.meetingClients);
+      setValue("numberOfStaff", siteAreaInformation?.numberOfStaff);
+      setValue("tenantInOccupation", siteAreaInformation?.tenantInOccupation);
+      setValue("tenantName", siteAreaInformation?.tenantName);
+      setValue(
+        "vacantAreaInBuilding",
+        siteAreaInformation?.vacantAreaInBuilding
+      );
+      setValue("numOfFloors", siteAreaInformation?.numOfFloors);
+      setValue(
+        "carParkSpaceAboveGround",
+        siteAreaInformation?.carParkSpaceAboveGround
+      );
+      setValue(
+        "carParkSpaceBelowGround",
+        siteAreaInformation?.carParkSpaceBelowGround
+      );
+      setValue("numOfBasementLevels", siteAreaInformation?.numOfBasementLevels);
       dispatch({
         type: GET_SITE_AREA_INFORMATION,
         payload: siteAreaInformation,
@@ -451,7 +472,8 @@ export const getAreaAndOccupancy = (id, setValue) => {
     } catch (error) {
       dispatch({
         type: GET_SITE_AREA_INFORMATION_FAILURE,
-        payload: "Something went wrong while fetching key contacts. Please try again.",
+        payload:
+          "Something went wrong while fetching key contacts. Please try again.",
       });
     }
   };
@@ -466,7 +488,7 @@ export const saveSafetyAndSecurityDetails = (siteId, formData) => {
     try {
       const url = "/api/siteservice/sitesecurityinfo";
       const siteSecurityInfo = await post(url, data);
-      if(siteSecurityInfo?.status === 200) {
+      if (siteSecurityInfo?.status === 200) {
         // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -488,26 +510,50 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
     try {
       const url = `/api/siteservice/siteinfo/${id}?q=siteSafety`;
       const siteSafetyInformation = await get(url);
-      setValue('extFabric', siteSafetyInformation?.extFabric);
-      setValue('extMetallicFireEscapeStaircases', siteSafetyInformation?.extMetallicFireEscapeStaircases);
-      setValue('extTimberFireEscapeStaircases', siteSafetyInformation?.extTimberFireEscapeStaircases);
-      setValue('verticalLadder', siteSafetyInformation?.verticalLadder);
-      setValue('confinedSpaces', siteSafetyInformation?.confinedSpaces);
-      setValue('accessibleUnguardedRoofAreas', siteSafetyInformation?.accessibleUnguardedRoofAreas);
-      setValue('fragileRoof', siteSafetyInformation?.fragileRoof);
-      setValue('lightingConductoreInstalltion', siteSafetyInformation?.lightingConductoreInstalltion);
-      setValue('fireAlarmSystem', siteSafetyInformation?.fireAlarmSystem);
-      setValue('firePanelLocation', siteSafetyInformation?.firePanelLocation);
-      setValue('lpgStorageOnSite', siteSafetyInformation?.lpgStorageOnSite);
-      setValue('lpgBulkStorageOnSite', siteSafetyInformation?.lpgBulkStorageOnSite);
-      setValue('hoseReels', siteSafetyInformation?.hoseReels);
-      setValue('securityGuardEmployed', siteSafetyInformation?.securityGuardEmployed);
-      setValue('internalCCTV', siteSafetyInformation?.internalCCTV);
-      setValue('externalCCTV', siteSafetyInformation?.externalCCTV);
-      setValue('automaticBarrier', siteSafetyInformation?.automaticBarrier);
-      setValue('automaticGatesSliding', siteSafetyInformation?.automaticGatesSliding);
-      setValue('automaticGatesHinged', siteSafetyInformation?.automaticGatesHinged);
-      setValue('manualSwingGates', siteSafetyInformation?.manualSwingGates);
+      setValue("extFabric", siteSafetyInformation?.extFabric);
+      setValue(
+        "extMetallicFireEscapeStaircases",
+        siteSafetyInformation?.extMetallicFireEscapeStaircases
+      );
+      setValue(
+        "extTimberFireEscapeStaircases",
+        siteSafetyInformation?.extTimberFireEscapeStaircases
+      );
+      setValue("verticalLadder", siteSafetyInformation?.verticalLadder);
+      setValue("confinedSpaces", siteSafetyInformation?.confinedSpaces);
+      setValue(
+        "accessibleUnguardedRoofAreas",
+        siteSafetyInformation?.accessibleUnguardedRoofAreas
+      );
+      setValue("fragileRoof", siteSafetyInformation?.fragileRoof);
+      setValue(
+        "lightingConductoreInstalltion",
+        siteSafetyInformation?.lightingConductoreInstalltion
+      );
+      setValue("fireAlarmSystem", siteSafetyInformation?.fireAlarmSystem);
+      setValue("firePanelLocation", siteSafetyInformation?.firePanelLocation);
+      setValue("lpgStorageOnSite", siteSafetyInformation?.lpgStorageOnSite);
+      setValue(
+        "lpgBulkStorageOnSite",
+        siteSafetyInformation?.lpgBulkStorageOnSite
+      );
+      setValue("hoseReels", siteSafetyInformation?.hoseReels);
+      setValue(
+        "securityGuardEmployed",
+        siteSafetyInformation?.securityGuardEmployed
+      );
+      setValue("internalCCTV", siteSafetyInformation?.internalCCTV);
+      setValue("externalCCTV", siteSafetyInformation?.externalCCTV);
+      setValue("automaticBarrier", siteSafetyInformation?.automaticBarrier);
+      setValue(
+        "automaticGatesSliding",
+        siteSafetyInformation?.automaticGatesSliding
+      );
+      setValue(
+        "automaticGatesHinged",
+        siteSafetyInformation?.automaticGatesHinged
+      );
+      setValue("manualSwingGates", siteSafetyInformation?.manualSwingGates);
       dispatch({
         type: GET_SITE_SECURITY_INFORMATION,
         payload: siteSafetyInformation,
@@ -515,7 +561,8 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
     } catch (error) {
       dispatch({
         type: GET_SITE_SECURITY_INFORMATION_FAILURE,
-        payload: "Something went wrong while fetching key contacts. Please try again.",
+        payload:
+          "Something went wrong while fetching key contacts. Please try again.",
       });
     }
   };
@@ -533,20 +580,21 @@ export const getSiteLayout = (id) => {
     } catch (error) {
       dispatch({
         type: GET_SITE_LAYOUT_FAILURE,
-        payload: "Something went wrong while fetching site layout. Please try again.",
+        payload:
+          "Something went wrong while fetching site layout. Please try again.",
       });
     }
   };
 };
 
 export const addSiteLayoutNode = (formData) => {
-  console.log('formData', formData);
+  console.log("formData", formData);
   return async (dispatch) => {
     try {
       const url = "/api/siteservice/createNode";
       const siteareainfo = await post(url, formData);
-      console.log('siteareainfo', siteareainfo);
-      if(siteareainfo?.status === 200) {
+      console.log("siteareainfo", siteareainfo);
+      if (siteareainfo?.status === 200) {
         const url = `/api/siteservice/layout/${formData?.siteId}`;
         const List = await get(url);
         dispatch({
@@ -561,13 +609,13 @@ export const addSiteLayoutNode = (formData) => {
 };
 
 export const uploadFloorPlan = (formData, siteId) => {
-  console.log('formData', formData);
+  console.log("formData", formData);
   return async (dispatch) => {
     try {
       const url = "/api/siteservice/uploadfloorplan";
-      const siteareainfo = await postFloorPlans(url, formData);
-      console.log('siteareainfo', siteareainfo);
-      if(siteareainfo?.status === 200) {
+      const siteareainfo = await postMultiPartFormData(url, formData);
+      console.log("siteareainfo", siteareainfo);
+      if (siteareainfo?.status === 200) {
         const url = `/api/siteservice/layout/${siteId}`;
         const List = await get(url);
         dispatch({

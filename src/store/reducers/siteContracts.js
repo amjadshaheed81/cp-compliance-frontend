@@ -3,6 +3,8 @@ import {
   GET_CONTRACT_DETAIL_FAILURE,
   GET_CONTRACT_LIST,
   GET_CONTRACT_LIST_FAILURE,
+  UPDATE_CONTRACT_DETAIL,
+  UPDATE_CONTRACT_DETAIL_FAILURE,
 } from "../actions/siteContractsActions";
 
 const initialState = {
@@ -38,6 +40,18 @@ const siteContractsReducer = (state = initialState, action) => {
     case GET_CONTRACT_DETAIL_FAILURE:
       return {
         ...state,
+        error: action.payload,
+      };
+    case UPDATE_CONTRACT_DETAIL:
+      return {
+        ...state,
+        success: action.payload,
+        error: "",
+      };
+    case UPDATE_CONTRACT_DETAIL_FAILURE:
+      return {
+        ...state,
+        success: "",
         error: action.payload,
       };
     default:

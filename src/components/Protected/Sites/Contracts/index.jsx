@@ -8,15 +8,20 @@ import { Box, Modal, Typography } from "@mui/material";
 import {
   getSiteContracts,
   getSiteContractDetails,
+  updateContractDetail,
 } from "../../../../store/thunk/contracts";
+import Success from "../../../common/Alert/Success";
+import Error from "../../../common/Alert/Error";
 
 const Contracts = ({
   getSiteContracts,
   getSiteContractDetails,
+  updateContractDetail,
   contractsList,
   contractDetail,
   filterContract,
   error,
+  success,
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState({});
@@ -30,6 +35,10 @@ const Contracts = ({
   useEffect(() => {
     getSiteContracts(126);
   }, []);
+
+  const updateContractDetails = () => {
+    updateContractDetail(selectedContract);
+  };
   const style = {
     position: "absolute",
     overflow: "auto",
@@ -267,6 +276,10 @@ const Contracts = ({
               </table>
             </div>
             <div className="col-md-12 pt-4 border-top">
+              <div>
+                {success && <Success msg={success} />}
+                {error && <Error msg={error} />}
+              </div>
               <div class="float-end">
                 <button
                   type="button"
@@ -278,7 +291,13 @@ const Contracts = ({
                   Cancel
                 </button>
                 &nbsp; &nbsp;
-                <button type="button" class="btn btn-primary mb-3 mr-4">
+                <button
+                  type="button"
+                  class="btn btn-primary mb-3 mr-4"
+                  onClick={() => {
+                    updateContractDetails();
+                  }}
+                >
                   Submit
                 </button>
               </div>
@@ -291,6 +310,7 @@ const Contracts = ({
 };
 const mapStateToProps = (state) => ({
   error: state.siteContracts.error,
+  success: state.siteContracts.success,
   contractsList: state.siteContracts.contractsList,
   filterContract: state.siteContracts.filterContract,
   contractDetail: state.siteContracts.contractDetail,
@@ -298,4 +318,5 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
   getSiteContracts,
   getSiteContractDetails,
+  updateContractDetail,
 })(Contracts);
