@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { Button, Modal, Typography, Box } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 
-const CreateFiles = ({ currentFolder }) => {
-    const [showModal, setShowModal] = useState(false);
+const CreateFiles = ({ showModal, setShowModal }) => {
+    // const [showModal, setShowModal] = useState(false);
     const [folderName, setFolderName] = useState("");
     const [open, setOpen] = React.useState(false);
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const handleOpen = () => setShowModal(true);
+    const handleClose = () => setShowModal(false);
     const style = {
         position: 'absolute',
         top: '50%',
@@ -25,7 +25,7 @@ const CreateFiles = ({ currentFolder }) => {
         <>
             <Button onClick={handleOpen}>Upload New Files</Button>
             <Modal
-                open={open}
+                open={showModal}
                 onClose={handleClose}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"

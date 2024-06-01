@@ -12,6 +12,7 @@ import SiteInformation from "../components/Protected/Sites/UpdateSite/SiteInform
 import Document from "../components/Protected/Sites/Documents";
 import Projects from "../components/Protected/Sites/Projects";
 import Contracts from "../components/Protected/Sites/Contracts";
+import SubFolder from "../components/Protected/Sites/Documents/SubFolder";
 export const getRoutes = () => {
   const tabs = [
     {
@@ -86,6 +87,10 @@ export const getRoutes = () => {
     {
       path: "/site-contracts",
       element: <Contracts />,
+    },
+    {
+      path: "/subfolder",
+      element: <SubFolder />,
     },
   ];
 };

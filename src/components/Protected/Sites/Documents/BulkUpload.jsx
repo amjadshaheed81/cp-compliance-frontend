@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { Button, Modal, Typography, Box } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 
-const BulkUpload = ({ currentFolder }) => {
+const BulkUpload = ({ bulkUploadModal, setBulkUploadModal }) => {
     const [open, setOpen] = React.useState(false);
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const handleOpen = () => setBulkUploadModal(true);
+    const handleClose = () => setBulkUploadModal(false);
     const style = {
         position: 'absolute',
         top: '50%',
@@ -23,7 +23,7 @@ const BulkUpload = ({ currentFolder }) => {
         <>
             <Button onClick={handleOpen}>Bulk Upload</Button>
             <Modal
-                open={open}
+                open={bulkUploadModal}
                 onClose={handleClose}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
