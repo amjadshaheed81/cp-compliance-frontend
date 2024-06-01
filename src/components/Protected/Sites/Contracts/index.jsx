@@ -5,11 +5,16 @@ import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { Box, Modal, Typography } from "@mui/material";
-import { getSiteContracts } from "../../../../store/thunk/contracts";
+import {
+  getSiteContracts,
+  getSiteContractDetails,
+} from "../../../../store/thunk/contracts";
 
 const Contracts = ({
   getSiteContracts,
+  getSiteContractDetails,
   contractsList,
+  contractDetail,
   filterContract,
   error,
 }) => {
@@ -117,7 +122,7 @@ const Contracts = ({
                   </tr>
                 )}
                 {contractsList?.map((itm) => (
-                  <tr key={itm?.id}>
+                  <tr key={itm?.quote_id}>
                     <td>{itm?.project_summary}</td>
                     <td>{itm?.site}</td>
                     <td>{itm?.manager_first_name}</td>
@@ -131,6 +136,7 @@ const Contracts = ({
                         style={{ color: "gray", cursor: "pointer" }}
                         onClick={() => {
                           setSelectedContract(itm);
+                          getSiteContractDetails(itm?.quote_id);
                           handleOpen();
                         }}
                       >
@@ -237,15 +243,26 @@ const Contracts = ({
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Asbestos Removal Work</td>
-                    <td>
-                      <input type="file" className="form-control" />
-                    </td>
-                    <td>
-                      <span class="badge bg-light text-primary">File1.pdf</span>
-                    </td>
-                  </tr>
+                  {contractDetail?.folderDetails?.length === 0 && (
+                    <tr>
+                      <td>folder details are not available</td>
+                    </tr>
+                  )}
+                  {contractDetail?.folderDetails?.map((itm) => (
+                    <tr key={itm?.folder_id}>
+                      <td>{itm?.folderName}</td>
+                      <td>
+                        <input type="file" className="form-control" />
+                      </td>
+                      <td>
+                        {itm?.file && (
+                          <span class="badge bg-light text-primary">
+                            {itm?.file}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -276,5 +293,9 @@ const mapStateToProps = (state) => ({
   error: state.siteContracts.error,
   contractsList: state.siteContracts.contractsList,
   filterContract: state.siteContracts.filterContract,
+  contractDetail: state.siteContracts.contractDetail,
 });
-export default connect(mapStateToProps, { getSiteContracts })(Contracts);
+export default connect(mapStateToProps, {
+  getSiteContracts,
+  getSiteContractDetails,
+})(Contracts);
