@@ -1,4 +1,4 @@
-import { del, get, post, postFloorPlans, put, uploadPhoto } from "../../api";
+import { del, get, post, put, uploadPhoto } from "../../api";
 import { GET_DOCUMENTS_ROOT_FOLDER, GET_DOCUMENTS_ROOT_FOLDER_FAILURE } from "../actionTypes";
 
 export const getDocumentsRootFolder = () => {

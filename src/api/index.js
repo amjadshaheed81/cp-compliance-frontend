@@ -51,7 +51,7 @@ export function post(url, userData) {
   });
 }
 
-export function postFloorPlans(url, userData) {
+export function postMultiPartFormData(url, userData) {
   configAxios();
   return axiosInstance({
     method: "POST",
