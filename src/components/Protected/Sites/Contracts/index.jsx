@@ -1,19 +1,30 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { Box, Modal, Typography } from "@mui/material";
+import { getSiteContracts } from "../../../../store/thunk/contracts";
 
-const Sites = () => {
+const Contracts = ({
+  getSiteContracts,
+  contractsList,
+  filterContract,
+  error,
+}) => {
   const [open, setOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState({});
   const handleOpen = () => {
     setOpen(!open);
   };
   const handleClose = () => {
     setOpen(false);
   };
+
+  useEffect(() => {
+    getSiteContracts(126);
+  }, []);
   const style = {
     position: "absolute",
     overflow: "auto",
@@ -72,9 +83,9 @@ const Sites = () => {
                 </div>
                 <div className="col">
                   <CSVLink
-                    filename={"site-lists"}
+                    filename={"contracts-lists"}
                     className="btn btn-light bg-white text-primary"
-                    data={[]}
+                    data={contractsList}
                   >
                     <i class="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
@@ -100,35 +111,38 @@ const Sites = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Project to install something</td>
-                  <td>Bradford BD1 1EE</td>
-                  <td>Malcolm B</td>
-                  <td>dd/mm/yyyy</td>
-                  <td>dd/mm/yyyy</td>
-                  <td>1200</td>
-                  <td>dd/mm/yyyy</td>
-                  <td>
-                    <div
-                      class="bg-warning text-light rounded-1 p-1"
-                      role="alert"
-                    >
-                      Recieved
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      style={{ color: "gray", cursor: "pointer" }}
-                      onClick={() => handleOpen()}
-                    >
-                      <i class="fas fa-eye"></i>
-                    </span>
-                    &nbsp;
-                    <span style={{ color: "gray" }} title="Official Quota">
-                      <i class="fas fa-solid fa-paperclip"></i>
-                    </span>
-                  </td>
-                </tr>
+                {contractsList?.length === 0 && (
+                  <tr>
+                    <td>No Contracts Found</td>
+                  </tr>
+                )}
+                {contractsList?.map((itm) => (
+                  <tr key={itm?.id}>
+                    <td>{itm?.project_summary}</td>
+                    <td>{itm?.site}</td>
+                    <td>{itm?.manager_first_name}</td>
+                    <td>{itm?.start_date}</td>
+                    <td>{itm?.recieved_date}</td>
+                    <td>{itm?.quote}</td>
+                    <td>{itm?.quote_date}</td>
+                    <td></td>
+                    <td>
+                      <span
+                        style={{ color: "gray", cursor: "pointer" }}
+                        onClick={() => {
+                          setSelectedContract(itm);
+                          handleOpen();
+                        }}
+                      >
+                        <i class="fas fa-eye"></i>
+                      </span>
+                      &nbsp;
+                      <span style={{ color: "gray" }} title="Official Quota">
+                        <i class="fas fa-solid fa-paperclip"></i>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -158,6 +172,7 @@ const Sites = () => {
                 name="projectSummary"
                 class="form-control"
                 id="projectSummary"
+                disabled={true}
               />
             </div>
             <div className="col-md-6">
@@ -169,6 +184,7 @@ const Sites = () => {
                 name="projectManager"
                 class="form-control"
                 id="projectManager"
+                disabled={true}
               />
             </div>
             <div className="col-md-6">
@@ -180,6 +196,7 @@ const Sites = () => {
                 name="projectStartDate"
                 class="form-control"
                 id="projectStartDate"
+                disabled={true}
               />
             </div>
             <div className="col-md-6">
@@ -203,7 +220,12 @@ const Sites = () => {
               <label for="notes" class="form-label">
                 Project Manager Comments
               </label>
-              <textarea name="notes" class="form-control" id="notes"></textarea>
+              <textarea
+                name="notes"
+                class="form-control"
+                id="notes"
+                disabled={true}
+              ></textarea>
             </div>
             <div>
               <table class="table f-11 mt-2">
@@ -250,5 +272,9 @@ const Sites = () => {
     </Fragment>
   );
 };
-const mapStateToProps = (state) => ({});
-export default connect(mapStateToProps, {})(Sites);
+const mapStateToProps = (state) => ({
+  error: state.siteContracts.error,
+  contractsList: state.siteContracts.contractsList,
+  filterContract: state.siteContracts.filterContract,
+});
+export default connect(mapStateToProps, { getSiteContracts })(Contracts);
