@@ -34,7 +34,7 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
   let initialSite = sites?.slice(0, 5);
   const searchSite = async (e) => {
     const value = e?.target?.value;
-    const url = `/api/siteservice/site/all?q=${value}`;
+    const url = `/api/site/site/all?q=${value}`;
     try {
       const response = await get(url);
       if (response.includes("Unable to Fetch the Site Search Results")) {

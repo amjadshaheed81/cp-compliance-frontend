@@ -52,7 +52,7 @@ import {
 export const addSite = (formData, goTo) => {
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/site";
+      const url = "/api/site/site";
       const userData = await post(url, formData);
       dispatch({
         type: ADD_SITE_SUCCESS,
@@ -74,7 +74,7 @@ export const updateSiteDetail = (formData) => {
   // const {id, ...data} = formData;
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/updateSite";
+      const url = "/api/site/updateSite";
       const res = await put(url, formData);
       dispatch({
         type: UPDATE_SITE_SUCCESS,
@@ -97,7 +97,7 @@ export const updateSiteImage = (data, siteId) => {
     formData.append("file", file);
     formData.append("fileName", `site-photo`);
     try {
-      const url = `/api/siteservice/site/${siteId}/upload`;
+      const url = `/api/site/site/${siteId}/upload`;
       const res = await uploadPhoto(url, formData);
       if (res.status === 200) {
         dispatch({
@@ -119,7 +119,7 @@ export const updateLocalDetails = (formData) => {
   // const {id, ...data} = formData;
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/updateLocalDetails";
+      const url = "/api/site/updateLocalDetails";
       const res = await put(url, formData);
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS,
@@ -137,7 +137,7 @@ export const updateLocalDetails = (formData) => {
 export const updateTimings = (formData) => {
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/updateTimings";
+      const url = "/api/site/updateTimings";
       const res = await put(url, formData);
       dispatch({
         type: UPDATE_TIMINIG_SUCCESS,
@@ -156,7 +156,7 @@ export const updateTimings = (formData) => {
 export const deleteSite = (id) => {
   return async () => {
     try {
-      const url = `/api/siteservice/site/${id}`;
+      const url = `/api/site/site/${id}`;
       await del(url);
       return "Success";
     } catch (error) {
@@ -168,7 +168,7 @@ export const deleteSite = (id) => {
 export const getSites = () => {
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/site/all";
+      const url = "/api/site/site/all";
       const siteList = await get(url);
       dispatch({
         type: GET_SITES_SUCCESS,
@@ -186,7 +186,7 @@ export const getSites = () => {
 export const getSiteById = (id) => {
   return async (dispatch) => {
     try {
-      const url = `/api/siteservice/site/${id}`;
+      const url = `/api/site/site/${id}`;
       const siteList = await get(url);
       dispatch({
         type: GET_SITES_BY_ID_SUCCESS,
@@ -239,7 +239,7 @@ export const updateSite = (itm) => {
 export const deleteKeyContact = (id) => {
   return async () => {
     try {
-      const url = `/api/siteservice/keyContacts/${id}`;
+      const url = `/api/site/keyContacts/${id}`;
       await del(url);
       return "Success";
     } catch (error) {
@@ -250,7 +250,7 @@ export const deleteKeyContact = (id) => {
 export const getKeyContact = (id) => {
   return async (dispatch) => {
     try {
-      const url = `/api/siteservice/keyContacts/${id}`;
+      const url = `/api/site/keyContacts/${id}`;
       const keyContactList = await get(url);
       dispatch({
         type: GET_KEY_CONTACTS,
@@ -268,10 +268,10 @@ export const getKeyContact = (id) => {
 export const addKeyContact = (formData, id) => {
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/updateKeyContacts";
+      const url = "/api/site/updateKeyContacts";
       const userData = await put(url, formData);
       if (userData?.status === 200) {
-        const url = `/api/siteservice/keyContacts/${id}`;
+        const url = `/api/site/keyContacts/${id}`;
         const keyContactList = await get(url);
         dispatch({
           type: GET_KEY_CONTACTS,
@@ -290,7 +290,7 @@ export const addKeyContact = (formData, id) => {
 export const deleteSiteImage = (id) => {
   return async () => {
     try {
-      const url = `/api/siteservice/site/${id}/delete`;
+      const url = `/api/site/site/${id}/delete`;
       await del(url);
       return "Success";
     } catch (error) {
@@ -369,10 +369,10 @@ export const saveSiteBuildingData = (siteId, formData) => {
   };
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/siteinfo";
+      const url = "/api/site/siteinfo";
       const buildingData = await post(url, data);
       if (buildingData?.status === 200) {
-        // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
           type: SET_SITE_INFORMATION,
@@ -391,7 +391,7 @@ export const saveSiteBuildingData = (siteId, formData) => {
 export const getSiteInformation = (id, setValue) => {
   return async (dispatch) => {
     try {
-      const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+      const url = `/api/site/siteinfo/${id}?q=siteInfo`;
       const siteInformation = await get(url);
       console.log("site information siteInformation", siteInformation);
       setValue("buildYear", siteInformation?.buildYear);
@@ -422,10 +422,10 @@ export const saveAreaAndOccupancyDetails = (siteId, formData) => {
   };
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/siteareainfo";
+      const url = "/api/site/siteareainfo";
       const siteareainfo = await post(url, data);
       if (siteareainfo?.status === 200) {
-        // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
           type: SAVE_SITE_AREA_INFORMATION,
@@ -444,7 +444,7 @@ export const saveAreaAndOccupancyDetails = (siteId, formData) => {
 export const getAreaAndOccupancy = (id, setValue) => {
   return async (dispatch) => {
     try {
-      const url = `/api/siteservice/siteinfo/${id}?q=siteArea`;
+      const url = `/api/site/siteinfo/${id}?q=siteArea`;
       const siteAreaInformation = await get(url);
       setValue("totalBuildingArea", siteAreaInformation?.totalBuildingArea);
       setValue("clientOccupiedArea", siteAreaInformation?.clientOccupiedArea);
@@ -489,10 +489,10 @@ export const saveSafetyAndSecurityDetails = (siteId, formData) => {
   };
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/sitesecurityinfo";
+      const url = "/api/site/sitesecurityinfo";
       const siteSecurityInfo = await post(url, data);
       if (siteSecurityInfo?.status === 200) {
-        // const url = `/api/siteservice/siteinfo/${id}?q=siteInfo`;
+        // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
           type: SAVE_SITE_SECURITY_INFORMATION,
@@ -511,7 +511,7 @@ export const saveSafetyAndSecurityDetails = (siteId, formData) => {
 export const getSafetyAndSecurityDetails = (id, setValue) => {
   return async (dispatch) => {
     try {
-      const url = `/api/siteservice/siteinfo/${id}?q=siteSafety`;
+      const url = `/api/site/siteinfo/${id}?q=siteSafety`;
       const siteSafetyInformation = await get(url);
       setValue("extFabric", siteSafetyInformation?.extFabric);
       setValue(
@@ -574,7 +574,7 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
 export const getSiteLayout = (id) => {
   return async (dispatch) => {
     try {
-      const url = `/api/siteservice/layout/${id}`;
+      const url = `/api/site/layout/${id}`;
       const List = await get(url);
       dispatch({
         type: GET_SITE_LAYOUT,
@@ -594,11 +594,11 @@ export const addSiteLayoutNode = (formData) => {
   console.log("formData", formData);
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/createNode";
+      const url = "/api/site/createNode";
       const siteareainfo = await post(url, formData);
       console.log("siteareainfo", siteareainfo);
       if (siteareainfo?.status === 200) {
-        const url = `/api/siteservice/layout/${formData?.siteId}`;
+        const url = `/api/site/layout/${formData?.siteId}`;
         const List = await get(url);
         dispatch({
           type: GET_SITE_LAYOUT,
@@ -615,11 +615,11 @@ export const uploadFloorPlan = (formData, siteId) => {
   console.log("formData", formData);
   return async (dispatch) => {
     try {
-      const url = "/api/siteservice/uploadfloorplan";
+      const url = "/api/site/uploadfloorplan";
       const siteareainfo = await postMultiPartFormData(url, formData);
       console.log("siteareainfo", siteareainfo);
       if (siteareainfo?.status === 200) {
-        const url = `/api/siteservice/layout/${siteId}`;
+        const url = `/api/site/layout/${siteId}`;
         const List = await get(url);
         dispatch({
           type: GET_SITE_LAYOUT,
