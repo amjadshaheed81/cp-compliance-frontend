@@ -39,6 +39,7 @@ import {
   SELECT_GLOBAL_SITE,
   UPDATE_DOCUMENT_FILE_FAILURE,
   UPDATE_DOCUMENT_FILE_SUCCESS,
+  CREATE_FOLDER,
 } from "./../actionTypes";
 
 const initialState = {
@@ -397,6 +398,11 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteSelectedForGlobal: action.payload,
+      };
+    case CREATE_FOLDER:
+      return {
+        ...state,
+        createFolder: action.payload,
       };
     default:
       return state;

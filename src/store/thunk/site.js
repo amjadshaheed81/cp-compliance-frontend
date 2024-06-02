@@ -49,6 +49,7 @@ import {
   SELECT_GLOBAL_SITE,
   UPDATE_DOCUMENT_FILE_SUCCESS,
   UPDATE_DOCUMENT_FILE_FAILURE,
+  CREATE_FOLDER,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -711,6 +712,30 @@ export const uploadDocumentFile = (data, folderId) => {
         payload:
           "Something went wrong while updating site image. Please try again.",
       });
+    }
+  };
+};
+
+export const createDocumentFolder = (formData, folderId) => {
+  console.log("formData", formData);
+  console.log("folderId", folderId);
+  // const data = {
+  //   ...formData,
+  //   folderId,
+  // };
+  return async (dispatch) => {
+    try {
+      const url = "/api/document/folder";
+      const createFolder = await post(url, formData);
+      console.log("siteareainfo", createFolder);
+      if (createFolder?.status === 200) {
+        dispatch({
+          type: CREATE_FOLDER,
+          payload: createFolder,
+        });
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 };

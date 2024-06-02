@@ -15,11 +15,13 @@ import BreadCrumHeader from '../../../common/BreadCrumHeader/BreadCrumHeader';
 import CreateFiles from './CreateFiles';
 import BulkUpload from './BulkUpload';
 import VersionHistory from './VersionHistory';
+import CreateFolder from './CreateFolder';
 
 const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, subfolderFiles }) => {
     const [searchParams] = useSearchParams();
     const folderId = searchParams.get("id");
     const [showModal, setShowModal] = useState(false);
+    const [showFolderModal, setShowFolderModal] = useState(false);
     const navigate = useNavigate();
     const [bulkUploadModal, setBulkUploadModal] = useState(false);
     const [versionHistory, setVersionHistory] = useState(false);
@@ -67,8 +69,8 @@ const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, s
                     </thead>
                     <tbody>
                     <tr> <div><i style={{ color: '#384BD3' }} class="fas fa-folder fa-2x"></i><span class="p-3">{subfolderFiles?.document?.name}</span></div><td>--</td><td>--</td><td>--</td><td>--</td><td>
-                                    <CreateNewFolderIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
+                                    <CreateNewFolderIcon onClick={() => setShowFolderModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
+                                    {showFolderModal && <CreateFolder showFolderModal={showFolderModal} setShowFolderModal={setShowFolderModal} />}
                                     <NoteAddIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
                                     <ContentCopyIcon onClick={() => setBulkUploadModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
@@ -80,8 +82,8 @@ const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, s
                             return (
 
                                 <><tr><div><i style={{ color: '#384BD3' }} class="fas fa-folder fa-2x"></i><span class="p-3">{folder?.name}</span></div><td>--</td><td>--</td><td>--</td><td>--</td><td>
-                                    <CreateNewFolderIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
+                                    <CreateNewFolderIcon onClick={() => setShowFolderModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
+                                    {showFolderModal && <CreateFolder showFolderModal={showFolderModal} setShowFolderModal={setShowFolderModal} folderId={folder.id} />}
                                     <NoteAddIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} folderId={folder.id}/>}
                                     <ContentCopyIcon onClick={() => setBulkUploadModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
