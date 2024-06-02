@@ -20,9 +20,11 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
         });
       }
     });
-    console.log("files ===>", files)
-    console.log("data ===>", data)
-    form_data.append('files', files);
+    // console.log("files ===>", files)
+    // console.log("data ===>", data)
+    files.map((file) => {
+      form_data.append('files', file);
+    });
     form_data.append('floorPlans',  String(data));
     uploadFloorPlan(form_data, updateSite?.siteId);
   };

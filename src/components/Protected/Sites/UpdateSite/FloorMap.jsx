@@ -23,7 +23,7 @@ const FloorMap = ({ siteLayout }) => {
         {itm?.floorPlanUrl ? (
           <iframe src={itm?.floorPlanUrl} width="auto" height="auto"></iframe>
         ) : (
-          "Floor Panel file is not available"
+          "Floor plan file is not available."
         )}
       </TabPanel>
     ));
