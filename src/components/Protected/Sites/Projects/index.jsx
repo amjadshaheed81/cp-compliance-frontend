@@ -129,6 +129,19 @@ const Projects = ({
               </div>
             </div>
             <MandatoryFolders />
+            <div className="row" style={{ height: "auto" }}>
+              <p>
+                <strong>Add Contractor</strong>
+              </p>
+              <div className="col-md-3">
+                <button
+                  className="btn btn-sm btn-light text-primary w-100 mb-2"
+                  // onClick={() => handleOpen()}
+                >
+                  <i className="fas fa-plus"></i>&nbsp;Add
+                </button>
+              </div>
+            </div>
             <div className="row mb-2" style={{ height: "auto" }}>
               <Contractors />
               <div className="col-md-12">

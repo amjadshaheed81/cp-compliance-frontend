@@ -13,7 +13,7 @@ const Contractors = ({}) => {
   };
   const style = {
     position: "absolute",
-    overflow: 'auto',
+    overflow: "auto",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
@@ -26,19 +26,6 @@ const Contractors = ({}) => {
   };
   return (
     <Fragment>
-      <div className="col-md-3">
-        <p>
-          <strong>Add Contractor</strong>
-        </p>
-        <div>
-          <button
-            className="btn btn-sm btn-light text-primary w-100 mb-2"
-            onClick={() => handleOpen()}
-          >
-            <i className="fas fa-plus"></i>&nbsp;Add
-          </button>
-        </div>
-      </div>
       <div>
         <table class="table table-bordered f-11">
           <thead class="table-dark">
@@ -61,7 +48,7 @@ const Contractors = ({}) => {
                 </div>
               </td>
               <td>
-                <span style={{ color: "gray" }}>
+                <span style={{ color: "gray" }} onClick={() => handleOpen()}>
                   <i class="fas fa-eye fa-2x"></i>
                 </span>
                 &nbsp;
