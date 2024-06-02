@@ -1,3 +1,4 @@
+import { get } from "../../api";
 import { GET_CONTRACTOR_LIST, GET_MANAGER_LIST } from "../actions/userAction";
 
 export const getContractorList = () => {

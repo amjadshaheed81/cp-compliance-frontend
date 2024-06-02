@@ -1,10 +1,32 @@
+import { connect } from "react-redux";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import Contractors from "./Contractors";
 import MandatoryFolders from "./MandatoryFolders";
+import { getProjectList } from "../../../../store/thunk/projects";
+import {
+  getContractorList,
+  getManagerList,
+} from "../../../../store/thunk/user";
+import { useEffect } from "react";
 
-const Projects = () => {
+const Projects = ({
+  getProjectList,
+  error,
+  success,
+  projectList,
+  getContractorList,
+  getManagerList,
+  siteSelectedForGlobal,
+  ManagerList,
+  contractsList,
+}) => {
+  useEffect(() => {
+    getContractorList();
+    getManagerList();
+    getProjectList(siteSelectedForGlobal?.siteId);
+  }, []);
   return (
     <>
       <Header />
@@ -37,21 +59,13 @@ const Projects = () => {
               </button>
             </div>
             <ul class="nav flex-column">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">
-                  Project A
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="#">
-                  Project B
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="#">
-                  Project C
-                </a>
-              </li>
+              {projectList?.map((itm) => {
+                <li class="nav-item" key={itm?.id}>
+                  <a class="nav-link active" aria-current="page" href="#">
+                    {itm?.name}
+                  </a>
+                </li>;
+              })}
             </ul>
           </div>
           <div className="col-md-10">
@@ -139,4 +153,16 @@ const Projects = () => {
     </>
   );
 };
-export default Projects;
+const mapStateToProps = (state) => ({
+  error: state.siteProjectsReducer.error,
+  success: state.siteProjectsReducer.success,
+  projectList: state.siteProjectsReducer.projectList,
+  contractsList: state.userReducer.projectList,
+  ManagerList: state.userReducer.ManagerList,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, {
+  getProjectList,
+  getContractorList,
+  getManagerList,
+})(Projects);
