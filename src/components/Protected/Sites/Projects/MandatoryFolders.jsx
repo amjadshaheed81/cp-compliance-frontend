@@ -159,7 +159,13 @@ const MandatoryFolders = ({
                   Cancel
                 </button>
                 &nbsp; &nbsp;
-                <button type="submit" class="btn btn-primary mb-3 mr-4">
+                <button
+                  type="button"
+                  class="btn btn-primary mb-3 mr-4"
+                  onClick={() => {
+                    setFolderOpen(false);
+                  }}
+                >
                   Save
                 </button>
               </div>

@@ -3,7 +3,7 @@ import React, { Fragment, useState } from "react";
 import { connect } from "react-redux";
 import { Box, Modal, Typography } from "@mui/material";
 
-const Contractors = ({}) => {
+const Contractors = ({ contractsList, setSelectedContractors }) => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => {
     setOpen(!open);
@@ -39,16 +39,35 @@ const Contractors = ({}) => {
           </thead>
           <tbody>
             <tr>
-              <td>Jason M</td>
-              <td>ACME Ltd</td>
-              <td>&#163;</td>
               <td>
-                <div class="bg-warning text-light rounded-1 p-1" role="alert">
-                  Recieved
-                </div>
+                <select
+                  className="form-control form-select"
+                  name="contractor"
+                  id="contractor"
+                  onChange={(e) => {
+                    setSelectedContractors([parseInt(e.target.value)]);
+                  }}
+                >
+                  <option value={""}>Select Contractor</option>
+                  {contractsList?.map((itm) => (
+                    <option value={itm?.id}>{itm?.name}</option>
+                  ))}
+                </select>
               </td>
               <td>
-                <span style={{ color: "gray" }} onClick={() => handleOpen()}>
+              {/* ACME Ltd */}
+              </td>
+              <td>&#163;</td>
+              <td>
+                <div class="bg-light text-info rounded-1 p-1" role="alert">
+                  New
+                </div>
+                {/* <div class="bg-warning text-light rounded-1 p-1" role="alert">
+                  Recieved
+                </div> */}
+              </td>
+              <td>
+                {/* <span style={{ color: "gray" }} onClick={() => handleOpen()}>
                   <i class="fas fa-eye fa-2x"></i>
                 </span>
                 &nbsp;
@@ -62,7 +81,7 @@ const Contractors = ({}) => {
                 &nbsp;
                 <span style={{ color: "gray" }}>
                   <i class="far fa-trash-alt fa-2x"></i>
-                </span>
+                </span> */}
               </td>
             </tr>
           </tbody>
