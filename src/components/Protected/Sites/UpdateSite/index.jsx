@@ -394,6 +394,7 @@ const UpdateSite = ({
                 <div>
                   <button
                     className="btn btn-sm btn-primary mt-2 mb-2 "
+                    disabled={!updateSiteImageSuccess?.data?.url}
                     onClick={handleDeleteSiteImage}
                   >
                     Delete
