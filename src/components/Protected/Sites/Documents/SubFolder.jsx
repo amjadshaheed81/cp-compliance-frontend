@@ -32,7 +32,7 @@ const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, s
             <SidebarNew />
             <div
                 class="container-fluid"
-                style={{ marginLeft: "5rem", paddingRight: "9rem" }}
+                style={{ paddingLeft: "5rem", paddingRight: "2rem" }}
             >
                 <BreadCrumHeader header={"Site Projects"} page={"Documents"} />
                 <div class="float-end w-25" style={{ position: "relative" }}>

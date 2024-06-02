@@ -47,7 +47,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
             {isCreateFolderModalOpen && (
                 <CreateFiles setIsCreateFolderModalOpen={setIsCreateFolderModalOpen} />
             )}
-            <div class='container-fluid' style={{ marginLeft: '5rem', paddingRight: '9rem' }}>
+            <div class='container-fluid' style={{ paddingLeft: '5rem', paddingRight: '9rem' }}>
                 <BreadCrumHeader header={"Document Management"} page={"Documents"} />
                 <div class="float-end w-25" style={{ position: "relative" }}>
                     <i

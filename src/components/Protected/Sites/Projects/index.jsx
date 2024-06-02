@@ -117,7 +117,7 @@ const Projects = ({
       <SidebarNew />
       <div
         class="container-fluid"
-        style={{ marginLeft: "5rem", paddingRight: "9rem" }}
+        style={{ paddingLeft: "5rem", paddingRight: "2rem" }}
       >
         <BreadCrumHeader header={"Site Projects"} page={"Projects"} />
         <div className="row">
