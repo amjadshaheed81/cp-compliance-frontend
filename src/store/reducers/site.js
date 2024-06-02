@@ -37,6 +37,8 @@ import {
   GET_DOCUMENTS_SUB_FOLDER_FILES,
   GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
   SELECT_GLOBAL_SITE,
+  UPDATE_DOCUMENT_FILE_FAILURE,
+  UPDATE_DOCUMENT_FILE_SUCCESS,
 } from "./../actionTypes";
 
 const initialState = {
@@ -377,6 +379,16 @@ const reducer = (state = initialState, action) => {
         subfolderFiles: action.payload,
       };
     case GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE:
+      return {
+        ...state,
+        subfolderFiles: "",
+      };
+    case UPDATE_DOCUMENT_FILE_SUCCESS:
+      return {
+        ...state,
+        uploadDocumentFile: action.payload,
+      };
+    case UPDATE_DOCUMENT_FILE_FAILURE:
       return {
         ...state,
         subfolderFiles: "",

@@ -47,6 +47,8 @@ import {
   GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
   GET_DOCUMENTS_SUB_FOLDER_FILES,
   SELECT_GLOBAL_SITE,
+  UPDATE_DOCUMENT_FILE_SUCCESS,
+  UPDATE_DOCUMENT_FILE_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -678,6 +680,37 @@ export const deleteFile = (id) => {
       return "Success";
     } catch (error) {
       return "Error";
+    }
+  };
+};
+
+export const uploadDocumentFile = (data, folderId) => {
+  console.log('data', data);
+  console.log('folderId', folderId);
+
+  return async (dispatch) => {
+    const formData = {
+      files: data.fileUpload[0],
+      documentRequestString : {
+        ...data,
+        folderId,
+      }
+    }
+    try {
+      const url = `/api/document/files/upload`;
+      const res = await uploadPhoto(url, formData);
+      if (res.status === 200) {
+        dispatch({
+          type: UPDATE_DOCUMENT_FILE_SUCCESS,
+          payload: res,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: UPDATE_DOCUMENT_FILE_FAILURE,
+        payload:
+          "Something went wrong while updating site image. Please try again.",
+      });
     }
   };
 };

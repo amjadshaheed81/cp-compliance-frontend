@@ -83,7 +83,7 @@ const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, s
                                     <CreateNewFolderIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
                                     <NoteAddIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
+                                    {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} folderId={folder.id}/>}
                                     <ContentCopyIcon onClick={() => setBulkUploadModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {bulkUploadModal && <BulkUpload bulkUploadModal={bulkUploadModal} setBulkUploadModal={setBulkUploadModal} folder={folder}/>}
                                 </td>
