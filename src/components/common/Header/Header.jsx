@@ -39,7 +39,7 @@ const Header = ({ siteSelectedForGlobal }) => {
             {siteSelectedForGlobal && (
               <>
                 {siteSelectedForGlobal?.siteImageUrl ? (
-                  <img src={siteSelectedForGlobal?.siteImageUrl} />
+                  <img src={siteSelectedForGlobal?.siteImageUrl} style={{ height: '50px', borderRadius: '50%'}}/>
                 ) : (
                   <AccountCircle style={{ color: "grey" }} />
                 )}

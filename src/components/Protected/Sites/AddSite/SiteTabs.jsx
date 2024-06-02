@@ -47,12 +47,12 @@ export default function SiteTabs({ tabs, isCreateSite }) {
             onChange={handleChange}
             aria-label="basic tabs example"
           >
-            {tabs.map(({ label }, i) => (
+            {tabs?.map(({ label }, i) => (
               <Tab label={label} key={i} disabled={isCreateSite && (i === 1 || i === 2)} />
             ))}
           </Tabs>
         </Box>
-        {tabs.map(({ Component }, i) => (
+        {tabs?.map(({ Component }, i) => (
           <TabPanel value={value} index={i} key={i}>
             {Component}
           </TabPanel>

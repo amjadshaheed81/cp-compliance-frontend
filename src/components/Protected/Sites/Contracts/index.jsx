@@ -261,7 +261,13 @@ const Contracts = ({
                     <tr key={itm?.folder_id}>
                       <td>{itm?.folderName}</td>
                       <td>
-                        <input type="file" className="form-control" />
+                        <input
+                          type="file"
+                          className="form-control"
+                          disabled={
+                            contractDetail?.status !== "Awarded" ? true : false
+                          }
+                        />
                       </td>
                       <td>
                         {itm?.file && (

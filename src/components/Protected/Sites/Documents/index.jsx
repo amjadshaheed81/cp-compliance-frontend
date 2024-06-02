@@ -100,7 +100,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {rootFolder?.parentFolders.map((folder, index) => {
+                        {rootFolder?.parentFolders?.map((folder, index) => {
                             return (
                                 <tr>
                                     <div role="button" tabIndex={0} onClick={() => navigateToSubFolder(folder?.id)}><i style={{ color: '#384BD3' }} class="fas fa-folder fa-2x"></i><span class="p-3">{folder?.name}</span></div>
