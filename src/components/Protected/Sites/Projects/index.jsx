@@ -7,6 +7,7 @@ import MandatoryFolders from "./MandatoryFolders";
 import {
   getProjectList,
   addUpdateProject,
+  deleteProject,
 } from "../../../../store/thunk/projects";
 import {
   getContractorList,
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
+import Swal from "sweetalert2";
 
 const Projects = ({
   getProjectList,
@@ -28,17 +30,17 @@ const Projects = ({
   ManagerList,
   contractsList,
   addUpdateProject,
+  deleteProject,
 }) => {
-  console.log("projectList", projectList);
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   const [selectedContractors, setSelectedContractors] = useState([]);
+  const [selectedProject, setSelectedProject] = useState({});
   const { register, handleSubmit, reset, getValues, setValue, watch } = useForm(
     {}
   );
   const submitProject = (data) => {
-    console.log(data);
     const payload = {
-      projectId: null,
+      projectId: data?.projectId || null,
       projectName: data?.projectName,
       siteId: siteSelectedForGlobal?.siteId,
       status: "New",
@@ -50,15 +52,16 @@ const Projects = ({
     };
     const contractors = [
       {
-        quoteId: null,
+        quoteId: selectedContractors?.[0],
         siteId: siteSelectedForGlobal?.siteId,
-        contractorUserId: selectedContractors?.[0]?.id,
+        contractorUserId: selectedContractors?.[0],
         status: "Pending",
         projectManagerUserId: parseInt(data?.manager),
       },
     ];
+    const mandatoryFolders = selectedMandatoryFolder?.map((itm) => itm.id);
     const folders = {
-      mandatoryFolders: selectedMandatoryFolder,
+      mandatoryFolders: mandatoryFolders,
       removeMandatoryFolders: null,
       quoteIds: null,
       removeQuoteId: null,
@@ -70,6 +73,44 @@ const Projects = ({
     getManagerList();
     getProjectList(siteSelectedForGlobal?.siteId);
   }, []);
+  const updateSelectedProject = (project) => {
+    setSelectedProject(project);
+    setValue("projectId", project?.id);
+    setValue("projectName", project?.name);
+    setValue("budget", project?.budget);
+    setValue("startDate", project?.startDate?.split("T")?.[0]);
+    setValue("shortDescription", project?.description);
+    setValue("manager", project?.projectManagerUserId);
+  };
+  const deleteProjectData = async () => {
+    const res = await deleteProject(selectedProject?.id);
+    if (res === "Success") {
+      Swal.fire({
+        icon: "success",
+        title: "Success...",
+        text: "Project has been successfully deleted",
+      });
+      getProjectList(siteSelectedForGlobal?.siteId);
+      resetFields();
+      setSelectedProject({});
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Something went wrong while deleting project. Please try again!",
+      });
+    }
+  };
+  const resetFields = () => {
+    reset({
+      projectId: "",
+      projectName: "",
+      budget: "",
+      startDate: "",
+      shortDescription: "",
+      manager: "",
+    });
+  };
   return (
     <>
       <Header />
@@ -96,17 +137,29 @@ const Projects = ({
                   padding: "2px",
                 }}
                 className="btn btn-sm btn-primary text-white w-100"
-                // onClick={() => goTo("/add-site")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  resetFields();
+                  setSelectedProject({});
+                }}
               >
                 <i className="fas fa-cog"></i>&nbsp; Create New Project
               </button>
             </div>
             <ul class="nav flex-column">
               {projectList?.map((itm) => (
-                <li class="nav-item" key={itm?.id}>
-                  <a class="nav-link active" aria-current="page" href="#">
+                <li
+                  class="nav-item mb-1"
+                  key={itm?.id}
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    updateSelectedProject(itm);
+                  }}
+                >
+                  <div class="bg-light text-primary rounded-1 p-1" role="alert">
                     {itm?.name}
-                  </a>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -214,10 +267,21 @@ const Projects = ({
                       Cancel
                     </button>
                     &nbsp; &nbsp;
-                    {/* <button type="button" class="btn btn-light mb-3 mr-4">
-                    Delete
-                  </button>
-                  &nbsp; &nbsp; */}
+                    {selectedProject?.id && (
+                      <>
+                        <button
+                          type="button"
+                          class="btn btn-light mb-3 mr-4"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            deleteProjectData();
+                          }}
+                        >
+                          Delete
+                        </button>
+                        &nbsp; &nbsp;
+                      </>
+                    )}
                     <button type="submit" class="btn btn-primary mb-3 mr-4">
                       Save
                     </button>
@@ -244,4 +308,5 @@ export default connect(mapStateToProps, {
   getContractorList,
   getManagerList,
   addUpdateProject,
+  deleteProject,
 })(Projects);

@@ -22,6 +22,7 @@ const Contracts = ({
   filterContract,
   error,
   success,
+  siteSelectedForGlobal,
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState({});
@@ -33,7 +34,7 @@ const Contracts = ({
   };
 
   useEffect(() => {
-    getSiteContracts(126);
+    getSiteContracts(siteSelectedForGlobal?.siteId);
   }, []);
 
   const updateContractDetails = () => {
@@ -320,6 +321,7 @@ const mapStateToProps = (state) => ({
   contractsList: state.siteContracts.contractsList,
   filterContract: state.siteContracts.filterContract,
   contractDetail: state.siteContracts.contractDetail,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getSiteContracts,

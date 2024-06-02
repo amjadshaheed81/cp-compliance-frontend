@@ -1,4 +1,4 @@
-import { get, put } from "../../api";
+import { del, get, put } from "../../api";
 import { ADD_UPDATE_SITE_PROJECT, ADD_UPDATE_SITE_PROJECT_FAILURE, GET_ALL_PROJECTS } from "../actions/siteProjectActions";
 
 export const getProjectList = (siteID) => {
@@ -23,10 +23,11 @@ export const addUpdateProject = (formData, projectContractor, folders) => {
       try {
         const url = "/api/project/manage";
         const addUpdateProjectData = await put(url, formData);
+        console.log("addUpdateProjectData", addUpdateProjectData);
         if (addUpdateProjectData?.status === 200) {
-            const contractorURL = `api/project/{${addUpdateProjectData?.projectId}}/contractor`;
+            const contractorURL = `api/project/${addUpdateProjectData?.data?.id}/contractor`;
             const contractorURLData = await put(contractorURL, projectContractor);
-            const folderURL = `api/project/{${addUpdateProjectData?.projectId}}/folders`;
+            const folderURL = `api/project/${addUpdateProjectData?.data?.id}/folders`;
             const folderURLData = await put(folderURL, folders);
           dispatch({
             type: ADD_UPDATE_SITE_PROJECT,
@@ -38,6 +39,18 @@ export const addUpdateProject = (formData, projectContractor, folders) => {
             type: ADD_UPDATE_SITE_PROJECT_FAILURE,
             payload: "Something went wrong while adding/updating project. Please try again.",
         });
+      }
+    };
+  };
+
+  export const deleteProject = (id) => {
+    return async () => {
+      try {
+        const url = `/api/project/${id}/delete`;
+        await del(url);
+        return "Success";
+      } catch (error) {
+        return "Error";
       }
     };
   };
