@@ -340,46 +340,22 @@ const UpdateSite = ({
                         )}
                       </div>
                     </div>
-                    <div className="col-md-12">
-                      <div class="mb-3">
-                        <label for="mapViewUrl" class="form-label">
-                          Map View URL <i class="fas fa-info-circle"></i>
-                        </label>
-                        <input
+                    <input
                           type="text"
                           name="mapViewUrl"
                           class="form-control"
                           id="mapViewUrl"
+                          style={{display: 'none' }}
                           {...register("mapViewUrl")}
                         />
-                        {errors?.mapViewUrl && (
-                          <InputError
-                            message={errors?.mapViewUrl?.message}
-                            key={errors?.mapViewUrl?.message}
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-12">
-                      <div class="mb-3">
-                        <label for="streetViewUrl" class="form-label">
-                          Street View URL <i class="fas fa-info-circle"></i>
-                        </label>
-                        <input
+                    <input
                           type="text"
                           name="streetViewUrl"
                           class="form-control"
                           id="streetViewUrl"
+                          style={{display: 'none' }}
                           {...register("streetViewUrl")}
                         />
-                        {errors?.streetViewUrl && (
-                          <InputError
-                            message={errors?.streetViewUrl?.message}
-                            key={errors?.streetViewUrl?.message}
-                          />
-                        )}
-                      </div>
-                    </div>
                     <div className="col-md-12">
                       <div>
                         {success && <Success msg={success} />}

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, Modal, Typography, Box } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 
-const VersionHistory = ({ versionHistory, setVersionHistory }) => {
+const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setVersionHistory(true);
     const handleClose = () => setVersionHistory(false);
@@ -45,8 +45,7 @@ const VersionHistory = ({ versionHistory, setVersionHistory }) => {
                             <div>
                             <label htmlFor="fileUpload" name="fileUpload">Upload New Version</label>
                             <input type="file" name="fileUpload" class="form-control" />
-                            </div>
-                            
+                            </div>                            
                         </div>
                         <table class="f-11">
                     <thead>

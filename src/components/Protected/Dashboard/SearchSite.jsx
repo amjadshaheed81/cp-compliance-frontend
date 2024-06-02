@@ -9,7 +9,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import StarOutlineIcon from "@mui/icons-material/StarOutline";
+import StarIcon from '@mui/icons-material/Star';
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../api";
 import { getSites, selectGlobalSite } from "../../../store/thunk/site";
@@ -31,7 +31,7 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
   useEffect(() => {
     getSites();
   }, []);
-  let initialSite = sites?.slice(0, 5);
+  let initialSite = sites?.slice(0, 2);
   const searchSite = async (e) => {
     const value = e?.target?.value;
     const url = `/api/site/site/all?q=${value}`;
@@ -105,7 +105,7 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
               }}
             >
               <ListItemIcon>
-                <StarOutlineIcon />
+                <StarIcon color="primary" />
               </ListItemIcon>
               <ListItemText primary={site?.siteName} />
             </ListItemButton>

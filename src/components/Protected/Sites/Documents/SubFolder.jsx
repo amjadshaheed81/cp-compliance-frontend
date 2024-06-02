@@ -36,7 +36,7 @@ const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, s
                 class="container-fluid"
                 style={{ paddingLeft: "5rem", paddingRight: "2rem" }}
             >
-                <BreadCrumHeader header={"Site Projects"} page={"Documents"} />
+                <BreadCrumHeader header={"Document Management"} page={"Documents"} />
                 <div class="float-end w-25" style={{ position: "relative" }}>
                     <i
                         style={{
@@ -107,8 +107,8 @@ const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, s
                                     <RestorePageIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
                                     <HistoryIcon onClick={() => setVersionHistory(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {versionHistory && <VersionHistory versionHistory={versionHistory} setVersionHistory={setVersionHistory} />}
-                                    <DeleteIcon onClick={() => deleteFile(1)} style={{ color: '384bd3', cursor: 'pointer' }} />
+                                    {versionHistory && <VersionHistory versionHistory={versionHistory} setVersionHistory={setVersionHistory} fileId={file?.id} />}
+                                    <DeleteIcon onClick={() => deleteFile(file?.id)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                 </td>
                                 </tr>
                                 </>
