@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Button, Modal, Typography, Box } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import { useForm } from "react-hook-form";
 
-const BulkUpload = ({ bulkUploadModal, setBulkUploadModal }) => {
-    const [open, setOpen] = React.useState(false);
+const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
     const handleOpen = () => setBulkUploadModal(true);
     const handleClose = () => setBulkUploadModal(false);
     const style = {
@@ -18,6 +18,13 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal }) => {
         boxShadow: 24,
         p: 4,
     };
+    const {
+        register,
+        handleSubmit,
+      } = useForm({});
+      const handleFileSelect = async (event) => {
+        console.log('event', event);
+      };
 
     return (
         <>
@@ -35,7 +42,7 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal }) => {
                     <form class="row">
                         <div class="col-md-6 h-50">
                             <label htmlFor="folder" name="folder">Folder</label>
-                            <input type="text" name="folder" class="form-control" />
+                            <input type="text" name="folder" class="form-control" value={folder} />
                         </div>
                         <div class="col-md-6 h-50">
                             <div
@@ -50,13 +57,13 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal }) => {
                                         }}
                                     />
                                     <input
-                                        // {...register("photo")}
+                                        {...register("bulkUpload")}
                                         className="uploadButton-input"
                                         type="file"
-                                        name="siteImage"
+                                        name="bulkUpload"
                                         accept="image/*, application/pdf"
-                                        id="siteImage"
-                                    // onChange={handleFileSelect}
+                                        id="bulkUpload"
+                                        onChange={handleFileSelect}
                                     />
                                     <label
                                         htmlFor="siteImage"

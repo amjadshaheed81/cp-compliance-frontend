@@ -669,7 +669,18 @@ export const getSubFilesAndFolder = (folderId) => {
   };
 };
 
-
+export const deleteFile = (id) => {
+  console.log('id', id);
+  return async () => {
+    try {
+      const url = `/api/document/file/${id}/delete`;
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
 
 export const selectGlobalSite = (site) => {
   console.log("site", site);

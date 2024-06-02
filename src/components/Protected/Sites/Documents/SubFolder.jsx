@@ -1,21 +1,28 @@
 import React, { useEffect, useState } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { getDocumentsRootFolder, getSubFilesAndFolder } from '../../../../store/thunk/site';
+import ReplyIcon from '@mui/icons-material/Reply';
+import DeleteIcon from '@mui/icons-material/Delete';
+import HistoryIcon from '@mui/icons-material/History';
+import RestorePageIcon from '@mui/icons-material/RestorePage';
+import { getDocumentsRootFolder, getSubFilesAndFolder, deleteFile } from '../../../../store/thunk/site';
 import { connect } from 'react-redux';
 import Header from '../../../common/Header/Header';
 import SidebarNew from '../../../common/Sidebar/SidebarNew';
 import BreadCrumHeader from '../../../common/BreadCrumHeader/BreadCrumHeader';
 import CreateFiles from './CreateFiles';
 import BulkUpload from './BulkUpload';
+import VersionHistory from './VersionHistory';
 
-const SubFolder = ({ rootFolder, getDocumentsRootFolder, getSubFilesAndFolder, subfolderFiles }) => {
+const SubFolder = ({ deleteFile, getDocumentsRootFolder, getSubFilesAndFolder, subfolderFiles }) => {
     const [searchParams] = useSearchParams();
     const folderId = searchParams.get("id");
     const [showModal, setShowModal] = useState(false);
+    const navigate = useNavigate();
     const [bulkUploadModal, setBulkUploadModal] = useState(false);
+    const [versionHistory, setVersionHistory] = useState(false);
     useEffect(() => {
         getSubFilesAndFolder(folderId);
     }, [])
@@ -78,7 +85,7 @@ const SubFolder = ({ rootFolder, getDocumentsRootFolder, getSubFilesAndFolder, s
                                     <NoteAddIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
                                     <ContentCopyIcon onClick={() => setBulkUploadModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {bulkUploadModal && <BulkUpload bulkUploadModal={bulkUploadModal} setBulkUploadModal={setBulkUploadModal} />}
+                                    {bulkUploadModal && <BulkUpload bulkUploadModal={bulkUploadModal} setBulkUploadModal={setBulkUploadModal} folder={folder}/>}
                                 </td>
                                 </tr>
                                 </>
@@ -94,12 +101,12 @@ const SubFolder = ({ rootFolder, getDocumentsRootFolder, getSubFilesAndFolder, s
                                 <td>{file?.expiryDate}</td>
                                 <td>{file?.source}</td>
                                 <td>
-                                    <CreateNewFolderIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
+                                    <ReplyIcon onClick={() => navigate('/documents')} style={{ color: '384bd3', cursor: 'pointer' }} />
+                                    <RestorePageIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                     {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
-                                    <NoteAddIcon onClick={() => setShowModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {showModal && <CreateFiles showModal={showModal} setShowModal={setShowModal} />}
-                                    <ContentCopyIcon onClick={() => setBulkUploadModal(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
-                                    {bulkUploadModal && <BulkUpload bulkUploadModal={bulkUploadModal} setBulkUploadModal={setBulkUploadModal} />}
+                                    <HistoryIcon onClick={() => setVersionHistory(true)} style={{ color: '384bd3', cursor: 'pointer' }} />
+                                    {versionHistory && <VersionHistory versionHistory={versionHistory} setVersionHistory={setVersionHistory} />}
+                                    <DeleteIcon onClick={() => deleteFile(1)} style={{ color: '384bd3', cursor: 'pointer' }} />
                                 </td>
                                 </tr>
                                 </>
@@ -118,6 +125,7 @@ const mapStateToProps = (state) => ({
     subfolderFiles: state.site.subfolderFiles,
 });
 export default connect(mapStateToProps, {
+    deleteFile,
     getDocumentsRootFolder,
     getSubFilesAndFolder,
 })(SubFolder);

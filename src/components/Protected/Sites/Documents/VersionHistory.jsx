@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { Button, Modal, Typography, Box } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 
-const VersionHistory = ({ currentFolder }) => {
+const VersionHistory = ({ versionHistory, setVersionHistory }) => {
     const [open, setOpen] = React.useState(false);
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const handleOpen = () => setVersionHistory(true);
+    const handleClose = () => setVersionHistory(false);
     const style = {
         position: 'absolute',
         top: '50%',
@@ -23,7 +23,7 @@ const VersionHistory = ({ currentFolder }) => {
         <>
             <Button onClick={handleOpen}>Version History</Button>
             <Modal
-                open={open}
+                open={versionHistory}
                 onClose={handleClose}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
