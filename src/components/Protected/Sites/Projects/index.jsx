@@ -9,7 +9,7 @@ import {
   getContractorList,
   getManagerList,
 } from "../../../../store/thunk/user";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const Projects = ({
   getProjectList,
@@ -22,6 +22,7 @@ const Projects = ({
   ManagerList,
   contractsList,
 }) => {
+  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   useEffect(() => {
     getContractorList();
     getManagerList();
@@ -109,12 +110,16 @@ const Projects = ({
                 <label for="manager" class="form-label">
                   Manager
                 </label>
-                <input
-                  type="text"
+                <select
+                  className="form-control form-select"
                   name="manager"
-                  class="form-control"
                   id="manager"
-                />
+                >
+                  <option value={""}>Select Manager</option>
+                  {ManagerList?.map((itm) => (
+                    <option value={itm?.id}>{itm?.name}</option>
+                  ))}
+                </select>
               </div>
               <div class="col-md-8">
                 <label for="shortDescription" class="form-label">
@@ -128,7 +133,7 @@ const Projects = ({
                 />
               </div>
             </div>
-            <MandatoryFolders />
+            <MandatoryFolders setSelectedMandatoryFolder={setSelectedMandatoryFolder} selectedMandatoryFolder={selectedMandatoryFolder}/>
             <div className="row" style={{ height: "auto" }}>
               <p>
                 <strong>Add Contractor</strong>

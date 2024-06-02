@@ -8,7 +8,7 @@ export const getContractorList = () => {
       const data = await get(url);
       dispatch({
         type: GET_CONTRACTOR_LIST,
-        payload: data,
+        payload: data?.users,
       });
     } catch (error) {
       console.error(error);
@@ -23,7 +23,7 @@ export const getManagerList = () => {
       const data = await get(url);
       dispatch({
         type: GET_MANAGER_LIST,
-        payload: data,
+        payload: data?.users,
       });
     } catch (error) {
       console.error(error);

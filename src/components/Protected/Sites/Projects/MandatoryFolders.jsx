@@ -1,8 +1,14 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Box, Modal, Typography } from "@mui/material";
 import { connect } from "react-redux";
+import { getDocumentsRootFolder } from "../../../../store/thunk/site";
 
-const MandatoryFolders = ({}) => {
+const MandatoryFolders = ({
+  getDocumentsRootFolder,
+  rootFolder,
+  selectedMandatoryFolder,
+  setSelectedMandatoryFolder,
+}) => {
   const [openFolder, setFolderOpen] = useState(false);
   const handleFolderOpen = () => {
     setFolderOpen(!openFolder);
@@ -10,6 +16,9 @@ const MandatoryFolders = ({}) => {
   const handleFolderClose = () => {
     setFolderOpen(false);
   };
+  useEffect(() => {
+    getDocumentsRootFolder();
+  }, []);
   const style = {
     position: "absolute",
     top: "50%",
@@ -17,6 +26,7 @@ const MandatoryFolders = ({}) => {
     transform: "translate(-50%, -50%)",
     width: 700,
     height: 400,
+    overflow: "scroll",
     bgcolor: "background.paper",
     border: "2px solid #fff",
     boxShadow: 24,
@@ -39,12 +49,25 @@ const MandatoryFolders = ({}) => {
           </div>
         </div>
         <div className="mt-2">
-          <span class="badge bg-light text-primary">
-            Key Structural Princiles <i class="fas fa-times" size="sm"></i>
-          </span>{" "}
-          <span class="badge bg-light text-primary">
-            Asbestos Removal Work <i class="fas fa-times" size="sm"></i>
-          </span>{" "}
+          {selectedMandatoryFolder?.map((itm) => (
+            <Fragment>
+              <span class="badge bg-light text-primary">
+                {itm?.name}{" "}
+                <i
+                  class="fas fa-times"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedMandatoryFolder(
+                      selectedMandatoryFolder?.filter(
+                        (value) => value?.id != itm?.id
+                      )
+                    );
+                  }}
+                ></i>
+              </span>
+              &nbsp;
+            </Fragment>
+          ))}
         </div>
       </div>
       <Modal
@@ -77,29 +100,52 @@ const MandatoryFolders = ({}) => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>
-                    <i
-                      style={{ color: "#384BD3" }}
-                      class="fas fa-folder fa-2x"
-                    ></i>
-                    <span class="p-3">Folder Name</span>
-                  </td>
-                  <td>
-                    <span className="text-primary">
-                      <i class="fas fa-plus" size="sm"></i>
-                    </span>
-                  </td>
-                </tr>
+                {rootFolder?.parentFolders?.map((folder, index) => (
+                  <tr>
+                    <td>
+                      <i
+                        style={{ color: "#384BD3" }}
+                        class="fas fa-folder fa-2x"
+                      ></i>
+                      <span class="p-3">{folder?.name}</span>
+                    </td>
+                    <td>
+                      <span
+                        className="text-primary"
+                        onClick={() => {
+                          setSelectedMandatoryFolder([
+                            ...selectedMandatoryFolder,
+                            folder,
+                          ]);
+                        }}
+                      >
+                        <i class="fas fa-plus" size="sm"></i>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             <div>
-              <span class="badge bg-light text-primary">
-                Key Structural Princiles <i class="fas fa-times" size="sm"></i>
-              </span>{" "}
-              <span class="badge bg-light text-primary">
-                Asbestos Removal Work <i class="fas fa-times" size="sm"></i>
-              </span>{" "}
+              {selectedMandatoryFolder?.map((itm) => (
+                <Fragment>
+                  <span class="badge bg-light text-primary">
+                    {itm?.name}{" "}
+                    <i
+                      class="fas fa-times"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedMandatoryFolder(
+                          selectedMandatoryFolder?.filter(
+                            (value) => value?.id != itm?.id
+                          )
+                        );
+                      }}
+                    ></i>
+                  </span>
+                  &nbsp;
+                </Fragment>
+              ))}
             </div>
             <div className="col-md-12 pt-4 border-top">
               <div class="float-end">
@@ -124,5 +170,9 @@ const MandatoryFolders = ({}) => {
     </Fragment>
   );
 };
-
-export default connect(null, {})(MandatoryFolders);
+const mapStateToProps = (state) => ({
+  rootFolder: state.site.rootFolder,
+});
+export default connect(mapStateToProps, { getDocumentsRootFolder })(
+  MandatoryFolders
+);
