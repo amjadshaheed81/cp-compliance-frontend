@@ -36,6 +36,7 @@ import {
   GET_DOCUMENTS_ROOT_FOLDER,
   GET_DOCUMENTS_SUB_FOLDER_FILES,
   GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
+  SELECT_GLOBAL_SITE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -58,6 +59,7 @@ const initialState = {
   updateSiteImageSuccess: "",
   siteLayout: [],
   siteLayoutFailure: "",
+  siteSelectedForGlobal: {},
 };
 
 const reducer = (state = initialState, action) => {
@@ -329,20 +331,22 @@ const reducer = (state = initialState, action) => {
         ...state,
         siteAreaInformation: action.payload,
       };
-  case GET_SITE_AREA_INFORMATION_FAILURE:
+    case GET_SITE_AREA_INFORMATION_FAILURE:
       return {
         ...state,
-        siteAreaInformation: "Something went wrong while fetching key contacts. Please try again.",
+        siteAreaInformation:
+          "Something went wrong while fetching key contacts. Please try again.",
       };
-      case SAVE_SITE_SECURITY_INFORMATION:
+    case SAVE_SITE_SECURITY_INFORMATION:
       return {
         ...state,
         siteSecurityInfo: action.payload,
       };
-  case SAVE_SITE_SECURITY_INFORMATION_FAILURE:
+    case SAVE_SITE_SECURITY_INFORMATION_FAILURE:
       return {
         ...state,
-        siteSecurityInfo: "Something went wrong while fetching key contacts. Please try again.",
+        siteSecurityInfo:
+          "Something went wrong while fetching key contacts. Please try again.",
       };
     case GET_SITE_LAYOUT:
       return {
@@ -356,26 +360,31 @@ const reducer = (state = initialState, action) => {
         siteLayout: [],
         siteLayoutFailure: action.payload,
       };
-      //TODO: move to fileFolderReducers
-      case GET_DOCUMENTS_ROOT_FOLDER:
+    //TODO: move to fileFolderReducers
+    case GET_DOCUMENTS_ROOT_FOLDER:
       return {
         ...state,
         rootFolder: action.payload,
       };
-      case GET_DOCUMENTS_ROOT_FOLDER_FAILURE:
+    case GET_DOCUMENTS_ROOT_FOLDER_FAILURE:
       return {
         ...state,
         rootFolderFailure: "",
       };
-      case GET_DOCUMENTS_SUB_FOLDER_FILES:
+    case GET_DOCUMENTS_SUB_FOLDER_FILES:
       return {
         ...state,
         subfolderFiles: action.payload,
       };
-      case GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE:
+    case GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE:
       return {
         ...state,
         subfolderFiles: "",
+      };
+    case SELECT_GLOBAL_SITE:
+      return {
+        ...state,
+        siteSelectedForGlobal: action.payload,
       };
     default:
       return state;

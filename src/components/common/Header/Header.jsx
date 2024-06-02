@@ -7,7 +7,7 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { connect } from "react-redux";
 
-const Header = () => {
+const Header = ({ siteSelectedForGlobal }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenu = (event) => {
@@ -18,20 +18,36 @@ const Header = () => {
     setAnchorEl(null);
   };
   return (
-    <AppBar position="static" style={{ backgroundColor: 'white', top: '0', left: '70px', zIndex: '-1' }}>
+    <AppBar
+      position="static"
+      style={{ backgroundColor: "white", top: "0", left: "70px", zIndex: "-1" }}
+    >
       <Toolbar>
-        <div style={{ flexGrow: 1 }}></div>{/* Empty div to push user icon to right */}
+        <div style={{ flexGrow: 1 }}></div>
+        {/* Empty div to push user icon to right */}
         <div class="nav-icon">
-        <div className='icon'>
-          <GridViewIcon className="grid-icon" />
-        </div>
-        <div className='icon'>
-          <NotificationsNoneIcon className="grid-icon" />
-        </div>
-        <div className='icon'>
-          <LogoutIcon className="grid-icon" />
-        </div>
-        <div>
+          <div className="icon">
+            <GridViewIcon className="grid-icon" />
+          </div>
+          <div className="icon">
+            <NotificationsNoneIcon className="grid-icon" />
+          </div>
+          <div className="icon">
+            <LogoutIcon className="grid-icon" />
+          </div>
+          <div className="text-dark mt-2">
+            {siteSelectedForGlobal && (
+              <>
+                {siteSelectedForGlobal?.siteImageUrl ? (
+                  <img src={siteSelectedForGlobal?.siteImageUrl} />
+                ) : (
+                  <AccountCircle style={{ color: "grey" }} />
+                )}
+                <span>{siteSelectedForGlobal?.siteName}</span>
+              </>
+            )}
+          </div>
+          {/* <div>
         <IconButton
           size="large"
           aria-label="account of current user"
@@ -42,7 +58,6 @@ const Header = () => {
           style={{marginRight:'40px'}}
         >
           <AccountCircle style={{ color: 'grey' }} />
-          <ArrowDropDown className="grid-icon" />
         </IconButton>
         <Menu
           id="menu-appbar"
@@ -63,11 +78,13 @@ const Header = () => {
           <MenuItem onClick={handleClose}>My account</MenuItem>
           <MenuItem onClick={handleClose}>Logout</MenuItem>
         </Menu>
-        </div>
+        </div> */}
         </div>
       </Toolbar>
     </AppBar>
   );
 };
-
-export default connect(null, {})(Header);
+const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, {})(Header);

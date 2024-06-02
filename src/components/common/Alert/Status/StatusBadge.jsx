@@ -3,7 +3,7 @@ import { Fragment } from "react";
 const StatusBadge = ({ status }) => {
   return (
     <Fragment>
-      {status === "Received" && (
+      {status === "Received" || status === "New" && (
         <div class="bg-warning text-light rounded-1 p-1" role="alert">
           Recieved
         </div>

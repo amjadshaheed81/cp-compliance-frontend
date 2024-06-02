@@ -10,13 +10,11 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
-import InboxIcon from "@mui/icons-material/MoveToInbox";
-import MailIcon from "@mui/icons-material/Mail";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../api";
-import { getSites, updateSite } from "../../../store/thunk/site";
+import { getSites, selectGlobalSite } from "../../../store/thunk/site";
 
-function SearchSite({ updateSite, getSites, sites }) {
+function SearchSite({ getSites, sites, selectGlobalSite }) {
   const [allSites, setSites] = useState([]);
   const [error, setError] = useState("");
   const [state, setState] = React.useState({
@@ -103,10 +101,7 @@ function SearchSite({ updateSite, getSites, sites }) {
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                setTimeout(() => {
-                  goTo("/update-site");
-                }, 1000);
-                updateSite(site);
+                selectGlobalSite(site);
               }}
             >
               <ListItemIcon>
@@ -125,10 +120,7 @@ function SearchSite({ updateSite, getSites, sites }) {
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                setTimeout(() => {
-                  goTo("/update-site");
-                }, 1000);
-                updateSite(site);
+                selectGlobalSite(site)
               }}
             >
               <ListItemText primary={site?.siteName} />
@@ -169,4 +161,4 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { updateSite, getSites })(SearchSite);
+export default connect(mapStateToProps, { getSites, selectGlobalSite })(SearchSite);

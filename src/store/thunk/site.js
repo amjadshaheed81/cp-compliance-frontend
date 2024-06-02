@@ -46,6 +46,7 @@ import {
   GET_DOCUMENTS_ROOT_FOLDER_FAILURE,
   GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
   GET_DOCUMENTS_SUB_FOLDER_FILES,
+  SELECT_GLOBAL_SITE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -664,6 +665,22 @@ export const getSubFilesAndFolder = (folderId) => {
         type: GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
         payload: "Something went wrong while fetching site. Please try again.",
       });
+    }
+  };
+};
+
+
+
+export const selectGlobalSite = (site) => {
+  console.log("site", site);
+  return async (dispatch) => {
+    try {
+      dispatch({
+        type: SELECT_GLOBAL_SITE,
+        payload: site,
+      });
+    } catch (error) {
+      console.error(error);
     }
   };
 };
