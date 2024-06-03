@@ -1,8 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
+import {
+  saveSiteLandScapes,
+  getSiteLandScapeInfo,
+} from "../../../../../store/thunk/site";
 
-const Landscape = () => {
+const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo }) => {
   const {
     register,
     handleSubmit,
@@ -13,8 +18,15 @@ const Landscape = () => {
     watch,
   } = useForm({});
   const saveAreaAndOccupancy = (data) => {
-    console.log("saveAreaAndOccupancy", data);
+    const formData = {
+      ...data,
+      siteId: updateSite?.siteId,
+    };
+    saveSiteLandScapes(formData);
   };
+  useEffect(() => {
+    getSiteLandScapeInfo(updateSite?.siteId, reset);
+  }, []);
   return (
     <div className="container">
       <form
@@ -23,19 +35,19 @@ const Landscape = () => {
       >
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="hardLandScaping"
+            name="hardLandScaping"
+            id="hardLandScaping"
           >
             Hard Landscaping
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="hardLandScaping"
+              id="hardLandScaping"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("hardLandScaping")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -45,19 +57,19 @@ const Landscape = () => {
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="softLandScaping"
+            name="softLandScaping"
+            id="softLandScaping"
           >
             Soft Landscaping
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="softLandScaping"
+              id="softLandScaping"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("softLandScaping")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -67,19 +79,19 @@ const Landscape = () => {
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="riverPondLakes"
+            name="riverPondLakes"
+            id="riverPondLakes"
           >
             Rivers/Ponds/Lakes
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="riverPondLakes"
+              id="riverPondLakes"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("riverPondLakes")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -88,20 +100,16 @@ const Landscape = () => {
           </div>
         </div>
         <div>
-          <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
-          >
+          <label htmlFor="tallTrees" name="tallTrees" id="tallTrees">
             Tall Trees
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="tallTrees"
+              id="tallTrees"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("tallTrees")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -111,19 +119,19 @@ const Landscape = () => {
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="drainageInterceptors"
+            name="drainageInterceptors"
+            id="drainageInterceptors"
           >
             Drainage Interceptors
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="drainageInterceptors"
+              id="drainageInterceptors"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("drainageInterceptors")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -133,19 +141,19 @@ const Landscape = () => {
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="thirdPartyTelEquipment"
+            name="thirdPartyTelEquipment"
+            id="thirdPartyTelEquipment"
           >
             Third Party Telecomms Equipment
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="thirdPartyTelEquipment"
+              id="thirdPartyTelEquipment"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("thirdPartyTelEquipment")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -155,19 +163,19 @@ const Landscape = () => {
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="electricalOverHeadPowerLines"
+            name="electricalOverHeadPowerLines"
+            id="electricalOverHeadPowerLines"
           >
             Electrical Overhead Power Lines
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="electricalOverHeadPowerLines"
+              id="electricalOverHeadPowerLines"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("electricalOverHeadPowerLines")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -177,64 +185,64 @@ const Landscape = () => {
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="vacantLandAdjacent"
+            name="vacantLandAdjacent"
+            id="vacantLandAdjacent"
           >
             Demolition Site or Vacant Land Adjacent
           </label>
           <div>
             <input
               type="string"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="vacantLandAdjacent"
+              id="vacantLandAdjacent"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("vacantLandAdjacent")}
             />
           </div>
         </div>
         <div>
-          <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
-          >
+          <label htmlFor="floodRisk" name="floodRisk" id="floodRisk">
             Risk of Flooding
           </label>
           <div>
             <input
               type="string"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="floodRisk"
+              id="floodRisk"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("floodRisk")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="railwayLineAdjacent"
+            name="railwayLineAdjacent"
+            id="railwayLineAdjacent"
           >
             Railway Line Adjacent
           </label>
           <div>
             <input
               type="string"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="railwayLineAdjacent"
+              id="railwayLineAdjacent"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("railwayLineAdjacent")}
             />
           </div>
         </div>
+
+        <div>
+          <button className="btn btn-primary float-end m-3">Save</button>
+        </div>
       </form>
-      <div>
-        <button className="btn btn-primary float-end m-3">Save</button>
-      </div>
     </div>
   );
 };
 
-export default Landscape;
+const mapStateToProps = (state) => ({
+  updateSite: state.site.updateSite,
+});
+export default connect(mapStateToProps, { saveSiteLandScapes, getSiteLandScapeInfo})(Landscape);

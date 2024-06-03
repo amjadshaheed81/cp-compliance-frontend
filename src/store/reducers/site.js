@@ -44,6 +44,12 @@ import {
   SAVE_UTILITY_ENERGY_DETAILS,
   GET_UTILITY_ENERGY_DETAILS,
   GET_UTILITY_ENERGY_DETAILS_FAILURE,
+  SAVE_SITE_LIFTS_INFORMATION,
+  SAVE_SITE_LIFTS_INFORMATION_FAILURE,
+  GET_SITE_LIFTS_INFORMATION,
+  SAVE_SITE_LANDSCAPED_INFORMATION,
+  SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
+  GET_SITE_LANDSCAPE_INFORMATION,
 } from "./../actionTypes";
 
 const initialState = {
@@ -68,6 +74,8 @@ const initialState = {
   siteLayoutFailure: "",
   siteSelectedForGlobal: {},
   saveSiteUtilityInfo: null,
+  saveSiteLiftsInfo: null,
+  saveSiteLandscapesInfo: null,
 };
 
 const reducer = (state = initialState, action) => {
@@ -430,6 +438,36 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         createFolder: action.payload,
+      };
+    case SAVE_SITE_LIFTS_INFORMATION:
+      return {
+        ...state,
+        saveSiteLiftsInfo: action.payload,
+      };
+    case SAVE_SITE_LIFTS_INFORMATION_FAILURE:
+      return {
+        ...state,
+        saveSiteLiftsInfo: "error",
+      };
+    case GET_SITE_LIFTS_INFORMATION:
+      return {
+        ...state,
+        saveSiteLiftsInfo: action.payload,
+      };
+    case SAVE_SITE_LANDSCAPED_INFORMATION:
+      return {
+        ...state,
+        saveSiteLandscapesInfo: action.payload,
+      };
+    case SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE:
+      return {
+        ...state,
+        saveSiteLandscapesInfo: "error",
+      };
+    case GET_SITE_LANDSCAPE_INFORMATION:
+      return {
+        ...state,
+        saveSiteLandscapesInfo: action.payload,
       };
     default:
       return state;

@@ -1,9 +1,15 @@
-import React from "react";
-import { useForm } from "react-hook-form";
+import React, { useEffect } from "react";
 import { connect } from "react-redux";
-import { getLiftsAndStairwaysDetails, saveLiftsAndStairwaysDetails } from "../../../../../store/thunk/site";
-
-const LiftsStairways = ({ saveLiftsAndStairwaysDetails, getLiftsAndStairwaysDetails }) => {
+import { useForm } from "react-hook-form";
+import {
+  saveLiftAndStairways,
+  getSiteLiftStairways,
+} from "../../../../../store/thunk/site";
+const LiftsStairways = ({
+  updateSite,
+  getSiteLiftStairways,
+  saveLiftAndStairways,
+}) => {
   const {
     register,
     handleSubmit,
@@ -13,208 +19,213 @@ const LiftsStairways = ({ saveLiftsAndStairwaysDetails, getLiftsAndStairwaysDeta
     setValue,
     watch,
   } = useForm({});
-  const saveLiftAndStairways = (data) => {
-    console.log("saveAreaAndOccupancy", data);
+  const saveAreaAndOccupancy = (data) => {
+    const formData = {
+      ...data,
+      siteId: updateSite?.siteId,
+    };
+    saveLiftAndStairways(formData);
   };
+  useEffect(() => {
+    getSiteLiftStairways(updateSite?.siteId, reset);
+  }, []);
   return (
     <div className="container">
       <form
         className="d-flex flex-wrap gap-3"
-        onSubmit={handleSubmit(saveLiftAndStairways)}
+        onSubmit={handleSubmit(saveAreaAndOccupancy)}
       >
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="disabledHoistLift"
+            name="disabledHoistLift"
+            id="disabledHoistLift"
           >
             Disabled Hoist/Lift
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="disabledHoistLift"
+              id="disabledHoistLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("disabledHoistLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="goodsTractionLift"
+            name="goodsTractionLift"
+            id="goodsTractionLift"
           >
             Lifts (Goods-Traction)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="goodsTractionLift"
+              id="goodsTractionLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("goodsTractionLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="goodsHydraulicLift"
+            name="goodsHydraulicLift"
+            id="goodsHydraulicLift"
           >
             Lifts (Goods-Hydraulic)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="goodsHydraulicLift"
+              id="goodsHydraulicLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("goodsHydraulicLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="passengerTractionLift"
+            name="passengerTractionLift"
+            id="passengerTractionLift"
           >
             Lifts (Passenger-Traction)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="passengerTractionLift"
+              id="passengerTractionLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("passengerTractionLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="passengerHydraulicLift"
+            name="passengerHydraulicLift"
+            id="passengerHydraulicLift"
           >
             Lifts (Passenger-Hydraulic)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="passengerHydraulicLift"
+              id="passengerHydraulicLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("passengerHydraulicLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="passengerMonospaceLift"
+            name="passengerMonospaceLift"
+            id="passengerMonospaceLift"
           >
             Lifts (Passenger-Monospace)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="passengerMonospaceLift"
+              id="passengerMonospaceLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("passengerMonospaceLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="fireFightingLift"
+            name="fireFightingLift"
+            id="fireFightingLift"
           >
             Lifts (Fire Fighting)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="fireFightingLift"
+              id="fireFightingLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("fireFightingLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="fireEvacuationLift"
+            name="fireEvacuationLift"
+            id="fireEvacuationLift"
           >
             Lifts (Fire Evacuation)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="fireEvacuationLift"
+              id="fireEvacuationLift"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("fireEvacuationLift")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="internalStairways"
+            name="internalStairways"
+            id="internalStairways"
           >
             Number of Stairways (Internal)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="internalStairways"
+              id="internalStairways"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("internalStairways")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
+            htmlFor="externalStairways"
+            name="externalStairways"
+            id="externalStairways"
           >
             Number of Stairways (External)
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="externalStairways"
+              id="externalStairways"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("externalStairways")}
             />
           </div>
         </div>
+        <div>
+          <button className="btn btn-primary float-end m-3">Save</button>
+        </div>
       </form>
-      <div>
-        <button className="btn btn-primary float-end m-3">Save</button>
-      </div>
     </div>
   );
 };
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
-  success: state.site.updateSuccess,
-  error: state.site.updateError,
 });
 export default connect(mapStateToProps, {
-  saveLiftsAndStairwaysDetails,
-  getLiftsAndStairwaysDetails
+  getSiteLiftStairways,
+  saveLiftAndStairways,
 })(LiftsStairways);

@@ -57,6 +57,12 @@ import {
   SAVE_SITE_UTILITY_INFORMATION_FAILURE,
   SAVE_SITE_UTILITY_INFORMATION,
   GET_SITE_UTILITY_INFORMATION,
+  GET_SITE_LIFTS_INFORMATION,
+  SAVE_SITE_LIFTS_INFORMATION_FAILURE,
+  SAVE_SITE_LIFTS_INFORMATION,
+  GET_SITE_LANDSCAPE_INFORMATION,
+  SAVE_SITE_LANDSCAPED_INFORMATION,
+  SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -970,6 +976,47 @@ export const saveSiteUtilityInfo = (formData) => {
   };
 };
 
+export const saveLiftAndStairways = (formData) => {
+  return async (dispatch) => {
+    try {
+      const url = "/api/site/siteliftsinfo";
+      const data = await post(url, formData);
+      if (data?.status === 200) {
+        dispatch({
+          type: SAVE_SITE_LIFTS_INFORMATION,
+          payload: data,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_SITE_LIFTS_INFORMATION_FAILURE,
+        payload:
+          "Something went wrong while updating site lifts info. Please try again.",
+      });
+    }
+  };
+};
+export const saveSiteLandScapes = (formData) => {
+  return async (dispatch) => {
+    try {
+      const url = "/api/site/sitelandscapeinfo";
+      const data = await post(url, formData);
+      if (data?.status === 200) {
+        dispatch({
+          type: SAVE_SITE_LANDSCAPED_INFORMATION,
+          payload: data,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
+        payload:
+          "Something went wrong while updating site land scapes info. Please try again.",
+      });
+    }
+  };
+};
+
 /**
  * q value
  * siteInfo
@@ -979,6 +1026,21 @@ export const saveSiteUtilityInfo = (formData) => {
  * siteLifts
  * siteScape
  */
+export const getSiteLandScapeInfo = (id, reset) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/siteinfo/${id}?q=siteScape`;
+      const siteLandscapeInfo = await get(url);
+      reset(siteLandscapeInfo);
+      dispatch({
+        type: GET_SITE_LANDSCAPE_INFORMATION,
+        payload: siteLandscapeInfo,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+};
 export const getSiteUtilityInfo = (id, reset) => {
   return async (dispatch) => {
     try {
@@ -988,6 +1050,21 @@ export const getSiteUtilityInfo = (id, reset) => {
       dispatch({
         type: GET_SITE_UTILITY_INFORMATION,
         payload: siteUtilityInfo,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+};
+export const getSiteLiftStairways = (id, reset) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/siteinfo/${id}?q=siteLifts`;
+      const siteLiftsInfo = await get(url);
+      reset(siteLiftsInfo);
+      dispatch({
+        type: GET_SITE_LIFTS_INFORMATION,
+        payload: siteLiftsInfo,
       });
     } catch (error) {
       console.error(error);

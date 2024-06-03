@@ -463,8 +463,11 @@ const UtilityEnergy = ({
             />
           </div>
         </div>
+
         <div>
-          <button className="btn btn-primary float-end m-3 my-sm-4">Save</button>
+          <button className="btn btn-primary float-end m-3" type="submit">
+            Save
+          </button>
         </div>
       </form>
     </div>
