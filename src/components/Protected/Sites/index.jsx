@@ -202,7 +202,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     <th scope="col">{itm?.siteName}</th>
                     <th scope="col">{itm?.address1}</th>
                     <th scope="col">
-                      <span class="badge rounded-pill bg-success">Open</span>
+                      <span class="badge rounded-pill bg-success">{itm?.status ? itm?.status : 'Open'}</span>
                     </th>
                     <th scope="col">
                       <span class="badge bg-danger p-2 m-1 risk-span">1</span>

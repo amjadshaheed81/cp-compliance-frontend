@@ -49,7 +49,7 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
   };
   return (
     <div>
-      <h5 class="pt-5 text-start">Update Floor Plan</h5>
+      <h5 className="pt-5 text-start">Update Floor Plan</h5>
       <table style={{ borderCollapse: "separate", borderSpacing: "2rem" }}>
         <thead>
           <tr>

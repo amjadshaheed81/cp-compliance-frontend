@@ -62,20 +62,20 @@ const LocalDetails = ({
   };
   return (
     <>
-      <div class="row p-2 bg-white">
-        <div class="col-md-8">
-          <h2 class="fs-6 mt-4 border-bottom">Local Details</h2>
+      <div className="row p-2 bg-white">
+        <div className="col-md-8">
+          <h2 className="fs-6 mt-4 border-bottom">Local Details</h2>
           <form className="p-2" onSubmit={handleSubmit(submitLocalDetails)}>
             <div className="row">
               <div className="col-md-6">
-                <div class="mb-3">
-                  <label for="Council" class="form-label">
+                <div className="mb-3">
+                  <label for="Council" className="form-label">
                     Local Authority
                   </label>
                   <input
                     type="text"
                     name="localAuthority"
-                    class="form-control"
+                    className="form-control"
                     id="localAuthority"
                     {...register("localAuthority", {
                       required: {
@@ -93,8 +93,8 @@ const LocalDetails = ({
                 </div>
               </div>
               <div className="col-md-6">
-                <div class="mb-3">
-                  <label htmlFor="status" class="form-label">
+                <div className="mb-3">
+                  <label htmlFor="status" className="form-label">
                     Status
                   </label>
                   <select
@@ -131,7 +131,7 @@ const LocalDetails = ({
                     name="clientResponsibility"
                     {...register("clientResponsibility")}
                   />
-                  <label class="m-2" for="clientResponsibility">
+                  <label className="m-2" for="clientResponsibility">
                     Client Responsibility
                   </label>
                 </div>
@@ -141,19 +141,19 @@ const LocalDetails = ({
               {success && <Success msg={success} />}
               {error && <Error msg={error} />}
             </div>
-            <div class="float-end">
-              <button type="button" class="btn btn-light mb-3 mr-4">
+            <div className="float-end">
+              <button type="button" className="btn btn-light mb-3 mr-4">
                 Cancel
               </button>
               &nbsp; &nbsp;
-              <button type="submit" class="btn btn-primary mb-3 mr-4">
+              <button type="submit" className="btn btn-primary mb-3 mr-4">
                 Save
               </button>
             </div>
           </form>
         </div>
-        <div class="col-md-4">
-          <h2 class="fs-6 mt-4 border-bottom">Opening Timings</h2>
+        <div className="col-md-4">
+          <h2 className="fs-6 mt-4 border-bottom">Opening Timings</h2>
           <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
             <span>Start</span>
             <span>End</span>
@@ -164,7 +164,7 @@ const LocalDetails = ({
           >
             <table>
               <tr>
-                <td><label class="">Mon:</label></td>
+                <td><label className="">Mon:</label></td>
                 <td><input
                   type="time"
                   className="form-control"
@@ -237,12 +237,12 @@ const LocalDetails = ({
               {timingSuccess && <Success msg={timingSuccess} />}
               {timingError && <Error msg={timingError} />}
             </div>
-            <div class="float-end m-5">
-              <button type="button" class="btn btn-light mb-3 mr-4">
+            <div className="float-end m-5">
+              <button type="button" className="btn btn-light mb-3 mr-4">
                 Cancel
               </button>
               &nbsp; &nbsp;
-              <button type="submit" class="btn btn-primary mb-3 mr-4">
+              <button type="submit" className="btn btn-primary mb-3 mr-4">
                 Save
               </button>
             </div>

@@ -173,10 +173,12 @@ export const getSites = () => {
     try {
       const url = "/api/site/site/all";
       const siteList = await get(url);
-      dispatch({
-        type: GET_SITES_SUCCESS,
-        payload: siteList,
-      });
+      if (siteList) {
+        dispatch({
+          type: GET_SITES_SUCCESS,
+          payload: siteList,
+        });
+      }
     } catch (error) {
       dispatch({
         type: GET_SITES_FAILURE,
@@ -747,6 +749,22 @@ export const selectGlobalSite = (site) => {
       dispatch({
         type: SELECT_GLOBAL_SITE,
         payload: site,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+};
+
+
+export const getSiteDetailsById = (id) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/site/${id}`;
+      const data = await get(url);
+      dispatch({
+        type: UPDATE_SITE,
+        payload: data,
       });
     } catch (error) {
       console.error(error);

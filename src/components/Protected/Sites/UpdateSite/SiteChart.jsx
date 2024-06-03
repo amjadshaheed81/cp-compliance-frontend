@@ -141,7 +141,7 @@ const SiteChart = ({
     <>
       <SidebarNew />
       <div style={{ textAlign: "center" }}>
-        <h5 class="text-start">Creating Building Layout</h5>
+        <h5 className="text-start">Creating Building Layout</h5>
         <Tree
           lineWidth={"2px"}
           lineColor={"grey"}

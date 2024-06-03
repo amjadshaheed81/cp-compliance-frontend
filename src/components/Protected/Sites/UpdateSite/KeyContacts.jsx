@@ -57,8 +57,8 @@ const KeyContacts = ({
   };
   return (
     <>
-      <div class="row p-2 bg-white">
-        <h2 class="fs-6 mt-4 border-bottom">Key Contacts</h2>
+      <div className="row p-2 bg-white">
+        <h2 className="fs-6 mt-4 border-bottom">Key Contacts</h2>
         <table>
           <thead>
             <tr>
@@ -82,7 +82,7 @@ const KeyContacts = ({
                     className="btn btn-sm btn-light text-danger mt-4"
                     onClick={() => deleteKeyContactClick(row)}
                   >
-                    <i class="fas fa-trash"></i>
+                    <i className="fas fa-trash"></i>
                   </button>
                 </td>
               </tr>
@@ -91,31 +91,31 @@ const KeyContacts = ({
               <tr>
                 <td>
                   <input
-                    class="contact-input form-control"
+                    className="contact-input form-control"
                     type="text"
                     {...register("contactName")}
                   />
                 </td>
                 {/* <td>
-                <input class="contact-input form-control" type="text" {...register("lastName")}/>
+                <input className="contact-input form-control" type="text" {...register("lastName")}/>
               </td> */}
                 <td>
                   <input
-                    class="contact-input form-control"
+                    className="contact-input form-control"
                     type="phone"
                     {...register("phone")}
                   />
                 </td>
                 <td>
                   <input
-                    class="contact-input form-control"
+                    className="contact-input form-control"
                     type="email"
                     {...register("email")}
                   />
                 </td>
                 <td>
                   {/* <input
-                    class="contact-input form-control"
+                    className="contact-input form-control"
                     type="text"
                     {...register("actionManager")}
                   /> */}
@@ -156,16 +156,16 @@ const KeyContacts = ({
           </tbody>
         </table>
         <div>{keyContactsFailure && <Error msg={keyContactsFailure} />}</div>
-        <div class="pt-4">
+        <div className="pt-4">
           <button
             type="button"
             onClick={() => addKeyContactClick()}
-            class="btn btn-light mb-3 mr-4"
+            className="btn btn-light mb-3 mr-4"
           >
             Add Row
           </button>
           &nbsp; &nbsp;
-          {/* <button type="submit" class="btn btn-primary mb-3 mr-4">
+          {/* <button type="submit" className="btn btn-primary mb-3 mr-4">
             Save
           </button> */}
         </div>

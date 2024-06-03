@@ -30,7 +30,7 @@ const FloorMap = ({ siteLayout }) => {
   };
   return (
     <div>
-      <h5 class="pt-5 text-start">Floor Map</h5>
+      <h5 className="pt-5 text-start">Floor Map</h5>
       <Box
         sx={{
           flexGrow: 1,
