@@ -3,7 +3,6 @@ import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
 import { getUtilityAndEnergyDetails, saveUtilityAndEnergyDetails } from "../../../../../store/thunk/site";
-import { connect } from "react-redux";
 
 const UtilityEnergy = ({
   updateSite,
