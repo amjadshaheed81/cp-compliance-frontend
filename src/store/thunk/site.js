@@ -812,12 +812,10 @@ export const addSiteLayoutNode = (formData) => {
 };
 
 export const uploadFloorPlan = (formData, siteId) => {
-  console.log("formData", formData);
   return async (dispatch) => {
     try {
       const url = "/api/site/uploadfloorplan";
       const siteareainfo = await postMultiPartFormData(url, formData);
-      console.log("siteareainfo", siteareainfo);
       if (siteareainfo?.status === 200) {
         const url = `/api/site/layout/${siteId}`;
         const List = await get(url);

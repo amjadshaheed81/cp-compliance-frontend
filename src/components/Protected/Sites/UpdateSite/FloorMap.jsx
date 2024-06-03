@@ -8,7 +8,6 @@ import TabPanel from "../../../common/TabPanel/TabPanel";
 const FloorMap = ({ siteLayout }) => {
   const [tabValue, setTabValue] = useState(null);
   const handleChange = (event, newValue) => {
-    console.log("newValue", newValue);
     setTabValue(newValue);
   };
   const getTabLabel = () => {
@@ -21,7 +20,7 @@ const FloorMap = ({ siteLayout }) => {
     return list?.map((itm, newValue) => (
       <TabPanel value={tabValue} index={newValue}>
         {itm?.floorPlanUrl ? (
-          <embed  src={itm?.floorPlanUrl} width="auto" height="auto"></embed >
+          <embed  src={itm?.floorPlanUrl} width="500px" height="auto"></embed >
         ) : (
           "Floor plan file is not available."
         )}

@@ -57,7 +57,7 @@ export function postMultiPartFormData(url, userData) {
     method: "POST",
     url,
     data: userData,
-    headers: {...getHeaders(), 'Content-Type': `multipart/form-data`},
+    headers: {...getHeaders(), 'Content-Type': 'multipart/form-data'},
   });
 }
 

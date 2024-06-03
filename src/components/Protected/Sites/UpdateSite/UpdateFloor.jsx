@@ -11,7 +11,6 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
     const data = [];
     list.forEach((itm) => {
       const file = getValues(`floorImage-${itm?.id}`);
-      console.log("===>", file)
       if (file?.length) {
         files.push(file?.[0]);
         data.push({
@@ -20,12 +19,10 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
         });
       }
     });
-    // console.log("files ===>", files)
-    // console.log("data ===>", data)
     files.map((file) => {
-      form_data.append('files', file);
+      form_data.append("files", file, file?.name);
     });
-    form_data.append('floorPlans',  String(data));
+    form_data.append("floorPlans", JSON.stringify(data));
     uploadFloorPlan(form_data, updateSite?.siteId);
   };
   const getFloorPlanInputs = () => {
