@@ -50,9 +50,10 @@ import {
   UPDATE_DOCUMENT_FILE_SUCCESS,
   UPDATE_DOCUMENT_FILE_FAILURE,
   CREATE_FOLDER,
-  SAVE_SITE_UTILITY_INFORMATION,
-  SAVE_SITE_UTILITY_INFORMATION_FAILURE,
-  GET_SITE_UTILITY_INFORMATION,
+  SAVE_UTILITY_ENERGY_DETAILS_FAILURE,
+  SAVE_UTILITY_ENERGY_DETAILS,
+  GET_UTILITY_ENERGY_DETAILS,
+  GET_UTILITY_ENERGY_DETAILS_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -572,6 +573,188 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
     } catch (error) {
       dispatch({
         type: GET_SITE_SECURITY_INFORMATION_FAILURE,
+        payload:
+          "Something went wrong while fetching key contacts. Please try again.",
+      });
+    }
+  };
+};
+
+export const saveUtilityAndEnergyDetails = (siteId, formData) => {
+  const data = {
+    ...formData,
+    siteId,
+  };
+  return async (dispatch) => {
+    try {
+      const url = "/api/site/siteutilityinfo";
+      const siteSecurityInfo = await post(url, data);
+      if (siteSecurityInfo?.status === 200) {
+        // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
+        // const siteInformation = await get(url);
+        dispatch({
+          type: SAVE_UTILITY_ENERGY_DETAILS,
+          payload: siteSecurityInfo,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_UTILITY_ENERGY_DETAILS_FAILURE,
+        payload: "Something went wrong while adding site. Please try again.",
+      });
+    }
+  };
+};
+
+export const getUtilityAndEnergyDetails = (id, setValue) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/siteinfo/${id}?q=siteUtility`;
+      const siteUtilityInformation = await get(url);
+      setValue("utilGas", siteUtilityInformation?.utilGas);
+      setValue(
+        "utilElectricity",
+        siteUtilityInformation?.utilElectricity
+      );
+      setValue(
+        "utilWater",
+        siteUtilityInformation?.utilWater
+      );
+      setValue("utilTelecom", siteUtilityInformation?.utilTelecom);
+      setValue("utilMainsDrainage", siteUtilityInformation?.utilMainsDrainage);
+      setValue(
+        "airConditioning",
+        siteUtilityInformation?.airConditioning
+      );
+      setValue("coolingTower", siteUtilityInformation?.coolingTower);
+      setValue(
+        "waterIsolationValveInternal",
+        siteUtilityInformation?.waterIsolationValveInternal
+      );
+      setValue("waterTankLocation", siteUtilityInformation?.waterTankLocation);
+      setValue("waterTanks", siteUtilityInformation?.waterTanks);
+      setValue("hotWaterCalorifier", siteUtilityInformation?.hotWaterCalorifier);
+      setValue(
+        "hotWaterCalorifierLocation",
+        siteUtilityInformation?.hotWaterCalorifierLocation
+      );
+      setValue("pressureVessel", siteUtilityInformation?.pressureVessel);
+      setValue(
+        "gasBoiler",
+        siteUtilityInformation?.gasBoiler
+      );
+      setValue("gasBoilerLocation", siteUtilityInformation?.gasBoilerLocation);
+      setValue("gasSupplyIsolation", siteUtilityInformation?.gasSupplyIsolation);
+      setValue("gasSupplyExternalIsolation", siteUtilityInformation?.gasSupplyExternalIsolation);
+      setValue(
+        "electricInstallationLocation",
+        siteUtilityInformation?.electricInstallationLocation
+      );
+      setValue(
+        "electricSubStationOnSite",
+        siteUtilityInformation?.electricSubStationOnSite
+      );
+      setValue("externalLighting", siteUtilityInformation?.externalLighting);
+      setValue("backupGenerator", siteUtilityInformation?.backupGenerator);
+      setValue("backupGeneratorLocation", siteUtilityInformation?.backupGeneratorLocation);
+      dispatch({
+        type: GET_UTILITY_ENERGY_DETAILS,
+        payload: siteUtilityInformation,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_UTILITY_ENERGY_DETAILS_FAILURE,
+        payload:
+          "Something went wrong while fetching key contacts. Please try again.",
+      });
+    }
+  };
+};
+
+export const saveLiftsAndStairwaysDetails = (siteId, formData) => {
+  const data = {
+    ...formData,
+    siteId,
+  };
+  return async (dispatch) => {
+    try {
+      const url = "/api/site/siteutilityinfo";
+      const siteSecurityInfo = await post(url, data);
+      if (siteSecurityInfo?.status === 200) {
+        // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
+        // const siteInformation = await get(url);
+        dispatch({
+          type: SAVE_UTILITY_ENERGY_DETAILS,
+          payload: siteSecurityInfo,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_UTILITY_ENERGY_DETAILS_FAILURE,
+        payload: "Something went wrong while adding site. Please try again.",
+      });
+    }
+  };
+};
+
+export const getLiftsAndStairwaysDetails = (id, setValue) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/siteinfo/${id}?q=siteUtility`;
+      const siteUtilityInformation = await get(url);
+      setValue("utilGas", siteUtilityInformation?.utilGas);
+      setValue(
+        "utilElectricity",
+        siteUtilityInformation?.utilElectricity
+      );
+      setValue(
+        "utilWater",
+        siteUtilityInformation?.utilWater
+      );
+      setValue("utilTelecom", siteUtilityInformation?.utilTelecom);
+      setValue("utilMainsDrainage", siteUtilityInformation?.utilMainsDrainage);
+      setValue(
+        "airConditioning",
+        siteUtilityInformation?.airConditioning
+      );
+      setValue("coolingTower", siteUtilityInformation?.coolingTower);
+      setValue(
+        "waterIsolationValveInternal",
+        siteUtilityInformation?.waterIsolationValveInternal
+      );
+      setValue("waterTankLocation", siteUtilityInformation?.waterTankLocation);
+      setValue("waterTanks", siteUtilityInformation?.waterTanks);
+      setValue("hotWaterCalorifier", siteUtilityInformation?.hotWaterCalorifier);
+      setValue(
+        "hotWaterCalorifierLocation",
+        siteUtilityInformation?.hotWaterCalorifierLocation
+      );
+      setValue("pressureVessel", siteUtilityInformation?.pressureVessel);
+      setValue(
+        "gasBoiler",
+        siteUtilityInformation?.gasBoiler
+      );
+      setValue("gasBoilerLocation", siteUtilityInformation?.gasBoilerLocation);
+      setValue("gasSupplyIsolation", siteUtilityInformation?.gasSupplyIsolation);
+      setValue("gasSupplyExternalIsolation", siteUtilityInformation?.gasSupplyExternalIsolation);
+      setValue(
+        "electricInstallationLocation",
+        siteUtilityInformation?.electricInstallationLocation
+      );
+      setValue(
+        "electricSubStationOnSite",
+        siteUtilityInformation?.electricSubStationOnSite
+      );
+      setValue("externalLighting", siteUtilityInformation?.externalLighting);
+      setValue("backupGenerator", siteUtilityInformation?.backupGenerator);
+      setValue("backupGeneratorLocation", siteUtilityInformation?.backupGeneratorLocation);
+      dispatch({
+        type: GET_UTILITY_ENERGY_DETAILS,
+        payload: siteUtilityInformation,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_UTILITY_ENERGY_DETAILS_FAILURE,
         payload:
           "Something went wrong while fetching key contacts. Please try again.",
       });

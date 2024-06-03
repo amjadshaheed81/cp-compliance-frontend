@@ -22,7 +22,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
         buildYear: "",
         buildingUnderClientControl: '',
         canteenInBuilding: '',
-        dedicatedKitchenArea:''
+        dedicatedKitchenArea: ''
     };
     const {
         register,
@@ -37,14 +37,13 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
     React.useEffect(() => {
         getSiteInformation(updateSite?.siteId, setValue);
         getAreaAndOccupancy(updateSite?.siteId, siteAreaForm.setValue);
-    },[])
+    }, [])
     const saveSiteInformation = (data) => {
         saveSiteBuildingData(updateSite?.siteId, data);
     };
     const saveAreaAndOccupancy = (data) => {
         saveAreaAndOccupancyDetails(updateSite?.siteId, data);
     };
-    console.log('site information', siteInformation);
     return (
         <div>
             <SidebarNew />
@@ -132,7 +131,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='totalBuildingArea' name="totalBuildingArea" id="totalBuildingArea">Total Building Area(Sq.m)</label>
                             <div className="pt-2 pb-2">
                                 <input type="text" name="totalBuildingArea" id="totalBuildingArea" className="form-control"
-                                {...siteAreaForm.register("totalBuildingArea")}
+                                    {...siteAreaForm.register("totalBuildingArea")}
                                 />
                             </div>
                         </div>
@@ -140,7 +139,7 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='clientOccupiedArea' name="clientOccupiedArea" id="clientOccupiedArea">Client Occupied Area(Sq.m)</label>
                             <div className="pt-2 pb-2">
                                 <input type="text" name="clientOccupiedArea" id="clientOccupiedArea" className="form-control"
-                                {...siteAreaForm.register("clientOccupiedArea")}
+                                    {...siteAreaForm.register("clientOccupiedArea")}
                                 />
                             </div>
                         </div>
@@ -148,92 +147,92 @@ const SiteInformation = ({ updateSite, saveSiteBuildingData, siteInformation, ge
                             <label htmlFor='tenantOccupiedArea' name="tenantOccupiedArea" id="tenantOccupiedArea">Tenant Occupied Area(Sq.m)</label>
                             <div className="pt-2 pb-2">
                                 <input type="tenantOccupiedArea" name="tenantOccupiedArea" id="tenantOccupiedArea" className="form-control"
-                                {...siteAreaForm.register("tenantOccupiedArea")}
+                                    {...siteAreaForm.register("tenantOccupiedArea")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='maxOccupancy' name="maxOccupancy" id="maxOccupancy">Maximum Occupancy(Client)</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="maxOccupancy" id="maxOccupancy" className="form-control" 
-                                {...siteAreaForm.register("maxOccupancy")}
+                                <input type="text" name="maxOccupancy" id="maxOccupancy" className="form-control"
+                                    {...siteAreaForm.register("maxOccupancy")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='meetingClients' name="meetingClients" id="meetingClients">Meeting/Conferences Client</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="meetingClients" id="meetingClients" className="form-control" 
-                                {...siteAreaForm.register("meetingClients")}
+                                <input type="text" name="meetingClients" id="meetingClients" className="form-control"
+                                    {...siteAreaForm.register("meetingClients")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='numberOfStaff' name="numberOfStaff" id="numberOfStaff">Number Of Staff</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="numberOfStaff" id="numberOfStaff" className="form-control mt-4" 
-                                {...siteAreaForm.register("numberOfStaff")}
+                                <input type="text" name="numberOfStaff" id="numberOfStaff" className="form-control mt-4"
+                                    {...siteAreaForm.register("numberOfStaff")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='tenantInOccupation' name="tenantInOccupation" id="tenantInOccupation">Tenants in Occupation</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="tenantInOccupation" id="tenantInOccupation" className="form-control mt-4" 
-                                {...siteAreaForm.register("tenantInOccupation")}
+                                <input type="text" name="tenantInOccupation" id="tenantInOccupation" className="form-control mt-4"
+                                    {...siteAreaForm.register("tenantInOccupation")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='tenantName' name="tenantName" id="tenantName">Name Of Tenant</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="tenantName" id="tenantName" className="form-control mt-4" 
-                                {...siteAreaForm.register("tenantName")}
+                                <input type="text" name="tenantName" id="tenantName" className="form-control mt-4"
+                                    {...siteAreaForm.register("tenantName")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='vacantAreaInBuilding' name="vacantAreaInBuilding" id="vacantAreaInBuilding">Vacant Areas in building</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="vacantAreaInBuilding" id="vacantAreaInBuilding" className="form-control" 
-                                {...siteAreaForm.register("vacantAreaInBuilding")}
+                                <input type="text" name="vacantAreaInBuilding" id="vacantAreaInBuilding" className="form-control"
+                                    {...siteAreaForm.register("vacantAreaInBuilding")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='numOfFloors' name="numOfFloors" id="numOfFloors">Number Of Floors</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="numOfFloors" id="numOfFloors" className="form-control mt-4" 
-                                {...siteAreaForm.register("numOfFloors")}
+                                <input type="text" name="numOfFloors" id="numOfFloors" className="form-control mt-4"
+                                    {...siteAreaForm.register("numOfFloors")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='carParkSpaceAboveGround' name="carParkSpaceAboveGround" id="carParkSpaceAboveGround">Cark Park Spaces Above Ground</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" className="form-control" 
-                                {...siteAreaForm.register("carParkSpaceAboveGround")}
+                                <input type="text" name="carParkSpaceAboveGround" id="carParkSpaceAboveGround" className="form-control"
+                                    {...siteAreaForm.register("carParkSpaceAboveGround")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='carParkSpaceBelowGround' name="carParkSpaceBelowGround" id="carParkSpaceBelowGround">Cark Park Spaces Below Ground</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="carParkSpaceBelowGround" id="carParkSpaceBelowGround" className="form-control" 
-                                {...siteAreaForm.register("carParkSpaceBelowGround")}
+                                <input type="text" name="carParkSpaceBelowGround" id="carParkSpaceBelowGround" className="form-control"
+                                    {...siteAreaForm.register("carParkSpaceBelowGround")}
                                 />
                             </div>
                         </div>
                         <div className="col-md-2">
                             <label htmlFor='numOfBasementLevels' name="numOfBasementLevels" id="numOfBasementLevels">Number Of Basement Levels</label>
                             <div className="pt-2 pb-2">
-                                <input type="text" name="numOfBasementLevels" id="numOfBasementLevels" className="form-control" 
-                                {...siteAreaForm.register("numOfBasementLevels")}
+                                <input type="text" name="numOfBasementLevels" id="numOfBasementLevels" className="form-control"
+                                    {...siteAreaForm.register("numOfBasementLevels")}
                                 />
                             </div>
                         </div>
                         <div className="pb-4">
-                        <button className="btn btn-primary float-end">Save</button>
+                            <button className="btn btn-primary float-end">Save</button>
                         </div>
                     </form>
                 </AccordionDetails>

@@ -1,7 +1,9 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import { connect } from "react-redux";
+import { getLiftsAndStairwaysDetails, saveLiftsAndStairwaysDetails } from "../../../../../store/thunk/site";
 
-const LiftsStairways = () => {
+const LiftsStairways = ({ saveLiftsAndStairwaysDetails, getLiftsAndStairwaysDetails }) => {
   const {
     register,
     handleSubmit,
@@ -11,14 +13,14 @@ const LiftsStairways = () => {
     setValue,
     watch,
   } = useForm({});
-  const saveAreaAndOccupancy = (data) => {
+  const saveLiftAndStairways = (data) => {
     console.log("saveAreaAndOccupancy", data);
   };
   return (
     <div className="container">
       <form
         className="d-flex flex-wrap gap-3"
-        onSubmit={handleSubmit(saveAreaAndOccupancy)}
+        onSubmit={handleSubmit(saveLiftAndStairways)}
       >
         <div>
           <label
@@ -207,5 +209,12 @@ const LiftsStairways = () => {
     </div>
   );
 };
-
-export default LiftsStairways;
+const mapStateToProps = (state) => ({
+  updateSite: state.site.updateSite,
+  success: state.site.updateSuccess,
+  error: state.site.updateError,
+});
+export default connect(mapStateToProps, {
+  saveLiftsAndStairwaysDetails,
+  getLiftsAndStairwaysDetails
+})(LiftsStairways);

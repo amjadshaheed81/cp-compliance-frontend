@@ -2,15 +2,13 @@ import React, { useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
-import {
-  saveSiteUtilityInfo,
-  getSiteUtilityInfo,
-} from "../../../../../store/thunk/site";
+import { getUtilityAndEnergyDetails, saveUtilityAndEnergyDetails } from "../../../../../store/thunk/site";
+import { connect } from "react-redux";
 
 const UtilityEnergy = ({
   updateSite,
-  getSiteUtilityInfo,
-  saveSiteUtilityInfo,
+  saveUtilityAndEnergyDetails,
+  getUtilityAndEnergyDetails,
 }) => {
   const {
     register,
@@ -21,25 +19,25 @@ const UtilityEnergy = ({
     setValue,
     watch,
   } = useForm({});
-  useEffect(() => {
-    getSiteUtilityInfo(updateSite?.siteId, reset);
+  React.useEffect(() => {
+    getUtilityAndEnergyDetails(updateSite?.siteId, setValue);
   }, []);
-  const saveAreaAndOccupancy = (data) => {
-    console.log("data ===>", data);
-    const formData = {
-      ...data,
-      siteId: updateSite?.siteId,
-    };
-    saveSiteUtilityInfo(formData);
+  const saveUtilityAndEnergy = (data) => {
+    console.log("saveAreaAndOccupancy", data);
+    saveUtilityAndEnergyDetails()
   };
   return (
     <div className="container">
       <form
         className="d-flex flex-wrap gap-3"
-        onSubmit={handleSubmit(saveAreaAndOccupancy)}
+        onSubmit={handleSubmit(saveUtilityAndEnergy)}
       >
         <div>
-          <label htmlFor="utilGas" name="utilGas" id="utilGas">
+          <label
+            htmlFor="utilGas"
+            name="utilGas"
+            id="utilGas"
+          >
             Utility - Gas
           </label>
           <div>
@@ -79,7 +77,11 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label htmlFor="utilWater" name="utilWater" id="utilWater">
+          <label
+            htmlFor="utilWater"
+            name="utilWater"
+            id="utilWater"
+          >
             Utility - Water
           </label>
           <div>
@@ -159,7 +161,11 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label htmlFor="coolingTower" name="coolingTower" id="coolingTower">
+          <label
+            htmlFor="coolingTower"
+            name="coolingTower"
+            id="coolingTower"
+          >
             Cooling Tower
           </label>
           <div>
@@ -177,11 +183,7 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label
-            htmlFor="waterIsolationValveInternal"
-            name="waterIsolationValveInternal"
-            id="waterIsolationValveInternal"
-          >
+          <label htmlFor="waterIsolationValveInternal" name="tenantNwaterIsolationValveInternalame" id="waterIsolationValveInternal">
             Water Isolation Valve Location (Internal)
           </label>
           <div>
@@ -195,16 +197,20 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label htmlFor="waterTanks" name="waterTanks" id="waterTanks">
+          <label
+            htmlFor="waterTankLocation"
+            name="waterTankLocation"
+            id="waterTankLocation"
+          >
             Water Tanks
           </label>
           <div>
             <select
               type="text"
-              name="waterTanks"
-              id="waterTanks"
+              name="waterTankLocation"
+              id="waterTankLocation"
               className="form-control form-select"
-              {...register("waterTanks")}
+              {...register("waterTankLocation")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -213,20 +219,16 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label
-            htmlFor="waterTankLocation"
-            name="waterTankLocation"
-            id="waterTankLocation"
-          >
+          <label htmlFor="waterTanks" name="waterTanks" id="waterTanks">
             Water Tank Location
           </label>
           <div>
             <input
               type="text"
-              name="waterTankLocation"
-              id="waterTankLocation"
+              name="waterTanks"
+              id="waterTanks"
               className="form-control"
-              {...register("waterTankLocation")}
+              {...register("waterTanks")}
             />
           </div>
         </div>
@@ -285,7 +287,11 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label htmlFor="gasBoiler" name="gasBoiler" id="gasBoiler">
+          <label
+            htmlFor="gasBoiler"
+            name="gasBoiler"
+            id="gasBoiler"
+          >
             Gas Boiler
           </label>
           <div>
@@ -458,18 +464,20 @@ const UtilityEnergy = ({
             />
           </div>
         </div>
+        <div>
+          <button className="btn btn-primary float-end m-3 my-sm-4">Save</button>
+        </div>
       </form>
-      <div>
-        <button className="btn btn-primary float-end m-3" type="submit">Save</button>
-      </div>
     </div>
   );
 };
 
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
+  success: state.site.updateSuccess,
+  error: state.site.updateError,
 });
 export default connect(mapStateToProps, {
-  saveSiteUtilityInfo,
-  getSiteUtilityInfo,
+  saveUtilityAndEnergyDetails,
+  getUtilityAndEnergyDetails,
 })(UtilityEnergy);

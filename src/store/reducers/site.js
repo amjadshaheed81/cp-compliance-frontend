@@ -40,9 +40,10 @@ import {
   UPDATE_DOCUMENT_FILE_FAILURE,
   UPDATE_DOCUMENT_FILE_SUCCESS,
   CREATE_FOLDER,
-  SAVE_SITE_UTILITY_INFORMATION,
-  SAVE_SITE_UTILITY_INFORMATION_FAILURE,
-  GET_SITE_UTILITY_INFORMATION,
+  SAVE_UTILITY_ENERGY_DETAILS_FAILURE,
+  SAVE_UTILITY_ENERGY_DETAILS,
+  GET_UTILITY_ENERGY_DETAILS,
+  GET_UTILITY_ENERGY_DETAILS_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -355,21 +356,27 @@ const reducer = (state = initialState, action) => {
         siteSecurityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
-    case SAVE_SITE_UTILITY_INFORMATION:
+    case SAVE_UTILITY_ENERGY_DETAILS:
       return {
         ...state,
         saveSiteUtilityInfo: action.payload,
       };
-    case SAVE_SITE_UTILITY_INFORMATION_FAILURE:
+    case SAVE_UTILITY_ENERGY_DETAILS_FAILURE:
       return {
         ...state,
         saveSiteUtilityInfo:
-          "error",
+          "Something went wrong while fetching key contacts. Please try again.",
       };
-    case GET_SITE_UTILITY_INFORMATION:
+    case GET_UTILITY_ENERGY_DETAILS:
       return {
         ...state,
-        saveSiteUtilityInfo: action.payload,
+        getSiteUtilityInfo: action.payload,
+      };
+    case GET_UTILITY_ENERGY_DETAILS_FAILURE:
+      return {
+        ...state,
+        getSiteUtilityInfo:
+          "Something went wrong while fetching key contacts. Please try again.",
       };
     case GET_SITE_LAYOUT:
       return {
