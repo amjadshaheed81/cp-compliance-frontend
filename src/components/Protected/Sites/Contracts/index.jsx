@@ -57,16 +57,16 @@ const Contracts = ({
     <Fragment>
       {/* <Sidebar /> */}
       <SidebarNew />
-      <div class="content">
+      <div className="content">
         <Header />
-        <div class="container-fluid">
+        <div className="container-fluid">
           <BreadCrumHeader header={"Contracts"} page={"Contracts"} />
           {/*  */}
           {/*  */}
-          <div class="d-flex bd-highlight">
-            <div class="pt-2 bd-highlight ">
-              <div class="row">
-                <div class="col">
+          <div className="d-flex bd-highlight">
+            <div className="pt-2 bd-highlight ">
+              <div className="row">
+                <div className="col">
                   <input
                     type="text"
                     className="form-control"
@@ -74,7 +74,7 @@ const Contracts = ({
                     name="project"
                   />
                 </div>
-                <div class="col">
+                <div className="col">
                   <select
                     name="startMonth"
                     className="form-control form-select"
@@ -85,7 +85,7 @@ const Contracts = ({
                     </option>
                   </select>
                 </div>
-                <div class="col">
+                <div className="col">
                   <select
                     name="site"
                     className="form-control form-select"
@@ -102,7 +102,7 @@ const Contracts = ({
                     className="btn btn-light bg-white text-primary"
                     data={contractsList}
                   >
-                    <i class="fas fa-download"></i>&nbsp;Export
+                    <i className="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
                 </div>
               </div>
@@ -111,8 +111,8 @@ const Contracts = ({
           {/* row start*/}
           <div className="row p-2"></div>
           <div className="col-md-12">
-            <table class="table">
-              <thead class="table-dark">
+            <table className="table">
+              <thead className="table-dark">
                 <tr>
                   <th scope="col">Project Summary</th>
                   <th scope="col">Site</th>
@@ -150,11 +150,11 @@ const Contracts = ({
                           handleOpen();
                         }}
                       >
-                        <i class="fas fa-eye"></i>
+                        <i className="fas fa-eye"></i>
                       </span>
                       &nbsp;
                       <span style={{ color: "gray" }} title="Official Quota">
-                        <i class="fas fa-solid fa-paperclip"></i>
+                        <i className="fas fa-solid fa-paperclip"></i>
                       </span>
                     </td>
                   </tr>
@@ -175,77 +175,77 @@ const Contracts = ({
           <Typography id="modal-modal-title" variant="h6" component="h2">
             View Contract
           </Typography>
-          <form class="row border-top">
+          <form className="row border-top">
             <div>
-              <span class="badge bg-warning">Recieved</span>
+              <span className="badge bg-warning">Recieved</span>
             </div>
             <div className="col-md-12">
-              <label for="projectSummary" class="form-label">
+              <label for="projectSummary" className="form-label">
                 Project Summary
               </label>
               <input
                 type="text"
                 name="projectSummary"
-                class="form-control"
+                className="form-control"
                 id="projectSummary"
                 disabled={true}
               />
             </div>
             <div className="col-md-6">
-              <label for="projectManager" class="form-label">
+              <label for="projectManager" className="form-label">
                 Project Manager
               </label>
               <input
                 type="text"
                 name="projectManager"
-                class="form-control"
+                className="form-control"
                 id="projectManager"
                 disabled={true}
               />
             </div>
             <div className="col-md-6">
-              <label for="projectStartDate" class="form-label">
+              <label for="projectStartDate" className="form-label">
                 Project Start date
               </label>
               <input
                 type="date"
                 name="projectStartDate"
-                class="form-control"
+                className="form-control"
                 id="projectStartDate"
                 disabled={true}
               />
             </div>
             <div className="col-md-6">
-              <label for="quote" class="form-label">
+              <label for="quote" className="form-label">
                 Quote (GBP)
               </label>
-              <input type="text" name="quote" class="form-control" id="quote" />
+              <input type="text" name="quote" className="form-control" id="quote" />
             </div>
             <div className="col-md-6">
-              <label for="officialQuote" class="form-label">
+              <label for="officialQuote" className="form-label">
                 Official Quote
               </label>
               <input
                 type="file"
                 name="officialQuote"
-                class="form-control"
+                className="form-control"
                 id="officialQuote"
               />
             </div>
             <div className="col-md-12">
-              <label for="notes" class="form-label">
+              <label for="notes" className="form-label">
                 Project Manager Comments
               </label>
               <textarea
                 name="notes"
-                class="form-control"
+                className="form-control"
                 id="notes"
                 disabled={true}
               ></textarea>
             </div>
             <div>
-              <table class="table f-11 mt-2">
-                <thead class="table-dark">
+              <table className="table f-11 mt-2">
+                <thead className="table-dark">
                   <tr>
                     <th scope="col">Mandatory Folder</th>
                     <th scope="col">File (PDF, 1 MB)</th>
@@ -272,7 +272,7 @@ const Contracts = ({
                       </td>
                       <td>
                         {itm?.file && (
-                          <span class="badge bg-light text-primary">
+                          <span className="badge bg-light text-primary">
                             {itm?.file}
                           </span>
                         )}
@@ -287,10 +287,10 @@ const Contracts = ({
                 {success && <Success msg={success} />}
                 {error && <Error msg={error} />}
               </div>
-              <div class="float-end">
+              <div className="float-end">
                 <button
                   type="button"
-                  class="btn btn-light mb-3 mr-4 text-primary"
+                  className="btn btn-light mb-3 mr-4 text-primary"
                   onClick={() => {
                     setOpen(false);
                   }}
@@ -300,7 +300,7 @@ const Contracts = ({
                 &nbsp; &nbsp;
                 <button
                   type="button"
-                  class="btn btn-primary mb-3 mr-4"
+                  className="btn btn-primary mb-3 mr-4"
                   onClick={() => {
                     updateContractDetails();
                   }}

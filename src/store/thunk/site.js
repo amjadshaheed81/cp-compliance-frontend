@@ -50,6 +50,9 @@ import {
   UPDATE_DOCUMENT_FILE_SUCCESS,
   UPDATE_DOCUMENT_FILE_FAILURE,
   CREATE_FOLDER,
+  SAVE_SITE_UTILITY_INFORMATION,
+  SAVE_SITE_UTILITY_INFORMATION_FAILURE,
+  GET_SITE_UTILITY_INFORMATION,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -675,7 +678,6 @@ export const getSubFilesAndFolder = (folderId) => {
 };
 
 export const deleteFile = (id) => {
-  console.log('id', id);
   return async () => {
     try {
       const url = `/api/document/file/${id}/delete`;
@@ -688,17 +690,14 @@ export const deleteFile = (id) => {
 };
 
 export const uploadDocumentFile = (data, folderId) => {
-  console.log('data', data);
-  console.log('folderId', folderId);
-
   return async (dispatch) => {
     const formData = {
       files: data.fileUpload[0],
-      documentRequestString : {
+      documentRequestString: {
         ...data,
         folderId,
-      }
-    }
+      },
+    };
     try {
       const url = `/api/document/files/upload`;
       const res = await uploadPhoto(url, formData);
@@ -719,17 +718,10 @@ export const uploadDocumentFile = (data, folderId) => {
 };
 
 export const createDocumentFolder = (formData, folderId) => {
-  console.log("formData", formData);
-  console.log("folderId", folderId);
-  // const data = {
-  //   ...formData,
-  //   folderId,
-  // };
   return async (dispatch) => {
     try {
       const url = "/api/document/folder";
       const createFolder = await post(url, formData);
-      console.log("siteareainfo", createFolder);
       if (createFolder?.status === 200) {
         dispatch({
           type: CREATE_FOLDER,
@@ -756,7 +748,6 @@ export const selectGlobalSite = (site) => {
   };
 };
 
-
 export const getSiteDetailsById = (id) => {
   return async (dispatch) => {
     try {
@@ -765,6 +756,52 @@ export const getSiteDetailsById = (id) => {
       dispatch({
         type: UPDATE_SITE,
         payload: data,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+};
+
+export const saveSiteUtilityInfo = (formData) => {
+  return async (dispatch) => {
+    try {
+      const url = "/api/site/siteutilityinfo";
+      const data = await post(url, formData);
+      if (data?.status === 200) {
+        dispatch({
+          type: SAVE_SITE_UTILITY_INFORMATION,
+          payload: data,
+        });
+      }
+    } catch (error) {
+      dispatch({
+        type: SAVE_SITE_UTILITY_INFORMATION_FAILURE,
+        payload:
+          "Something went wrong while updating site utility info. Please try again.",
+      });
+    }
+  };
+};
+
+/**
+ * q value
+ * siteInfo
+ * siteArea
+ * siteSafety
+ * siteUtility
+ * siteLifts
+ * siteScape
+ */
+export const getSiteUtilityInfo = (id, reset) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/siteinfo/${id}?q=siteUtility`;
+      const siteUtilityInfo = await get(url);
+      reset(siteUtilityInfo);
+      dispatch({
+        type: GET_SITE_UTILITY_INFORMATION,
+        payload: siteUtilityInfo,
       });
     } catch (error) {
       console.error(error);

@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
+import {
+  saveSiteUtilityInfo,
+  getSiteUtilityInfo,
+} from "../../../../../store/thunk/site";
 
-const UtilityEnergy = () => {
+const UtilityEnergy = ({
+  updateSite,
+  getSiteUtilityInfo,
+  saveSiteUtilityInfo,
+}) => {
   const {
     register,
     handleSubmit,
@@ -12,8 +21,16 @@ const UtilityEnergy = () => {
     setValue,
     watch,
   } = useForm({});
+  useEffect(() => {
+    getSiteUtilityInfo(updateSite?.siteId, reset);
+  }, []);
   const saveAreaAndOccupancy = (data) => {
-    console.log("saveAreaAndOccupancy", data);
+    console.log("data ===>", data);
+    const formData = {
+      ...data,
+      siteId: updateSite?.siteId,
+    };
+    saveSiteUtilityInfo(formData);
   };
   return (
     <div className="container">
@@ -22,20 +39,16 @@ const UtilityEnergy = () => {
         onSubmit={handleSubmit(saveAreaAndOccupancy)}
       >
         <div>
-          <label
-            htmlFor="totalBuildingArea"
-            name="totalBuildingArea"
-            id="totalBuildingArea"
-          >
+          <label htmlFor="utilGas" name="utilGas" id="utilGas">
             Utility - Gas
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="utilGas"
+              id="utilGas"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("utilGas")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -45,19 +58,19 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="clientOccupiedArea"
-            name="clientOccupiedArea"
-            id="clientOccupiedArea"
+            htmlFor="utilElectricity"
+            name="utilElectricity"
+            id="utilElectricity"
           >
             Utility - Electricity
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="utilElectricity"
+              id="utilElectricity"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("utilElectricity")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -66,20 +79,16 @@ const UtilityEnergy = () => {
           </div>
         </div>
         <div>
-          <label
-            htmlFor="tenantOccupiedArea"
-            name="tenantOccupiedArea"
-            id="tenantOccupiedArea"
-          >
+          <label htmlFor="utilWater" name="utilWater" id="utilWater">
             Utility - Water
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="utilWater"
+              id="utilWater"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("utilWater")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -88,16 +97,16 @@ const UtilityEnergy = () => {
           </div>
         </div>
         <div>
-          <label htmlFor="maxOccupancy" name="maxOccupancy" id="maxOccupancy">
+          <label htmlFor="utilTelecom" name="utilTelecom" id="utilTelecom">
             Utility - Telecom/Data
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="utilTelecom"
+              id="utilTelecom"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("utilTelecom")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -107,19 +116,19 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="meetingClients"
-            name="meetingClients"
-            id="meetingClients"
+            htmlFor="utilMainsDrainage"
+            name="utilMainsDrainage"
+            id="utilMainsDrainage"
           >
             Utility - Mains Drainage
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="utilMainsDrainage"
+              id="utilMainsDrainage"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("utilMainsDrainage")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -129,19 +138,19 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="numberOfStaff"
-            name="numberOfStaff"
-            id="numberOfStaff"
+            htmlFor="airConditioning"
+            name="airConditioning"
+            id="airConditioning"
           >
             Air Conditioning
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="airConditioning"
+              id="airConditioning"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("airConditioning")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -150,20 +159,16 @@ const UtilityEnergy = () => {
           </div>
         </div>
         <div>
-          <label
-            htmlFor="tenantInOccupation"
-            name="tenantInOccupation"
-            id="tenantInOccupation"
-          >
+          <label htmlFor="coolingTower" name="coolingTower" id="coolingTower">
             Cooling Tower
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="coolingTower"
+              id="coolingTower"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("coolingTower")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -172,34 +177,34 @@ const UtilityEnergy = () => {
           </div>
         </div>
         <div>
-          <label htmlFor="tenantName" name="tenantName" id="tenantName">
+          <label
+            htmlFor="waterIsolationValveInternal"
+            name="waterIsolationValveInternal"
+            id="waterIsolationValveInternal"
+          >
             Water Isolation Valve Location (Internal)
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="waterIsolationValveInternal"
+              id="waterIsolationValveInternal"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("waterIsolationValveInternal")}
             />
           </div>
         </div>
         <div>
-          <label
-            htmlFor="vacantAreaInBuilding"
-            name="vacantAreaInBuilding"
-            id="vacantAreaInBuilding"
-          >
+          <label htmlFor="waterTanks" name="waterTanks" id="waterTanks">
             Water Tanks
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="waterTanks"
+              id="waterTanks"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("waterTanks")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -208,88 +213,88 @@ const UtilityEnergy = () => {
           </div>
         </div>
         <div>
-          <label htmlFor="numOfFloors" name="numOfFloors" id="numOfFloors">
+          <label
+            htmlFor="waterTankLocation"
+            name="waterTankLocation"
+            id="waterTankLocation"
+          >
             Water Tank Location
           </label>
           <div>
             <input
               type="text"
-              name="numOfFloors"
-              id="numOfFloors"
+              name="waterTankLocation"
+              id="waterTankLocation"
               className="form-control"
-              {...register("numOfFloors")}
+              {...register("waterTankLocation")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="carParkSpaceAboveGround"
-            name="carParkSpaceAboveGround"
-            id="carParkSpaceAboveGround"
+            htmlFor="hotWaterCalorifier"
+            name="hotWaterCalorifier"
+            id="hotWaterCalorifier"
           >
             Hot Water Calorifier
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="hotWaterCalorifier"
+              id="hotWaterCalorifier"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("hotWaterCalorifier")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="carParkSpaceBelowGround"
-            name="carParkSpaceBelowGround"
-            id="carParkSpaceBelowGround"
+            htmlFor="hotWaterCalorifierLocation"
+            name="hotWaterCalorifierLocation"
+            id="hotWaterCalorifierLocation"
           >
             Hot Water Calorifier Location
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="hotWaterCalorifierLocation"
+              id="hotWaterCalorifierLocation"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("hotWaterCalorifierLocation")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="pressureVessel"
+            name="pressureVessel"
+            id="pressureVessel"
           >
             Pressure Vessel
           </label>
           <div>
             <input
               type="number"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="pressureVessel"
+              id="pressureVessel"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("pressureVessel")}
             />
           </div>
         </div>
         <div>
-          <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
-          >
+          <label htmlFor="gasBoiler" name="gasBoiler" id="gasBoiler">
             Gas Boiler
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="gasBoiler"
+              id="gasBoiler"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("gasBoiler")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -299,91 +304,91 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="gasBoilerLocation"
+            name="gasBoilerLocation"
+            id="gasBoilerLocation"
           >
             Gas Boiler Location
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="gasBoilerLocation"
+              id="gasBoilerLocation"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("gasBoilerLocation")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="gasSupplyIsolation"
+            name="gasSupplyIsolation"
+            id="gasSupplyIsolation"
           >
             Gas Supply Isolation/Meter Location
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="gasSupplyIsolation"
+              id="gasSupplyIsolation"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("gasSupplyIsolation")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="gasSupplyExternalIsolation"
+            name="gasSupplyExternalIsolation"
+            id="gasSupplyExternalIsolation"
           >
             Gas Supply External Isolation Location
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="gasSupplyExternalIsolation"
+              id="gasSupplyExternalIsolation"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("gasSupplyExternalIsolation")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="electricInstallationLocation"
+            name="electricInstallationLocation"
+            id="electricInstallationLocation"
           >
             Electric Installation / Meter Location
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="electricInstallationLocation"
+              id="electricInstallationLocation"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("electricInstallationLocation")}
             />
           </div>
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="electricSubStationOnSite"
+            name="electricSubStationOnSite"
+            id="electricSubStationOnSite"
           >
             Electric Sub-Station on Site
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="electricSubStationOnSite"
+              id="electricSubStationOnSite"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("electricSubStationOnSite")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -393,19 +398,19 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="externalLighting"
+            name="externalLighting"
+            id="externalLighting"
           >
             External Lighting
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="externalLighting"
+              id="externalLighting"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("externalLighting")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -415,19 +420,19 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="backupGenerator"
+            name="backupGenerator"
+            id="backupGenerator"
           >
             Back Up Generator
           </label>
           <div>
             <select
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="backupGenerator"
+              id="backupGenerator"
               className="form-control form-select"
-              {...register("carParkSpaceAboveGround")}
+              {...register("backupGenerator")}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -437,28 +442,34 @@ const UtilityEnergy = () => {
         </div>
         <div>
           <label
-            htmlFor="numOfBasementLevels"
-            name="numOfBasementLevels"
-            id="numOfBasementLevels"
+            htmlFor="backupGeneratorLocation"
+            name="backupGeneratorLocation"
+            id="backupGeneratorLocation"
           >
             Back Up Generator Location
           </label>
           <div>
             <input
               type="text"
-              name="carParkSpaceAboveGround"
-              id="carParkSpaceAboveGround"
+              name="backupGeneratorLocation"
+              id="backupGeneratorLocation"
               className="form-control"
-              {...register("carParkSpaceAboveGround")}
+              {...register("backupGeneratorLocation")}
             />
           </div>
         </div>
       </form>
       <div>
-        <button className="btn btn-primary float-end m-3">Save</button>
+        <button className="btn btn-primary float-end m-3" type="submit">Save</button>
       </div>
     </div>
   );
 };
 
-export default UtilityEnergy;
+const mapStateToProps = (state) => ({
+  updateSite: state.site.updateSite,
+});
+export default connect(mapStateToProps, {
+  saveSiteUtilityInfo,
+  getSiteUtilityInfo,
+})(UtilityEnergy);

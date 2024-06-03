@@ -27,8 +27,8 @@ const Contractors = ({ contractsList, setSelectedContractors }) => {
   return (
     <Fragment>
       <div>
-        <table class="table table-bordered f-11">
-          <thead class="table-dark">
+        <table className="table table-bordered f-11">
+          <thead className="table-dark">
             <tr>
               <th scope="col">Contractor Contact</th>
               <th scope="col">Company</th>
@@ -54,33 +54,31 @@ const Contractors = ({ contractsList, setSelectedContractors }) => {
                   ))}
                 </select>
               </td>
-              <td>
-              {/* ACME Ltd */}
-              </td>
+              <td>{/* ACME Ltd */}</td>
               <td>&#163;</td>
               <td>
-                <div class="bg-light text-info rounded-1 p-1" role="alert">
+                <div className="bg-light text-info rounded-1 p-1" role="alert">
                   New
                 </div>
-                {/* <div class="bg-warning text-light rounded-1 p-1" role="alert">
+                {/* <div className="bg-warning text-light rounded-1 p-1" role="alert">
                   Recieved
                 </div> */}
               </td>
               <td>
                 {/* <span style={{ color: "gray" }} onClick={() => handleOpen()}>
-                  <i class="fas fa-eye fa-2x"></i>
+                  <i className="fas fa-eye fa-2x"></i>
                 </span>
                 &nbsp;
                 <span style={{ color: "gray" }}>
-                  <i class="far fa-thumbs-up fa-2x"></i>
+                  <i className="far fa-thumbs-up fa-2x"></i>
                 </span>
                 &nbsp;
                 <span style={{ color: "gray" }}>
-                  <i class="far fa-thumbs-down fa-2x"></i>
+                  <i className="far fa-thumbs-down fa-2x"></i>
                 </span>
                 &nbsp;
                 <span style={{ color: "gray" }}>
-                  <i class="far fa-trash-alt fa-2x"></i>
+                  <i className="far fa-trash-alt fa-2x"></i>
                 </span> */}
               </td>
             </tr>
@@ -97,91 +95,100 @@ const Contractors = ({ contractsList, setSelectedContractors }) => {
           <Typography id="modal-modal-title" variant="h6" component="h2">
             View Contract &amp; Quote
           </Typography>
-          <form class="row border-top">
+          <form className="row border-top">
             <div>
-              <span class="badge bg-warning">Recieved</span>
+              <span className="badge bg-warning">Recieved</span>
             </div>
             <div className="col-md-6">
-              <label for="projectSummary" class="form-label">
+              <label for="projectSummary" className="form-label">
                 Project Summary
               </label>
               <input
                 type="text"
                 name="projectSummary"
-                class="form-control"
+                className="form-control"
                 id="projectSummary"
               />
             </div>
             <div className="col-md-6">
-              <label for="contractor" class="form-label">
+              <label for="contractor" className="form-label">
                 Contractor
               </label>
               <input
                 type="text"
                 name="contractor"
-                class="form-control"
+                className="form-control"
                 id="contractor"
               />
             </div>
             <div className="col-md-6">
-              <label for="projectManager" class="form-label">
+              <label for="projectManager" className="form-label">
                 Project Manager
               </label>
               <input
                 type="text"
                 name="projectManager"
-                class="form-control"
+                className="form-control"
                 id="projectManager"
               />
             </div>
             <div className="col-md-6">
-              <label for="projectStartDate" class="form-label">
+              <label for="projectStartDate" className="form-label">
                 Project Start date
               </label>
               <input
                 type="date"
                 name="projectStartDate"
-                class="form-control"
+                className="form-control"
                 id="projectStartDate"
               />
             </div>
             <div className="col-md-6">
-              <label for="quoteDate" class="form-label">
+              <label for="quoteDate" className="form-label">
                 Quote date
               </label>
               <input
                 type="date"
                 name="quoteDate"
-                class="form-control"
+                className="form-control"
                 id="quoteDate"
               />
             </div>
             <div className="col-md-6">
-              <label for="quote" class="form-label">
+              <label for="quote" className="form-label">
                 Quote (GBP)
               </label>
-              <input type="text" name="quote" class="form-control" id="quote" />
+              <input
+                type="text"
+                name="quote"
+                className="form-control"
+                id="quote"
+              />
             </div>
             <div className="col-md-6">
-              <label for="officialQuote" class="form-label">
+              <label for="officialQuote" className="form-label">
                 Official Quote
               </label>
               <input
                 type="text"
                 name="officialQuote"
-                class="form-control"
+                className="form-control"
                 id="officialQuote"
               />
             </div>
             <div className="col-md-6">
-              <label for="notes" class="form-label">
+              <label for="notes" className="form-label">
                 Notes
               </label>
-              <textarea name="notes" class="form-control" id="notes"></textarea>
+              <textarea
+                name="notes"
+                className="form-control"
+                id="notes"
+              ></textarea>
             </div>
             <div>
-              <table class="table f-11">
-                <thead class="table-dark">
+              <table className="table f-11">
+                <thead className="table-dark">
                   <tr>
                     <th scope="col">Mandatory Folder</th>
                     <th scope="col">File</th>
@@ -191,17 +198,19 @@ const Contractors = ({ contractsList, setSelectedContractors }) => {
                   <tr>
                     <td>Asbestos Removal Work</td>
                     <td>
-                      <span class="badge bg-light text-primary">File1.pdf</span>
+                      <span className="badge bg-light text-primary">
+                        File1.pdf
+                      </span>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div className="col-md-12 pt-4 border-top">
-              <div class="float-end">
+              <div className="float-end">
                 <button
                   type="button"
-                  class="btn btn-light mb-3 mr-4 text-primary"
+                  className="btn btn-light mb-3 mr-4 text-primary"
                   onClick={() => {
                     setOpen(false);
                   }}
@@ -209,11 +218,11 @@ const Contractors = ({ contractsList, setSelectedContractors }) => {
                   Close
                 </button>
                 &nbsp; &nbsp;
-                <button type="button" class="btn btn-success mb-3 mr-4">
+                <button type="button" className="btn btn-success mb-3 mr-4">
                   Approve
                 </button>
                 &nbsp; &nbsp;
-                <button type="button" class="btn btn-danger mb-3 mr-4">
+                <button type="button" className="btn btn-danger mb-3 mr-4">
                   Reject
                 </button>
               </div>

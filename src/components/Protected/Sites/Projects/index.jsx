@@ -116,7 +116,7 @@ const Projects = ({
       <Header />
       <SidebarNew />
       <div
-        class="container-fluid"
+        className="container-fluid"
         style={{ paddingLeft: "5rem", paddingRight: "2rem" }}
       >
         <BreadCrumHeader header={"Site Projects"} page={"Projects"} />
@@ -146,10 +146,10 @@ const Projects = ({
                 <i className="fas fa-cog"></i>&nbsp; Create New Project
               </button>
             </div>
-            <ul class="nav flex-column">
+            <ul className="nav flex-column">
               {projectList?.map((itm) => (
                 <li
-                  class="nav-item mb-1"
+                  className="nav-item mb-1"
                   key={itm?.id}
                   style={{ cursor: "pointer" }}
                   onClick={(e) => {
@@ -157,7 +157,10 @@ const Projects = ({
                     updateSelectedProject(itm);
                   }}
                 >
-                  <div class="bg-light text-primary rounded-1 p-1" role="alert">
+                  <div
+                    className="bg-light text-primary rounded-1 p-1"
+                    role="alert"
+                  >
                     {itm?.name}
                   </div>
                 </li>
@@ -167,47 +170,47 @@ const Projects = ({
           <div className="col-md-10">
             <form onSubmit={handleSubmit(submitProject)}>
               <h5 className="border-bottom p-2">Project Details</h5>
-              <span class="badge bg-light text-primary">New</span>
+              <span className="badge bg-light text-primary">New</span>
 
               <div className="row" style={{ height: "auto" }}>
-                <div class="col-md-4">
-                  <label for="projectName" class="form-label">
+                <div className="col-md-4">
+                  <label for="projectName" className="form-label">
                     Project Name
                   </label>
                   <input
                     type="text"
                     name="projectName"
-                    class="form-control"
+                    className="form-control"
                     id="projectName"
                     {...register("projectName")}
                   />
                 </div>
-                <div class="col-md-4">
-                  <label for="budget" class="form-label">
+                <div className="col-md-4">
+                  <label for="budget" className="form-label">
                     Budget (GBP)
                   </label>
                   <input
                     type="text"
                     name="budget"
-                    class="form-control"
+                    className="form-control"
                     id="budget"
                     {...register("budget")}
                   />
                 </div>
-                <div class="col-md-4">
-                  <label for="startDate" class="form-label">
+                <div className="col-md-4">
+                  <label for="startDate" className="form-label">
                     Start Date
                   </label>
                   <input
                     type="date"
                     name="startDate"
-                    class="form-control"
+                    className="form-control"
                     id="startDate"
                     {...register("startDate")}
                   />
                 </div>
-                <div class="col-md-4">
-                  <label for="manager" class="form-label">
+                <div className="col-md-4">
+                  <label for="manager" className="form-label">
                     Manager
                   </label>
                   <select
@@ -222,14 +225,14 @@ const Projects = ({
                     ))}
                   </select>
                 </div>
-                <div class="col-md-8">
-                  <label for="shortDescription" class="form-label">
+                <div className="col-md-8">
+                  <label for="shortDescription" className="form-label">
                     Short Description
                   </label>
                   <input
                     type="text"
                     name="shortDescription"
-                    class="form-control"
+                    className="form-control"
                     id="shortDescription"
                     {...register("shortDescription")}
                   />
@@ -262,8 +265,8 @@ const Projects = ({
                     {success && <Success msg={success} />}
                     {error && <Error msg={error} />}
                   </div>
-                  <div class="float-end">
-                    <button type="button" class="btn btn-light mb-3 mr-4">
+                  <div className="float-end">
+                    <button type="button" className="btn btn-light mb-3 mr-4">
                       Cancel
                     </button>
                     &nbsp; &nbsp;
@@ -271,7 +274,7 @@ const Projects = ({
                       <>
                         <button
                           type="button"
-                          class="btn btn-light mb-3 mr-4"
+                          className="btn btn-light mb-3 mr-4"
                           onClick={(e) => {
                             e.preventDefault();
                             deleteProjectData();
@@ -282,7 +285,7 @@ const Projects = ({
                         &nbsp; &nbsp;
                       </>
                     )}
-                    <button type="submit" class="btn btn-primary mb-3 mr-4">
+                    <button type="submit" className="btn btn-primary mb-3 mr-4">
                       Save
                     </button>
                   </div>

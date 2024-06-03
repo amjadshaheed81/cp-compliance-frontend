@@ -40,6 +40,9 @@ import {
   UPDATE_DOCUMENT_FILE_FAILURE,
   UPDATE_DOCUMENT_FILE_SUCCESS,
   CREATE_FOLDER,
+  SAVE_SITE_UTILITY_INFORMATION,
+  SAVE_SITE_UTILITY_INFORMATION_FAILURE,
+  GET_SITE_UTILITY_INFORMATION,
 } from "./../actionTypes";
 
 const initialState = {
@@ -63,6 +66,7 @@ const initialState = {
   siteLayout: [],
   siteLayoutFailure: "",
   siteSelectedForGlobal: {},
+  saveSiteUtilityInfo: null,
 };
 
 const reducer = (state = initialState, action) => {
@@ -350,6 +354,22 @@ const reducer = (state = initialState, action) => {
         ...state,
         siteSecurityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
+      };
+    case SAVE_SITE_UTILITY_INFORMATION:
+      return {
+        ...state,
+        saveSiteUtilityInfo: action.payload,
+      };
+    case SAVE_SITE_UTILITY_INFORMATION_FAILURE:
+      return {
+        ...state,
+        saveSiteUtilityInfo:
+          "error",
+      };
+    case GET_SITE_UTILITY_INFORMATION:
+      return {
+        ...state,
+        saveSiteUtilityInfo: action.payload,
       };
     case GET_SITE_LAYOUT:
       return {

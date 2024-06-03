@@ -51,10 +51,10 @@ const MandatoryFolders = ({
         <div className="mt-2">
           {selectedMandatoryFolder?.map((itm) => (
             <Fragment>
-              <span class="badge bg-light text-primary">
+              <span className="badge bg-light text-primary">
                 {itm?.name}{" "}
                 <i
-                  class="fas fa-times"
+                  className="fas fa-times"
                   size="sm"
                   onClick={() => {
                     setSelectedMandatoryFolder(
@@ -80,20 +80,20 @@ const MandatoryFolders = ({
           <Typography id="modal-modal-title" variant="h6" component="h2">
             Select Mandatory Folders
           </Typography>
-          <form class="row border-top">
+          <form className="row border-top">
             <div className="col-md-12 pt-4 border-top">
-              <div class="float-end">
-                <button type="button" class="btn btn-light text-primary">
-                  <i class="fas fa-solid fa-home"></i> Root
+              <div className="float-end">
+                <button type="button" className="btn btn-light text-primary">
+                  <i className="fas fa-solid fa-home"></i> Root
                 </button>
                 &nbsp; &nbsp;
-                <button type="button" class="btn btn-light text-primary">
-                  <i class="fas fa-solid fa-arrow-left"></i> Back
+                <button type="button" className="btn btn-light text-primary">
+                  <i className="fas fa-solid fa-arrow-left"></i> Back
                 </button>
               </div>
             </div>
-            <table class="table f-11">
-              <thead class="table-dark">
+            <table className="table f-11">
+              <thead className="table-dark">
                 <tr>
                   <th scope="col">Folder</th>
                   <th scope="col">Actions</th>
@@ -105,9 +105,9 @@ const MandatoryFolders = ({
                     <td>
                       <i
                         style={{ color: "#384BD3" }}
-                        class="fas fa-folder fa-2x"
+                        className="fas fa-folder fa-2x"
                       ></i>
-                      <span class="p-3">{folder?.name}</span>
+                      <span className="p-3">{folder?.name}</span>
                     </td>
                     <td>
                       <span
@@ -119,7 +119,7 @@ const MandatoryFolders = ({
                           ]);
                         }}
                       >
-                        <i class="fas fa-plus" size="sm"></i>
+                        <i className="fas fa-plus" size="sm"></i>
                       </span>
                     </td>
                   </tr>
@@ -129,10 +129,10 @@ const MandatoryFolders = ({
             <div>
               {selectedMandatoryFolder?.map((itm) => (
                 <Fragment>
-                  <span class="badge bg-light text-primary">
+                  <span className="badge bg-light text-primary">
                     {itm?.name}{" "}
                     <i
-                      class="fas fa-times"
+                      className="fas fa-times"
                       size="sm"
                       onClick={() => {
                         setSelectedMandatoryFolder(
@@ -148,10 +148,10 @@ const MandatoryFolders = ({
               ))}
             </div>
             <div className="col-md-12 pt-4 border-top">
-              <div class="float-end">
+              <div className="float-end">
                 <button
                   type="button"
-                  class="btn btn-light mb-3 mr-4 text-primary"
+                  className="btn btn-light mb-3 mr-4 text-primary"
                   onClick={() => {
                     setFolderOpen(false);
                   }}
@@ -161,7 +161,7 @@ const MandatoryFolders = ({
                 &nbsp; &nbsp;
                 <button
                   type="button"
-                  class="btn btn-primary mb-3 mr-4"
+                  className="btn btn-primary mb-3 mr-4"
                   onClick={() => {
                     setFolderOpen(false);
                   }}

@@ -35,11 +35,29 @@ export default function SiteTabs({ tabs, isCreateSite }) {
   return (
     <>
       <Header />
-      <Box sx={{ width: "90%", marginTop: "10rem", marginLeft: "5rem", zIndex: "-1", position: "static" }}>
+      <Box
+        sx={{
+          width: "90%",
+          marginTop: "10rem",
+          marginLeft: "5rem",
+          zIndex: "-1",
+          position: "static",
+        }}
+      >
         <div style={{ marginTop: "-10rem" }}>
-          {isCreateSite ? <BreadCrumHeader style={{ marginTop: "-5rem" }} header={"Create New Site"} page={"New Site"} /> :
-            <BreadCrumHeader style={{ marginTop: "-5rem" }} header={"View & Update Site"} page={"New Site"} />
-          }
+          {isCreateSite ? (
+            <BreadCrumHeader
+              style={{ marginTop: "-5rem" }}
+              header={"Create New Site"}
+              page={"New Site"}
+            />
+          ) : (
+            <BreadCrumHeader
+              style={{ marginTop: "-5rem" }}
+              header={"View & Update Site"}
+              page={"New Site"}
+            />
+          )}
         </div>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
@@ -48,7 +66,11 @@ export default function SiteTabs({ tabs, isCreateSite }) {
             aria-label="basic tabs example"
           >
             {tabs?.map(({ label }, i) => (
-              <Tab label={label} key={i} disabled={isCreateSite && (i === 1 || i === 2)} />
+              <Tab
+                label={label}
+                key={i}
+                disabled={isCreateSite && (i === 1 || i === 2)}
+              />
             ))}
           </Tabs>
         </Box>
@@ -59,6 +81,5 @@ export default function SiteTabs({ tabs, isCreateSite }) {
         ))}
       </Box>
     </>
-
   );
 }

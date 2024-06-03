@@ -69,8 +69,8 @@ const AddSite = ({
     updateSiteImage(event, siteId);
   };
   const handleOnSearch = async (event) => {
-    setValue("latitude", '');
-    setValue("longitude", '');
+    setValue("latitude", "");
+    setValue("longitude", "");
     setShowPostCodeSearch(true);
     handleOnPostCodeSearch(event);
   };
@@ -86,9 +86,15 @@ const AddSite = ({
       setValue("latitude", response?.latitude);
       setValue("longitude", response?.longitude);
       setValue("country", response?.country);
-      setValue("mapViewUrl", `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`);
-      setValue("streetViewUrl", `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`);
-      
+      setValue(
+        "mapViewUrl",
+        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
+      );
+      setValue(
+        "streetViewUrl",
+        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
+      );
+
       setShowPostCodeSearch(false);
     } catch (e) {
       console.log("error while loading postcode");
@@ -98,25 +104,25 @@ const AddSite = ({
     <Fragment>
       {/* <Sidebar /> */}
       <SidebarNew />
-      <div class="content">
+      <div className="content">
         {/* <Header /> */}
-        <div class="container-fluid">
+        <div className="container-fluid">
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
             <div className="col-md-8">
               <div className="row bg-white">
-                <p class="fs-6 mt-2 border-bottom">Property Detail</p>
+                <p className="fs-6 mt-2 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
                     <div className="col-md-12">
-                      <div class="mb-3">
-                        <label for="siteName" class="form-label">
+                      <div className="mb-3">
+                        <label for="siteName" className="form-label">
                           Site Name
                         </label>
                         <input
                           type="text"
                           name="siteName"
-                          class="form-control"
+                          className="form-control"
                           id="siteName"
                           {...register("siteName", {
                             required: {
@@ -134,14 +140,14 @@ const AddSite = ({
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div class="mb-3">
-                        <label for="address1" class="form-label">
+                      <div className="mb-3">
+                        <label for="address1" className="form-label">
                           Address Line 1
                         </label>
                         <input
                           type="text"
                           name="address1"
-                          class="form-control"
+                          className="form-control"
                           id="address1"
                           {...register("address1", {
                             required: {
@@ -159,14 +165,14 @@ const AddSite = ({
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div class="mb-3">
-                        <label for="address2" class="form-label">
+                      <div className="mb-3">
+                        <label for="address2" className="form-label">
                           Address Line 2
                         </label>
                         <input
                           type="text"
                           name="address2"
-                          class="form-control"
+                          className="form-control"
                           id="address2"
                           {...register("address2", {
                             required: {
@@ -184,14 +190,14 @@ const AddSite = ({
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div class="mb-3">
-                        <label for="city" class="form-label">
+                      <div className="mb-3">
+                        <label for="city" className="form-label">
                           City
                         </label>
                         <input
                           type="text"
                           name="city"
-                          class="form-control"
+                          className="form-control"
                           id="city"
                           {...register("city", {
                             required: {
@@ -209,8 +215,8 @@ const AddSite = ({
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div class="mb-3">
-                        <label for="area" class="form-label">
+                      <div className="mb-3">
+                        <label for="area" className="form-label">
                           Area
                         </label>
                         <select
@@ -235,12 +241,8 @@ const AddSite = ({
                           <option value="North East, Yorkshire & Humberside">
                             North East, Yorkshire & Humberside
                           </option>
-                          <option value="North West">
-                            North West
-                          </option>
-                          <option value="Scotland">
-                            Scotland
-                          </option>
+                          <option value="North West">North West</option>
+                          <option value="Scotland">Scotland</option>
                           <option value="South East">South East</option>
                           <option value="South West">South West</option>
                           <option value="Wales">Wales</option>
@@ -255,14 +257,14 @@ const AddSite = ({
                       </div>
                     </div>
                     <div className="col-md-12">
-                      <div class="mb-3">
-                        <label for="postCode" class="form-label">
+                      <div className="mb-3">
+                        <label for="postCode" className="form-label">
                           Post Code
                         </label>
                         <input
                           type="text"
                           name="postCode"
-                          class="form-control"
+                          className="form-control"
                           id="postCode"
                           placeholder="Search Post Code"
                           {...register("postCode", {
@@ -297,14 +299,14 @@ const AddSite = ({
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div class="mb-3">
-                        <label for="country" class="form-label">
+                      <div className="mb-3">
+                        <label for="country" className="form-label">
                           Country
                         </label>
                         <input
                           type="text"
                           name="country"
-                          class="form-control"
+                          className="form-control"
                           id="country"
                           {...register("country", {
                             required: {
@@ -322,32 +324,32 @@ const AddSite = ({
                       </div>
                     </div>
                     <input
-                          type="text"
-                          name="mapViewUrl"
-                          class="form-control"
-                          id="mapViewUrl"
-                          style={{display: 'none' }}
-                          {...register("mapViewUrl")}
-                        />
+                      type="text"
+                      name="mapViewUrl"
+                      className="form-control"
+                      id="mapViewUrl"
+                      style={{ display: "none" }}
+                      {...register("mapViewUrl")}
+                    />
                     <input
-                          type="text"
-                          name="streetViewUrl"
-                          class="form-control"
-                          id="streetViewUrl"
-                          style={{display: 'none' }}
-                          {...register("streetViewUrl")}
-                        />
+                      type="text"
+                      name="streetViewUrl"
+                      className="form-control"
+                      id="streetViewUrl"
+                      style={{ display: "none" }}
+                      {...register("streetViewUrl")}
+                    />
                     <div className="col-md-12">
                       <div>
                         {success && <Success msg={success} />}
                         {error && <Error msg={error} />}
                       </div>
-                      <div class="float-end">
-                        <button type="button" class="btn btn-light mb-3 mr-4">
+                      <div className="float-end">
+                        <button type="button" className="btn btn-light mb-3 mr-4">
                           Cancel
                         </button>
                         &nbsp; &nbsp;
-                        <button type="submit" class="btn btn-primary mb-3 mr-4">
+                        <button type="submit" className="btn btn-primary mb-3 mr-4">
                           Save
                         </button>
                       </div>
@@ -391,7 +393,7 @@ const AddSite = ({
                   <label
                     htmlFor="siteImage"
                     style={{ color: "blue", marginLeft: "2.5rem" }}
-                    class="btn"
+                    className="btn"
                   >
                     Click to upload
                   </label>
@@ -401,7 +403,11 @@ const AddSite = ({
                 </div>
               </div>
               {values?.latitude && values?.longitude && (
-                <GoogleMap lat={values?.latitude} long={values?.longitude} postCode={values?.postCode}/>
+                <GoogleMap
+                  lat={values?.latitude}
+                  long={values?.longitude}
+                  postCode={values?.postCode}
+                />
               )}
             </div>
           </div>
