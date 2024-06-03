@@ -21,7 +21,7 @@ const FloorMap = ({ siteLayout }) => {
     return list?.map((itm, newValue) => (
       <TabPanel value={tabValue} index={newValue}>
         {itm?.floorPlanUrl ? (
-          <iframe src={itm?.floorPlanUrl} width="auto" height="auto"></iframe>
+          <embed  src={itm?.floorPlanUrl} width="auto" height="auto"></embed >
         ) : (
           "Floor plan file is not available."
         )}
