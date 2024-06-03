@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Sites.css";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
+import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
 
 const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSite }) => {
   const [selectedItem, setSelectedItem] = useState("status");
@@ -202,7 +203,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     <th scope="col">{itm?.siteName}</th>
                     <th scope="col">{itm?.address1}</th>
                     <th scope="col">
-                      <span class="badge rounded-pill bg-success">{itm?.status ? itm?.status : 'Open'}</span>
+                      <ListStatusBadge status={itm?.status} />
                     </th>
                     <th scope="col">
                       <span class="badge bg-danger p-2 m-1 risk-span">1</span>
