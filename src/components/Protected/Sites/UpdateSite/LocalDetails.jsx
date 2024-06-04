@@ -32,7 +32,7 @@ const LocalDetails = ({
       reset({
         localAuthority: updateSite?.localAuthority,
         status: updateSite?.status,
-        clientResponsibility: updateSite?.clientResponsibility,
+        clientResponsibility: updateSite?.client_responsiblity,
       });
       timingForm.reset({
         monStartTime: updateSite?.monStartTime,
