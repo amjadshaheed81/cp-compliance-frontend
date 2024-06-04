@@ -11,7 +11,8 @@ import {
   updateContractDetail,
 } from "../../../../store/thunk/contracts";
 import Success from "../../../common/Alert/Success";
-import Error from "../../../common/Alert/Error";
+import Status from "../../../common/Alert/Status/Status";
+import { useForm } from "react-hook-form";
 
 const Contracts = ({
   getSiteContracts,
@@ -51,13 +52,22 @@ const Contracts = ({
   const handleClose = () => {
     setOpen(false);
   };
+  const { register, handleSubmit, getValues, setValue } = useForm({});
 
   useEffect(() => {
     getSiteContracts(3); // TODO: need to change it to loggedIn user id or siteSelectedForGlobal?.siteId
   }, []);
 
-  const updateContractDetails = () => {
-    updateContractDetail(selectedContract);
+  const updateContractDetails = (formData) => {
+    console.log(contractDetail)
+    let form_data = new FormData();
+    if(formData?.official_quote) {
+      form_data.append("file", formData?.official_quote?.[0], formData?.official_quote?.[0]?.name);
+    }
+    form_data.append("quote", formData?.quote);
+    form_data.append("quoteId", JSON.stringify(contractDetail?.quote_id));
+    console.log("form_data", form_data)
+    updateContractDetail(form_data);
   };
   const style = {
     position: "absolute",
@@ -166,6 +176,7 @@ const Contracts = ({
                         style={{ color: "gray" }}
                         className="cursor"
                         onClick={() => {
+                          setValue("quote", itm?.quote)
                           setSelectedContract(itm);
                           getSiteContractDetails(itm?.quote_id);
                           handleOpen();
@@ -200,9 +211,9 @@ const Contracts = ({
           <Typography id="modal-modal-title" variant="h6" component="h2">
             View Contract
           </Typography>
-          <form className="row border-top">
+          <form className="row border-top" onSubmit={handleSubmit(updateContractDetails)}>
             <div>
-              <span className="badge bg-warning">Recieved</span>
+              <Status status={contractDetail?.status}/>
             </div>
             <div className="col-md-12">
               <label for="projectSummary" className="form-label">
@@ -252,18 +263,20 @@ const Contracts = ({
                 name="quote"
                 className="form-control"
                 id="quote"
-                value={contractDetail?.quote}
+                // value={contractDetail?.quote}
+                {...register(`quote`)}
               />
             </div>
             <div className="col-md-6">
-              <label for="officialQuote" className="form-label">
+              <label for="official_quote" className="form-label">
                 Official Quote
               </label>
               <input
                 type="file"
-                name="officialQuote"
+                name="official_quote"
                 className="form-control"
-                id="officialQuote"
+                id="official_quote"
+                {...register(`official_quote`)}
               />
             </div>
             <div className="col-md-12">
@@ -275,6 +288,7 @@ const Contracts = ({
                 className="form-control"
                 id="notes"
                 disabled={true}
+                {...register(`project_comments`)}
                 value={contractDetail?.project_comments}
               ></textarea>
             </div>
@@ -300,6 +314,7 @@ const Contracts = ({
                         <input
                           type="file"
                           className="form-control"
+                          {...register(`folderFiles-${itm?.folder_id}`)}
                           disabled={
                             contractDetail?.status !== "Awarded" ? true : false
                           }
@@ -320,7 +335,7 @@ const Contracts = ({
             <div className="col-md-12 pt-4 border-top">
               <div>
                 {success && <Success msg={success} />}
-                {error && <Error msg={error} />}
+                {/* {error && <Error msg={error} />} */}
               </div>
               <div className="float-end">
                 <button
@@ -334,11 +349,8 @@ const Contracts = ({
                 </button>
                 &nbsp; &nbsp;
                 <button
-                  type="button"
                   className="btn btn-primary mb-3 mr-4"
-                  onClick={() => {
-                    updateContractDetails();
-                  }}
+                  type="submit"
                 >
                   Submit
                 </button>
