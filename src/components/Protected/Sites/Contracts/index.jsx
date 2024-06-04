@@ -34,7 +34,7 @@ const Contracts = ({
   };
 
   useEffect(() => {
-    getSiteContracts(siteSelectedForGlobal?.siteId);
+    getSiteContracts(3); // TODO: need to change it to loggedIn user id or siteSelectedForGlobal?.siteId
   }, []);
 
   const updateContractDetails = () => {
@@ -219,7 +219,12 @@ const Contracts = ({
               <label for="quote" className="form-label">
                 Quote (GBP)
               </label>
-              <input type="text" name="quote" className="form-control" id="quote" />
+              <input
+                type="text"
+                name="quote"
+                className="form-control"
+                id="quote"
+              />
             </div>
             <div className="col-md-6">
               <label for="officialQuote" className="form-label">

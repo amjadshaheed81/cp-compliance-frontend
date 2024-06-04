@@ -33,12 +33,12 @@ const Contractors = ({
     };
     return (
       <tr>
-        {itm.contractor ? (
+        {itm ? (
           <td>
             <select
               className="form-control form-select"
-              name="contractor"
-              id="contractor"
+              name="contractors"
+              id="contractors"
               onChange={(e) => {
                 const selectedValue = e.target.value;
                 console.log(selectedValue);
@@ -48,13 +48,13 @@ const Contractors = ({
                 const contractRows = [...data];
                 contractRows[index] = {
                   ...row,
-                  contractorId: selectedValue,
+                  contractorUserId: selectedValue,
                   company: getContractorList?.[0]?.company || "",
                 };
                 setData(contractRows);
                 setRowdata({
                   ...row,
-                  contractorId: selectedValue,
+                  contractorUserId: selectedValue,
                   company: getContractorList?.[0]?.company || "",
                 });
               }}
@@ -63,7 +63,7 @@ const Contractors = ({
               {contractsList?.map((contractItm) => (
                 <option
                   value={contractItm?.id}
-                  selected={contractItm?.id == itm?.contractorId}
+                  selected={contractItm?.id == itm?.contractorUserId}
                 >
                   {contractItm?.name}
                 </option>
@@ -73,9 +73,9 @@ const Contractors = ({
         ) : (
           <td></td>
         )}
-        {itm?.company ? <td>{row?.company}</td> : null}
-        {itm?.quote ? <td>{row?.quote}</td> : null}
-        {itm?.status ? <td>{row?.status}</td> : null}
+        {itm?.company ? <td>{itm?.company}</td> : <td></td>}
+        {itm?.quote ? <td>{itm?.quote}</td> : <td></td>}
+        {itm?.status ? <td>{itm?.status}</td> : <td></td>}
         {itm?.actions ? (
           <td>
             <button
@@ -211,9 +211,9 @@ const Contractors = ({
               </label>
               <input
                 type="text"
-                name="quote"
+                name="budget"
                 className="form-control"
-                id="quote"
+                id="budget"
               />
             </div>
             <div className="col-md-6">

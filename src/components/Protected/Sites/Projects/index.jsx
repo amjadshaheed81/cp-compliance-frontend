@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
 import Swal from "sweetalert2";
+import { get } from "../../../../api";
 
 const Projects = ({
   getProjectList,
@@ -39,9 +40,9 @@ const Projects = ({
   // contractor data
   const [data, setData] = useState([
     {
-      contractor: [],
+      contractors: [],
       company: " ",
-      quote: " ",
+      budget: " ",
       status: "New",
     },
   ]);
@@ -49,6 +50,49 @@ const Projects = ({
     {}
   );
   const submitProject = (formData) => {
+    if (selectedProject?.id) {
+      updateProjectdata(formData);
+    } else {
+      submitProjectdata(formData);
+    }
+  };
+  const updateProjectdata = (formData) => {
+    const payload = {
+      projectId: selectedProject?.id,
+      projectName: formData?.projectName,
+      siteId: selectedProject?.siteId,
+      status: "Active",
+      budget: formData?.budget,
+      startDate: `${formData?.startDate} 10:00:00`,
+      endDate: selectedProject?.endDate,
+      projectManagerUserId: parseInt(formData?.manager),
+      description: formData?.shortDescription,
+    };
+    const contractors = [];
+    const quoteIds = [];
+    for (let i of data) {
+      console.log("update contractors", i);
+      if (i?.quoteId) {
+        quoteIds.push(i?.quoteId);
+      }
+      contractors.push({
+        quoteId: i?.quoteId || null,
+        siteId: i?.siteId || siteSelectedForGlobal?.siteId,
+        contractorUserId: parseInt(i?.contractorUserId),
+        status: "Pending",
+        projectManagerUserId: parseInt(formData?.manager),
+      });
+    }
+    const mandatoryFolders = selectedMandatoryFolder?.map((itm) => itm.id);
+    const folders = {
+      mandatoryFolders: mandatoryFolders,
+      removeMandatoryFolders: null,
+      quoteIds: quoteIds?.length === 0 ? null : quoteIds,
+      removeQuoteId: null,
+    };
+    addUpdateProject(payload, contractors, folders);
+  };
+  const submitProjectdata = (formData) => {
     const payload = {
       projectId: formData?.projectId || null,
       projectName: formData?.projectName,
@@ -60,13 +104,12 @@ const Projects = ({
       projectManagerUserId: parseInt(formData?.manager),
       description: formData?.shortDescription,
     };
-    console.log("contractor", data);
     const contractors = [];
     for (let i of data) {
       contractors.push({
         quoteId: null,
         siteId: siteSelectedForGlobal?.siteId,
-        contractorUserId: parseInt(i?.contractorId),
+        contractorUserId: parseInt(i?.contractorUserId),
         status: "Pending",
         projectManagerUserId: parseInt(formData?.manager),
       });
@@ -102,14 +145,27 @@ const Projects = ({
       setFilterProjects(projectList);
     }
   }, [projectList]);
-  const updateSelectedProject = (project) => {
-    setSelectedProject(project);
-    setValue("projectId", project?.id);
-    setValue("projectName", project?.name);
-    setValue("budget", project?.budget);
-    setValue("startDate", project?.startDate?.split("T")?.[0]);
-    setValue("shortDescription", project?.description);
-    setValue("manager", project?.projectManagerUserId);
+  /**
+   *
+   * @function updateSelectedProject
+   * function to fetch selected project detail
+   */
+  const updateSelectedProject = async (project) => {
+    const res = await get(`api/project/${project?.id}/details`);
+    console.log(res, res);
+    setSelectedProject(res);
+    setSelectedMandatoryFolder(
+      res?.projectFolders.map((itm) => {
+        return { ...itm, isSaved: true };
+      })
+    );
+    setData(res?.contractors);
+    setValue("projectId", res?.id);
+    setValue("projectName", res?.name);
+    setValue("budget", res?.budget);
+    setValue("startDate", res?.startDate?.split("T")?.[0]);
+    setValue("shortDescription", res?.description);
+    setValue("manager", res?.projectManagerUserId);
   };
   const deleteProjectData = async () => {
     const res = await deleteProject(selectedProject?.id);
@@ -281,11 +337,10 @@ const Projects = ({
                     onClick={(e) => {
                       e?.preventDefault();
                       const d = [...data];
-                      console.log("d ===", d);
                       d.push({
-                        contractor: [],
+                        contractors: [],
                         company: " ",
-                        quote: " ",
+                        budget: " ",
                         status: "New",
                       });
                       setData(d);
