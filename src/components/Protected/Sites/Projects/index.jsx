@@ -35,6 +35,7 @@ const Projects = ({
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   const [selectedContractors, setSelectedContractors] = useState([]);
   const [selectedProject, setSelectedProject] = useState({});
+  const [filterProjects, setFilterProjects] = useState([]);
   const { register, handleSubmit, reset, getValues, setValue, watch } = useForm(
     {}
   );
@@ -73,6 +74,24 @@ const Projects = ({
     getManagerList();
     getProjectList(siteSelectedForGlobal?.siteId);
   }, []);
+  const searchSite = (e) => {
+    const val = e.target.value;
+    
+    if(val){
+      const list = projectList?.filter((x) =>
+        String(x?.name).toLowerCase().includes(String(val).toLowerCase())
+      );
+      setFilterProjects(list);
+    }
+    else {
+      setFilterProjects(projectList);
+    }
+  }
+  useEffect(() => {
+    if(projectList) {
+      setFilterProjects(projectList);
+    }
+  }, [projectList])
   const updateSelectedProject = (project) => {
     setSelectedProject(project);
     setValue("projectId", project?.id);
@@ -127,7 +146,7 @@ const Projects = ({
                 type="text"
                 className="form-control"
                 placeholder="Search..."
-                // onChange={searchSite}
+                onChange={searchSite}
               />
             </div>
             <div className="mb-2">
@@ -147,7 +166,7 @@ const Projects = ({
               </button>
             </div>
             <ul className="nav flex-column">
-              {projectList?.map((itm) => (
+              {filterProjects?.map((itm) => (
                 <li
                   className="nav-item mb-1"
                   key={itm?.id}
