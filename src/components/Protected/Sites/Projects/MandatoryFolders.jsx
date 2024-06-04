@@ -51,7 +51,7 @@ const MandatoryFolders = ({
         <div className="mt-2">
           {selectedMandatoryFolder?.map((itm) => (
             <Fragment>
-              <span className="badge bg-light text-primary">
+              <span className="badge bg-light text-primary cursor">
                 {itm?.name}{" "}
                 <i
                   className="fas fa-times"
@@ -111,7 +111,7 @@ const MandatoryFolders = ({
                     </td>
                     <td>
                       <span
-                        className="text-primary"
+                        className="text-primary cursor"
                         onClick={() => {
                           setSelectedMandatoryFolder([
                             ...selectedMandatoryFolder,
@@ -129,7 +129,7 @@ const MandatoryFolders = ({
             <div>
               {selectedMandatoryFolder?.map((itm) => (
                 <Fragment>
-                  <span className="badge bg-light text-primary">
+                  <span className="badge bg-light text-primary cursor">
                     {itm?.name}{" "}
                     <i
                       className="fas fa-times"

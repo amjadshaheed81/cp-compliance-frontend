@@ -36,30 +36,41 @@ const Projects = ({
   const [selectedContractors, setSelectedContractors] = useState([]);
   const [selectedProject, setSelectedProject] = useState({});
   const [filterProjects, setFilterProjects] = useState([]);
+  // contractor data
+  const [data, setData] = useState([
+    {
+      contractor: [],
+      company: " ",
+      quote: " ",
+      status: "New",
+    },
+  ]);
   const { register, handleSubmit, reset, getValues, setValue, watch } = useForm(
     {}
   );
-  const submitProject = (data) => {
+  const submitProject = (formData) => {
     const payload = {
-      projectId: data?.projectId || null,
-      projectName: data?.projectName,
+      projectId: formData?.projectId || null,
+      projectName: formData?.projectName,
       siteId: siteSelectedForGlobal?.siteId,
-      status: "New",
-      budget: data?.budget,
-      startDate: `${data?.startDate} 10:00:00`,
+      status: "Active",
+      budget: formData?.budget,
+      startDate: `${formData?.startDate} 10:00:00`,
       endDate: "",
-      projectManagerUserId: parseInt(data?.manager),
-      description: data?.shortDescription,
+      projectManagerUserId: parseInt(formData?.manager),
+      description: formData?.shortDescription,
     };
-    const contractors = [
-      {
-        quoteId: selectedContractors?.[0],
+    console.log("contractor", data);
+    const contractors = [];
+    for (let i of data) {
+      contractors.push({
+        quoteId: null,
         siteId: siteSelectedForGlobal?.siteId,
-        contractorUserId: selectedContractors?.[0],
+        contractorUserId: parseInt(i?.contractorId),
         status: "Pending",
-        projectManagerUserId: parseInt(data?.manager),
-      },
-    ];
+        projectManagerUserId: parseInt(formData?.manager),
+      });
+    }
     const mandatoryFolders = selectedMandatoryFolder?.map((itm) => itm.id);
     const folders = {
       mandatoryFolders: mandatoryFolders,
@@ -76,22 +87,21 @@ const Projects = ({
   }, []);
   const searchSite = (e) => {
     const val = e.target.value;
-    
-    if(val){
+
+    if (val) {
       const list = projectList?.filter((x) =>
         String(x?.name).toLowerCase().includes(String(val).toLowerCase())
       );
       setFilterProjects(list);
-    }
-    else {
+    } else {
       setFilterProjects(projectList);
     }
-  }
+  };
   useEffect(() => {
-    if(projectList) {
+    if (projectList) {
       setFilterProjects(projectList);
     }
-  }, [projectList])
+  }, [projectList]);
   const updateSelectedProject = (project) => {
     setSelectedProject(project);
     setValue("projectId", project?.id);
@@ -209,7 +219,7 @@ const Projects = ({
                     Budget (GBP)
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     name="budget"
                     className="form-control"
                     id="budget"
@@ -268,7 +278,18 @@ const Projects = ({
                 <div className="col-md-3">
                   <button
                     className="btn btn-sm btn-light text-primary w-100 mb-2"
-                    // onClick={() => handleOpen()}
+                    onClick={(e) => {
+                      e?.preventDefault();
+                      const d = [...data];
+                      console.log("d ===", d);
+                      d.push({
+                        contractor: [],
+                        company: " ",
+                        quote: " ",
+                        status: "New",
+                      });
+                      setData(d);
+                    }}
                   >
                     <i className="fas fa-plus"></i>&nbsp;Add
                   </button>
@@ -276,6 +297,8 @@ const Projects = ({
               </div>
               <div className="row mb-2" style={{ height: "auto" }}>
                 <Contractors
+                  setData={setData}
+                  data={data}
                   contractsList={contractsList}
                   setSelectedContractors={setSelectedContractors}
                 />

@@ -1,15 +1,102 @@
 // components/Login/LoginForm.js
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { Box, Modal, Typography } from "@mui/material";
 
-const Contractors = ({ contractsList, setSelectedContractors }) => {
+const Contractors = ({
+  contractsList,
+  setSelectedContractors,
+  data,
+  setData,
+}) => {
   const [open, setOpen] = useState(false);
+  const [tableData, setTableData] = useState(data);
+  useEffect(() => {
+    setTableData(data);
+  }, [data]);
   const handleOpen = () => {
     setOpen(!open);
   };
   const handleClose = () => {
     setOpen(false);
+  };
+  const removeByIndex = (list, index) => [
+    ...list.slice(0, index),
+    ...list.slice(index + 1),
+  ];
+  const GettableRow = ({ itm, index, setData, data }) => {
+    const [row, setRowdata] = useState(itm);
+    const deleteContractById = (index) => {
+      const res = removeByIndex(data, index);
+      console.log("res", res);
+      setData(res);
+    };
+    return (
+      <tr>
+        {itm.contractor ? (
+          <td>
+            <select
+              className="form-control form-select"
+              name="contractor"
+              id="contractor"
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                console.log(selectedValue);
+                const getContractorList = contractsList?.filter(
+                  (contractor) => contractor?.id == selectedValue
+                );
+                const contractRows = [...data];
+                contractRows[index] = {
+                  ...row,
+                  contractorId: selectedValue,
+                  company: getContractorList?.[0]?.company || "",
+                };
+                setData(contractRows);
+                setRowdata({
+                  ...row,
+                  contractorId: selectedValue,
+                  company: getContractorList?.[0]?.company || "",
+                });
+              }}
+            >
+              <option value={""}>Select Contractor</option>
+              {contractsList?.map((contractItm) => (
+                <option
+                  value={contractItm?.id}
+                  selected={contractItm?.id == itm?.contractorId}
+                >
+                  {contractItm?.name}
+                </option>
+              ))}
+            </select>
+          </td>
+        ) : (
+          <td></td>
+        )}
+        {itm?.company ? <td>{row?.company}</td> : null}
+        {itm?.quote ? <td>{row?.quote}</td> : null}
+        {itm?.status ? <td>{row?.status}</td> : null}
+        {itm?.actions ? (
+          <td>
+            <button
+              className="btn btn-sm btn-light text-danger"
+              onClick={() => deleteContractById(index)}
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        ) : (
+          <td>
+            <button
+              className="btn btn-sm btn-light text-danger"
+              onClick={() => deleteContractById(index)}
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        )}
+      </tr>
+    );
   };
   const style = {
     position: "absolute",
@@ -38,50 +125,14 @@ const Contractors = ({ contractsList, setSelectedContractors }) => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>
-                <select
-                  className="form-control form-select"
-                  name="contractor"
-                  id="contractor"
-                  onChange={(e) => {
-                    setSelectedContractors([parseInt(e.target.value)]);
-                  }}
-                >
-                  <option value={""}>Select Contractor</option>
-                  {contractsList?.map((itm) => (
-                    <option value={itm?.id}>{itm?.name}</option>
-                  ))}
-                </select>
-              </td>
-              <td>{/* ACME Ltd */}</td>
-              <td>&#163;</td>
-              <td>
-                <div className="bg-light text-info rounded-1 p-1" role="alert">
-                  New
-                </div>
-                {/* <div className="bg-warning text-light rounded-1 p-1" role="alert">
-                  Recieved
-                </div> */}
-              </td>
-              <td>
-                {/* <span style={{ color: "gray" }} onClick={() => handleOpen()}>
-                  <i className="fas fa-eye fa-2x"></i>
-                </span>
-                &nbsp;
-                <span style={{ color: "gray" }}>
-                  <i className="far fa-thumbs-up fa-2x"></i>
-                </span>
-                &nbsp;
-                <span style={{ color: "gray" }}>
-                  <i className="far fa-thumbs-down fa-2x"></i>
-                </span>
-                &nbsp;
-                <span style={{ color: "gray" }}>
-                  <i className="far fa-trash-alt fa-2x"></i>
-                </span> */}
-              </td>
-            </tr>
+            {tableData?.map((dataItm, index) => (
+              <GettableRow
+                itm={dataItm}
+                index={index}
+                setData={setData}
+                data={data}
+              />
+            ))}
           </tbody>
         </table>
       </div>
