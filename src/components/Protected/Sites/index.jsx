@@ -106,16 +106,16 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
     <Fragment>
       {/* <Sidebar /> */}
       <SidebarNew />
-      <div class="content">
+      <div className="content">
         <Header />
-        <div class="container-fluid">
+        <div className="container-fluid">
           <BreadCrumHeader header={"Portfolio Management"} page={"Portfolio"} />
           {/*  */}
           {/*  */}
-          <div class="d-flex bd-highlight">
-            <div class="pt-2 bd-highlight ">
-              <div class="row">
-                <div class="col">
+          <div className="d-flex bd-highlight">
+            <div className="pt-2 bd-highlight ">
+              <div className="row">
+                <div className="col">
                   <input
                     type="text"
                     className="form-control"
@@ -123,7 +123,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     onChange={searchSite}
                   />
                 </div>
-                <div class="col">
+                <div className="col">
                   <select
                     name="city"
                     className="form-control form-select"
@@ -134,7 +134,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     {sites?.map((site) => <option value={site.city}>{site.city}</option>)}
                   </select>
                 </div>
-                <div class="col">
+                <div className="col">
                   <select
                     name="area"
                     className="form-control form-select"
@@ -145,7 +145,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     {sites?.map((site) => <option value={site.area}>{site.area}</option>)}
                   </select>
                 </div>
-                <div class="col">
+                <div className="col">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -165,12 +165,12 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     className="btn btn-sm btn-light bg-white text-primary"
                     data={sites}
                   >
-                    <i class="fas fa-download"></i>&nbsp;Export
+                    <i className="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
                 </div>
               </div>
             </div>
-            <div class="ms-auto p-2 bd-highlight">
+            <div className="ms-auto p-2 bd-highlight">
               <button
                 className="btn btn-sm btn-primary text-white"
                 onClick={() => goTo("/add-site")}
@@ -182,8 +182,8 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
           {/* row start*/}
           <div className="row p-2"></div>
           <div className="col-md-12">
-            <table class="table">
-              <thead class="table-dark">
+            <table className="table">
+              <thead className="table-dark">
                 <tr>
                   <th scope="col">Site</th>
                   <th scope="col">Address</th>
@@ -206,10 +206,10 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                       <ListStatusBadge status={itm?.status} />
                     </th>
                     <th scope="col">
-                      <span class="badge bg-danger p-2 m-1 risk-span">1</span>
-                      <span class="badge bg-warning p-2 m-1 risk-span">1</span>
-                      <span class="badge bg-info p-2 m-1 risk-span">1</span>
-                      <span class="badge bg-success p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-danger p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-warning p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-info p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-success p-2 m-1 risk-span">1</span>
                     </th>
                     <th scope="col">
                       <button className="btn btn-sm btn-light" onClick={() => {
@@ -218,14 +218,14 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                         }, 1000);
                         updateSite(itm);
                       }}>
-                        <i class="fas fa-pen"></i>
+                        <i className="fas fa-pen"></i>
                       </button>{" "}
                       &nbsp;
                       <button
                         className="btn btn-sm btn-light text-danger"
                         onClick={() => deleteSiteById(itm)}
                       >
-                        <i class="fas fa-trash"></i>
+                        <i className="fas fa-trash"></i>
                       </button>
                     </th>
                   </tr>

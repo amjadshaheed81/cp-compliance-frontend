@@ -82,7 +82,7 @@ const Contractors = ({
               className="btn btn-sm btn-light text-danger"
               onClick={() => deleteContractById(index)}
             >
-              <i class="fas fa-trash"></i>
+              <i className="fas fa-trash"></i>
             </button>
           </td>
         ) : (
@@ -91,7 +91,7 @@ const Contractors = ({
               className="btn btn-sm btn-light text-danger"
               onClick={() => deleteContractById(index)}
             >
-              <i class="fas fa-trash"></i>
+              <i className="fas fa-trash"></i>
             </button>
           </td>
         )}

@@ -4,21 +4,21 @@ import { connect } from "react-redux";
 const DashboardActions = () => {
   return (
     <Fragment>
-      <div class="card">
-        <div class="card-body p-2">
-          <div class="d-flex bd-highlight p-0">
-            <div class="bd-highlight">
-              <h5 class="card-title">Actions</h5>
+      <div className="card">
+        <div className="card-body p-2">
+          <div className="d-flex bd-highlight p-0">
+            <div className="bd-highlight">
+              <h5 className="card-title">Actions</h5>
             </div>
-            <div class="ms-auto bd-highlight">
-              <button type="button" class="btn btn-sm btn-light text-primary">
+            <div className="ms-auto bd-highlight">
+              <button type="button" className="btn btn-sm btn-light text-primary">
                 View All
               </button>
             </div>
           </div>
 
-          <table class="table table-bordered f-11">
-            <thead class="table-dark">
+          <table className="table table-bordered f-11">
+            <thead className="table-dark">
               <tr>
                 <th scope="col">Action</th>
                 <th scope="col">Owner</th>
@@ -32,7 +32,7 @@ const DashboardActions = () => {
                 <td>Joe B</td>
                 <td>31 Dec 24</td>
                 <td>
-                  <div class="bg-warning text-light rounded-1 p-1" role="alert">
+                  <div className="bg-warning text-light rounded-1 p-1" role="alert">
                     In Progress
                   </div>
                 </td>
@@ -42,7 +42,7 @@ const DashboardActions = () => {
                 <td>Joe B</td>
                 <td>31 Dec 24</td>
                 <td>
-                  <div class="bg-warning text-light rounded-1 p-1" role="alert">
+                  <div className="bg-warning text-light rounded-1 p-1" role="alert">
                     In Progress
                   </div>
                 </td>
@@ -52,7 +52,7 @@ const DashboardActions = () => {
                 <td>Joe B</td>
                 <td>31 Dec 24</td>
                 <td>
-                  <div class="bg-success text-light rounded-1 p-1" role="alert">
+                  <div className="bg-success text-light rounded-1 p-1" role="alert">
                     Completed
                   </div>
                 </td>

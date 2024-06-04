@@ -87,7 +87,7 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
           onChange={searchSite}
         />
       </div>
-      <div class="ms-auto p-2 bd-highlight">
+      <div className="ms-auto p-2 bd-highlight">
         <button
           className="btn btn-sm btn-primary text-white w-100"
           onClick={() => goTo("/add-site")}

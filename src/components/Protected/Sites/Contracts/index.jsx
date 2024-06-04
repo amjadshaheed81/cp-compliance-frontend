@@ -19,13 +19,32 @@ const Contracts = ({
   updateContractDetail,
   contractsList,
   contractDetail,
-  filterContract,
   error,
   success,
-  siteSelectedForGlobal,
 }) => {
   const [open, setOpen] = useState(false);
+  const [filteredContractList, setFilteredContractList] = useState([]);
   const [selectedContract, setSelectedContract] = useState({});
+  useEffect(() => {
+    setFilteredContractList(contractsList);
+  }, [contractsList]);
+  /**
+   *
+   * @param {event} e
+   * search project
+   */
+  const searchContract = (e) => {
+    const val = e.target.value;
+
+    if (val) {
+      const list = contractsList?.filter((x) =>
+        String(x?.project_summary).toLowerCase().includes(String(val).toLowerCase())
+      );
+      setFilteredContractList(list);
+    } else {
+      setFilteredContractList(contractsList);
+    }
+  };
   const handleOpen = () => {
     setOpen(!open);
   };
@@ -72,6 +91,7 @@ const Contracts = ({
                     className="form-control"
                     placeholder="Project"
                     name="project"
+                    onChange={searchContract}
                   />
                 </div>
                 <div className="col">
@@ -126,12 +146,12 @@ const Contracts = ({
                 </tr>
               </thead>
               <tbody>
-                {contractsList?.length === 0 && (
+                {filteredContractList?.length === 0 && (
                   <tr>
                     <td>No Contracts Found</td>
                   </tr>
                 )}
-                {contractsList?.map((itm) => (
+                {filteredContractList?.map((itm) => (
                   <tr key={itm?.quote_id}>
                     <td>{itm?.project_summary}</td>
                     <td>{itm?.site}</td>

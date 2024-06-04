@@ -25,7 +25,7 @@ const Header = ({ siteSelectedForGlobal }) => {
       <Toolbar>
         <div style={{ flexGrow: 1 }}></div>
         {/* Empty div to push user icon to right */}
-        <div class="nav-icon">
+        <div className="nav-icon">
           <div className="icon">
             <GridViewIcon className="grid-icon" />
           </div>

@@ -18,22 +18,22 @@ const Dashboard = () => {
     <Fragment>
       {/* <Sidebar /> */}
       <SidebarNew />
-      <div class="content">
+      <div className="content">
         <Header />
         <SearchSite />
-        <div class="container-fluid">
+        <div className="container-fluid">
           <BreadCrumHeader header={"Welcome"} page={"Home"} />
-          <div class="d-flex bd-highlight p-0">
-            <div class="bd-highlight">
+          <div className="d-flex bd-highlight p-0">
+            <div className="bd-highlight">
               <p className="display-8">Samantha Joe</p>
             </div>
-            <div class="ms-auto bd-highlight">
-              <div class="form-check form-switch">
-                <label class="form-check-label" for="flexSwitchCheckChecked">
+            <div className="ms-auto bd-highlight">
+              <div className="form-check form-switch">
+                <label className="form-check-label" for="flexSwitchCheckChecked">
                   All Sites
                 </label>
                 <input
-                  class="form-check-input"
+                  className="form-check-input"
                   type="checkbox"
                   id="flexSwitchCheckChecked"
                   checked
@@ -41,25 +41,25 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div class="row">
-            <div class="col">
+          <div className="row">
+            <div className="col">
               <DashboardRiskScore />
             </div>
-            <div class="col">
+            <div className="col">
               <DashboardEventCalendar />
             </div>
-            <div class="col">
+            <div className="col">
               <DashboardActiveProjects />
             </div>
           </div>
-          <div class="row mt-4">
-            <div class="col">
+          <div className="row mt-4">
+            <div className="col">
               <DashboardActions />
             </div>
-            <div class="col">
+            <div className="col">
               <DashboardNotification />
             </div>
-            <div class="col">
+            <div className="col">
               <DashboardTender />
             </div>
           </div>

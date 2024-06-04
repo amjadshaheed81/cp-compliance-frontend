@@ -28,13 +28,13 @@ export const data = {
 const DashboardRiskScore = () => {
   return (
     <Fragment>
-      <div class="card">
-        <div class="card-body p-2" style={{zIndex:"1"}}>
-          <div class="d-flex bd-highlight p-0">
-            <div class="bd-highlight">
-              <h5 class="card-title">Risk Scorecard</h5>
+      <div className="card">
+        <div className="card-body p-2" style={{zIndex:"1"}}>
+          <div className="d-flex bd-highlight p-0">
+            <div className="bd-highlight">
+              <h5 className="card-title">Risk Scorecard</h5>
             </div>
-            <div class="ms-auto bd-highlight"></div>
+            <div className="ms-auto bd-highlight"></div>
           </div>
           <Doughnut data={data} />
         </div>

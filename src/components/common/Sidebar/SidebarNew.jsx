@@ -202,7 +202,7 @@ export default function SidebarNew() {
                         backgroundColor: 'black',
                         ...(open && { display: 'none' }),
                     }}
-                // class="m-0"
+                // className="m-0"
                 >
                     <MenuIcon sx={{ color: 'white' }} />
                 </IconButton>
@@ -216,9 +216,9 @@ export default function SidebarNew() {
                     <li style={{ textAlign: 'center' }}>
                         <img src={unite} height={50} width={140} className="img img-responsive" alt="side logo" />
                     </li>
-                    <li class="m-0">
+                    <li className="m-0">
                         <img src={userImg} height={40} width={40} className="img img-responsive" alt="side logo" />
-                        <span class="text-white p-2 fs-5">Samantha Joe</span><p class="text-white ps-5 fs-6">Site Manager</p>
+                        <span className="text-white p-2 fs-5">Samantha Joe</span><p className="text-white ps-5 fs-6">Site Manager</p>
                     </li>
                     <p style={{ color: 'grey' }}>Genral</p>
                     {['Dashboard', 'Edit Profile', 'Portfolio', 'Reports',
@@ -248,7 +248,7 @@ export default function SidebarNew() {
                         ))}
                 </List>
                 {/* <Divider /> */}
-                <p style={{ color: 'grey' }} class="bg-black m-0">Site Actions</p>
+                <p style={{ color: 'grey' }} className="bg-black m-0">Site Actions</p>
                 <List sx={{ backgroundColor: 'black' }}>
                     {['Create Site', 'Site Details', 'Site Documents',
                         'Site Projects', 'Site Assets', 'Site Contracts', 'Pre-Action',
