@@ -143,7 +143,8 @@ const Contracts = ({
                     <td></td>
                     <td>
                       <span
-                        style={{ color: "gray", cursor: "pointer" }}
+                        style={{ color: "gray" }}
+                        className="cursor"
                         onClick={() => {
                           setSelectedContract(itm);
                           getSiteContractDetails(itm?.quote_id);
@@ -152,10 +153,14 @@ const Contracts = ({
                       >
                         <i className="fas fa-eye"></i>
                       </span>
-                      &nbsp;
-                      <span style={{ color: "gray" }} title="Official Quota">
+                      &nbsp;&nbsp;&nbsp;
+                      <CSVLink
+                        filename={"contracts-quote"}
+                        className="btn btn-light bg-white text-primary"
+                        data={[itm]}
+                      >
                         <i className="fas fa-solid fa-paperclip"></i>
-                      </span>
+                      </CSVLink>
                     </td>
                   </tr>
                 ))}
@@ -189,6 +194,7 @@ const Contracts = ({
                 className="form-control"
                 id="projectSummary"
                 disabled={true}
+                value={contractDetail?.project_summary}
               />
             </div>
             <div className="col-md-6">
@@ -201,6 +207,7 @@ const Contracts = ({
                 className="form-control"
                 id="projectManager"
                 disabled={true}
+                value={contractDetail?.manager_first_name}
               />
             </div>
             <div className="col-md-6">
@@ -213,6 +220,7 @@ const Contracts = ({
                 className="form-control"
                 id="projectStartDate"
                 disabled={true}
+                value={contractDetail?.start_date}
               />
             </div>
             <div className="col-md-6">
@@ -224,6 +232,7 @@ const Contracts = ({
                 name="quote"
                 className="form-control"
                 id="quote"
+                value={contractDetail?.quote}
               />
             </div>
             <div className="col-md-6">
@@ -246,6 +255,7 @@ const Contracts = ({
                 className="form-control"
                 id="notes"
                 disabled={true}
+                value={contractDetail?.project_comments}
               ></textarea>
             </div>
             <div>
@@ -258,14 +268,14 @@ const Contracts = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {contractDetail?.folderDetails?.length === 0 && (
+                  {contractDetail?.folder_details?.length === 0 && (
                     <tr>
                       <td>folder details are not available</td>
                     </tr>
                   )}
-                  {contractDetail?.folderDetails?.map((itm) => (
+                  {contractDetail?.folder_details?.map((itm) => (
                     <tr key={itm?.folder_id}>
-                      <td>{itm?.folderName}</td>
+                      <td>{itm?.folder_name}</td>
                       <td>
                         <input
                           type="file"

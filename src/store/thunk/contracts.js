@@ -30,7 +30,7 @@ export const getSiteContracts = (id) => {
 export const getSiteContractDetails = (id) => {
   return async (dispatch) => {
     try {
-      const url = `/api/project/contractDetails/${id}`;
+      const url = `/api/project/contractdetails/${id}`;
       const data = await get(url);
       dispatch({
         type: GET_CONTRACT_DETAIL,
