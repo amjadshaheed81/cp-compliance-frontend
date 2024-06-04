@@ -152,10 +152,9 @@ const Projects = ({
    */
   const updateSelectedProject = async (project) => {
     const res = await get(`api/project/${project?.id}/details`);
-    console.log(res, res);
     setSelectedProject(res);
     setSelectedMandatoryFolder(
-      res?.projectFolders.map((itm) => {
+      res?.projectFolders?.map((itm) => {
         return { ...itm, isSaved: true };
       })
     );
