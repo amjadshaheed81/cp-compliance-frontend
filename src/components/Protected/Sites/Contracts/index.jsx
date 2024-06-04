@@ -246,7 +246,7 @@ const Contracts = ({
                 Project Start date
               </label>
               <input
-                type="date"
+                type="text"
                 name="projectStartDate"
                 className="form-control"
                 id="projectStartDate"
