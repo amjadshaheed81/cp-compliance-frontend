@@ -123,7 +123,7 @@ export default function SidebarNew() {
                 break;
             case 'Edit Profile': navigate('/dashboard');
                 break;
-            case 'Portfolio': navigate('/dashboard');
+            case 'Portfolio': navigate('/sites');
                 break;
             case 'Reports': navigate('/sites');
                 break;
