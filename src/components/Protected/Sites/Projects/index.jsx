@@ -83,7 +83,13 @@ const Projects = ({
         projectManagerUserId: parseInt(formData?.manager),
       });
     }
-    const mandatoryFolders = selectedMandatoryFolder?.map((itm) => itm.id);
+    let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
+      if (!itm?.isSaved) {
+        return  itm.id
+      }
+    });
+    mandatoryFolders = mandatoryFolders?.filter(x => x);
+    console.log('mandatoryFolders ======',mandatoryFolders)
     const folders = {
       mandatoryFolders: mandatoryFolders,
       removeMandatoryFolders: null,
@@ -126,7 +132,15 @@ const Projects = ({
   useEffect(() => {
     getContractorList();
     getManagerList();
-    getProjectList(siteSelectedForGlobal?.siteId);
+    if (siteSelectedForGlobal?.siteId) {
+      getProjectList(siteSelectedForGlobal?.siteId);
+    } else{
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Please select site from site search and try again.",
+      });
+    }
   }, []);
   const searchSite = (e) => {
     const val = e.target.value;
