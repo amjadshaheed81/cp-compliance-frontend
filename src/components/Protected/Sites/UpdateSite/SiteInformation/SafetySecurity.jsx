@@ -5,12 +5,14 @@ import { yesNoOptions } from "../../../../../utils/yesNoOptions";
 import {
   getSafetyAndSecurityDetails,
   saveSafetyAndSecurityDetails,
+  setLoader,
 } from "../../../../../store/thunk/site";
 
 const SafetySecurity = ({
   updateSite,
   saveSafetyAndSecurityDetails,
   getSafetyAndSecurityDetails,
+  setLoader,
 }) => {
   const {
     register,
@@ -26,6 +28,7 @@ const SafetySecurity = ({
     getSafetyAndSecurityDetails(updateSite?.siteId, setValue);
   }, []);
   const saveSafetyAndSecurity = (data) => {
+    setLoader(true);
     console.log("getSafetyAndSecurity", data);
     saveSafetyAndSecurityDetails(updateSite?.siteId, data);
   };
@@ -517,4 +520,5 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
   saveSafetyAndSecurityDetails,
   getSafetyAndSecurityDetails,
+  setLoader,
 })(SafetySecurity);

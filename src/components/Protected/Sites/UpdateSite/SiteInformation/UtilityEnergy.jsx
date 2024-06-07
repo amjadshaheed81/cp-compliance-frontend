@@ -2,12 +2,13 @@ import React, { useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
-import { getUtilityAndEnergyDetails, saveUtilityAndEnergyDetails } from "../../../../../store/thunk/site";
+import { getUtilityAndEnergyDetails, saveUtilityAndEnergyDetails, setLoader } from "../../../../../store/thunk/site";
 
 const UtilityEnergy = ({
   updateSite,
   saveUtilityAndEnergyDetails,
   getUtilityAndEnergyDetails,
+  setLoader,
 }) => {
   const {
     register,
@@ -23,6 +24,7 @@ const UtilityEnergy = ({
   }, []);
   const saveUtilityAndEnergy = (data) => {
     console.log("saveAreaAndOccupancy", data);
+    setLoader(true);
     saveUtilityAndEnergyDetails()
   };
   return (
@@ -482,4 +484,5 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
   saveUtilityAndEnergyDetails,
   getUtilityAndEnergyDetails,
+  setLoader,
 })(UtilityEnergy);

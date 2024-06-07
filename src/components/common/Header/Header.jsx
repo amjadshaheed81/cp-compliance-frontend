@@ -6,8 +6,9 @@ import { AccountCircle, ArrowDropDown } from '@mui/icons-material';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { connect } from "react-redux";
+import BackDrop from "../Loader/BackDrop";
 
-const Header = ({ siteSelectedForGlobal }) => {
+const Header = ({ siteSelectedForGlobal, isLoading }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenu = (event) => {
@@ -22,6 +23,7 @@ const Header = ({ siteSelectedForGlobal }) => {
       position="static"
       style={{ backgroundColor: "white", top: "0", left: "70px", zIndex: "-1" }}
     >
+      <BackDrop isLoading={isLoading}/>
       <Toolbar>
         <div style={{ flexGrow: 1 }}></div>
         {/* Empty div to push user icon to right */}
@@ -47,38 +49,6 @@ const Header = ({ siteSelectedForGlobal }) => {
               </>
             )}
           </div>
-          {/* <div>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="menu-appbar"
-          aria-haspopup="true"
-          onClick={handleMenu}
-          color="inherit"
-          style={{marginRight:'40px'}}
-        >
-          <AccountCircle style={{ color: 'grey' }} />
-        </IconButton>
-        <Menu
-          id="menu-appbar"
-          anchorEl={anchorEl}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          open={Boolean(anchorEl)}
-          onClose={handleClose}
-        >
-          <MenuItem onClick={handleClose}>Profile</MenuItem>
-          <MenuItem onClick={handleClose}>My account</MenuItem>
-          <MenuItem onClick={handleClose}>Logout</MenuItem>
-        </Menu>
-        </div> */}
         </div>
       </Toolbar>
     </AppBar>
@@ -86,5 +56,6 @@ const Header = ({ siteSelectedForGlobal }) => {
 };
 const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  isLoading: state.site.isLoading,
 });
 export default connect(mapStateToProps, {})(Header);

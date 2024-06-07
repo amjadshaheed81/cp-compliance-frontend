@@ -622,20 +622,11 @@ export const getUtilityAndEnergyDetails = (id, setValue) => {
       const url = `/api/site/siteinfo/${id}?q=siteUtility`;
       const siteUtilityInformation = await get(url);
       setValue("utilGas", siteUtilityInformation?.utilGas);
-      setValue(
-        "utilElectricity",
-        siteUtilityInformation?.utilElectricity
-      );
-      setValue(
-        "utilWater",
-        siteUtilityInformation?.utilWater
-      );
+      setValue("utilElectricity", siteUtilityInformation?.utilElectricity);
+      setValue("utilWater", siteUtilityInformation?.utilWater);
       setValue("utilTelecom", siteUtilityInformation?.utilTelecom);
       setValue("utilMainsDrainage", siteUtilityInformation?.utilMainsDrainage);
-      setValue(
-        "airConditioning",
-        siteUtilityInformation?.airConditioning
-      );
+      setValue("airConditioning", siteUtilityInformation?.airConditioning);
       setValue("coolingTower", siteUtilityInformation?.coolingTower);
       setValue(
         "waterIsolationValveInternal",
@@ -643,19 +634,25 @@ export const getUtilityAndEnergyDetails = (id, setValue) => {
       );
       setValue("waterTankLocation", siteUtilityInformation?.waterTankLocation);
       setValue("waterTanks", siteUtilityInformation?.waterTanks);
-      setValue("hotWaterCalorifier", siteUtilityInformation?.hotWaterCalorifier);
+      setValue(
+        "hotWaterCalorifier",
+        siteUtilityInformation?.hotWaterCalorifier
+      );
       setValue(
         "hotWaterCalorifierLocation",
         siteUtilityInformation?.hotWaterCalorifierLocation
       );
       setValue("pressureVessel", siteUtilityInformation?.pressureVessel);
-      setValue(
-        "gasBoiler",
-        siteUtilityInformation?.gasBoiler
-      );
+      setValue("gasBoiler", siteUtilityInformation?.gasBoiler);
       setValue("gasBoilerLocation", siteUtilityInformation?.gasBoilerLocation);
-      setValue("gasSupplyIsolation", siteUtilityInformation?.gasSupplyIsolation);
-      setValue("gasSupplyExternalIsolation", siteUtilityInformation?.gasSupplyExternalIsolation);
+      setValue(
+        "gasSupplyIsolation",
+        siteUtilityInformation?.gasSupplyIsolation
+      );
+      setValue(
+        "gasSupplyExternalIsolation",
+        siteUtilityInformation?.gasSupplyExternalIsolation
+      );
       setValue(
         "electricInstallationLocation",
         siteUtilityInformation?.electricInstallationLocation
@@ -666,7 +663,10 @@ export const getUtilityAndEnergyDetails = (id, setValue) => {
       );
       setValue("externalLighting", siteUtilityInformation?.externalLighting);
       setValue("backupGenerator", siteUtilityInformation?.backupGenerator);
-      setValue("backupGeneratorLocation", siteUtilityInformation?.backupGeneratorLocation);
+      setValue(
+        "backupGeneratorLocation",
+        siteUtilityInformation?.backupGeneratorLocation
+      );
       dispatch({
         type: GET_UTILITY_ENERGY_DETAILS,
         payload: siteUtilityInformation,
@@ -713,20 +713,11 @@ export const getLiftsAndStairwaysDetails = (id, setValue) => {
       const url = `/api/site/siteinfo/${id}?q=siteUtility`;
       const siteUtilityInformation = await get(url);
       setValue("utilGas", siteUtilityInformation?.utilGas);
-      setValue(
-        "utilElectricity",
-        siteUtilityInformation?.utilElectricity
-      );
-      setValue(
-        "utilWater",
-        siteUtilityInformation?.utilWater
-      );
+      setValue("utilElectricity", siteUtilityInformation?.utilElectricity);
+      setValue("utilWater", siteUtilityInformation?.utilWater);
       setValue("utilTelecom", siteUtilityInformation?.utilTelecom);
       setValue("utilMainsDrainage", siteUtilityInformation?.utilMainsDrainage);
-      setValue(
-        "airConditioning",
-        siteUtilityInformation?.airConditioning
-      );
+      setValue("airConditioning", siteUtilityInformation?.airConditioning);
       setValue("coolingTower", siteUtilityInformation?.coolingTower);
       setValue(
         "waterIsolationValveInternal",
@@ -734,19 +725,25 @@ export const getLiftsAndStairwaysDetails = (id, setValue) => {
       );
       setValue("waterTankLocation", siteUtilityInformation?.waterTankLocation);
       setValue("waterTanks", siteUtilityInformation?.waterTanks);
-      setValue("hotWaterCalorifier", siteUtilityInformation?.hotWaterCalorifier);
+      setValue(
+        "hotWaterCalorifier",
+        siteUtilityInformation?.hotWaterCalorifier
+      );
       setValue(
         "hotWaterCalorifierLocation",
         siteUtilityInformation?.hotWaterCalorifierLocation
       );
       setValue("pressureVessel", siteUtilityInformation?.pressureVessel);
-      setValue(
-        "gasBoiler",
-        siteUtilityInformation?.gasBoiler
-      );
+      setValue("gasBoiler", siteUtilityInformation?.gasBoiler);
       setValue("gasBoilerLocation", siteUtilityInformation?.gasBoilerLocation);
-      setValue("gasSupplyIsolation", siteUtilityInformation?.gasSupplyIsolation);
-      setValue("gasSupplyExternalIsolation", siteUtilityInformation?.gasSupplyExternalIsolation);
+      setValue(
+        "gasSupplyIsolation",
+        siteUtilityInformation?.gasSupplyIsolation
+      );
+      setValue(
+        "gasSupplyExternalIsolation",
+        siteUtilityInformation?.gasSupplyExternalIsolation
+      );
       setValue(
         "electricInstallationLocation",
         siteUtilityInformation?.electricInstallationLocation
@@ -757,7 +754,10 @@ export const getLiftsAndStairwaysDetails = (id, setValue) => {
       );
       setValue("externalLighting", siteUtilityInformation?.externalLighting);
       setValue("backupGenerator", siteUtilityInformation?.backupGenerator);
-      setValue("backupGeneratorLocation", siteUtilityInformation?.backupGeneratorLocation);
+      setValue(
+        "backupGeneratorLocation",
+        siteUtilityInformation?.backupGeneratorLocation
+      );
       dispatch({
         type: GET_UTILITY_ENERGY_DETAILS,
         payload: siteUtilityInformation,

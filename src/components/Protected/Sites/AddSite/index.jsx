@@ -20,8 +20,7 @@ import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import GoogleMap from "../UpdateSite/GoogleMap";
-import BusinessIcon from '@mui/icons-material/Business';
-import CircularProgress from '@mui/material/CircularProgress';
+import BusinessIcon from "@mui/icons-material/Business";
 
 const AddSite = ({
   updateSite,
@@ -31,7 +30,7 @@ const AddSite = ({
   addSite,
   handleOnPostCodeSearch,
   getAddresOnPostCodeSuccess,
-  isLoading,
+  setLoader,
 }) => {
   const navigate = useNavigate();
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
@@ -138,11 +137,11 @@ const AddSite = ({
                         />
                       </div>
                       {errors?.siteName && (
-                          <InputError
-                            message={errors?.siteName?.message}
-                            key={errors?.siteName?.message}
-                          />
-                        )}
+                        <InputError
+                          message={errors?.siteName?.message}
+                          key={errors?.siteName?.message}
+                        />
+                      )}
                       {/* <div className="mb-3">
                        
                       </div> */}
@@ -352,25 +351,21 @@ const AddSite = ({
                         {success && <Success msg={success} />}
                         {error && <Error msg={error} />}
                       </div>
-                      {!isLoading && (
-                        <div className="float-end">
-                          <button
-                            type="button"
-                            className="btn btn-light mb-3 mr-4"
-                          >
-                            Cancel
-                          </button>
-                          &nbsp; &nbsp;
-                          <button
-                            type="submit"
-                            className="btn btn-primary mb-3 mr-4"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      )}
-                      {isLoading && <div className="float-end">
-                      <CircularProgress /></div>}
+                      <div className="float-end">
+                        <button
+                          type="button"
+                          className="btn btn-light mb-3 mr-4"
+                        >
+                          Cancel
+                        </button>
+                        &nbsp; &nbsp;
+                        <button
+                          type="submit"
+                          className="btn btn-primary mb-3 mr-4"
+                        >
+                          Save
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </form>
@@ -444,7 +439,6 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   updateSite: state.site.updateSite,
   sites: state.site.sites,
-  isLoading: state.site.isLoading,
   getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
 });
 export default connect(mapStateToProps, {
@@ -453,4 +447,5 @@ export default connect(mapStateToProps, {
   updateSiteImage,
   getSites,
   handleOnPostCodeSearch,
+  setLoader,
 })(AddSite);

@@ -4,11 +4,13 @@ import { useForm } from "react-hook-form";
 import {
   saveLiftAndStairways,
   getSiteLiftStairways,
+  setLoader,
 } from "../../../../../store/thunk/site";
 const LiftsStairways = ({
   updateSite,
   getSiteLiftStairways,
   saveLiftAndStairways,
+  setLoader,
 }) => {
   const {
     register,
@@ -24,6 +26,7 @@ const LiftsStairways = ({
       ...data,
       siteId: updateSite?.siteId,
     };
+    setLoader(true);
     saveLiftAndStairways(formData);
   };
   useEffect(() => {
@@ -228,4 +231,5 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
   getSiteLiftStairways,
   saveLiftAndStairways,
+  setLoader,
 })(LiftsStairways);

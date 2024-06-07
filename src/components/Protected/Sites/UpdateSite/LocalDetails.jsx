@@ -6,6 +6,7 @@ import { connect } from "react-redux";
 import {
   updateLocalDetails,
   updateTimings,
+  setLoader,
 } from "./../../../../store/thunk/site";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
@@ -18,6 +19,7 @@ const LocalDetails = ({
   timingSuccess,
   timingError,
   updateSite,
+  setLoader,
 }) => {
   const {
     register,
@@ -54,10 +56,11 @@ const LocalDetails = ({
   }, [updateSite]);
 
   const submitLocalDetails = (data) => {
-    console.log("data", data);
+    setLoader(true);
     updateLocalDetails({ siteId: updateSite?.siteId, ...data });
   };
   const submitOpeningTiming = (data) => {
+    setLoader(true);
     updateTimings({ siteId: updateSite?.siteId, ...data });
   };
   return (
@@ -260,6 +263,6 @@ const mapStateToProps = (state) => ({
   timingError: state.site.timingError,
   updateSite: state.site.updateSite,
 });
-export default connect(mapStateToProps, { updateLocalDetails, updateTimings })(
+export default connect(mapStateToProps, { updateLocalDetails, updateTimings, setLoader })(
   LocalDetails
 );

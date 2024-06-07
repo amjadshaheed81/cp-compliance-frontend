@@ -4,10 +4,11 @@ import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
 import {
   saveSiteLandScapes,
+  setLoader,
   getSiteLandScapeInfo,
 } from "../../../../../store/thunk/site";
 
-const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo }) => {
+const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo, setLoader }) => {
   const {
     register,
     handleSubmit,
@@ -18,6 +19,7 @@ const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo }) => 
     watch,
   } = useForm({});
   const saveAreaAndOccupancy = (data) => {
+    setLoader(true);
     const formData = {
       ...data,
       siteId: updateSite?.siteId,
@@ -245,4 +247,4 @@ const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo }) => 
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
 });
-export default connect(mapStateToProps, { saveSiteLandScapes, getSiteLandScapeInfo})(Landscape);
+export default connect(mapStateToProps, { saveSiteLandScapes, getSiteLandScapeInfo, setLoader})(Landscape);

@@ -8,8 +8,8 @@ import {
   deleteSiteImage,
   getSiteById,
   handleOnPostCodeSearch,
-  getAddresOnPostCodeSuccess,
   getSiteDetailsById,
+  setLoader,
 } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
@@ -35,6 +35,7 @@ const UpdateSite = ({
   deleteSiteImage,
   handleOnPostCodeSearch,
   getSiteDetailsById,
+  setLoader,
 }) => {
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const defaultValues = {
@@ -61,7 +62,6 @@ const UpdateSite = ({
   });
   const values = watch();
   useEffect(() => {
-    console.log("updateSite", updateSite);
     getSiteDetailsById(updateSite?.siteId);
   }, []);
   useEffect(() => {
@@ -70,15 +70,18 @@ const UpdateSite = ({
     }
   }, [updateSite]);
   const submitSite = (data) => {
+    setLoader(true);
     updateSiteDetail(data);
     reset(data);
   };
-  const handleFileSelect = async (event) => {
+const handleFileSelect = async (event) => {
+    setLoader(true);
     let siteId = updateSite?.siteId;
     const res = await updateSiteImage(event, siteId);
     setValue("siteImage", "");
   };
   const handleDeleteSiteImage = async (event) => {
+    setLoader(true);
     let siteId = updateSite?.siteId;
     const res = await deleteSiteImage(siteId);
     if (res === "Success") {
@@ -434,7 +437,7 @@ const UpdateSite = ({
                     className="text-primary cursor mt-4"
                   >
                     Click to upload
-                  </label>
+                  </label>&nbsp;
                   <span>or drag and drop</span>
                   <p>
                     SVG, PNG, JPG or GIF
@@ -477,4 +480,5 @@ export default connect(mapStateToProps, {
   getSiteById,
   handleOnPostCodeSearch,
   getSiteDetailsById,
+  setLoader,
 })(UpdateSite);

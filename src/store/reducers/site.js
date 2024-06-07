@@ -51,6 +51,7 @@ import {
   SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
   GET_SITE_LANDSCAPE_INFORMATION,
   SET_SITE_LOADER,
+  SET_SITE_INFORMATION_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -130,6 +131,7 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case GET_SITES_FAILURE:
       return {
@@ -144,6 +146,7 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case FILTER_SITES:
       return {
@@ -159,6 +162,7 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE:
       return {
@@ -174,6 +178,7 @@ const reducer = (state = initialState, action) => {
         updateSuccess: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE_SUCCESS:
       return {
@@ -188,6 +193,7 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE_FAILURE:
       return {
@@ -202,6 +208,7 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE_LOCAL_DETAILS:
       return {
@@ -216,6 +223,7 @@ const reducer = (state = initialState, action) => {
         localDetailsError: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE_LOCAL_DETAILS_FAILURE:
       return {
@@ -230,6 +238,7 @@ const reducer = (state = initialState, action) => {
         localDetailsError: action.payload,
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_TIMINIG_SUCCESS:
       return {
@@ -244,6 +253,7 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_TIMINIG_FAILURE:
       return {
@@ -258,6 +268,7 @@ const reducer = (state = initialState, action) => {
         timingError: action.payload,
         updateSiteImageSuccess: "",
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE_IMAGE_SUCCESS:
       return {
@@ -272,6 +283,7 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateSiteImageSuccess: action.payload,
         updateSiteImageFailure: "",
+        isLoading: false,
       };
     case UPDATE_SITE_IMAGE_FAILURE:
       return {
@@ -286,74 +298,93 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateSiteImageSuccess: "",
         updateSiteImageFailure: action.payload,
+        isLoading: false,
       };
     case GET_KEY_CONTACTS:
       return {
         ...state,
         keyContactsFailure: "",
         keyContacts: action.payload,
+        isLoading: false,
       };
     case GET_KEY_CONTACTS_FAILURE:
       return {
         ...state,
         keyContactsFailure: action.payload,
+        isLoading: false,
       };
     case GET_SITES_BY_ID_SUCCESS:
       return {
         ...state,
         updateSiteImageSuccess: "",
         siteDetailsById: action.payload?.data,
+        isLoading: false,
       };
     case GET_SITES_BY_ID_FAILURE:
       return {
         ...state,
         siteDetailsByFailure: "",
+        isLoading: false,
       };
     case GET_ADDRESS_ON_POST_CODE_SUCCESS:
       return {
         ...state,
         getAddresOnPostCodeSuccess: action.payload,
+        isLoading: false,
       };
     case GET_ADDRESS_ON_POST_CODE_FAILURE:
       return {
         ...state,
+        isLoading: false,
         getAddresOnPostCodeFailure: action.payload,
       };
     case GET_SITE_INFORMATION:
       return {
         ...state,
         siteInformationFailure: "",
+        isLoading: false,
         siteInformation: action.payload,
       };
     case SET_SITE_INFORMATION:
       return {
         ...state,
+        isLoading: false,
         siteInformationFailure: "",
         setSiteInformation: action.payload,
+      };
+    case SET_SITE_INFORMATION_FAILURE:
+      return {
+        ...state,
+        isLoading: false,
       };
     case GET_SITE_INFORMATION_FAILURE:
       return {
         ...state,
+        isLoading: false,
         siteInformationFailure: action.payload,
       };
     case SAVE_SITE_AREA_INFORMATION_FAILURE:
       return {
         ...state,
         siteareainfo: action.payload,
+        isLoading: false,
       };
     case SAVE_SITE_AREA_INFORMATION:
       return {
         ...state,
         siteareainfo: action.payload,
+        isLoading: false,
       };
     case GET_SITE_AREA_INFORMATION:
       return {
         ...state,
         siteAreaInformation: action.payload,
+        isLoading: false,
       };
     case GET_SITE_AREA_INFORMATION_FAILURE:
       return {
         ...state,
+        isLoading: false,
         siteAreaInformation:
           "Something went wrong while fetching key contacts. Please try again.",
       };
@@ -361,44 +392,52 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteSecurityInfo: action.payload,
+        isLoading: false,
       };
     case SAVE_SITE_SECURITY_INFORMATION_FAILURE:
       return {
         ...state,
+        isLoading: false,
         siteSecurityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
     case SAVE_UTILITY_ENERGY_DETAILS:
       return {
         ...state,
+        isLoading: false,
         saveSiteUtilityInfo: action.payload,
       };
     case SAVE_UTILITY_ENERGY_DETAILS_FAILURE:
       return {
         ...state,
+        isLoading: false,
         saveSiteUtilityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
     case GET_UTILITY_ENERGY_DETAILS:
       return {
         ...state,
+        isLoading: false,
         getSiteUtilityInfo: action.payload,
       };
     case GET_UTILITY_ENERGY_DETAILS_FAILURE:
       return {
         ...state,
+        isLoading: false,
         getSiteUtilityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
     case GET_SITE_LAYOUT:
       return {
         ...state,
+        isLoading: false,
         siteLayoutFailure: "",
         siteLayout: action.payload,
       };
     case GET_SITE_LAYOUT_FAILURE:
       return {
         ...state,
+        isLoading: false,
         siteLayout: [],
         siteLayoutFailure: action.payload,
       };
@@ -406,6 +445,7 @@ const reducer = (state = initialState, action) => {
     case GET_DOCUMENTS_ROOT_FOLDER:
       return {
         ...state,
+        isLoading: false,
         rootFolder: action.payload,
       };
     case GET_DOCUMENTS_ROOT_FOLDER_FAILURE:
@@ -416,46 +456,55 @@ const reducer = (state = initialState, action) => {
     case GET_DOCUMENTS_SUB_FOLDER_FILES:
       return {
         ...state,
+        isLoading: false,
         subfolderFiles: action.payload,
       };
     case GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE:
       return {
         ...state,
+        isLoading: false,
         subfolderFiles: "",
       };
     case UPDATE_DOCUMENT_FILE_SUCCESS:
       return {
         ...state,
+        isLoading: false,
         uploadDocumentFile: action.payload,
       };
     case UPDATE_DOCUMENT_FILE_FAILURE:
       return {
         ...state,
+        isLoading: false,
         subfolderFiles: "",
       };
     case SELECT_GLOBAL_SITE:
       return {
         ...state,
+        isLoading: false,
         siteSelectedForGlobal: action.payload,
       };
     case CREATE_FOLDER:
       return {
         ...state,
+        isLoading: false,
         createFolder: action.payload,
       };
     case SAVE_SITE_LIFTS_INFORMATION:
       return {
         ...state,
+        isLoading: false,
         saveSiteLiftsInfo: action.payload,
       };
     case SAVE_SITE_LIFTS_INFORMATION_FAILURE:
       return {
         ...state,
+        isLoading: false,
         saveSiteLiftsInfo: "error",
       };
     case GET_SITE_LIFTS_INFORMATION:
       return {
         ...state,
+        isLoading: false,
         saveSiteLiftsInfo: action.payload,
       };
     case SAVE_SITE_LANDSCAPED_INFORMATION:
@@ -466,11 +515,13 @@ const reducer = (state = initialState, action) => {
     case SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE:
       return {
         ...state,
+        isLoading: false,
         saveSiteLandscapesInfo: "error",
       };
     case GET_SITE_LANDSCAPE_INFORMATION:
       return {
         ...state,
+        isLoading: false,
         saveSiteLandscapesInfo: action.payload,
       };
     case SET_SITE_LOADER:

@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useEffect, useState } from 'react';
 import { connect } from "react-redux";
 import styled from "@emotion/styled";
 import { Tree, TreeNode } from "react-organizational-chart";
@@ -6,12 +6,11 @@ import { useForm } from "react-hook-form";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import UpdateFloor from "./UpdateFloor";
 import FloorMap from "./FloorMap";
-import { useEffect } from "react";
 import {
   getSiteLayout,
   addSiteLayoutNode,
+  setLoader,
 } from "./../../../../store/thunk/site";
-import { useState } from "react";
 
 const InteriorExteriorStyledNode = styled.div`
   padding: 5px;
@@ -50,6 +49,7 @@ const SiteChart = ({
   addSiteLayoutNode,
   siteLayout,
   updateSite,
+  setLoader,
 }) => {
   const {
     register,
@@ -67,6 +67,7 @@ const SiteChart = ({
       nodeType: values?.nodeType,
       parentNode: values?.parentNode,
     };
+    setLoader(true);
     addSiteLayoutNode(data);
   };
   useEffect(() => {
@@ -150,43 +151,8 @@ const SiteChart = ({
         >
           {getTreeNodePosition()}
           {getTreeNodePositionInterior()}
-          {/* <TreeNode
-            label={
-              <InteriorExteriorStyledNode>Interior</InteriorExteriorStyledNode>
-            }
-          >
-            <TreeNode label={<FloorStyledNode>Ground Floor</FloorStyledNode>}>
-              <TreeNode label={<OtherStyledNode>Reception</OtherStyledNode>} />
-              <TreeNode label={<OtherStyledNode>Concierge</OtherStyledNode>} />
-            </TreeNode>
-            <TreeNode label={<FloorStyledNode>First Floor</FloorStyledNode>}>
-              <TreeNode label={<OtherStyledNode>Lift Lobby</OtherStyledNode>} />
-              <TreeNode label={<OtherStyledNode>Office</OtherStyledNode>} />
-              <TreeNode label={<OtherStyledNode>WC</OtherStyledNode>} />
-            </TreeNode>
-            <TreeNode label={<FloorStyledNode>Second Floor</FloorStyledNode>}>
-              <TreeNode label={<OtherStyledNode>Lift Lobby</OtherStyledNode>} />
-              <TreeNode label={<OtherStyledNode>Office</OtherStyledNode>} />
-              <TreeNode label={<OtherStyledNode>WC</OtherStyledNode>} />
-            </TreeNode>
-          </TreeNode> */}
         </Tree>
         <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
-          {/* <div className="col-md-3">
-            <input
-              type="text"
-              placeholder="Node Name"
-              className="form-control w-75"
-              id="nodename"
-              name="nodename"
-              {...register("nodename", {
-                required: {
-                  value: true,
-                  // message: `${Validation.REQUIRED} Council`,
-                },
-              })}
-            />
-          </div> */}
           <div className="col-md-3">
             <select
               name="nodeType"
@@ -307,4 +273,5 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
   getSiteLayout,
   addSiteLayoutNode,
+  setLoader,
 })(SiteChart);

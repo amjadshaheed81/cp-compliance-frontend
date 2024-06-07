@@ -1,21 +1,19 @@
-import * as React from "react";
+import React, { useEffect } from "react";
 import { connect } from "react-redux";
 import Accordion from "@mui/material/Accordion";
-import AccordionActions from "@mui/material/AccordionActions";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import Button from "@mui/material/Button";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { yearOptions } from "../../../../utils/yearOptions";
 import { yesNoOptions } from "../../../../utils/yesNoOptions";
 import { useForm } from "react-hook-form";
-import { Validation } from "../../../../Constant/Validation";
 import {
   getSiteInformation,
   saveSiteBuildingData,
   saveAreaAndOccupancyDetails,
   getAreaAndOccupancy,
+  setLoader,
 } from "../../../../store/thunk/site";
 import SafetySecurity from "./SiteInformation/SafetySecurity";
 import UtilityEnergy from "./SiteInformation/UtilityEnergy";
@@ -25,35 +23,24 @@ import Landscape from "./SiteInformation/Landscape";
 const SiteInformation = ({
   updateSite,
   saveSiteBuildingData,
-  siteInformation,
   getSiteInformation,
   saveAreaAndOccupancyDetails,
   getAreaAndOccupancy,
+  isLoading,
+  setLoader,
 }) => {
-  const defaultValues = {
-    buildYear: "",
-    buildingUnderClientControl: "",
-    canteenInBuilding: "",
-    dedicatedKitchenArea: "",
-  };
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    getValues,
-    setValue,
-    watch,
-  } = useForm({});
+  const { register, handleSubmit, reset, setValue } = useForm({});
   const siteAreaForm = useForm();
-  React.useEffect(() => {
+  useEffect(() => {
     getSiteInformation(updateSite?.siteId, setValue);
     getAreaAndOccupancy(updateSite?.siteId, siteAreaForm.setValue);
   }, []);
   const saveSiteInformation = (data) => {
+    setLoader(true);
     saveSiteBuildingData(updateSite?.siteId, data);
   };
   const saveAreaAndOccupancy = (data) => {
+    setLoader(true);
     saveAreaAndOccupancyDetails(updateSite?.siteId, data);
   };
   return (
@@ -69,8 +56,6 @@ const SiteInformation = ({
               name="buildYear"
               id="buildYear"
               className="form-control w-100 form-select"
-              // value={siteInformation?.buildYear}
-              // onChange={(e)=> setValue('buildYear',e.target.value)}
               {...register("buildYear")}
             >
               {yearOptions.map((year) => (
@@ -153,7 +138,7 @@ const SiteInformation = ({
             </select>
           </div>
         </div>
-        <div className="pb-4">
+        <div className="pb-4 ">
           <button className="float-end btn btn-primary">Save</button>
         </div>
       </form>
@@ -463,10 +448,12 @@ const mapStateToProps = (state) => ({
   success: state.site.updateSuccess,
   error: state.site.updateError,
   siteInformation: state.site.siteInformation,
+  isLoading: state.site.isLoading,
 });
 export default connect(mapStateToProps, {
   saveSiteBuildingData,
   getSiteInformation,
   saveAreaAndOccupancyDetails,
   getAreaAndOccupancy,
+  setLoader,
 })(SiteInformation);
