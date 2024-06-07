@@ -58,12 +58,11 @@ const KeyContacts = ({
   return (
     <>
       <div className="row p-2 bg-white">
-        <h2 className="fs-6 mt-4 border-bottom">Key Contacts</h2>
-        <table>
+        <h2 className="fs-6 mt-4 border-bottom bg-primary text-white">Key Contacts</h2>
+        <table className="table">
           <thead>
             <tr>
               <th>Name</th>
-              {/* <th>Last Name</th> */}
               <th>Phone</th>
               <th>Email</th>
               <th>Role</th>

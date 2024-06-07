@@ -121,15 +121,15 @@ const UpdateSite = ({
     <Fragment>
       {/* <Sidebar /> */}
       <SidebarNew />
-      <div className="content">
+      <div className="">
         {/* <Header /> */}
         <div className="container-fluid">
           {/* <BreadCrumHeader header={"Update Site"} page={"Update Site"} /> */}
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
-            <div className="col-md-8">
+            <div className="col-md-8 border">
               <div className="row bg-white">
-                <p className="fs-6 mt-2 border-bottom">Property Detail</p>
+                <p className="pt-2 pb-2 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
                     <div className="col-md-12">
@@ -274,7 +274,7 @@ const UpdateSite = ({
                         )}
                       </div>
                     </div>
-                    <div className="col-md-12">
+                    <div className="col-md-6">
                       <div className="mb-3">
                         <label for="postCode" className="form-label">
                           Post Code
@@ -381,7 +381,7 @@ const UpdateSite = ({
                 </form>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-4 border">
               <div className="pic-container pic-medium pic-circle">
                 <img
                   className="pic"
@@ -411,17 +411,18 @@ const UpdateSite = ({
                 className="uploading-outer"
                 style={{ backgroundColor: "#f1f5f9" }}
               >
-                <div className="uploadPhotoButton">
+                <div className="uploadPhotoButton text-center">
                   <FileUploadOutlinedIcon
                     style={{
                       color: "blue",
-                      fontSize: "50px",
-                      marginLeft: "9rem",
+                      position: "relative",
+                      left: "50%",
+                      transform: "translate(-25%, 0)",
                     }}
                   />
                   <input
                     {...register("siteImage")}
-                    className="uploadButton-input"
+                    className="uploadButton-input mt-4"
                     type="file"
                     name="siteImage"
                     accept="image/*, application/pdf"
@@ -430,14 +431,16 @@ const UpdateSite = ({
                   />
                   <label
                     htmlFor="siteImage"
-                    style={{ color: "blue", marginLeft: "2.5rem" }}
-                    className="btn"
+                    className="text-primary cursor mt-4"
                   >
                     Click to upload
                   </label>
                   <span>or drag and drop</span>
-                  <p style={{ marginLeft: "6rem" }}>SVG, PNG, JPG or GIF</p>
-                  <p style={{ marginLeft: "6rem" }}>(max 800 * 800 px)</p>
+                  <p>
+                    SVG, PNG, JPG or GIF
+                    <br />
+                    (max 800 * 800 px)
+                  </p>
                 </div>
               </div>
               <div className="map">
