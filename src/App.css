@@ -52,3 +52,6 @@ h2{
 ::-webkit-scrollbar-thumb:hover {
   background: #555; 
 }
+.content {
+  padding-left: 3rem;;
+}
