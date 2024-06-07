@@ -50,6 +50,7 @@ import {
   SAVE_SITE_LANDSCAPED_INFORMATION,
   SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
   GET_SITE_LANDSCAPE_INFORMATION,
+  SET_SITE_LOADER,
 } from "./../actionTypes";
 
 const initialState = {
@@ -76,6 +77,7 @@ const initialState = {
   saveSiteUtilityInfo: null,
   saveSiteLiftsInfo: null,
   saveSiteLandscapesInfo: null,
+  isLoading: false,
 };
 
 const reducer = (state = initialState, action) => {
@@ -94,6 +96,7 @@ const reducer = (state = initialState, action) => {
         timingError: "",
         updateError: "",
         updateSuccess: "",
+        isLoading: false,
       };
     case ADD_SITE_SUCCESS:
       return {
@@ -110,6 +113,7 @@ const reducer = (state = initialState, action) => {
         updateSiteImageFailure: "",
         updateSite: action.payload?.data,
         currentSiteData: action.payload,
+        isLoading: false,
       };
     case GET_SITES_SUCCESS:
       return {
@@ -468,6 +472,11 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         saveSiteLandscapesInfo: action.payload,
+      };
+    case SET_SITE_LOADER:
+      return {
+        ...state,
+        isLoading: action.payload,
       };
     default:
       return state;

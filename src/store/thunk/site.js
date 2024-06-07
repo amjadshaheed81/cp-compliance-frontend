@@ -63,6 +63,7 @@ import {
   GET_SITE_LANDSCAPE_INFORMATION,
   SAVE_SITE_LANDSCAPED_INFORMATION,
   SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
+  SET_SITE_LOADER,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -1067,5 +1068,14 @@ export const getSiteLiftStairways = (id, reset) => {
     } catch (error) {
       console.error(error);
     }
+  };
+};
+
+export const setLoader = (value) => {
+  return async (dispatch) => {
+    dispatch({
+      type: SET_SITE_LOADER,
+      payload: value,
+    });
   };
 };

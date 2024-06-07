@@ -6,13 +6,11 @@ p.fs-6.mt-2.border-bottom {
     border: none;
     padding-left: 4rem;
     background-color: none;
+    border: 0px;
 }
 .uploading-outer{
-    width: 22rem;
-    height: 12rem;
     background-color: white;
-    border: dashed lightblue;
-    margin-bottom: 2rem;
+    border: 1.5px dashed #57a7c1;
 }
 .uploadButton-input{
     visibility: hidden;
@@ -56,4 +54,7 @@ p.fs-6.mt-2.border-bottom {
 }
 .postCodeSearchResultSite {
   max-height: 10rem;
+}
+.uploadPhotoButton {
+  color: grey;
 }

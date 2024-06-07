@@ -47,13 +47,11 @@ export default function SiteTabs({ tabs, isCreateSite }) {
         <div style={{ marginTop: "-10rem" }}>
           {isCreateSite ? (
             <BreadCrumHeader
-              style={{ marginTop: "-5rem" }}
               header={"Create New Site"}
               page={"New Site"}
             />
           ) : (
             <BreadCrumHeader
-              style={{ marginTop: "-5rem" }}
               header={"View & Update Site"}
               page={"New Site"}
             />

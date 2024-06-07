@@ -89,7 +89,6 @@ const Projects = ({
       }
     });
     mandatoryFolders = mandatoryFolders?.filter(x => x);
-    console.log('mandatoryFolders ======',mandatoryFolders)
     const folders = {
       mandatoryFolders: mandatoryFolders,
       removeMandatoryFolders: null,

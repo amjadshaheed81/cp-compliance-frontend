@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, Fragment } from "react";
+import React, { useState, Fragment } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -9,19 +9,19 @@ import {
   updateSite,
   getSites,
   handleOnPostCodeSearch,
+  setLoader,
 } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
-import Sidebar from "../../../common/Sidebar/Sidebar";
-import Header from "../../../common/Header/Header";
 import "./AddSite.css";
 import { Validation } from "../../../../Constant/Validation";
-import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import GoogleMap from "../UpdateSite/GoogleMap";
+import BusinessIcon from '@mui/icons-material/Business';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const AddSite = ({
   updateSite,
@@ -31,6 +31,7 @@ const AddSite = ({
   addSite,
   handleOnPostCodeSearch,
   getAddresOnPostCodeSuccess,
+  isLoading,
 }) => {
   const navigate = useNavigate();
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
@@ -61,8 +62,9 @@ const AddSite = ({
   });
   const values = watch();
   const submitSite = (data) => {
-    addSite(data, goTo);
-    reset(defaultValues);
+    setLoader(true);
+    // addSite(data, goTo);
+    // reset(defaultValues);
   };
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.siteId;
@@ -108,17 +110,20 @@ const AddSite = ({
         {/* <Header /> */}
         <div className="container-fluid">
           {/* row start*/}
-          <div className="row p-2" style={{ backgroundColor: "white" }}>
+          <div className="row p-2">
             <div className="col-md-8">
-              <div className="row bg-white">
-                <p className="fs-6 mt-2 border-bottom">Property Detail</p>
+              <div className="row autoHeight">
+                <p className="fs-6 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
                     <div className="col-md-12">
-                      <div className="mb-3">
-                        <label for="siteName" className="form-label">
-                          Site Name
-                        </label>
+                      <div for="siteName" className="form-label">
+                        Site Name
+                      </div>
+                      <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">
+                          <BusinessIcon />
+                        </span>
                         <input
                           type="text"
                           name="siteName"
@@ -131,13 +136,16 @@ const AddSite = ({
                             },
                           })}
                         />
-                        {errors?.siteName && (
+                      </div>
+                      {errors?.siteName && (
                           <InputError
                             message={errors?.siteName?.message}
                             key={errors?.siteName?.message}
                           />
                         )}
-                      </div>
+                      {/* <div className="mb-3">
+                       
+                      </div> */}
                     </div>
                     <div className="col-md-6">
                       <div className="mb-3">
@@ -256,7 +264,7 @@ const AddSite = ({
                         )}
                       </div>
                     </div>
-                    <div className="col-md-12">
+                    <div className="col-md-6">
                       <div className="mb-3">
                         <label for="postCode" className="form-label">
                           Post Code
@@ -344,15 +352,25 @@ const AddSite = ({
                         {success && <Success msg={success} />}
                         {error && <Error msg={error} />}
                       </div>
-                      <div className="float-end">
-                        <button type="button" className="btn btn-light mb-3 mr-4">
-                          Cancel
-                        </button>
-                        &nbsp; &nbsp;
-                        <button type="submit" className="btn btn-primary mb-3 mr-4">
-                          Save
-                        </button>
-                      </div>
+                      {!isLoading && (
+                        <div className="float-end">
+                          <button
+                            type="button"
+                            className="btn btn-light mb-3 mr-4"
+                          >
+                            Cancel
+                          </button>
+                          &nbsp; &nbsp;
+                          <button
+                            type="submit"
+                            className="btn btn-primary mb-3 mr-4"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      )}
+                      {isLoading && <div className="float-end">
+                      <CircularProgress /></div>}
                     </div>
                   </div>
                 </form>
@@ -370,20 +388,22 @@ const AddSite = ({
                 <span>Upload your site photo</span>
               </div>
               <div
-                className="uploading-outer"
+                className="uploading-outer mb-2"
                 style={{ backgroundColor: "#f1f5f9" }}
               >
-                <div className="uploadPhotoButton">
+                <div className="uploadPhotoButton text-center">
                   <FileUploadOutlinedIcon
                     style={{
                       color: "blue",
-                      fontSize: "50px",
-                      marginLeft: "9rem",
+                      // fontSize: "50px",
+                      position: "relative",
+                      left: "50%",
+                      transform: "translate(-25%, 0)",
                     }}
                   />
                   <input
                     {...register("photo")}
-                    className="uploadButton-input"
+                    className="uploadButton-input mt-4"
                     type="file"
                     name="siteImage"
                     accept="image/*, application/pdf"
@@ -392,14 +412,17 @@ const AddSite = ({
                   />
                   <label
                     htmlFor="siteImage"
-                    style={{ color: "blue", marginLeft: "2.5rem" }}
-                    className="btn"
+                    className="text-primary cursor mt-4"
                   >
                     Click to upload
                   </label>
+                  &nbsp;
                   <span>or drag and drop</span>
-                  <p style={{ marginLeft: "6rem" }}>SVG, PNG, JPG or GIF</p>
-                  <p style={{ marginLeft: "6rem" }}>(max 800 * 800 px)</p>
+                  <p>
+                    SVG, PNG, JPG or GIF
+                    <br />
+                    (max 800 * 800 px)
+                  </p>
                 </div>
               </div>
               {values?.latitude && values?.longitude && (
@@ -421,6 +444,7 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   updateSite: state.site.updateSite,
   sites: state.site.sites,
+  isLoading: state.site.isLoading,
   getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
 });
 export default connect(mapStateToProps, {
