@@ -63,8 +63,8 @@ const AddSite = ({
   const values = watch();
   const submitSite = (data) => {
     setLoader(true);
-    // addSite(data, goTo);
-    // reset(defaultValues);
+    addSite(data, goTo);
+    reset(defaultValues);
   };
   const handleFileSelect = async (event) => {
     let siteId = updateSite?.siteId;
