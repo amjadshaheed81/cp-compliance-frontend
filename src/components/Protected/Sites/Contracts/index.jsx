@@ -9,6 +9,7 @@ import {
   getSiteContracts,
   getSiteContractDetails,
   updateContractDetail,
+  setLoader,
 } from "../../../../store/thunk/contracts";
 import Success from "../../../common/Alert/Success";
 import Status from "../../../common/Alert/Status/Status";
@@ -22,6 +23,7 @@ const Contracts = ({
   contractDetail,
   error,
   success,
+  setLoader,
 }) => {
   const [open, setOpen] = useState(false);
   const [filteredContractList, setFilteredContractList] = useState([]);
@@ -55,7 +57,8 @@ const Contracts = ({
   const { register, handleSubmit, getValues, setValue } = useForm({});
 
   useEffect(() => {
-    getSiteContracts(3); // TODO: need to change it to loggedIn user id or siteSelectedForGlobal?.siteId
+    setLoader(true);
+    getSiteContracts(6); // TODO: need to change it to loggedIn user id or siteSelectedForGlobal?.siteId
   }, []);
 
   const updateContractDetails = (formData) => {
@@ -369,9 +372,11 @@ const mapStateToProps = (state) => ({
   filterContract: state.siteContracts.filterContract,
   contractDetail: state.siteContracts.contractDetail,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  isLoading: state.siteContracts.isLoading,
 });
 export default connect(mapStateToProps, {
   getSiteContracts,
   getSiteContractDetails,
   updateContractDetail,
+  setLoader,
 })(Contracts);

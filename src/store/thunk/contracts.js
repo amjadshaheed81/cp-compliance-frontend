@@ -4,6 +4,7 @@ import {
   GET_CONTRACT_DETAIL_FAILURE,
   GET_CONTRACT_LIST,
   GET_CONTRACT_LIST_FAILURE,
+  SET_LOADING_CONTRACT,
   UPDATE_CONTRACT_DETAIL,
   UPDATE_CONTRACT_DETAIL_FAILURE,
 } from "../actions/siteContractsActions";
@@ -68,5 +69,14 @@ export const updateContractDetail = (formData) => {
         payload: 'Contract detail has been successfully updated',
       });
     }
+  };
+};
+
+export const setLoader = (value) => {
+  return async (dispatch) => {
+    dispatch({
+      type: SET_LOADING_CONTRACT,
+      payload: value,
+    });
   };
 };
