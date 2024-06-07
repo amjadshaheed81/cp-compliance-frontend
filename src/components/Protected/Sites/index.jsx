@@ -25,7 +25,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        const res = await deleteSite(itm?.id);
+        const res = await deleteSite(itm?.siteId);
         if (res === "Success") {
           Swal.fire({
             icon: "success",
@@ -162,7 +162,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                 <div className="col">
                   <CSVLink
                     filename={'site-lists'}
-                    className="btn btn-sm btn-light bg-white text-primary"
+                    className="btn btn-light bg-white text-primary"
                     data={sites}
                   >
                     <i className="fas fa-download"></i>&nbsp;Export
@@ -172,7 +172,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
             </div>
             <div className="ms-auto p-2 bd-highlight">
               <button
-                className="btn btn-sm btn-primary text-white"
+                className="btn btn-primary text-white"
                 onClick={() => goTo("/add-site")}
               >
                 <i className="fas fa-plus"></i>&nbsp; Create New Site
