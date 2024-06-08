@@ -85,6 +85,9 @@ const KeyContacts = ({
                 <td>{row?.actionManager}</td>
                 <td>
                   <button
+                    style={{
+                      display: updateSite?.isViewMode ? "none" : "",
+                    }}
                     className="btn btn-sm btn-light text-danger"
                     onClick={() => deleteKeyContactClick(row)}
                   >
@@ -93,7 +96,11 @@ const KeyContacts = ({
                 </td>
               </tr>
             ))}
-            <tr>
+            <tr
+              style={{
+                display: updateSite?.isViewMode ? "none" : "",
+              }}
+            >
               <td>
                 <input
                   className="contact-input form-control"
@@ -152,8 +159,11 @@ const KeyContacts = ({
               <td>&nbsp;</td>
             </tr>
             <tr>
-              <div className="pt-4">
+              <td className="pt-4">
                 <button
+                  style={{
+                    display: updateSite?.isViewMode ? "none" : "",
+                  }}
                   type="button"
                   onClick={() => addKeyContactClick()}
                   className="btn btn-light"
@@ -161,7 +171,7 @@ const KeyContacts = ({
                   Add Row
                 </button>
                 &nbsp; &nbsp;
-              </div>
+              </td>
             </tr>
           </tbody>
         </table>

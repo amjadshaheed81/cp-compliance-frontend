@@ -138,7 +138,12 @@ const SiteInformation = ({
             </select>
           </div>
         </div>
-        <div className="pb-4 ">
+        <div
+          className="pb-4 "
+          style={{
+            display: updateSite?.isViewMode ? "none" : "block",
+          }}
+        >
           <button className="float-end btn btn-primary">Save</button>
         </div>
       </form>
@@ -385,7 +390,12 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="pb-4">
+            <div
+              className="pb-4"
+              style={{
+                display: updateSite?.isViewMode ? "none" : "block",
+              }}
+            >
               <button className="btn btn-primary float-end">Save</button>
             </div>
           </form>

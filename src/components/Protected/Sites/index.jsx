@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
-import { getSites, deleteSite, setFilterSite, updateSite } from "../../../store/thunk/site";
+import { getSites, deleteSite, setFilterSite, updateSite as updateSiteData } from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -11,7 +11,7 @@ import "./Sites.css";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
 
-const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSite }) => {
+const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSiteData }) => {
   const [selectedItem, setSelectedItem] = useState("status");
 
   useEffect(() => {
@@ -216,7 +216,16 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                         setTimeout(() => {
                           goTo('/update-site');
                         }, 1000);
-                        updateSite(itm);
+                        updateSiteData({...itm, isViewMode: true});
+                      }}>
+                        <i className="fas fa-eye"></i>
+                      </button>{" "}
+                      &nbsp;
+                      <button className="btn btn-sm btn-light" onClick={() => {
+                        setTimeout(() => {
+                          goTo('/update-site');
+                        }, 1000);
+                        updateSiteData({...itm, isViewMode: false});
                       }}>
                         <i className="fas fa-pen"></i>
                       </button>{" "}
@@ -245,4 +254,4 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { getSites, deleteSite, setFilterSite, updateSite })(Sites);
+export default connect(mapStateToProps, { getSites, deleteSite, setFilterSite, updateSiteData })(Sites);

@@ -62,9 +62,11 @@ const UpdateSite = ({
   });
   const values = watch();
   useEffect(() => {
-    getSiteDetailsById(updateSite?.siteId);
+    setLoader(true);
+    getSiteDetailsById(updateSite?.siteId, updateSite?.isViewMode);
   }, []);
   useEffect(() => {
+    console.log("updateSite", updateSite);
     if (updateSite) {
       reset(updateSite);
     }
@@ -74,7 +76,7 @@ const UpdateSite = ({
     updateSiteDetail(data);
     reset(data);
   };
-const handleFileSelect = async (event) => {
+  const handleFileSelect = async (event) => {
     setLoader(true);
     let siteId = updateSite?.siteId;
     const res = await updateSiteImage(event, siteId);
@@ -95,6 +97,7 @@ const handleFileSelect = async (event) => {
     handleOnPostCodeSearch(event);
   };
   const handleOnSelect = async (data) => {
+    setLoader(true);
     try {
       const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
       const response = await get(url);
@@ -116,6 +119,7 @@ const handleFileSelect = async (event) => {
       );
 
       setShowPostCodeSearch(false);
+      setLoader(false);
     } catch (e) {
       console.log("error while loading postcode");
     }
@@ -359,7 +363,12 @@ const handleFileSelect = async (event) => {
                       style={{ display: "none" }}
                       {...register("streetViewUrl")}
                     />
-                    <div className="col-md-12">
+                    <div
+                      className="col-md-12"
+                      style={{
+                        display: updateSite?.isViewMode ? "none" : "block",
+                      }}
+                    >
                       <div>
                         {success && <Success msg={success} />}
                         {error && <Error msg={error} />}
@@ -400,7 +409,11 @@ const handleFileSelect = async (event) => {
                   height="64px"
                 />
                 <span>Upload your site photo</span>
-                <div>
+                <div
+                  style={{
+                    display: updateSite?.isViewMode ? "none" : "block",
+                  }}
+                >
                   <button
                     className="btn btn-sm btn-primary mt-2 mb-2 "
                     disabled={!updateSiteImageSuccess?.data?.url}
@@ -412,7 +425,10 @@ const handleFileSelect = async (event) => {
               </div>
               <div
                 className="uploading-outer"
-                style={{ backgroundColor: "#f1f5f9" }}
+                style={{
+                  backgroundColor: "#f1f5f9",
+                  display: updateSite?.isViewMode ? "none" : "block",
+                }}
               >
                 <div className="uploadPhotoButton text-center">
                   <FileUploadOutlinedIcon
@@ -437,7 +453,8 @@ const handleFileSelect = async (event) => {
                     className="text-primary cursor mt-4"
                   >
                     Click to upload
-                  </label>&nbsp;
+                  </label>
+                  &nbsp;
                   <span>or drag and drop</span>
                   <p>
                     SVG, PNG, JPG or GIF
@@ -446,7 +463,7 @@ const handleFileSelect = async (event) => {
                   </p>
                 </div>
               </div>
-              <div className="map">
+              <div className="map mt-2">
                 {values?.latitude && values?.longitude && (
                   <GoogleMap
                     lat={values?.latitude}

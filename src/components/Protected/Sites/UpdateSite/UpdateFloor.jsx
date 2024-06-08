@@ -45,7 +45,9 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
     ));
   };
   return (
-    <div>
+    <div style={{
+      display: updateSite?.isViewMode ? "none" : "block",
+    }}>
       <h5 className="pt-5 text-start">Update Floor Plan</h5>
       <table style={{ borderCollapse: "separate", borderSpacing: "2rem" }}>
         <thead>

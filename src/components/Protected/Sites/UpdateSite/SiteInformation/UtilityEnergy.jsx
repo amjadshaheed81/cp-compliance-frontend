@@ -2,7 +2,11 @@ import React, { useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
-import { getUtilityAndEnergyDetails, saveUtilityAndEnergyDetails, setLoader } from "../../../../../store/thunk/site";
+import {
+  getUtilityAndEnergyDetails,
+  saveUtilityAndEnergyDetails,
+  setLoader,
+} from "../../../../../store/thunk/site";
 
 const UtilityEnergy = ({
   updateSite,
@@ -25,7 +29,7 @@ const UtilityEnergy = ({
   const saveUtilityAndEnergy = (data) => {
     console.log("saveAreaAndOccupancy", data);
     setLoader(true);
-    saveUtilityAndEnergyDetails()
+    saveUtilityAndEnergyDetails();
   };
   return (
     <div className="container">
@@ -34,11 +38,7 @@ const UtilityEnergy = ({
         onSubmit={handleSubmit(saveUtilityAndEnergy)}
       >
         <div>
-          <label
-            htmlFor="utilGas"
-            name="utilGas"
-            id="utilGas"
-          >
+          <label htmlFor="utilGas" name="utilGas" id="utilGas">
             Utility - Gas
           </label>
           <div>
@@ -78,11 +78,7 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label
-            htmlFor="utilWater"
-            name="utilWater"
-            id="utilWater"
-          >
+          <label htmlFor="utilWater" name="utilWater" id="utilWater">
             Utility - Water
           </label>
           <div>
@@ -162,11 +158,7 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label
-            htmlFor="coolingTower"
-            name="coolingTower"
-            id="coolingTower"
-          >
+          <label htmlFor="coolingTower" name="coolingTower" id="coolingTower">
             Cooling Tower
           </label>
           <div>
@@ -184,7 +176,11 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label htmlFor="waterIsolationValveInternal" name="tenantNwaterIsolationValveInternalame" id="waterIsolationValveInternal">
+          <label
+            htmlFor="waterIsolationValveInternal"
+            name="tenantNwaterIsolationValveInternalame"
+            id="waterIsolationValveInternal"
+          >
             Water Isolation Valve Location (Internal)
           </label>
           <div>
@@ -288,11 +284,7 @@ const UtilityEnergy = ({
           </div>
         </div>
         <div>
-          <label
-            htmlFor="gasBoiler"
-            name="gasBoiler"
-            id="gasBoiler"
-          >
+          <label htmlFor="gasBoiler" name="gasBoiler" id="gasBoiler">
             Gas Boiler
           </label>
           <div>
@@ -466,7 +458,11 @@ const UtilityEnergy = ({
           </div>
         </div>
 
-        <div>
+        <div
+          style={{
+            display: updateSite?.isViewMode ? "none" : "block",
+          }}
+        >
           <button className="btn btn-primary float-end m-3" type="submit">
             Save
           </button>

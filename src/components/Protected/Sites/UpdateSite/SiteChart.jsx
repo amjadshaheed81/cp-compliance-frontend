@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import styled from "@emotion/styled";
 import { Tree, TreeNode } from "react-organizational-chart";
@@ -17,7 +17,12 @@ const InteriorExteriorStyledNode = styled.div`
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #f3a515;
-  background: repeating-linear-gradient(+45deg, #fff7de 2px, #fff7de, transparent 1rem);
+  background: repeating-linear-gradient(
+    +45deg,
+    #fff7de 2px,
+    #fff7de,
+    transparent 1rem
+  );
 `;
 
 const MainBuildingStyledNode = styled.div`
@@ -25,7 +30,12 @@ const MainBuildingStyledNode = styled.div`
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #1dca5d;
-  background: repeating-linear-gradient(+45deg, #1dca5d0a 2px, #1dca5d0a, transparent 1rem);
+  background: repeating-linear-gradient(
+    +45deg,
+    #1dca5d0a 2px,
+    #1dca5d0a,
+    transparent 1rem
+  );
 `;
 
 const FloorStyledNode = styled.div`
@@ -33,7 +43,12 @@ const FloorStyledNode = styled.div`
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #f34040;
-  background: repeating-linear-gradient(+45deg, #fff5f4 2px, #fff5f4, transparent 1rem);
+  background: repeating-linear-gradient(
+    +45deg,
+    #fff5f4 2px,
+    #fff5f4,
+    transparent 1rem
+  );
 `;
 
 const OtherStyledNode = styled.div`
@@ -41,7 +56,12 @@ const OtherStyledNode = styled.div`
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #3b80f2;
-  background: repeating-linear-gradient(+45deg, #f0f8ff 2px, #f0f8ff, transparent 1rem);
+  background: repeating-linear-gradient(
+    +45deg,
+    #f0f8ff 2px,
+    #f0f8ff,
+    transparent 1rem
+  );
 `;
 
 const SiteChart = ({
@@ -152,114 +172,124 @@ const SiteChart = ({
           {getTreeNodePosition()}
           {getTreeNodePositionInterior()}
         </Tree>
-        <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
-          <div className="col-md-3">
-            <select
-              name="nodeType"
-              className="form-control w-75"
-              id="nodeType"
-              {...register("nodeType", {
-                required: {
-                  value: true,
-                  // message: `${Validation.REQUIRED} Status`,
-                },
-              })}
-              onChange={(e) => {
-                setValue("nodeType", e.target.value);
-                setFloorOptions([]);
-                if (e.target.value === "position") {
-                  const parentNodeId = siteLayout?.filter(
-                    (itm) => itm?.nodeType === "MasterNode"
-                  );
-                  setValue("parentNode", parentNodeId?.[0]?.id);
-                  setParntNodeOptions(["Exterior", "Interior"]);
-                } else if (e.target.value === "floor") {
-                  setParntNodeOptions([
-                    "Garden",
-                    "Ground Floor",
-                    "First Floor",
-                    "Second Floor",
-                  ]);
-                } else if (e.target.value === "room") {
-                  setParntNodeOptions(["Reception", "Concierge", "Lift Lobby"]);
-                  const floors = siteLayout?.filter(
-                    (itm) => itm?.nodeType === "floor"
-                  );
-                  setFloorOptions(floors);
-                }
-              }}
-            >
-              <option value="" disabled selected>
-                Node Type
-              </option>
-              <option value="position">Position</option>
-              <option value="floor">Floor</option>
-              <option value="room">Room</option>
-            </select>
-          </div>
-          <div className="col-md-3">
-            <select
-              name="typeOfNode"
-              className="form-control w-75"
-              id="typeOfNode"
-              {...register("typeOfNode", {
-                required: {
-                  value: true,
-                  // message: `${Validation.REQUIRED} Status`,
-                },
-              })}
-              onChange={(e) => {
-                setValue("typeOfNode", e.target.value);
-                if (e.target.value === "Garden") {
-                  const parentNodeId = siteLayout?.filter(
-                    (itm) => itm?.nodeName === "Exterior"
-                  );
-                  setValue("parentNode", parentNodeId?.[0]?.id);
-                } else {
-                  const parentNodeId = siteLayout?.filter(
-                    (itm) => itm?.nodeName === "Interior"
-                  );
-                  setValue("parentNode", parentNodeId?.[0]?.id);
-                }
-              }}
-            >
-              <option value="" disabled selected>
-                Node name
-              </option>
-              {parentNodeOptions?.map((itm) => (
-                <option value={itm}>{itm}</option>
-              ))}
-            </select>
-          </div>
-          {floorOptions?.length > 0 && (
+        <div
+          style={{
+            display: updateSite?.isViewMode ? "none" : "block",
+          }}
+        >
+          <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
             <div className="col-md-3">
               <select
-                name="floorNode"
+                name="nodeType"
                 className="form-control w-75"
-                id="floorNode"
-                {...register("floorNode")}
+                id="nodeType"
+                {...register("nodeType", {
+                  required: {
+                    value: true,
+                    // message: `${Validation.REQUIRED} Status`,
+                  },
+                })}
                 onChange={(e) => {
-                  setValue("floorNode", e.target.value);
-                  setValue("parentNode", e.target.value);
+                  setValue("nodeType", e.target.value);
+                  setFloorOptions([]);
+                  if (e.target.value === "position") {
+                    const parentNodeId = siteLayout?.filter(
+                      (itm) => itm?.nodeType === "MasterNode"
+                    );
+                    setValue("parentNode", parentNodeId?.[0]?.id);
+                    setParntNodeOptions(["Exterior", "Interior"]);
+                  } else if (e.target.value === "floor") {
+                    setParntNodeOptions([
+                      "Garden",
+                      "Ground Floor",
+                      "First Floor",
+                      "Second Floor",
+                    ]);
+                  } else if (e.target.value === "room") {
+                    setParntNodeOptions([
+                      "Reception",
+                      "Concierge",
+                      "Lift Lobby",
+                    ]);
+                    const floors = siteLayout?.filter(
+                      (itm) => itm?.nodeType === "floor"
+                    );
+                    setFloorOptions(floors);
+                  }
                 }}
               >
                 <option value="" disabled selected>
-                  Select Floor Node
+                  Node Type
                 </option>
-                {floorOptions?.map((itm) => (
-                  <option value={itm?.id}>{itm?.nodeName}</option>
+                <option value="position">Position</option>
+                <option value="floor">Floor</option>
+                <option value="room">Room</option>
+              </select>
+            </div>
+            <div className="col-md-3">
+              <select
+                name="typeOfNode"
+                className="form-control w-75"
+                id="typeOfNode"
+                {...register("typeOfNode", {
+                  required: {
+                    value: true,
+                    // message: `${Validation.REQUIRED} Status`,
+                  },
+                })}
+                onChange={(e) => {
+                  setValue("typeOfNode", e.target.value);
+                  if (e.target.value === "Garden") {
+                    const parentNodeId = siteLayout?.filter(
+                      (itm) => itm?.nodeName === "Exterior"
+                    );
+                    setValue("parentNode", parentNodeId?.[0]?.id);
+                  } else {
+                    const parentNodeId = siteLayout?.filter(
+                      (itm) => itm?.nodeName === "Interior"
+                    );
+                    setValue("parentNode", parentNodeId?.[0]?.id);
+                  }
+                }}
+              >
+                <option value="" disabled selected>
+                  Node name
+                </option>
+                {parentNodeOptions?.map((itm) => (
+                  <option value={itm}>{itm}</option>
                 ))}
               </select>
             </div>
-          )}
-          <div className="col-md-3">
-            <button className="btn btn-primary" type="submit">
-              Add Node
-            </button>
-          </div>
-        </form>
+            {floorOptions?.length > 0 && (
+              <div className="col-md-3">
+                <select
+                  name="floorNode"
+                  className="form-control w-75"
+                  id="floorNode"
+                  {...register("floorNode")}
+                  onChange={(e) => {
+                    setValue("floorNode", e.target.value);
+                    setValue("parentNode", e.target.value);
+                  }}
+                >
+                  <option value="" disabled selected>
+                    Select Floor Node
+                  </option>
+                  {floorOptions?.map((itm) => (
+                    <option value={itm?.id}>{itm?.nodeName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="col-md-3">
+              <button className="btn btn-primary" type="submit">
+                Add Node
+              </button>
+            </div>
+          </form>
+        </div>
         <UpdateFloor />
-        <FloorMap siteLayout={siteLayout}/>
+        <FloorMap siteLayout={siteLayout} />
       </div>
     </>
   );

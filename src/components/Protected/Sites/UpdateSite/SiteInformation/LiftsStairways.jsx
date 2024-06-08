@@ -218,7 +218,11 @@ const LiftsStairways = ({
             />
           </div>
         </div>
-        <div>
+        <div
+          style={{
+            display: updateSite?.isViewMode ? "none" : "block",
+          }}
+        >
           <button className="btn btn-primary float-end m-3">Save</button>
         </div>
       </form>

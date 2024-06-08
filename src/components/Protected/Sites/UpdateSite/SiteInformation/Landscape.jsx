@@ -8,7 +8,12 @@ import {
   getSiteLandScapeInfo,
 } from "../../../../../store/thunk/site";
 
-const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo, setLoader }) => {
+const Landscape = ({
+  updateSite,
+  saveSiteLandScapes,
+  getSiteLandScapeInfo,
+  setLoader,
+}) => {
   const {
     register,
     handleSubmit,
@@ -236,7 +241,11 @@ const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo, setLo
           </div>
         </div>
 
-        <div>
+        <div
+          style={{
+            display: updateSite?.isViewMode ? "none" : "block",
+          }}
+        >
           <button className="btn btn-primary float-end m-3">Save</button>
         </div>
       </form>
@@ -247,4 +256,8 @@ const Landscape = ({ updateSite, saveSiteLandScapes, getSiteLandScapeInfo, setLo
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
 });
-export default connect(mapStateToProps, { saveSiteLandScapes, getSiteLandScapeInfo, setLoader})(Landscape);
+export default connect(mapStateToProps, {
+  saveSiteLandScapes,
+  getSiteLandScapeInfo,
+  setLoader,
+})(Landscape);

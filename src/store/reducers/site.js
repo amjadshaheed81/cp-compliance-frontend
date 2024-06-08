@@ -510,6 +510,7 @@ const reducer = (state = initialState, action) => {
     case SAVE_SITE_LANDSCAPED_INFORMATION:
       return {
         ...state,
+        isLoading: false,
         saveSiteLandscapesInfo: action.payload,
       };
     case SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE:

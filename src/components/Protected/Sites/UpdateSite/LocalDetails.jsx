@@ -110,10 +110,12 @@ const LocalDetails = ({
                         message: `${Validation.REQUIRED} Status`,
                       },
                     })}
-                  // value={sites}
-                  // onChange={searchSitesWithStatus}
+                    // value={sites}
+                    // onChange={searchSitesWithStatus}
                   >
-                    <option value="" selected disabled>Select Status</option>
+                    <option value="" selected disabled>
+                      Select Status
+                    </option>
                     <option value="open">Open</option>
                     <option value="closed">Closed</option>
                     <option value="sold">Sold</option>
@@ -144,7 +146,9 @@ const LocalDetails = ({
               {success && <Success msg={success} />}
               {/* {error && <Error msg={error} />} */}
             </div>
-            <div className="float-end">
+            <div className="float-end" style={{
+                display: updateSite?.isViewMode ? "none" : "block",
+              }}>
               <button type="button" className="btn btn-light mb-3 mr-4">
                 Cancel
               </button>
@@ -157,7 +161,7 @@ const LocalDetails = ({
         </div>
         <div className="col-md-4 border">
           <h2 className="fs-6 mt-4 border-bottom">Opening Timings</h2>
-          <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
+          <div style={{ display: "flex", justifyContent: "space-evenly" }}>
             <span>Start</span>
             <span>End</span>
           </div>
@@ -167,80 +171,149 @@ const LocalDetails = ({
           >
             <table>
               <tr>
-                <td><label className="">Mon:</label></td>
-                <td><input
-                  type="time"
-                  className="form-control"
-                  {...timingForm.register("monStartTime")} /></td>
-                <td><input {...timingForm.register("monEndTime")}
-                  type="time"
-                  className="form-control"
-                /></td>
-              </tr>
-              <tr>
-                <td><label>Tues:</label></td>
                 <td>
-                  <input type="time"
-                  className="form-control"
-                  {...timingForm.register("tuesStartTime")} />
+                  <label className="">Mon:</label>
                 </td>
                 <td>
-                  <input type="time"
-                  className="form-control"
-                  {...timingForm.register("tuesEndTime")}/>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("monStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    {...timingForm.register("monEndTime")}
+                    type="time"
+                    className="form-control"
+                  />
                 </td>
               </tr>
               <tr>
-                <td><label>wed:</label></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("wedStartTime")} /></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("wedEndTime")}/></td>
+                <td>
+                  <label>Tues:</label>
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("tuesStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("tuesEndTime")}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Thurs:</label></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("thurStartTime")} /></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("thurEndTime")} /></td>
+                <td>
+                  <label>wed:</label>
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("wedStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("wedEndTime")}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Fri:</label></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("friStartTime")} /></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("friEndTime")} /></td>
+                <td>
+                  <label>Thurs:</label>
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("thurStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("thurEndTime")}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Sat:</label></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("satStartTime")} /></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("satEndTime")} /></td>
+                <td>
+                  <label>Fri:</label>
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("friStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("friEndTime")}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Sun:</label></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("sunStartTime")} /></td>
-                <td><input type="time"
-                  className="form-control"
-                  {...timingForm.register("sunEndTime")} /></td>
+                <td>
+                  <label>Sat:</label>
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("satStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("satEndTime")}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Sun:</label>
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("sunStartTime")}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="time"
+                    className="form-control"
+                    {...timingForm.register("sunEndTime")}
+                  />
+                </td>
               </tr>
             </table>
             <div>
               {timingSuccess && <Success msg={timingSuccess} />}
               {timingError && <Error msg={timingError} />}
             </div>
-            <div className="float-end m-5">
+            <div
+              className="float-end m-5"
+              style={{
+                display: updateSite?.isViewMode ? "none" : "block",
+              }}
+            >
               <button type="button" className="btn btn-light mb-3 mr-4">
                 Cancel
               </button>
@@ -263,6 +336,8 @@ const mapStateToProps = (state) => ({
   timingError: state.site.timingError,
   updateSite: state.site.updateSite,
 });
-export default connect(mapStateToProps, { updateLocalDetails, updateTimings, setLoader })(
-  LocalDetails
-);
+export default connect(mapStateToProps, {
+  updateLocalDetails,
+  updateTimings,
+  setLoader,
+})(LocalDetails);

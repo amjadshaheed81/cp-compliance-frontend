@@ -939,14 +939,14 @@ export const selectGlobalSite = (site) => {
   };
 };
 
-export const getSiteDetailsById = (id) => {
+export const getSiteDetailsById = (id, isViewMode) => {
   return async (dispatch) => {
     try {
       const url = `/api/site/site/${id}`;
       const data = await get(url);
       dispatch({
         type: UPDATE_SITE,
-        payload: data,
+        payload: {...data, isViewMode},
       });
     } catch (error) {
       console.error(error);
