@@ -41,7 +41,7 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
           />
         </td>
         <td>{
-        itm?.floorPlanUrl ? <span className="badge bg-light text-primary cursor p-4"><a className="text-white" download href={itm?.floorPlanUrl}>{`${itm?.nodeName}.png`}</a></span> : null}</td>
+        itm?.floorPlanUrl ? <a className="btn btn-sm btn-light" download href={itm?.floorPlanUrl}>{`${itm?.nodeName}.png`}</a> : null}</td>
       </tr>
     ));
   };
