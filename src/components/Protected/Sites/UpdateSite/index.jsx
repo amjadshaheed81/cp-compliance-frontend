@@ -134,7 +134,7 @@ const UpdateSite = ({
           {/* <BreadCrumHeader header={"Update Site"} page={"Update Site"} /> */}
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
-            <div className="col-md-8 border">
+            <div className="col-md-8">
               <div className="row bg-white">
                 <p className="pt-2 pb-2 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
@@ -393,7 +393,7 @@ const UpdateSite = ({
                 </form>
               </div>
             </div>
-            <div className="col-md-4 border">
+            <div className="col-md-4">
               <div className="pic-container pic-medium pic-circle">
                 <img
                   className="pic"

@@ -63,9 +63,7 @@ const KeyContacts = ({
   return (
     <>
       <div className="row p-2 bg-white">
-        <h2 className="fs-6 mt-4 border-bottom bg-primary text-white">
-          Key Contacts
-        </h2>
+        <h2 className="fs-6 mt-4 bg-white">Key Contacts</h2>
         <table className="table">
           <thead>
             <tr>
@@ -88,7 +86,7 @@ const KeyContacts = ({
                     style={{
                       display: updateSite?.isViewMode ? "none" : "",
                     }}
-                    className="btn btn-sm btn-light text-danger"
+                    className="btn btn-sm btn-light"
                     onClick={() => deleteKeyContactClick(row)}
                   >
                     <i className="fas fa-trash"></i>

@@ -48,14 +48,18 @@ h2{
   border-radius: 10px;
   background: #888; 
 }
-
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #555; 
 }
-.content {
-  padding-left: 3rem;;
-}
 .MuiBox-root {
   padding: 0px !important;
+}
+
+
+/* min-width: 768px */
+@media (min-width: 768px) {
+  .content {
+    padding-left: 3rem;;
+  }
 }

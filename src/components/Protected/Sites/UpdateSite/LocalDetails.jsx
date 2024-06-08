@@ -66,7 +66,7 @@ const LocalDetails = ({
   return (
     <>
       <div className="row p-2 bg-white">
-        <div className="col-md-8 border">
+        <div className="col-md-8">
           <h2 className="fs-6 mt-4 border-bottom">Local Details</h2>
           <form className="p-2" onSubmit={handleSubmit(submitLocalDetails)}>
             <div className="row">
@@ -159,7 +159,7 @@ const LocalDetails = ({
             </div>
           </form>
         </div>
-        <div className="col-md-4 border">
+        <div className="col-md-4">
           <h2 className="fs-6 mt-4 border-bottom">Opening Timings</h2>
           <div style={{ display: "flex", justifyContent: "space-evenly" }}>
             <span>Start</span>
