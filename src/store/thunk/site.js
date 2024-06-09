@@ -65,6 +65,8 @@ import {
   SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
   SET_SITE_LOADER,
   RESET_SITE_MESSAGES,
+  SAVE_SITE_LAYOUT,
+  SAVE_SITE_LAYOUT_FAILURE,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -819,6 +821,10 @@ export const uploadFloorPlan = (formData, siteId) => {
       const url = "/api/site/uploadfloorplan";
       const siteareainfo = await postMultiPartFormData(url, formData);
       if (siteareainfo?.status === 200) {
+        dispatch({
+          type: SAVE_SITE_LAYOUT,
+          payload: 'success',
+        });
         const url = `/api/site/layout/${siteId}`;
         const List = await get(url);
         dispatch({
@@ -827,7 +833,10 @@ export const uploadFloorPlan = (formData, siteId) => {
         });
       }
     } catch (error) {
-      console.error(error);
+      dispatch({
+        type: SAVE_SITE_LAYOUT_FAILURE,
+        payload: 'error',
+      });
     }
   };
 };

@@ -1,8 +1,8 @@
 import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
-import { uploadFloorPlan } from "./../../../../store/thunk/site";
+import { setLoader, uploadFloorPlan } from "./../../../../store/thunk/site";
 
-const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
+const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite,setLoader }) => {
   const { register, getValues } = useForm({});
   const sendFloorPlan = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
@@ -23,6 +23,7 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite }) => {
       form_data.append("files", file, file?.name);
     });
     form_data.append("floorPlans", JSON.stringify(data));
+    setLoader(true);
     uploadFloorPlan(form_data, updateSite?.siteId);
   };
   const getFloorPlanInputs = () => {
@@ -74,4 +75,4 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { uploadFloorPlan })(UpdateFloor);
+export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(UpdateFloor);

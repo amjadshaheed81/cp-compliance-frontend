@@ -55,6 +55,8 @@ import {
   RESET_SITE_MESSAGES,
   GET_SITE_SECURITY_INFORMATION,
   GET_SITE_SECURITY_INFORMATION_FAILURE,
+  SAVE_SITE_LAYOUT,
+  SAVE_SITE_LAYOUT_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -345,8 +347,8 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteInformationFailure: "",
-        success: '',
-        error: '',
+        success: "",
+        error: "",
         isLoading: false,
         siteInformation: action.payload,
       };
@@ -573,6 +575,21 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         error: "",
+        success: "",
+      };
+    case SAVE_SITE_LAYOUT:
+      return {
+        ...state,
+        isLoading: false,
+        error: "",
+        success: "Successfuly updated site layout",
+      };
+    case SAVE_SITE_LAYOUT_FAILURE:
+      return {
+        ...state,
+        isLoading: false,
+        error:
+          "Something went wrong while saving floor layout. please try again",
         success: "",
       };
     default:
