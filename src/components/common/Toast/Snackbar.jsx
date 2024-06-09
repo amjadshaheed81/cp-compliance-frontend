@@ -6,13 +6,14 @@ import { resetSiteMessageState } from "../../../store/thunk/site";
 const SnackBarMessage = ({ error, success, resetSiteMessageState }) => {
   const [state, setState] = useState({
     open: false,
-    vertical: "top",
-    horizontal: "center",
+    vertical: "bottom",
+    horizontal: "right",
   });
   const { vertical, horizontal, open } = state;
 
   useEffect(() => {
     console.log("success", success);
+    console.log("error", error);
     if (success || error) {
       setState({ ...state, open: true });
     } else {
@@ -32,7 +33,7 @@ const SnackBarMessage = ({ error, success, resetSiteMessageState }) => {
       anchorOrigin={{ vertical, horizontal }}
       open={open}
       onClose={handleClose}
-      message={success || error}
+      message={success || error || ''}
       key={vertical + horizontal}
     />
   );

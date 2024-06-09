@@ -53,6 +53,8 @@ import {
   SET_SITE_LOADER,
   SET_SITE_INFORMATION_FAILURE,
   RESET_SITE_MESSAGES,
+  GET_SITE_SECURITY_INFORMATION,
+  GET_SITE_SECURITY_INFORMATION_FAILURE,
 } from "./../actionTypes";
 
 const initialState = {
@@ -122,8 +124,6 @@ const reducer = (state = initialState, action) => {
         ...state,
         sites: action.payload,
         filterSite: action.payload,
-        success: "",
-        error: "",
         localDetailsSuccess: "",
         localDetailsError: "",
         timingSuccess: "",
@@ -313,6 +313,8 @@ const reducer = (state = initialState, action) => {
         ...state,
         keyContactsFailure: action.payload,
         isLoading: false,
+        error: "Something went wrong while fetching key contacts",
+        success: "",
       };
     case GET_SITES_BY_ID_SUCCESS:
       return {
@@ -343,6 +345,8 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         siteInformationFailure: "",
+        success: '',
+        error: '',
         isLoading: false,
         siteInformation: action.payload,
       };
@@ -352,7 +356,7 @@ const reducer = (state = initialState, action) => {
         isLoading: false,
         siteInformationFailure: "",
         setSiteInformation: action.payload,
-        success: "site information has been saved successfully.",
+        success: "site information has been saved successfully",
       };
     case SET_SITE_INFORMATION_FAILURE:
       return {
@@ -384,8 +388,22 @@ const reducer = (state = initialState, action) => {
     case GET_SITE_AREA_INFORMATION:
       return {
         ...state,
+        error: "",
+        success: "",
         siteAreaInformation: action.payload,
         isLoading: false,
+      };
+    case GET_SITE_SECURITY_INFORMATION:
+      return {
+        ...state,
+        error: "",
+        success: "",
+      };
+    case GET_SITE_SECURITY_INFORMATION_FAILURE:
+      return {
+        ...state,
+        error: "Something went wrong while fetching site security information",
+        success: "",
       };
     case GET_SITE_AREA_INFORMATION_FAILURE:
       return {
@@ -432,7 +450,6 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
-        success: "Site energy details has been updated successfully.",
         getSiteUtilityInfo: action.payload,
       };
     case GET_UTILITY_ENERGY_DETAILS_FAILURE:
