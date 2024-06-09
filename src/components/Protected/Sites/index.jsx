@@ -114,7 +114,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
           {/*  */}
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
-              <div className="row">
+              <div className="row" style={{ height: 'auto'}}>
                 <div className="col">
                   <input
                     type="text"

@@ -87,7 +87,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
           )}
           {error && <p>{error}</p>}
         </div>
-        <div className="table-responsive">
+        <div className="table-responsive w-100">
           <table className="table f-11">
             <thead className="table-dark">
               <tr>
