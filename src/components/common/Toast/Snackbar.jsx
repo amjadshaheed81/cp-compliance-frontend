@@ -21,7 +21,7 @@ const SnackBarMessage = ({ error, success, resetSiteMessageState }) => {
     return () => {
         setTimeout(() => {
             resetSiteMessageState();
-        }, 6000);
+        }, 3000);
     };
   }, [error, success]);
   const handleClose = () => {

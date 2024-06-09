@@ -689,7 +689,7 @@ export const saveLiftsAndStairwaysDetails = (siteId, formData) => {
   };
   return async (dispatch) => {
     try {
-      const url = "/api/site/siteutilityinfo";
+      const url = "/api/site/siteLiftsInfo";
       const siteSecurityInfo = await post(url, data);
       if (siteSecurityInfo?.status === 200) {
         // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
