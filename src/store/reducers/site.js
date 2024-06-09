@@ -52,6 +52,7 @@ import {
   GET_SITE_LANDSCAPE_INFORMATION,
   SET_SITE_LOADER,
   SET_SITE_INFORMATION_FAILURE,
+  RESET_SITE_MESSAGES,
 } from "./../actionTypes";
 
 const initialState = {
@@ -351,27 +352,32 @@ const reducer = (state = initialState, action) => {
         isLoading: false,
         siteInformationFailure: "",
         setSiteInformation: action.payload,
+        success: "site information has been saved successfully.",
       };
     case SET_SITE_INFORMATION_FAILURE:
       return {
         ...state,
         isLoading: false,
+        error: "Something went wrong while saving site information.",
       };
     case GET_SITE_INFORMATION_FAILURE:
       return {
         ...state,
         isLoading: false,
         siteInformationFailure: action.payload,
+        error: "Something went wrong while site fetching site informatio.",
       };
     case SAVE_SITE_AREA_INFORMATION_FAILURE:
       return {
         ...state,
         siteareainfo: action.payload,
         isLoading: false,
+        error: "Something went wrong while saving site area information.",
       };
     case SAVE_SITE_AREA_INFORMATION:
       return {
         ...state,
+        success: "Site area information has been saved successfully.",
         siteareainfo: action.payload,
         isLoading: false,
       };
@@ -385,19 +391,24 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
+        error:
+          "Something went wrong while fetching site area information. Please try again.",
         siteAreaInformation:
-          "Something went wrong while fetching key contacts. Please try again.",
+          "Something went wrong while fetching site area information. Please try again.",
       };
     case SAVE_SITE_SECURITY_INFORMATION:
       return {
         ...state,
         siteSecurityInfo: action.payload,
+        success: "Site security information has been saved successfully.",
         isLoading: false,
       };
     case SAVE_SITE_SECURITY_INFORMATION_FAILURE:
       return {
         ...state,
         isLoading: false,
+        error:
+          "Something went wrong while saving site security information. Please try again.",
         siteSecurityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
@@ -405,12 +416,15 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
+        success: "Site utility energy details has been updated successfully.",
         saveSiteUtilityInfo: action.payload,
       };
     case SAVE_UTILITY_ENERGY_DETAILS_FAILURE:
       return {
         ...state,
         isLoading: false,
+        error:
+          "Something went wrong while saving energy details. Please try again.",
         saveSiteUtilityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
@@ -418,12 +432,15 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
+        success: "Site energy details has been updated successfully.",
         getSiteUtilityInfo: action.payload,
       };
     case GET_UTILITY_ENERGY_DETAILS_FAILURE:
       return {
         ...state,
         isLoading: false,
+        error:
+          "Something went wrong while fetching utility energy details. Please try again.",
         getSiteUtilityInfo:
           "Something went wrong while fetching key contacts. Please try again.",
       };
@@ -493,12 +510,14 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
+        success: "Site lifts information has been saves successfully",
         saveSiteLiftsInfo: action.payload,
       };
     case SAVE_SITE_LIFTS_INFORMATION_FAILURE:
       return {
         ...state,
         isLoading: false,
+        error: "Something went wrong while saving site lifts information",
         saveSiteLiftsInfo: "error",
       };
     case GET_SITE_LIFTS_INFORMATION:
@@ -511,12 +530,15 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
+        success: "Successfully saved site landscape information",
         saveSiteLandscapesInfo: action.payload,
       };
     case SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE:
       return {
         ...state,
         isLoading: false,
+        success: "",
+        error: "something went wrong while saving landscape information",
         saveSiteLandscapesInfo: "error",
       };
     case GET_SITE_LANDSCAPE_INFORMATION:
@@ -529,6 +551,12 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: action.payload,
+      };
+    case RESET_SITE_MESSAGES:
+      return {
+        ...state,
+        error: "",
+        success: "",
       };
     default:
       return state;

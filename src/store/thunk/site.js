@@ -64,6 +64,7 @@ import {
   SAVE_SITE_LANDSCAPED_INFORMATION,
   SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
   SET_SITE_LOADER,
+  RESET_SITE_MESSAGES,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -946,7 +947,7 @@ export const getSiteDetailsById = (id, isViewMode) => {
       const data = await get(url);
       dispatch({
         type: UPDATE_SITE,
-        payload: {...data, isViewMode},
+        payload: { ...data, isViewMode },
       });
     } catch (error) {
       console.error(error);
@@ -1075,6 +1076,15 @@ export const setLoader = (value) => {
   return async (dispatch) => {
     dispatch({
       type: SET_SITE_LOADER,
+      payload: value,
+    });
+  };
+};
+
+export const resetSiteMessageState = (value) => {
+  return async (dispatch) => {
+    dispatch({
+      type: RESET_SITE_MESSAGES,
       payload: value,
     });
   };

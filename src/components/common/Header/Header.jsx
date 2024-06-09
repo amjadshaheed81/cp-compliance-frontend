@@ -7,6 +7,7 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { connect } from "react-redux";
 import BackDrop from "../Loader/BackDrop";
+import Snackbar from "../Toast/Snackbar";
 
 const Header = ({ siteSelectedForGlobal, isLoading }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -24,6 +25,7 @@ const Header = ({ siteSelectedForGlobal, isLoading }) => {
       style={{ backgroundColor: "white", top: "0", left: "70px", zIndex: "-1" }}
     >
       <BackDrop isLoading={isLoading}/>
+      <Snackbar />
       <Toolbar>
         <div style={{ flexGrow: 1 }}></div>
         {/* Empty div to push user icon to right */}
