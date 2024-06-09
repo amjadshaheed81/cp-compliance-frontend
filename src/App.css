@@ -63,3 +63,6 @@ h2{
     padding-left: 3rem;;
   }
 }
+#root {
+  overflow: scroll;
+}

@@ -64,115 +64,119 @@ const KeyContacts = ({
     <>
       <div className="row p-2 bg-white">
         <h2 className="fs-6 mt-4 bg-white">Key Contacts</h2>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>&nbsp;</th>
-            </tr>
-          </thead>
-          <tbody>
-            {keyContacts.map((row) => (
-              <tr key={row?.id}>
-                <td>{row?.contactName}</td>
-                <td>{row?.phone}</td>
-                <td>{row?.email}</td>
-                <td>{row?.actionManager}</td>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+              {keyContacts.map((row) => (
+                <tr key={row?.id}>
+                  <td>{row?.contactName}</td>
+                  <td>{row?.phone}</td>
+                  <td>{row?.email}</td>
+                  <td>{row?.actionManager}</td>
+                  <td>
+                    <button
+                      style={{
+                        display: updateSite?.isViewMode ? "none" : "",
+                      }}
+                      className="btn btn-sm btn-light"
+                      onClick={() => deleteKeyContactClick(row)}
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              <tr
+                style={{
+                  display: updateSite?.isViewMode ? "none" : "",
+                }}
+              >
                 <td>
+                  <input
+                    className="contact-input form-control"
+                    type="text"
+                    {...register("contactName")}
+                  />
+                </td>
+                <td>
+                  <input
+                    className="contact-input form-control"
+                    type="phone"
+                    {...register("phone")}
+                  />
+                </td>
+                <td>
+                  <input
+                    className="contact-input form-control"
+                    type="email"
+                    {...register("email")}
+                  />
+                </td>
+                <td>
+                  <select
+                    name="actionManager"
+                    className="contact-input form-control form-select"
+                    id="actionManager"
+                    {...register("actionManager")}
+                    value={selectedItem}
+                    onChange={(e) => setSelectedItem(e.target.value)}
+                  >
+                    <option value=""></option>
+                    <option value="admin">Admin</option>
+                    <option value="propertymanager">Property Manager</option>
+                    <option value="siteactionmanager">
+                      Site Action Manager
+                    </option>
+                    <option value="siteusers">Site users</option>
+                    <option value="caretaker">Care Taker</option>
+                    <option value="contractor">Contractor</option>
+                    <option value="surveyor">Surveyor</option>
+                    <option value="tradesman">Tradesman</option>
+                    <option value="electrician">Electrician</option>
+                    <option value="gasengineer">Gas Engineer</option>
+                    <option value="asbestossurveyor">Asbestos Surveyor</option>
+                    <option value="acengineer">AC Engineer</option>
+                    <option value="firedoorinstall">Fire Door Install</option>
+                    <option value="genralcompany">Genral Company</option>
+                    <option value="lift+maintainence">Lift Maintainence</option>
+                    <option value="plumber">Plumber</option>
+                    <option value="autodoormaintainence">
+                      Auto Door Maintainence
+                    </option>
+                    <option value="refusecollector">Refse Collector</option>
+                    <option value="firealarm">Fire Alarm</option>
+                    <option value="asbestossurveyor">Asbestos Surveyor</option>
+                  </select>
+                </td>
+                <td>&nbsp;</td>
+              </tr>
+              <tr>
+                <td className="pt-4">
                   <button
                     style={{
                       display: updateSite?.isViewMode ? "none" : "",
                     }}
-                    className="btn btn-sm btn-light"
-                    onClick={() => deleteKeyContactClick(row)}
+                    type="button"
+                    onClick={() => addKeyContactClick()}
+                    className="btn btn-light"
                   >
-                    <i className="fas fa-trash"></i>
+                    Add Row
                   </button>
+                  &nbsp; &nbsp;
                 </td>
               </tr>
-            ))}
-            <tr
-              style={{
-                display: updateSite?.isViewMode ? "none" : "",
-              }}
-            >
-              <td>
-                <input
-                  className="contact-input form-control"
-                  type="text"
-                  {...register("contactName")}
-                />
-              </td>
-              <td>
-                <input
-                  className="contact-input form-control"
-                  type="phone"
-                  {...register("phone")}
-                />
-              </td>
-              <td>
-                <input
-                  className="contact-input form-control"
-                  type="email"
-                  {...register("email")}
-                />
-              </td>
-              <td>
-                <select
-                  name="actionManager"
-                  className="contact-input form-control form-select"
-                  id="actionManager"
-                  {...register("actionManager")}
-                  value={selectedItem}
-                  onChange={(e) => setSelectedItem(e.target.value)}
-                >
-                  <option value=""></option>
-                  <option value="admin">Admin</option>
-                  <option value="propertymanager">Property Manager</option>
-                  <option value="siteactionmanager">Site Action Manager</option>
-                  <option value="siteusers">Site users</option>
-                  <option value="caretaker">Care Taker</option>
-                  <option value="contractor">Contractor</option>
-                  <option value="surveyor">Surveyor</option>
-                  <option value="tradesman">Tradesman</option>
-                  <option value="electrician">Electrician</option>
-                  <option value="gasengineer">Gas Engineer</option>
-                  <option value="asbestossurveyor">Asbestos Surveyor</option>
-                  <option value="acengineer">AC Engineer</option>
-                  <option value="firedoorinstall">Fire Door Install</option>
-                  <option value="genralcompany">Genral Company</option>
-                  <option value="lift+maintainence">Lift Maintainence</option>
-                  <option value="plumber">Plumber</option>
-                  <option value="autodoormaintainence">
-                    Auto Door Maintainence
-                  </option>
-                  <option value="refusecollector">Refse Collector</option>
-                  <option value="firealarm">Fire Alarm</option>
-                  <option value="asbestossurveyor">Asbestos Surveyor</option>
-                </select>
-              </td>
-              <td>&nbsp;</td>
-            </tr>
-            <tr>
-              <td className="pt-4">
-                <button
-                  style={{
-                    display: updateSite?.isViewMode ? "none" : "",
-                  }}
-                  type="button"
-                  onClick={() => addKeyContactClick()}
-                  className="btn btn-light"
-                >
-                  Add Row
-                </button>
-                &nbsp; &nbsp;
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
         <div>{keyContactsFailure && <Error msg={keyContactsFailure} />}</div>
       </div>
     </>

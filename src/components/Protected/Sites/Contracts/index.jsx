@@ -96,7 +96,7 @@ const Contracts = ({
           {/*  */}
           {/*  */}
           <div className="d-flex bd-highlight">
-            <div className="pt-2 bd-highlight ">
+            <div className="pt-2 bd-highlight">
               <div className="row">
                 <div className="col">
                   <input
@@ -143,7 +143,7 @@ const Contracts = ({
           </div>
           {/* row start*/}
           <div className="row p-2"></div>
-          <div className="col-md-12">
+          <div className="col-md-12 table-responsive">
             <table className="table">
               <thead className="table-dark">
                 <tr>
@@ -295,7 +295,7 @@ const Contracts = ({
                 value={contractDetail?.project_comments}
               ></textarea>
             </div>
-            <div>
+            <div className="table-responsive">
               <table className="table f-11 mt-2">
                 <thead className="table-dark">
                   <tr>

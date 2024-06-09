@@ -181,7 +181,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
           </div>
           {/* row start*/}
           <div className="row p-2"></div>
-          <div className="col-md-12">
+          <div className="col-md-12 table-responsive">
             <table className="table">
               <thead className="table-dark">
                 <tr>

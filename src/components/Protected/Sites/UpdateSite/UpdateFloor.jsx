@@ -2,7 +2,12 @@ import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
 import { setLoader, uploadFloorPlan } from "./../../../../store/thunk/site";
 
-const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite,setLoader }) => {
+const UpdateFloor = ({
+  siteLayout,
+  uploadFloorPlan,
+  updateSite,
+  setLoader,
+}) => {
   const { register, getValues } = useForm({});
   const sendFloorPlan = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
@@ -41,25 +46,36 @@ const UpdateFloor = ({ siteLayout, uploadFloorPlan, updateSite,setLoader }) => {
             id={`floorImage-${itm?.id}`}
           />
         </td>
-        <td>{
-        itm?.floorPlanUrl ? <a className="btn btn-sm btn-light" download href={itm?.floorPlanUrl}>{`${itm?.nodeName}.png`}</a> : null}</td>
+        <td>
+          {itm?.floorPlanUrl ? (
+            <a
+              className="btn btn-sm btn-light"
+              download
+              href={itm?.floorPlanUrl}
+            >{`${itm?.nodeName}.png`}</a>
+          ) : null}
+        </td>
       </tr>
     ));
   };
   return (
-    <div style={{
-      display: updateSite?.isViewMode ? "none" : "block",
-    }}>
+    <div
+      style={{
+        display: updateSite?.isViewMode ? "none" : "block",
+      }}
+    >
       <h5 className="pt-5 text-start">Update Floor Plan</h5>
-      <table style={{ borderCollapse: "separate", borderSpacing: "2rem" }}>
-        <thead>
-          <tr>
-            <td>Floor Name</td>
-            <td>Floor Image</td>
-          </tr>
-        </thead>
-        <tbody>{getFloorPlanInputs()}</tbody>
-      </table>
+      <div className="table-responsive">
+        <table style={{ borderCollapse: "separate", borderSpacing: "2rem" }}>
+          <thead>
+            <tr>
+              <td>Floor Name</td>
+              <td>Floor Image</td>
+            </tr>
+          </thead>
+          <tbody>{getFloorPlanInputs()}</tbody>
+        </table>
+      </div>
       <div className="row">
         <div className="col-md-3">
           <button className="btn btn-primary" onClick={() => sendFloorPlan()}>
@@ -75,4 +91,6 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(UpdateFloor);
+export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(
+  UpdateFloor
+);

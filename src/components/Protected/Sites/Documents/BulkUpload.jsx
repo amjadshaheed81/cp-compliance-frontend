@@ -80,32 +80,34 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
                 </div>
               </div>
             </div>
-            <table className="f-11">
-              <thead>
-                <tr>
-                  <th scope="col">File</th>
-                  <th scope="col">File Name</th>
-                  <th scope="col">Issue Date</th>
-                  <th scope="col">Expiry Date</th>
-                  <th scope="col">Version</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <div>
-                    <i
-                      style={{ color: "#384BD3" }}
-                      className="fas fa-folder fa-2x"
-                    ></i>
-                    <span className="p-3">Statutory Documents</span>
-                  </div>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>--</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="table-responsive">
+              <table className="f-11">
+                <thead>
+                  <tr>
+                    <th scope="col">File</th>
+                    <th scope="col">File Name</th>
+                    <th scope="col">Issue Date</th>
+                    <th scope="col">Expiry Date</th>
+                    <th scope="col">Version</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <div>
+                      <i
+                        style={{ color: "#384BD3" }}
+                        className="fas fa-folder fa-2x"
+                      ></i>
+                      <span className="p-3">Statutory Documents</span>
+                    </div>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <div className="d-flex d-flex flex-lg-row-reverse">
               <div>
                 <button className="btn btn-primary float-end">Save</button>

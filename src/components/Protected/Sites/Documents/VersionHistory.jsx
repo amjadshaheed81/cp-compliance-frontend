@@ -53,41 +53,43 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
                 <input type="file" name="fileUpload" className="form-control" />
               </div>
             </div>
-            <table className="f-11">
-              <thead>
-                <tr>
-                  <th scope="col">File</th>
-                  <th scope="col">Version</th>
-                  <th scope="col">Uploaded By</th>
-                  <th scope="col">Date</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <div>
-                    <i
-                      style={{ color: "#384BD3" }}
-                      className="fas fa-folder fa-2x"
-                    ></i>
-                    <span className="p-3">Statutory Documents</span>
-                  </div>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>
-                    <span style={{ color: "gray" }}>
+            <div className="table-responsive">
+              <table className="f-11">
+                <thead>
+                  <tr>
+                    <th scope="col">File</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Uploaded By</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <div>
                       <i
-                        className="fa fa-eye fa-2x"
-                        aria-hidden="true"
-                        size="md"
+                        style={{ color: "#384BD3" }}
+                        className="fas fa-folder fa-2x"
                       ></i>
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                      <span className="p-3">Statutory Documents</span>
+                    </div>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>
+                      <span style={{ color: "gray" }}>
+                        <i
+                          className="fa fa-eye fa-2x"
+                          aria-hidden="true"
+                          size="md"
+                        ></i>
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <div className="d-flex d-flex flex-lg-row-reverse">
               <div>
                 <button className="btn btn-primary float-end">Save</button>

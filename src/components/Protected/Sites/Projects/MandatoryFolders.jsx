@@ -92,40 +92,42 @@ const MandatoryFolders = ({
                 </button>
               </div>
             </div>
-            <table className="table f-11">
-              <thead className="table-dark">
-                <tr>
-                  <th scope="col">Folder</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rootFolder?.parentFolders?.map((folder, index) => (
+            <div className="table-responsive">
+              <table className="table f-11">
+                <thead className="table-dark">
                   <tr>
-                    <td>
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-2x"
-                      ></i>
-                      <span className="p-3">{folder?.name}</span>
-                    </td>
-                    <td>
-                      <span
-                        className="text-primary cursor"
-                        onClick={() => {
-                          setSelectedMandatoryFolder([
-                            ...selectedMandatoryFolder,
-                            folder,
-                          ]);
-                        }}
-                      >
-                        <i className="fas fa-plus" size="sm"></i>
-                      </span>
-                    </td>
+                    <th scope="col">Folder</th>
+                    <th scope="col">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rootFolder?.parentFolders?.map((folder, index) => (
+                    <tr>
+                      <td>
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-folder fa-2x"
+                        ></i>
+                        <span className="p-3">{folder?.name}</span>
+                      </td>
+                      <td>
+                        <span
+                          className="text-primary cursor"
+                          onClick={() => {
+                            setSelectedMandatoryFolder([
+                              ...selectedMandatoryFolder,
+                              folder,
+                            ]);
+                          }}
+                        >
+                          <i className="fas fa-plus" size="sm"></i>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <div>
               {selectedMandatoryFolder?.map((itm) => (
                 <Fragment>

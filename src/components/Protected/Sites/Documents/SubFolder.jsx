@@ -65,171 +65,173 @@ const SubFolder = ({
             // onChange={searchDocument}
           />
         </div>
-        <table className="table f-11">
-          <thead className="table-dark">
-            <tr>
-              <th scope="col">Document Name</th>
-              <th scope="col">Uploader</th>
-              <th scope="col">Issue Date</th>
-              <th scope="col">Expiry Date</th>
-              <th scope="col">Source</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              {" "}
-              <div>
-                <i
-                  style={{ color: "#384BD3" }}
-                  className="fas fa-folder fa-2x"
-                ></i>
-                <span className="p-3">{subfolderFiles?.document?.name}</span>
-              </div>
-              <td>--</td>
-              <td>--</td>
-              <td>--</td>
-              <td>--</td>
-              <td>
-                <CreateNewFolderIcon
-                  onClick={() => setShowFolderModal(true)}
-                  style={{ color: "384bd3", cursor: "pointer" }}
-                />
-                {showFolderModal && (
-                  <CreateFolder
-                    showFolderModal={showFolderModal}
-                    setShowFolderModal={setShowFolderModal}
+        <div className="table-responsive">
+          <table className="table f-11">
+            <thead className="table-dark">
+              <tr>
+                <th scope="col">Document Name</th>
+                <th scope="col">Uploader</th>
+                <th scope="col">Issue Date</th>
+                <th scope="col">Expiry Date</th>
+                <th scope="col">Source</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                {" "}
+                <div>
+                  <i
+                    style={{ color: "#384BD3" }}
+                    className="fas fa-folder fa-2x"
+                  ></i>
+                  <span className="p-3">{subfolderFiles?.document?.name}</span>
+                </div>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>
+                  <CreateNewFolderIcon
+                    onClick={() => setShowFolderModal(true)}
+                    style={{ color: "384bd3", cursor: "pointer" }}
                   />
-                )}
-                <NoteAddIcon
-                  onClick={() => setShowModal(true)}
-                  style={{ color: "384bd3", cursor: "pointer" }}
-                />
-                {showModal && (
-                  <CreateFiles
-                    showModal={showModal}
-                    setShowModal={setShowModal}
+                  {showFolderModal && (
+                    <CreateFolder
+                      showFolderModal={showFolderModal}
+                      setShowFolderModal={setShowFolderModal}
+                    />
+                  )}
+                  <NoteAddIcon
+                    onClick={() => setShowModal(true)}
+                    style={{ color: "384bd3", cursor: "pointer" }}
                   />
-                )}
-                <ContentCopyIcon
-                  onClick={() => setBulkUploadModal(true)}
-                  style={{ color: "384bd3", cursor: "pointer" }}
-                />
-                {bulkUploadModal && (
-                  <BulkUpload
-                    bulkUploadModal={bulkUploadModal}
-                    setBulkUploadModal={setBulkUploadModal}
+                  {showModal && (
+                    <CreateFiles
+                      showModal={showModal}
+                      setShowModal={setShowModal}
+                    />
+                  )}
+                  <ContentCopyIcon
+                    onClick={() => setBulkUploadModal(true)}
+                    style={{ color: "384bd3", cursor: "pointer" }}
                   />
-                )}
-              </td>
-            </tr>
+                  {bulkUploadModal && (
+                    <BulkUpload
+                      bulkUploadModal={bulkUploadModal}
+                      setBulkUploadModal={setBulkUploadModal}
+                    />
+                  )}
+                </td>
+              </tr>
 
-            {subfolderFiles?.document?.childFolders?.map((folder) => {
-              return (
-                <>
-                  <tr>
-                    <div>
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-2x"
-                      ></i>
-                      <span className="p-3">{folder?.name}</span>
-                    </div>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>
-                      <CreateNewFolderIcon
-                        onClick={() => setShowFolderModal(true)}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                      {showFolderModal && (
-                        <CreateFolder
-                          showFolderModal={showFolderModal}
-                          setShowFolderModal={setShowFolderModal}
-                          folderId={folder.id}
+              {subfolderFiles?.document?.childFolders?.map((folder) => {
+                return (
+                  <>
+                    <tr>
+                      <div>
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-folder fa-2x"
+                        ></i>
+                        <span className="p-3">{folder?.name}</span>
+                      </div>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>
+                        <CreateNewFolderIcon
+                          onClick={() => setShowFolderModal(true)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
                         />
-                      )}
-                      <NoteAddIcon
-                        onClick={() => setShowModal(true)}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                      {showModal && (
-                        <CreateFiles
-                          showModal={showModal}
-                          setShowModal={setShowModal}
-                          folderId={folder.id}
+                        {showFolderModal && (
+                          <CreateFolder
+                            showFolderModal={showFolderModal}
+                            setShowFolderModal={setShowFolderModal}
+                            folderId={folder.id}
+                          />
+                        )}
+                        <NoteAddIcon
+                          onClick={() => setShowModal(true)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
                         />
-                      )}
-                      <ContentCopyIcon
-                        onClick={() => setBulkUploadModal(true)}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                      {bulkUploadModal && (
-                        <BulkUpload
-                          bulkUploadModal={bulkUploadModal}
-                          setBulkUploadModal={setBulkUploadModal}
-                          folder={folder}
+                        {showModal && (
+                          <CreateFiles
+                            showModal={showModal}
+                            setShowModal={setShowModal}
+                            folderId={folder.id}
+                          />
+                        )}
+                        <ContentCopyIcon
+                          onClick={() => setBulkUploadModal(true)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
                         />
-                      )}
-                    </td>
-                  </tr>
-                </>
-              );
-            })}
-            {subfolderFiles?.document?.files?.map((file) => {
-              return (
-                <>
-                  <tr>
-                    <div>
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-file fa-2x"
-                      ></i>
-                      <span className="p-3">{file?.name}</span>
-                    </div>
-                    <td>{file?.uploaderUserName}</td>
-                    <td>{file?.issueDate}</td>
-                    <td>{file?.expiryDate}</td>
-                    <td>{file?.source}</td>
-                    <td>
-                      <ReplyIcon
-                        onClick={() => navigate("/documents")}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                      <RestorePageIcon
-                        onClick={() => setShowModal(true)}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                      {showModal && (
-                        <CreateFiles
-                          showModal={showModal}
-                          setShowModal={setShowModal}
+                        {bulkUploadModal && (
+                          <BulkUpload
+                            bulkUploadModal={bulkUploadModal}
+                            setBulkUploadModal={setBulkUploadModal}
+                            folder={folder}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  </>
+                );
+              })}
+              {subfolderFiles?.document?.files?.map((file) => {
+                return (
+                  <>
+                    <tr>
+                      <div>
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-file fa-2x"
+                        ></i>
+                        <span className="p-3">{file?.name}</span>
+                      </div>
+                      <td>{file?.uploaderUserName}</td>
+                      <td>{file?.issueDate}</td>
+                      <td>{file?.expiryDate}</td>
+                      <td>{file?.source}</td>
+                      <td>
+                        <ReplyIcon
+                          onClick={() => navigate("/documents")}
+                          style={{ color: "384bd3", cursor: "pointer" }}
                         />
-                      )}
-                      <HistoryIcon
-                        onClick={() => setVersionHistory(true)}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                      {versionHistory && (
-                        <VersionHistory
-                          versionHistory={versionHistory}
-                          setVersionHistory={setVersionHistory}
-                          fileId={file?.id}
+                        <RestorePageIcon
+                          onClick={() => setShowModal(true)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
                         />
-                      )}
-                      <DeleteIcon
-                        onClick={() => deleteFile(file?.id)}
-                        style={{ color: "384bd3", cursor: "pointer" }}
-                      />
-                    </td>
-                  </tr>
-                </>
-              );
-            })}
-          </tbody>
-        </table>
+                        {showModal && (
+                          <CreateFiles
+                            showModal={showModal}
+                            setShowModal={setShowModal}
+                          />
+                        )}
+                        <HistoryIcon
+                          onClick={() => setVersionHistory(true)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
+                        />
+                        {versionHistory && (
+                          <VersionHistory
+                            versionHistory={versionHistory}
+                            setVersionHistory={setVersionHistory}
+                            fileId={file?.id}
+                          />
+                        )}
+                        <DeleteIcon
+                          onClick={() => deleteFile(file?.id)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
+                        />
+                      </td>
+                    </tr>
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
