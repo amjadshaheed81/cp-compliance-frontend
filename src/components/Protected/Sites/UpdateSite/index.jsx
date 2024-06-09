@@ -22,6 +22,7 @@ import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
+import BusinessIcon from "@mui/icons-material/Business";
 
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
@@ -140,10 +141,10 @@ const UpdateSite = ({
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
                     <div className="col-md-12">
-                      <div className="mb-3">
-                        <label for="siteName" className="form-label">
-                          Site Name
-                        </label>
+                      <div className="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">
+                          <BusinessIcon />
+                        </span>
                         <input
                           type="text"
                           name="siteName"
