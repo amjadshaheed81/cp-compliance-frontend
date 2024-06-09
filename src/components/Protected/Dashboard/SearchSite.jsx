@@ -12,9 +12,9 @@ import ListItemText from "@mui/material/ListItemText";
 import StarIcon from '@mui/icons-material/Star';
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../api";
-import { getSites, selectGlobalSite } from "../../../store/thunk/site";
+import { getSites, selectGlobalSite, setLoader } from "../../../store/thunk/site";
 
-function SearchSite({ getSites, sites, selectGlobalSite }) {
+function SearchSite({ getSites, sites, selectGlobalSite, setLoader }) {
   const [allSites, setSites] = useState([]);
   const [error, setError] = useState("");
   const [state, setState] = React.useState({
@@ -35,6 +35,7 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
   const searchSite = async (e) => {
     const value = e?.target?.value;
     const url = `/api/site/site/all?q=${value}`;
+    setLoader(true);
     try {
       const response = await get(url);
       if (response.includes("Unable to Fetch the Site Search Results")) {
@@ -42,11 +43,11 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
         setSites([]);
       } else {
         setSites(response);
-        initialSite = response?.slice(0, 5);
       }
     } catch (e) {
       setError("No Sites found. Please check the input");
     }
+    setLoader(false);
   };
   const toggleDrawer = (anchor, open) => (event) => {
     if (
@@ -113,9 +114,6 @@ function SearchSite({ getSites, sites, selectGlobalSite }) {
         ))}
       </List>
       <List>
-        {allSites?.length === 0 && (
-          <p className="p-2">Search result not found!!</p>
-        )}
         {allSites?.map((site) => (
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
@@ -161,4 +159,4 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { getSites, selectGlobalSite })(SearchSite);
+export default connect(mapStateToProps, { getSites, selectGlobalSite, setLoader })(SearchSite);
