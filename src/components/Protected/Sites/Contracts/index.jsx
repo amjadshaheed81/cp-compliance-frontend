@@ -5,6 +5,7 @@ import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { Box, Modal, Typography } from "@mui/material";
+import Tooltip from "@mui/material/Tooltip";
 import {
   getSiteContracts,
   getSiteContractDetails,
@@ -41,7 +42,9 @@ const Contracts = ({
 
     if (val) {
       const list = contractsList?.filter((x) =>
-        String(x?.project_summary).toLowerCase().includes(String(val).toLowerCase())
+        String(x?.project_summary)
+          .toLowerCase()
+          .includes(String(val).toLowerCase())
       );
       setFilteredContractList(list);
     } else {
@@ -62,14 +65,18 @@ const Contracts = ({
   }, []);
 
   const updateContractDetails = (formData) => {
-    console.log(contractDetail)
+    console.log(contractDetail);
     let form_data = new FormData();
-    if(formData?.official_quote) {
-      form_data.append("file", formData?.official_quote?.[0], formData?.official_quote?.[0]?.name);
+    if (formData?.official_quote) {
+      form_data.append(
+        "file",
+        formData?.official_quote?.[0],
+        formData?.official_quote?.[0]?.name
+      );
     }
     form_data.append("quote", formData?.quote);
     form_data.append("quoteId", JSON.stringify(contractDetail?.quote_id));
-    console.log("form_data", form_data)
+    console.log("form_data", form_data);
     updateContractDetail(form_data);
   };
   const style = {
@@ -175,25 +182,29 @@ const Contracts = ({
                     <td>{itm?.quote_date}</td>
                     <td></td>
                     <td>
-                      <span
-                        style={{ color: "gray" }}
-                        className="cursor"
-                        onClick={() => {
-                          setValue("quote", itm?.quote)
-                          setSelectedContract(itm);
-                          getSiteContractDetails(itm?.quote_id);
-                          handleOpen();
-                        }}
-                      >
-                        <i className="fas fa-eye"></i>
-                      </span>
+                      <Tooltip title={`View`} arrow>
+                        <span
+                          style={{ color: "gray" }}
+                          className="cursor"
+                          onClick={() => {
+                            setValue("quote", itm?.quote);
+                            setSelectedContract(itm);
+                            getSiteContractDetails(itm?.quote_id);
+                            handleOpen();
+                          }}
+                        >
+                          <i className="fas fa-eye"></i>
+                        </span>
+                      </Tooltip>
                       &nbsp;&nbsp;&nbsp;
                       <CSVLink
                         filename={"contracts-quote"}
                         className="btn btn-light bg-white text-primary"
                         data={[itm]}
                       >
-                        <i className="fas fa-solid fa-paperclip"></i>
+                        <Tooltip title={`Official Quote`} arrow>
+                          <i className="fas fa-solid fa-paperclip"></i>
+                        </Tooltip>
                       </CSVLink>
                     </td>
                   </tr>
@@ -214,9 +225,12 @@ const Contracts = ({
           <Typography id="modal-modal-title" variant="h6" component="h2">
             View Contract
           </Typography>
-          <form className="row border-top" onSubmit={handleSubmit(updateContractDetails)}>
+          <form
+            className="row border-top"
+            onSubmit={handleSubmit(updateContractDetails)}
+          >
             <div>
-              <Status status={contractDetail?.status}/>
+              <Status status={contractDetail?.status} />
             </div>
             <div className="col-md-12">
               <label for="projectSummary" className="form-label">
@@ -351,10 +365,7 @@ const Contracts = ({
                   Cancel
                 </button>
                 &nbsp; &nbsp;
-                <button
-                  className="btn btn-primary mb-3 mr-4"
-                  type="submit"
-                >
+                <button className="btn btn-primary mb-3 mr-4" type="submit">
                   Submit
                 </button>
               </div>
