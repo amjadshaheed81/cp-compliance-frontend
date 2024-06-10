@@ -21,6 +21,7 @@ const CreateFolder = ({
   setShowFolderModal,
   folderId,
   uploadDocumentFile,
+  refresh
 }) => {
   console.log("folderId", folderId);
   const handleOpen = () => setShowFolderModal(true);
@@ -33,6 +34,7 @@ const CreateFolder = ({
     //createDocumentFolder(data, folderId);
     setIsLoading(false);
     handleClose();
+    refresh();
     toast.success("Folder added successfully")
   };
   const style = {
@@ -51,7 +53,7 @@ const CreateFolder = ({
   return (
     <React.Fragment>
       <Button variant="outlined" onClick={handleOpen}>
-        Open form dialog
+        Create New Folder
       </Button>
       <Dialog
         open={showFolderModal}

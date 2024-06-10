@@ -41,6 +41,7 @@ const SubFolder = ({
   const [fileList, setFileList] = useState([]);
   const [error, setError] = useState("");
   const [folderId2, setFolderId2] = useState();
+  const [folderData, setfolder] = useState();
   const [fileId, setFileId] = useState();
   const searchDocument = async (e) => {
     const value = e?.target?.value;
@@ -93,12 +94,15 @@ const SubFolder = ({
             setShowFolderModal={setShowFolderModal}
             //folderId={folder.id}
             folderId={folderId2}
+            refresh={() => { getSubFilesAndFolder(folderId); }}
           />
         )}
         {showModal && (
           <CreateFiles
             showModal={showModal}
             setShowModal={setShowModal}
+            folderData={folderData}
+            refresh={() => { getSubFilesAndFolder(folderId); }}
           />
         )}
         {bulkUploadModal && (
@@ -181,13 +185,17 @@ const SubFolder = ({
                 <td style={{ backgroundColor: '#E3E3E3' }}>--</td>
                 
                 <td style={{ backgroundColor: '#E3E3E3' }}>
+                  <ReplyIcon
+                    onClick={() => navigate("/documents")}
+                    style={{ color: "384bd3", cursor: "pointer" }}
+                  />
                   <CreateNewFolderIcon
                     onClick={() => { setShowFolderModal(true); setFolderId2(folderId) }}
                     style={{ color: "384bd3", cursor: "pointer" }}
                   />
                   
                   <NoteAddIcon
-                    onClick={() => setShowModal(true)}
+                    onClick={() => { setShowModal(true); setfolder(subfolderFiles?.document)}}
                     style={{ color: "384bd3", cursor: "pointer" }}
                   />
                   
@@ -222,7 +230,7 @@ const SubFolder = ({
                         />
                         
                         <NoteAddIcon
-                          onClick={() => setShowModal(true)}
+                          onClick={() => { setShowModal(true);  setfolder(folder) }}
                           style={{ color: "384bd3", cursor: "pointer" }}
                         />
                         
@@ -253,12 +261,12 @@ const SubFolder = ({
                       <td>{file?.expiryDate}</td>
                       <td>{file?.source}</td>
                       <td>
-                        <ReplyIcon
+                        {/* <ReplyIcon
                           onClick={() => navigate("/documents")}
                           style={{ color: "384bd3", cursor: "pointer" }}
-                        />
+                        /> */}
                         <RestorePageIcon
-                          onClick={() => setShowModal(true)}
+                          onClick={() => { setShowModal(true); setfolder(file)}}
                           style={{ color: "384bd3", cursor: "pointer" }}
                         />
                         

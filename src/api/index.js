@@ -1,13 +1,13 @@
 import axios from "axios";
 
 let axiosInstance = axios.create({
-  baseURL: window?.location?.origin,
+  baseURL: "http://ccp-util-man.ukwest.cloudapp.azure.com",
   timeout: 20000,
 });
 
 function configAxios() {
   axiosInstance = axios.create({
-    baseURL: window?.location?.origin,
+    baseURL: "http://ccp-util-man.ukwest.cloudapp.azure.com",
     timeout: 20000,
   });
 }
