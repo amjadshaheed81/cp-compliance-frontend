@@ -66,6 +66,7 @@ const AddSite = ({
     reset(defaultValues);
   };
   const handleFileSelect = async (event) => {
+    setLoader(true);
     let siteId = updateSite?.siteId;
     updateSiteImage(event, siteId);
   };
@@ -181,19 +182,8 @@ const AddSite = ({
                           name="address2"
                           className="form-control"
                           id="address2"
-                          {...register("address2", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} addess on line 2`,
-                            },
-                          })}
+                          {...register("address2")}
                         />
-                        {errors?.address2 && (
-                          <InputError
-                            message={errors?.address2?.message}
-                            key={errors?.address2?.message}
-                          />
-                        )}
                       </div>
                     </div>
                     <div className="col-md-6">

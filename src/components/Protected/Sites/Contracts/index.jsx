@@ -199,7 +199,7 @@ const Contracts = ({
                       &nbsp;&nbsp;&nbsp;
                       <CSVLink
                         filename={"contracts-quote"}
-                        className="btn btn-light bg-white text-primary"
+                        className="bg-white text-primary"
                         data={[itm]}
                       >
                         <Tooltip title={`Official Quote`} arrow>
