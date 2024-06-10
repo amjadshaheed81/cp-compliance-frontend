@@ -3,15 +3,28 @@ import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
-import { getSites, deleteSite, setFilterSite, updateSite as updateSiteData } from "../../../store/thunk/site";
+import {
+  getSites,
+  deleteSite,
+  setFilterSite,
+  updateSite as updateSiteData,
+} from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Sites.css";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
+import Tooltip from "@mui/material/Tooltip";
 
-const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateSiteData }) => {
+const Sites = ({
+  filterSite,
+  getSites,
+  sites,
+  deleteSite,
+  setFilterSite,
+  updateSiteData,
+}) => {
   const [selectedItem, setSelectedItem] = useState("status");
 
   useEffect(() => {
@@ -52,9 +65,14 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
   const searchSite = (event) => {
     const value = event?.target?.value;
     if (value) {
-      const list = sites?.filter((x) =>
-        (String(x?.siteName).toLowerCase().includes(String(value).toLowerCase()) || 
-        String(x?.address1).toLowerCase().includes(String(value).toLowerCase()))
+      const list = sites?.filter(
+        (x) =>
+          String(x?.siteName)
+            .toLowerCase()
+            .includes(String(value).toLowerCase()) ||
+          String(x?.address1)
+            .toLowerCase()
+            .includes(String(value).toLowerCase())
       );
       setFilterSite(list);
     } else {
@@ -63,11 +81,11 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
   };
   const searchSitesWithStatus = (e) => {
     const val = e.target.value;
-    setSelectedItem(val)
-    if(val === 'status'){
+    setSelectedItem(val);
+    if (val === "status") {
       setFilterSite(sites);
     }
-    if (val === 'open' || val === 'closed' || val === 'sold') {
+    if (val === "open" || val === "closed" || val === "sold") {
       const list = sites?.filter((x) =>
         String(x?.status).toLowerCase().includes(String(val).toLowerCase())
       );
@@ -78,11 +96,10 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
   };
   const searchSitesWithArea = (e) => {
     const val = e.target.value;
-    setSelectedItem(val)
-    if(val === 'area'){
+    setSelectedItem(val);
+    if (val === "area") {
       setFilterSite(sites);
-    }
-    else {
+    } else {
       const list = sites?.filter((x) =>
         String(x?.area).toLowerCase().includes(String(val).toLowerCase())
       );
@@ -91,11 +108,10 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
   };
   const searchSitesWithCity = (e) => {
     const val = e.target.value;
-    setSelectedItem(val)
-    if(val === 'city'){
+    setSelectedItem(val);
+    if (val === "city") {
       setFilterSite(sites);
-    }
-    else {
+    } else {
       const list = sites?.filter((x) =>
         String(x?.city).toLowerCase().includes(String(val).toLowerCase())
       );
@@ -114,7 +130,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
           {/*  */}
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
-              <div className="row" style={{ height: 'auto'}}>
+              <div className="row" style={{ height: "auto" }}>
                 <div className="col">
                   <input
                     type="text"
@@ -131,7 +147,9 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     onChange={searchSitesWithCity}
                   >
                     <option value="city">City</option>
-                    {filterSite?.map((site) => <option value={site.city}>{site.city}</option>)}
+                    {filterSite?.map((site) => (
+                      <option value={site.city}>{site.city}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="col">
@@ -142,7 +160,9 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                     onChange={searchSitesWithArea}
                   >
                     <option value="area">Area</option>
-                    {filterSite?.map((site) => <option value={site.area}>{site.area}</option>)}
+                    {filterSite?.map((site) => (
+                      <option value={site.area}>{site.area}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="col">
@@ -161,7 +181,7 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                 </div>
                 <div className="col">
                   <CSVLink
-                    filename={'site-lists'}
+                    filename={"site-lists"}
                     className="btn btn-light bg-white text-primary"
                     data={sites}
                   >
@@ -206,36 +226,54 @@ const Sites = ({ filterSite, getSites, sites, deleteSite, setFilterSite, updateS
                       <ListStatusBadge status={itm?.status} />
                     </th>
                     <th scope="col">
-                      <span className="badge bg-danger p-2 m-1 risk-span">1</span>
-                      <span className="badge bg-warning p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-danger p-2 m-1 risk-span">
+                        1
+                      </span>
+                      <span className="badge bg-warning p-2 m-1 risk-span">
+                        1
+                      </span>
                       <span className="badge bg-info p-2 m-1 risk-span">1</span>
-                      <span className="badge bg-success p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-success p-2 m-1 risk-span">
+                        1
+                      </span>
                     </th>
                     <th scope="col">
-                      <button className="btn btn-sm btn-light" onClick={() => {
-                        setTimeout(() => {
-                          goTo('/update-site');
-                        }, 1000);
-                        updateSiteData({...itm, isViewMode: true});
-                      }}>
-                        <i className="fas fa-eye"></i>
-                      </button>{" "}
+                      <Tooltip title={`View ${itm?.siteName}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            setTimeout(() => {
+                              goTo("/update-site");
+                            }, 1000);
+                            updateSiteData({ ...itm, isViewMode: true });
+                          }}
+                        >
+                          <i className="fas fa-eye"></i>
+                        </button>{" "}
+                      </Tooltip>
                       &nbsp;
-                      <button className="btn btn-sm btn-light" onClick={() => {
-                        setTimeout(() => {
-                          goTo('/update-site');
-                        }, 1000);
-                        updateSiteData({...itm, isViewMode: false});
-                      }}>
-                        <i className="fas fa-pen"></i>
-                      </button>{" "}
+                      <Tooltip title={`Edit ${itm?.siteName}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            setTimeout(() => {
+                              goTo("/update-site");
+                            }, 1000);
+                            updateSiteData({ ...itm, isViewMode: false });
+                          }}
+                        >
+                          <i className="fas fa-pen"></i>
+                        </button>{" "}
+                      </Tooltip>
                       &nbsp;
-                      <button
-                        className="btn btn-sm btn-light text-danger"
-                        onClick={() => deleteSiteById(itm)}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
+                      <Tooltip title={`Delete ${itm?.siteName}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light text-danger"
+                          onClick={() => deleteSiteById(itm)}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </Tooltip>
                     </th>
                   </tr>
                 ))}
@@ -254,4 +292,9 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   filterSite: state.site.filterSite,
 });
-export default connect(mapStateToProps, { getSites, deleteSite, setFilterSite, updateSiteData })(Sites);
+export default connect(mapStateToProps, {
+  getSites,
+  deleteSite,
+  setFilterSite,
+  updateSiteData,
+})(Sites);
