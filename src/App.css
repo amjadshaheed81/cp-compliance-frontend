@@ -55,6 +55,9 @@ h2{
 .MuiBox-root {
   padding: 0px !important;
 }
+header.MuiPaper-root{
+  margin-top: 0px !important;
+}
 
 
 /* min-width: 768px */
