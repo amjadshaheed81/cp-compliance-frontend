@@ -12,8 +12,6 @@ import {
   setLoader,
 } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
-import Success from "../../../common/Alert/Success";
-import Error from "../../../common/Alert/Error";
 import "./AddSite.css";
 import { Validation } from "../../../../Constant/Validation";
 import userDefault from "../../../../images/user-default.png";
@@ -25,8 +23,6 @@ import BusinessIcon from "@mui/icons-material/Business";
 const AddSite = ({
   updateSite,
   updateSiteImage,
-  success,
-  error,
   addSite,
   handleOnPostCodeSearch,
   getAddresOnPostCodeSuccess,
@@ -337,10 +333,6 @@ const AddSite = ({
                       {...register("streetViewUrl")}
                     />
                     <div className="col-md-12">
-                      <div>
-                        {success && <Success msg={success} />}
-                        {error && <Error msg={error} />}
-                      </div>
                       <div className="float-end">
                         <button
                           type="button"
@@ -425,8 +417,6 @@ const AddSite = ({
   );
 };
 const mapStateToProps = (state) => ({
-  success: state.site.success,
-  error: state.site.error,
   updateSite: state.site.updateSite,
   sites: state.site.sites,
   getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,

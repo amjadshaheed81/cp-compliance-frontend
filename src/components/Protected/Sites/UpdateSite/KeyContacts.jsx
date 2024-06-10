@@ -38,7 +38,7 @@ const KeyContacts = ({
     setLoader(true);
     const res = await deleteKeyContact(itm?.id);
     if (res === "Success") {
-      toast.success("Key contact has been deletd succesfully.")
+      toast.success("Key contact has been deleted succesfully.")
       setLoader(false);
       getKeyContact(updateSite?.siteId);
     } else{

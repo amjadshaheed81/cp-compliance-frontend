@@ -79,13 +79,15 @@ export const addSite = (formData, goTo) => {
         type: ADD_SITE_SUCCESS,
         payload: userData,
       });
+      toast.success("Site has been added successully.");
       setTimeout(() => {
         goTo("/update-site");
       }, 1000);
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: ADD_SITE_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -149,7 +151,7 @@ export const updateLocalDetails = (formData) => {
     try {
       const url = "/api/site/updateLocalDetails";
       const res = await put(url, formData);
-      toast.error("Local details has been updated successfully.");
+      toast.success("Local details has been updated successfully.");
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS,
         payload: "",
@@ -321,6 +323,7 @@ export const addKeyContact = (formData, id) => {
       if (userData?.status === 200) {
         const url = `/api/site/keyContacts/${id}`;
         const keyContactList = await get(url);
+        toast.success("Key contact detail has been added successuly.");
         dispatch({
           type: GET_KEY_CONTACTS,
           payload: keyContactList,

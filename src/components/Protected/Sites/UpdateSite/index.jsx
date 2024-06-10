@@ -12,8 +12,6 @@ import {
   setLoader,
 } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
-import Success from "../../../common/Alert/Success";
-import Error from "../../../common/Alert/Error";
 import "./../AddSite/AddSite.css";
 import { Validation } from "../../../../Constant/Validation";
 import userDefault from "../../../../images/user-default.png";
@@ -28,8 +26,6 @@ import { toast } from 'react-toastify';
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
   getSiteById,
-  success,
-  error,
   updateSite,
   updateSiteDetail,
   updateSiteImage,
@@ -363,10 +359,6 @@ const UpdateSite = ({
                         display: updateSite?.isViewMode ? "none" : "block",
                       }}
                     >
-                      <div>
-                        {success && <Success msg={success} />}
-                        {error && <Error msg={error} />}
-                      </div>
                       <div className="float-end">
                         <button
                           type="button"
@@ -478,8 +470,6 @@ const UpdateSite = ({
 };
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
-  success: state.site.updateSuccess,
-  error: state.site.updateError,
   updateSiteImageSuccess: state.site.updateSiteImageSuccess,
   siteDetailsById: state.site.siteDetailsById,
   getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
