@@ -28,16 +28,22 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
   };
   const searchDocument = async (e) => {
     const value = e?.target?.value;
-    const url = `/api/document/file/search?q=${value}`;
-    try {
-      const response = await get(url);
-      setFileList(response);
-      // if (!response.includes(null)) {
-      //     setFileList(response);
-      // }
-      // else setError("No Sites found. Please check the input");
-    } catch (e) {
-      setError("No Sites found. Please check the input");
+    if (value && value.length > 0) {
+
+    
+      const url = `/api/document/file/search?q=${value}`;
+      try {
+        const response = await get(url);
+        setFileList(response);
+        // if (!response.includes(null)) {
+        //     setFileList(response);
+        // }
+        // else setError("No Sites found. Please check the input");
+      } catch (e) {
+        setError("No Sites found. Please check the input");
+      }
+    } else { 
+      setFileList([]);
     }
   };
   return (
@@ -49,7 +55,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
       )}
       <div className="container-fluid" style={{ paddingLeft: "5rem" }}>
         <BreadCrumHeader header={"Document Management"} page={"Documents"} />
-        <div className="float-end w-25" style={{ position: "relative" }}>
+        <div className="float-end w-25" style={{ position: "relative", paddingBottom: '10px' }}>
           <i
             style={{
               position: "absolute",
@@ -79,7 +85,10 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
                 <p>{itm}</p>;
                 return (
                   <a href={itm.fileBlobUrl} download key={itm?.id}>
-                    {itm?.name}
+                    <span><i
+                      style={{ color: "#384BD3" }}
+                      className="fas fa-folder fa-1x"
+                    ></i> {itm?.folderName}/<b>{itm?.name}</b></span>
                   </a>
                 );
               })}
@@ -103,6 +112,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
               {rootFolder?.parentFolders?.map((folder, index) => {
                 return (
                   <tr>
+                    <td>
                     <div
                       role="button"
                       tabIndex={0}
@@ -113,7 +123,8 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
                         className="fas fa-folder fa-2x"
                       ></i>
                       <span className="p-3">{folder?.name}</span>
-                    </div>
+                      </div>
+                    </td>
                     <td>--</td>
                     <td>--</td>
                     <td>--</td>
