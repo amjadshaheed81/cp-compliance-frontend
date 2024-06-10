@@ -144,7 +144,9 @@ const SiteInformation = ({
             display: updateSite?.isViewMode ? "none" : "block",
           }}
         >
-          <button className="float-end btn btn-primary">Save</button>
+          <button className="float-end btn btn-primary" type="submit">
+            Save
+          </button>
         </div>
       </form>
       <Accordion>
@@ -396,7 +398,9 @@ const SiteInformation = ({
                 display: updateSite?.isViewMode ? "none" : "block",
               }}
             >
-              <button className="btn btn-primary float-end">Save</button>
+              <button className="btn btn-primary float-end" type="submit">
+                Save
+              </button>
             </div>
           </form>
         </AccordionDetails>

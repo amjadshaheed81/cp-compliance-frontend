@@ -509,7 +509,9 @@ const SafetySecurity = ({
             display: updateSite?.isViewMode ? "none" : "block",
           }}
         >
-          <button className="btn btn-primary float-end m-3">Save</button>
+          <button className="btn btn-primary float-end m-3" type="submit">
+            Save
+          </button>
         </div>
       </form>
     </div>

@@ -398,8 +398,6 @@ const reducer = (state = initialState, action) => {
     case GET_SITE_SECURITY_INFORMATION:
       return {
         ...state,
-        error: "",
-        success: "",
       };
     case GET_SITE_SECURITY_INFORMATION_FAILURE:
       return {

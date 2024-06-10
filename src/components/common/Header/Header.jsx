@@ -22,7 +22,7 @@ const Header = ({ siteSelectedForGlobal, isLoading }) => {
   return (
     <AppBar
       position="static"
-      style={{ backgroundColor: "white", top: "0", left: "70px", zIndex: "-1" }}
+      style={{ backgroundColor: "white", top: "0", left: "70px", zIndex: "-1", marginTop: '0px !important' }}
     >
       <BackDrop isLoading={isLoading}/>
       <Snackbar />
