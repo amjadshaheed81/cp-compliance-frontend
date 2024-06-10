@@ -8,6 +8,7 @@ import {
   setLoader,
 } from "./../../../../store/thunk/site";
 import Error from "../../../common/Alert/Error";
+import { toast } from 'react-toastify';
 
 const KeyContacts = ({
   updateSite,
@@ -37,8 +38,11 @@ const KeyContacts = ({
     setLoader(true);
     const res = await deleteKeyContact(itm?.id);
     if (res === "Success") {
+      toast.success("Key contact has been deletd succesfully.")
       setLoader(false);
       getKeyContact(updateSite?.siteId);
+    } else{
+      toast.error("Something went wrong while deleting key contact.")
     }
   };
   const addKeyContactClick = () => {

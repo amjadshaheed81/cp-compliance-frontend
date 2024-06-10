@@ -1,7 +1,6 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
-import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import {
   getSites,
@@ -16,6 +15,7 @@ import "./Sites.css";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
 import Tooltip from "@mui/material/Tooltip";
+import { toast } from 'react-toastify';
 
 const Sites = ({
   filterSite,
@@ -40,21 +40,13 @@ const Sites = ({
       if (result.isConfirmed) {
         const res = await deleteSite(itm?.siteId);
         if (res === "Success") {
-          Swal.fire({
-            icon: "success",
-            title: "Success...",
-            text: "Site has been successfully deleted",
-          });
+          toast.success(`${itm?.siteName} site has been deleted successully`)
           getSites();
         } else {
-          Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: "Something went wrong while deleting site. Please try again!",
-          });
+          toast.error("Something went wrong while deleting site. Please try again!")
         }
       } else if (result.isDenied) {
-        Swal.fire("Changes are not saved", "", "info");
+        // Swal.fire("Changes are not saved", "", "info");
       }
     });
   };

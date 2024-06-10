@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import {
   del,
   get,
@@ -96,14 +97,18 @@ export const updateSiteDetail = (formData) => {
     try {
       const url = "/api/site/updateSite";
       const res = await put(url, formData);
+      toast.success("Site has been updated successully.");
       dispatch({
         type: UPDATE_SITE_SUCCESS,
-        payload: "Site has been updated successully",
+        payload: "",
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site. Please try again."
+      );
       dispatch({
         type: UPDATE_SITE_FAILURE,
-        payload: "Something went wrong while updating site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -120,16 +125,19 @@ export const updateSiteImage = (data, siteId) => {
       const url = `/api/site/site/${siteId}/upload`;
       const res = await uploadPhoto(url, formData);
       if (res.status === 200) {
+        toast.success("Site image has been updated successully.");
         dispatch({
           type: UPDATE_SITE_IMAGE_SUCCESS,
           payload: res,
         });
       }
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site image. please try again."
+      );
       dispatch({
         type: UPDATE_SITE_IMAGE_FAILURE,
-        payload:
-          "Something went wrong while updating site image. Please try again.",
+        payload: "",
       });
     }
   };
@@ -141,14 +149,18 @@ export const updateLocalDetails = (formData) => {
     try {
       const url = "/api/site/updateLocalDetails";
       const res = await put(url, formData);
+      toast.error("Local details has been updated successfully.");
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS,
-        payload: "Local details has been updated successfully.",
+        payload: "",
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site. Please try again."
+      );
       dispatch({
         type: UPDATE_SITE_LOCAL_DETAILS_FAILURE,
-        payload: "Something went wrong while updating site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -159,15 +171,18 @@ export const updateTimings = (formData) => {
     try {
       const url = "/api/site/updateTimings";
       const res = await put(url, formData);
+      toast.success("Site Timings has been updated successfully.");
       dispatch({
         type: UPDATE_TIMINIG_SUCCESS,
-        payload: "Site Timings has been updated successfully.",
+        payload: "",
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site timing. Please try again."
+      );
       dispatch({
         type: UPDATE_TIMINIG_FAILURE,
-        payload:
-          "Something went wrong while updating site timing. Please try again.",
+        payload: "",
       });
     }
   };
@@ -197,9 +212,12 @@ export const getSites = () => {
         });
       }
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site. Please try again."
+      );
       dispatch({
         type: GET_SITES_FAILURE,
-        payload: "Something went wrong while fetching site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -215,9 +233,12 @@ export const getSiteById = (id) => {
         payload: siteList,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site. Please try again."
+      );
       dispatch({
         type: GET_SITES_BY_ID_FAILURE,
-        payload: "Something went wrong while fetching site. Please try again.",
+        payload: ".",
       });
     }
   };
@@ -231,10 +252,12 @@ export const setFilterSite = (siteList) => {
         payload: siteList,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while filtering sites. Please try again."
+      );
       dispatch({
         type: FILTER_SITES_FAILURE,
-        payload:
-          "Something went wrong while filtering sites. Please try again.",
+        payload: "",
       });
     }
   };
@@ -248,11 +271,12 @@ export const updateSite = (itm) => {
         payload: itm,
       });
     } catch (error) {
-      console.log("===>", error);
+      toast.error(
+        "Something went wrong while filtering sites. Please try again."
+      );
       dispatch({
         type: UPDATE_SITE_FAILURE,
-        payload:
-          "Something went wrong while filtering sites. Please try again.",
+        payload: "",
       });
     }
   };
@@ -279,10 +303,12 @@ export const getKeyContact = (id) => {
         payload: keyContactList,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching key contacts. Please try again."
+      );
       dispatch({
         type: GET_KEY_CONTACTS_FAILURE,
-        payload:
-          "Something went wrong while fetching key contacts. Please try again.",
+        payload: "",
       });
     }
   };
@@ -301,9 +327,10 @@ export const addKeyContact = (formData, id) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: ADD_SITE_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -348,9 +375,10 @@ export const handleOnPostCodeSearch = (e) => {
         payload: res,
       });
     } catch (error) {
+      toast.error("Please enter a valid post code.");
       dispatch({
         type: GET_ADDRESS_ON_POST_CODE_FAILURE,
-        payload: "Please enter a valid post code.",
+        payload: "",
       });
     }
   };
@@ -394,6 +422,7 @@ export const saveSiteBuildingData = (siteId, formData) => {
       const url = "/api/site/siteinfo";
       const buildingData = await post(url, data);
       if (buildingData?.status === 200) {
+        toast.success("Site building details has been saved successfully.");
         // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -402,9 +431,10 @@ export const saveSiteBuildingData = (siteId, formData) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: SET_SITE_INFORMATION_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -428,10 +458,12 @@ export const getSiteInformation = (id, setValue) => {
         payload: siteInformation,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching key contacts. Please try again."
+      );
       dispatch({
         type: GET_SITE_INFORMATION_FAILURE,
-        payload:
-          "Something went wrong while fetching key contacts. Please try again.",
+        payload: "",
       });
     }
   };
@@ -447,6 +479,7 @@ export const saveAreaAndOccupancyDetails = (siteId, formData) => {
       const url = "/api/site/siteareainfo";
       const siteareainfo = await post(url, data);
       if (siteareainfo?.status === 200) {
+        toast.success("Site area information has been saved successfully.");
         // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -455,9 +488,10 @@ export const saveAreaAndOccupancyDetails = (siteId, formData) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: SAVE_SITE_AREA_INFORMATION_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -495,10 +529,12 @@ export const getAreaAndOccupancy = (id, setValue) => {
         payload: siteAreaInformation,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching key contacts. Please try again."
+      );
       dispatch({
         type: GET_SITE_AREA_INFORMATION_FAILURE,
-        payload:
-          "Something went wrong while fetching key contacts. Please try again.",
+        payload: "",
       });
     }
   };
@@ -514,6 +550,9 @@ export const saveSafetyAndSecurityDetails = (siteId, formData) => {
       const url = "/api/site/sitesecurityinfo";
       const siteSecurityInfo = await post(url, data);
       if (siteSecurityInfo?.status === 200) {
+        toast.success(
+          "Site safety and security details has been saved successfully."
+        );
         // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -522,9 +561,10 @@ export const saveSafetyAndSecurityDetails = (siteId, formData) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: SAVE_SITE_SECURITY_INFORMATION_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -584,10 +624,12 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
         payload: siteSafetyInformation,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching key contacts. Please try again."
+      );
       dispatch({
         type: GET_SITE_SECURITY_INFORMATION_FAILURE,
-        payload:
-          "Something went wrong while fetching key contacts. Please try again.",
+        payload: "",
       });
     }
   };
@@ -605,15 +647,17 @@ export const saveUtilityAndEnergyDetails = (siteId, formData) => {
       if (siteSecurityInfo?.status === 200) {
         // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
+        toast.success("Site utility information has been saved successfully");
         dispatch({
           type: SAVE_UTILITY_ENERGY_DETAILS,
           payload: siteSecurityInfo,
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: SAVE_UTILITY_ENERGY_DETAILS_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -675,10 +719,12 @@ export const getUtilityAndEnergyDetails = (id, setValue) => {
         payload: siteUtilityInformation,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching key contacts. Please try again."
+      );
       dispatch({
         type: GET_UTILITY_ENERGY_DETAILS_FAILURE,
-        payload:
-          "Something went wrong while fetching key contacts. Please try again.",
+        payload: "",
       });
     }
   };
@@ -694,6 +740,9 @@ export const saveLiftsAndStairwaysDetails = (siteId, formData) => {
       const url = "/api/site/siteLiftsInfo";
       const siteSecurityInfo = await post(url, data);
       if (siteSecurityInfo?.status === 200) {
+        toast.success(
+          "Site lifts and stairways details has been saved successfully."
+        );
         // const url = `/api/site/siteinfo/${id}?q=siteInfo`;
         // const siteInformation = await get(url);
         dispatch({
@@ -702,9 +751,10 @@ export const saveLiftsAndStairwaysDetails = (siteId, formData) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: SAVE_UTILITY_ENERGY_DETAILS_FAILURE,
-        payload: "Something went wrong while adding site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -766,10 +816,12 @@ export const getLiftsAndStairwaysDetails = (id, setValue) => {
         payload: siteUtilityInformation,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching key contacts. Please try again."
+      );
       dispatch({
         type: GET_UTILITY_ENERGY_DETAILS_FAILURE,
-        payload:
-          "Something went wrong while fetching key contacts. Please try again.",
+        payload: "",
       });
     }
   };
@@ -785,10 +837,12 @@ export const getSiteLayout = (id) => {
         payload: List,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site layout. Please try again."
+      );
       dispatch({
         type: GET_SITE_LAYOUT_FAILURE,
-        payload:
-          "Something went wrong while fetching site layout. Please try again.",
+        payload: "",
       });
     }
   };
@@ -802,6 +856,7 @@ export const addSiteLayoutNode = (formData) => {
       const siteareainfo = await post(url, formData);
       console.log("siteareainfo", siteareainfo);
       if (siteareainfo?.status === 200) {
+        toast.success("Site layout node addedd successfully.");
         const url = `/api/site/layout/${formData?.siteId}`;
         const List = await get(url);
         dispatch({
@@ -810,6 +865,7 @@ export const addSiteLayoutNode = (formData) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while adding node.");
       console.error(error);
     }
   };
@@ -821,9 +877,10 @@ export const uploadFloorPlan = (formData, siteId) => {
       const url = "/api/site/uploadfloorplan";
       const siteareainfo = await postMultiPartFormData(url, formData);
       if (siteareainfo?.status === 200) {
+        toast.success("Floor plan has been uploaded successfully.");
         dispatch({
           type: SAVE_SITE_LAYOUT,
-          payload: 'success',
+          payload: "",
         });
         const url = `/api/site/layout/${siteId}`;
         const List = await get(url);
@@ -833,9 +890,10 @@ export const uploadFloorPlan = (formData, siteId) => {
         });
       }
     } catch (error) {
+      toast.error("Something went wrong while updating floor plan.");
       dispatch({
         type: SAVE_SITE_LAYOUT_FAILURE,
-        payload: 'error',
+        payload: "",
       });
     }
   };
@@ -852,9 +910,12 @@ export const getDocumentsRootFolder = () => {
         payload: folderList,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site. Please try again."
+      );
       dispatch({
         type: GET_DOCUMENTS_ROOT_FOLDER_FAILURE,
-        payload: "Something went wrong while fetching site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -870,9 +931,12 @@ export const getSubFilesAndFolder = (folderId) => {
         payload: subFolderFiles,
       });
     } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site. Please try again."
+      );
       dispatch({
         type: GET_DOCUMENTS_SUB_FOLDER_FILES_FAILURE,
-        payload: "Something went wrong while fetching site. Please try again.",
+        payload: "",
       });
     }
   };
@@ -970,16 +1034,19 @@ export const saveSiteUtilityInfo = (formData) => {
       const url = "/api/site/siteutilityinfo";
       const data = await post(url, formData);
       if (data?.status === 200) {
+        toast.success("Site utility information has been saved successfully.");
         dispatch({
           type: SAVE_SITE_UTILITY_INFORMATION,
           payload: data,
         });
       }
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site utility info. Please try again."
+      );
       dispatch({
         type: SAVE_SITE_UTILITY_INFORMATION_FAILURE,
-        payload:
-          "Something went wrong while updating site utility info. Please try again.",
+        payload: "",
       });
     }
   };
@@ -991,16 +1058,21 @@ export const saveLiftAndStairways = (formData) => {
       const url = "/api/site/siteliftsinfo";
       const data = await post(url, formData);
       if (data?.status === 200) {
+        toast.success(
+          "Site lifts and stairways information has been saved successfully."
+        );
         dispatch({
           type: SAVE_SITE_LIFTS_INFORMATION,
           payload: data,
         });
       }
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site lifts info. Please try again."
+      );
       dispatch({
         type: SAVE_SITE_LIFTS_INFORMATION_FAILURE,
-        payload:
-          "Something went wrong while updating site lifts info. Please try again.",
+        payload: "",
       });
     }
   };
@@ -1011,16 +1083,21 @@ export const saveSiteLandScapes = (formData) => {
       const url = "/api/site/sitelandscapeinfo";
       const data = await post(url, formData);
       if (data?.status === 200) {
+        toast.success(
+          "Site landscape information has been saved successfully."
+        );
         dispatch({
           type: SAVE_SITE_LANDSCAPED_INFORMATION,
           payload: data,
         });
       }
     } catch (error) {
+      toast.error(
+        "Something went wrong while updating site land scapes info. Please try again."
+      );
       dispatch({
         type: SAVE_SITE_LANDSCAPED_INFORMATION_FAILURE,
-        payload:
-          "Something went wrong while updating site land scapes info. Please try again.",
+        payload: "",
       });
     }
   };
@@ -1046,6 +1123,7 @@ export const getSiteLandScapeInfo = (id, reset) => {
         payload: siteLandscapeInfo,
       });
     } catch (error) {
+      toast.error("Something went wrong. Please try again.");
       console.error(error);
     }
   };
@@ -1061,6 +1139,7 @@ export const getSiteUtilityInfo = (id, reset) => {
         payload: siteUtilityInfo,
       });
     } catch (error) {
+      toast.error("Something went wrong. Please try again.");
       console.error(error);
     }
   };
@@ -1076,6 +1155,8 @@ export const getSiteLiftStairways = (id, reset) => {
         payload: siteLiftsInfo,
       });
     } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+
       console.error(error);
     }
   };

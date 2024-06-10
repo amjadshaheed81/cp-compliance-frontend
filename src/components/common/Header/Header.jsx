@@ -25,7 +25,6 @@ const Header = ({ siteSelectedForGlobal, isLoading }) => {
       style={{ backgroundColor: "white", top: "0", left: "70px", zIndex: "-1", marginTop: '0px !important' }}
     >
       <BackDrop isLoading={isLoading}/>
-      <Snackbar />
       <Toolbar>
         <div style={{ flexGrow: 1 }}></div>
         {/* Empty div to push user icon to right */}

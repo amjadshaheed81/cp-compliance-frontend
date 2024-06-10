@@ -23,6 +23,7 @@ import KeyContacts from "./KeyContacts";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import BusinessIcon from "@mui/icons-material/Business";
+import { toast } from 'react-toastify';
 
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
@@ -88,7 +89,10 @@ const UpdateSite = ({
     let siteId = updateSite?.siteId;
     const res = await deleteSiteImage(siteId);
     if (res === "Success") {
+      toast.success("Site image has been deleted successfully.")
       getSiteById(siteId);
+    } else{
+      toast.error("Something went wrong while deleting site image. Please try again.")
     }
   };
   const handleOnSearch = async (event) => {
