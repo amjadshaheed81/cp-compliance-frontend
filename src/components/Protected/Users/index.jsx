@@ -13,7 +13,7 @@ import Swal from "sweetalert2";
 const Users = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState({});
-  const [showEditModal, setShowEditModal] = useState({});
+  const [showEditModal, setShowEditModal] = useState(false);
   const [userList, setUserList] = useState([
     {
       fullName: "Joe Bloggs",
