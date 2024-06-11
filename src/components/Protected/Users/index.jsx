@@ -5,12 +5,15 @@ import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Tooltip from "@mui/material/Tooltip";
-import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
-import ViewUsers from "./ViewUsers";
+import ViewUser from "./ViewUser";
+import EditUser from "./EditUser";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const Users = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState({});
+  const [showEditModal, setShowEditModal] = useState({});
   const [userList, setUserList] = useState([
     {
       fullName: "Joe Bloggs",
@@ -24,6 +27,21 @@ const Users = () => {
       id: 1,
     },
   ]);
+  const deleteUser = (user) => {
+    Swal.fire({
+      title: `Do you want to delete ${user?.fullName}`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        // TODO: need to integrate delete API
+        toast.success(`user has been deleted successully`);
+      } else if (result.isDenied) {
+        toast.info(`delete action has been denied.`);
+      }
+    });
+  };
 
   return (
     <Fragment>
@@ -32,10 +50,20 @@ const Users = () => {
         <Header />
         <div className="container-fluid">
           {showViewModal && (
-            <ViewUsers
+            <ViewUser
               selectedUser={selectedUser}
               showViewModal={showViewModal}
               setShowViewModal={setShowViewModal}
+              refresh={() => {
+                console.log("refresh call to update view users");
+              }}
+            />
+          )}
+          {showEditModal && (
+            <EditUser
+              selectedUser={selectedUser}
+              showEditModal={showEditModal}
+              setShowEditModal={setShowEditModal}
               refresh={() => {
                 console.log("refresh call to update view users");
               }}
@@ -137,7 +165,7 @@ const Users = () => {
                     <th scope="col">{user?.company}</th>
                     <th scope="col">{user?.status}</th>
                     <th scope="col">
-                      <Tooltip title={`View`} arrow>
+                      <Tooltip title={`View ${user.fullName}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
@@ -146,6 +174,25 @@ const Users = () => {
                           }}
                         >
                           <i className="fas fa-eye"></i>
+                        </button>{" "}
+                      </Tooltip>
+                      <Tooltip title={`Edit ${user.fullName}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowEditModal(true);
+                          }}
+                        >
+                          <i className="fas fa-pen"></i>
+                        </button>{" "}
+                      </Tooltip>
+                      <Tooltip title={`Delete ${user.fullName}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light text-danger"
+                          onClick={() => deleteUser(user)}
+                        >
+                          <i className="fas fa-trash"></i>
                         </button>{" "}
                       </Tooltip>
                     </th>

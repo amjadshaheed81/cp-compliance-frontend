@@ -19,9 +19,6 @@ const ViewUsers = ({
 
   return (
     <React.Fragment>
-      <Button variant="outlined" onClick={handleOpen}>
-        Vuew User Detail
-      </Button>
       <Dialog
         open={showViewModal}
         onClose={handleClose}
@@ -34,9 +31,6 @@ const ViewUsers = ({
             const formData = new FormData(event.currentTarget);
             const formJson = Object.fromEntries(formData.entries());
             console.log("formJson", formJson);
-            // formJson.parentUserId = userId
-            // console.log(formJson);
-            //handleClose();
           },
         }}
       >
