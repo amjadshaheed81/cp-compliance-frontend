@@ -186,16 +186,9 @@ export default function SidebarNew() {
         navigate("/dashboard");
     }
   };
-  const handleDrawerOpen = () => {
-    setOpen(true);
+  const sideBarOpenClose = (status) => {
+    setOpen(status);
   };
-
-  // const handleDrawerClose = () => (event) => {
-  //     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
-  //         return;
-  //     }
-  //     setOpen(false);
-  // };
 
   const handleDrawerClose = () => {
     setOpen(false);
@@ -204,34 +197,17 @@ export default function SidebarNew() {
   return (
     <Box sx={{ display: "flex", marginTop: "0px !important" }}>
       <CssBaseline />
-      {/* This is to add Header in the same component */}
-      {/* <AppBar position="fixed" open={open} sx={{ backgroundColor: "white" }}>
-                <Toolbar>
-                    <IconButton
-                        aria-label="open drawer"
-                        onClick={handleDrawerOpen}
-                        edge="start"
-                        sx={{
-                            marginRight: 5,
-                            ...(open && { display: 'none' }),
-                        }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" noWrap component="div">
-                        Mini variant drawer
-                    </Typography>
-                </Toolbar>
-            </AppBar> */}
       <Drawer
         sx={{ backgroundColor: "black !important" }}
         variant="permanent"
         open={open}
+        onMouseEnter={() => sideBarOpenClose(true)}
+        onMouseLeave={() => sideBarOpenClose(false)}
+        className="sidebar"
       >
-        <IconButton
+        {/* <IconButton
           aria-label="open drawer"
-          onClick={handleDrawerOpen}
-          // edge="start"
+          
           sx={{
             backgroundColor: "black",
             ...(open && { display: "none" }),
@@ -239,8 +215,8 @@ export default function SidebarNew() {
           // className="m-0"
         >
           <MenuIcon sx={{ color: "white" }} />
-        </IconButton>
-        <DrawerHeader sx={{ backgroundColor: "black" }}>
+        </IconButton> */}
+        {/* <DrawerHeader sx={{ backgroundColor: "black" }}>
           {open && (
             <IconButton onClick={handleDrawerClose}>
               {theme.direction === "rtl" ? (
@@ -250,7 +226,7 @@ export default function SidebarNew() {
               )}
             </IconButton>
           )}
-        </DrawerHeader>
+        </DrawerHeader> */}
         {/* <Divider /> */}
         <List sx={{ backgroundColor: "black" }}>
           <li style={{ textAlign: "center" }}>
