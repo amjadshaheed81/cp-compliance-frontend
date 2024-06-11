@@ -1,0 +1,164 @@
+import React, { Fragment, useState } from "react";
+import { connect } from "react-redux";
+import { CSVLink } from "react-csv";
+import Header from "../../common/Header/Header";
+import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import SidebarNew from "../../common/Sidebar/SidebarNew";
+import Tooltip from "@mui/material/Tooltip";
+import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
+import ViewUsers from "./ViewUsers";
+
+const Users = () => {
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState({});
+  const [userList, setUserList] = useState([
+    {
+      fullName: "Joe Bloggs",
+      email: "joe@gmai.com",
+      site: "Site 1",
+      role: "Property Manager",
+      creationDate: "21/May/1992",
+      type: "type",
+      company: "--",
+      status: "Active",
+      id: 1,
+    },
+  ]);
+
+  return (
+    <Fragment>
+      <SidebarNew />
+      <div className="content">
+        <Header />
+        <div className="container-fluid">
+          {showViewModal && (
+            <ViewUsers
+              selectedUser={selectedUser}
+              showViewModal={showViewModal}
+              setShowViewModal={setShowViewModal}
+              refresh={() => {
+                console.log("refresh call to update view users");
+              }}
+            />
+          )}
+          <BreadCrumHeader header={"User Management"} page={"Users"} />
+          {/*  */}
+          {/*  */}
+          <div className="d-flex bd-highlight">
+            <div className="pt-2 bd-highlight ">
+              <div className="row" style={{ height: "auto" }}>
+                <div className="col">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search"
+                  />
+                </div>
+                <div className="col">
+                  <select
+                    name="role"
+                    className="form-control form-select"
+                    id="role"
+                  >
+                    <option value="">Role</option>
+                  </select>
+                </div>
+                <div className="col">
+                  <select
+                    name="site"
+                    className="form-control form-select"
+                    id="site"
+                  >
+                    <option value="">Site</option>
+                  </select>
+                </div>
+                <div className="col">
+                  <select
+                    name="status"
+                    className="form-control form-select"
+                    id="status"
+                  >
+                    <option value="status">Status</option>
+                    <option value="active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="ms-auto p-2 bd-highlight">
+              <div className="row" style={{ height: "auto" }}>
+                <div className="col">
+                  <button
+                    className="btn btn-primary text-white pr-2"
+                    onClick={() => {}}
+                  >
+                    Add New
+                  </button>
+                  &nbsp;
+                </div>
+                <div className="col">
+                  <CSVLink
+                    filename={"site-lists"}
+                    className="btn btn-light bg-white text-primary"
+                    data={[]}
+                  >
+                    <i className="fas fa-download"></i>&nbsp;Export
+                  </CSVLink>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* row start*/}
+          <div className="row p-2"></div>
+          <div className="col-md-12 table-responsive">
+            <table className="table">
+              <thead className="table-dark">
+                <tr>
+                  <th scope="col">Full Name</th>
+                  <th scope="col">Email ID</th>
+                  <th scope="col">Site</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Creation Date</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Company</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userList?.map((user) => (
+                  <tr key={user?.id}>
+                    <th scope="col">{user?.fullName}</th>
+                    <th scope="col">{user?.email}</th>
+                    <th scope="col">{user?.site}</th>
+                    <th scope="col">{user?.role}</th>
+                    <th scope="col">{user?.creationDate}</th>
+                    <th scope="col">{user?.type}</th>
+                    <th scope="col">{user?.company}</th>
+                    <th scope="col">{user?.status}</th>
+                    <th scope="col">
+                      <Tooltip title={`View`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowViewModal(true);
+                          }}
+                        >
+                          <i className="fas fa-eye"></i>
+                        </button>{" "}
+                      </Tooltip>
+                    </th>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* row end*/}
+        </div>
+      </div>
+    </Fragment>
+  );
+};
+const mapStateToProps = () => ({});
+export default connect(mapStateToProps, {})(Users);

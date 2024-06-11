@@ -1,6 +1,5 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
-import Sidebar from "../../common/Sidebar/Sidebar";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import DashboardActions from "./DashboardActions";
@@ -16,7 +15,6 @@ import SidebarNew from "../../common/Sidebar/SidebarNew";
 const Dashboard = () => {
   return (
     <Fragment>
-      {/* <Sidebar /> */}
       <SidebarNew />
       <div className="content">
         <Header />

@@ -94,7 +94,6 @@ const Contracts = ({
   };
   return (
     <Fragment>
-      {/* <Sidebar /> */}
       <SidebarNew />
       <div className="content">
         <Header />

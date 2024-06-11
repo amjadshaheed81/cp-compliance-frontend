@@ -127,7 +127,6 @@ const UpdateSite = ({
   };
   return (
     <Fragment>
-      {/* <Sidebar /> */}
       <SidebarNew />
       <div className="">
         {/* <Header /> */}

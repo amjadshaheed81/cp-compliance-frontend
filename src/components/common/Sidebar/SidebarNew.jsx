@@ -144,7 +144,7 @@ export default function SidebarNew() {
         navigate("/sites");
         break;
       case "Users":
-        navigate("/sites");
+        navigate("/user-management");
         break;
       case "Notifications":
         navigate("/sites");

@@ -13,6 +13,8 @@ import Document from "../components/Protected/Sites/Documents";
 import Projects from "../components/Protected/Sites/Projects";
 import Contracts from "../components/Protected/Sites/Contracts";
 import SubFolder from "../components/Protected/Sites/Documents/SubFolder";
+import Users from "../components/Protected/Users";
+
 export const getRoutes = () => {
   const tabs = [
     {
@@ -91,6 +93,10 @@ export const getRoutes = () => {
     {
       path: "/subfolder",
       element: <SubFolder />,
+    },
+    {
+      path: "/user-management",
+      element: <Users />,
     },
   ];
 };

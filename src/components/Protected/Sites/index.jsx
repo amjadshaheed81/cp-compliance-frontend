@@ -112,7 +112,6 @@ const Sites = ({
   };
   return (
     <Fragment>
-      {/* <Sidebar /> */}
       <SidebarNew />
       <div className="content">
         <Header />
