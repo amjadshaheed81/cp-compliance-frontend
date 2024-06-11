@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import { yesNoOptions } from "../../../../../utils/yesNoOptions";
@@ -14,17 +14,14 @@ const SafetySecurity = ({
   getSafetyAndSecurityDetails,
   setLoader,
 }) => {
+  const isViewMode = updateSite?.isViewMode;
   const {
     register,
     handleSubmit,
-    reset,
-    formState: { errors },
-    getValues,
     setValue,
-    watch,
   } = useForm({});
   console.log("update site ", updateSite);
-  React.useEffect(() => {
+  useEffect(() => {
     getSafetyAndSecurityDetails(updateSite?.siteId, setValue);
   }, []);
   const saveSafetyAndSecurity = (data) => {
@@ -49,6 +46,7 @@ const SafetySecurity = ({
               id="extFabric"
               className="form-control"
               {...register("extFabric")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -67,6 +65,7 @@ const SafetySecurity = ({
               id="extMetallicFireEscapeStaircases"
               className="form-control"
               {...register("extMetallicFireEscapeStaircases")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -85,6 +84,7 @@ const SafetySecurity = ({
               id="extTimberFireEscapeStaircases"
               className="form-control"
               {...register("extTimberFireEscapeStaircases")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -103,6 +103,7 @@ const SafetySecurity = ({
               id="verticalLadder"
               className="form-control"
               {...register("verticalLadder")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -121,6 +122,7 @@ const SafetySecurity = ({
               id="confinedSpaces"
               className="form-control form-select"
               {...register("confinedSpaces")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -143,6 +145,7 @@ const SafetySecurity = ({
               id="accessibleUnguardedRoofAreas"
               className="form-control form-select"
               {...register("accessibleUnguardedRoofAreas")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -161,6 +164,7 @@ const SafetySecurity = ({
               id="fragileRoof"
               className="form-control form-select"
               {...register("fragileRoof")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -183,6 +187,7 @@ const SafetySecurity = ({
               id="lightingConductoreInstalltion"
               className="form-control form-select"
               {...register("lightingConductoreInstalltion")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -205,6 +210,7 @@ const SafetySecurity = ({
               id="fireAlarmSystem"
               className="form-control form-select"
               {...register("fireAlarmSystem")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -227,6 +233,7 @@ const SafetySecurity = ({
               id="firePanelLocation"
               className="form-control"
               {...register("firePanelLocation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -245,6 +252,7 @@ const SafetySecurity = ({
               id="oilStorageOnSite"
               className="form-control form-select"
               {...register("oilStorageOnSite")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -267,6 +275,7 @@ const SafetySecurity = ({
               id="lpgStorageOnSite"
               className="form-control form-select"
               {...register("lpgStorageOnSite")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -289,6 +298,7 @@ const SafetySecurity = ({
               id="lpgBulkStorageOnSite"
               className="form-control form-select"
               {...register("lpgBulkStorageOnSite")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -311,6 +321,7 @@ const SafetySecurity = ({
               id="sprinklerSystem"
               className="form-control form-select"
               {...register("sprinklerSystem")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -333,6 +344,7 @@ const SafetySecurity = ({
               id="sprinklerSystem"
               className="form-control form-select"
               {...register("sprinklerSystem")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -351,6 +363,7 @@ const SafetySecurity = ({
               id="hoseReels"
               className="form-control form-select"
               {...register("hoseReels")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -373,6 +386,7 @@ const SafetySecurity = ({
               id="securityGuardEmployed"
               className="form-control form-select"
               {...register("securityGuardEmployed")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -391,6 +405,7 @@ const SafetySecurity = ({
               id="internalCCTV"
               className="form-control form-select"
               {...register("internalCCTV")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -409,6 +424,7 @@ const SafetySecurity = ({
               id="externalCCTV"
               className="form-control form-select"
               {...register("externalCCTV")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -431,6 +447,7 @@ const SafetySecurity = ({
               id="automaticBarrier"
               className="form-control form-select"
               {...register("automaticBarrier")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -453,6 +470,7 @@ const SafetySecurity = ({
               id="automaticGatesSliding"
               className="form-control form-select"
               {...register("automaticGatesSliding")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -475,6 +493,7 @@ const SafetySecurity = ({
               id="automaticGatesHinged"
               className="form-control form-select"
               {...register("automaticGatesHinged")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -497,6 +516,7 @@ const SafetySecurity = ({
               id="manualSwingGates"
               className="form-control form-select"
               {...register("manualSwingGates")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -506,7 +526,7 @@ const SafetySecurity = ({
         </div>
         <div
           style={{
-            display: updateSite?.isViewMode ? "none" : "block",
+            display: isViewMode ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">

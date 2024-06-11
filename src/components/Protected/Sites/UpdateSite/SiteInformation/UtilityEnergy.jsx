@@ -14,14 +14,11 @@ const UtilityEnergy = ({
   getUtilityAndEnergyDetails,
   setLoader,
 }) => {
+  const isViewMode = updateSite?.isViewMode;
   const {
     register,
     handleSubmit,
-    reset,
-    formState: { errors },
-    getValues,
     setValue,
-    watch,
   } = useForm({});
   React.useEffect(() => {
     getUtilityAndEnergyDetails(updateSite?.siteId, setValue);
@@ -48,6 +45,7 @@ const UtilityEnergy = ({
               id="utilGas"
               className="form-control form-select"
               {...register("utilGas")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -70,6 +68,7 @@ const UtilityEnergy = ({
               id="utilElectricity"
               className="form-control form-select"
               {...register("utilElectricity")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -88,6 +87,7 @@ const UtilityEnergy = ({
               id="utilWater"
               className="form-control form-select"
               {...register("utilWater")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -106,6 +106,7 @@ const UtilityEnergy = ({
               id="utilTelecom"
               className="form-control form-select"
               {...register("utilTelecom")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -128,6 +129,7 @@ const UtilityEnergy = ({
               id="utilMainsDrainage"
               className="form-control form-select"
               {...register("utilMainsDrainage")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -150,6 +152,7 @@ const UtilityEnergy = ({
               id="airConditioning"
               className="form-control form-select"
               {...register("airConditioning")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -168,6 +171,7 @@ const UtilityEnergy = ({
               id="coolingTower"
               className="form-control form-select"
               {...register("coolingTower")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -190,6 +194,7 @@ const UtilityEnergy = ({
               id="waterIsolationValveInternal"
               className="form-control"
               {...register("waterIsolationValveInternal")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -208,6 +213,7 @@ const UtilityEnergy = ({
               id="waterTankLocation"
               className="form-control form-select"
               {...register("waterTankLocation")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -226,6 +232,7 @@ const UtilityEnergy = ({
               id="waterTanks"
               className="form-control"
               {...register("waterTanks")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -244,6 +251,7 @@ const UtilityEnergy = ({
               id="hotWaterCalorifier"
               className="form-control"
               {...register("hotWaterCalorifier")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -262,6 +270,7 @@ const UtilityEnergy = ({
               id="hotWaterCalorifierLocation"
               className="form-control"
               {...register("hotWaterCalorifierLocation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -280,6 +289,7 @@ const UtilityEnergy = ({
               id="pressureVessel"
               className="form-control"
               {...register("pressureVessel")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -294,6 +304,7 @@ const UtilityEnergy = ({
               id="gasBoiler"
               className="form-control form-select"
               {...register("gasBoiler")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -316,6 +327,7 @@ const UtilityEnergy = ({
               id="gasBoilerLocation"
               className="form-control"
               {...register("gasBoilerLocation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -334,6 +346,7 @@ const UtilityEnergy = ({
               id="gasSupplyIsolation"
               className="form-control"
               {...register("gasSupplyIsolation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -352,6 +365,7 @@ const UtilityEnergy = ({
               id="gasSupplyExternalIsolation"
               className="form-control"
               {...register("gasSupplyExternalIsolation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -370,6 +384,7 @@ const UtilityEnergy = ({
               id="electricInstallationLocation"
               className="form-control"
               {...register("electricInstallationLocation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -388,6 +403,7 @@ const UtilityEnergy = ({
               id="electricSubStationOnSite"
               className="form-control form-select"
               {...register("electricSubStationOnSite")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -410,6 +426,7 @@ const UtilityEnergy = ({
               id="externalLighting"
               className="form-control form-select"
               {...register("externalLighting")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -432,6 +449,7 @@ const UtilityEnergy = ({
               id="backupGenerator"
               className="form-control form-select"
               {...register("backupGenerator")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -454,13 +472,14 @@ const UtilityEnergy = ({
               id="backupGeneratorLocation"
               className="form-control"
               {...register("backupGeneratorLocation")}
+              disabled={isViewMode}
             />
           </div>
         </div>
 
         <div
           style={{
-            display: updateSite?.isViewMode ? "none" : "block",
+            display: isViewMode ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">

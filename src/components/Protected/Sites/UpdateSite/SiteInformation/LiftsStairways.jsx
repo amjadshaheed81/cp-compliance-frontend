@@ -12,14 +12,11 @@ const LiftsStairways = ({
   saveLiftAndStairways,
   setLoader,
 }) => {
+  const isViewMode = updateSite?.isViewMode;
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
-    getValues,
-    setValue,
-    watch,
   } = useForm({});
   const saveAreaAndOccupancy = (data) => {
     const formData = {
@@ -53,6 +50,7 @@ const LiftsStairways = ({
               id="disabledHoistLift"
               className="form-control"
               {...register("disabledHoistLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -71,6 +69,7 @@ const LiftsStairways = ({
               id="goodsTractionLift"
               className="form-control"
               {...register("goodsTractionLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -89,6 +88,7 @@ const LiftsStairways = ({
               id="goodsHydraulicLift"
               className="form-control"
               {...register("goodsHydraulicLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -107,6 +107,7 @@ const LiftsStairways = ({
               id="passengerTractionLift"
               className="form-control"
               {...register("passengerTractionLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -125,6 +126,7 @@ const LiftsStairways = ({
               id="passengerHydraulicLift"
               className="form-control"
               {...register("passengerHydraulicLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -143,6 +145,7 @@ const LiftsStairways = ({
               id="passengerMonospaceLift"
               className="form-control"
               {...register("passengerMonospaceLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -161,6 +164,7 @@ const LiftsStairways = ({
               id="fireFightingLift"
               className="form-control"
               {...register("fireFightingLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -179,6 +183,7 @@ const LiftsStairways = ({
               id="fireEvacuationLift"
               className="form-control"
               {...register("fireEvacuationLift")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -197,6 +202,7 @@ const LiftsStairways = ({
               id="internalStairways"
               className="form-control"
               {...register("internalStairways")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -215,12 +221,13 @@ const LiftsStairways = ({
               id="externalStairways"
               className="form-control"
               {...register("externalStairways")}
+              disabled={isViewMode}
             />
           </div>
         </div>
         <div
           style={{
-            display: updateSite?.isViewMode ? "none" : "block",
+            display: isViewMode ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">

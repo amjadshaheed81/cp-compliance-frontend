@@ -28,6 +28,7 @@ const LocalDetails = ({
     reset,
   } = useForm({});
   const timingForm = useForm();
+  const isViewMode = updateSite?.isViewMode;
   useEffect(() => {
     console.log("updateSite ===>", updateSite);
     if (updateSite) {
@@ -86,6 +87,7 @@ const LocalDetails = ({
                         message: `${Validation.REQUIRED} Council`,
                       },
                     })}
+                    disabled={isViewMode}
                   />
                   {errors?.localAuthority && (
                     <InputError
@@ -110,6 +112,7 @@ const LocalDetails = ({
                         message: `${Validation.REQUIRED} Status`,
                       },
                     })}
+                    disabled={isViewMode}
                     // value={sites}
                     // onChange={searchSitesWithStatus}
                   >
@@ -135,6 +138,7 @@ const LocalDetails = ({
                     id="clientResponsibility"
                     name="clientResponsibility"
                     {...register("clientResponsibility")}
+                    disabled={isViewMode}
                   />
                   <label className="m-2" for="clientResponsibility">
                     Client Responsibility
@@ -149,7 +153,7 @@ const LocalDetails = ({
             <div
               className="float-end"
               style={{
-                display: updateSite?.isViewMode ? "none" : "block",
+                display: isViewMode ? "none" : "block",
               }}
             >
               <button type="button" className="btn btn-light mb-3 mr-4">
@@ -183,11 +187,13 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("monStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
                     <input
                       {...timingForm.register("monEndTime")}
+                      disabled={isViewMode}
                       type="time"
                       className="form-control"
                     />
@@ -202,6 +208,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("tuesStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
@@ -209,6 +216,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("tuesEndTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                 </tr>
@@ -221,6 +229,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("wedStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
@@ -228,6 +237,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("wedEndTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                 </tr>
@@ -240,6 +250,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("thurStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
@@ -247,6 +258,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("thurEndTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                 </tr>
@@ -259,6 +271,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("friStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
@@ -266,6 +279,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("friEndTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                 </tr>
@@ -278,6 +292,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("satStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
@@ -285,6 +300,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("satEndTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                 </tr>
@@ -297,6 +313,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("sunStartTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                   <td>
@@ -304,6 +321,7 @@ const LocalDetails = ({
                       type="time"
                       className="form-control"
                       {...timingForm.register("sunEndTime")}
+                      disabled={isViewMode}
                     />
                   </td>
                 </tr>
@@ -316,7 +334,7 @@ const LocalDetails = ({
             <div
               className="float-end m-5"
               style={{
-                display: updateSite?.isViewMode ? "none" : "block",
+                display: isViewMode ? "none" : "block",
               }}
             >
               <button type="button" className="btn btn-light mb-3 mr-4">

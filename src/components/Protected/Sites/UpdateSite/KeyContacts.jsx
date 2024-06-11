@@ -27,6 +27,7 @@ const KeyContacts = ({
     reset,
   } = useForm({});
   const [selectedItem, setSelectedItem] = useState("");
+  const isViewMode = updateSite?.isViewMode;
 
   useEffect(() => {
     getKeyContact(updateSite?.siteId);
@@ -89,7 +90,7 @@ const KeyContacts = ({
                   <td>
                     <button
                       style={{
-                        display: updateSite?.isViewMode ? "none" : "",
+                        display: isViewMode ? "none" : "",
                       }}
                       className="btn btn-sm btn-light"
                       onClick={() => deleteKeyContactClick(row)}
@@ -101,13 +102,14 @@ const KeyContacts = ({
               ))}
               <tr
                 style={{
-                  display: updateSite?.isViewMode ? "none" : "",
+                  display: isViewMode ? "none" : "",
                 }}
               >
                 <td>
                   <input
                     className="contact-input form-control"
                     type="text"
+                    disabled={isViewMode}
                     {...register("contactName")}
                   />
                 </td>
@@ -115,6 +117,7 @@ const KeyContacts = ({
                   <input
                     className="contact-input form-control"
                     type="phone"
+                    disabled={isViewMode}
                     {...register("phone")}
                   />
                 </td>
@@ -122,6 +125,7 @@ const KeyContacts = ({
                   <input
                     className="contact-input form-control"
                     type="email"
+                    disabled={isViewMode}
                     {...register("email")}
                   />
                 </td>
@@ -130,6 +134,7 @@ const KeyContacts = ({
                     name="actionManager"
                     className="contact-input form-control form-select"
                     id="actionManager"
+                    disabled={isViewMode}
                     {...register("actionManager")}
                     value={selectedItem}
                     onChange={(e) => setSelectedItem(e.target.value)}
@@ -167,7 +172,7 @@ const KeyContacts = ({
                 <td className="pt-4">
                   <button
                     style={{
-                      display: updateSite?.isViewMode ? "none" : "",
+                      display: isViewMode ? "none" : "",
                     }}
                     type="button"
                     onClick={() => addKeyContactClick()}

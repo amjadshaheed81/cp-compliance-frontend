@@ -14,14 +14,11 @@ const Landscape = ({
   getSiteLandScapeInfo,
   setLoader,
 }) => {
+  const isViewMode = updateSite?.isViewMode;
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
-    getValues,
-    setValue,
-    watch,
   } = useForm({});
   const saveAreaAndOccupancy = (data) => {
     setLoader(true);
@@ -55,6 +52,7 @@ const Landscape = ({
               id="hardLandScaping"
               className="form-control form-select"
               {...register("hardLandScaping")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -77,6 +75,7 @@ const Landscape = ({
               id="softLandScaping"
               className="form-control form-select"
               {...register("softLandScaping")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -99,6 +98,7 @@ const Landscape = ({
               id="riverPondLakes"
               className="form-control form-select"
               {...register("riverPondLakes")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -117,6 +117,7 @@ const Landscape = ({
               id="tallTrees"
               className="form-control form-select"
               {...register("tallTrees")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -139,6 +140,7 @@ const Landscape = ({
               id="drainageInterceptors"
               className="form-control form-select"
               {...register("drainageInterceptors")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -161,6 +163,7 @@ const Landscape = ({
               id="thirdPartyTelEquipment"
               className="form-control form-select"
               {...register("thirdPartyTelEquipment")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -183,6 +186,7 @@ const Landscape = ({
               id="electricalOverHeadPowerLines"
               className="form-control form-select"
               {...register("electricalOverHeadPowerLines")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -205,6 +209,7 @@ const Landscape = ({
               id="vacantLandAdjacent"
               className="form-control"
               {...register("vacantLandAdjacent")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -219,6 +224,7 @@ const Landscape = ({
               id="floodRisk"
               className="form-control"
               {...register("floodRisk")}
+              disabled={isViewMode}
             />
           </div>
         </div>
@@ -237,13 +243,14 @@ const Landscape = ({
               id="railwayLineAdjacent"
               className="form-control"
               {...register("railwayLineAdjacent")}
+              disabled={isViewMode}
             />
           </div>
         </div>
 
         <div
           style={{
-            display: updateSite?.isViewMode ? "none" : "block",
+            display: isViewMode ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">

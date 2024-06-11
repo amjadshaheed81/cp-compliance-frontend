@@ -59,9 +59,10 @@ const UpdateSite = ({
     defaultValues,
   });
   const values = watch();
+  const isViewMode = updateSite?.isViewMode;
   useEffect(() => {
     setLoader(true);
-    getSiteDetailsById(updateSite?.siteId, updateSite?.isViewMode);
+    getSiteDetailsById(updateSite?.siteId, isViewMode);
   }, []);
   useEffect(() => {
     console.log("updateSite", updateSite);
@@ -149,6 +150,7 @@ const UpdateSite = ({
                           name="siteName"
                           className="form-control"
                           id="siteName"
+                          disabled={isViewMode}
                           {...register("siteName", {
                             required: {
                               value: true,
@@ -174,6 +176,7 @@ const UpdateSite = ({
                           name="address1"
                           className="form-control"
                           id="address1"
+                          disabled={isViewMode}
                           {...register("address1", {
                             required: {
                               value: true,
@@ -199,6 +202,7 @@ const UpdateSite = ({
                           name="address2"
                           className="form-control"
                           id="address2"
+                          disabled={isViewMode}
                           {...register("address2")}
                         />
                       </div>
@@ -213,6 +217,7 @@ const UpdateSite = ({
                           name="city"
                           className="form-control"
                           id="city"
+                          disabled={isViewMode}
                           {...register("city", {
                             required: {
                               value: true,
@@ -237,6 +242,7 @@ const UpdateSite = ({
                           name="area"
                           className="contact-input form-control form-select"
                           id="area"
+                          disabled={isViewMode}
                           {...register("area", {
                             required: {
                               value: true,
@@ -280,6 +286,7 @@ const UpdateSite = ({
                           name="postCode"
                           className="form-control"
                           id="postCode"
+                          disabled={isViewMode}
                           {...register("postCode", {
                             required: {
                               value: true,
@@ -321,6 +328,7 @@ const UpdateSite = ({
                           name="country"
                           className="form-control"
                           id="country"
+                          disabled={isViewMode}
                           {...register("country", {
                             required: {
                               value: true,
@@ -355,7 +363,7 @@ const UpdateSite = ({
                     <div
                       className="col-md-12"
                       style={{
-                        display: updateSite?.isViewMode ? "none" : "block",
+                        display: isViewMode ? "none" : "block",
                       }}
                     >
                       <div className="float-end">
@@ -367,6 +375,7 @@ const UpdateSite = ({
                         </button>
                         &nbsp; &nbsp;
                         <button
+                          disabled={isViewMode}
                           type="submit"
                           className="btn btn-primary mb-3 mr-4"
                         >
@@ -396,7 +405,7 @@ const UpdateSite = ({
                 <span>Upload your site photo</span>
                 <div
                   style={{
-                    display: updateSite?.isViewMode ? "none" : "block",
+                    display: isViewMode ? "none" : "block",
                   }}
                 >
                   <button
@@ -412,7 +421,7 @@ const UpdateSite = ({
                 className="uploading-outer"
                 style={{
                   backgroundColor: "#f1f5f9",
-                  display: updateSite?.isViewMode ? "none" : "block",
+                  display: isViewMode ? "none" : "block",
                 }}
               >
                 <div className="uploadPhotoButton text-center">
@@ -426,6 +435,7 @@ const UpdateSite = ({
                   />
                   <input
                     {...register("siteImage")}
+                    disabled={isViewMode}
                     className="uploadButton-input mt-4"
                     type="file"
                     name="siteImage"

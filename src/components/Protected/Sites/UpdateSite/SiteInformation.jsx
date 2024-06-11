@@ -31,6 +31,7 @@ const SiteInformation = ({
 }) => {
   const { register, handleSubmit, reset, setValue } = useForm({});
   const siteAreaForm = useForm();
+  const isViewMode =  updateSite?.isViewMode;
   useEffect(() => {
     getSiteInformation(updateSite?.siteId, setValue);
     getAreaAndOccupancy(updateSite?.siteId, siteAreaForm.setValue);
@@ -57,6 +58,7 @@ const SiteInformation = ({
               id="buildYear"
               className="form-control w-100 form-select"
               {...register("buildYear")}
+              disabled={isViewMode}
             >
               {yearOptions.map((year) => (
                 <option value={year.value}>{year.label}</option>
@@ -80,6 +82,7 @@ const SiteInformation = ({
               className="form-control w-100 form-select"
               // value={siteInformation?.buildingUnderClientControl}
               {...register("buildingUnderClientControl")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -108,6 +111,7 @@ const SiteInformation = ({
                 //     message: `${Validation.REQUIRED}`,
                 // },
               })}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -129,8 +133,8 @@ const SiteInformation = ({
               name="dedicatedKitchenArea"
               id="dedicatedKitchenArea"
               className="form-control w-100 form-select"
-              // value={siteInformation?.dedicatedKitchenArea}
               {...register("dedicatedKitchenArea")}
+              disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -141,7 +145,7 @@ const SiteInformation = ({
         <div
           className="pb-4 "
           style={{
-            display: updateSite?.isViewMode ? "none" : "block",
+            display: isViewMode ? "none" : "block",
           }}
         >
           <button className="float-end btn btn-primary" type="submit">
@@ -177,6 +181,7 @@ const SiteInformation = ({
                   id="totalBuildingArea"
                   className="form-control"
                   {...siteAreaForm.register("totalBuildingArea")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -195,6 +200,7 @@ const SiteInformation = ({
                   id="clientOccupiedArea"
                   className="form-control"
                   {...siteAreaForm.register("clientOccupiedArea")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -213,6 +219,7 @@ const SiteInformation = ({
                   id="tenantOccupiedArea"
                   className="form-control"
                   {...siteAreaForm.register("tenantOccupiedArea")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -231,6 +238,7 @@ const SiteInformation = ({
                   id="maxOccupancy"
                   className="form-control"
                   {...siteAreaForm.register("maxOccupancy")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -249,6 +257,7 @@ const SiteInformation = ({
                   id="meetingClients"
                   className="form-control form-select"
                   {...siteAreaForm.register("meetingClients")}
+                  disabled={isViewMode}
                 >
                   {yesNoOptions.map((itm) => (
                     <option value={itm.value}>{itm.label}</option>
@@ -271,6 +280,7 @@ const SiteInformation = ({
                   id="numberOfStaff"
                   className="form-control mt-4"
                   {...siteAreaForm.register("numberOfStaff")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -289,6 +299,7 @@ const SiteInformation = ({
                   id="tenantInOccupation"
                   className="form-control mt-4"
                   {...siteAreaForm.register("tenantInOccupation")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -303,6 +314,7 @@ const SiteInformation = ({
                   id="tenantName"
                   className="form-control mt-4"
                   {...siteAreaForm.register("tenantName")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -321,6 +333,7 @@ const SiteInformation = ({
                   id="vacantAreaInBuilding"
                   className="form-control"
                   {...siteAreaForm.register("vacantAreaInBuilding")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -335,6 +348,7 @@ const SiteInformation = ({
                   id="numOfFloors"
                   className="form-control mt-4"
                   {...siteAreaForm.register("numOfFloors")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -353,6 +367,7 @@ const SiteInformation = ({
                   id="carParkSpaceAboveGround"
                   className="form-control"
                   {...siteAreaForm.register("carParkSpaceAboveGround")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -371,6 +386,7 @@ const SiteInformation = ({
                   id="carParkSpaceBelowGround"
                   className="form-control"
                   {...siteAreaForm.register("carParkSpaceBelowGround")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -389,13 +405,14 @@ const SiteInformation = ({
                   id="numOfBasementLevels"
                   className="form-control"
                   {...siteAreaForm.register("numOfBasementLevels")}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
             <div
               className="pb-4"
               style={{
-                display: updateSite?.isViewMode ? "none" : "block",
+                display: isViewMode ? "none" : "block",
               }}
             >
               <button className="btn btn-primary float-end" type="submit">
