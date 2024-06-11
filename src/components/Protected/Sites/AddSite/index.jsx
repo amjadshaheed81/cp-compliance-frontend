@@ -353,54 +353,6 @@ const AddSite = ({
               </div>
             </div>
             <div className="col-md-4">
-              <div className="pic-container pic-medium pic-circle">
-                <img
-                  className="pic"
-                  src={userDefault}
-                  alt=""
-                  width="64px"
-                  height="64px"
-                />
-                <span>Upload your site photo</span>
-              </div>
-              <div
-                className="uploading-outer mb-2"
-                style={{ backgroundColor: "#f1f5f9" }}
-              >
-                <div className="uploadPhotoButton text-center">
-                  <FileUploadOutlinedIcon
-                    style={{
-                      color: "blue",
-                      // fontSize: "50px",
-                      position: "relative",
-                      left: "50%",
-                      transform: "translate(-25%, 0)",
-                    }}
-                  />
-                  <input
-                    {...register("photo")}
-                    className="uploadButton-input mt-4"
-                    type="file"
-                    name="siteImage"
-                    accept="image/*, application/pdf"
-                    id="siteImage"
-                    onChange={handleFileSelect}
-                  />
-                  <label
-                    htmlFor="siteImage"
-                    className="text-primary cursor mt-4"
-                  >
-                    Click to upload
-                  </label>
-                  &nbsp;
-                  <span>or drag and drop</span>
-                  <p>
-                    SVG, PNG, JPG or GIF
-                    <br />
-                    (max 800 * 800 px)
-                  </p>
-                </div>
-              </div>
               {values?.latitude && values?.longitude && (
                 <GoogleMap
                   lat={values?.latitude}

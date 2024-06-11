@@ -7,6 +7,7 @@ import {
   deleteSite,
   setFilterSite,
   updateSite as updateSiteData,
+  selectGlobalSite,
 } from "../../../store/thunk/site";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ const Sites = ({
   deleteSite,
   setFilterSite,
   updateSiteData,
+  selectGlobalSite,
 }) => {
   const [selectedItem, setSelectedItem] = useState("status");
 
@@ -211,7 +213,13 @@ const Sites = ({
                 )}
                 {filterSite?.map((itm, i) => (
                   <tr key={i}>
-                    <th scope="col">{itm?.siteName}</th>
+                    <th scope="col">
+                      <span className="text-primary cursor" onClick={() => {
+                        selectGlobalSite(itm);
+                      }}>
+                        {itm?.siteName}
+                      </span>
+                    </th>
                     <th scope="col">{itm?.address1}</th>
                     <th scope="col">
                       <ListStatusBadge status={itm?.status} />
@@ -288,4 +296,5 @@ export default connect(mapStateToProps, {
   deleteSite,
   setFilterSite,
   updateSiteData,
+  selectGlobalSite,
 })(Sites);
