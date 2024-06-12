@@ -138,7 +138,7 @@ const UpdateSite = ({
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
             <div className="col-md-8">
-              <div className="row bg-white">
+              <div className="row bg-white" style={{ height: 'auto'}}>
                 <p className="pt-2 pb-2 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">
