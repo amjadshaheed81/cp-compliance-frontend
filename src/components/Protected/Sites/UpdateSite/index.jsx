@@ -21,7 +21,7 @@ import KeyContacts from "./KeyContacts";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import BusinessIcon from "@mui/icons-material/Business";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
@@ -86,10 +86,12 @@ const UpdateSite = ({
     let siteId = updateSite?.siteId;
     const res = await deleteSiteImage(siteId);
     if (res === "Success") {
-      toast.success("Site image has been deleted successfully.")
+      toast.success("Site image has been deleted successfully.");
       getSiteById(siteId);
-    } else{
-      toast.error("Something went wrong while deleting site image. Please try again.")
+    } else {
+      toast.error(
+        "Something went wrong while deleting site image. Please try again."
+      );
     }
   };
   const handleOnSearch = async (event) => {
@@ -104,8 +106,8 @@ const UpdateSite = ({
       const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
       const response = await get(url);
       setValue("postCode", response?.postcode, { shouldValidate: true });
-      setValue("address1", response?.line_2);
-      setValue("address2", response?.line_1, { shouldValidate: true });
+      setValue("address1", response?.line_1);
+      setValue("address2", response?.line_2, { shouldValidate: true });
       setValue("city", response?.town_or_city, { shouldValidate: true });
       setValue("area", response?.county);
       setValue("latitude", response?.latitude);
@@ -459,13 +461,12 @@ const UpdateSite = ({
                 </div>
               </div>
               <div className="map mt-2">
-                {values?.latitude && values?.longitude && (
-                  <GoogleMap
-                    lat={values?.latitude}
-                    long={values?.longitude}
-                    postCode={values?.postCode}
-                  />
-                )}
+                <GoogleMap
+                  lat={values?.latitude}
+                  long={values?.longitude}
+                  postCode={values?.postCode}
+                  streetViewURL={values?.streetViewUrl}
+                />
               </div>
             </div>
           </div>
