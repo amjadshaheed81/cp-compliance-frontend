@@ -21,9 +21,10 @@ const CreateFolder = ({
   setShowFolderModal,
   folderId,
   uploadDocumentFile,
-  refresh
+  refresh,
+  siteSelectedForGlobal
 }) => {
-  console.log("folderId", folderId);
+  console.log("siteSelectedForGlobal", siteSelectedForGlobal);
   const handleOpen = () => setShowFolderModal(true);
   const handleClose = () => setShowFolderModal(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,8 +68,8 @@ const CreateFolder = ({
             const formData = new FormData(event.currentTarget);
             const formJson = Object.fromEntries((formData).entries());
             formJson.parentFolderId = folderId
-            submitFolder(formJson)
-            console.log(formJson);
+            formJson.siteId = siteSelectedForGlobal?.siteId;
+            submitFolder(formJson);
             //handleClose();
           },
         }}
@@ -129,6 +130,7 @@ const CreateFolder = ({
 const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   uploadDocumentFile,

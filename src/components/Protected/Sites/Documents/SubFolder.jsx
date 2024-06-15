@@ -6,15 +6,23 @@ import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import TextSnippetOutlinedIcon from '@mui/icons-material/TextSnippetOutlined';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import moment from "moment";
 import ReplyIcon from "@mui/icons-material/Reply";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
 import RestorePageIcon from "@mui/icons-material/RestorePage";
+
+import Breadcrumbs from '@mui/material/Breadcrumbs';
+import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import {
   getDocumentsRootFolder,
   getSubFilesAndFolder,
   deleteFile,
 } from "../../../../store/thunk/site";
+import { toast } from 'react-toastify';
 import { connect } from "react-redux";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
@@ -32,6 +40,7 @@ const SubFolder = ({
   subfolderFiles,
 }) => {
   const [searchParams] = useSearchParams();
+  
   const folderId = searchParams.get("id");
   const [showModal, setShowModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
@@ -43,6 +52,7 @@ const SubFolder = ({
   const [folderId2, setFolderId2] = useState();
   const [folderData, setfolder] = useState();
   const [fileId, setFileId] = useState();
+  const [previousFolderId, setPreviousFolderId] = useState([]);
   const searchDocument = async (e) => {
     const value = e?.target?.value;
     if (value && value.length > 0) {
@@ -64,13 +74,49 @@ const SubFolder = ({
     }
   };
 
+  const navigate2 = () => { 
+    if (previousFolderId.length === 0 || (previousFolderId.length === 1 && previousFolderId[0].id === folderId)) {
+      navigate("/documents");
+    } else {
+      let id = previousFolderId.pop();
+      if (id.id == folderId) {
+        id = previousFolderId.pop();
+      }
+      
+      setPreviousFolderId(previousFolderId);
+      navigateToSubFolder(id.id);
+    }
+    
+   
+  }
+
+  const addStack = (id, name) => {
+    const idx = previousFolderId.findIndex(i => i.id === id);
+    if (idx < 0) {
+      previousFolderId.push({ id, name });
+      setPreviousFolderId(previousFolderId);
+     
+    }
+  }
+  const deleteFile2 = async (id) => {
+    deleteFile(id);
+    getSubFilesAndFolder(folderId);
+    toast.warn("File deleted");
+
+  }
+
   const navigateToSubFolder = (id) => {
     console.log("target", id);
     navigate(`/subfolder/?id=${id}`);
   };
 
+  
+
   useEffect(() => {
     getSubFilesAndFolder(folderId);
+    if (previousFolderId.length === 0) {
+      setPreviousFolderId([{ id: folderId, name: subfolderFiles?.document?.name }])
+    }
   }, [folderId]);
   return (
     <>
@@ -112,6 +158,19 @@ const SubFolder = ({
           />
         )}
         <BreadCrumHeader header={"Document Management"} page={"Documents"} />
+        <Breadcrumbs
+          separator={<NavigateNextIcon fontSize="small" />}
+          aria-label="breadcrumb"
+        >
+          {previousFolderId.map(pr => {
+            return (<Link underline="hover" key="1" color="inherit" href="/" onClick={(e) => { e.preventDefault(); navigateToSubFolder(pr.id)}}>
+              <i
+                style={{ color: "#384BD3" }}
+                className="fas fa-folder fa-1x"
+              ></i>&nbsp; {pr.name}
+            </Link>)
+          })}
+        </Breadcrumbs>
         <div className="float-end w-25" style={{ position: "relative", paddingBottom: '10px' }}>
           <i
             style={{
@@ -186,7 +245,7 @@ const SubFolder = ({
                 
                 <td style={{ backgroundColor: '#E3E3E3' }}>
                   <ReplyIcon
-                    onClick={() => navigate("/documents")}
+                    onClick={() => navigate2()}
                     style={{ color: "384bd3", cursor: "pointer" }}
                   />
                   <CreateNewFolderIcon
@@ -212,7 +271,7 @@ const SubFolder = ({
                   <>
                     <tr style={{backgroundColor: 'red'}}>
                       <td >
-                        <div onClick={() => navigateToSubFolder(folder?.id)}>
+                        <div onClick={() => { navigateToSubFolder(folder?.id); addStack(folder?.id, folder?.name); }}>
                           &nbsp; &nbsp;
                         
                           <FolderOpenIcon style={{ color: "#384BD3" }} />
@@ -257,8 +316,8 @@ const SubFolder = ({
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
-                      <td>{file?.issueDate}</td>
-                      <td>{file?.expiryDate}</td>
+                      <td>{moment(file?.issueDate).format('DD-MM-YYYY')}</td>
+                      <td>{moment(file?.expiryDate).format('DD-MM-YYYY')}</td>
                       <td>{file?.source}</td>
                       <td>
                         {/* <ReplyIcon
@@ -276,7 +335,7 @@ const SubFolder = ({
                         />
                         
                         <DeleteIcon
-                          onClick={() => deleteFile(file?.id)}
+                          onClick={() => deleteFile2(file?.id)}
                           style={{ color: "384bd3", cursor: "pointer" }}
                         />
                       </td>

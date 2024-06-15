@@ -21,15 +21,17 @@ const CreateFiles = ({
   setShowModal,
   folderId,
   folderData,
-  refresh
+  refresh,
+  siteSelectedForGlobal
 }) => {
   // const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [fileName, setFileName] = useState("");
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
-  const { register, handleSubmit } = useForm({});
+  const { register, handleSubmit, getValues } = useForm({});
   const submitFile = async (data, fileUpload) => {
     
     const reqData = {
@@ -54,7 +56,9 @@ const CreateFiles = ({
     toast.success("File uploaded successfully")
     handleClose();
     refresh();
+    
   };
+  console.log("getValues", getValues());
   const style = {
     position: "absolute",
     top: "50%",
@@ -67,6 +71,16 @@ const CreateFiles = ({
     boxShadow: 24,
     p: 4,
   };
+
+  const handleFileChange = (e) => {
+    console.log("input1Value", e.target.files[0].name)
+    setFileName(e?.target?.files?.[0]?.name)
+    
+    // Update input2 value based on input1 value
+    // Assuming you want to set input2 to the same value as input1
+    // You can modify this logic as per your requirement
+    //setValue('input2', input1Value);
+  }
 
   return (
     <React.Fragment>
@@ -89,7 +103,8 @@ const CreateFiles = ({
               files: [
                 {
                   ...formJson,
-                  fileVersion: 1
+                  fileVersion: 1,
+                  siteId: siteSelectedForGlobal?.siteId
                 }
               ]
             }
@@ -130,7 +145,9 @@ const CreateFiles = ({
                 </label>
                 <input
                   type="text"
-                  name="name"
+                      name="name"
+                      disabled
+                      value={fileName?.split(".")[0]}
                   className="form-control"
                       {...register("name")}
                     />
@@ -209,6 +226,7 @@ const CreateFiles = ({
                     name="fileUpload"
                     className="form-control"
                     {...register("fileUpload")}
+                    onChange={handleFileChange}
                   />
                   <span>or drag and drop</span>
                   <p>SVG, PNG, JPG or GIF</p>
@@ -452,6 +470,7 @@ const CreateFiles = ({
 const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   uploadDocumentFile,
