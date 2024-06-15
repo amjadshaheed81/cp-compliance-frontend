@@ -14,6 +14,7 @@ import Projects from "../components/Protected/Sites/Projects";
 import Contracts from "../components/Protected/Sites/Contracts";
 import SubFolder from "../components/Protected/Sites/Documents/SubFolder";
 import Users from "../components/Protected/Users";
+import Assets from "../components/Protected/Sites/Assets";
 
 export const getRoutes = () => {
   const tabs = [
@@ -97,6 +98,10 @@ export const getRoutes = () => {
     {
       path: "/user-management",
       element: <Users />,
+    },
+    {
+      path: "/assets",
+      element: <Assets />,
     },
   ];
 };

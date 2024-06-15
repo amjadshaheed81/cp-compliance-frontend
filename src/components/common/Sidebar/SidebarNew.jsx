@@ -165,7 +165,7 @@ export default function SidebarNew() {
         navigate("/site-projects");
         break;
       case "Site Assets":
-        navigate("/sites");
+        navigate("/assets");
         break;
       case "Site Contracts":
         navigate("/site-contracts");
