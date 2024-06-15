@@ -8,6 +8,7 @@ const MandatoryFolders = ({
   rootFolder,
   selectedMandatoryFolder,
   setSelectedMandatoryFolder,
+  siteSelectedForGlobal
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
   const handleFolderOpen = () => {
@@ -17,7 +18,7 @@ const MandatoryFolders = ({
     setFolderOpen(false);
   };
   useEffect(() => {
-    getDocumentsRootFolder();
+    getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
   }, []);
   const style = {
     position: "absolute",
@@ -180,6 +181,7 @@ const MandatoryFolders = ({
 };
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, { getDocumentsRootFolder })(
   MandatoryFolders
