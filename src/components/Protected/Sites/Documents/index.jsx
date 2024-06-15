@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import "./Documents.css";
 
-const Document = ({ rootFolder, getDocumentsRootFolder }) => {
+const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal }) => {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] =
     React.useState(false);
   const [fileList, setFileList] = useState([]);
@@ -20,7 +20,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
 
   const navigate = useNavigate();
   useEffect(() => {
-    getDocumentsRootFolder();
+    getDocumentsRootFolder(siteSelectedForGlobal?.siteId );
   }, []);
   const navigateToSubFolder = (id) => {
     console.log("target", id);
@@ -154,6 +154,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder }) => {
 
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getDocumentsRootFolder,
