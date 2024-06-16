@@ -103,6 +103,7 @@ function SearchSite({ getSites, sites, selectGlobalSite, setLoader }) {
             <ListItemButton
               onClick={() => {
                 selectGlobalSite(site);
+                localStorage.setItem("site", JSON.stringify(site))
               }}
             >
               <ListItemIcon>

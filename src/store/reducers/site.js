@@ -79,7 +79,7 @@ const initialState = {
   updateSiteImageSuccess: "",
   siteLayout: [],
   siteLayoutFailure: "",
-  siteSelectedForGlobal: {},
+  siteSelectedForGlobal: JSON.parse(localStorage.getItem("site")),
   saveSiteUtilityInfo: null,
   saveSiteLiftsInfo: null,
   saveSiteLandscapesInfo: null,

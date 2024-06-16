@@ -4,7 +4,7 @@ import { CSVLink } from "react-csv";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import { Box, Modal, Typography } from "@mui/material";
+import { Box, Modal, Typography,Chip } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 import {
   getSiteContracts,
@@ -15,6 +15,7 @@ import {
 import Success from "../../../common/Alert/Success";
 import Status from "../../../common/Alert/Status/Status";
 import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 
 const Contracts = ({
   getSiteContracts,
@@ -65,8 +66,12 @@ const Contracts = ({
   }, []);
 
   const updateContractDetails = (formData) => {
-    console.log(contractDetail);
     let form_data = new FormData();
+    if (formData?.official_quote?.length === 0) {
+      toast.error("Please select a file!");
+      return;
+    }
+    
     if (formData?.official_quote) {
       form_data.append(
         "file",
@@ -74,10 +79,15 @@ const Contracts = ({
         formData?.official_quote?.[0]?.name
       );
     }
-    form_data.append("quote", formData?.quote);
-    form_data.append("quoteId", JSON.stringify(contractDetail?.quote_id));
-    console.log("form_data", form_data);
+    const contractUpdateRquestString = {
+      quote: formData?.quote,
+      quoteId: JSON.stringify(contractDetail?.quote_id),
+      status: "Submitted"
+
+    }
+    form_data.append("contractUpdateRquestString", JSON.stringify(contractUpdateRquestString) )
     updateContractDetail(form_data);
+    handleClose();
   };
   const style = {
     position: "absolute",
@@ -91,6 +101,7 @@ const Contracts = ({
     border: "2px solid #fff",
     boxShadow: 24,
     p: 4,
+    margin: "20px",
   };
   return (
     <Fragment>
@@ -158,8 +169,8 @@ const Contracts = ({
                   <th scope="col">Manager</th>
                   <th scope="col">Start Date</th>
                   <th scope="col">Recieved Date</th>
-                  <th scope="col">Quota (GBP)</th>
-                  <th scope="col">Quota Date</th>
+                  <th scope="col">Quote (GBP)</th>
+                  <th scope="col">Quote Date</th>
                   <th scope="col">Status</th>
                   <th scope="col">Action</th>
                 </tr>
@@ -179,7 +190,8 @@ const Contracts = ({
                     <td>{itm?.recieved_date}</td>
                     <td>{itm?.quote}</td>
                     <td>{itm?.quote_date}</td>
-                    <td></td>
+                    
+                    <td><Chip label={itm?.status} color={itm.status === "received" ? "secondary" : "success"} /></td>
                     <td>
                       <Tooltip title={`View`} arrow>
                         <span
@@ -221,6 +233,8 @@ const Contracts = ({
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
+          <div style={{ margin: "20px" }}>
+
           <Typography id="modal-modal-title" variant="h6" component="h2">
             View Contract
           </Typography>
@@ -350,7 +364,7 @@ const Contracts = ({
             </div>
             <div className="col-md-12 pt-4 border-top">
               <div>
-                {success && <Success msg={success} />}
+                {/* {success && <Success msg={success} />} */}
                 {/* {error && <Error msg={error} />} */}
               </div>
               <div className="float-end">
@@ -369,7 +383,8 @@ const Contracts = ({
                 </button>
               </div>
             </div>
-          </form>
+            </form>
+          </div>
         </Box>
       </Modal>
     </Fragment>

@@ -1,7 +1,8 @@
 // components/Login/LoginForm.js
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { Box, Modal, Typography } from "@mui/material";
+import moment from "moment";
+import { Box, Modal, Typography, Chip } from "@mui/material";
 
 const Contractors = ({
   contractsList,
@@ -31,6 +32,10 @@ const Contractors = ({
       console.log("res", res);
       setData(res);
     };
+    let color = "secondary" 
+    if (itm.status === "received") {
+      color="success"
+    }
     return (
       <tr>
         {itm ? (
@@ -74,8 +79,9 @@ const Contractors = ({
           <td></td>
         )}
         {itm?.company ? <td>{itm?.company}</td> : <td></td>}
-        {itm?.quote ? <td>{itm?.quote}</td> : <td></td>}
-        {itm?.status ? <td>{itm?.status}</td> : <td></td>}
+        {itm?.quote ? <td>£ {itm?.quote}</td> : <td></td>}
+        {itm?.quoteDate ? <td>{moment(itm?.quoteDate).format('DD-MM-YYYY')}</td> : <td></td>}
+        {itm?.status ? <td><Chip label={itm?.status} color={color}/></td> : <td></td>}
         {itm?.actions ? (
           <td>
             <button
@@ -119,7 +125,8 @@ const Contractors = ({
             <tr>
               <th scope="col">Contractor Contact</th>
               <th scope="col">Company</th>
-              <th scope="col">Quota (GBP)</th>
+              <th scope="col">Quote (GBP)</th>
+              <th scope="col">Quote Date</th>
               <th scope="col">Status</th>
               <th scope="col">Actions</th>
             </tr>
@@ -142,6 +149,8 @@ const Contractors = ({
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
+        
+        <div style={{padding: "20px"}}>
         <Box sx={style}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
             View Contract &amp; Quote
@@ -279,7 +288,8 @@ const Contractors = ({
               </div>
             </div>
           </form>
-        </Box>
+          </Box>
+        </div>
       </Modal>
     </Fragment>
   );

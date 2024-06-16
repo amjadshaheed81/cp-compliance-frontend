@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import { get, postMultiPartFormData } from "../../api";
 import {
   GET_CONTRACT_DETAIL,
@@ -57,6 +58,7 @@ export const updateContractDetail = (formData) => {
           type: UPDATE_CONTRACT_DETAIL,
           payload: 'Contract detail has been successfully updated',
         });
+        toast.success("Contract detail has been successfully updated.")
       } else {
         dispatch({
           type: UPDATE_CONTRACT_DETAIL_FAILURE,

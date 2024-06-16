@@ -1,6 +1,6 @@
 import { del, get, put } from "../../api";
 import { ADD_UPDATE_SITE_PROJECT, ADD_UPDATE_SITE_PROJECT_FAILURE, GET_ALL_PROJECTS } from "../actions/siteProjectActions";
-
+import { toast } from "react-toastify";
 export const getProjectList = (siteID) => {
   return async (dispatch) => {
     try {
@@ -28,7 +28,8 @@ export const addUpdateProject = (formData, projectContractor, folders) => {
             const contractorURL = `api/project/${addUpdateProjectData?.data?.id}/contractor`;
             const contractorURLData = await put(contractorURL, projectContractor);
             const folderURL = `api/project/${addUpdateProjectData?.data?.id}/folders`;
-            const folderURLData = await put(folderURL, folders);
+          const folderURLData = await put(folderURL, folders);
+          toast.success("Site project added successfully")
           dispatch({
             type: ADD_UPDATE_SITE_PROJECT,
             payload: 'Successfully added project',

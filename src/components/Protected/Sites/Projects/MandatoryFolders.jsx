@@ -11,7 +11,8 @@ const MandatoryFolders = ({
   siteSelectedForGlobal
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
-  const handleFolderOpen = () => {
+  const handleFolderOpen = (e) => {
+    e?.preventDefault();
     setFolderOpen(!openFolder);
   };
   const handleFolderClose = () => {

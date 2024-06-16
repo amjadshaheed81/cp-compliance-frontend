@@ -19,6 +19,7 @@ import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
 import Swal from "sweetalert2";
 import { get } from "../../../../api";
+import { toast } from "react-toastify";
 
 const Projects = ({
   getProjectList,
@@ -50,12 +51,21 @@ const Projects = ({
     {}
   );
   const submitProject = (formData) => {
+    if (isDateOlderThanToday(formData.startDate)) {
+      toast.error("Start date cannot be in past !");
+      return;
+    }
     if (selectedProject?.id) {
       updateProjectdata(formData);
     } else {
       submitProjectdata(formData);
     }
   };
+  function isDateOlderThanToday(dateString) {
+    const inputDate = new Date(dateString);
+    const today = new Date();
+    return inputDate.getTime() < today.getTime();
+  }
   const updateProjectdata = (formData) => {
     const payload = {
       projectId: selectedProject?.id,
@@ -79,7 +89,7 @@ const Projects = ({
         quoteId: i?.quoteId || null,
         siteId: i?.siteId || siteSelectedForGlobal?.siteId,
         contractorUserId: parseInt(i?.contractorUserId),
-        status: "Pending",
+        status: "Received",
         projectManagerUserId: parseInt(formData?.manager),
       });
     }
@@ -115,7 +125,7 @@ const Projects = ({
         quoteId: null,
         siteId: siteSelectedForGlobal?.siteId,
         contractorUserId: parseInt(i?.contractorUserId),
-        status: "Pending",
+        status: "Received",
         projectManagerUserId: parseInt(formData?.manager),
       });
     }
@@ -127,6 +137,7 @@ const Projects = ({
       removeQuoteId: null,
     };
     addUpdateProject(payload, contractors, folders);
+    resetFields();
   };
   useEffect(() => {
     getContractorList();
@@ -207,6 +218,9 @@ const Projects = ({
       shortDescription: "",
       manager: "",
     });
+    setSelectedMandatoryFolder([]);
+    setSelectedContractors([]);
+    setData([])
   };
   return (
     <>
@@ -370,10 +384,10 @@ const Projects = ({
                   setSelectedContractors={setSelectedContractors}
                 />
                 <div className="col-md-12">
-                  <div>
+                  {/* <div>
                     {success && <Success msg={success} />}
-                    {/* {error && <Error msg={error} />} */}
-                  </div>
+                     {error && <Error msg={error} />} 
+                  </div> */}
                   <div className="float-end">
                     <button type="button" className="btn btn-light mb-3 mr-4">
                       Cancel
