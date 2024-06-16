@@ -61,12 +61,14 @@ const Pat = ({}) => {
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
             <div className="col">
-              <button
-                className="btn btn-light text-primary pr-2"
-                onClick={() => {}}
-              >
-                Clone
-              </button>
+              <Tooltip title={`Clone`} arrow>
+                <button
+                  className="btn btn-light text-primary pr-2"
+                  onClick={() => {}}
+                >
+                  Clone
+                </button>
+              </Tooltip>
             </div>
             <div className="col">
               <CSVLink
@@ -74,7 +76,9 @@ const Pat = ({}) => {
                 className="btn btn-light bg-white text-primary"
                 data={[]}
               >
-                <i className="fas fa-download"></i>&nbsp;Export
+                <Tooltip title={`Export`} arrow>
+                  <i className="fas fa-download"></i>
+                </Tooltip>
               </CSVLink>
             </div>
           </div>

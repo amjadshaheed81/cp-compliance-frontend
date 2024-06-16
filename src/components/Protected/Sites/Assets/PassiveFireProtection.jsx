@@ -62,12 +62,14 @@ const PassiveFireProtection = ({}) => {
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
             <div className="col">
-              <button
-                className="btn btn-light text-primary pr-2"
-                onClick={() => {}}
-              >
-                Clone
-              </button>
+              <Tooltip title={`Clone`} arrow>
+                <button
+                  className="btn btn-light text-primary pr-2"
+                  onClick={() => {}}
+                >
+                  Clone
+                </button>
+              </Tooltip>
             </div>
             <div className="col">
               <CSVLink

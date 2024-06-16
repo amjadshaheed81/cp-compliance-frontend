@@ -1,10 +1,17 @@
 import React, { Fragment, useState } from "react";
 import { connect } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
 
 const Summary = ({}) => {
+  const navigate = useNavigate();
+
+  const goTo = (link) => {
+    navigate(link);
+  };
+
   const [assetList, setAssetList] = useState([
     {
       assetName: "Joe Bloggs",
@@ -60,21 +67,27 @@ const Summary = ({}) => {
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
             <div className="col">
-              <button
-                className="btn btn-primary text-white pr-2"
-                onClick={() => {}}
-              >
-                Add New Asset
-              </button>
+              <Tooltip title={`Add New Asset`} arrow>
+                <button
+                  className="btn btn-primary text-white pr-2"
+                  onClick={() => {
+                    goTo("/create-asset");
+                  }}
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </Tooltip>
               &nbsp;
             </div>
             <div className="col">
-              <button
-                className="btn btn-light text-primary pr-2"
-                onClick={() => {}}
-              >
-                Clone
-              </button>
+              <Tooltip title={`Clone`} arrow>
+                <button
+                  className="btn btn-light text-primary pr-2"
+                  onClick={() => {}}
+                >
+                  Clone
+                </button>
+              </Tooltip>
             </div>
             <div className="col">
               <CSVLink
@@ -82,7 +95,9 @@ const Summary = ({}) => {
                 className="btn btn-light bg-white text-primary"
                 data={[]}
               >
-                <i className="fas fa-download"></i>&nbsp;
+                <Tooltip title={`Export`} arrow>
+                  <i className="fas fa-download"></i>
+                </Tooltip>
               </CSVLink>
             </div>
           </div>
