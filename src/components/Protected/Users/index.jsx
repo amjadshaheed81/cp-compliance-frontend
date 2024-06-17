@@ -1,6 +1,7 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
+import moment from "moment";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
@@ -9,34 +10,34 @@ import ViewUser from "./ViewUser";
 import EditUser from "./EditUser";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import AddUser from "./AddUser";
+import { deleteUser, getUsers } from "../../../store/thunk/site";
 
-const Users = () => {
+const Users = ({ users, getUsers, deleteUser }) => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
-  const [userList, setUserList] = useState([
-    {
-      fullName: "Joe Bloggs",
-      email: "joe@gmai.com",
-      site: "Site 1",
-      role: "Property Manager",
-      creationDate: "21/May/1992",
-      type: "type",
-      company: "--",
-      status: "Active",
-      id: 1,
-    },
-  ]);
-  const deleteUser = (user) => {
+  const [showAddModal, setShowAddModal] = useState(false);
+  useEffect(() => {
+    getUsers();
+  }, []);
+  const deleteUserCall = (user) => {
     Swal.fire({
-      title: `Do you want to delete ${user?.fullName}`,
+      title: `Do you want to delete ${user?.name}`,
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // TODO: need to integrate delete API
-        toast.success(`user has been deleted successully`);
+        const res = await deleteUser(user?.id);
+        if (res === "Success") {
+          toast.success(`user has been deleted successully`);
+          getUsers();
+        } else {
+          toast.error(
+            `Something went wrong while deleting user. Please try again.`
+          );
+        }
       } else if (result.isDenied) {
         toast.info(`delete action has been denied.`);
       }
@@ -54,6 +55,16 @@ const Users = () => {
               selectedUser={selectedUser}
               showViewModal={showViewModal}
               setShowViewModal={setShowViewModal}
+              refresh={() => {
+                console.log("refresh call to update view users");
+              }}
+            />
+          )}
+          {showAddModal && (
+            <AddUser
+              showAddModal={selectedUser}
+              showEditModal={showAddModal}
+              setShowAddModal={setShowAddModal}
               refresh={() => {
                 console.log("refresh call to update view users");
               }}
@@ -118,7 +129,9 @@ const Users = () => {
                 <div className="col">
                   <button
                     className="btn btn-primary text-white pr-2"
-                    onClick={() => {}}
+                    onClick={() => {
+                      setShowAddModal(true);
+                    }}
                   >
                     Add New
                   </button>
@@ -154,18 +167,20 @@ const Users = () => {
                 </tr>
               </thead>
               <tbody>
-                {userList?.map((user) => (
+                {users?.map((user) => (
                   <tr key={user?.id}>
-                    <th scope="col">{user?.fullName}</th>
+                    <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>
-                    <th scope="col">{user?.site}</th>
+                    <th scope="col">{user?.defaultSiteName}</th>
                     <th scope="col">{user?.role}</th>
-                    <th scope="col">{user?.creationDate}</th>
-                    <th scope="col">{user?.type}</th>
+                    <th scope="col">
+                      {moment(user?.creationDate).format("DD-MM-YYYY")}
+                    </th>
+                    <th scope="col">{user?.userType}</th>
                     <th scope="col">{user?.company}</th>
                     <th scope="col">{user?.status}</th>
                     <th scope="col">
-                      <Tooltip title={`View ${user.fullName}`} arrow>
+                      <Tooltip title={`View ${user?.name}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
@@ -176,7 +191,7 @@ const Users = () => {
                           <i className="fas fa-eye"></i>
                         </button>{" "}
                       </Tooltip>
-                      <Tooltip title={`Edit ${user.fullName}`} arrow>
+                      <Tooltip title={`Edit ${user?.name}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
@@ -187,10 +202,10 @@ const Users = () => {
                           <i className="fas fa-pen"></i>
                         </button>{" "}
                       </Tooltip>
-                      <Tooltip title={`Delete ${user.fullName}`} arrow>
+                      <Tooltip title={`Delete ${user?.name}`} arrow>
                         <button
                           className="btn btn-sm btn-light text-danger"
-                          onClick={() => deleteUser(user)}
+                          onClick={() => deleteUserCall(user)}
                         >
                           <i className="fas fa-trash"></i>
                         </button>{" "}
@@ -207,5 +222,7 @@ const Users = () => {
     </Fragment>
   );
 };
-const mapStateToProps = () => ({});
-export default connect(mapStateToProps, {})(Users);
+const mapStateToProps = (state) => ({
+  users: state.site.users,
+});
+export default connect(mapStateToProps, { getUsers, deleteUser })(Users);

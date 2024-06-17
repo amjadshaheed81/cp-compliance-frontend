@@ -68,6 +68,7 @@ import {
   RESET_SITE_MESSAGES,
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
+  GET_USER_ALL,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -1159,7 +1160,6 @@ export const getSiteLiftStairways = (id, reset) => {
       });
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
-
       console.error(error);
     }
   };
@@ -1180,5 +1180,52 @@ export const resetSiteMessageState = (value) => {
       type: RESET_SITE_MESSAGES,
       payload: value,
     });
+  };
+};
+
+export const addUser = (formData) => {
+  return async (dispatch) => {
+    try {
+      const url = "/api/user/manage";
+      const data = await put(url, formData);
+      console.log("data", data);
+      if (data?.status === 200) {
+        return "success";
+      } else {
+        return "error";
+      }
+    } catch (error) {
+      toast.error("Something went wrong while adding user. Please try again.");
+    }
+  };
+};
+
+export const getUsers = () => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/user/all`;
+      const userList = await get(url);
+      console.log("userList", userList);
+      dispatch({
+        type: GET_USER_ALL,
+        payload: userList?.users,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching users. Please try again."
+      );
+    }
+  };
+};
+
+export const deleteUser = (id) => {
+  return async () => {
+    try {
+      const url = `/api/user/${id}/delete`;
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
+    }
   };
 };

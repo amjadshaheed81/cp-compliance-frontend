@@ -57,6 +57,7 @@ import {
   GET_SITE_SECURITY_INFORMATION_FAILURE,
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
+  GET_USER_ALL,
 } from "./../actionTypes";
 
 const initialState = {
@@ -84,6 +85,7 @@ const initialState = {
   saveSiteLiftsInfo: null,
   saveSiteLandscapesInfo: null,
   isLoading: false,
+  users: [],
 };
 
 const reducer = (state = initialState, action) => {
@@ -589,6 +591,11 @@ const reducer = (state = initialState, action) => {
         error:
           "Something went wrong while saving floor layout. please try again",
         success: "",
+      };
+    case GET_USER_ALL:
+      return {
+        ...state,
+        users: action.payload,
       };
     default:
       return state;

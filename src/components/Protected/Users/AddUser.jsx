@@ -1,0 +1,294 @@
+import React, { Fragment, useEffect, useState } from "react";
+import { Button, Box } from "@mui/material";
+import { connect } from "react-redux";
+import { useForm } from "react-hook-form";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import CircularProgress from "@mui/material/CircularProgress";
+import DialogTitle from "@mui/material/DialogTitle";
+import { getSites, addUser } from "../../../store/thunk/site";
+import { getCurrentDate } from "../../../utils/dateMethod";
+import { toast } from "react-toastify";
+
+const AddUser = ({
+  showAddModal,
+  setShowAddModal,
+  refresh,
+  selectedUser,
+  getSites,
+  sites,
+  addUser,
+}) => {
+  const handleOpen = () => setShowAddModal(true);
+  const handleClose = () => setShowAddModal(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { register, reset, watch } = useForm({});
+  const values = watch();
+  useEffect(() => {
+    reset(selectedUser);
+    getSites();
+  }, []);
+  return (
+    <React.Fragment>
+      <Dialog
+        open={showAddModal}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          component: "form",
+          onSubmit: async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const formJson = Object.fromEntries(formData.entries());
+            const data = {
+              ...formJson,
+              // userId: 0,
+              // defaultSiteId: Number(formJson?.tagSite),
+            };
+            setIsLoading(true);
+            try {
+              const res = await addUser(data);
+              if (res === "success") {
+                toast.success("User has been added successfully.");
+                refresh();
+                reset({});
+                handleClose();
+              } else {
+                toast.error("Something went wrong while adding user.");
+              }
+              setIsLoading(false);
+            } catch (e) {
+              setIsLoading(false);
+            }
+          },
+        }}
+      >
+        <DialogTitle>Add User</DialogTitle>
+        <DialogContent dividers>
+          {isLoading && (
+            <Box sx={{ display: "flex" }}>
+              <CircularProgress />
+            </Box>
+          )}
+          {!isLoading && (
+            <Fragment>
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="form-group">
+                    <label for="firstName">First Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="firstName"
+                      {...register("firstName")}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="lastName"
+                      {...register("lastName")}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="form-group">
+                    <label for="email">Email ID</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      id="email"
+                      {...register("email")}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4 mt-2">
+                  <div className="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="phone"
+                      {...register("phone")}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4 mt-2">
+                  <div className="form-group">
+                    <label for="email">Role</label>
+                    <select
+                      {...register("role")}
+                      className="form-control form-select"
+                    >
+                      <option value={""} disabled selected>
+                        Select Action Manager
+                      </option>
+                      <option value={"Admin"}>Admin</option>
+                      <option value={"Property Manager"}>
+                        Property Manager
+                      </option>
+                      <option value={"Site Action Manager"}>
+                        Site Action Manager
+                      </option>
+                      <option value={"Site Users"}>Site Users</option>
+                      <option value={"Care Taker"}>Care Taker</option>
+                      <option value={"Contractor"}>Contractor</option>
+                      <option value={"Surveyor"}>Surveyor</option>
+                      <option value={"Tradesman"}>Tradesman</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="col-md-4 mt-2">
+                  <div className="form-group">
+                    <label for="internalExternal">Internal/External</label>
+                    <select
+                      id="internalExternal"
+                      name="internalExternal"
+                      {...register("internalExternal")}
+                      className="form-control form-select"
+                    >
+                      <option value={""} selected disabled>
+                        Select Internal/External
+                      </option>
+                      <option value={"Internal"}>Internal</option>
+                      <option value={"External"}>External</option>
+                    </select>
+                  </div>
+                </div>
+                {values?.internalExternal === "Internal" && (
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="tagSite">Tag Site (if internal)</label>
+                      <select
+                        id="tagSite"
+                        name="tagSite"
+                        {...register("tagSite")}
+                        className="form-control form-select"
+                      >
+                        <option value={""} selected disabled>
+                          Tag Site
+                        </option>
+                        {sites?.map((itm) => (
+                          <option value={itm?.siteId} key={itm?.siteId}>
+                            {itm?.siteName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="col-md-4 mt-2">
+                  <div className="form-group">
+                    <label for="company">Company Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="company"
+                      {...register("company")}
+                    />
+                  </div>
+                </div>
+                {values?.internalExternal === "External" && (
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="trade">Trade (if external)</label>
+                      <select
+                        id="trade"
+                        name="trade"
+                        {...register("trade")}
+                        className="form-control form-select"
+                      >
+                        <option value={""} selected>
+                          NA
+                        </option>
+                        <option value={"Electrician"}>Electrician</option>
+                        <option value={"Gas Engineer"}>Gas Engineer</option>
+                        <option value={"Asbestos Surveyor"}>
+                          Asbestos Surveyor
+                        </option>
+                        <option value={"AC Engineer"}>AC Engineer</option>
+                        <option value={"Fire Door Install"}>
+                          Fire Door Install
+                        </option>
+                        <option value={"General Company"}>
+                          General Company
+                        </option>
+                        <option value={"Life Maintenance"}>
+                          Life Maintenance
+                        </option>
+                        <option value={"Plumber"}>Plumber</option>
+                        <option value={"Auto Door Maintanance"}>
+                          Auto Door Maintanance
+                        </option>
+                        <option value={"Refuse Collector"}>
+                          Refuse Collector
+                        </option>
+                        <option value={"Fire Alarm"}>Fire Alarm</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+                {values?.tagSite && (
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="trade">Selected Sites</label>
+                      <div>
+                        <button className="btn btn-sm btn-light text-primary">
+                          {
+                            sites?.filter(
+                              (itm) => itm.siteId == values?.tagSite
+                            )?.[0]?.siteName
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="col-md-4 mt-2">
+                  <div className="form-group">
+                    <label for="status">Status</label>
+                    <select
+                      id="status"
+                      name="status"
+                      {...register("status")}
+                      className="form-control form-select"
+                    >
+                      <option value={""} disabled selected>
+                        Select Status
+                      </option>
+                      <option value={"active"}>Active</option>
+                      <option value={"inactive"}>Inactive</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </Fragment>
+          )}
+        </DialogContent>
+        {!isLoading && (
+          <DialogActions>
+            <Button onClick={handleClose} className="bg-light text-primary">
+              Close
+            </Button>
+            <Button type="submit" className="bg-primary text-white">
+              Save
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
+    </React.Fragment>
+  );
+};
+
+const mapStateToProps = (state) => ({
+  sites: state.site.sites,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, { getSites, addUser })(AddUser);

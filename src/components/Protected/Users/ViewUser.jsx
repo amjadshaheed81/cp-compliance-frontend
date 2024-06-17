@@ -6,6 +6,7 @@ import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
 import { connect } from "react-redux";
+import moment from "moment";
 
 const ViewUsers = ({
   showViewModal,
@@ -47,7 +48,7 @@ const ViewUsers = ({
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Full Name
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.fullName}
+                    {selectedUser?.name}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -59,7 +60,7 @@ const ViewUsers = ({
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Site
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.site}
+                    {selectedUser?.defaultSiteName || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -71,19 +72,25 @@ const ViewUsers = ({
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Creation Date
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.creationDate}
+                    {moment(selectedUser?.creationDate).format("DD-MM-YYYY")}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Type
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.type}
+                    {selectedUser?.userType}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Company
                   <span class="badge bg-primary rounded-pill">
                     {selectedUser?.company}
+                  </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  Trade
+                  <span class="badge bg-primary rounded-pill">
+                    {selectedUser?.trade}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
