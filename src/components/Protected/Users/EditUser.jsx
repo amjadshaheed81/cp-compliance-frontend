@@ -7,7 +7,8 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import { getSites } from "../../../store/thunk/site";
+import { addUser, getSites } from "../../../store/thunk/site";
+import { toast } from "react-toastify";
 
 const ViewUsers = ({
   showEditModal,
@@ -16,6 +17,7 @@ const ViewUsers = ({
   selectedUser,
   sites,
   getSites,
+  addUser,
 }) => {
   const handleOpen = () => setShowEditModal(true);
   const handleClose = () => setShowEditModal(false);
@@ -36,11 +38,39 @@ const ViewUsers = ({
         fullWidth
         PaperProps={{
           component: "form",
-          onSubmit: (event) => {
+          onSubmit: async (event) => {
             event.preventDefault();
             const formData = new FormData(event.currentTarget);
             const formJson = Object.fromEntries(formData.entries());
-            console.log("formJson", formJson);
+            console.log("formJson", formJson)
+            const data = {
+              userId: selectedUser?.id,
+              firstName: formJson?.firstName || null,
+              lastName: formJson?.lastName || null,
+              email: formJson?.email || null,
+              phone: Number(formJson?.phone) || null,
+              role: formJson?.role || null,
+              userType: formJson?.userType || null,
+              defaultSiteId: formJson?.userType === 'Internal' ? Number(formJson?.tagSite) : null,
+              company: formJson?.company || null,
+              trade: formJson?.userType === 'External' ? formJson?.trade : null,
+              status: formJson?.status || null,
+            };
+            setIsLoading(true);
+            try {
+              const res = await addUser(data);
+              if (res === "success") {
+                toast.success("User has been added successfully.");
+                refresh();
+                reset({});
+                handleClose();
+              } else {
+                toast.error("Something went wrong while adding user.");
+              }
+              setIsLoading(false);
+            } catch (e) {
+              setIsLoading(false);
+            }
           },
         }}
       >
@@ -265,4 +295,4 @@ const ViewUsers = ({
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
 });
-export default connect(mapStateToProps, { getSites })(ViewUsers);
+export default connect(mapStateToProps, { getSites, addUser })(ViewUsers);
