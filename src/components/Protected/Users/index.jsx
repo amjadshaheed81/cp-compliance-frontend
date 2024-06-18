@@ -11,16 +11,62 @@ import EditUser from "./EditUser";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import AddUser from "./AddUser";
-import { deleteUser, getUsers } from "../../../store/thunk/site";
+import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 
-const Users = ({ users, getUsers, deleteUser }) => {
+const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
   const [showViewModal, setShowViewModal] = useState(false);
+  const [filteredUser, setFilteredUser] = useState([]);
   const [selectedUser, setSelectedUser] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+
   useEffect(() => {
     getUsers();
+    getSites();
   }, []);
+  useEffect(() => {
+    if (users?.length > 0) {
+      setFilteredUser(users);
+    }
+  }, [users]);
+  const [formData, setFormData] = useState({
+    searchField: "",
+    role: "",
+    site: "",
+    status: "",
+  });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+  useEffect(() => {
+    searchUser();
+  }, [formData.role, formData.searchField, formData.site, formData.status]);
+  const searchUser = () => {
+    const searchField = formData?.searchField;
+    const role = formData?.role;
+    const site = formData?.site;
+    const status = formData?.status;
+    if (searchField || role || site || status) {
+      const list = users?.filter(
+        (x) =>
+          String(x?.name)
+            .toLowerCase()
+            .includes(String(searchField).toLowerCase()) &&
+          String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
+          String(x?.defaultSiteName)
+            .toLowerCase()
+            .includes(String(site).toLowerCase()) &&
+          String(x?.status).toLowerCase().includes(String(status).toLowerCase())
+      );
+      setFilteredUser(list);
+    } else {
+      setFilteredUser(users);
+    }
+  };
   const deleteUserCall = (user) => {
     Swal.fire({
       title: `Do you want to delete ${user?.name}`,
@@ -91,6 +137,8 @@ const Users = ({ users, getUsers, deleteUser }) => {
                     type="text"
                     className="form-control"
                     placeholder="Search"
+                    name="searchField"
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="col">
@@ -98,8 +146,19 @@ const Users = ({ users, getUsers, deleteUser }) => {
                     name="role"
                     className="form-control form-select"
                     id="role"
+                    onChange={handleInputChange}
                   >
                     <option value="">Role</option>
+                    <option value={"Admin"}>Admin</option>
+                    <option value={"Property Manager"}>Property Manager</option>
+                    <option value={"Site Action Manager"}>
+                      Site Action Manager
+                    </option>
+                    <option value={"Site Users"}>Site Users</option>
+                    <option value={"Care Taker"}>Care Taker</option>
+                    <option value={"Contractor"}>Contractor</option>
+                    <option value={"Surveyor"}>Surveyor</option>
+                    <option value={"Tradesman"}>Tradesman</option>
                   </select>
                 </div>
                 <div className="col">
@@ -107,8 +166,14 @@ const Users = ({ users, getUsers, deleteUser }) => {
                     name="site"
                     className="form-control form-select"
                     id="site"
+                    onChange={handleInputChange}
                   >
                     <option value="">Site</option>
+                    {sites?.map((itm) => (
+                      <option value={itm?.siteId} key={itm?.siteId}>
+                        {itm?.siteName}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="col">
@@ -116,8 +181,9 @@ const Users = ({ users, getUsers, deleteUser }) => {
                     name="status"
                     className="form-control form-select"
                     id="status"
+                    onChange={handleInputChange}
                   >
-                    <option value="status">Status</option>
+                    <option value="">Status</option>
                     <option value="active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </select>
@@ -139,9 +205,9 @@ const Users = ({ users, getUsers, deleteUser }) => {
                 </div>
                 <div className="col">
                   <CSVLink
-                    filename={"site-lists"}
+                    filename={"user-lists"}
                     className="btn btn-light bg-white text-primary"
-                    data={[]}
+                    data={users || []}
                   >
                     <i className="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
@@ -167,7 +233,12 @@ const Users = ({ users, getUsers, deleteUser }) => {
                 </tr>
               </thead>
               <tbody>
-                {users?.map((user) => (
+                {filteredUser?.length === 0 && (
+                  <tr>
+                    <td>No search result found!!</td>
+                  </tr>
+                )}
+                {filteredUser?.map((user) => (
                   <tr key={user?.id}>
                     <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>
@@ -223,6 +294,9 @@ const Users = ({ users, getUsers, deleteUser }) => {
   );
 };
 const mapStateToProps = (state) => ({
+  sites: state.site.sites,
   users: state.site.users,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser })(Users);
+export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+  Users
+);

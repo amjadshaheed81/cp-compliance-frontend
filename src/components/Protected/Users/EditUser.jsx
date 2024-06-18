@@ -7,19 +7,25 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
+import { getSites } from "../../../store/thunk/site";
 
 const ViewUsers = ({
   showEditModal,
   setShowEditModal,
   refresh,
   selectedUser,
+  sites,
+  getSites,
 }) => {
   const handleOpen = () => setShowEditModal(true);
   const handleClose = () => setShowEditModal(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register, reset } = useForm({});
+  const { register, reset, watch } = useForm({});
+  const values = watch();
   useEffect(() => {
+    console.log("selectedUser", selectedUser);
     reset(selectedUser);
+    getSites();
   }, []);
   return (
     <React.Fragment>
@@ -94,22 +100,36 @@ const ViewUsers = ({
                 </div>
                 <div className="col-md-4 mt-2">
                   <div className="form-group">
-                    <label for="email">Role</label>
+                    <label for="role">Role</label>
                     <select
                       {...register("role")}
                       className="form-control form-select"
                     >
-                      <option value={""}>Select Role</option>
+                      <option value={""} disabled selected>
+                        Select Action Manager
+                      </option>
+                      <option value={"Admin"}>Admin</option>
+                      <option value={"Property Manager"}>
+                        Property Manager
+                      </option>
+                      <option value={"Site Action Manager"}>
+                        Site Action Manager
+                      </option>
+                      <option value={"Site Users"}>Site Users</option>
+                      <option value={"Care Taker"}>Care Taker</option>
+                      <option value={"Contractor"}>Contractor</option>
+                      <option value={"Surveyor"}>Surveyor</option>
+                      <option value={"Tradesman"}>Tradesman</option>
                     </select>
                   </div>
                 </div>
                 <div className="col-md-4 mt-2">
                   <div className="form-group">
-                    <label for="internalExternal">Internal/External</label>
+                    <label for="userType">Internal/External</label>
                     <select
-                      id="internalExternal"
-                      name="internalExternal"
-                      {...register("internalExternal")}
+                      id="userType"
+                      name="userType"
+                      {...register("userType")}
                       className="form-control form-select"
                     >
                       <option value={"Internal"}>Internal</option>
@@ -117,48 +137,95 @@ const ViewUsers = ({
                     </select>
                   </div>
                 </div>
-                <div className="col-md-4 mt-2">
-                  <div className="form-group">
-                    <label for="tagSite">Tag Site (if internal)</label>
-                    <select
-                      id="tagSite"
-                      name="tagSite"
-                      {...register("tagSite")}
-                      className="form-control form-select"
-                    >
-                      <option value={""}>Tag Site</option>
-                    </select>
+                {values?.userType === "Internal" && (
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="tagSite">Tag Site (if internal)</label>
+                      <select
+                        id="tagSite"
+                        name="tagSite"
+                        {...register("tagSite")}
+                        className="form-control form-select"
+                      >
+                        <option value={""} selected disabled>
+                          Tag Site
+                        </option>
+                        {sites?.map((itm) => (
+                          <option value={itm?.siteId} key={itm?.siteId}>
+                            {itm?.siteName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="col-md-4 mt-2">
                   <div className="form-group">
-                    <label for="companyName">Company Name</label>
+                    <label for="company">Company Name</label>
                     <input
                       type="text"
                       className="form-control"
-                      id="companyName"
-                      {...register("companyName")}
+                      id="company"
+                      {...register("company")}
                     />
                   </div>
                 </div>
-                <div className="col-md-4 mt-2">
-                  <div className="form-group">
-                    <label for="trade">Trade (if external)</label>
-                    <select
-                      id="trade"
-                      name="trade"
-                      {...register("trade")}
-                      className="form-control form-select"
-                    >
-                      <option value={""}>NA</option>
-                    </select>
+                {values?.userType === "External" && (
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="trade">Trade (if external)</label>
+                      <select
+                        id="trade"
+                        name="trade"
+                        {...register("trade")}
+                        className="form-control form-select"
+                      >
+                        <option value={""} selected>
+                          NA
+                        </option>
+                        <option value={"Electrician"}>Electrician</option>
+                        <option value={"Gas Engineer"}>Gas Engineer</option>
+                        <option value={"Asbestos Surveyor"}>
+                          Asbestos Surveyor
+                        </option>
+                        <option value={"AC Engineer"}>AC Engineer</option>
+                        <option value={"Fire Door Install"}>
+                          Fire Door Install
+                        </option>
+                        <option value={"General Company"}>
+                          General Company
+                        </option>
+                        <option value={"Life Maintenance"}>
+                          Life Maintenance
+                        </option>
+                        <option value={"Plumber"}>Plumber</option>
+                        <option value={"Auto Door Maintanance"}>
+                          Auto Door Maintanance
+                        </option>
+                        <option value={"Refuse Collector"}>
+                          Refuse Collector
+                        </option>
+                        <option value={"Fire Alarm"}>Fire Alarm</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
-                <div className="col-md-4 mt-2">
-                  <div className="form-group">
-                    <label for="trade">Selected Sites</label>
+                )}
+                {values?.tagSite && (
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="trade">Selected Sites</label>
+                      <div>
+                        <button className="btn btn-sm btn-light text-primary">
+                          {
+                            sites?.filter(
+                              (itm) => itm.siteId == values?.tagSite
+                            )?.[0]?.siteName
+                          }
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="col-md-4 mt-2">
                   <div className="form-group">
                     <label for="status">Status</label>
@@ -168,7 +235,9 @@ const ViewUsers = ({
                       {...register("status")}
                       className="form-control form-select"
                     >
-                      <option value={""}>Select Status</option>
+                      <option value={""} disabled selected>
+                        Select Status
+                      </option>
                       <option value={"active"}>Active</option>
                       <option value={"inactive"}>Inactive</option>
                     </select>
@@ -193,5 +262,7 @@ const ViewUsers = ({
   );
 };
 
-const mapStateToProps = () => ({});
-export default connect(mapStateToProps, {})(ViewUsers);
+const mapStateToProps = (state) => ({
+  sites: state.site.sites,
+});
+export default connect(mapStateToProps, { getSites })(ViewUsers);

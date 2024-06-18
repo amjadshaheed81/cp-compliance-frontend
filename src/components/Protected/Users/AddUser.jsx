@@ -43,12 +43,17 @@ const AddUser = ({
             const formData = new FormData(event.currentTarget);
             const formJson = Object.fromEntries(formData.entries());
             const data = {
-              ...formJson,
-              trade: formJson?.trade || null,
-              tagSite: formJson?.tagSite || null,
-              defaultSiteId: null,
-              defaultSiteName: null,
-              taggedSites: null,
+              userId: null,
+              firstName: formJson?.firstName || null,
+              lastName: formJson?.lastName || null,
+              email: formJson?.email || null,
+              phone: Number(formJson?.phone) || null,
+              role: formJson?.role || null,
+              userType: formJson?.userType || null,
+              defaultSiteId: formJson?.userType === 'Internal' ? Number(formJson?.tagSite) : null,
+              company: formJson?.company || null,
+              trade: formJson?.userType === 'External' ? formJson?.trade : null,
+              status: formJson?.status || null,
             };
             setIsLoading(true);
             try {
@@ -124,7 +129,7 @@ const AddUser = ({
                 </div>
                 <div className="col-md-4 mt-2">
                   <div className="form-group">
-                    <label for="email">Role</label>
+                    <label for="role">Role</label>
                     <select
                       {...register("role")}
                       className="form-control form-select"
@@ -266,8 +271,8 @@ const AddUser = ({
                       <option value={""} disabled selected>
                         Select Status
                       </option>
-                      <option value={"active"}>Active</option>
-                      <option value={"inactive"}>Inactive</option>
+                      <option value={"Active"}>Active</option>
+                      <option value={"Inactive"}>Inactive</option>
                     </select>
                   </div>
                 </div>
