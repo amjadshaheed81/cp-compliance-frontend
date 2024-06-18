@@ -56,7 +56,7 @@ const Users = ({ users, getUsers, deleteUser }) => {
               showViewModal={showViewModal}
               setShowViewModal={setShowViewModal}
               refresh={() => {
-                console.log("refresh call to update view users");
+                getUsers();
               }}
             />
           )}
@@ -66,7 +66,7 @@ const Users = ({ users, getUsers, deleteUser }) => {
               showEditModal={showAddModal}
               setShowAddModal={setShowAddModal}
               refresh={() => {
-                console.log("refresh call to update view users");
+                getUsers();
               }}
             />
           )}
@@ -76,7 +76,7 @@ const Users = ({ users, getUsers, deleteUser }) => {
               showEditModal={showEditModal}
               setShowEditModal={setShowEditModal}
               refresh={() => {
-                console.log("refresh call to update view users");
+                getUsers();
               }}
             />
           )}

@@ -44,8 +44,11 @@ const AddUser = ({
             const formJson = Object.fromEntries(formData.entries());
             const data = {
               ...formJson,
-              // userId: 0,
-              // defaultSiteId: Number(formJson?.tagSite),
+              trade: formJson?.trade || null,
+              tagSite: formJson?.tagSite || null,
+              defaultSiteId: null,
+              defaultSiteName: null,
+              taggedSites: null,
             };
             setIsLoading(true);
             try {
@@ -146,11 +149,11 @@ const AddUser = ({
                 </div>
                 <div className="col-md-4 mt-2">
                   <div className="form-group">
-                    <label for="internalExternal">Internal/External</label>
+                    <label for="userType">Internal/External</label>
                     <select
-                      id="internalExternal"
-                      name="internalExternal"
-                      {...register("internalExternal")}
+                      id="userType"
+                      name="userType"
+                      {...register("userType")}
                       className="form-control form-select"
                     >
                       <option value={""} selected disabled>
@@ -161,7 +164,7 @@ const AddUser = ({
                     </select>
                   </div>
                 </div>
-                {values?.internalExternal === "Internal" && (
+                {values?.userType === "Internal" && (
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
                       <label for="tagSite">Tag Site (if internal)</label>
@@ -195,7 +198,7 @@ const AddUser = ({
                     />
                   </div>
                 </div>
-                {values?.internalExternal === "External" && (
+                {values?.userType === "External" && (
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
                       <label for="trade">Trade (if external)</label>
