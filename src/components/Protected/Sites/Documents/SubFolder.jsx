@@ -74,27 +74,48 @@ const SubFolder = ({
     }
   };
 
-  const navigate2 = () => { 
-    if (previousFolderId.length === 0 || (previousFolderId.length === 1 && previousFolderId[0].id === folderId)) {
+  const navigate2 = () => {
+    const previos = previousFolderId[previousFolderId.length - 2];
+    if (previos.isParent === true) {
       navigate("/documents");
     } else {
-      let id = previousFolderId.pop();
-      if (id.id == folderId) {
-        id = previousFolderId.pop();
-      }
-      
-      setPreviousFolderId(previousFolderId);
-      navigateToSubFolder(id.id);
+      navigateToSubFolder(previos.id);
     }
     
    
+  }
+
+  useEffect( () => {
+    if (subfolderFiles) {
+      updateFolderList()
+    }
+  }, [subfolderFiles])
+
+  const updateFolderList = async () => {
+    const foldersList = [];
+    if (subfolderFiles) {
+      foldersList.push({ id: subfolderFiles.document.id, name: subfolderFiles.document.name, isParent: false });
+      let parentFolderId = subfolderFiles.document.parentFolderId;
+      while (true) {
+        if (parentFolderId !== null) {
+          const url = `/api/document/parent/${parentFolderId}/folders`;
+          const response = await get(url);
+          parentFolderId = response.document.parentFolderId
+          foldersList.push({ id: response.document.id, name: response.document.name, isParent: parentFolderId === null});
+          if (parentFolderId === null) {
+            break;
+          }
+          }
+      }
+      setPreviousFolderId(foldersList.reverse());
+    }
   }
 
   const addStack = (id, name) => {
     const idx = previousFolderId.findIndex(i => i.id === id);
     if (idx < 0) {
       previousFolderId.push({ id, name });
-      setPreviousFolderId(previousFolderId);
+      //setPreviousFolderId(previousFolderId);
      
     }
   }
@@ -115,7 +136,7 @@ const SubFolder = ({
   useEffect(() => {
     getSubFilesAndFolder(folderId);
     if (previousFolderId.length === 0) {
-      setPreviousFolderId([{ id: folderId, name: subfolderFiles?.document?.name }])
+      //setPreviousFolderId([{ id: folderId, name: subfolderFiles?.document?.name }])
     }
   }, [folderId]);
   return (
