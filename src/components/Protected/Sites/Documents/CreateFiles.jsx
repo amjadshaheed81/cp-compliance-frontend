@@ -15,6 +15,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import DialogTitle from '@mui/material/DialogTitle';
 import { post, uploadPhoto } from "../../../../api";
 import { toast } from 'react-toastify';
+import moment from "moment";
 
 const CreateFiles = ({
   showModal,
@@ -27,6 +28,8 @@ const CreateFiles = ({
   // const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [issueDate, setIssueDate] = useState("");
   const [fileName, setFileName] = useState("");
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setShowModal(true);
@@ -42,8 +45,8 @@ const CreateFiles = ({
     };
     
     delete reqData.documentRequestString.files[0].fileUpload;
-    reqData.documentRequestString.files[0].issueDate = reqData.documentRequestString.files[0].issueDate + " 00:00:00";
-    reqData.documentRequestString.files[0].expiryDate = reqData.documentRequestString.files[0].expiryDate + " 00:00:00";
+    reqData.documentRequestString.files[0].issueDate = issueDate + " 00:00:00";
+    reqData.documentRequestString.files[0].expiryDate = expiryDate + " 00:00:00";
     setIsLoading(true);
     const url = `/api/document/files/upload`;
     const formData = new FormData();
@@ -58,7 +61,19 @@ const CreateFiles = ({
     refresh();
     
   };
-  console.log("getValues", getValues());
+  
+  
+  const setExpiry = (e) => {
+    setExpiryDate(e.target.value)
+  }
+  const setIssue = (e) => {
+    console.log(e.target.value);
+    setIssueDate(e.target.value)
+    const date = moment(e.target.value).add(1, 'years').format('YYYY-MM-DD');
+    setExpiryDate(date)
+  }
+
+  
   const style = {
     position: "absolute",
     top: "50%",
@@ -174,11 +189,12 @@ const CreateFiles = ({
                 <label htmlFor="issueDate" name="folder">
                   Issue Date
                 </label>
-                <input
+                    <input
+                      value={issueDate}
                   type="date"
                   name="folder"
                   className="form-control"
-                  {...register("issueDate")}
+                      onChange={setIssue}
                     />
                   </div>
               </Grid>
@@ -187,11 +203,12 @@ const CreateFiles = ({
                   <label htmlFor="expiryDate" name="expiryDate">
                 Expiry Date
               </label>
-                <input
+                    <input
+                      value={expiryDate}
                     type="date"
                   name="expiryDate"
                   className="form-control"
-                  {...register("expiryDate")}
+                  onChange={setExpiry}
                     />
                   </div>
                 </Grid>

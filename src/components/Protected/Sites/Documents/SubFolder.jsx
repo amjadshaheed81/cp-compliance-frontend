@@ -96,7 +96,7 @@ const SubFolder = ({
     if (subfolderFiles) {
       foldersList.push({ id: subfolderFiles.document.id, name: subfolderFiles.document.name, isParent: false });
       let parentFolderId = subfolderFiles.document.parentFolderId;
-      while (true) {
+      for (let i = 0; i < 10; i=i+1) {
         if (parentFolderId !== null) {
           const url = `/api/document/parent/${parentFolderId}/folders`;
           const response = await get(url);
