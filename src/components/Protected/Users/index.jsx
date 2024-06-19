@@ -77,7 +77,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
       if (result.isConfirmed) {
         const res = await deleteUser(user?.id);
         if (res === "Success") {
-          toast.success(`user has been deleted successully`);
+          toast.success(`${user?.name} user has been deleted successully`);
           getUsers();
         } else {
           toast.error(

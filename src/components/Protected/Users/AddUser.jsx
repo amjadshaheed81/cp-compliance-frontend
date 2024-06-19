@@ -57,12 +57,14 @@ const AddUser = ({
     try {
       const res = await addUser(data);
       if (res === "success") {
-        toast.success("User has been added successfully.");
+        toast.success(`${formJson?.firstName} has been added successfully.`);
         refresh();
         reset({});
         handleClose();
       } else {
-        toast.error("Something went wrong while adding user.");
+        toast.error(
+          `Something went wrong while adding ${formJson?.firstName}.`
+        );
       }
       setIsLoading(false);
     } catch (e) {
@@ -71,12 +73,7 @@ const AddUser = ({
   };
   return (
     <React.Fragment>
-      <Dialog
-        open={showAddModal}
-        onClose={handleClose}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={showAddModal} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(submitUser)}>
           <DialogTitle>Add User</DialogTitle>
           <DialogContent dividers>
