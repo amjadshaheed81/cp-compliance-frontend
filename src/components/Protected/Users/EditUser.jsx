@@ -285,8 +285,19 @@ const ViewUsers = ({
                         type="text"
                         className="form-control"
                         id="company"
-                        {...register("company")}
+                        {...register("company", {
+                          required: {
+                            value: true,
+                            message: `Please enter company name.`,
+                          },
+                        })}
                       />
+                      {errors?.company && (
+                        <InputError
+                          message={errors?.company?.message}
+                          key={errors?.company?.message}
+                        />
+                      )}
                     </div>
                   </div>
                   {values?.userType === "External" && (
