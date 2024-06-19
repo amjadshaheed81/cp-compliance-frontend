@@ -58,6 +58,8 @@ import {
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
   GET_USER_ALL,
+  USER_LOGIN,
+  USER_LOGOUT,
 } from "./../actionTypes";
 
 const initialState = {
@@ -86,6 +88,7 @@ const initialState = {
   saveSiteLandscapesInfo: null,
   isLoading: false,
   users: [],
+  loggedInUserData: null,
 };
 
 const reducer = (state = initialState, action) => {
@@ -596,6 +599,16 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         users: action.payload,
+      };
+    case USER_LOGIN:
+      return {
+        ...state,
+        isLoading: false,
+        loggedInUserData: action.payload,
+      };
+    case USER_LOGOUT:
+      return {
+        ...initialState,
       };
     default:
       return state;

@@ -1,29 +1,32 @@
 // components/Login/LoginForm.js
 import React, { Fragment, useState } from "react";
 import { connect } from "react-redux";
+import { Box } from "@mui/material";
 import { login } from "../../store/thunks";
 import "./Login.css";
 import logoImage from "../../images/login-left.png";
 import logo from "../../images/logo.png";
 import { useNavigate } from "react-router-dom";
+import { Validation } from "../../Constant/Validation";
+import { InputError } from "../common/InputError";
+import { useForm } from "react-hook-form";
+import { loginUser } from "../../store/thunk/site";
+import CircularProgress from "@mui/material/CircularProgress";
 
-const LoginForm = ({ login }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const LoginForm = ({ login, loginUser }) => {
   const navigate = useNavigate();
-
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
+  const [isLoading, setLoading] = useState(false);
+  const {
+    register,
+    formState: { errors },
+    handleSubmit,
+  } = useForm({});
+  const goTo = (link) => {
+    navigate(link);
   };
-
-  const handlePasswordChange = (e) => {
-    setPassword(e.target.value);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    navigate("/dashboard");
-    // login('email, password);
+  const handleLoginSubmit = (data) => {
+    setLoading(true);
+    loginUser(data, goTo, setLoading);
   };
 
   return (
@@ -34,7 +37,7 @@ const LoginForm = ({ login }) => {
             <img src={logoImage} alt="login left panel logo" />
           </div>
           <div className="col-md-6 right-panel bg-white">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit(handleLoginSubmit)}>
               <div className="text-center mb-4">
                 <img src={logo} alt="main cpc portal logo" />
               </div>
@@ -48,10 +51,28 @@ const LoginForm = ({ login }) => {
                   type="text"
                   className="form-control"
                   id="email"
-                  value={email}
                   placeholder="Enter your email"
-                  onChange={handleEmailChange}
+                  {...register("email", {
+                    required: {
+                      value: true,
+                      message: `${Validation.REQUIRED} email.`,
+                    },
+                    validate: {
+                      maxLength: (v) =>
+                        v.length <= 50 ||
+                        "The email should have at most 50 characters",
+                      matchPattern: (v) =>
+                        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) ||
+                        "Email address must be a valid address",
+                    },
+                  })}
                 />
+                {errors?.email && (
+                  <InputError
+                    message={errors?.email?.message}
+                    key={errors?.email?.message}
+                  />
+                )}
               </div>
               <div className="form-group mt-2">
                 <label for="password">Password</label>
@@ -60,18 +81,36 @@ const LoginForm = ({ login }) => {
                   className="form-control"
                   id="password"
                   placeholder="Password"
-                  value={password}
-                  onChange={handlePasswordChange}
+                  {...register("password", {
+                    required: {
+                      value: true,
+                      message: `${Validation.REQUIRED} password.`,
+                    },
+                  })}
                 />
+                {errors?.password && (
+                  <InputError
+                    message={errors?.password?.message}
+                    key={errors?.password?.message}
+                  />
+                )}
               </div>
-              <div className="form-group mt-2">
-                <button
-                  type="submit"
-                  className="btn btn-primary rounded w-100 login-submit"
-                >
-                  Login
-                </button>
-              </div>
+              {isLoading && (
+                <Box sx={{ display: "flex" }}>
+                  <CircularProgress />
+                </Box>
+              )}
+              {!isLoading && (
+                <div className="form-group mt-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary rounded w-100 login-submit"
+                  >
+                    Login
+                  </button>
+                </div>
+              )}
+
               <div className="mt-2 text-center">
                 <p>
                   <small>
@@ -96,4 +135,4 @@ const LoginForm = ({ login }) => {
   );
 };
 
-export default connect(null, { login })(LoginForm);
+export default connect(null, { login, loginUser })(LoginForm);

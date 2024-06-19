@@ -35,6 +35,7 @@ import ChecklistIcon from "@mui/icons-material/Checklist";
 import SearchIcon from "@mui/icons-material/Search";
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import { connect } from "react-redux";
 
 const drawerWidth = 240;
 
@@ -125,7 +126,7 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-export default function SidebarNew() {
+const SidebarNew = ({ loggedInUserData }) => {
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
@@ -246,8 +247,10 @@ export default function SidebarNew() {
               className="img img-responsive"
               alt="side logo"
             />
-            <span className="text-white p-2 fs-5">Samantha Joe</span>
-            <p className="text-white ps-5 fs-6">Site Manager</p>
+            <span className="text-white p-2 fs-5">
+              {loggedInUserData?.name}
+            </span>
+            <p className="text-white ps-5 fs-6">{loggedInUserData?.role}</p>
           </li>
           <p style={{ color: "grey" }}>Genral</p>
           {[
@@ -333,4 +336,9 @@ export default function SidebarNew() {
       </Drawer>
     </Box>
   );
-}
+};
+
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+});
+export default connect(mapStateToProps, {})(SidebarNew);

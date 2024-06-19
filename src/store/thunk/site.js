@@ -69,6 +69,8 @@ import {
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
   GET_USER_ALL,
+  USER_LOGIN,
+  USER_LOGOUT,
 } from "../actionTypes";
 
 export const addSite = (formData, goTo) => {
@@ -1227,5 +1229,39 @@ export const deleteUser = (id) => {
     } catch (error) {
       return "Error";
     }
+  };
+};
+
+export const loginUser = (formData, goTo, setLoading) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/user/login?email=${formData?.email}&password=${formData?.password}`;
+      const userData = await get(url);
+      if (userData?.id) {
+        dispatch({
+          type: USER_LOGIN,
+          payload: userData,
+        });
+        toast.success("Successfully logged in.");
+        goTo("/dashboard");
+      } else {
+        toast.error("Please enter valid email and password.");
+      }
+      setLoading(false);
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  };
+};
+
+export const logoutUser = (goTo) => {
+  return async (dispatch) => {
+    dispatch({
+      type: USER_LOGOUT,
+      payload: {},
+    });
+    toast.success("Successfully logged out.");
+    goTo("/login");
   };
 };

@@ -34,7 +34,12 @@ const ViewUsers = ({
   const values = watch();
   useEffect(() => {
     console.log("selectedUser", selectedUser);
-    reset(selectedUser);
+    const name = selectedUser?.name?.split(" ");
+    reset({
+      ...selectedUser,
+      firstName: name?.[0] || "",
+      lastName: name?.[1] || "",
+    });
     getSites();
   }, []);
   const submitUser = async (formJson) => {

@@ -7,10 +7,18 @@ import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { connect } from "react-redux";
 import BackDrop from "../Loader/BackDrop";
+import { logoutUser } from "../../../store/thunk/site";
+import { useNavigate } from "react-router-dom";
 
-const Header = ({ siteSelectedForGlobal, isLoading }) => {
+const Header = ({ siteSelectedForGlobal, isLoading, logoutUser }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
+  const logout = () => {
+    logoutUser(goTo);
+  };
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -40,7 +48,7 @@ const Header = ({ siteSelectedForGlobal, isLoading }) => {
           <div className="icon">
             <NotificationsNoneIcon className="grid-icon" />
           </div>
-          <div className="icon">
+          <div className="icon cursor" onClick={() => logout()}>
             <LogoutIcon className="grid-icon" />
           </div>
           <div className="text-dark mt-2">
@@ -67,4 +75,4 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   isLoading: state.site.isLoading,
 });
-export default connect(mapStateToProps, {})(Header);
+export default connect(mapStateToProps, { logoutUser })(Header);
