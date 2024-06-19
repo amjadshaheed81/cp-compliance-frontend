@@ -87,6 +87,7 @@ const Contracts = ({
     }
     form_data.append("contractUpdateRquestString", JSON.stringify(contractUpdateRquestString) )
     updateContractDetail(form_data);
+    getSiteContracts(6); 
     handleClose();
   };
   const style = {
