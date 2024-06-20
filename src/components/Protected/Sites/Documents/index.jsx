@@ -11,6 +11,8 @@ import SubFolder from "./SubFolder";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import "./Documents.css";
+import Swal from "sweetalert2";
+
 
 const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal }) => {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] =
@@ -20,7 +22,15 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
 
   const navigate = useNavigate();
   useEffect(() => {
-    getDocumentsRootFolder(siteSelectedForGlobal?.siteId );
+    if (siteSelectedForGlobal?.siteId) {
+      getDocumentsRootFolder(siteSelectedForGlobal?.siteId );
+    } else{
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Please select site from site search and try again.",
+      });
+    }
   }, []);
   const navigateToSubFolder = (id) => {
     console.log("target", id);
