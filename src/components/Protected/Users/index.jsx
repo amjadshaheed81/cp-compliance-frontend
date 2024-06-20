@@ -150,7 +150,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
                   >
                     <option value="">Role</option>
                     <option value={"Admin"}>Admin</option>
-                    <option value={"Property Manager"}>Property Manager</option>
+                    <option value={"Manager"}>Property Manager</option>
                     <option value={"Site Action Manager"}>
                       Site Action Manager
                     </option>

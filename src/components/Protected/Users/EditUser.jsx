@@ -214,7 +214,7 @@ const ViewUsers = ({
                           Select Action Manager
                         </option>
                         <option value={"Admin"}>Admin</option>
-                        <option value={"Property Manager"}>
+                        <option value={"Manager"}>
                           Property Manager
                         </option>
                         <option value={"Site Action Manager"}>

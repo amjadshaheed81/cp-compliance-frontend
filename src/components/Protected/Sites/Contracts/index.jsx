@@ -26,6 +26,7 @@ const Contracts = ({
   error,
   success,
   setLoader,
+  loggedInUserData,
 }) => {
   const [open, setOpen] = useState(false);
   const [filteredContractList, setFilteredContractList] = useState([]);
@@ -62,7 +63,7 @@ const Contracts = ({
 
   useEffect(() => {
     setLoader(true);
-    getSiteContracts(6); // TODO: need to change it to loggedIn user id or siteSelectedForGlobal?.siteId
+    getSiteContracts(loggedInUserData?.id);
   }, []);
 
   const updateContractDetails = (formData) => {
@@ -399,6 +400,7 @@ const mapStateToProps = (state) => ({
   contractDetail: state.siteContracts.contractDetail,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   isLoading: state.siteContracts.isLoading,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   getSiteContracts,
