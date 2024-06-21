@@ -16,6 +16,7 @@ import SubFolder from "../components/Protected/Sites/Documents/SubFolder";
 import Users from "../components/Protected/Users";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
+import PreActions from "../components/Protected/Sites/PreActions";
 
 export const getRoutes = () => {
   const tabs = [
@@ -107,6 +108,10 @@ export const getRoutes = () => {
     {
       path: "/create-asset",
       element: <CreateAsset />,
+    },
+    {
+      path: "/pre-actions",
+      element: <PreActions />,
     },
   ];
 };

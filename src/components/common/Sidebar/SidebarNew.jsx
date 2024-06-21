@@ -172,7 +172,7 @@ const SidebarNew = ({ loggedInUserData }) => {
         navigate("/site-contracts");
         break;
       case "Pre-Action":
-        navigate("/sites");
+        navigate("/pre-actions");
         break;
       case "Site Checks":
         navigate("/sites");
