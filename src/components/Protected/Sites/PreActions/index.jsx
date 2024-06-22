@@ -9,6 +9,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import AddPreActions from "./AddPreActions";
 
 const PreActions = ({}) => {
   const [filteredPreActions, setFilteredPreActions] = useState([
@@ -21,8 +22,6 @@ const PreActions = ({}) => {
       status: "Open",
     },
   ]);
-  const [selectedPreAction, setSelectedPreAction] = useState({});
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const navigate = useNavigate();
   const goTo = (link) => {
@@ -95,36 +94,14 @@ const PreActions = ({}) => {
       <div className="content">
         <Header />
         <div className="container-fluid">
-          {/* {showViewModal && (
-            <ViewUser
-              selectedUser={selectedUser}
-              showViewModal={showViewModal}
-              setShowViewModal={setShowViewModal}
-              refresh={() => {
-                getUsers();
-              }}
-            />
-          )} */}
-          {/* {showAddModal && (
-            <AddUser
-              showAddModal={selectedUser}
-              showEditModal={showAddModal}
+          {showAddModal && (
+            <AddPreActions
+              showAddModal={showAddModal}
               setShowAddModal={setShowAddModal}
               refresh={() => {
-                getUsers();
               }}
             />
-          )} */}
-          {/* {showEditModal && (
-            <EditUser
-              selectedUser={selectedUser}
-              showEditModal={showEditModal}
-              setShowEditModal={setShowEditModal}
-              refresh={() => {
-                getUsers();
-              }}
-            />
-          )} */}
+          )}
           <BreadCrumHeader header={"Pre-Action"} page={"Pre-Action"} />
           {/*  */}
           {/*  */}
