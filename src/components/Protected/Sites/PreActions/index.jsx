@@ -8,23 +8,28 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 
 const PreActions = ({}) => {
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [filteredPreActions, setFilteredPreActions] = useState([{
-    id: 'PA100001',
-    raisedBy: 'Dheeraj',
-    comment: "Lorem Ipsum",
-    location: 'Internal > Room G1',
-    raisedOn: 'dd/mm/yyyy',
-    status: 'Open',
-  }]);
+  const [filteredPreActions, setFilteredPreActions] = useState([
+    {
+      id: "PA100001",
+      raisedBy: "Dheeraj",
+      comment: "Lorem Ipsum",
+      location: "Internal > Room G1",
+      raisedOn: new Date(),
+      status: "Open",
+    },
+  ]);
   const [selectedPreAction, setSelectedPreAction] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
 
-  useEffect(() => {
-  }, []);
+  useEffect(() => {}, []);
   const [formData, setFormData] = useState({
     searchField: "",
     location: "",
@@ -45,20 +50,20 @@ const PreActions = ({}) => {
     const location = formData?.location;
     const status = formData?.status;
     if (searchField || location || status) {
-    //   const list = users?.filter(
-    //     (x) =>
-    //       String(x?.name)
-    //         .toLowerCase()
-    //         .includes(String(searchField).toLowerCase()) &&
-    //       String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
-    //       String(x?.defaultSiteName)
-    //         .toLowerCase()
-    //         .includes(String(site).toLowerCase()) &&
-    //       String(x?.status).toLowerCase().includes(String(status).toLowerCase())
-    //   );
-    //   setFilteredUser(list);
+      //   const list = users?.filter(
+      //     (x) =>
+      //       String(x?.name)
+      //         .toLowerCase()
+      //         .includes(String(searchField).toLowerCase()) &&
+      //       String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
+      //       String(x?.defaultSiteName)
+      //         .toLowerCase()
+      //         .includes(String(site).toLowerCase()) &&
+      //       String(x?.status).toLowerCase().includes(String(status).toLowerCase())
+      //   );
+      //   setFilteredUser(list);
     } else {
-    //   setFilteredUser(users);
+      //   setFilteredUser(users);
     }
   };
   const deleteUserCall = (action) => {
@@ -162,15 +167,16 @@ const PreActions = ({}) => {
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
-                  <button
-                    className="btn btn-primary text-white pr-2"
-                    onClick={() => {
-                      setShowAddModal(true);
-                    }}
-                  >
-                    Create New
-                  </button>
-                  &nbsp;
+                  <Tooltip title={`Create New`} arrow>
+                    <button
+                      className="btn btn-primary text-white pr-2"
+                      onClick={() => {
+                        setShowAddModal(true);
+                      }}
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                  </Tooltip>
                 </div>
                 <div className="col">
                   <CSVLink
@@ -178,7 +184,9 @@ const PreActions = ({}) => {
                     className="btn btn-light bg-white text-primary"
                     data={[]}
                   >
-                    <i className="fas fa-download"></i>&nbsp;Export
+                    <Tooltip title={`Export`} arrow>
+                      <i className="fas fa-download"></i>
+                    </Tooltip>
                   </CSVLink>
                 </div>
               </div>
@@ -220,27 +228,23 @@ const PreActions = ({}) => {
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
-                            setSelectedPreAction(action);
-                            setShowViewModal(true);
+                            goTo("/view-update-pre-actions");
                           }}
                         >
                           <i className="fas fa-eye"></i>
                         </button>{" "}
                       </Tooltip>
-                      <Tooltip title={`Edit ${action?.id}`} arrow>
+                      <Tooltip title={`${action?.id} mark as closed`} arrow>
                         <button
                           className="btn btn-sm btn-light"
-                          onClick={() => {
-                            setSelectedPreAction(action);
-                            setShowEditModal(true);
-                          }}
+                          onClick={() => {}}
                         >
-                          <i className="fas fa-pen"></i>
+                          <i className="fas fa-check"></i>
                         </button>{" "}
                       </Tooltip>
                       <Tooltip title={`Delete ${action?.id}`} arrow>
                         <button
-                          className="btn btn-sm btn-light text-danger"
+                          className="btn btn-sm btn-light text-dark"
                           onClick={() => deleteUserCall(action)}
                         >
                           <i className="fas fa-trash"></i>
@@ -259,6 +263,4 @@ const PreActions = ({}) => {
   );
 };
 const mapStateToProps = () => ({});
-export default connect(mapStateToProps, { })(
-    PreActions
-);
+export default connect(mapStateToProps, {})(PreActions);

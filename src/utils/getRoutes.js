@@ -17,6 +17,7 @@ import Users from "../components/Protected/Users";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
+import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewCreatePreActions";
 
 export const getRoutes = () => {
   const tabs = [
@@ -112,6 +113,10 @@ export const getRoutes = () => {
     {
       path: "/pre-actions",
       element: <PreActions />,
+    },
+    {
+      path: "/view-update-pre-actions",
+      element: <ViewCreatePreActions />,
     },
   ];
 };
