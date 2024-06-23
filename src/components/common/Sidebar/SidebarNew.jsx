@@ -183,7 +183,7 @@ const SidebarNew = ({ loggedInUserData }) => {
         navigate("/pre-actions");
         break;
       case "Site Checks":
-        navigate("/sites");
+        navigate("/site-checks");
         break;
       case "Energy Cost":
         navigate("/sites");
