@@ -12,6 +12,7 @@ import { getCurrentDate } from "../../../utils/dateMethod";
 import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
+import { ROLE } from "../../../Constant/Role";
 
 const AddUser = ({
   showAddModal,
@@ -199,18 +200,16 @@ const AddUser = ({
                         <option value={""} disabled selected>
                           Select Action Manager
                         </option>
-                        <option value={"Admin"}>Admin</option>
-                        <option value={"Manager"}>
-                          Property Manager
-                        </option>
-                        <option value={"Site Action Manager"}>
+                        <option value={ROLE.ADMIN}>Admin</option>
+                        <option value={ROLE.MANAGER}>Property Manager</option>
+                        <option value={ROLE.SITE_ACTION_MANAGER}>
                           Site Action Manager
                         </option>
-                        <option value={"Site Users"}>Site Users</option>
-                        <option value={"Care Taker"}>Care Taker</option>
-                        <option value={"Contractor"}>Contractor</option>
-                        <option value={"Surveyor"}>Surveyor</option>
-                        <option value={"Tradesman"}>Tradesman</option>
+                        <option value={ROLE.SITE_USERS}>Site Users</option>
+                        <option value={ROLE.CARE_TAKER}>Care Taker</option>
+                        <option value={ROLE.CONTRACTOR}>Contractor</option>
+                        <option value={ROLE.SURVEYOR}>Surveyor</option>
+                        <option value={ROLE.TRADESMAN}>Tradesman</option>
                       </select>
                       {errors?.role && (
                         <InputError
@@ -272,31 +271,36 @@ const AddUser = ({
                   )}
 
                   <div className="col-md-4 mt-2">
-                  <div className="form-check form-switch">
-                    <label className="form-check-label pt-4" for="flexSwitchCheckChecked">
-                      Is Company ?
-                    </label>
-                    <input
-                      className="mt-4 form-check-input"
-                      type="checkbox"
-                      id="isCompany"
-                      name="isCompany"
-                      {...register("isCompany")}
-                    />
-                  </div>
-                  </div>
-                  {values?.isCompany && <div className="col-md-4 mt-2">
-                    <div className="form-group">
-                      <label for="company">Company Name</label>
+                    <div className="form-check form-switch">
+                      <label
+                        className="form-check-label pt-4"
+                        for="flexSwitchCheckChecked"
+                      >
+                        Is Company ?
+                      </label>
                       <input
-                        type="text"
-                        className="form-control"
-                        id="company"
-                        {...register("company")}
+                        className="mt-4 form-check-input"
+                        type="checkbox"
+                        id="isCompany"
+                        name="isCompany"
+                        {...register("isCompany")}
                       />
                     </div>
-                  </div>}
-                  
+                  </div>
+                  {values?.isCompany && (
+                    <div className="col-md-4 mt-2">
+                      <div className="form-group">
+                        <label for="company">Company Name</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="company"
+                          {...register("company")}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {values?.userType === "External" && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">

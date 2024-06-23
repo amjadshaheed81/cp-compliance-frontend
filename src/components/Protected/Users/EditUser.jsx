@@ -11,6 +11,7 @@ import { addUser, getSites } from "../../../store/thunk/site";
 import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
+import { ROLE } from "../../../Constant/Role";
 
 const ViewUsers = ({
   showEditModal,
@@ -39,7 +40,7 @@ const ViewUsers = ({
       ...selectedUser,
       firstName: name?.[0] || "",
       lastName: name?.[1] || "",
-      isCompany: selectedUser?.company ? true: false,
+      isCompany: selectedUser?.company ? true : false,
     });
     getSites();
   }, []);
@@ -214,16 +215,16 @@ const ViewUsers = ({
                         <option value={""} disabled selected>
                           Select Action Manager
                         </option>
-                        <option value={"Admin"}>Admin</option>
-                        <option value={"Manager"}>Property Manager</option>
-                        <option value={"Site Action Manager"}>
+                        <option value={ROLE.ADMIN}>Admin</option>
+                        <option value={ROLE.MANAGER}>Property Manager</option>
+                        <option value={ROLE.SITE_ACTION_MANAGER}>
                           Site Action Manager
                         </option>
-                        <option value={"Site Users"}>Site Users</option>
-                        <option value={"Care Taker"}>Care Taker</option>
-                        <option value={"Contractor"}>Contractor</option>
-                        <option value={"Surveyor"}>Surveyor</option>
-                        <option value={"Tradesman"}>Tradesman</option>
+                        <option value={ROLE.SITE_USERS}>Site Users</option>
+                        <option value={ROLE.CARE_TAKER}>Care Taker</option>
+                        <option value={ROLE.CONTRACTOR}>Contractor</option>
+                        <option value={ROLE.SURVEYOR}>Surveyor</option>
+                        <option value={ROLE.TRADESMAN}>Tradesman</option>
                       </select>
                       {errors?.role && (
                         <InputError

@@ -36,6 +36,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { connect } from "react-redux";
+import { ROLE } from "../../../Constant/Role";
+import { toast } from "react-toastify";
 
 const drawerWidth = 240;
 
@@ -127,6 +129,7 @@ const Drawer = styled(MuiDrawer, {
 }));
 
 const SidebarNew = ({ loggedInUserData }) => {
+  console.log("loggedInUserData", loggedInUserData);
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
@@ -162,9 +165,14 @@ const SidebarNew = ({ loggedInUserData }) => {
       case "Site Documents":
         navigate("/documents");
         break;
-      case "Site Projects":
-        navigate("/site-projects");
+      case "Site Projects": {
+        if (loggedInUserData?.role === ROLE.MANAGER) {
+          navigate("/site-projects");
+        } else {
+          toast.info("Only Manager's can login into site project.");
+        }
         break;
+      }
       case "Site Assets":
         navigate("/assets");
         break;
