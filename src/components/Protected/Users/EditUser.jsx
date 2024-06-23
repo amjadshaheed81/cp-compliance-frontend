@@ -39,6 +39,7 @@ const ViewUsers = ({
       ...selectedUser,
       firstName: name?.[0] || "",
       lastName: name?.[1] || "",
+      isCompany: selectedUser?.company ? true: false,
     });
     getSites();
   }, []);
@@ -214,9 +215,7 @@ const ViewUsers = ({
                           Select Action Manager
                         </option>
                         <option value={"Admin"}>Admin</option>
-                        <option value={"Manager"}>
-                          Property Manager
-                        </option>
+                        <option value={"Manager"}>Property Manager</option>
                         <option value={"Site Action Manager"}>
                           Site Action Manager
                         </option>
@@ -284,27 +283,35 @@ const ViewUsers = ({
                     </div>
                   )}
                   <div className="col-md-4 mt-2">
-                    <div className="form-group">
-                      <label for="company">Company Name</label>
+                    <div className="form-check form-switch">
+                      <label
+                        className="form-check-label pt-4"
+                        for="flexSwitchCheckChecked"
+                      >
+                        Is Company ?
+                      </label>
                       <input
-                        type="text"
-                        className="form-control"
-                        id="company"
-                        {...register("company", {
-                          required: {
-                            value: true,
-                            message: `Please enter company name.`,
-                          },
-                        })}
+                        className="mt-4 form-check-input"
+                        type="checkbox"
+                        id="isCompany"
+                        name="isCompany"
+                        {...register("isCompany")}
                       />
-                      {errors?.company && (
-                        <InputError
-                          message={errors?.company?.message}
-                          key={errors?.company?.message}
-                        />
-                      )}
                     </div>
                   </div>
+                  {values?.isCompany && (
+                    <div className="col-md-4 mt-2">
+                      <div className="form-group">
+                        <label for="company">Company Name</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="company"
+                          {...register("company")}
+                        />
+                      </div>
+                    </div>
+                  )}
                   {values?.userType === "External" && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
