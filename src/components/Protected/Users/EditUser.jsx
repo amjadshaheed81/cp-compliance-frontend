@@ -154,7 +154,7 @@ const ViewUsers = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4">
+                  {/* <div className="col-md-4">
                     <div className="form-group">
                       <label for="password">Password</label>
                       <input
@@ -175,7 +175,7 @@ const ViewUsers = ({
                         />
                       )}
                     </div>
-                  </div>
+                  </div> */}
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
                       <label for="phone">Phone Number</label>

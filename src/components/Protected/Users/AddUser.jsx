@@ -272,27 +272,31 @@ const AddUser = ({
                   )}
 
                   <div className="col-md-4 mt-2">
+                  <div className="form-check form-switch">
+                    <label className="form-check-label pt-4" for="flexSwitchCheckChecked">
+                      Is Company ?
+                    </label>
+                    <input
+                      className="mt-4 form-check-input"
+                      type="checkbox"
+                      id="isCompany"
+                      name="isCompany"
+                      {...register("isCompany")}
+                    />
+                  </div>
+                  </div>
+                  {values?.isCompany && <div className="col-md-4 mt-2">
                     <div className="form-group">
                       <label for="company">Company Name</label>
                       <input
                         type="text"
                         className="form-control"
                         id="company"
-                        {...register("company", {
-                          required: {
-                            value: true,
-                            message: `Please enter company name.`,
-                          },
-                        })}
+                        {...register("company")}
                       />
-                      {errors?.company && (
-                        <InputError
-                          message={errors?.company?.message}
-                          key={errors?.company?.message}
-                        />
-                      )}
                     </div>
-                  </div>
+                  </div>}
+                  
                   {values?.userType === "External" && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
