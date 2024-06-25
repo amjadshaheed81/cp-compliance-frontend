@@ -9,6 +9,7 @@ import {
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const PassiveFireProtection = ({
   sitePFPItems,
@@ -16,6 +17,10 @@ const PassiveFireProtection = ({
   deleteSiteAsset,
   getSitePFPAssets,
 }) => {
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
   useEffect(() => {
     getSitePFPAssets(siteSelectedForGlobal?.siteId);
   }, []);
@@ -142,16 +147,21 @@ const PassiveFireProtection = ({
                   <input type="checkbox" />
                   &nbsp;{asset?.assetName}
                 </th>
-                <th scope="col">{asset?.material}</th>
-                <th scope="col">{asset?.product}</th>
-                <th scope="col">{asset?.location}</th>
-                <th scope="col">{asset?.service}</th>
-                <th scope="col">{asset?.dim}</th>
-                <th scope="col">{asset?.qty}</th>
-                <th scope="col">{asset?.area}</th>
+                <th scope="col">{asset?.assetPFPItem?.material}</th>
+                <th scope="col">{asset?.assetPFPItem?.product}</th>
+                <th scope="col">{asset?.assetPFPItem?.access}</th>
+                <th scope="col">{asset?.assetPFPItem?.service}</th>
+                <th scope="col">{asset?.assetPFPItem?.dimension}</th>
+                <th scope="col">{asset?.assetPFPItem?.quantity}</th>
+                <th scope="col">{asset?.assetPFPItem?.area}</th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button className="btn btn-sm btn-light" onClick={() => {}}>
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                      }}
+                    >
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>

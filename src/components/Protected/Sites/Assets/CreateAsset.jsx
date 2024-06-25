@@ -278,19 +278,32 @@ const CreateAsset = ({
                   <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-4">
                       <label for="category">Category</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="category"
+                      <select
                         name="category"
-                        placeholder=""
+                        className="form-control form-select"
+                        id="category"
                         {...register("category", {
                           required: {
                             value: true,
-                            message: `${Validation.REQUIRED} category`,
+                            message: `Please select category`,
                           },
                         })}
-                      />
+                      >
+                        <option value="" selected disabled>
+                          Select Folder
+                        </option>
+                        <option value="Lifting Machinery / Equipment">
+                          Lifting Machinery / Equipment
+                        </option>
+                        <option value="Central Heating">Central Heating</option>
+                        <option value="Air Conditioning">
+                          Air Conditioning
+                        </option>
+                        <option value="Sanitary">Sanitary</option>
+                        <option value="Vantilation">Vantilation</option>
+                        <option value="Gas">Gas</option>
+                        <option value="Drainage">Drainage</option>
+                      </select>
                       {errors?.category && (
                         <InputError
                           message={errors?.category?.message}
@@ -300,19 +313,41 @@ const CreateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <label for="subCategory">Sub Category 1</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="subCategory"
+                      <select
                         name="subCategory"
-                        placeholder=""
+                        className="form-control form-select"
+                        id="subCategory"
                         {...register("subCategory", {
                           required: {
                             value: true,
-                            message: `${Validation.REQUIRED} sub category 1`,
+                            message: `Please select sub category 1`,
                           },
                         })}
-                      />
+                      >
+                        <option value="" selected disabled>
+                          Select Folder
+                        </option>
+                        <option value="Fire Fighting Equipment">
+                          Fire Fighting Equipment
+                        </option>
+                        <option value="Internal Finishes">
+                          Internal Finishes
+                        </option>
+                        <option value="Mechanical">Mechanical</option>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Building Envelop">
+                          Building Envelop
+                        </option>
+                        <option value="Maintanance Plant & Equipment">
+                          Maintanance Plant & Equipment
+                        </option>
+                        <option value="Landscaping">Landscaping</option>
+                        <option value="Waste Disposal">Waste Disposal</option>
+                        <option value="COVID Items">COVID Items</option>
+                        <option value="First Aid Equipment">
+                          First Aid Equipment
+                        </option>
+                      </select>
                       {errors?.subCategory && (
                         <InputError
                           message={errors?.subCategory?.message}
@@ -322,19 +357,40 @@ const CreateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <label for="subCategory2">Sub Category 2</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="subCategory2"
+                      <select
                         name="subCategory2"
-                        placeholder=""
+                        className="form-control form-select"
+                        id="subCategory2"
                         {...register("subCategory2", {
                           required: {
                             value: true,
-                            message: `${Validation.REQUIRED} sub category 2`,
+                            message: `Please select sub category 2`,
                           },
                         })}
-                      />
+                      >
+                        <option value="" selected disabled>
+                          Select Folder
+                        </option>
+                        <option value="Water Meter">Water Meter</option>
+                        <option value="Cold Water Storage Tank">
+                          Cold Water Storage Tank
+                        </option>
+                        <option value="Calorifier">Calorifier</option>
+                        <option value="Distribution Pipework hot">
+                          Distribution Pipework hot
+                        </option>
+                        <option value="Distribution Pipework cold">
+                          Distribution Pipework cold
+                        </option>
+                        <option value="Hot Water Cylinder">
+                          Hot Water Cylinder
+                        </option>
+                        <option value="Controls">Controls</option>
+                        <option value="Outlet">Outlet</option>
+                        <option value="Pipework Dead Leg">
+                          Pipework Dead Leg
+                        </option>
+                      </select>
                       {errors?.subCategory2 && (
                         <InputError
                           message={errors?.subCategory2?.message}

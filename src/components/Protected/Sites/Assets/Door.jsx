@@ -9,6 +9,7 @@ import {
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Door = ({
   siteDoorItems,
@@ -16,6 +17,10 @@ const Door = ({
   getSiteDoorAssets,
   deleteSiteAsset,
 }) => {
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
   useEffect(() => {
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
   }, []);
@@ -141,15 +146,20 @@ const Door = ({
                   <input type="checkbox" />
                   &nbsp;{asset?.assetName}
                 </th>
-                <th scope="col">{asset?.doorSize}</th>
-                <th scope="col">{asset?.fireRating}</th>
-                <th scope="col">{asset?.location}</th>
-                <th scope="col">{asset?.doorFinish}</th>
-                <th scope="col">{asset?.visionPanel}</th>
-                <th scope="col">{asset?.frame}</th>
+                <th scope="col">{asset?.assetDoorSpecifications?.width} * {asset?.assetDoorSpecifications?.height}</th>
+                <th scope="col">{asset?.assetDoorSpecifications?.fireRating}</th>
+                <th scope="col">{asset?.assetDoorSpecifications?.location}</th>
+                <th scope="col">{asset?.assetDoorSpecifications?.doorFinish}</th>
+                <th scope="col">{asset?.assetDoorSpecifications?.visionPanel}</th>
+                <th scope="col">{asset?.assetDoorSpecifications?.frameMaterial}</th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button className="btn btn-sm btn-light" onClick={() => {}}>
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                      }}
+                    >
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>

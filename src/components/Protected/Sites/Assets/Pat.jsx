@@ -9,6 +9,7 @@ import {
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Pat = ({
   sitePATItems,
@@ -16,6 +17,10 @@ const Pat = ({
   siteSelectedForGlobal,
   getSitePATAssets,
 }) => {
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
   useEffect(() => {
     getSitePATAssets(siteSelectedForGlobal?.siteId);
   }, []);
@@ -149,7 +154,12 @@ const Pat = ({
                 <th scope="col">{asset?.status}</th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button className="btn btn-sm btn-light" onClick={() => {}}>
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                      }}
+                    >
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>
