@@ -98,9 +98,9 @@ const Pat = ({
             </div>
             <div className="col">
               <CSVLink
-                filename={"site-lists"}
+                filename={"site-pat-item-list"}
                 className="btn btn-light bg-white text-primary"
-                data={[]}
+                data={sitePATItems}
               >
                 <Tooltip title={`Export`} arrow>
                   <i className="fas fa-download"></i>

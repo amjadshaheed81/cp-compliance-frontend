@@ -98,9 +98,9 @@ const PassiveFireProtection = ({
             </div>
             <div className="col">
               <CSVLink
-                filename={"site-lists"}
+                filename={"site-pfp-item-list"}
                 className="btn btn-light bg-white text-primary"
-                data={[]}
+                data={sitePFPItems}
               >
                 <Tooltip title={`Export`} arrow>
                   <i className="fas fa-download"></i>

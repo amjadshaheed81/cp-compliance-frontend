@@ -98,9 +98,9 @@ const Door = ({
             </div>
             <div className="col">
               <CSVLink
-                filename={"site-lists"}
+                filename={"site-door-assets"}
                 className="btn btn-light bg-white text-primary"
-                data={[]}
+                data={siteDoorItems}
               >
                 <Tooltip title={`Export`} arrow>
                   <i className="fas fa-download"></i>
