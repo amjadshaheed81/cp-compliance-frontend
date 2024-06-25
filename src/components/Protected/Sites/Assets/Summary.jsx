@@ -113,9 +113,9 @@ const Summary = ({
             </div>
             <div className="col">
               <CSVLink
-                filename={"site-lists"}
+                filename={"site-assets-lists"}
                 className="btn btn-light bg-white text-primary"
-                data={[]}
+                data={siteAssets}
               >
                 <Tooltip title={`Export`} arrow>
                   <i className="fas fa-download"></i>
@@ -150,7 +150,7 @@ const Summary = ({
               </tr>
             )}
             {siteAssets?.map((asset) => (
-              <tr key={asset?.id}>
+              <tr key={asset?.assetId}>
                 <th scope="col">
                   <input type="checkbox" />
                   &nbsp;{asset?.assetName}
@@ -162,7 +162,9 @@ const Summary = ({
                 <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button className="btn btn-sm btn-light" onClick={() => {}}>
+                    <button className="btn btn-sm btn-light" onClick={() => {
+                      goTo(`/update-asset?assetId=${asset?.assetId}`)
+                    }}>
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>
