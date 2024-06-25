@@ -1,15 +1,49 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import { deleteSiteAsset, getSiteAssets } from "../../../../store/thunk/site";
 
-const Summary = ({ siteAssets }) => {
+const Summary = ({
+  siteAssets,
+  deleteSiteAsset,
+  getSiteAssets,
+  siteSelectedForGlobal,
+}) => {
+  useEffect(() => {
+    getSiteAssets(siteSelectedForGlobal?.siteId);
+  }, []);
   const navigate = useNavigate();
-
   const goTo = (link) => {
     navigate(link);
+  };
+  const deleteAsset = (itm) => {
+    Swal.fire({
+      title: `Do you want to delete ${itm?.assetName}`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await deleteSiteAsset(itm?.assetId);
+        if (res === "Success") {
+          toast.success(
+            `${itm?.assetName} site asset has been deleted successully`
+          );
+          getSiteAssets(siteSelectedForGlobal?.siteId);
+        } else {
+          toast.error(
+            "Something went wrong while deleting site asset. Please try again!"
+          );
+        }
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
   };
   return (
     <Fragment>
@@ -124,8 +158,8 @@ const Summary = ({ siteAssets }) => {
                 <th scope="col">{asset?.manufacturer}</th>
                 <th scope="col">{asset?.category}</th>
                 <th scope="col">{asset?.location}</th>
-                <th scope="col">{asset?.passiveFireSch}</th>
-                <th scope="col">{asset?.patItem}</th>
+                <th scope="col">{asset?.passiveFireSch ? "YES" : "NO"}</th>
+                <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
                     <button className="btn btn-sm btn-light" onClick={() => {}}>
@@ -145,7 +179,7 @@ const Summary = ({ siteAssets }) => {
                   <Tooltip title={`Delete ${asset.assetName}`} arrow>
                     <button
                       className="btn btn-sm btn-light text-danger"
-                      onClick={() => {}}
+                      onClick={() => deleteAsset(asset)}
                     >
                       <i className="fas fa-trash"></i>
                     </button>{" "}
@@ -163,5 +197,8 @@ const Summary = ({ siteAssets }) => {
 
 const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, {})(Summary);
+export default connect(mapStateToProps, { deleteSiteAsset, getSiteAssets })(
+  Summary
+);

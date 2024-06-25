@@ -1373,3 +1373,15 @@ export const addSiteAsset = (data, goTo, siteId) => {
     }
   };
 };
+
+export const deleteSiteAsset = (id) => {
+  return async () => {
+    try {
+      const url = `/api/site/assets/${id}`;
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
+    }
+  };
+};

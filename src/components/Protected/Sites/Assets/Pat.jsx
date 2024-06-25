@@ -1,10 +1,48 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
+import {
+  deleteSiteAsset,
+  getSitePATAssets,
+} from "../../../../store/thunk/site";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
 
-const Pat = ({ sitePATItems }) => {
+const Pat = ({
+  sitePATItems,
+  deleteSiteAsset,
+  siteSelectedForGlobal,
+  getSitePATAssets,
+}) => {
+  useEffect(() => {
+    getSitePATAssets(siteSelectedForGlobal?.siteId);
+  }, []);
+  const deleteAsset = (itm) => {
+    Swal.fire({
+      title: `Do you want to delete ${itm?.assetName}`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await deleteSiteAsset(itm?.assetId);
+        if (res === "Success") {
+          toast.success(
+            `${itm?.assetName} site asset has been deleted successully`
+          );
+          getSitePATAssets(siteSelectedForGlobal?.siteId);
+        } else {
+          toast.error(
+            "Something went wrong while deleting site asset. Please try again!"
+          );
+        }
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  };
   return (
     <Fragment>
       <div className="d-flex bd-highlight">
@@ -128,7 +166,7 @@ const Pat = ({ sitePATItems }) => {
                   <Tooltip title={`Delete ${asset.assetName}`} arrow>
                     <button
                       className="btn btn-sm btn-light text-danger"
-                      onClick={() => {}}
+                      onClick={() => deleteAsset(asset)}
                     >
                       <i className="fas fa-trash"></i>
                     </button>{" "}
@@ -146,5 +184,8 @@ const Pat = ({ sitePATItems }) => {
 
 const mapStateToProps = (state) => ({
   sitePATItems: state.site.sitePATItems,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, {})(Pat);
+export default connect(mapStateToProps, { getSitePATAssets, deleteSiteAsset })(
+  Pat
+);
