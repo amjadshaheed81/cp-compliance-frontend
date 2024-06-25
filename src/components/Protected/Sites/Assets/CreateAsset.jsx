@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import Box from "@mui/material/Box";
 import Header from "../../../common/Header/Header";
@@ -9,13 +9,32 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import siteDummy from "../../../../images/site-dummy.png";
-import { setLoader } from "../../../../store/thunk/site";
+import {
+  addSiteAsset,
+  getDocumentsRootFolder,
+  setLoader,
+} from "../../../../store/thunk/site";
 import { Validation } from "../../../../Constant/Validation";
 import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
-const CreateAsset = ({ setLoader }) => {
+const CreateAsset = ({
+  setLoader,
+  siteSelectedForGlobal,
+  getDocumentsRootFolder,
+  rootFolder,
+  addSiteAsset,
+}) => {
   const [patRecord, setPatRecord] = useState([]);
+  useEffect(() => {
+    if (siteSelectedForGlobal?.siteId) {
+      getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+    } else {
+      toast.error("Please select site from site search to proceed....");
+    }
+  }, []);
 
   const addPatRecord = () => {
     setPatRecord([
@@ -54,10 +73,30 @@ const CreateAsset = ({ setLoader }) => {
   } = useForm({
     defaultValues,
   });
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
   const submitSiteAsset = (data) => {
     setLoader(true);
-    // addSite(data, goTo);
-    reset(defaultValues);
+    console.log("data", data);
+    let form_data = new FormData();
+    if (data?.assetImage) {
+      form_data.append(
+        "assetImage",
+        data?.assetImage?.[0],
+        data?.assetImage?.[0]?.name
+      );
+    } else {
+      form_data.append("assetImage", "", "");
+    }
+    const { assetImage, ...formData } = data;
+    console.log("data", data);
+    console.log("assetImage", assetImage);
+    console.log("formData", formData);
+    form_data.append("assetRequestString", JSON.stringify(formData));
+    addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+    // reset(defaultValues);
   };
   return (
     <Fragment>
@@ -136,12 +175,12 @@ const CreateAsset = ({ setLoader }) => {
 
                         <div className="col-md-6">
                           <div className="form-group mt-2">
-                            <label for="relatedAsset">Related Asset</label>
+                            <label for="relatedAssetId">Related Asset</label>
                             <input
                               type="text"
                               className="form-control"
-                              id="relatedAsset"
-                              name="relatedAsset"
+                              id="relatedAssetId"
+                              name="relatedAssetId"
                               placeholder=""
                             />
                           </div>
@@ -160,7 +199,12 @@ const CreateAsset = ({ setLoader }) => {
                               },
                             })}
                           >
-                            <option value="">Select Folder</option>
+                            <option value="" selected disabled>
+                              Select Folder
+                            </option>
+                            {rootFolder?.parentFolders?.map((folder) => (
+                              <option value={folder?.id}>{folder?.name}</option>
+                            ))}
                           </select>
                           {errors?.folderId && (
                             <InputError
@@ -222,7 +266,13 @@ const CreateAsset = ({ setLoader }) => {
                       </div>
                     </div>
                     <div className="col-md-4">
-                      <img src={siteDummy} className="img img-responsive" />
+                      <div className="form-group">
+                        <input
+                          type="file"
+                          className="form-control"
+                          {...register("assetImage")}
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="row" style={{ height: "auto" }}>
@@ -344,5 +394,12 @@ const CreateAsset = ({ setLoader }) => {
     </Fragment>
   );
 };
-const mapStateToProps = () => ({ setLoader });
-export default connect(mapStateToProps, {})(CreateAsset);
+const mapStateToProps = (state) => ({
+  rootFolder: state.site.rootFolder,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, {
+  setLoader,
+  getDocumentsRootFolder,
+  addSiteAsset,
+})(CreateAsset);

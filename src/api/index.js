@@ -63,6 +63,17 @@ export function postMultiPartFormData(url, userData) {
   });
 }
 
+
+export function putMultiPartFormData(url, userData) {
+  configAxios();
+  return axiosInstance({
+    method: "PUT",
+    url,
+    data: userData,
+    headers: {...getHeaders(), 'Content-Type': 'multipart/form-data'},
+  });
+}
+
 // delete is a reserved name so don't use that
 export function del(url) {
   configAxios();

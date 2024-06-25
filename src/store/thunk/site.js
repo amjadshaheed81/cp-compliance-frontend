@@ -5,6 +5,7 @@ import {
   post,
   postMultiPartFormData,
   put,
+  putMultiPartFormData,
   uploadPhoto,
 } from "../../api";
 import {
@@ -73,6 +74,7 @@ import {
   USER_LOGOUT,
 } from "../actionTypes";
 import {
+  ADD_SITE_ASSET,
   GET_SITES_ASSET,
   GET_SITES_DOOR_ASSET,
   GET_SITES_PAT_ASSET,
@@ -1339,6 +1341,34 @@ export const getSitePATAssets = (id) => {
     } catch (error) {
       toast.error(
         "Something went wrong while fetching site assets. Please try again."
+      );
+    }
+  };
+};
+
+
+export const addSiteAsset = (data, goTo, siteId) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/${siteId}/assets`;
+      const userData = await putMultiPartFormData(url, data);
+      if (userData?.status === 200) {
+        toast.success("Site asset has been added successully.");
+        setTimeout(() => {
+          goTo("/assets");
+        }, 500);
+        dispatch({
+          type: ADD_SITE_ASSET,
+          payload: "success",
+        });
+      } else {
+        toast.error(
+          "Something went wrong while adding site asset. Please try again."
+        );
+      }
+    } catch (error) {
+      toast.error(
+        "Something went wrong while adding site asset. Please try again."
       );
     }
   };

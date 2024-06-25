@@ -1,5 +1,6 @@
 // reducers.js
 import {
+  ADD_SITE_ASSET,
   GET_SITES_ASSET,
   GET_SITES_DOOR_ASSET,
   GET_SITES_PAT_ASSET,
@@ -639,6 +640,11 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         sitePFPItems: action.payload,
+      };
+    case ADD_SITE_ASSET:
+      return {
+        ...state,
+        isLoading: false,
       };
     default:
       return state;
