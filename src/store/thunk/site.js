@@ -72,6 +72,12 @@ import {
   USER_LOGIN,
   USER_LOGOUT,
 } from "../actionTypes";
+import {
+  GET_SITES_ASSET,
+  GET_SITES_DOOR_ASSET,
+  GET_SITES_PAT_ASSET,
+  GET_SITES_PFP_ASSET,
+} from "../actions/siteAssets";
 
 export const addSite = (formData, goTo) => {
   return async (dispatch) => {
@@ -1263,5 +1269,77 @@ export const logoutUser = (goTo) => {
     });
     toast.success("Successfully logged out.");
     goTo("/login");
+  };
+};
+
+export const getSiteAssets = (id) => {
+  return async (dispatch) => {
+    try {
+      let url = `/api/site/${id}/assets`;
+      const { assets } = await get(url);
+      console.log("assetList", assets);
+      dispatch({
+        type: GET_SITES_ASSET,
+        payload: assets,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site assets. Please try again."
+      );
+    }
+  };
+};
+
+export const getSitePFPAssets = (id) => {
+  return async (dispatch) => {
+    try {
+      let url = `/api/site/${id}/assets?pfpItem=true`;
+      const { assets } = await get(url);
+      console.log("assetList", assets);
+      dispatch({
+        type: GET_SITES_PFP_ASSET,
+        payload: assets,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site assets. Please try again."
+      );
+    }
+  };
+};
+
+export const getSiteDoorAssets = (id) => {
+  return async (dispatch) => {
+    try {
+      let url = `/api/site/${id}/assets?doorItem=true`;
+      const { assets } = await get(url);
+      console.log("assetList", assets);
+      dispatch({
+        type: GET_SITES_DOOR_ASSET,
+        payload: assets,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site assets. Please try again."
+      );
+    }
+  };
+};
+
+export const getSitePATAssets = (id) => {
+  return async (dispatch) => {
+    try {
+      let url = `/api/site/${id}/assets?patItem=true`;
+      const { assets } = await get(url);
+      console.log("assetList", assets);
+      dispatch({
+        type: GET_SITES_PAT_ASSET,
+        payload: assets,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site assets. Please try again."
+      );
+    }
   };
 };

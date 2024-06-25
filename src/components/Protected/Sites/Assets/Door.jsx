@@ -4,19 +4,7 @@ import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
 
-const Door = ({}) => {
-  const [assetList, setAssetList] = useState([
-    {
-      assetName: "Joe Bloggs",
-      doorSize: "joe@gmai.com",
-      fireRating: "Site 1",
-      location: "Property Manager",
-      doorFinish: "21/May/1992",
-      visionPanel: "type",
-      frame: "frame",
-      id: 1,
-    },
-  ]);
+const Door = ({ siteDoorItems }) => {
   return (
     <Fragment>
       <div className="d-flex bd-highlight">
@@ -104,7 +92,12 @@ const Door = ({}) => {
             </tr>
           </thead>
           <tbody>
-            {assetList?.map((asset) => (
+            {siteDoorItems?.length === 0 && (
+              <tr>
+                <td>No Result Found !!</td>
+              </tr>
+            )}
+            {siteDoorItems?.map((asset) => (
               <tr key={asset?.id}>
                 <th scope="col">
                   <input type="checkbox" />
@@ -151,5 +144,7 @@ const Door = ({}) => {
   );
 };
 
-const mapStateToProps = () => ({});
+const mapStateToProps = (state) => ({
+  siteDoorItems: state.site.siteDoorItems,
+});
 export default connect(mapStateToProps, {})(Door);

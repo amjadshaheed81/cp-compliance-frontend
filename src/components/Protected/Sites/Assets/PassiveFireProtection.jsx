@@ -4,20 +4,7 @@ import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
 
-const PassiveFireProtection = ({}) => {
-  const [assetList, setAssetList] = useState([
-    {
-      assetName: "Boiler",
-      material: "Batt",
-      product: "HP Mastic",
-      location: "Interior > Basement",
-      service: "Cables",
-      dim: "5*2",
-      qty: "1",
-      area: "10 sq m",
-      id: 1,
-    },
-  ]);
+const PassiveFireProtection = ({ sitePFPItems }) => {
   return (
     <Fragment>
       <div className="d-flex bd-highlight">
@@ -106,7 +93,12 @@ const PassiveFireProtection = ({}) => {
             </tr>
           </thead>
           <tbody>
-            {assetList?.map((asset) => (
+            {sitePFPItems?.length === 0 && (
+              <tr>
+                <td>No Result Found !!</td>
+              </tr>
+            )}
+            {sitePFPItems?.map((asset) => (
               <tr key={asset?.id}>
                 <th scope="col">
                   <input type="checkbox" />
@@ -154,5 +146,7 @@ const PassiveFireProtection = ({}) => {
   );
 };
 
-const mapStateToProps = () => ({});
+const mapStateToProps = (state) => ({
+  sitePFPItems: state.site.sitePFPItems,
+});
 export default connect(mapStateToProps, {})(PassiveFireProtection);

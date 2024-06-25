@@ -1,5 +1,11 @@
 // reducers.js
 import {
+  GET_SITES_ASSET,
+  GET_SITES_DOOR_ASSET,
+  GET_SITES_PAT_ASSET,
+  GET_SITES_PFP_ASSET,
+} from "../actions/siteAssets";
+import {
   ADD_SITE_FAILURE,
   ADD_SITE_SUCCESS,
   GET_SITES_SUCCESS,
@@ -89,6 +95,10 @@ const initialState = {
   isLoading: false,
   users: [],
   loggedInUserData: null,
+  siteAssets: [],
+  siteDoorItems: [],
+  sitePATItems: [],
+  sitePFPItems: [],
 };
 
 const reducer = (state = initialState, action) => {
@@ -609,6 +619,26 @@ const reducer = (state = initialState, action) => {
     case USER_LOGOUT:
       return {
         ...initialState,
+      };
+    case GET_SITES_ASSET:
+      return {
+        ...state,
+        siteAssets: action.payload,
+      };
+    case GET_SITES_DOOR_ASSET:
+      return {
+        ...state,
+        siteDoorItems: action.payload,
+      };
+    case GET_SITES_PAT_ASSET:
+      return {
+        ...state,
+        sitePATItems: action.payload,
+      };
+    case GET_SITES_PFP_ASSET:
+      return {
+        ...state,
+        sitePFPItems: action.payload,
       };
     default:
       return state;
