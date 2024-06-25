@@ -166,7 +166,7 @@ const SidebarNew = ({ loggedInUserData }) => {
         navigate("/documents");
         break;
       case "Site Projects": {
-        if (loggedInUserData?.role === ROLE.MANAGER) {
+        if (loggedInUserData?.role === ROLE.MANAGER || loggedInUserData?.role === ROLE.ADMIN) {
           navigate("/site-projects");
         } else {
           toast.info("Only Manager's can login into site project.");

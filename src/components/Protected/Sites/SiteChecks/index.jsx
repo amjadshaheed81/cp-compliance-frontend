@@ -10,16 +10,20 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
-const SiteChecks = ({}) => {
+import { Button, Modal, Typography, Box, Grid, Divider } from "@mui/material";
+import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+
+const SiteChecks = ({ users, getUsers }) => {
+  const [create, setCreate] = useState(false);
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([
     {
       id: "PA100001",
       type: "Dheeraj",
       subType: "Lorem Ipsum",
-      summary: "Internal > Room G1",
-      lead: "Joe B",
+      category: "Internal > Room G1",
+      leadUserID: "Joe B",
       riskScore: "",
-      date: "21/05/1992",
+      dueDate: "21/05/1992",
       status: "Open",
     },
   ]);
@@ -28,6 +32,9 @@ const SiteChecks = ({}) => {
     navigate(link);
   };
 
+  useEffect(() => {
+    getUsers();
+  }, []);
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
     searchField: "",
@@ -92,12 +99,13 @@ const SiteChecks = ({}) => {
   return (
     <Fragment>
       <SidebarNew />
+      
       <div className="content">
         <Header />
         <div className="container-fluid">
+          {!create && <>
           <BreadCrumHeader header={"Site Check"} page={"Site Inspection"} />
-          {/*  */}
-          {/*  */}
+          
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
@@ -118,6 +126,10 @@ const SiteChecks = ({}) => {
                     onChange={handleInputChange}
                   >
                     <option value="">Select Type</option>
+                    <option value="Assessment">Assessment</option>
+                    <option value="Audit">Audit</option>
+                    <option value="Survey">Survey</option>
+                    <option value="Inspection">Inspection</option>
                   </select>
                 </div>
                 <div className="col">
@@ -128,6 +140,11 @@ const SiteChecks = ({}) => {
                     onChange={handleInputChange}
                   >
                     <option value="">Select Sub Type</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Fire Risk">Fire Risk</option>
+                    <option value="Daily Fire Inspection">Daily Fire Inspection</option>
+                    <option value="Water Survey">Water Survey</option>
+                    <option value="Asbestos Survey">Asbestos Survey</option>
                   </select>
                 </div>
                 <div className="col">
@@ -147,14 +164,13 @@ const SiteChecks = ({}) => {
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
-                  <Tooltip title={`Start New`} arrow>
-                    <button
-                      className="btn btn-primary text-white pr-2"
-                      onClick={() => {}}
-                    >
-                      <i className="fas fa-plus"></i>
-                    </button>
-                  </Tooltip>
+                  <button
+                    style={{ width: "150px" }}
+                    className="btn btn-primary text-white pr-2"
+                    onClick={() => { setCreate(true) }}
+                  >
+                    Start New
+                  </button>
                 </div>
                 <div className="col">
                   <CSVLink
@@ -170,7 +186,7 @@ const SiteChecks = ({}) => {
               </div>
             </div>
           </div>
-          {/* row start*/}
+          
           <div className="row p-2"></div>
           <div className="col-md-12 table-responsive">
             <table className="table">
@@ -196,8 +212,8 @@ const SiteChecks = ({}) => {
                   <tr key={action?.id}>
                     <th scope="col">{action?.type}</th>
                     <th scope="col">{action?.subType}</th>
-                    <th scope="col">{action?.summary}</th>
-                    <th scope="col">{action?.lead}</th>
+                    <th scope="col">{action?.category}</th>
+                    <th scope="col">{action?.leadUserID}</th>
                     <th scope="col">
                       <span className="badge bg-danger p-2 m-1 risk-span">
                         1
@@ -211,7 +227,7 @@ const SiteChecks = ({}) => {
                       </span>
                     </th>
                     <th scope="col">
-                      {moment(action?.date).format("DD-MM-YYYY")}
+                      {moment(action?.dueDate).format("DD-MM-YYYY")}
                     </th>
                     <th scope="col">{action?.status}</th>
                     <th scope="col">
@@ -252,12 +268,191 @@ const SiteChecks = ({}) => {
                 ))}
               </tbody>
             </table>
-          </div>
-          {/* row end*/}
+            </div>
+          </>}
+          {create && 
+            <div >
+            <BreadCrumHeader header={"Site Check - New"} page={"New"} />
+              <Grid container >
+
+              
+                    <Grid sm={4}>
+                      <div style={{ margin: "10px" }}>
+                        <label htmlFor="folder" name="folder">
+                          Type
+                        </label>
+                        <select
+                          name="type"
+                          className="form-control form-select"
+                          id="type"
+                          onChange={handleInputChange}
+                        >
+                          <option value="">Select Type</option>
+                          <option value="Assessment">Assessment</option>
+                          <option value="Audit">Audit</option>
+                          <option value="Survey">Survey</option>
+                          <option value="Inspection">Inspection</option>
+                        </select>
+                      </div>
+                </Grid>
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="folder" name="folder">
+                      Sub Type
+                    </label>
+                    <select
+                      name="subType"
+                      className="form-control form-select"
+                      id="subType"
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Sub Type</option>
+                      <option value="Electrical">Electrical</option>
+                      <option value="Fire Risk">Fire Risk</option>
+                      <option value="Daily Fire Inspection">Daily Fire Inspection</option>
+                      <option value="Water Survey">Water Survey</option>
+                      <option value="Asbestos Survey">Asbestos Survey</option>
+                    </select>
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="category" name="category">
+                      Category
+                    </label>
+                    <select
+                      name="category"
+                      className="form-control form-select"
+                      id="category"
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Category</option>
+                      <option value="Electrical">WC Alarm Testing</option>
+                      <option value="Fire Risk">Fire Risk Assessment</option>
+                      <option value="Daily Fire Inspection">Daily Fire Inspection</option>
+                      <option value="Water Survey">Domestic RA Water Survey</option>
+                      <option value="Asbestos Survey">Localised Type 3 Asbestos Survey</option>
+                    </select>
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="folder" name="folder">
+                      Due Date
+                    </label>
+                    <input
+                      //value={issueDate}
+                      type="date"
+                      name="dueDate"
+                      className="form-control"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="folder" name="folder">
+                      Lead
+                    </label>
+                    <select
+                      name="leadUserID"
+                      className="form-control form-select"
+                      id="leadUserID"
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Lead</option>
+                      {users.map(u => {
+                        return (
+                          <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="folder" name="folder">
+                      Assistant
+                    </label>
+                    <select
+                      name="assistantUserID"
+                      className="form-control form-select"
+                      id="assistantUserID"
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Assistant</option>
+                      {users.map(u => {
+                        return (
+                          <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                </Grid>
+
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="folder" name="folder">
+                      Repeats
+                    </label>
+                    <select
+                      name="repeatFrequency"
+                      className="form-control form-select"
+                      id="repeatFrequency"
+                      onChange={handleInputChange}
+                    >
+                      <option value="">None</option>
+                      
+                    </select>
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+
+                </Grid>
+                <Grid sm={4}>
+
+                </Grid>
+                <hr />
+                <Grid sm={4}>
+
+                </Grid>
+                <Grid sm={4}>
+
+                </Grid>
+                <Grid sm={4}>
+                  <button
+                    style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
+                    className="btn btn-primary text-white pr-2"
+                    onClick={() => { console.log("formData", formData) }}
+                  >
+                    Save & Continue
+                  </button>
+                  <button
+                    style={{ width: "150px", marginBottom: '20px',margin: '10px', float: 'right' }}
+                    className="btn btn-primary btn-light"
+                    onClick={() => { setCreate(false) }}
+                  >
+                    Cancel
+                  </button>
+                  
+                </Grid>
+                
+                    
+              </Grid>
+            
+            </div>
+                }
         </div>
       </div>
     </Fragment>
   );
 };
-const mapStateToProps = () => ({});
-export default connect(mapStateToProps, {})(SiteChecks);
+
+const mapStateToProps = (state) => ({
+  sites: state.site.sites,
+  users: state.site.users,
+});
+export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+  SiteChecks
+);
+

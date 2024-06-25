@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box } from "@mui/material";
+import { Button, Box, Autocomplete, TextField } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -8,11 +8,13 @@ import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
 import { getSites, addUser } from "../../../store/thunk/site";
+import { get } from "../../../api";
 import { getCurrentDate } from "../../../utils/dateMethod";
 import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
 import { ROLE } from "../../../Constant/Role";
+import axios from "axios";
 
 const AddUser = ({
   showAddModal,
@@ -26,6 +28,7 @@ const AddUser = ({
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [companies, setcompanies] = useState([]);
   const {
     register,
     reset,
@@ -37,7 +40,14 @@ const AddUser = ({
   useEffect(() => {
     reset(selectedUser);
     getSites();
+    getCompanies();
   }, []);
+  
+  const getCompanies = async () => {
+    const url = `/api/user/companies`;
+    const response = await get(url);
+    setcompanies(response);
+  }
   const submitUser = async (formJson) => {
     const data = {
       userId: null,
@@ -291,12 +301,13 @@ const AddUser = ({
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <label for="company">Company Name</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="company"
-                          {...register("company")}
+                        <Autocomplete
+                          id="companyName"
+                          freeSolo
+                          options={companies.map((option) => option)}
+                          renderInput={(params) => <TextField {...params} />}
                         />
+                        
                       </div>
                     </div>
                   )}
