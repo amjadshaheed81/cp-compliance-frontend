@@ -1385,3 +1385,66 @@ export const deleteSiteAsset = (id) => {
     }
   };
 };
+
+
+export const updatePurchaseDetails = (data, assetId) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/assets/${assetId}/details`;
+      const userData = await putMultiPartFormData(url, data);
+      if (userData?.status === 200) {
+        toast.success("Site asset has been updated successully.");
+      } else {
+        toast.error(
+          "Something went wrong while updating site asset. Please try again."
+        );
+      }
+    } catch (error) {
+      toast.error(
+        "Something went wrong while updating site asset. Please try again."
+      );
+    }
+  };
+};
+
+export const updateDoorSpecification = (formData, assetId) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/assets/${assetId}/doorSpecification`;
+      const res = await put(url, formData);
+      if(res?.status === 200) {
+        toast.success("Door specification details has been updated successfully.");
+      } else{
+        toast.error(
+          "Something went wrong while updating door specification. Please try again."
+        );
+      }
+      
+    } catch (error) {
+      toast.error(
+        "Something went wrong while updating door specification. Please try again."
+      );
+    }
+  };
+};
+
+export const updatepspDetails = (formData, assetId) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/assets/${assetId}/pspDetails`;
+      const res = await put(url, formData);
+      if(res?.status === 200) {
+        toast.success("Passive fire protection details has been updated successfully.");
+      } else{
+        toast.error(
+          "Something went wrong while updating Passive fire protection details. Please try again."
+        );
+      }
+      
+    } catch (error) {
+      toast.error(
+        "Something went wrong while updating Passive fire protection details. Please try again."
+      );
+    }
+  };
+};

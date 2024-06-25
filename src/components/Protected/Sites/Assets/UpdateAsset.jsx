@@ -11,7 +11,11 @@ import TabPanel from "@mui/lab/TabPanel";
 import {
   addSiteAsset,
   getDocumentsRootFolder,
+  getUsers,
   setLoader,
+  updateDoorSpecification,
+  updatePurchaseDetails,
+  updatepspDetails,
 } from "../../../../store/thunk/site";
 import { Validation } from "../../../../Constant/Validation";
 import { InputError } from "../../../common/InputError";
@@ -26,6 +30,11 @@ const UpdateAsset = ({
   getDocumentsRootFolder,
   rootFolder,
   addSiteAsset,
+  updatePurchaseDetails,
+  getUsers,
+  users,
+  updateDoorSpecification,
+  updatepspDetails,
 }) => {
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -40,6 +49,7 @@ const UpdateAsset = ({
     if (siteSelectedForGlobal?.siteId) {
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getAssetDetails();
+      getUsers();
     } else {
       toast.error("Please select site from site search to proceed....");
     }
@@ -131,28 +141,70 @@ const UpdateAsset = ({
   };
 
   const purchaseDetailForm = useForm({});
-  const submitSiteAssetPurchaseDetail = (data) => {
+  const submitSiteAssetPurchaseDetail = async (data) => {
     console.log("data", data);
+    let form_data = new FormData();
+    const { purchaseInvoice, ...formData } = data;
+    if (purchaseInvoice) {
+        form_data.append(
+          "purchaseInvoice",
+          data?.purchaseInvoice?.[0],
+          data?.purchaseInvoice?.[0]?.name
+        );
+      }
+    const submitData = {...formData, purchaseDate: formData?.purchaseDate + ' 10:00:00', assetId: selectedAsset?.assetId}
+    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+    setLoader(true);
+    await updatePurchaseDetails(form_data, selectedAsset?.assetId)
+    setLoader(false);
   };
 
   const locationForm = useForm({});
-  const submitLocationForm = (data) => {
+  const submitLocationForm = async (data) => {
     console.log("data", data);
+    let form_data = new FormData();
+    const submitData = {...data, assetId: selectedAsset?.assetId}
+    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+    setLoader(true);
+    await updatePurchaseDetails(form_data, selectedAsset?.assetId)
+    setLoader(false);
   };
 
   const valudationForm = useForm({});
-  const submitValudationForm = (data) => {
-    console.log("data", data);
+  const submitValudationForm = async (data) => {
+    let form_data = new FormData();
+    const submitData = {
+      ...data,
+      assetId: selectedAsset?.assetId,
+      valuationDate: data?.valuationDate + " 10:00:00",
+      disposalDate: data?.disposalDate + " 10:00:00",
+    };
+    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+    setLoader(true);
+    await updatePurchaseDetails(form_data, selectedAsset?.assetId)
+    setLoader(false);
   };
 
   const passiveFireProtectionForm = useForm({});
-  const submitPassiveFireProtectionForm = (data) => {
-    console.log("data", data);
+  const submitPassiveFireProtectionForm = async (data) => {
+    const submitData = {
+        ...data,
+        assetId: selectedAsset?.assetId,
+      };
+      setLoader(true);
+      await updatepspDetails(submitData, selectedAsset?.assetId);
+      setLoader(false);
   };
 
   const doorSpecificationForm = useForm({});
-  const submitDoorSpecificationForm = (data) => {
-    console.log("data", data);
+  const submitDoorSpecificationForm = async (data) => {
+    const submitData = {
+      ...data,
+      assetId: selectedAsset?.assetId,
+    };
+    setLoader(true);
+    await updateDoorSpecification(submitData, selectedAsset?.assetId);
+    setLoader(false);
   };
   return (
     <Fragment>
@@ -617,7 +669,7 @@ const UpdateAsset = ({
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="valuationDate">Valudation Date</label>
+                        <label for="valuationDate">Valuation Date</label>
                         <input
                           type="date"
                           className="form-control"
@@ -650,6 +702,11 @@ const UpdateAsset = ({
                         {...valudationForm.register("valuationUserId")}
                       >
                         <option value=""></option>
+                        {users?.map((itm) => (
+                          <option value={itm?.id} key={itm?.name}>
+                            {itm?.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-4">
@@ -989,6 +1046,11 @@ const UpdateAsset = ({
                         />
                       </div>
                     </div>
+                    <div>
+                      <button type="submit" className="btn btn-primary mt-2">
+                        Save
+                      </button>
+                    </div>
                   </div>
                 </form>
               </TabPanel>
@@ -1003,9 +1065,14 @@ const UpdateAsset = ({
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  users: state.site.users,
 });
 export default connect(mapStateToProps, {
   setLoader,
   getDocumentsRootFolder,
   addSiteAsset,
+  updatePurchaseDetails,
+  getUsers,
+  updateDoorSpecification,
+  updatepspDetails,
 })(UpdateAsset);
