@@ -302,7 +302,8 @@ const AddUser = ({
                       <div className="form-group">
                         <label for="company">Company Name</label>
                         <Autocomplete
-                          id="companyName"
+                          id="company"
+                          {...register("company")}
                           freeSolo
                           options={companies.map((option) => option)}
                           renderInput={(params) => <TextField {...params} />}
