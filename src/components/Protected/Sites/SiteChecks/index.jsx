@@ -17,18 +17,8 @@ import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
 const SiteChecks = ({ users, getUsers }) => {
   const [create, setCreate] = useState(false);
   const site = JSON.parse(localStorage.getItem("site"))
-  const [filteredSiteChecks, setFilteredSiteChecks] = useState([
-    {
-      id: "PA100001",
-      type: "Dheeraj",
-      subType: "Lorem Ipsum",
-      category: "Internal > Room G1",
-      leadUserID: "Joe B",
-      riskScore: "",
-      dueDate: "21/05/1992",
-      status: "Open",
-    },
-  ]);
+  const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
+  const [siteChecks, setSiteChecks] = useState([]);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
@@ -44,6 +34,12 @@ const SiteChecks = ({ users, getUsers }) => {
     subType: "",
     status: "Open",
   });
+  const [formData2, setFormData2] = useState({
+    searchField: "",
+    type: "",
+    subType: "",
+    status: "Open",
+  });
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -51,14 +47,42 @@ const SiteChecks = ({ users, getUsers }) => {
       [name]: value,
     });
   };
+
+  const handleInputChange2 = (e) => {
+    const { name, value } = e.target;
+    setFormData2({
+      ...formData,
+      [name]: value,
+    });
+  };
   useEffect(() => {
     searchPreActions();
-  }, [formData.role, formData.searchField, formData.site, formData.status]);
+  }, [formData2.type, formData2.searchField, formData2.subType, formData2.status]);
+
   const searchPreActions = () => {
-    const searchField = formData?.searchField;
-    const location = formData?.location;
-    const status = formData?.status;
-    if (searchField || location || status) {
+    console.log(formData2)
+    let filteredSiteChecks2 = siteChecks;
+    if (formData2?.type?.length > 0) {
+      filteredSiteChecks2 = filteredSiteChecks2.filter(sc => sc.type === formData2.type)
+    }
+    if (formData2?.subType?.length > 0) {
+      filteredSiteChecks2 = filteredSiteChecks2.filter(sc => sc.subType === formData2.subType)
+    }
+    if (formData2?.status?.length > 0) {
+       filteredSiteChecks2 = filteredSiteChecks2.filter(sc => sc.status === formData2.status)
+    }
+    if (formData2?.searchField?.length > 0) {
+      filteredSiteChecks2 = filteredSiteChecks2.filter(sc =>
+        sc?.type.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
+        sc?.subType.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
+        sc?.category.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
+        sc?.leadUserID.toLowerCase().includes(String(formData2?.searchField).toLowerCase())
+      )
+    }
+    setFilteredSiteChecks(filteredSiteChecks2);
+    //const searchField = formData?.searchField;
+    //const status = formData?.status;
+    //if (searchField || status) {
       //   const list = users?.filter(
       //     (x) =>
       //       String(x?.name)
@@ -71,9 +95,9 @@ const SiteChecks = ({ users, getUsers }) => {
       //       String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       //   );
       //   setFilteredUser(list);
-    } else {
+    //} else {
       //   setFilteredUser(users);
-    }
+    //}
   };
   const deleteSiteCheckCall = (action) => {
     Swal.fire({
@@ -114,6 +138,7 @@ const SiteChecks = ({ users, getUsers }) => {
     const siteChecks = await get("/api/site-check/site/" + site.siteId);
     console.log("siteCheckssiteChecks", siteChecks)
     setFilteredSiteChecks(siteChecks)
+    setSiteChecks(siteChecks);
   }
 
 
@@ -136,7 +161,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     className="form-control"
                     placeholder="Search"
                     name="searchField"
-                    onChange={handleInputChange}
+                      onChange={handleInputChange2}
                   />
                 </div>
                 <div className="col">
@@ -144,7 +169,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     name="type"
                     className="form-control form-select"
                     id="type"
-                    onChange={handleInputChange}
+                      onChange={handleInputChange2}
                   >
                     <option value="">Select Type</option>
                     <option value="Assessment">Assessment</option>
@@ -158,7 +183,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     name="subType"
                     className="form-control form-select"
                     id="subType"
-                    onChange={handleInputChange}
+                      onChange={handleInputChange2}
                   >
                     <option value="">Select Sub Type</option>
                     <option value="Electrical">Electrical</option>
@@ -173,7 +198,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     name="status"
                     className="form-control form-select"
                     id="status"
-                    onChange={handleInputChange}
+                    onChange={handleInputChange2}
                   >
                     <option value="">Status</option>
                     <option value="Open">Open</option>

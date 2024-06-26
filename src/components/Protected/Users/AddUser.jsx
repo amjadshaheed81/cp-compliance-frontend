@@ -45,7 +45,8 @@ const AddUser = ({
   
   const getCompanies = async () => {
     const url = `/api/user/companies`;
-    const response = await get(url);
+    let response = await get(url);
+    response = response.filter(r=> r!=null)
     setcompanies(response);
   }
   const submitUser = async (formJson) => {
