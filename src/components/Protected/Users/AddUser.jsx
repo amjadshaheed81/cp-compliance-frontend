@@ -29,6 +29,7 @@ const AddUser = ({
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany ] = useState();
   const {
     register,
     reset,
@@ -46,10 +47,11 @@ const AddUser = ({
   const getCompanies = async () => {
     const url = `/api/user/companies`;
     let response = await get(url);
-    response = response.filter(r=> r!=null)
+    response = response.filter(r=> r!== null)
     setcompanies(response);
   }
   const submitUser = async (formJson) => {
+    formJson.company = selectedCompany;
     const data = {
       userId: null,
       firstName: formJson?.firstName || null,
@@ -304,7 +306,9 @@ const AddUser = ({
                         <label for="company">Company Name</label>
                         <Autocomplete
                           id="company"
-                          {...register("company")}
+                          onChange={(event, item) => {
+                            setSelectedCompany(item)
+                          }}
                           freeSolo
                           options={companies.map((option) => option)}
                           renderInput={(params) => <TextField {...params} />}
