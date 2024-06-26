@@ -58,7 +58,31 @@ const UpdateAsset = ({
   const getAssetDetails = async () => {
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
+    console.log("response", response);
     setSelectedAsset(response);
+    purchaseDetailForm.reset({
+      invoiceFile: response?.invoiceFile,
+      purchaseDate: response?.purchaseDate,
+      supplier: response?.supplier,
+      transactionId: response?.transactionId,
+      cost: response?.cost,
+    });
+    locationForm.reset({
+      position: response?.position,
+      floor: response?.floor,
+      room: response?.room,
+    });
+    valudationForm.reset({
+      valuationDate: response?.valuationDate,
+      valuationUserId: response?.valuationUserId,
+      valuationUserName: response?.valuationUserName,
+      valuationValue: response?.valuationValue,
+      disposalDate: response?.disposalDate,
+      disposalTo: response?.disposalTo,
+      disposalValue: response?.disposalValue,
+    });
+    passiveFireProtectionForm.reset(response?.assetPFPItem);
+    doorSpecificationForm.reset(response?.assetDoorSpecifications);
     reset(response);
   };
 
@@ -141,21 +165,26 @@ const UpdateAsset = ({
   };
 
   const purchaseDetailForm = useForm({});
+  const purchaseFrormValues = purchaseDetailForm.watch();
   const submitSiteAssetPurchaseDetail = async (data) => {
     console.log("data", data);
     let form_data = new FormData();
     const { purchaseInvoice, ...formData } = data;
     if (purchaseInvoice) {
-        form_data.append(
-          "purchaseInvoice",
-          data?.purchaseInvoice?.[0],
-          data?.purchaseInvoice?.[0]?.name
-        );
-      }
-    const submitData = {...formData, purchaseDate: formData?.purchaseDate + ' 10:00:00', assetId: selectedAsset?.assetId}
+      form_data.append(
+        "purchaseInvoice",
+        data?.purchaseInvoice?.[0],
+        data?.purchaseInvoice?.[0]?.name
+      );
+    }
+    const submitData = {
+      ...formData,
+      purchaseDate: formData?.purchaseDate + " 10:00:00",
+      assetId: selectedAsset?.assetId,
+    };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId)
+    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
     setLoader(false);
   };
 
@@ -163,10 +192,10 @@ const UpdateAsset = ({
   const submitLocationForm = async (data) => {
     console.log("data", data);
     let form_data = new FormData();
-    const submitData = {...data, assetId: selectedAsset?.assetId}
+    const submitData = { ...data, assetId: selectedAsset?.assetId };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId)
+    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
     setLoader(false);
   };
 
@@ -181,19 +210,19 @@ const UpdateAsset = ({
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId)
+    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
     setLoader(false);
   };
 
   const passiveFireProtectionForm = useForm({});
   const submitPassiveFireProtectionForm = async (data) => {
     const submitData = {
-        ...data,
-        assetId: selectedAsset?.assetId,
-      };
-      setLoader(true);
-      await updatepspDetails(submitData, selectedAsset?.assetId);
-      setLoader(false);
+      ...data,
+      assetId: selectedAsset?.assetId,
+    };
+    setLoader(true);
+    await updatepspDetails(submitData, selectedAsset?.assetId);
+    setLoader(false);
   };
 
   const doorSpecificationForm = useForm({});
@@ -657,6 +686,11 @@ const UpdateAsset = ({
                           {...purchaseDetailForm.register("purchaseInvoice")}
                         />
                       </div>
+                      {purchaseFrormValues.invoiceFile && (
+                        <a href={purchaseFrormValues.invoiceFile} download>
+                          Download Uploaded Invoice
+                        </a>
+                      )}
                     </div>
                     <div>
                       <button type="submit" className="btn btn-primary mt-2">
