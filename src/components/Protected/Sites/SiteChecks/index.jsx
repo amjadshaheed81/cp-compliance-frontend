@@ -9,12 +9,14 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { get, post } from "../../../../api";
 
 import { Button, Modal, Typography, Box, Grid, Divider } from "@mui/material";
 import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
 
 const SiteChecks = ({ users, getUsers }) => {
   const [create, setCreate] = useState(false);
+  const site = JSON.parse(localStorage.getItem("site"))
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([
     {
       id: "PA100001",
@@ -40,7 +42,7 @@ const SiteChecks = ({ users, getUsers }) => {
     searchField: "",
     type: "",
     subType: "",
-    status: "",
+    status: "Open",
   });
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -95,6 +97,25 @@ const SiteChecks = ({ users, getUsers }) => {
       }
     });
   };
+
+  useEffect(() => { getSiteChecks() },[])
+
+  const addSiteCheck = async () => {
+    
+    const body = formData;
+    body.siteId = site.siteId
+    body.dueDate = new Date(body.dueDate);
+    await post("/api/site-check/", body );
+    await getSiteChecks();
+    setCreate(false);
+  }
+
+  const getSiteChecks = async () => {
+    const siteChecks = await get("/api/site-check/site/" + site.siteId);
+    console.log("siteCheckssiteChecks", siteChecks)
+    setFilteredSiteChecks(siteChecks)
+  }
+
 
   return (
     <Fragment>
@@ -423,7 +444,7 @@ const SiteChecks = ({ users, getUsers }) => {
                   <button
                     style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                     className="btn btn-primary text-white pr-2"
-                    onClick={() => { console.log("formData", formData) }}
+                    onClick={() => { addSiteCheck() }}
                   >
                     Save & Continue
                   </button>
