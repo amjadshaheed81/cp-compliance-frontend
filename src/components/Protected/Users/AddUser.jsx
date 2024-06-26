@@ -309,6 +309,9 @@ const AddUser = ({
                           onChange={(event, item) => {
                             setSelectedCompany(item)
                           }}
+                          onInputChange={(event, newInputValue) => {
+                            setSelectedCompany(newInputValue);
+                          }}
                           freeSolo
                           options={companies.map((option) => option)}
                           renderInput={(params) => <TextField {...params} />}
