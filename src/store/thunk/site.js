@@ -1448,3 +1448,27 @@ export const updatepspDetails = (formData, assetId) => {
     }
   };
 };
+
+export const updatePatDetails = (formData, assetId, deleteSavedPatItems) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/site/assets/${assetId}/patDetails`;
+      const res = await put(url, {
+        assetPATItems: formData,
+        deletedPatIds: deleteSavedPatItems
+      });
+      if(res?.status === 200) {
+        toast.success("Passive fire protection details has been updated successfully.");
+      } else{
+        toast.error(
+          "Something went wrong while updating Passive fire protection details. Please try again."
+        );
+      }
+      
+    } catch (error) {
+      toast.error(
+        "Something went wrong while updating Passive fire protection details. Please try again."
+      );
+    }
+  };
+};

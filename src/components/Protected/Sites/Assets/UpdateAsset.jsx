@@ -14,6 +14,7 @@ import {
   getUsers,
   setLoader,
   updateDoorSpecification,
+  updatePatDetails,
   updatePurchaseDetails,
   updatepspDetails,
 } from "../../../../store/thunk/site";
@@ -23,6 +24,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { get } from "../../../../api";
+import { ROLE } from "../../../../Constant/Role";
+import moment from "moment";
 
 const UpdateAsset = ({
   setLoader,
@@ -35,9 +38,11 @@ const UpdateAsset = ({
   users,
   updateDoorSpecification,
   updatepspDetails,
+  updatePatDetails,
 }) => {
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [tester, setTester] = useState([]);
   const assetId = searchParams.get("assetId");
   const [value, setValue] = useState("1");
   const tabChange = (event, newValue) => {
@@ -50,16 +55,37 @@ const UpdateAsset = ({
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getAssetDetails();
       getUsers();
+      getTester();
     } else {
       toast.error("Please select site from site search to proceed....");
     }
   }, []);
 
+  const getTester = async () => {
+    const url = `/api/user/all?userRole=${ROLE.TESTER}`;
+    const data = await get(url);
+    setTester(data?.users);
+  };
+
+  const savePatDetails = async () => {
+    setLoader(true);
+    const data = patRecord?.map((itm) => {
+      return {
+        ...itm,
+        patDate: itm?.patDate?.replace(/T/g, " "),
+        patNextDate: itm?.patNextDate?.replace(/T/g, " "),
+      };
+    });
+    await updatePatDetails(data, selectedAsset?.assetId, deleteSavedPatItems);
+    getAssetDetails();
+    setLoader(false);
+  };
+
   const getAssetDetails = async () => {
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
-    console.log("response", response);
     setSelectedAsset(response);
+    setPatRecord(response?.assetPATItems);
     purchaseDetailForm.reset({
       invoiceFile: response?.invoiceFile,
       purchaseDate: response?.purchaseDate,
@@ -90,11 +116,41 @@ const UpdateAsset = ({
     setPatRecord([
       ...patRecord,
       {
-        tester: "",
-        testDate: "",
-        nextTestDate: "",
+        patId: null,
+        assetId: selectedAsset?.assetId,
+        patUserId: null,
+        patDate: null,
+        patNextDate: null,
+        patStatus: "",
       },
     ]);
+  };
+  const [deleteSavedPatItems, setDeleteSavedPatItems] = useState([]);
+  const deletePatRecord = (index, item) => {
+    if (item?.patId) {
+      setDeleteSavedPatItems((deleteSavedPatItems) => [
+        ...deleteSavedPatItems,
+        item?.patId,
+      ]);
+    }
+    setPatRecord(patRecord.filter((_, i) => i !== index));
+  };
+
+  const handleInputChange = (index, field, value) => {
+    const updatedData = [...patRecord];
+    updatedData[index] = {
+      ...updatedData[index],
+      [field]:
+        field === "patDate" || field === "patNextDate"
+          ? `${value} 10:00:00`
+          : field === "patUserId"
+          ? Number(value)
+          : value,
+    };
+    setPatRecord(updatedData);
+  };
+  const getTesterName = (id) => {
+    return tester?.filter((itm) => itm.id === id)?.[0]?.name;
   };
   const defaultValues = {
     assetId: null,
@@ -128,7 +184,6 @@ const UpdateAsset = ({
   };
   const submitSiteAsset = (data) => {
     setLoader(true);
-    console.log("data", data);
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
     if (data?.assetImage?.length > 0) {
@@ -140,9 +195,6 @@ const UpdateAsset = ({
     } else {
       form_data.append("assetImage", JSON.stringify(data?.image));
     }
-    console.log("data", data);
-    console.log("assetImage", assetImage);
-    console.log("formData", formData);
     const formDetails = {
       assetId: formData?.assetId,
       assetName: formData?.assetName,
@@ -167,7 +219,6 @@ const UpdateAsset = ({
   const purchaseDetailForm = useForm({});
   const purchaseFrormValues = purchaseDetailForm.watch();
   const submitSiteAssetPurchaseDetail = async (data) => {
-    console.log("data", data);
     let form_data = new FormData();
     const { purchaseInvoice, ...formData } = data;
     if (purchaseInvoice) {
@@ -186,6 +237,7 @@ const UpdateAsset = ({
     setLoader(true);
     await updatePurchaseDetails(form_data, selectedAsset?.assetId);
     setLoader(false);
+    getAssetDetails();
   };
 
   const locationForm = useForm({});
@@ -197,6 +249,7 @@ const UpdateAsset = ({
     setLoader(true);
     await updatePurchaseDetails(form_data, selectedAsset?.assetId);
     setLoader(false);
+    getAssetDetails();
   };
 
   const valudationForm = useForm({});
@@ -212,6 +265,7 @@ const UpdateAsset = ({
     setLoader(true);
     await updatePurchaseDetails(form_data, selectedAsset?.assetId);
     setLoader(false);
+    getAssetDetails();
   };
 
   const passiveFireProtectionForm = useForm({});
@@ -223,6 +277,7 @@ const UpdateAsset = ({
     setLoader(true);
     await updatepspDetails(submitData, selectedAsset?.assetId);
     setLoader(false);
+    getAssetDetails();
   };
 
   const doorSpecificationForm = useForm({});
@@ -234,6 +289,7 @@ const UpdateAsset = ({
     setLoader(true);
     await updateDoorSpecification(submitData, selectedAsset?.assetId);
     setLoader(false);
+    getAssetDetails();
   };
   return (
     <Fragment>
@@ -869,41 +925,84 @@ const UpdateAsset = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {patRecord?.map((itm) => (
+                          {patRecord?.map((itm, index) => (
                             <tr>
                               <td>
-                                <select
-                                  name="tester"
-                                  className="form-control form-select"
-                                  id="tester"
-                                >
-                                  <option value="">Select Tester</option>
-                                </select>
+                                {itm?.patId ? (
+                                  getTesterName(itm?.patUserId)
+                                ) : (
+                                  <select
+                                    name="patUserId"
+                                    className="form-control form-select"
+                                    id="patUserId"
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        index,
+                                        "patUserId",
+                                        e.target.value
+                                      )
+                                    }
+                                  >
+                                    <option value="" selected disabled>
+                                      Select Tester
+                                    </option>
+                                    {tester?.map((itm) => (
+                                      <option value={itm?.id} key={itm?.id}>
+                                        {itm?.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
                               </td>
                               <td>
-                                <input
-                                  type="date"
-                                  className="form-control"
-                                  id="testDate"
-                                  name="testDate"
-                                  placeholder="dd/mm/yyyy"
-                                />
+                                {itm?.patId ? (
+                                  moment(itm?.patDate).format("DD-MM-YYYY")
+                                ) : (
+                                  <input
+                                    type="date"
+                                    className="form-control"
+                                    id="patDate"
+                                    name="patDate"
+                                    placeholder="dd/mm/yyyy"
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        index,
+                                        "patDate",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                )}
                               </td>
                               <td>
-                                <input
-                                  type="date"
-                                  className="form-control"
-                                  id="nextTestDate"
-                                  name="nextTestDate"
-                                  placeholder="dd/mm/yyyy"
-                                />
+                                {itm?.patId ? (
+                                  moment(itm?.patNextDate).format("DD-MM-YYYY")
+                                ) : (
+                                  <input
+                                    type="date"
+                                    className="form-control"
+                                    id="patNextDate"
+                                    name="patNextDate"
+                                    placeholder="dd/mm/yyyy"
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        index,
+                                        "patNextDate",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                )}
                               </td>
                               <td>
                                 <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
                                 &nbsp;
                                 <i class="fas fa-regular fa-thumbs-down cursor"></i>{" "}
                                 &nbsp;
-                                <i className="fas fa-trash cursor"></i>
+                                <i
+                                  className="fas fa-trash cursor"
+                                  onClick={() => deletePatRecord(index, itm)}
+                                ></i>
                               </td>
                             </tr>
                           ))}
@@ -912,7 +1011,13 @@ const UpdateAsset = ({
                     </div>
                   </div>
                   <div>
-                    <button type="submit" className="btn btn-primary mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary mt-2"
+                      onClick={() => {
+                        savePatDetails();
+                      }}
+                    >
                       Save
                     </button>
                   </div>
@@ -1165,4 +1270,5 @@ export default connect(mapStateToProps, {
   getUsers,
   updateDoorSpecification,
   updatepspDetails,
+  updatePatDetails,
 })(UpdateAsset);

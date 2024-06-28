@@ -225,6 +225,7 @@ const ViewUsers = ({
                         <option value={ROLE.CONTRACTOR}>Contractor</option>
                         <option value={ROLE.SURVEYOR}>Surveyor</option>
                         <option value={ROLE.TRADESMAN}>Tradesman</option>
+                        <option value={ROLE.TESTER}>Tester</option>
                       </select>
                       {errors?.role && (
                         <InputError

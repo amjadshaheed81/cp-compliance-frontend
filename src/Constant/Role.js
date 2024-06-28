@@ -7,4 +7,5 @@ export const ROLE = {
   CONTRACTOR: "Contractor",
   SURVEYOR: "Surveyor",
   TRADESMAN: "Tradesman",
+  TESTER: "Tester",
 };
