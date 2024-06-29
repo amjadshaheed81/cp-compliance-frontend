@@ -8,8 +8,20 @@ import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import { InputError } from "../../../common/InputError";
+import { createUpdatePreActions } from "../../../../store/thunk/preActions";
+import { setLoader } from "../../../../store/thunk/site";
+import { toast } from "react-toastify";
 
-const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
+const AddPreActions = ({
+  showAddModal,
+  setShowAddModal,
+  refresh,
+  createUpdatePreActions,
+  loggedInUserData,
+  setLoader,
+  siteSelectedForGlobal,
+}) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +37,38 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
     // reset(selectedUser);
   }, []);
   const submitPreActions = async (data) => {
-    console.log("data", data);
+    let form_data = new FormData();
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed.");
+      return;
+    }
+    if (loggedInUserData?.id) {
+      if (data?.actionImage) {
+        form_data.append(
+          "actionImage",
+          data?.actionImage?.[0],
+          data?.actionImage?.[0]?.name
+        );
+      } else {
+        form_data.append("actionImage", "", "");
+      }
+      const { actionImage, ...formData } = data;
+      form_data.append(
+        "actionRequestString",
+        JSON.stringify({
+          ...formData,
+          actionId: null,
+          raisedByUserId: loggedInUserData?.id,
+        })
+      );
+      setIsLoading(true);
+      await createUpdatePreActions(form_data, siteSelectedForGlobal?.siteId);
+      setIsLoading(false);
+      handleClose();
+      refresh();
+    } else {
+      toast.error("Please login with valid user details to proceed.");
+    }
   };
   return (
     <React.Fragment>
@@ -44,16 +87,30 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                   <div className="col-md-8">
                     <div className="row">
                       <div className="col-md-6">
-                        <label for="userType">Internal/External</label>
+                        <label for="category">Internal/External</label>
                         <select
-                          name="userType"
+                          name="category"
                           className="form-control form-select"
-                          id="userType"
+                          id="category"
+                          {...register("category", {
+                            required: {
+                              value: true,
+                              message: `Please select category`,
+                            },
+                          })}
                         >
-                          <option value="">Select Internal/External</option>
+                          <option value="" selected disabled>
+                            Select Internal/External
+                          </option>
                           <option value="Internal">Internal</option>
                           <option value="External">External</option>
                         </select>
+                        {errors?.category && (
+                          <InputError
+                            message={errors?.category?.message}
+                            key={errors?.category?.message}
+                          />
+                        )}
                       </div>
                       <div className="col-md-6">
                         <div className="form-group mt-2">
@@ -62,9 +119,27 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                             name="floor"
                             className="form-control form-select"
                             id="floor"
+                            {...register("floor", {
+                              required: {
+                                value: true,
+                                message: `Please select floor`,
+                              },
+                            })}
                           >
-                            <option value="">Select Floor</option>
+                            <option value="" selected disabled>
+                              Select Floor
+                            </option>
+                            <option value={"Ground"}>Ground</option>
+                            <option value={"First"}>First</option>
+                            <option value={"Second"}>Second</option>
+                            <option value={"Third"}>Third</option>`
                           </select>
+                          {errors?.floor && (
+                            <InputError
+                              message={errors?.floor?.message}
+                              key={errors?.floor?.message}
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -75,9 +150,26 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                             name="room"
                             className="form-control form-select"
                             id="room"
+                            {...register("room", {
+                              required: {
+                                value: true,
+                                message: `Please select room`,
+                              },
+                            })}
                           >
-                            <option value="">Select Room</option>
+                            <option value="" selected disabled>
+                              Select Room
+                            </option>
+                            <option value="R101">R101</option>
+                            <option value="R102">R102</option>
+                            <option value="R103">R103</option>
                           </select>
+                          {errors?.room && (
+                            <InputError
+                              message={errors?.room?.message}
+                              key={errors?.room?.message}
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -88,9 +180,24 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                             name="status"
                             className="form-control form-select"
                             id="status"
+                            {...register("status", {
+                              required: {
+                                value: true,
+                                message: `Please select room`,
+                              },
+                            })}
                           >
-                            <option value="">Select Status</option>
+                            <option value="" selected disabled>
+                              Select Status
+                            </option>
+                            <option value="New">New</option>
                           </select>
+                          {errors?.status && (
+                            <InputError
+                              message={errors?.status?.message}
+                              key={errors?.status?.message}
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -110,6 +217,7 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                       <div className="col-md-12">
                         <div className="form-group mt-2">
                           <textarea
+                            {...register("description")}
                             className="form-control form-text"
                             placeholder="Enter Notes..."
                           ></textarea>
@@ -137,12 +245,18 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                         <input
                           className="uploadButton-input mt-4"
                           type="file"
-                          name="siteImage"
+                          name="actionImage"
                           accept="image/*, application/pdf"
-                          id="siteImage"
+                          id="actionImage"
+                          {...register("actionImage", {
+                            required: {
+                              value: true,
+                              message: `Please select action image`,
+                            },
+                          })}
                         />
                         <label
-                          htmlFor="siteImage"
+                          htmlFor="actionImage"
                           className="text-primary cursor mt-4"
                         >
                           Click to upload
@@ -154,6 +268,12 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
                           <br />
                           (max 800 * 800 px)
                         </p>
+                        {errors?.actionImage && (
+                          <InputError
+                            message={errors?.actionImage?.message}
+                            key={errors?.actionImage?.message}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -164,7 +284,7 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
           {!isLoading && (
             <DialogActions>
               <Button onClick={handleClose} className="bg-light text-primary">
-                Close
+                Cancel
               </Button>
               <Button type="submit" className="bg-primary text-white">
                 Save
@@ -177,5 +297,10 @@ const AddPreActions = ({ showAddModal, setShowAddModal, refresh }) => {
   );
 };
 
-const mapStateToProps = (state) => ({});
-export default connect(mapStateToProps, {})(AddPreActions);
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, { createUpdatePreActions, setLoader })(
+  AddPreActions
+);

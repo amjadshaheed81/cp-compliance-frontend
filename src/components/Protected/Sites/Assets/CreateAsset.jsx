@@ -91,9 +91,6 @@ const CreateAsset = ({
       form_data.append("assetImage", "", "");
     }
     const { assetImage, ...formData } = data;
-    console.log("data", data);
-    console.log("assetImage", assetImage);
-    console.log("formData", formData);
     form_data.append("assetRequestString", JSON.stringify(formData));
     addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
     // reset(defaultValues);

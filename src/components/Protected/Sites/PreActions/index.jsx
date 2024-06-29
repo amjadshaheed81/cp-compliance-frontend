@@ -10,25 +10,33 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import AddPreActions from "./AddPreActions";
+import { get } from "../../../../api";
+import { deletePreAction } from "../../../../store/thunk/preActions";
 
-const PreActions = ({}) => {
-  const [filteredPreActions, setFilteredPreActions] = useState([
-    {
-      id: "PA100001",
-      raisedBy: "Dheeraj",
-      comment: "Lorem Ipsum",
-      location: "Internal > Room G1",
-      raisedOn: new Date(),
-      status: "Open",
-    },
-  ]);
+const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
+  const [filteredPreActions, setFilteredPreActions] = useState([]);
+  const [preActions, setPreActions] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    getPreActions();
+  }, []);
+  const getPreActions = async () => {
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed.");
+      return;
+    }
+    const res = await get(
+      `api/action/${siteSelectedForGlobal?.siteId}/summary`
+    );
+    console.log("res", res);
+    setFilteredPreActions(res?.preActions || []);
+    setPreActions(res?.preActions || []);
+  };
   const [formData, setFormData] = useState({
     searchField: "",
     location: "",
@@ -49,39 +57,40 @@ const PreActions = ({}) => {
     const location = formData?.location;
     const status = formData?.status;
     if (searchField || location || status) {
-      //   const list = users?.filter(
-      //     (x) =>
-      //       String(x?.name)
-      //         .toLowerCase()
-      //         .includes(String(searchField).toLowerCase()) &&
-      //       String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
-      //       String(x?.defaultSiteName)
-      //         .toLowerCase()
-      //         .includes(String(site).toLowerCase()) &&
-      //       String(x?.status).toLowerCase().includes(String(status).toLowerCase())
-      //   );
-      //   setFilteredUser(list);
+      const list = preActions?.filter(
+        (x) =>
+          String(x?.actionId)
+            .toLowerCase()
+            .includes(String(searchField).toLowerCase()) &&
+          String(x?.raisedByUserName)
+            .toLowerCase()
+            .includes(String(searchField).toLowerCase()) &&
+          String(x?.status).toLowerCase().includes(String(status).toLowerCase())
+      );
+      setFilteredPreActions(list);
     } else {
-      //   setFilteredUser(users);
+      setFilteredPreActions(preActions);
     }
   };
-  const deleteUserCall = (action) => {
+  const deleteActionCall = (action) => {
     Swal.fire({
-      title: `Do you want to delete ${action?.id} action?`,
+      title: `Do you want to delete pre action #${action?.actionId}?`,
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // const res = await deleteUser(user?.id);
-        // if (res === "Success") {
-        //   toast.success(`${user?.name} user has been deleted successully`);
-        //   getUsers();
-        // } else {
-        //   toast.error(
-        //     `Something went wrong while deleting user. Please try again.`
-        //   );
-        // }
+        const res = await deletePreAction(action?.actionId);
+        if (res === "Success") {
+          toast.success(
+            `#${action?.actionId} pre action has been deleted successully.`
+          );
+          getPreActions();
+        } else {
+          toast.error(
+            `Something went wrong while deleting pre action #${action?.actionId}. Please try again!!`
+          );
+        }
       } else if (result.isDenied) {
         toast.info(`delete action has been denied.`);
       }
@@ -98,8 +107,7 @@ const PreActions = ({}) => {
             <AddPreActions
               showAddModal={showAddModal}
               setShowAddModal={setShowAddModal}
-              refresh={() => {
-              }}
+              refresh={() => {}}
             />
           )}
           <BreadCrumHeader header={"Pre-Action"} page={"Pre-Action"} />
@@ -135,8 +143,9 @@ const PreActions = ({}) => {
                     onChange={handleInputChange}
                   >
                     <option value="">Status</option>
-                    <option value="Open">Open</option>
-                    <option value="Close">Close</option>
+                    <option value="New">New</option>
+                    <option value="Pending Action">Pending Action</option>
+                    <option value="Closed">Closed</option>
                   </select>
                 </div>
               </div>
@@ -159,7 +168,7 @@ const PreActions = ({}) => {
                   <CSVLink
                     filename={"pre-action-list"}
                     className="btn btn-light bg-white text-primary"
-                    data={[]}
+                    data={filteredPreActions}
                   >
                     <Tooltip title={`Export`} arrow>
                       <i className="fas fa-download"></i>
@@ -192,16 +201,22 @@ const PreActions = ({}) => {
                 )}
                 {filteredPreActions?.map((action) => (
                   <tr key={action?.id}>
-                    <th scope="col">{action?.id}</th>
-                    <th scope="col">{action?.raisedBy}</th>
-                    <th scope="col">{action?.comment}</th>
-                    <th scope="col">{action?.location}</th>
+                    <th scope="col">{action?.actionId}</th>
+                    <th scope="col">{action?.raisedByUserName}</th>
+                    <th scope="col">{action?.description}</th>
                     <th scope="col">
-                      {moment(action?.raisedOn).format("DD-MM-YYYY")}
+                      {action?.category} > {action?.floor} > {action?.room}
                     </th>
-                    <th scope="col">{action?.status}</th>
                     <th scope="col">
-                      <Tooltip title={`View ${action?.id}`} arrow>
+                      {moment(action?.raisedDate).format("DD-MM-YYYY")}
+                    </th>
+                    <th scope="col">
+                      <span className="badge rounded-pill bg-primary text-capitalize">
+                        {action?.status}
+                      </span>
+                    </th>
+                    <th scope="col">
+                      <Tooltip title={`View ${action?.actionId}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
@@ -211,7 +226,10 @@ const PreActions = ({}) => {
                           <i className="fas fa-eye"></i>
                         </button>{" "}
                       </Tooltip>
-                      <Tooltip title={`${action?.id} mark as closed`} arrow>
+                      <Tooltip
+                        title={`${action?.actionId} mark as closed`}
+                        arrow
+                      >
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {}}
@@ -219,10 +237,10 @@ const PreActions = ({}) => {
                           <i className="fas fa-check"></i>
                         </button>{" "}
                       </Tooltip>
-                      <Tooltip title={`Delete ${action?.id}`} arrow>
+                      <Tooltip title={`Delete ${action?.actionId}`} arrow>
                         <button
                           className="btn btn-sm btn-light text-dark"
-                          onClick={() => deleteUserCall(action)}
+                          onClick={() => deleteActionCall(action)}
                         >
                           <i className="fas fa-trash"></i>
                         </button>{" "}
@@ -239,5 +257,7 @@ const PreActions = ({}) => {
     </Fragment>
   );
 };
-const mapStateToProps = () => ({});
-export default connect(mapStateToProps, {})(PreActions);
+const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, { deletePreAction })(PreActions);
