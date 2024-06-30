@@ -220,10 +220,37 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
-                            goTo("/view-update-pre-actions");
+                            goTo(
+                              `/pre-action-detail?id=${action?.actionId}&viewMode=viewOnly`
+                            );
                           }}
                         >
                           <i className="fas fa-eye"></i>
+                        </button>{" "}
+                      </Tooltip>
+                      {/* <Tooltip title={`Edit ${action?.actionId}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            goTo(`/pre-action-detail?id=${action?.actionId}&viewMode=editOnly`);
+                          }}
+                        >
+                          <i className="fas fa-pen"></i>
+                        </button>{" "}
+                      </Tooltip> */}
+                      <Tooltip
+                        title={`${action?.actionId} mark as approve`}
+                        arrow
+                      >
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            goTo(
+                              `/pre-action-detail?id=${action?.actionId}&viewMode=markApproved`
+                            );
+                          }}
+                        >
+                          <i className="fas fa-check"></i>
                         </button>{" "}
                       </Tooltip>
                       <Tooltip
@@ -232,9 +259,13 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
                       >
                         <button
                           className="btn btn-sm btn-light"
-                          onClick={() => {}}
+                          onClick={() => {
+                            goTo(
+                              `/pre-action-detail?id=${action?.actionId}&viewMode=markClosed`
+                            );
+                          }}
                         >
-                          <i className="fas fa-check"></i>
+                          <i className="fas fa-window-close"></i>
                         </button>{" "}
                       </Tooltip>
                       <Tooltip title={`Delete ${action?.actionId}`} arrow>
