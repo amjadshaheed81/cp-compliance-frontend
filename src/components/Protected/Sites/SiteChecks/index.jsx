@@ -9,7 +9,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../../../api";
+import { get, post, del } from "../../../../api";
 
 import { Button, Modal, Typography, Box, Grid, Divider } from "@mui/material";
 import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
@@ -107,7 +107,8 @@ const SiteChecks = ({ users, getUsers }) => {
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // const res = await deleteUser(user?.id);
+        await del("/api/site-check/check-id/" + action.checkId);
+        getSiteChecks();
         // if (res === "Success") {
         //   toast.success(`${user?.name} user has been deleted successully`);
         //   getUsers();
@@ -280,7 +281,7 @@ const SiteChecks = ({ users, getUsers }) => {
                       <Tooltip title={`View ${action?.type}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
-                          onClick={() => {}}
+                          onClick={() => { navigate(`/site-checks/${action?.checkId}/update`);}}
                         >
                           <i className="fas fa-eye"></i>
                         </button>{" "}

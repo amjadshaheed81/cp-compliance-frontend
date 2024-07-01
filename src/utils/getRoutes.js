@@ -19,6 +19,7 @@ import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
 import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewCreatePreActions";
 import SiteChecks from "../components/Protected/Sites/SiteChecks";
+import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 
 export const getRoutes = () => {
@@ -123,6 +124,10 @@ export const getRoutes = () => {
     {
       path: "/site-checks",
       element: <SiteChecks />,
+    },
+    {
+      path: "/site-checks/:id/update",
+      element: <UpdateSiteCheck />,
     },
     {
       path: "/update-asset",
