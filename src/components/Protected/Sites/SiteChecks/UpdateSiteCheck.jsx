@@ -7,6 +7,7 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import InspectionElectricalFault from "./InspectionElectricalFault";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
+import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
@@ -91,6 +92,8 @@ const SiteChecks = ({ users, getUsers }) => {
       setStep("inspection-electrical")
     } else if (siteCheck.type === "Assessment" && siteCheck.subType === "Fire Risk") {
       setStep("assessment-fire-risk")
+    } else if (siteCheck.type === "Audit" && siteCheck.subType.trim() === "Unit Maintenance Periodic") {
+      setStep("audit-unit-maintenance-periodic")
     }
     setSiteCheck(siteCheck);
   }
@@ -148,6 +151,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     <option value="Daily Fire Inspection">Daily Fire Inspection</option>
                     <option value="Water Survey">Water Survey</option>
                     <option value="Asbestos Survey">Asbestos Survey</option>
+                    <option value="Unit Maintenance Periodic">Unit Maintenance Periodic</option>
                   </select>
                 </div>
               </Grid>
@@ -165,11 +169,12 @@ const SiteChecks = ({ users, getUsers }) => {
                     value={siteCheck?.category}
                   >
                     <option value="">Select Category</option>
-                    <option value="Electrical">WC Alarm Testing</option>
-                    <option value="Fire Risk">Fire Risk Assessment</option>
+                    <option value="WC Alarm Testing">WC Alarm Testing</option>
+                    <option value="Fire Risk Assessment">Fire Risk Assessment</option>
                     <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                    <option value="Water Survey">Domestic RA Water Survey</option>
-                    <option value="Asbestos Survey">Localised Type 3 Asbestos Survey</option>
+                    <option value="Domestic RA Water Survey">Domestic RA Water Survey</option>
+                    <option value="Localised Type 3 Asbestos Survey">Localised Type 3 Asbestos Survey</option>
+                    <option value="6 monthly">6 monthly</option>
                   </select>
                 </div>
               </Grid>
@@ -287,6 +292,7 @@ const SiteChecks = ({ users, getUsers }) => {
             {step === "inspection-electrical" && <Item><InspectionElectricalFault /></Item>}
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate /></Item>}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk /></Item>}
+            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic /></Item>}
           </Stack>    
           
          

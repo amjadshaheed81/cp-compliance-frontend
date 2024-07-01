@@ -191,7 +191,9 @@ const SiteChecks = ({ users, getUsers }) => {
                     <option value="Fire Risk">Fire Risk</option>
                     <option value="Daily Fire Inspection">Daily Fire Inspection</option>
                     <option value="Water Survey">Water Survey</option>
-                    <option value="Asbestos Survey">Asbestos Survey</option>
+                      <option value="Asbestos Survey">Asbestos Survey</option>
+                      <option value="Unit Maintenance Periodic">Unit Maintenance Periodic</option>
+                     
                   </select>
                 </div>
                 <div className="col">
@@ -359,6 +361,7 @@ const SiteChecks = ({ users, getUsers }) => {
                       <option value="Daily Fire Inspection">Daily Fire Inspection</option>
                       <option value="Water Survey">Water Survey</option>
                       <option value="Asbestos Survey">Asbestos Survey</option>
+                      <option value="Unit Maintenance Periodic">Unit Maintenance Periodic</option>
                     </select>
                   </div>
                 </Grid>
@@ -374,11 +377,12 @@ const SiteChecks = ({ users, getUsers }) => {
                       onChange={handleInputChange}
                     >
                       <option value="">Select Category</option>
-                      <option value="Electrical">WC Alarm Testing</option>
-                      <option value="Fire Risk">Fire Risk Assessment</option>
+                      <option value="WC Alarm Testing">WC Alarm Testing</option>
+                      <option value="Fire Risk Assessment">Fire Risk Assessment</option>
                       <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                      <option value="Water Survey">Domestic RA Water Survey</option>
-                      <option value="Asbestos Survey">Localised Type 3 Asbestos Survey</option>
+                      <option value="Domestic RA Water Survey">Domestic RA Water Survey</option>
+                      <option value="Localised Type 3 Asbestos Survey">Localised Type 3 Asbestos Survey</option>
+                      <option value="6 monthly">6 monthly</option>
                     </select>
                   </div>
                 </Grid>
