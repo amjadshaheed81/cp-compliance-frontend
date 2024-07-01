@@ -21,6 +21,7 @@ import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewC
 import SiteChecks from "../components/Protected/Sites/SiteChecks";
 import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
+import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
 
 export const getRoutes = () => {
   const tabs = [
@@ -132,6 +133,10 @@ export const getRoutes = () => {
     {
       path: "/update-asset",
       element: <UpdateAsset />,
+    },
+    {
+      path: "/pre-action-detail",
+      element: <ViewEditPreAction />,
     },
   ];
 };
