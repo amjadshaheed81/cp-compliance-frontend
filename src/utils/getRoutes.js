@@ -14,6 +14,9 @@ import Projects from "../components/Protected/Sites/Projects";
 import Contracts from "../components/Protected/Sites/Contracts";
 import SubFolder from "../components/Protected/Sites/Documents/SubFolder";
 import Users from "../components/Protected/Users";
+import AdminCategories from "../components/Protected/Admin/AdminCategories";
+import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd"
+import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit"
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
@@ -130,6 +133,19 @@ export const getRoutes = () => {
       path: "/site-checks/:id/update",
       element: <UpdateSiteCheck />,
     },
+    {
+      path: "/admin/categories",
+      element: <AdminCategories />,
+    },
+    {
+      path: "/admin/categories/new",
+      element: <AdminCategoriesAdd />,
+    },
+    {
+      path: "/admin/categories/:id/update",
+      element: <AdminCategoriesEdit />,
+    },
+    
     {
       path: "/update-asset",
       element: <UpdateAsset />,

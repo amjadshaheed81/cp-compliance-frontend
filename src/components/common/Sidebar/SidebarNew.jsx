@@ -129,7 +129,6 @@ const Drawer = styled(MuiDrawer, {
 }));
 
 const SidebarNew = ({ loggedInUserData }) => {
-  console.log("loggedInUserData", loggedInUserData);
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
@@ -166,11 +165,11 @@ const SidebarNew = ({ loggedInUserData }) => {
         navigate("/documents");
         break;
       case "Site Projects": {
-        if (loggedInUserData?.role === ROLE.MANAGER || loggedInUserData?.role === ROLE.ADMIN) {
+       // if (loggedInUserData?.role === ROLE.MANAGER || loggedInUserData?.role === ROLE.ADMIN) {
           navigate("/site-projects");
-        } else {
-          toast.info("Only Manager's can login into site project.");
-        }
+        //} else {
+         // toast.info("Only Manager's can login into site project.");
+        //}
         break;
       }
       case "Site Assets":
@@ -191,6 +190,8 @@ const SidebarNew = ({ loggedInUserData }) => {
       case "Site Calendar":
         navigate("/sites");
         break;
+      case "Categories":
+        navigate("/admin/categories")
       default:
         navigate("/dashboard");
     }
@@ -313,6 +314,40 @@ const SidebarNew = ({ loggedInUserData }) => {
             "Site Checks",
             "Energy Cost",
             "Site Calendar",
+          ].map((text, index) => (
+            <ListItem key={text} disablePadding sx={{ display: "block" }}>
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? "initial" : "center",
+                  px: 2.5,
+                }}
+                onClick={() => goTo(text)}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : "auto",
+                    justifyContent: "center",
+                  }}
+                  onClick={() => goTo(text)}
+                >
+                  {siteIconComponents[index]}
+                </ListItemIcon>
+                <ListItemText
+                  primary={text}
+                  sx={{ opacity: open ? 1 : 0, color: "white" }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+        <p style={{ color: "grey" }} className="bg-black m-0">
+          Admin
+        </p>
+        <List sx={{ backgroundColor: "black" }}>
+          {[
+            "Categories",
           ].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
