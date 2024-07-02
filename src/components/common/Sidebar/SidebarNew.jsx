@@ -35,6 +35,7 @@ import ChecklistIcon from "@mui/icons-material/Checklist";
 import SearchIcon from "@mui/icons-material/Search";
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
@@ -61,6 +62,9 @@ const siteIconComponents = [
   <SearchIcon style={{ color: "white" }} />,
   <EnergySavingsLeafIcon style={{ color: "white" }} />,
   <CalendarMonthIcon style={{ color: "white" }} />,
+];
+const adminIconComponents = [
+  <AdminPanelSettingsIcon style={{ color: "white" }} />,
 ];
 
 const openedMixin = (theme) => ({
@@ -192,6 +196,7 @@ const SidebarNew = ({ loggedInUserData }) => {
         break;
       case "Categories":
         navigate("/admin/categories")
+        break;
       default:
         navigate("/dashboard");
     }
@@ -366,7 +371,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                   }}
                   onClick={() => goTo(text)}
                 >
-                  {siteIconComponents[index]}
+                  {adminIconComponents[index]}
                 </ListItemIcon>
                 <ListItemText
                   primary={text}

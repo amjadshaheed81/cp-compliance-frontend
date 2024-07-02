@@ -6,6 +6,7 @@ import SidebarNew from "../../common/Sidebar/SidebarNew";
 import { useNavigate } from "react-router-dom";
 import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import { get, post, del } from "../../../api";
+import CircularProgress from '@mui/material/CircularProgress';
 
 
 const AdminCategories = ({ }) => {
@@ -13,11 +14,13 @@ const AdminCategories = ({ }) => {
   const navigate = useNavigate();
   
   const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     getCategories();
   },[])
   const getCategories = async () => {
+    setIsLoading(true);
     const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
     const lovsubtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE");
     const categories = await get("/api/lov/SITE_CHECK_CATEGORY");
@@ -46,6 +49,7 @@ const AdminCategories = ({ }) => {
     })
     console.log(fetchData)
     setData(fetchData);
+    setIsLoading(false);
     const fetchData2 = [
       {
         type: "Inspection",
@@ -186,7 +190,14 @@ const AdminCategories = ({ }) => {
                 </tr>
               </thead>
               <tbody>
-                {data?.length === 0 && (
+                {isLoading &&
+                  <tr>
+                    <td colSpan={4} align="center"><CircularProgress /></td>
+                  </tr>
+                }
+                  
+                 
+                {!isLoading && data?.length === 0 && (
                   <tr>
                     <td colSpan={4} align="center">No result found!!</td>
                   </tr>
