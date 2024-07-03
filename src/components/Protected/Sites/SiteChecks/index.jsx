@@ -16,6 +16,10 @@ import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
 
 const SiteChecks = ({ users, getUsers }) => {
   const [create, setCreate] = useState(false);
+  const [typeoptions, settypeoptions] = useState([]);
+  const [subtypeoptions, setsubtypeoptions] = useState([]);
+  const [subtypeoptions2, setsubtypeoptions2] = useState([]);
+  const [catoptions, setcatoptions] = useState([]);
   const site = JSON.parse(localStorage.getItem("site"))
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
@@ -26,18 +30,40 @@ const SiteChecks = ({ users, getUsers }) => {
 
   useEffect(() => {
     getUsers();
+    gettypeoptions();
   }, []);
+  
+  const gettypeoptions = async () => {
+    const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
+    settypeoptions(lovtypes.map(l => l.lovValue));
+  }
+  const getsubtypeoptions = async () => {
+    const lovtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE?filter1"+formData2.type);
+    setsubtypeoptions(lovtypes.map(l => l.lovValue));
+  }
+
+  const getcatoptions = async () => {
+    const lovtypes = await get("/api/lov/SITE_CHECK_CATEGORY?filter1" + formData.category);
+    setcatoptions(lovtypes.map(l => l.lovValue));
+  }
+
+  const getsubtypeoptions2 = async () => {
+    const lovtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE?filter1" + formData.type);
+    setsubtypeoptions2(lovtypes.map(l => l.lovValue));
+  }
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
     searchField: "",
     type: "",
     subType: "",
+    category: "",
     status: "Open",
   });
   const [formData2, setFormData2] = useState({
     searchField: "",
     type: "",
     subType: "",
+    category: "",
     status: "Open",
   });
   const handleInputChange = (e) => {
@@ -51,13 +77,31 @@ const SiteChecks = ({ users, getUsers }) => {
   const handleInputChange2 = (e) => {
     const { name, value } = e.target;
     setFormData2({
-      ...formData,
+      ...formData2,
       [name]: value,
     });
   };
+
   useEffect(() => {
     searchPreActions();
+    if (formData2.type?.length > 0) {
+      getsubtypeoptions();
+    }
   }, [formData2.type, formData2.searchField, formData2.subType, formData2.status]);
+
+  useEffect(() => {
+    searchPreActions();
+    if (formData.type?.length > 0) {
+      getsubtypeoptions2();
+    }
+  }, [formData.type]);
+
+  useEffect(() => {
+    searchPreActions();
+    if (formData.subType?.length > 0) {
+      getcatoptions();
+    }
+  }, [formData.subType]);
 
   const searchPreActions = () => {
     console.log(formData2)
@@ -172,28 +216,21 @@ const SiteChecks = ({ users, getUsers }) => {
                     id="type"
                       onChange={handleInputChange2}
                   >
-                    <option value="">Select Type</option>
-                    <option value="Assessment">Assessment</option>
-                    <option value="Audit">Audit</option>
-                    <option value="Survey">Survey</option>
-                    <option value="Inspection">Inspection</option>
+                      <option value="">Select Type</option>
+                      {typeoptions.map(t => <option value={t}>{t}</option>)}
+                   
                   </select>
                 </div>
                 <div className="col">
                   <select
                     name="subType"
                     className="form-control form-select"
-                    id="subType"
+                      id="subType"
+                      disabled={formData2?.type?.length === 0}
                       onChange={handleInputChange2}
                   >
                     <option value="">Select Sub Type</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Fire Risk">Fire Risk</option>
-                    <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                    <option value="Water Survey">Water Survey</option>
-                      <option value="Asbestos Survey">Asbestos Survey</option>
-                      <option value="Unit Maintenance Periodic">Unit Maintenance Periodic</option>
-                     
+                      {subtypeoptions.map(t => <option value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div className="col">
@@ -337,10 +374,7 @@ const SiteChecks = ({ users, getUsers }) => {
                           onChange={handleInputChange}
                         >
                           <option value="">Select Type</option>
-                          <option value="Assessment">Assessment</option>
-                          <option value="Audit">Audit</option>
-                          <option value="Survey">Survey</option>
-                          <option value="Inspection">Inspection</option>
+                          {typeoptions.map(t => <option value={t}>{t}</option>)}
                         </select>
                       </div>
                 </Grid>
@@ -352,16 +386,12 @@ const SiteChecks = ({ users, getUsers }) => {
                     <select
                       name="subType"
                       className="form-control form-select"
+                      disabled={formData?.type?.length === 0}
                       id="subType"
                       onChange={handleInputChange}
                     >
                       <option value="">Select Sub Type</option>
-                      <option value="Electrical">Electrical</option>
-                      <option value="Fire Risk">Fire Risk</option>
-                      <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                      <option value="Water Survey">Water Survey</option>
-                      <option value="Asbestos Survey">Asbestos Survey</option>
-                      <option value="Unit Maintenance Periodic">Unit Maintenance Periodic</option>
+                      {subtypeoptions2.map(t => <option value={t}>{t}</option>)}
                     </select>
                   </div>
                 </Grid>
@@ -372,17 +402,13 @@ const SiteChecks = ({ users, getUsers }) => {
                     </label>
                     <select
                       name="category"
+                      disabled={formData?.subType?.length === 0}
                       className="form-control form-select"
                       id="category"
                       onChange={handleInputChange}
                     >
                       <option value="">Select Category</option>
-                      <option value="WC Alarm Testing">WC Alarm Testing</option>
-                      <option value="Fire Risk Assessment">Fire Risk Assessment</option>
-                      <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                      <option value="Domestic RA Water Survey">Domestic RA Water Survey</option>
-                      <option value="Localised Type 3 Asbestos Survey">Localised Type 3 Asbestos Survey</option>
-                      <option value="6 monthly">6 monthly</option>
+                      {catoptions.map(t => <option value={t}>{t}</option>)}
                     </select>
                   </div>
                 </Grid>
