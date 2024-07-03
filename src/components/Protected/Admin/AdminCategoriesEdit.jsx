@@ -119,7 +119,7 @@ const AdminCategoriesAdd = ({ }) => {
         <Header />
         <div className="container-fluid">
 
-          <BreadCrumHeader header={"Categories Management - Add"} page={"Manage"} />
+          <BreadCrumHeader header={"Categories Management - Edit"} page={"Manage"} />
 
 
           <Grid container spacing={3} style={{ color: "white", }}>

@@ -9,12 +9,12 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { get, post, del } from "../../../../api";
+import { get, post, del, put } from "../../../../api";
 
 import { Button, Modal, Typography, Box, Grid, Divider } from "@mui/material";
-import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+import { deleteUser, getSites, getUsers, getExternalUsers } from "../../../../store/thunk/site";
 
-const SiteChecks = ({ users, getUsers }) => {
+const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   const [create, setCreate] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
   const [subtypeoptions, setsubtypeoptions] = useState([]);
@@ -29,7 +29,7 @@ const SiteChecks = ({ users, getUsers }) => {
   };
 
   useEffect(() => {
-    getUsers();
+    getExternalUsers();
     gettypeoptions();
   }, []);
   
@@ -38,17 +38,17 @@ const SiteChecks = ({ users, getUsers }) => {
     settypeoptions(lovtypes.map(l => l.lovValue));
   }
   const getsubtypeoptions = async () => {
-    const lovtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE?filter1"+formData2.type);
+    const lovtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE?filter1="+formData2.type);
     setsubtypeoptions(lovtypes.map(l => l.lovValue));
   }
 
   const getcatoptions = async () => {
-    const lovtypes = await get("/api/lov/SITE_CHECK_CATEGORY?filter1" + formData.category);
+    const lovtypes = await get("/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData.subType);
     setcatoptions(lovtypes.map(l => l.lovValue));
   }
 
   const getsubtypeoptions2 = async () => {
-    const lovtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE?filter1" + formData.type);
+    const lovtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData.type);
     setsubtypeoptions2(lovtypes.map(l => l.lovValue));
   }
   useEffect(() => {}, []);
@@ -66,8 +66,19 @@ const SiteChecks = ({ users, getUsers }) => {
     category: "",
     status: "Open",
   });
+  const  isDateOlderThanToday = (dateString) => {
+    const dateToCheck = moment(dateString, 'YYYY-MM-DD');
+    const today = moment().startOf('day');
+    return dateToCheck.isBefore(today);
+  }
   const handleInputChange = (e) => {
+   
     const { name, value } = e.target;
+    console.log(isDateOlderThanToday(value))
+    if (name === "dueDate" && isDateOlderThanToday(value)) {
+      toast.error("Date cannot be older than today");
+      return;
+    }
     setFormData({
       ...formData,
       [name]: value,
@@ -92,7 +103,11 @@ const SiteChecks = ({ users, getUsers }) => {
   useEffect(() => {
     searchPreActions();
     if (formData.type?.length > 0) {
+      setcatoptions([]);
+      setsubtypeoptions([]);
+      setsubtypeoptions2([]);
       getsubtypeoptions2();
+      
     }
   }, [formData.type]);
 
@@ -143,6 +158,19 @@ const SiteChecks = ({ users, getUsers }) => {
       //   setFilteredUser(users);
     //}
   };
+  const copyData = (action) => {
+    setFormData({
+      type: action.type,
+      subType: action.subType,
+      category: action.category,
+      dueDate: action.dueDate,
+      leadUserID: action.leadUserID,
+      assistantUserID: action.assistantUserID,
+      repeatFrequency: action.repeatFrequency
+    });
+    setCreate(true);
+  }
+
   const deleteSiteCheckCall = (action) => {
     Swal.fire({
       title: `Do you want to delete ${action?.type} site check?`,
@@ -152,6 +180,31 @@ const SiteChecks = ({ users, getUsers }) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         await del("/api/site-check/check-id/" + action.checkId);
+        getSiteChecks();
+        // if (res === "Success") {
+        //   toast.success(`${user?.name} user has been deleted successully`);
+        //   getUsers();
+        // } else {
+        //   toast.error(
+        //     `Something went wrong while deleting user. Please try again.`
+        //   );
+        // }
+      } else if (result.isDenied) {
+        toast.info(`delete action has been denied.`);
+      }
+    });
+  };
+
+  const markAsDone = (action) => {
+    Swal.fire({
+      title: `Do you want to close ${action?.type}?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Confirm",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        action.status = "Done";
+        await put("/api/site-check/" + action.checkId, action);
         getSiteChecks();
         // if (res === "Success") {
         //   toast.success(`${user?.name} user has been deleted successully`);
@@ -260,9 +313,9 @@ const SiteChecks = ({ users, getUsers }) => {
                 </div>
                 <div className="col">
                   <CSVLink
-                    filename={"pre-action-list"}
+                      filename={"site-checks-list_" + moment(new Date()).format("DD-MM-YYYY")}
                     className="btn btn-light bg-white text-primary"
-                    data={[]}
+                      data={filteredSiteChecks}
                   >
                     <Tooltip title={`Export`} arrow>
                       <i className="fas fa-download"></i>
@@ -294,64 +347,73 @@ const SiteChecks = ({ users, getUsers }) => {
                     <td>No search result found!!</td>
                   </tr>
                 )}
-                {filteredSiteChecks?.map((action) => (
-                  <tr key={action?.id}>
-                    <th scope="col">{action?.type}</th>
-                    <th scope="col">{action?.subType}</th>
-                    <th scope="col">{action?.category}</th>
-                    <th scope="col">{action?.leadUserID}</th>
-                    <th scope="col">
-                      <span className="badge bg-danger p-2 m-1 risk-span">
-                        1
-                      </span>
-                      <span className="badge bg-warning p-2 m-1 risk-span">
-                        1
-                      </span>
-                      <span className="badge bg-info p-2 m-1 risk-span">1</span>
-                      <span className="badge bg-success p-2 m-1 risk-span">
-                        1
-                      </span>
-                    </th>
-                    <th scope="col">
-                      {moment(action?.dueDate).format("DD-MM-YYYY")}
-                    </th>
-                    <th scope="col">{action?.status}</th>
-                    <th scope="col">
-                      <Tooltip title={`View ${action?.type}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => { navigate(`/site-checks/${action?.checkId}/update`);}}
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip title={`${action?.type} List`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {}}
-                        >
-                          <i class="fas fa-regular fa-list cursor"></i>{" "}
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip title={`${action?.type} mark as closed`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {}}
-                        >
-                          <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip title={`Delete ${action?.type}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light text-dark"
-                          onClick={() => deleteSiteCheckCall(action)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>{" "}
-                      </Tooltip>
-                    </th>
-                  </tr>
-                ))}
+                  {filteredSiteChecks?.map((action) =>
+                  {
+                    let leanName = "-"
+                    console.log('externalusers', externalusers)
+                    const lead = externalusers.filter(u => u.id == action.leadUserID);
+                    if (lead.length > 0) {
+                      leanName = lead[0].trade  + ' - ' +lead[0].name + ' ('+lead[0].email +') - ' + lead[0].company;
+                    }
+                    return (
+                    <tr key={action?.id}>
+                      <th scope="col">{action?.type}</th>
+                      <th scope="col">{action?.subType}</th>
+                      <th scope="col">{action?.category}</th>
+                        <th scope="col">{leanName}</th>
+                      <th scope="col">
+                        <span className="badge bg-danger p-2 m-1 risk-span">
+                          0
+                        </span>
+                        <span className="badge bg-warning p-2 m-1 risk-span">
+                          0
+                        </span>
+                        <span className="badge bg-info p-2 m-1 risk-span">0</span>
+                        <span className="badge bg-success p-2 m-1 risk-span">
+                          0
+                        </span>
+                      </th>
+                      <th scope="col">
+                        {moment(action?.dueDate).format("DD-MM-YYYY")}
+                      </th>
+                      <th scope="col">{action?.status}</th>
+                      <th scope="col">
+                        <Tooltip title={`View ${action?.type}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => { navigate(`/site-checks/${action?.checkId}/update`); }}
+                          >
+                            <i className="fas fa-eye"></i>
+                          </button>{" "}
+                        </Tooltip>
+                        <Tooltip title={`${action?.type} Copy As`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => { copyData(action) }}
+                          >
+                            <i class="fas fa-regular fa-copy cursor"></i>{" "}
+                          </button>{" "}
+                        </Tooltip>
+                        <Tooltip title={`${action?.type} mark as closed`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => markAsDone(action)}
+                          >
+                            <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
+                          </button>{" "}
+                        </Tooltip>
+                        <Tooltip title={`Delete ${action?.type}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light text-dark"
+                            onClick={() => deleteSiteCheckCall(action)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>{" "}
+                        </Tooltip>
+                      </th>
+                    </tr>
+                  )
+                  })}
               </tbody>
             </table>
             </div>
@@ -368,7 +430,8 @@ const SiteChecks = ({ users, getUsers }) => {
                           Type
                         </label>
                         <select
-                          name="type"
+                      name="type"
+                      value={formData?.type}
                           className="form-control form-select"
                           id="type"
                           onChange={handleInputChange}
@@ -385,6 +448,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     </label>
                     <select
                       name="subType"
+                      value={formData?.subType}
                       className="form-control form-select"
                       disabled={formData?.type?.length === 0}
                       id="subType"
@@ -402,6 +466,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     </label>
                     <select
                       name="category"
+                      value={formData?.category}
                       disabled={formData?.subType?.length === 0}
                       className="form-control form-select"
                       id="category"
@@ -418,7 +483,8 @@ const SiteChecks = ({ users, getUsers }) => {
                       Due Date
                     </label>
                     <input
-                      //value={issueDate}
+                      value={formData?.dueDate}
+                      min={new Date().toISOString().split('T')[0]}
                       type="date"
                       name="dueDate"
                       className="form-control"
@@ -432,15 +498,16 @@ const SiteChecks = ({ users, getUsers }) => {
                       Lead
                     </label>
                     <select
+                      value={formData?.leadUserID}
                       name="leadUserID"
                       className="form-control form-select"
                       id="leadUserID"
                       onChange={handleInputChange}
                     >
                       <option value="">Select Lead</option>
-                      {users.map(u => {
+                      {externalusers.map(u => {
                         return (
-                          <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                          <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                         )
                       })}
                     </select>
@@ -452,15 +519,16 @@ const SiteChecks = ({ users, getUsers }) => {
                       Assistant
                     </label>
                     <select
+                      value={formData?.assistantUserID}
                       name="assistantUserID"
                       className="form-control form-select"
                       id="assistantUserID"
                       onChange={handleInputChange}
                     >
                       <option value="">Select Assistant</option>
-                      {users.map(u => {
+                      {externalusers.map(u => {
                         return (
-                          <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                          <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                         )
                       })}
                     </select>
@@ -468,7 +536,7 @@ const SiteChecks = ({ users, getUsers }) => {
                 </Grid>
 
                 <Grid sm={4}>
-                  <div style={{ margin: "10px" }}>
+                  {(formData.type === "Audit" || (formData.type === "Survey" && formData.category === "Outlet Temperature")) && <div style={{ margin: "10px" }}>
                     <label htmlFor="folder" name="folder">
                       Repeats
                     </label>
@@ -478,10 +546,15 @@ const SiteChecks = ({ users, getUsers }) => {
                       id="repeatFrequency"
                       onChange={handleInputChange}
                     >
-                      <option value="">None</option>
+                      <option value="None">None</option>
+                      <option value="Daily">Daily</option>
+                      <option value="Weekly">Weekly</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Yearly">Yearly</option>
+
                       
                     </select>
-                  </div>
+                  </div>}
                 </Grid>
                 <Grid sm={4}>
 
@@ -527,9 +600,9 @@ const SiteChecks = ({ users, getUsers }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  users: state.site.users,
+  externalusers: state.site.externalusers,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+export default connect(mapStateToProps, { getUsers, deleteUser, getSites, getExternalUsers })(
   SiteChecks
 );
 

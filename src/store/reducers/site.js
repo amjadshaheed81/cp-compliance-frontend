@@ -65,6 +65,7 @@ import {
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
   GET_USER_ALL,
+  GET_USER_ALL_EXTERNAL,
   USER_LOGIN,
   USER_LOGOUT,
 } from "./../actionTypes";
@@ -95,6 +96,7 @@ const initialState = {
   saveSiteLandscapesInfo: null,
   isLoading: false,
   users: [],
+  externalusers: [],
   loggedInUserData: null,
   siteAssets: [],
   siteDoorItems: [],
@@ -610,6 +612,11 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         users: action.payload,
+      };
+    case GET_USER_ALL_EXTERNAL:
+      return {
+        ...state,
+        externalusers: action.payload,
       };
     case USER_LOGIN:
       return {

@@ -70,6 +70,7 @@ import {
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
   GET_USER_ALL,
+  GET_USER_ALL_EXTERNAL,
   USER_LOGIN,
   USER_LOGOUT,
 } from "../actionTypes";
@@ -1218,6 +1219,24 @@ export const getUsers = () => {
       console.log("userList", userList);
       dispatch({
         type: GET_USER_ALL,
+        payload: userList?.users,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching users. Please try again."
+      );
+    }
+  };
+};
+
+export const getExternalUsers = () => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/user/all?userType=External`;
+      const userList = await get(url);
+      console.log("userList", userList);
+      dispatch({
+        type: GET_USER_ALL_EXTERNAL,
         payload: userList?.users,
       });
     } catch (error) {

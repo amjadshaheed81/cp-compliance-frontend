@@ -15,7 +15,7 @@ import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
 import { get, post } from "../../../../api";
 import { Button, Modal, Typography, Box, Grid, Divider, Stack, Paper, styled } from "@mui/material";
-import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+import { deleteUser, getSites, getExternalUsers } from "../../../../store/thunk/site";
 import PrintIcon from '@mui/icons-material/Print';
 
 const Item = styled(Paper)(({ theme }) => ({
@@ -27,7 +27,7 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 
-const SiteChecks = ({ users, getUsers }) => {
+const SiteChecks = ({ externalusers, getExternalUsers }) => {
 
   // Get ID from URL
   const params = useParams();
@@ -42,7 +42,7 @@ const SiteChecks = ({ users, getUsers }) => {
   };
 
   useEffect(() => {
-    getUsers();
+    getExternalUsers();
     getSiteChecks();
   }, [checkId]);
 
@@ -208,9 +208,9 @@ const SiteChecks = ({ users, getUsers }) => {
                     value={siteCheck?.leadUserID}
                   >
                     <option value="">Select Lead</option>
-                    {users.map(u => {
+                    {externalusers.map(u => {
                       return (
-                        <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                        <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )
                     })}
                   </select>
@@ -230,9 +230,9 @@ const SiteChecks = ({ users, getUsers }) => {
                     value={siteCheck?.assistantUserID}
                   >
                     <option value="">Select Assistant</option>
-                    {users.map(u => {
+                    {externalusers.map(u => {
                       return (
-                        <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                        <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )
                     })}
                   </select>
@@ -240,7 +240,7 @@ const SiteChecks = ({ users, getUsers }) => {
               </Grid>
 
               <Grid sm={4}>
-                <div style={{ margin: "10px" }}>
+                {(siteCheck?.type === "Audit" || (siteCheck?.type === "Survey" && siteCheck?.category === "Outlet Temperature")) && <div style={{ margin: "10px" }}>
                   <label htmlFor="folder" name="folder">
                     Repeats
                   </label>
@@ -254,7 +254,7 @@ const SiteChecks = ({ users, getUsers }) => {
                     <option value="">None</option>
 
                   </select>
-                </div>
+                </div>}
               </Grid>
               <Grid sm={4}>
 
@@ -305,9 +305,9 @@ const SiteChecks = ({ users, getUsers }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  users: state.site.users,
+  externalusers: state.site.externalusers,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+export default connect(mapStateToProps, { getExternalUsers, deleteUser, getSites })(
   SiteChecks
 );
 
