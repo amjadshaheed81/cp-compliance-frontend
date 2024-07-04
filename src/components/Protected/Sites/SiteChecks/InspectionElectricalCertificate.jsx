@@ -9,25 +9,24 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../../../api";
+import { get, post, uploadSiteCheckDoc } from "../../../../api";
 import { Grid, Chip, Button, Typography, Box, IconButton, Divider } from '@mui/material';
 import { UploadFile, Close } from '@mui/icons-material';
 
-import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+import { getSites, getExternalUsers } from "../../../../store/thunk/site";
 
-const InspectionElectricalCertificate = ({ users, getUsers }) => {
+const InspectionElectricalCertificate = ({ checkId, externalusers, getExternalUsers }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUsers();
+    getExternalUsers();
+    getIpection();
   }, []);
-  useEffect(() => { }, []);
+  const [completed, setCompleted] = useState(false);
   const [formData, setFormData] = useState({
-    documentName: '',
-    reviewBy: '',
     issueDate: '',
     expiryDate: '',
-    notes: '',
+    note: '',
     file: null
   });
   const [data, setData] = useState([{}]);
@@ -53,21 +52,35 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
     });
   };
 
-
-  const addSiteCheck = async () => {
-
-    const body = formData;
-
-    //await post("/api/site-check/", body);
-    //await getSiteChecks();
+  const getIpection = async () => {
+    const data = await get("/api/site-check/inspection/" + checkId);
+    if (data.length > 0) {
+      //d.dateRaised = moment(d?.dateRaised).format("DD-MM-YYYY");
+      setFormData(data[0]);
+      setCompleted(true)
+    }
   }
 
-  const getSiteChecks = async () => {
-    // const siteChecks = await get("/api/site-check/site/" + site.siteId);
-    // console.log("siteCheckssiteChecks", siteChecks)
-    // setFilteredSiteChecks(siteChecks)
-    // setSiteChecks(siteChecks);
+  const certify = async () => {
+    const data = { ...formData }
+      if (data?.file?.name) {
+        data.certificateUrl = await uploadSiteCheckDoc(data);
+        delete data.file;
+
+      }
+      data.issueDate = new Date(data.issueDate);
+      data.expiryDate = new Date(data.expiryDate);
+      data.checkId = checkId;
+      data.status = "Open";
+
+      console.log('data', data)
+      await post("/api/site-check/inspection", data)
+    toast.success("Inspection data saved")
+    setCompleted(true);
+    
   }
+
+  
 
 
   return (
@@ -81,33 +94,37 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
         <Grid container spacing={2}>
           
         <Grid item xs={12} sm={6}>
-          <label htmlFor="documentName" name="documentName">
+          <label htmlFor="certificateName" name="certificateName">
             Document Name
           </label>
             <input
-              type="text"
-              name="documentName"
+            type="text"
+            disabled={completed}
+            name="certificateName"
               className="form-control"
-              id="documentName"
+            id="certificateName"
               //placeholder="Document Name"
-              value={formData.documentName}
+            value={formData.certificateName}
               onChange={handleInputChange}
             />
           </Grid>
         <Grid item xs={12} sm={6}>
-          <label htmlFor="reviewBy" name="reviewBy">
+          <label htmlFor="reviewerUserId" name="reviewerUserId">
             Need review by
           </label>
           <select
-            name="reviewBy"
+            disabled={completed}
+            name="reviewerUserId"
             className="form-control form-select"
-            id="reviewBy"
+            id="reviewerUserId"
             onChange={handleInputChange}
+
+            value={formData.reviewerUserId}
           >
             <option value="">Select</option>
-            {users.map(u => {
+            {externalusers.map(u => {
               return (
-                <option value={u.id}>{u.role} - {u.name} ({u.email}) </option>
+                <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
               )
             })}
           </select>
@@ -116,12 +133,13 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
           <label htmlFor="issueDate" name="issueDate">
             Issue Date
           </label>
-            <input
+          <input
+            disabled={completed}
               type="date"
               name="issueDate"
               className="form-control"
               id="issueDate"
-              value={formData.issueDate}
+            value={formData.issueDate?.substring(0, 10)}
               onChange={handleInputChange}
             />
           </Grid>
@@ -129,32 +147,34 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
           <label htmlFor="expiryDate" name="expiryDate">
             Expiry Date
           </label>
-            <input
+          <input
+            disabled={completed}
               type="date"
               name="expiryDate"
               className="form-control"
               id="expiryDate"
-              value={formData.expiryDate}
+            value={formData.expiryDate?.substring(0, 10)}
               onChange={handleInputChange}
             />
           </Grid>
           <Grid item xs={12}>
-            <textarea
-              name="notes"
+          <textarea
+            disabled={completed}
+              name="note"
               className="form-control"
-              id="notes"
+              id="note"
               rows="4"
               placeholder="Enter notes ..."
-              value={formData.notes}
+              value={formData.note}
               onChange={handleInputChange}
             />
           </Grid>
           <Grid item xs={12}>
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              border="1px dashed grey"
+          {!completed && <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            border="1px dashed grey"
             p={2}
             mb={2}
             style={{
@@ -163,17 +183,17 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
               borderRadius: '4px',
               color: '#3f51b5',
             }}
-            >
-              <IconButton component="label">
+          >
+            <IconButton component="label">
               <input hidden type="file"
-              onChange={handleFileChange}
+                onChange={handleFileChange}
               />
-                <UploadFile />
-              </IconButton>
-              <Typography>
-                Click to upload or drag and drop Image File (PDF) (max, 1MB)
-              </Typography>
-            </Box>
+              <UploadFile />
+            </IconButton>
+            <Typography>
+              Click to upload or drag and drop Image File (PDF) (max, 1MB)
+            </Typography>
+          </Box>}
         </Grid>
         
         
@@ -187,10 +207,22 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
           </Grid>
         )}
         <Grid item xs={12}>
+          {!completed && <button
+            style={{ width: "250px", marginBottom: '20px', margin: '10px', float: 'right' }}
+            className="btn btn-primary btn-dark"
+            onClick={() => { certify() }}
+          >
+            Sign Off & Certify
+          </button>}
+          {completed && <button
+            style={{ width: "250px", marginBottom: '20px', margin: '10px', float: 'right' }}
+            className="btn btn-primary btn-dark"
+            onClick={() => {  }}
+          >
+            <i className="fas fa-download" />&nbsp;Download Certificate
+          </button>}
           
-            <Button variant="contained" color="success" style={{float:'right'}}>
-              Sign Off & Certify
-            </Button>
+            
           </Grid>
         </Grid>
       </Box>
@@ -200,9 +232,9 @@ const InspectionElectricalCertificate = ({ users, getUsers }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  users: state.site.users,
+  externalusers: state.site.externalusers,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+export default connect(mapStateToProps, { getSites, getExternalUsers })(
   InspectionElectricalCertificate
 );
 

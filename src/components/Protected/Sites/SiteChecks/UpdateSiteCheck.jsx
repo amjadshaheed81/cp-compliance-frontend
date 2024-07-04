@@ -70,21 +70,6 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       [name]: value,
     });
   };
-  
-  
-  
-
-  const addSiteCheck = async () => {
-    
-    const body = formData;
-    body.siteId = site.siteId
-    body.dueDate = new Date(body.dueDate);
-    const response = await post("/api/site-check/", body);
-    //setCheckId(response);
-    //await getSiteChecks();
-    setShowSiteCheck(false);
-   
-  }
 
   const getSiteChecks = async () => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
@@ -92,7 +77,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("inspection-electrical")
     } else if (siteCheck.type === "Assessment" && siteCheck.subType === "Fire Risk") {
       setStep("assessment-fire-risk")
-    } else if (siteCheck.type === "Audit" && siteCheck.subType.trim() === "Unit Maintenance Periodic") {
+    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Unite Maintenance Periodic") {
       setStep("audit-unit-maintenance-periodic")
     }
     setSiteCheck(siteCheck);
@@ -116,20 +101,13 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   <label htmlFor="folder" name="folder">
                     Type
                   </label>
-                  <select
+                  <input
+                    type="text"
                     disabled
                     value={siteCheck?.type}
-                    name="type"
-                    className="form-control form-select"
-                    id="type"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Type</option>
-                    <option value="Assessment">Assessment</option>
-                    <option value="Audit">Audit</option>
-                    <option value="Survey">Survey</option>
-                    <option value="Inspection">Inspection</option>
-                  </select>
+                    className="form-control"
+                  />
+                  
                 </div>
               </Grid>
               <Grid sm={4}>
@@ -137,22 +115,13 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   <label htmlFor="folder" name="folder">
                     Sub Type
                   </label>
-                  <select
-                    name="subType"
-                    className="form-control form-select"
-                    id="subType"
-                    onChange={handleInputChange}
+                  <input
+                    type="text"
                     disabled
                     value={siteCheck?.subType}
-                  >
-                    <option value="">Select Sub Type</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Fire Risk">Fire Risk</option>
-                    <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                    <option value="Water Survey">Water Survey</option>
-                    <option value="Asbestos Survey">Asbestos Survey</option>
-                    <option value="Unit Maintenance Periodic">Unit Maintenance Periodic</option>
-                  </select>
+                    className="form-control"
+                  />
+                  
                 </div>
               </Grid>
               <Grid sm={4}>
@@ -160,22 +129,12 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   <label htmlFor="category" name="category">
                     Category
                   </label>
-                  <select
-                    name="category"
-                    className="form-control form-select"
-                    id="category"
-                    onChange={handleInputChange}
+                  <input
+                    type="text"
                     disabled
                     value={siteCheck?.category}
-                  >
-                    <option value="">Select Category</option>
-                    <option value="WC Alarm Testing">WC Alarm Testing</option>
-                    <option value="Fire Risk Assessment">Fire Risk Assessment</option>
-                    <option value="Daily Fire Inspection">Daily Fire Inspection</option>
-                    <option value="Domestic RA Water Survey">Domestic RA Water Survey</option>
-                    <option value="Localised Type 3 Asbestos Survey">Localised Type 3 Asbestos Survey</option>
-                    <option value="6 monthly">6 monthly</option>
-                  </select>
+                    className="form-control"
+                  />
                 </div>
               </Grid>
               <Grid sm={4}>
@@ -185,7 +144,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   </label>
                   <input
                     //value={issueDate}
-                    value={siteCheck?.issueDate}
+                    value={siteCheck?.dueDate?.substring(0, 10)}
                     disabled
                     type="date"
                     name="dueDate"
@@ -244,16 +203,12 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   <label htmlFor="folder" name="folder">
                     Repeats
                   </label>
-                  <select
-                    name="repeatFrequency"
-                    className="form-control form-select"
+                  <input
+                    type="text"
                     disabled
-                    id="repeatFrequency"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">None</option>
-
-                  </select>
+                    value={siteCheck?.repeatFrequency}
+                    className="form-control"
+                  />
                 </div>}
               </Grid>
               <Grid sm={4}>
@@ -289,10 +244,10 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
 
 
             </Grid></Item>
-            {step === "inspection-electrical" && <Item><InspectionElectricalFault /></Item>}
-            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate /></Item>}
-            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk /></Item>}
-            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic /></Item>}
+            {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} /></Item>}
+            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} /></Item>}
+            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} /></Item>}
+            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} /></Item>}
           </Stack>    
           
          

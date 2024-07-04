@@ -11,7 +11,7 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
 
-import { Button, Modal, Typography, Box, Grid, Divider } from "@mui/material";
+import { Button, Modal, Typography, Box, Grid, Divider, Autocomplete, TextField } from "@mui/material";
 import { deleteUser, getSites, getUsers, getExternalUsers } from "../../../../store/thunk/site";
 
 const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
@@ -119,7 +119,6 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }, [formData.subType]);
 
   const searchPreActions = () => {
-    console.log(formData2)
     let filteredSiteChecks2 = siteChecks;
     if (formData2?.type?.length > 0) {
       filteredSiteChecks2 = filteredSiteChecks2.filter(sc => sc.type === formData2.type)
@@ -350,7 +349,6 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   {filteredSiteChecks?.map((action) =>
                   {
                     let leanName = "-"
-                    console.log('externalusers', externalusers)
                     const lead = externalusers.filter(u => u.id == action.leadUserID);
                     if (lead.length > 0) {
                       leanName = lead[0].trade  + ' - ' +lead[0].name + ' ('+lead[0].email +') - ' + lead[0].company;
@@ -360,8 +358,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                       <th scope="col">{action?.type}</th>
                       <th scope="col">{action?.subType}</th>
                       <th scope="col">{action?.category}</th>
-                        <th scope="col">{leanName}</th>
-                      <th scope="col">
+                        <th scope="col" style={{width: '250px'}}>{leanName}</th>
+                        <th scope="col" style={{ width: '200px' }}>
                         <span className="badge bg-danger p-2 m-1 risk-span">
                           0
                         </span>
@@ -373,11 +371,11 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                           0
                         </span>
                       </th>
-                      <th scope="col">
+                        <th scope="col" style={{ width: '150px' }}>
                         {moment(action?.dueDate).format("DD-MM-YYYY")}
                       </th>
                       <th scope="col">{action?.status}</th>
-                      <th scope="col">
+                        <th scope="col" style={{ width: '250px' }}>
                         <Tooltip title={`View ${action?.type}`} arrow>
                           <button
                             className="btn btn-sm btn-light"
@@ -483,7 +481,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                       Due Date
                     </label>
                     <input
-                      value={formData?.dueDate}
+                      value={formData?.dueDate?.substring(0, 10)}
                       min={new Date().toISOString().split('T')[0]}
                       type="date"
                       name="dueDate"
@@ -494,7 +492,27 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                 </Grid>
                 <Grid sm={4}>
                   <div style={{ margin: "10px" }}>
-                    <label htmlFor="folder" name="folder">
+                    <label htmlFor="lead">Lead</label>
+                    <Autocomplete
+                      id="leadUserID"
+                      onChange={(event, item) => {
+                        const uformData = { ...formData }
+                        uformData.leadUserID = item?.key;
+                        setFormData(uformData);
+                      }}
+                      options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
+                      getOptionLabel={(option) => option.label}
+                      renderInput={(params) => (
+                        <div ref={params.InputProps.ref} >
+                          <input type="text"
+                            {...params.inputProps}
+                            className="form-control"
+                            placeholder="Select Lead"
+                          />
+                        </div>
+                      )}
+                    />
+                    {/* <label htmlFor="folder" name="folder">
                       Lead
                     </label>
                     <select
@@ -510,12 +528,32 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                           <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                         )
                       })}
-                    </select>
+                    </select> */}
                   </div>
                 </Grid>
                 <Grid sm={4}>
                   <div style={{ margin: "10px" }}>
-                    <label htmlFor="folder" name="folder">
+                    <label htmlFor="assistantUserID">Assistant</label>
+                    <Autocomplete
+                      id="assistantUserID"
+                      onChange={(event, item) => {
+                        const uformData = { ...formData }
+                        uformData.assistantUserID = item?.key;
+                        setFormData(uformData);
+                      }}
+                      options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
+                      getOptionLabel={(option) => option.label}
+                      renderInput={(params) => (
+                        <div ref={params.InputProps.ref} >
+                          <input type="text"
+                            {...params.inputProps}
+                            className="form-control"
+                            placeholder="Select Assistant"
+                          />
+                        </div>
+                      )}
+                    />
+                    {/* <label htmlFor="folder" name="folder">
                       Assistant
                     </label>
                     <select
@@ -531,7 +569,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                           <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                         )
                       })}
-                    </select>
+                    </select>*/}
                   </div>
                 </Grid>
 

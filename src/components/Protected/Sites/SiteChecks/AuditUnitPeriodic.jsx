@@ -9,43 +9,77 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../../../api";
+import { get, post, uploadSiteCheckDoc } from "../../../../api";
 
 import { Button, Modal, Typography, Box, Grid, Divider, TextField, Autocomplete } from "@mui/material";
-import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+import { deleteUser, getSites, getUsers, getSiteAssets } from "../../../../store/thunk/site";
 
-const AuditUnitPeriodic = ({ users, getUsers }) => {
+const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets, siteSelectedForGlobal }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUsers();
-  }, []);
-  useEffect(() => { }, []);
-  const [formData, setFormData] = useState({});
-  const [data, setData] = useState([{}]);
+    if (siteSelectedForGlobal?.siteId) {
+      getSiteAssets(siteSelectedForGlobal?.siteId);
 
-  const handleInputChange = (e) => {
+    }
+    getUsers();
+    getAudit();
+  }, []);
+
+  const getAudit = async () => {
+
+    const data = await get("/api/site-check/audit/" + checkId);
+    if (data.length > 0) {
+      setFormData(data);
+      setCompleted(true)
+    }
+  }
+
+  const [formData, setFormData] = useState([{}]);
+  const [completed, setCompleted] = useState(false);
+
+  useEffect(() => {
+    console.log('formData', formData)
+  }, [formData]);
+
+  const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    const uformData = [...formData]
+    const udata = {
+      ...formData[idx],
       [name]: value,
-    });
+    }
+    uformData[idx] = udata
+    setFormData(uformData);
+  };
+
+  const handleFileChange = (e, idx) => {
+    console.log(e.target.files[0]);
+    const uformData = [...formData]
+    const udata = {
+      ...formData[idx],
+      file: e.target.files[0],
+    }
+    uformData[idx] = udata
+    setFormData(uformData);
   };
 
 
-  const addSiteCheck = async () => {
+  const addSiteCheckAudit = async () => {
+    for (const data of formData) {
+      if (data?.file?.name) {
+        data.imageUrl = await uploadSiteCheckDoc(data);
+        delete data.file;
+      }
+      data.dateRaised = new Date(data.dateRaised);
+      data.checkId = checkId;
+      data.status = "Open";
+      await post("/api/site-check/audit", data)
 
-    const body = formData;
-
-    //await post("/api/site-check/", body);
-    //await getSiteChecks();
-  }
-
-  const getSiteChecks = async () => {
-    // const siteChecks = await get("/api/site-check/site/" + site.siteId);
-    // console.log("siteCheckssiteChecks", siteChecks)
-    // setFilteredSiteChecks(siteChecks)
-    // setSiteChecks(siteChecks);
+      toast.success("Audit data saved")
+      console.log('data', data)
+    }
+    setCompleted(true);
   }
 
 
@@ -57,24 +91,23 @@ const AuditUnitPeriodic = ({ users, getUsers }) => {
         <Typography variant="h6" gutterBottom>
           Observations
         </Typography>
-        {/* <p style={{ fontSize: "20px" }}>Faults Identified</p> */}
       </Grid>
       <Grid sm={4}>
 
       </Grid>
       <Grid sm={4}>
-
-        <button
-          style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
-          className="btn btn-primary btn-light"
-          onClick={() => { 
-            const data2 = [...data];
-            data2.push({});
-            setData(data2)
-          }}
-        >
-          Record New
-        </button>
+        {!completed &&
+          <button
+            style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
+            className="btn btn-primary btn-light"
+            onClick={() => {
+              const uformData = [...formData];
+              uformData.push({});
+              setFormData(uformData)
+            }}
+          >
+            Record New
+          </button>}
 
       </Grid>
 
@@ -93,131 +126,156 @@ const AuditUnitPeriodic = ({ users, getUsers }) => {
               </tr>
             </thead>
             <tbody>
-              {data.map((d,idx) => 
-                <tr>
-                  <td>
-                    <input
-                      type="text"
-                      name="fault"
+              {formData.map((d, idx) => {
+                const assetName = siteAssets.filter(a => a.assetId == formData[idx].assetId).map(option => option.assetName + " - " + option.category)?.[0];
+                return (
+                  <tr>
+                    <td>
+                      <input
+                        type="text"
+                        disabled={completed}
+                        name="summary"
+                        className="form-control"
+                        id="summary"
+                        value={formData?.[idx]?.summary}
+                        onChange={(e) => handleInputChange(e, idx)}
+                      />
+                    </td>
+                    <td>
+                      {completed && <input type="text"
+                        disabled={completed}
+                        className="form-control"
+                        value={assetName} />}
+                      {!completed && <Autocomplete
+                        id="assetId"
+                        disabled={completed}
+                        onChange={(event, item) => {
+                          const uformData = [...formData]
+                          uformData[idx].assetId = item?.key;
+                          setFormData(uformData);
+                        }}
+                        options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        getOptionLabel={(option) => option.label}
+                        renderInput={(params) => (
+                          <div ref={params.InputProps.ref} >
+                            <i
+                              style={{
+                                position: "absolute",
+                                padding: "13px",
+                                color: "lightgrey",
+                                paddingLeft: "10rem",
+                                float: 'right'
+                              }}
+                              className="fas fa-search"
+                            ></i>
+                            <input type="text" {...params.inputProps} disabled={completed} className="form-control" />
+                          </div>
+
+                        )}
+                      />
+                      }
+                    </td>
+                    <td> <input
+                      disabled={completed}
+                      type="date"
+                      name="dateRaised"
+                      value={formData?.[idx]?.dateRaised?.substring(0, 10)}
                       className="form-control"
-                      id="fault"
+                      id="dateRaised"
 
-                      onChange={handleInputChange}
-                    />
-                  </td>
-                <td><Autocomplete
-                  id="asset"
-                  onChange={(event, item) => {
-                    setFormData({
-                      ...formData,
-                      asset: item,
-                    });
-                  }}
-                  onInputChange={(event, newInputValue) => {
-                    setFormData({
-                      ...formData,
-                      asset: newInputValue,
-                    });
-                  }}
-                  //freeSolo
-                    options={["Asset 1", "Asset 2"].map((option) => option)}
-                    renderInput={(params) => (
-                      <div ref={params.InputProps.ref} >
-                        <i
-                          style={{
-                            position: "absolute",
-                            padding: "13px",
-                            color: "lightgrey",
-                            paddingLeft: "10rem",
-                            float:'right'
-                          }}
-                          className="fas fa-search"
-                        ></i>
-                        <input type="text" {...params.inputProps} className="form-control" />
-                      </div>
-                      
-                    )}
-                />
-                </td>
-               
-                <td> <input
-                  type="date"
-                  name="fault"
-                  className="form-control"
-                  id="fault"
+                      onChange={(e) => handleInputChange(e, idx)}
+                    /></td>
+                    <td>
+                      <select
+                        disabled={completed}
+                        name="rating"
+                        className="form-control form-select"
+                        id="rating"
+                        value={formData?.[idx]?.rating}
+                        onChange={(e) => handleInputChange(e, idx)}
+                      >
+                        <option value="">Select Rating</option>
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                        <option value={4}>4</option>
+                        <option value={5}>5</option>
+                      </select>
+                    </td>
+                    <td>
+                      {completed && <button
+                        disabled={completed}
+                        className="btn btn-sm btn-light text-dark"
+                        onClick={() => {
 
-                  onChange={handleInputChange}
-                /></td>
-                <td>
-                  <select
-                    name="rating"
-                    className="form-control form-select"
-                    id="rating"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Rating</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                  </select>
-                </td>
-                  <td><input
-                    type="file"
-                    name="file"
-                    className="form-control"
-                    id="file"
-                    onChange={handleInputChange}
-                  />
-                </td>
-                <td><input
-                  type="text"
-                  name="fault"
-                  className="form-control"
-                  id="fault"
-                  onChange={handleInputChange}
-                /></td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-light text-dark"
-                      onClick={() => {
-                        const data2 = [...data];
-                        data2.splice(idx, 1);
-                        setData(data2)
-                      }}
-                    >
-                      <i className="fas fa-trash"></i>
-                    </button>
-                </td>
-                </tr>
+                        }}
+                      >
+                        <i className="fas fa-download"></i>
+                      </button>}
+                      {!completed && <input
+                        disabled={completed}
+                        type="file"
+                        name="file"
+                        className="form-control"
+                        id="file"
+                        onChange={(e) => handleFileChange(e, idx)}
+                      />}
+                    </td>
+                    <td><input
+                      disabled={completed}
+                      value={formData?.[idx]?.action}
+                      type="text"
+                      name="action"
+                      className="form-control"
+                      id="action"
+                      onChange={(e) => handleInputChange(e, idx)}
+                    /></td>
+                    <td>
+                      <button
+                        disabled={completed}
+                        className="btn btn-sm btn-light text-dark"
+                        onClick={() => {
+                          const uformData = [...formData];
+                          uformData.splice(idx, 1);
+                          setFormData(uformData)
+                        }}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                )
+              }
               )}
             </tbody>
           </table>
         </div>
 
       </Grid>
-      <Grid sm={12}>
+      {!completed && <Grid sm={12}>
+
         <button
           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
           className="btn btn-primary text-white pr-2"
-          //onClick={() => { addSiteCheck() }}
+          onClick={() => { addSiteCheckAudit() }}
         >
           Save
         </button>
-       
 
-      </Grid>
+
+      </Grid>}
     </Grid>
 
   );
 };
 
 const mapStateToProps = (state) => ({
+  siteAssets: state.site.siteAssets,
   sites: state.site.sites,
   users: state.site.users,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+export default connect(mapStateToProps, { getUsers, deleteUser, getSites, getSiteAssets })(
   AuditUnitPeriodic
 );
 
