@@ -6,6 +6,7 @@ import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import InspectionElectricalFault from "./InspectionElectricalFault";
+import SurveyWaterOutletTemperature from "./SurveyWaterOutletTemperature";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
@@ -79,6 +80,9 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck.subType === "Unite Maintenance Periodic") {
       setStep("audit-unit-maintenance-periodic")
+    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Outlet Temperature") {
+      setStep("survey-water-outlet-temperature")
+      
     }
     setSiteCheck(siteCheck);
   }
@@ -248,6 +252,8 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} /></Item>}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} /></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} /></Item>}
+            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} /></Item>}
+            
           </Stack>    
           
          
