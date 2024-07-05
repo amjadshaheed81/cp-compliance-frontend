@@ -112,3 +112,17 @@ export function uploadPhoto(url, formData) {
     headers: {...getHeaders(), 'Content-Type': `multipart/form-data`},
   });
 }
+
+export async function uploadSiteCheckDoc(reqData) {
+  const formData = new FormData();
+  formData.append("file", reqData.file);
+  formData.append("fileName", reqData.file?.name);
+  configAxios();
+  const { data } = await axiosInstance({
+    method: "POST",
+    url: "/api/site-check/file/upload",
+    data: formData,
+    headers: { ...getHeaders(), 'Content-Type': `multipart/form-data` },
+  });
+  return data;
+}
