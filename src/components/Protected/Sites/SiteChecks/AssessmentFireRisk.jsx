@@ -9,61 +9,112 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../../../api";
+import { get, post, uploadSiteCheckDoc } from "../../../../api";
 import {
   Grid, TextField, Button, Typography, Box, IconButton, MenuItem, Select, InputLabel, FormControl, Checkbox, FormControlLabel,
   Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete
 } from '@mui/material';
 import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
-import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const AssessmentFireRisk = ({ users, getUsers }) => {
+const AssessmentFireRisk = ({ checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
   const navigate = useNavigate();
 
+  const [risks, setrisks] = useState([0,0,0,0])
+
   useEffect(() => {
-    getUsers();
+    getQuestions();
+    if (siteSelectedForGlobal?.siteId) {
+      getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteLayout(siteSelectedForGlobal?.siteId)
+    }
   }, []);
 
-  const defaultQuestions = [
-    {
-      q: "Q1. Are all means of escape free from combustible and other storage?",
-      s: "Open"
-    },
-    {
-      q: "Q2. Are sufficiently robust and applicable systems in place for the safe storage and use of flammable substances?",
-      s: "Closed"
-    },
-    {
-      q: "Q3. Are all means of escape free from combustible and other storage?",
-      s: "Open"
-    },
-    {
-      q: "Q4. All means provided to ensure adequate Means Of Escape (other than floors walls and ceilings, see above) must be properly maintained",
-      s: "Open"
-    },
-    {
-      q: "Q5. Is the building provided with signs and notices in accordance with the Signs and Signals Regulations 1996?",
-      s: "Open"
-    },
-    {
-      q: "Q6. Were there is a need for a degree of fire resistance, are doors provided constructed in accordance with relevant part of B.S. 476?",
-      s: "Open"
-    },
-    {
-      q: "Q7. Is emergency lighting provided and maintained in accordance with B.S.5266: 2003?",
-      s: "Open"
-    },
-    {
-      q: "Q8. Is the building provided with fire fighting equipment in compliance with B.S 5306, Part 3?",
-      s: "Open"
-    },
-    {
-      q: "Q9. Are all means of escape free from combustible and other storage?",
-      s: "Open"
-    },
-  ]
+  // const defaultQuestions = [
+  //   {
+  //     q: "Are all means of escape free from combustible and other storage?",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "Are sufficiently robust and applicable systems in place for the safe storage and use of flammable substances?",
+  //     s: "Closed"
+  //   },
+  //   {
+  //     q: "Are all means of escape free from combustible and other storage?",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "All means provided to ensure adequate Means Of Escape (other than floors walls and ceilings, see above) must be properly maintained",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "Is the building provided with signs and notices in accordance with the Signs and Signals Regulations 1996?",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "Were there is a need for a degree of fire resistance, are doors provided constructed in accordance with relevant part of B.S. 476?",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "Is emergency lighting provided and maintained in accordance with B.S.5266: 2003?",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "Is the building provided with fire fighting equipment in compliance with B.S 5306, Part 3?",
+  //     s: "Open"
+  //   },
+  //   {
+  //     q: "Are all means of escape free from combustible and other storage?",
+  //     s: "Open"
+  //   },
+  // ]
+
+  // const temp = async () => {
+  //   for (let d of defaultQuestions) {
+  //     const data = {
+  //       question: d.q,
+  //       category: "assessment-fire-risk"
+  //     }
+  //     await post("/api/site-check/assessment/questions", data)
+  //   }
+    
+    
+  // }
+
+  const getQuestions = async () => {
+    const questionsFromDB = await get("/api/site-check/assessment/questions/assessment-fire-risk")
+    const questionsResponse = await get("/api/site-check/assessment/response/" + checkId)
+    questionsFromDB.forEach(q => { 
+      const resIdx = questionsResponse.findIndex(r => r.qid === q.qid);
+      if (resIdx >= 0) {
+        q.status = "Closed";
+        q.response = questionsResponse[resIdx]
+        q.completed = true
+      } else {
+        q.status = "Open";
+        q.response = {}
+        q.completed = false
+      }
+    })
+    const risksN = [0,0,0,0]
+    questionsResponse.forEach(r => {
+      if (r.totalRiskScore > 17) {
+        risksN[0] = risksN[0] + 1;
+      } else if (r.totalRiskScore > 10) {
+        risksN[1] = risksN[1] + 1;
+      } else if (r.totalRiskScore > 5) {
+        risksN[2] = risksN[2] + 1;
+      } else if (r.totalRiskScore > 1) {
+        risksN[3] = risksN[3] + 1;
+      }
+      
+    })
+    setrisks(risksN)
+    setquest(questionsFromDB);
+  }
   
-  const [quest, setquest] = useState(defaultQuestions);
+  const [quest, setquest] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
   const [formData, setFormData] = useState({
     response: '',
@@ -78,53 +129,51 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
     file: null
   });
 
-  const handleInputChange = (e) => {
+
+  const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    const uquest = [...quest]
+    const udata = {
+      ...quest[idx].response,
+      [name]: value,
+    }
+    uquest[idx].response = udata
+    setquest(uquest);
   };
 
-  const handleFileChange = (e) => {
-    setFormData({
-      ...formData,
-      file: e.target.files[0]
-    });
+  useEffect(() => {
+    console.log('quest', quest[0])
+  }, [quest])
+
+  const handleFileChange = (e, idx) => {
+    const uquest = [...quest]
+    uquest[idx].response.file =e.target.files[0]
+    setquest(uquest);
   };
 
-  const handleFileDelete = () => {
-    setFormData({
-      ...formData,
-      file: null
-    });
+  const handleFileDelete = ( idx) => {
+    const uquest = [...quest]
+    uquest[idx].response.file = null
+    setquest(uquest);
   };
 
-  const handleAssetChange = (asset) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      assets: prevData.assets.includes(asset)
-        ? prevData.assets.filter((item) => item !== asset)
-        : [...prevData.assets, asset]
-    }));
-  };
-
-
-
-  const addSiteCheck = async () => {
-
-    const body = formData;
-
-    //await post("/api/site-check/", body);
-    //await getSiteChecks();
+  const saveAssessmentResponse = async (index) => {
+    const dataToSave = quest[index].response;
+    if (dataToSave?.file?.name) {
+      dataToSave.file = await uploadSiteCheckDoc(dataToSave);
+    }
+    dataToSave.responseDate = new Date();
+    dataToSave.checkId = checkId;
+    dataToSave.qid = quest[index].qid;
+    dataToSave.status = "Closed";
+    dataToSave.totalRiskScore = Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0)
+    console.log(dataToSave);
+    await post("/api/site-check/assessment/response", dataToSave);
+    await getQuestions();
+    toast.success("Assessment response saved")
   }
 
-  const getSiteChecks = async () => {
-    // const siteChecks = await get("/api/site-check/site/" + site.siteId);
-    // console.log("siteCheckssiteChecks", siteChecks)
-    // setFilteredSiteChecks(siteChecks)
-    // setSiteChecks(siteChecks);
-  }
+
 
 
   return (
@@ -139,20 +188,20 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
             <Grid item>
               <Box display="flex" alignItems="center">
                 <Typography variant="body1" style={{ backgroundColor: '#E0E7FF', padding: '4px 8px', borderRadius: '4px' }}>
-                  Total: {quest.length}, Open: {quest.filter(q => q.s === "Open").length}, Closed: {quest.filter(q => q.s === "Closed").length}
+                  Total: {quest.length}, Open: {quest.filter(q => q.status === "Open").length}, Closed: {quest.filter(q => q.status === "Closed").length}
                 </Typography>
                 <Box ml={2} display="flex" alignItems="center">
                   <Box width={24} height={24} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">0</Typography>
+                    <Typography variant="body2" color="white">{risks[0]}</Typography>
                   </Box>
                   <Box width={24} height={24} bgcolor="#FF9800" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">0</Typography>
+                    <Typography variant="body2" color="white">{risks[1]}</Typography>
                   </Box>
                   <Box width={24} height={24} bgcolor="#FFEB3B" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">0</Typography>
+                    <Typography variant="body2" color="white">{risks[2]}</Typography>
                   </Box>
                   <Box width={24} height={24} bgcolor="#4CAF50" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">0</Typography>
+                    <Typography variant="body2" color="white">{risks[3]}</Typography>
                   </Box>
                 </Box>
               </Box>
@@ -161,7 +210,7 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
           {quest.map((q,idx) =>
             <Accordion defaultExpanded={idx === openIndex}>
             <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>{q.q}</Typography> <Chip color={q.s === "Closed" ? "success" : "primary"} label={ q.s} />
+                <Typography>Q{idx}. {q.question}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{margin: '-5px', }} color={q.status === "Closed" ? "success" : "primary"} label={ q.status} />
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>
@@ -169,11 +218,12 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                   <label htmlFor="response" name="response">
                     Response
                   </label>
-                  <select
+                    <select
+                      disabled={quest[idx]?.completed}
                     className="form-control form-select"
                     name="response"
-                    value={formData.response}
-                    onChange={handleInputChange}
+                      value={quest[idx]?.response?.response}
+                    onChange={(e)=>handleInputChange(e, idx)}
                   >
                     <option value="">Select </option>
                     {["Yes", "No"].map((num) => (
@@ -183,14 +233,16 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                   
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <label htmlFor="internalExternal" name="internalExternal">
+                    <label htmlFor="riskType" name="riskType">
                     Internal/External
                   </label>
-                  <select
+                    <select
+                      disabled={quest[idx]?.completed}
                     className="form-control form-select"
-                    name="internalExternal"
-                    value={formData.internalExternal}
-                    onChange={handleInputChange}
+                      name="riskType"
+                    
+                      onChange={(e) => handleInputChange(e, idx)}
+                      value={quest[idx]?.response?.riskType}
                   >
                     <option value="">Select </option>
                     {["Internal", "External"].map((num) => (
@@ -199,20 +251,25 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                   </select>
                   
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={6}>
+                    
                   <label htmlFor="floor" name="floor">
                     Floor
                   </label>
-                  <select
+                    <select
+                      disabled={quest[idx]?.completed}
                     className="form-control form-select"
                     name="floor"
-                    value={formData.floor}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select </option>
-                    {["1st Floor", "2nd Floor"].map((num) => (
-                      <option value={num}>{num} </option>
-                    ))}
+                      value={quest[idx]?.response?.floor}
+                      
+                    onChange={(e)=>handleInputChange(e, idx)}
+                    >
+                      <option value="">Select </option>
+                      {siteLayout.filter(site => site.nodeType === "floor").map(site => 
+                      (
+                        <option value={site.id}>{site.nodeName} </option>
+                      ))
+                      }
                   </select>
                   
                 </Grid>
@@ -220,102 +277,125 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                   <label htmlFor="room" name="room">
                     Room
                   </label>
-                  <select
+                    <select
+                      disabled={quest[idx]?.completed}
                     className="form-control form-select"
                     name="room"
-                    value={formData.room}
-                    onChange={handleInputChange}
+                      value={quest[idx]?.response?.room}
+                    onChange={(e)=>handleInputChange(e, idx)}
                   >
                     <option value="">Select </option>
-                    {["1001", "1002", "2001", "2002"].map((num) => (
-                      <option value={num}>{num} </option>
-                    ))}
+                      {siteLayout.filter(site => site.nodeType === "room").map(site =>
+                      (
+                        <option value={site.id}>{site.nodeName}</option>
+                      ))
+                      }
                   </select>
                  
                 </Grid>
                 <Grid item xs={12}>
-                  <label htmlFor="observation" name="observation">
+                    <label htmlFor="position" name="position">
                     Observation
                   </label>
-                  <textarea
-                    name="observation"
+                    <textarea
+                      disabled={quest[idx]?.completed}
+                      name="position"
                     className="form-control"
-                    id="observation"
+                      id="position"
                     rows="4"
                     placeholder="Enter notes..."
-                    value={formData.observation}
-                    onChange={handleInputChange}
+                      value={quest[idx]?.response?.position}
+                    onChange={(e)=>handleInputChange(e, idx)}
                     style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Autocomplete
+                    <Autocomplete
+                      disabled={quest[idx]?.completed}
                     multiple
-                    options={['Asset 1', 'Asset 2', 'Asset 3']}
-                    value={formData.assets}
-                    onChange={handleAssetChange}
+                      onChange={(event, item) => {
+                        console.log(item);
+                        const uquest = [...quest]
+                        
+                        uquest[idx].response = {
+                          ...uquest[idx].response,
+                          assets: item.map(i => i.key).join(",")
+                        }
+                        setquest(uquest);
+                      }}
+                      value={siteAssets.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())  ).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+
+                      options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                      getOptionLabel={(option) => option.label}
+
                     renderInput={(params) => (
                       <TextField
                         {...params}
                         variant="outlined"
                         label="Search Asset"
-                        placeholder="Assets"
+                        //placeholder="Assets"
                       />
                     )}
                   />
                 </Grid>
                 
                 <Grid item xs={12}>
-                  <label htmlFor="suggestedAction" name="suggestedAction">
+                    <label htmlFor="action" name="action">
                     Suggested Action
                   </label>
-                  <textarea
-                    name="suggestedAction"
+                    <textarea
+                      disabled={quest[idx]?.completed}
+                    name="action"
                     className="form-control"
-                    id="suggestedAction"
+                      id="action"
                     rows="4"
                     placeholder="Enter notes..."
-                    value={formData.suggestedAction}
-                    onChange={handleInputChange}
+                      value={quest[idx]?.response?.action}
+                    onChange={(e)=>handleInputChange(e, idx)}
                     style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                   />
                 </Grid>
-                <Grid item xs={12}>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    border="1px dashed grey"
-                    p={2}
-                    mb={2}
-                    style={{
-                      backgroundColor: '#f9f9f9',
-                      height: '150px',
-                      borderRadius: '4px',
-                      color: '#3f51b5',
-                    }}
-                  >
-                    <IconButton component="label">
-                      <input hidden type="file" onChange={handleFileChange} />
-                      <UploadFile />
-                    </IconButton>
-                    <Typography>
-                      Click to upload or drag and drop PNG/JPG (max, 1MB)
-                    </Typography>
-                  </Box>
+                  <Grid item xs={12}>
+                    {!quest[idx]?.completed &&
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        border="1px dashed grey"
+                        p={2}
+                        mb={2}
+                        style={{
+                          backgroundColor: '#f9f9f9',
+                          height: '150px',
+                          borderRadius: '4px',
+                          color: '#3f51b5',
+                        }}
+                      >
+                        <IconButton component="label">
+                          <input hidden type="file" onChange={(e) => handleFileChange(e, idx)} />
+                          <UploadFile />
+                        </IconButton>
+                        <Typography>
+                          Click to upload or drag and drop PNG/JPG (max, 1MB)
+                        </Typography>
+                      </Box>
+                    }
+                   
                 </Grid>
-                {formData.file && (
+                  {!quest[idx]?.completed && quest[idx]?.response?.file && (
                   <Grid item xs={12} container alignItems="center" >
                     <Chip
-                      label={formData.file.name}
-                      onDelete={handleFileDelete}
+                        label={quest[idx]?.response?.file?.name}
+                        onDelete={() => handleFileDelete(idx)}
+                       
                     />
 
                   </Grid>
-                )}
+                  )}
+                  
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom>
-                    Risk Score Card (<strong>Total Risk Score = {formData.consequence * formData.likelihood}</strong>)
+                      Risk Score Card (<strong>Total Risk Score = {(quest[idx]?.response?.consequence?? 0) * (quest[idx]?.response?.likelihood??0)}</strong>)
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
@@ -323,11 +403,12 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                       <label htmlFor="consequence" name="consequence">
                         Consequence
                       </label>
-                      <select
+                          <select
+                            disabled={quest[idx]?.completed}
                         className="form-control form-select"
                         name="consequence"
-                        value={formData.consequence}
-                        onChange={handleInputChange}
+                            value={quest[idx]?.response?.consequence}
+                        onChange={(e)=>handleInputChange(e, idx)}
                       >
                         <option value="">Select </option>
                         {[1, 2, 3, 4, 5].map((num) => (
@@ -341,11 +422,12 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                         <label htmlFor="likelihood" name="likelihood">
                           Likelihood
                         </label>
-                        <select
+                          <select
+                            disabled={quest[idx]?.completed}
                           className="form-control form-select"
                           name="likelihood"
-                          value={formData.likelihood}
-                          onChange={handleInputChange}
+                            value={quest[idx]?.response?.likelihood}
+                          onChange={(e)=>handleInputChange(e, idx)}
                         >
                           <option value="">Select </option>
                           {[1, 2, 3, 4, 5].map((num) => (
@@ -378,26 +460,43 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
                       </Box>
                     </Grid>
                   </Grid>
-                </Grid>
-                <Grid item xs={12}>
+                  </Grid>
+                  {!quest[idx]?.completed &&
+                    <Grid item xs={12}>
+                    
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                         className="btn btn-primary text-white pr-2"
-                      onClick={() => { 
-                        setOpenIndex(idx + 1);
-                         }}
+                        onClick={() => {
+                          setOpenIndex(idx + 1);
+                          saveAssessmentResponse(idx);
+                          //temp()
+                        }}
                       >
                         Save & Continue
                       </button>
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                         className="btn btn-primary btn-light"
-                       // onClick={() => { setCreate(false) }}
+                      // onClick={() => { setCreate(false) }}
                       >
                         Cancel
                       </button>
+                    
 
-                    </Grid>
+                    </Grid>}
+                  {quest[idx]?.completed && <Grid item xs={12}>
+                    
+                    <button
+                      style={{float: 'right'}}
+                    disabled={quest[idx]?.response?.completed}
+                    className="btn btn-sm btn-light text-dark"
+                    onClick={() => {
+
+                    }}
+                  >
+                      <i className="fas fa-download" />&nbsp;Download Attachment
+                  </button></Grid>}
                </Grid>
             </AccordionDetails>
             </Accordion>
@@ -412,8 +511,11 @@ const AssessmentFireRisk = ({ users, getUsers }) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
+  siteAssets: state.site.siteAssets,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+export default connect(mapStateToProps, { getSiteAssets, deleteUser, getSites, getSiteLayout })(
   AssessmentFireRisk
 );
 
