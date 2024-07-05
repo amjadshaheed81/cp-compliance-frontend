@@ -205,7 +205,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
                     <th scope="col">{action?.raisedByUserName}</th>
                     <th scope="col">{action?.description}</th>
                     <th scope="col">
-                      {action?.category} > {action?.floor} > {action?.room}
+                      {action?.category} &gt; {action?.floor} &gt; {action?.room}
                     </th>
                     <th scope="col">
                       {moment(action?.raisedDate).format("DD-MM-YYYY")}
