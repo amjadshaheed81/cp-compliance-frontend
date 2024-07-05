@@ -17,6 +17,7 @@ import Status from "../../../common/Alert/Status/Status";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { get } from "../../../../api";
+import AddContracts from "./AddContracts";
 
 const Contracts = ({
   getSiteContracts,
@@ -40,30 +41,30 @@ const Contracts = ({
   }, [contractsList]);
   useEffect(() => {
     getCategories();
-  }, [])
+  }, []);
   const getCategories = async () => {
     const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
     const lovsubtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE");
     const categories = await get("/api/lov/SITE_CHECK_CATEGORY");
     const fetchData = [];
-    lovtypes.forEach(t => {
+    lovtypes.forEach((t) => {
       fetchData.push({
         type: t.lovValue,
         id: t.id,
         subTypes: lovsubtypes
-          .filter(s => s.attribite1 === t.lovValue)
-          .map(s => ({
+          .filter((s) => s.attribite1 === t.lovValue)
+          .map((s) => ({
             subType: s.lovValue,
             id: t.id,
             categories: categories
-              .filter(c => c.attribite1 === s.lovValue)
-              .map(c => ({ category: c.lovValue, id: c.id }))
-          }))
+              .filter((c) => c.attribite1 === s.lovValue)
+              .map((c) => ({ category: c.lovValue, id: c.id })),
+          })),
       });
     });
     console.log("fetchData", fetchData);
     setCategory(fetchData);
-  }
+  };
   /**
    *
    * @param {event} e
@@ -143,9 +144,16 @@ const Contracts = ({
       <div className="content">
         <Header />
         <div className="container-fluid">
-          <BreadCrumHeader header={"Contracts"} page={"Contracts"} />
+          <BreadCrumHeader header={"Site Contracts"} page={"Contracts"} />
           {/*  */}
           {/*  */}
+          {showAddModal && (
+            <AddContracts
+              showAddModal={showAddModal}
+              setShowAddModal={setShowAddModal}
+              refresh={() => {}}
+            />
+          )}
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight">
               <div className="row">
