@@ -10,8 +10,11 @@ import DialogTitle from "@mui/material/DialogTitle";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { InputError } from "../../../common/InputError";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
-import { setLoader } from "../../../../store/thunk/site";
+import { getSiteAssets, setLoader } from "../../../../store/thunk/site";
 import { toast } from "react-toastify";
+import Chip from "@mui/material/Chip";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
 
 const AddPreActions = ({
   showAddModal,
@@ -21,9 +24,13 @@ const AddPreActions = ({
   loggedInUserData,
   setLoader,
   siteSelectedForGlobal,
+  getSiteAssets,
+  siteAssets,
 }) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
+  const [value, setValue] = useState([]);
+  const [assetOptions, setAssetOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const {
     register,
@@ -35,7 +42,15 @@ const AddPreActions = ({
   const values = watch();
   useEffect(() => {
     // reset(selectedUser);
+    getSiteAssets(siteSelectedForGlobal?.siteId)
   }, []);
+  useEffect(()=>{
+    if(siteAssets?.length > 0) {
+      setAssetOptions(siteAssets?.map(itm => {
+        return { title: itm?.assetName, id: itm?.assetId}
+      }))
+    }
+  }, [siteAssets]);
   const submitPreActions = async (data) => {
     let form_data = new FormData();
     if (!siteSelectedForGlobal?.siteId) {
@@ -203,13 +218,34 @@ const AddPreActions = ({
 
                       <div className="col-md-12">
                         <div className="form-group mt-2 w-50">
-                          <label for="taggedAsset">Tagger Asset</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="taggedAsset"
-                            name="taggedAsset"
-                            placeholder=""
+                          <Autocomplete
+                            multiple
+                            id="fixed-tags-demo"
+                            value={value}
+                            onChange={(event, newValue) => {
+                              console.log("newValue", newValue);
+                              setValue([
+                                ...newValue
+                              ]);
+                            }}
+                            options={assetOptions}
+                            getOptionLabel={(option) => option.title}
+                            renderTags={(tagValue, getTagProps) =>
+                              tagValue.map((option, index) => (
+                                <Chip
+                                  label={option.title}
+                                  {...getTagProps({ index })}
+                                />
+                              ))
+                            }
+                            style={{ width: 500 }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Tag Asset"
+                                placeholder="Tag Asset"
+                              />
+                            )}
                           />
                         </div>
                       </div>
@@ -300,7 +336,8 @@ const AddPreActions = ({
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteAssets: state.site.siteAssets,
 });
-export default connect(mapStateToProps, { createUpdatePreActions, setLoader })(
+export default connect(mapStateToProps, { createUpdatePreActions, setLoader, getSiteAssets })(
   AddPreActions
 );
