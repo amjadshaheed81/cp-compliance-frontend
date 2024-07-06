@@ -1,8 +1,19 @@
-// components/Login/LoginForm.js
-import React, { Fragment, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import moment from "moment";
-import { Chip } from "@mui/material";
+import {
+  Chip,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 const AddAssets = ({
   siteAssets,
@@ -11,116 +22,114 @@ const AddAssets = ({
   setAssetData,
 }) => {
   const [tableData, setTableData] = useState(assetData);
+
   useEffect(() => {
     setTableData(assetData);
   }, [assetData]);
+
   const removeByIndex = (list, index) => [
     ...list.slice(0, index),
     ...list.slice(index + 1),
   ];
-  const GettableRow = ({ itm, index, setAssetData, assetData }) => {
-    const [row, setRowdata] = useState(itm);
-    const deleteContractById = (index) => {
-      const res = removeByIndex(assetData, index);
-      console.log("res", res);
-      setAssetData(res);
+
+  const handleAssetChange = (index, selectedValue) => {
+    const updatedAssets = siteAssets?.filter(
+      (asset) => asset?.assetId == selectedValue
+    );
+    const updatedRow = {
+      ...tableData[index],
+      assetId: selectedValue,
+      ...updatedAssets?.[0]
     };
+
+    setTableData((prev) => {
+      const newData = [...prev];
+      newData[index] = updatedRow;
+      return newData;
+    });
+
+    setAssetData((prev) => {
+      const newData = [...prev];
+      newData[index] = updatedRow;
+      return newData;
+    });
+  };
+
+  const deleteContractById = (index) => {
+    const updatedData = removeByIndex(tableData, index);
+    setTableData(updatedData);
+    setAssetData(updatedData);
+  };
+
+  const GetTableRow = ({ itm, index }) => {
     let color = "secondary";
     if (itm.status === "received") {
       color = "success";
     }
+
     return (
-      <tr>
-        {itm ? (
-          <td>
-            <select
-              className="form-control form-select"
-              name="contractors"
-              id="contractors"
-              onChange={(e) => {
-                const selectedValue = e.target.value;
-                console.log(selectedValue);
-                const getContractorList = siteAssets?.filter(
-                  (asset) => asset?.assetId == selectedValue
-                );
-                const contractRows = [...assetData];
-                contractRows[index] = {
-                  ...row,
-                  contractorUserId: selectedValue,
-                  company: getContractorList?.[0]?.company || "",
-                };
-                setAssetData(contractRows);
-                setRowdata({
-                  ...row,
-                  contractorUserId: selectedValue,
-                  company: getContractorList?.[0]?.company || "",
-                });
-              }}
-            >
-              <option value={""} disabled selected>Select Asset</option>
-              {siteAssets?.map((itm) => (
-                <option value={itm?.assetId}>{itm?.assetName}</option>
-              ))}
-            </select>
-          </td>
-        ) : (
-          <td></td>
-        )}
-        {itm?.company ? <td>{itm?.company}</td> : <td></td>}
-        {itm?.quote ? <td>£ {itm?.quote}</td> : <td></td>}
-        {itm?.quoteDate ? (
-          <td>{moment(itm?.quoteDate).format("DD-MM-YYYY")}</td>
-        ) : (
-          <td></td>
-        )}
-        {itm?.actions ? (
-          <td>
-            <button
-              className="btn btn-sm btn-light text-danger"
-              onClick={() => deleteContractById(index)}
-            >
-              <i className="fas fa-trash"></i>
-            </button>
-          </td>
-        ) : (
-          <td>
-            <button
-              className="btn btn-sm btn-light text-danger"
-              onClick={() => deleteContractById(index)}
-            >
-              <i className="fas fa-trash"></i>
-            </button>
-          </td>
-        )}
-      </tr>
+      <TableRow key={index}>
+        <TableCell>
+          <Select
+            value={itm.assetId || ""}
+            onChange={(e) => handleAssetChange(index, e.target.value)}
+            displayEmpty
+          >
+            <MenuItem value="" disabled>
+              Select Asset
+            </MenuItem>
+            {siteAssets?.map((asset) => (
+              <MenuItem key={asset.assetId} value={asset.assetId}>
+                {asset.assetName}
+              </MenuItem>
+            ))}
+          </Select>
+        </TableCell>
+        <TableCell>{itm.assetName || ""}</TableCell>
+        <TableCell>{itm.position} &gt; {itm.floor} &gt; {itm.room}</TableCell>
+        <TableCell>
+          {itm.category} &gt; {itm.subCategory} &gt; {itm.subCategor2}
+        </TableCell>
+        <TableCell>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => deleteContractById(index)}
+          >
+            <i className="fas fa-trash"></i>
+          </Button>
+        </TableCell>
+      </TableRow>
     );
   };
+
   return (
-    <Fragment>
-      <div>
-        <table className="table table-bordered f-11">
-          <thead className="table-dark">
-            <tr>
-              <th scope="col">Asset Name</th>
-              <th scope="col">Asset Reference</th>
-              <th scope="col">Location</th>
-              <th scope="col">Category</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tableData?.map((dataItm, index) => (
-              <GettableRow
-                itm={dataItm}
-                index={index}
-                setAssetData={setAssetData}
-                assetData={assetData}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Fragment>
+    <>
+      <Box>
+        <TableContainer>
+          <Table className="table table-bordered f-11">
+            <TableHead className="table-dark">
+              <TableRow>
+                <TableCell>Asset Name</TableCell>
+                <TableCell>Asset Reference</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {tableData?.map((dataItm, index) => (
+                <GetTableRow
+                  itm={dataItm}
+                  index={index}
+                  key={dataItm.assetId || index}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    </>
   );
 };
 

@@ -23,47 +23,35 @@ const Contracts = ({
   getSiteContracts,
   getSiteContractDetails,
   updateContractDetail,
-  contractsList,
   contractDetail,
   error,
   success,
   setLoader,
   loggedInUserData,
+  siteSelectedForGlobal,
 }) => {
-  const [open, setOpen] = useState(false);
   const [filteredContractList, setFilteredContractList] = useState([]);
   const [selectedContract, setSelectedContract] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
-  const [categrory, setCategory] = useState([]);
-
-  useEffect(() => {
-    setFilteredContractList(contractsList);
-  }, [contractsList]);
+  const [category, setCategory] = useState([]);
+  const [subCategory, setSubCategory] = useState([]);
+  const [subCategoryList, setSubCategoryList] = useState([]);
   useEffect(() => {
     getCategories();
+    getProjectList();
   }, []);
+  const getProjectList = async () => {
+    const projects = await get(
+      `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+    );
+    setFilteredContractList(projects?.projectContracts || []);
+  };
   const getCategories = async () => {
-    const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
-    const lovsubtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE");
-    const categories = await get("/api/lov/SITE_CHECK_CATEGORY");
-    const fetchData = [];
-    lovtypes.forEach((t) => {
-      fetchData.push({
-        type: t.lovValue,
-        id: t.id,
-        subTypes: lovsubtypes
-          .filter((s) => s.attribite1 === t.lovValue)
-          .map((s) => ({
-            subType: s.lovValue,
-            id: t.id,
-            categories: categories
-              .filter((c) => c.attribite1 === s.lovValue)
-              .map((c) => ({ category: c.lovValue, id: c.id })),
-          })),
-      });
-    });
-    console.log("fetchData", fetchData);
-    setCategory(fetchData);
+    const category = await get("/api/lov/PROJECT_CONTRACT_CATEGORY");
+    const subCategory = await get("/api/lov/PROJECT_CONTRACT_SUB_CATEGORY");
+    console.log("category", category);
+    setCategory(category);
+    setSubCategory(subCategory);
   };
   /**
    *
@@ -71,58 +59,20 @@ const Contracts = ({
    * search project
    */
   const searchContract = (e) => {
+    // const val = e.target.value;
+    // if (val) {
+    //   const list = contractsList?.filter((x) =>
+    //     String(x?.project_summary)
+    //       .toLowerCase()
+    //       .includes(String(val).toLowerCase())
+    //   );
+    //   setFilteredContractList(list);
+    // } else {
+    //   setFilteredContractList(contractsList);
+    // }
+  };
+  const categoryChange = (e) => {
     const val = e.target.value;
-
-    if (val) {
-      const list = contractsList?.filter((x) =>
-        String(x?.project_summary)
-          .toLowerCase()
-          .includes(String(val).toLowerCase())
-      );
-      setFilteredContractList(list);
-    } else {
-      setFilteredContractList(contractsList);
-    }
-  };
-  const handleOpen = () => {
-    setOpen(!open);
-  };
-  const handleClose = () => {
-    setOpen(false);
-  };
-  const { register, handleSubmit, getValues, setValue } = useForm({});
-
-  useEffect(() => {
-    setLoader(true);
-    getSiteContracts(loggedInUserData?.id);
-  }, []);
-
-  const updateContractDetails = (formData) => {
-    let form_data = new FormData();
-    if (formData?.official_quote?.length === 0) {
-      toast.error("Please select a file!");
-      return;
-    }
-
-    if (formData?.official_quote) {
-      form_data.append(
-        "file",
-        formData?.official_quote?.[0],
-        formData?.official_quote?.[0]?.name
-      );
-    }
-    const contractUpdateRquestString = {
-      quote: formData?.quote,
-      quoteId: JSON.stringify(contractDetail?.quote_id),
-      status: "Submitted",
-    };
-    form_data.append(
-      "contractUpdateRquestString",
-      JSON.stringify(contractUpdateRquestString)
-    );
-    updateContractDetail(form_data);
-    getSiteContracts(6);
-    handleClose();
   };
   const style = {
     position: "absolute",
@@ -151,6 +101,8 @@ const Contracts = ({
             <AddContracts
               showAddModal={showAddModal}
               setShowAddModal={setShowAddModal}
+              category={category}
+              subCategory={subCategory}
               refresh={() => {}}
             />
           )}
@@ -171,12 +123,13 @@ const Contracts = ({
                     name="category"
                     className="form-control form-select"
                     id="startMonth"
+                    onChange={categoryChange}
                   >
                     <option value="" selected disabled>
                       Category
                     </option>
-                    {categrory?.map((itm) => (
-                      <option value={itm?.id}>{itm?.type}</option>
+                    {category?.map((itm) => (
+                      <option value={itm?.lovValue}>{itm?.lovValue}</option>
                     ))}
                   </select>
                 </div>
@@ -189,6 +142,20 @@ const Contracts = ({
                     <option value="" selected disabled>
                       Sub Category
                     </option>
+                  </select>
+                </div>
+                <div className="col">
+                  <select
+                    name="status"
+                    className="form-control form-select"
+                    id="status"
+                  >
+                    <option value="" selected disabled>
+                      Status
+                    </option>
+                    <option value="Active">Active</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Terminated">Terminated</option>
                   </select>
                 </div>
               </div>
@@ -214,7 +181,7 @@ const Contracts = ({
                     <CSVLink
                       filename={"contracts-lists"}
                       className="btn btn-light bg-white text-primary"
-                      data={contractsList}
+                      data={[]}
                     >
                       {" "}
                       <Tooltip title={`Export`} arrow>
@@ -274,168 +241,6 @@ const Contracts = ({
           {/* row end*/}
         </div>
       </div>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-          <div style={{ margin: "20px" }}>
-            <Typography id="modal-modal-title" variant="h6" component="h2">
-              View Contract
-            </Typography>
-            <form
-              className="row border-top"
-              onSubmit={handleSubmit(updateContractDetails)}
-            >
-              <div>
-                <Status status={contractDetail?.status} />
-              </div>
-              <div className="col-md-12">
-                <label for="projectSummary" className="form-label">
-                  Project Summary
-                </label>
-                <input
-                  type="text"
-                  name="projectSummary"
-                  className="form-control"
-                  id="projectSummary"
-                  disabled={true}
-                  value={contractDetail?.project_summary}
-                />
-              </div>
-              <div className="col-md-6">
-                <label for="projectManager" className="form-label">
-                  Project Manager
-                </label>
-                <input
-                  type="text"
-                  name="projectManager"
-                  className="form-control"
-                  id="projectManager"
-                  disabled={true}
-                  value={contractDetail?.manager_first_name}
-                />
-              </div>
-              <div className="col-md-6">
-                <label for="projectStartDate" className="form-label">
-                  Project Start date
-                </label>
-                <input
-                  type="text"
-                  name="projectStartDate"
-                  className="form-control"
-                  id="projectStartDate"
-                  disabled={true}
-                  value={contractDetail?.start_date}
-                />
-              </div>
-              <div className="col-md-6">
-                <label for="quote" className="form-label">
-                  Quote (GBP)
-                </label>
-                <input
-                  type="text"
-                  name="quote"
-                  className="form-control"
-                  id="quote"
-                  // value={contractDetail?.quote}
-                  {...register(`quote`)}
-                />
-              </div>
-              <div className="col-md-6">
-                <label for="official_quote" className="form-label">
-                  Official Quote
-                </label>
-                <input
-                  type="file"
-                  name="official_quote"
-                  className="form-control"
-                  id="official_quote"
-                  {...register(`official_quote`)}
-                />
-              </div>
-              <div className="col-md-12">
-                <label for="notes" className="form-label">
-                  Project Manager Comments
-                </label>
-                <textarea
-                  name="notes"
-                  className="form-control"
-                  id="notes"
-                  disabled={true}
-                  {...register(`project_comments`)}
-                  value={contractDetail?.project_comments}
-                ></textarea>
-              </div>
-              <div className="table-responsive">
-                <table className="table f-11 mt-2">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col">Mandatory Folder</th>
-                      <th scope="col">File (PDF, 1 MB)</th>
-                      <th scope="col"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contractDetail?.folder_details?.length === 0 && (
-                      <tr>
-                        <td>folder details are not available</td>
-                      </tr>
-                    )}
-                    {contractDetail?.folder_details?.map((itm) => (
-                      <tr key={itm?.folder_id}>
-                        <td>{itm?.folder_name}</td>
-                        <td>
-                          <input
-                            type="file"
-                            className="form-control"
-                            {...register(`folderFiles-${itm?.folder_id}`)}
-                            disabled={
-                              contractDetail?.status !== "Awarded"
-                                ? true
-                                : false
-                            }
-                          />
-                        </td>
-                        <td>
-                          {itm?.file && (
-                            <span className="badge bg-light text-primary">
-                              {itm?.file}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="col-md-12 pt-4 border-top">
-                <div>
-                  {/* {success && <Success msg={success} />} */}
-                  {/* {error && <Error msg={error} />} */}
-                </div>
-                <div className="float-end">
-                  <button
-                    type="button"
-                    className="btn btn-light mb-3 mr-4 text-primary"
-                    onClick={() => {
-                      setOpen(false);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  &nbsp; &nbsp;
-                  <button className="btn btn-primary mb-3 mr-4" type="submit">
-                    Submit
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </Box>
-      </Modal>
     </Fragment>
   );
 };

@@ -7,7 +7,6 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { InputError } from "../../../common/InputError";
 import { toast } from "react-toastify";
 import { Validation } from "../../../../Constant/Validation";
@@ -17,12 +16,13 @@ import {
 } from "../../../../store/thunk/site";
 import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
+import { get } from "../../../../api";
+import MandatoryFolders from "./MandatoryFolders";
 
 const AddContracts = ({
   showAddModal,
   setShowAddModal,
   refresh,
-  createUpdatePreActions,
   loggedInUserData,
   siteSelectedForGlobal,
   rootFolder,
@@ -31,12 +31,18 @@ const AddContracts = ({
   ManagerList,
   getSiteAssets,
   siteAssets,
+  category,
+  subCategory,
 }) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
+  const [showMandatoryModal, setShowMandatoryModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   const [selectedAssets, setSelectedAssets] = useState([]);
+  const [categoryList, setCategoryList] = useState([]);
+  const [subCategoryList, setSubCategoryList] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [assetData, setAssetData] = useState([
     {
       assets: [],
@@ -56,12 +62,25 @@ const AddContracts = ({
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getManagerList();
+      getCompanies();
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
     } else {
       toast.error("Please select site from site search.");
     }
   }, []);
+  const getCompanies = async () => {
+    const companiesData = await get(`/api/user/companies`);
+    setCompanies(companiesData);
+  };
+  useEffect(() => {
+    if (category) {
+      setCategoryList(category);
+    }
+    if (subCategory) {
+      setSubCategoryList(subCategory);
+    }
+  }, [category, subCategory]);
   const submitPreActions = async (data) => {
     // let form_data = new FormData();
     if (!siteSelectedForGlobal?.siteId) {
@@ -88,6 +107,7 @@ const AddContracts = ({
                 <CircularProgress />
               </Box>
             )}
+
             {!isLoading && (
               <Fragment>
                 <div className="row">
@@ -131,6 +151,11 @@ const AddContracts = ({
                           <option value="" selected disabled>
                             Select category
                           </option>
+                          {categoryList?.map((itm) => (
+                            <option value={itm?.lovValue}>
+                              {itm?.lovValue}
+                            </option>
+                          ))}
                         </select>
                         {errors?.category && (
                           <InputError
@@ -155,6 +180,11 @@ const AddContracts = ({
                           <option value="" selected disabled>
                             Select sub category
                           </option>
+                          {subCategoryList?.map((itm) => (
+                            <option value={itm?.lovValue}>
+                              {itm?.lovValue}
+                            </option>
+                          ))}
                         </select>
                         {errors?.subCategory && (
                           <InputError
@@ -179,6 +209,9 @@ const AddContracts = ({
                           <option value="" selected disabled>
                             Select company
                           </option>
+                          {companies?.map((itm) => (
+                            <option value={itm?.id}>{itm?.companyName}</option>
+                          ))}
                         </select>
                         {errors?.company && (
                           <InputError
@@ -300,74 +333,21 @@ const AddContracts = ({
                           ))}
                         </select>
                       </div>
+                      <div className="col-md-3">
+                        <MandatoryFolders
+                          setSelectedMandatoryFolder={
+                            setSelectedMandatoryFolder
+                          }
+                          selectedMandatoryFolder={selectedMandatoryFolder}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  {/** Add Mandatory Folder */}
-                  <div className="col-md-12 mt-2 mb-2">
-                    Add Mandatory Folder
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table f-11">
-                      <thead className="table-dark">
-                        <tr>
-                          <th scope="col">Folder</th>
-                          <th scope="col">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rootFolder?.parentFolders?.map((folder, index) => (
-                          <tr>
-                            <td>
-                              <i
-                                style={{ color: "#384BD3" }}
-                                className="fas fa-folder fa-2x"
-                              ></i>
-                              <span className="p-3">{folder?.name}</span>
-                            </td>
-                            <td>
-                              <span
-                                className="text-primary cursor"
-                                onClick={() => {
-                                  setSelectedMandatoryFolder([
-                                    ...selectedMandatoryFolder,
-                                    folder,
-                                  ]);
-                                }}
-                              >
-                                <i className="fas fa-plus" size="sm"></i>
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div>
-                    {selectedMandatoryFolder?.map((itm) => (
-                      <Fragment>
-                        <span className="bg-light text-primary cursor h6 p-2">
-                          {itm?.name}{" "}
-                          <i
-                            className="fas fa-times"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedMandatoryFolder(
-                                selectedMandatoryFolder?.filter(
-                                  (value) => value?.id != itm?.id
-                                )
-                              );
-                            }}
-                          ></i>
-                        </span>
-                        &nbsp;
-                      </Fragment>
-                    ))}
                   </div>
                   {/** Add Assets start */}
                   <div className="d-flex bd-highlight">
                     <div className="pt-2 bd-highlight">
                       <div className="row">
-                        <div className="col">Add Asset</div>
+                        <div className="col h6">Add Assets</div>
                       </div>
                     </div>
                     <div className="ms-auto p-2 bd-highlight">
@@ -377,7 +357,7 @@ const AddContracts = ({
                             <Tooltip title={`Add New row`} arrow>
                               <button
                                 type="button"
-                                className="btn btn-primary text-white pr-2"
+                                className="btn btn-light text-primary pr-2"
                                 onClick={(e) => {
                                   e?.preventDefault();
                                   const d = [...assetData];
@@ -409,6 +389,18 @@ const AddContracts = ({
                     </div>
                   </div>
                   {/** Add Assets end */}
+                  {/* schedule date */}
+                  <div className="col-md-3">
+                    <div className="form-group">
+                      <label for="scheduleDate">Schedule Visit</label>
+                      <input
+                        type="date"
+                        className="form-control date-input"
+                        id="scheduleDate"
+                        {...register("scheduleDate")}
+                      />
+                    </div>
+                  </div>
                 </div>
               </Fragment>
             )}
