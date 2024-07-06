@@ -1,5 +1,5 @@
-import React, { Fragment, useState } from "react";
-import { Button, Box } from "@mui/material";
+import React, { Fragment, useEffect, useState } from "react";
+import { Button, Box, Tooltip } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -11,6 +11,12 @@ import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { InputError } from "../../../common/InputError";
 import { toast } from "react-toastify";
 import { Validation } from "../../../../Constant/Validation";
+import {
+  getDocumentsRootFolder,
+  getSiteAssets,
+} from "../../../../store/thunk/site";
+import { getManagerList } from "../../../../store/thunk/user";
+import AddAssets from "./AddAssets";
 
 const AddContracts = ({
   showAddModal,
@@ -19,10 +25,26 @@ const AddContracts = ({
   createUpdatePreActions,
   loggedInUserData,
   siteSelectedForGlobal,
+  rootFolder,
+  getDocumentsRootFolder,
+  getManagerList,
+  ManagerList,
+  getSiteAssets,
+  siteAssets,
 }) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
+  const [selectedAssets, setSelectedAssets] = useState([]);
+  const [assetData, setAssetData] = useState([
+    {
+      assets: [],
+      assetRef: " ",
+      location: " ",
+      category: "New",
+    },
+  ]);
   const {
     register,
     reset,
@@ -31,6 +53,15 @@ const AddContracts = ({
     handleSubmit,
   } = useForm({});
   const values = watch();
+  useEffect(() => {
+    if (siteSelectedForGlobal?.siteId) {
+      getManagerList();
+      getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+      getSiteAssets(siteSelectedForGlobal?.siteId);
+    } else {
+      toast.error("Please select site from site search.");
+    }
+  }, []);
   const submitPreActions = async (data) => {
     // let form_data = new FormData();
     if (!siteSelectedForGlobal?.siteId) {
@@ -264,10 +295,120 @@ const AddContracts = ({
                           <option value="" selected disabled>
                             Select manager
                           </option>
+                          {ManagerList?.map((itm) => (
+                            <option value={itm?.id}>{itm?.name}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
                   </div>
+                  {/** Add Mandatory Folder */}
+                  <div className="col-md-12 mt-2 mb-2">
+                    Add Mandatory Folder
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table f-11">
+                      <thead className="table-dark">
+                        <tr>
+                          <th scope="col">Folder</th>
+                          <th scope="col">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rootFolder?.parentFolders?.map((folder, index) => (
+                          <tr>
+                            <td>
+                              <i
+                                style={{ color: "#384BD3" }}
+                                className="fas fa-folder fa-2x"
+                              ></i>
+                              <span className="p-3">{folder?.name}</span>
+                            </td>
+                            <td>
+                              <span
+                                className="text-primary cursor"
+                                onClick={() => {
+                                  setSelectedMandatoryFolder([
+                                    ...selectedMandatoryFolder,
+                                    folder,
+                                  ]);
+                                }}
+                              >
+                                <i className="fas fa-plus" size="sm"></i>
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div>
+                    {selectedMandatoryFolder?.map((itm) => (
+                      <Fragment>
+                        <span className="bg-light text-primary cursor h6 p-2">
+                          {itm?.name}{" "}
+                          <i
+                            className="fas fa-times"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMandatoryFolder(
+                                selectedMandatoryFolder?.filter(
+                                  (value) => value?.id != itm?.id
+                                )
+                              );
+                            }}
+                          ></i>
+                        </span>
+                        &nbsp;
+                      </Fragment>
+                    ))}
+                  </div>
+                  {/** Add Assets start */}
+                  <div className="d-flex bd-highlight">
+                    <div className="pt-2 bd-highlight">
+                      <div className="row">
+                        <div className="col">Add Asset</div>
+                      </div>
+                    </div>
+                    <div className="ms-auto p-2 bd-highlight">
+                      <div className="row" style={{ height: "auto" }}>
+                        <div className="col">
+                          <div className="col">
+                            <Tooltip title={`Add New row`} arrow>
+                              <button
+                                type="button"
+                                className="btn btn-primary text-white pr-2"
+                                onClick={(e) => {
+                                  e?.preventDefault();
+                                  const d = [...assetData];
+                                  d.push({
+                                    assets: [],
+                                    assetRef: " ",
+                                    location: " ",
+                                    category: "New",
+                                  });
+                                  setAssetData(d);
+                                }}
+                              >
+                                <i className="fas fa-plus"></i>&nbsp; Add More
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="col-md-12">
+                      <AddAssets
+                        setAssetData={setAssetData}
+                        assetData={assetData}
+                        siteAssets={siteAssets}
+                        setSelectedAssets={setSelectedAssets}
+                      />
+                    </div>
+                  </div>
+                  {/** Add Assets end */}
                 </div>
               </Fragment>
             )}
@@ -278,7 +419,7 @@ const AddContracts = ({
                 Cancel
               </Button>
               <Button type="submit" className="bg-primary text-white">
-                Save
+                Submit
               </Button>
             </DialogActions>
           )}
@@ -290,6 +431,13 @@ const AddContracts = ({
 
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
+  rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  ManagerList: state.userReducer.ManagerList,
+  siteAssets: state.site.siteAssets,
 });
-export default connect(mapStateToProps, {})(AddContracts);
+export default connect(mapStateToProps, {
+  getDocumentsRootFolder,
+  getManagerList,
+  getSiteAssets,
+})(AddContracts);
