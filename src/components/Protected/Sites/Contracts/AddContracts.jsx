@@ -16,7 +16,7 @@ import {
 } from "../../../../store/thunk/site";
 import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
-import { get } from "../../../../api";
+import { get, put } from "../../../../api";
 import MandatoryFolders from "./MandatoryFolders";
 
 const AddContracts = ({
@@ -81,7 +81,8 @@ const AddContracts = ({
       setSubCategoryList(subCategory);
     }
   }, [category, subCategory]);
-  const submitPreActions = async (data) => {
+  const submitAddContract = async (data) => {
+    console.log("data", data);
     // let form_data = new FormData();
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed.");
@@ -89,9 +90,45 @@ const AddContracts = ({
     }
     if (loggedInUserData?.id) {
       console.log("data", data);
+      const formData = {
+        projectContractId: null,
+        summary: data?.summary,
+        siteId: siteSelectedForGlobal?.siteId,
+        category: data?.category || "",
+        subCategory: data?.subCategory || "",
+        contractorCompanyId: data?.company ? Number(data?.company) : null,
+        status: "Active",
+        budget: data?.cost,
+        cost: data?.cost,
+        startDate: `${data?.startDate} 10:00:00`,
+        endDate: `${data?.endDate} 10:00:00`,
+        projectManagerUserId: data?.manager ? Number(data?.manager) : null,
+        description: data?.description,
+      };
+      const url = "api/project/manage";
+      const res = await put(url, formData);
+      if (res?.status === 200) {
+        let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
+          if (!itm?.isSaved) {
+            return  itm.id
+          }
+        });
+        if(mandatoryFolders.length > 0) {
+          const folders = {
+            mandatoryFolders: mandatoryFolders,
+            removeMandatoryFolders: null,
+          };
+          const folderApi = await put(`api/project/${res?.data?.projectContractId}/folders`, folders);
+        }
+        toast.success("Successully added contract.");
+        handleClose();
+        refresh();
+      } else {
+        toast.error(
+          "Something went wrong while adding contract. Please try again!!"
+        );
+      }
       setIsLoading(false);
-      handleClose();
-      refresh();
     } else {
       toast.error("Please login with valid user details to proceed.");
     }
@@ -99,7 +136,7 @@ const AddContracts = ({
   return (
     <React.Fragment>
       <Dialog open={showAddModal} onClose={handleClose} maxWidth="lg" fullWidth>
-        <form onSubmit={handleSubmit(submitPreActions)}>
+        <form onSubmit={handleSubmit(submitAddContract)}>
           <DialogTitle>New Contract</DialogTitle>
           <DialogContent dividers>
             {isLoading && (
@@ -210,7 +247,9 @@ const AddContracts = ({
                             Select company
                           </option>
                           {companies?.map((itm) => (
-                            <option value={itm?.id}>{itm?.companyName}</option>
+                            <option value={itm?.userId}>
+                              {itm?.companyName}
+                            </option>
                           ))}
                         </select>
                         {errors?.company && (
@@ -344,63 +383,69 @@ const AddContracts = ({
                     </div>
                   </div>
                   {/** Add Assets start */}
-                  <div className="d-flex bd-highlight">
-                    <div className="pt-2 bd-highlight">
-                      <div className="row">
-                        <div className="col h6">Add Assets</div>
-                      </div>
-                    </div>
-                    <div className="ms-auto p-2 bd-highlight">
-                      <div className="row" style={{ height: "auto" }}>
-                        <div className="col">
-                          <div className="col">
-                            <Tooltip title={`Add New row`} arrow>
-                              <button
-                                type="button"
-                                className="btn btn-light text-primary pr-2"
-                                onClick={(e) => {
-                                  e?.preventDefault();
-                                  const d = [...assetData];
-                                  d.push({
-                                    assets: [],
-                                    assetRef: " ",
-                                    location: " ",
-                                    category: "New",
-                                  });
-                                  setAssetData(d);
-                                }}
-                              >
-                                <i className="fas fa-plus"></i>&nbsp; Add More
-                              </button>
-                            </Tooltip>
+                  {values?.category !== "Building Project" &&
+                    values?.category !== "" && (
+                      <Fragment>
+                        <div className="d-flex bd-highlight">
+                          <div className="pt-2 bd-highlight">
+                            <div className="row">
+                              <div className="col h6">Add Assets</div>
+                            </div>
+                          </div>
+                          <div className="ms-auto p-2 bd-highlight">
+                            <div className="row" style={{ height: "auto" }}>
+                              <div className="col">
+                                <div className="col">
+                                  <Tooltip title={`Add New row`} arrow>
+                                    <button
+                                      type="button"
+                                      className="btn btn-light text-primary pr-2"
+                                      onClick={(e) => {
+                                        e?.preventDefault();
+                                        const d = [...assetData];
+                                        d.push({
+                                          assets: [],
+                                          assetRef: " ",
+                                          location: " ",
+                                          category: "New",
+                                        });
+                                        setAssetData(d);
+                                      }}
+                                    >
+                                      <i className="fas fa-plus"></i>&nbsp; Add
+                                      More
+                                    </button>
+                                  </Tooltip>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="row">
-                    <div className="col-md-12">
-                      <AddAssets
-                        setAssetData={setAssetData}
-                        assetData={assetData}
-                        siteAssets={siteAssets}
-                        setSelectedAssets={setSelectedAssets}
-                      />
-                    </div>
-                  </div>
-                  {/** Add Assets end */}
-                  {/* schedule date */}
-                  <div className="col-md-3">
-                    <div className="form-group">
-                      <label for="scheduleDate">Schedule Visit</label>
-                      <input
-                        type="date"
-                        className="form-control date-input"
-                        id="scheduleDate"
-                        {...register("scheduleDate")}
-                      />
-                    </div>
-                  </div>
+                        <div className="row">
+                          <div className="col-md-12">
+                            <AddAssets
+                              setAssetData={setAssetData}
+                              assetData={assetData}
+                              siteAssets={siteAssets}
+                              setSelectedAssets={setSelectedAssets}
+                            />
+                          </div>
+                        </div>
+                        {/** Add Assets end */}
+                        {/* schedule date */}
+                        <div className="col-md-3">
+                          <div className="form-group">
+                            <label for="scheduleDate">Schedule Visit</label>
+                            <input
+                              type="date"
+                              className="form-control date-input"
+                              id="scheduleDate"
+                              {...register("scheduleDate")}
+                            />
+                          </div>
+                        </div>
+                      </Fragment>
+                    )}
                 </div>
               </Fragment>
             )}

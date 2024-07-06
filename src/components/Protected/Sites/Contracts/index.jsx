@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { get } from "../../../../api";
 import AddContracts from "./AddContracts";
+import moment from "moment";
 
 const Contracts = ({
   getSiteContracts,
@@ -217,13 +218,21 @@ const Contracts = ({
                 )}
                 {filteredContractList?.map((itm) => (
                   <tr key={itm?.quote_id}>
-                    <td>{itm?.project_summary}</td>
+                    <td>{itm?.summary}</td>
                     <td>{itm?.category}</td>
                     <td>{itm?.subCategory}</td>
-                    <td>{itm?.company}</td>
-                    <td>{itm?.startDate}</td>
-                    <td>{itm?.endDate}</td>
-                    <td>{itm?.cose}</td>
+                    <td>{itm?.contractorCompanyName}</td>
+                    <td>
+                      {itm?.startDate
+                        ? moment(itm?.startDate).format("DD-MM-YYYY")
+                        : "-"}
+                    </td>
+                    <td>
+                      {itm?.endDate
+                        ? moment(itm?.endDate).format("DD-MM-YYYY")
+                        : "-"}
+                    </td>
+                    <td>{itm?.cost}</td>
 
                     <td>
                       <Chip
