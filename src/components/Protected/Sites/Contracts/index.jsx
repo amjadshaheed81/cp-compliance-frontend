@@ -4,7 +4,7 @@ import { CSVLink } from "react-csv";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import { Box, Modal, Typography, Chip } from "@mui/material";
+import { Box, Modal, Typography, Chip, Switch } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 import {
   getSiteContracts,
@@ -19,6 +19,9 @@ import { toast } from "react-toastify";
 import { get } from "../../../../api";
 import AddContracts from "./AddContracts";
 import moment from "moment";
+import { ROLE } from "../../../../Constant/Role";
+import ChipComponent from "../../../common/Chips/Chips";
+import ManagerContractView from "./ManagerContractView";
 
 const Contracts = ({
   getSiteContracts,
@@ -33,10 +36,16 @@ const Contracts = ({
 }) => {
   const [filteredContractList, setFilteredContractList] = useState([]);
   const [selectedContract, setSelectedContract] = useState({});
+  const [editContractViewType, setEditContractViewType] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
+  const [checked, setChecked] = useState(false);
+
+  const handleChange = (event) => {
+    setChecked(event.target.checked);
+  };
   useEffect(() => {
     getCategories();
     getProjectList();
@@ -50,7 +59,6 @@ const Contracts = ({
   const getCategories = async () => {
     const category = await get("/api/lov/PROJECT_CONTRACT_CATEGORY");
     const subCategory = await get("/api/lov/PROJECT_CONTRACT_SUB_CATEGORY");
-    console.log("category", category);
     setCategory(category);
     setSubCategory(subCategory);
   };
@@ -59,35 +67,22 @@ const Contracts = ({
    * @param {event} e
    * search project
    */
-  const searchContract = (e) => {
-    // const val = e.target.value;
-    // if (val) {
-    //   const list = contractsList?.filter((x) =>
-    //     String(x?.project_summary)
-    //       .toLowerCase()
-    //       .includes(String(val).toLowerCase())
-    //   );
-    //   setFilteredContractList(list);
-    // } else {
-    //   setFilteredContractList(contractsList);
-    // }
-  };
+  const searchContract = (e) => {};
   const categoryChange = (e) => {
     const val = e.target.value;
   };
-  const style = {
-    position: "absolute",
-    overflow: "auto",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 700,
-    height: 400,
-    bgcolor: "background.paper",
-    border: "2px solid #fff",
-    boxShadow: 24,
-    p: 4,
-    margin: "20px",
+  const openContractDetail = (contract) => {
+    setSelectedContract(contract);
+    if (
+      loggedInUserData?.role === ROLE.ADMIN ||
+      loggedInUserData?.role === ROLE.MANAGER
+    ) {
+      setEditContractViewType(ROLE.MANAGER);
+    } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
+      setEditContractViewType(ROLE.CONTRACTOR);
+    } else {
+      setEditContractViewType("");
+    }
   };
   return (
     <Fragment>
@@ -106,6 +101,9 @@ const Contracts = ({
               subCategory={subCategory}
               refresh={() => {}}
             />
+          )}
+          {editContractViewType === ROLE.MANAGER && (
+            <ManagerContractView selectedContract={selectedContract} />
           )}
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight">
@@ -159,6 +157,17 @@ const Contracts = ({
                     <option value="Terminated">Terminated</option>
                   </select>
                 </div>
+                {loggedInUserData?.role === ROLE.CONTRACTOR && (
+                  <div className="col p-0 m-0">
+                    <label>All</label>
+                    <Switch
+                      checked={checked}
+                      onChange={handleChange}
+                      inputProps={{ "aria-label": "controlled" }}
+                    />
+                    <label>Selected Site</label>
+                  </div>
+                )}
               </div>
             </div>
             <div className="ms-auto p-2 bd-highlight">
@@ -203,7 +212,13 @@ const Contracts = ({
                   <th scope="col">Summary</th>
                   <th scope="col">Category</th>
                   <th scope="col">SubCategory</th>
-                  <th scope="col">Company</th>
+                  {loggedInUserData?.role === ROLE.ADMIN ||
+                    (loggedInUserData?.role === ROLE.MANAGER && (
+                      <th scope="col">Company</th>
+                    ))}
+                  {loggedInUserData?.role === ROLE.CONTRACTOR && (
+                    <th scope="col">Site</th>
+                  )}
                   <th scope="col">Start Date</th>
                   <th scope="col">End date</th>
                   <th scope="col">Cost</th>
@@ -217,11 +232,24 @@ const Contracts = ({
                   </tr>
                 )}
                 {filteredContractList?.map((itm) => (
-                  <tr key={itm?.quote_id}>
-                    <td>{itm?.summary}</td>
+                  <tr key={itm?.projectContractId}>
+                    <td>
+                      <span
+                        onClick={() => openContractDetail(itm)}
+                        className="text-primary cursor"
+                      >
+                        {itm?.summary}
+                      </span>
+                    </td>
                     <td>{itm?.category}</td>
                     <td>{itm?.subCategory}</td>
-                    <td>{itm?.contractorCompanyName}</td>
+                    {loggedInUserData?.role === ROLE.ADMIN ||
+                      (loggedInUserData?.role === ROLE.MANAGER && (
+                        <td>{itm?.contractorCompanyName}</td>
+                      ))}
+                    {loggedInUserData?.role === ROLE.CONTRACTOR && (
+                      <td>{itm?.siteName}</td>
+                    )}
                     <td>
                       {itm?.startDate
                         ? moment(itm?.startDate).format("DD-MM-YYYY")
@@ -235,12 +263,7 @@ const Contracts = ({
                     <td>{itm?.cost}</td>
 
                     <td>
-                      <Chip
-                        label={itm?.status}
-                        color={
-                          itm.status === "received" ? "secondary" : "success"
-                        }
-                      />
+                      <ChipComponent status={itm?.status} />
                     </td>
                   </tr>
                 ))}

@@ -86,9 +86,15 @@ const AddAssets = ({
           </Select>
         </TableCell>
         <TableCell>{itm.assetName || ""}</TableCell>
-        <TableCell>{itm.position} &gt; {itm.floor} &gt; {itm.room}</TableCell>
         <TableCell>
-          {itm.category} &gt; {itm.subCategory} &gt; {itm.subCategor2}
+          {itm.position ? `${itm.position}` : ""}
+          {itm.floor ? ` > ${itm.floor}` : ""}
+          {itm.room ? ` > ${itm.room}` : ""}
+        </TableCell>
+        <TableCell>
+          {itm.category ? `${itm.category}` : ""}
+          {itm.subCategory ? ` > ${itm.subCategory}` : ""}
+          {itm.subCategor2 ? ` > ${itm.subCategor2}` : ""}
         </TableCell>
         <TableCell>
           <Button

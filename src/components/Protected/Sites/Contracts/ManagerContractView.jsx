@@ -19,7 +19,7 @@ import AddAssets from "./AddAssets";
 import { get, put } from "../../../../api";
 import MandatoryFolders from "./MandatoryFolders";
 
-const AddContracts = ({
+const ManagerContractView = ({
   showAddModal,
   setShowAddModal,
   refresh,
@@ -33,7 +33,9 @@ const AddContracts = ({
   siteAssets,
   category,
   subCategory,
+  selectedContract,
 }) => {
+  console.log("selectedContract ===>", selectedContract);
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
   const [showMandatoryModal, setShowMandatoryModal] = useState(false);
@@ -60,6 +62,7 @@ const AddContracts = ({
   } = useForm({});
   const values = watch();
   useEffect(() => {
+    
     if (siteSelectedForGlobal?.siteId) {
       getManagerList();
       getCompanies();
@@ -121,35 +124,6 @@ const AddContracts = ({
           const folderApi = await put(
             `api/project/${res?.data?.projectContractId}/folders`,
             folders
-          );
-        }
-        let assets = selectedAssets?.map((itm) => {
-          if (!itm?.isSaved) {
-            return itm.assetId;
-          }
-        });
-        if (assets.length > 0) {
-          const assetData = {
-            addAssets: assets,
-            removeAssets: [],
-          };
-          const assetUpdateAPI = await put(
-            `api/project/${res?.data?.projectContractId}/assets`,
-            assetData
-          );
-        }
-        if (data?.scheduleDate) {
-          const scheduleData = {
-            scheduleId: null,
-            projectContractId: res?.data?.projectContractId,
-            visitPurpose: "Inspection",
-            status: "Reschedule Requested",
-            visitDate: `${data?.scheduleDate} 10:00:00`,
-            rescheduleDate: "",
-          };
-          const scheduleVisitApi = await put(
-            `api/project/visits`,
-            scheduleData
           );
         }
         toast.success("Successully added contract.");
@@ -509,4 +483,4 @@ export default connect(mapStateToProps, {
   getDocumentsRootFolder,
   getManagerList,
   getSiteAssets,
-})(AddContracts);
+})(ManagerContractView);

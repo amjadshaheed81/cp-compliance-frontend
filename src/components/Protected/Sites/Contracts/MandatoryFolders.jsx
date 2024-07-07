@@ -71,7 +71,7 @@ const MandatoryFolders = ({
       <Dialog
         open={openFolder}
         onClose={handleFolderClose}
-        maxWidth="lg"
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Select Mandatory Folders</DialogTitle>
