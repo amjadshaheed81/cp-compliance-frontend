@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Tooltip } from "@mui/material";
+import { Button, Box, Tooltip, TextField, IconButton } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -20,6 +20,10 @@ import { get, put } from "../../../../api";
 import ChipComponent from "../../../common/Chips/Chips";
 import BusinessIcon from "@mui/icons-material/Business";
 import moment from "moment";
+import { updateScheduleVisit } from "../../../../store/thunk/projects";
+import Swal from "sweetalert2";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const ContractorContractView = ({
   showAddModal,
@@ -36,6 +40,7 @@ const ContractorContractView = ({
   category,
   subCategory,
   selectedContract,
+  updateScheduleVisit,
 }) => {
   console.log("selectedContract ===>", selectedContract);
   const handleOpen = () => setShowAddModal(true);
@@ -157,9 +162,76 @@ const ContractorContractView = ({
       toast.error("Please login with valid user details to proceed.");
     }
   };
+  const requestReschedule = async (itm, newDate) => {
+    const data = {
+      ...itm,
+      status: "Reschedule Requested",
+      visitDate: `${itm?.visitDate?.split("T")?.[0]} 10:00:00`,
+      rescheduleDate: `${newDate} 10:00:00`,
+      projectContractId: selectedContract?.projectContractId,
+    };
+    Swal.fire({
+      target: document.getElementById("Modal-container"),
+      title: `Do you want to reschedule your visit to ${newDate}?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Reschedule Visit",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await updateScheduleVisit(data);
+        if (res == "Success") {
+          getContractDetail();
+          toast.success(
+            `Visit has been successfully rescheduled to ${newDate}.`
+          );
+        } else {
+          toast.error("Something went wrong while visit schedule update.");
+        }
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  };
+  const markCompletedVisit = async (itm) => {
+    const data = {
+      ...itm,
+      status: "Completed",
+      projectContractId: selectedContract?.projectContractId,
+      visitDate: `${itm?.visitDate?.split("T")?.[0]} 10:00:00`,
+    };
+    Swal.fire({
+      target: document.getElementById("Modal-container"),
+      title: `Do you want to mark complete ${
+        itm?.rescheduleDate
+          ? moment(itm?.rescheduleDate).format("DD-MM-YYYY")
+          : moment(itm?.visitDate).format("DD-MM-YYYY")
+      } visit ?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Mark Visit Complete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await updateScheduleVisit(data);
+        if (res == "Success") {
+          getContractDetail();
+          toast.success("Visit has been successfully marked completed.");
+        } else {
+          toast.error("Something went wrong while visit schedule update.");
+        }
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  };
   return (
     <React.Fragment>
-      <Dialog open={showAddModal} onClose={handleClose} maxWidth="lg" fullWidth>
+      <Dialog
+        open={showAddModal}
+        onClose={handleClose}
+        maxWidth="lg"
+        fullWidth
+        id="Modal-container"
+      >
         <form onSubmit={handleSubmit(submitAddContract)}>
           <DialogTitle>
             View Contract ({currentContract?.category} &gt;{" "}
@@ -530,16 +602,58 @@ const ContractorContractView = ({
                             (itm) => (
                               <tr key={itm?.scheduleId}>
                                 <td>
-                                  {moment(itm?.visitDate).format("DD-MM-YYYY")}
+                                  {itm?.rescheduleDate ? (
+                                    <>
+                                      <del className="text-danger">
+                                        {moment(itm?.visitDate).format(
+                                          "DD-MM-YYYY"
+                                        )}
+                                      </del>
+                                      <br />
+                                      <span>
+                                        {moment(itm?.rescheduleDate).format(
+                                          "DD-MM-YYYY"
+                                        )}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    moment(itm?.visitDate).format("DD-MM-YYYY")
+                                  )}
                                 </td>
                                 <td>{itm?.status}</td>
                                 <td>
-                                  <a
-                                    target="_blank"
-                                    href={`/#/update-asset?assetId=${itm?.assetId}`}
-                                  >
-                                    <i className="fas fa-eye"></i>
-                                  </a>
+                                  {itm?.status !== "Completed" ? (
+                                    <>
+                                      <DatePicker
+                                        onChange={(value) =>
+                                          requestReschedule(
+                                            itm,
+                                            moment(value).format("YYYY-MM-DD")
+                                          )
+                                        }
+                                        customInput={
+                                          <IconButton>
+                                            <i className="fas fa-calendar"></i>
+                                          </IconButton>
+                                        }
+                                      />
+                                      &nbsp;
+                                      <Tooltip
+                                        title={`Mark Visit Complete`}
+                                        arrow
+                                      >
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-light text-primary"
+                                          onClick={() =>
+                                            markCompletedVisit(itm)
+                                          }
+                                        >
+                                          <i className="fas fa-check"></i>
+                                        </button>
+                                      </Tooltip>
+                                    </>
+                                  ) : null}
                                 </td>
                               </tr>
                             )
@@ -580,4 +694,5 @@ export default connect(mapStateToProps, {
   getDocumentsRootFolder,
   getManagerList,
   getSiteAssets,
+  updateScheduleVisit,
 })(ContractorContractView);

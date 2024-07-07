@@ -134,7 +134,9 @@ const Contracts = ({
               setShowAddModal={setShowUpdateModal}
               category={category}
               subCategory={subCategory}
-              refresh={() => {}}
+              refresh={() => {
+                getProjectList();
+              }}
             />
           )}
           {editContractViewType === ROLE.CONTRACTOR && (
@@ -144,7 +146,9 @@ const Contracts = ({
               setShowAddModal={setShowUpdateModal}
               category={category}
               subCategory={subCategory}
-              refresh={() => {}}
+              refresh={() => {
+                getProjectList();
+              }}
             />
           )}
           <div className="d-flex bd-highlight">

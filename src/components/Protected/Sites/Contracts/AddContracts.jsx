@@ -146,7 +146,7 @@ const AddContracts = ({
             scheduleId: null,
             projectContractId: res?.data?.projectContractId,
             visitPurpose: "Inspection",
-            status: "Reschedule Requested",
+            status: "Scheduled",
             visitDate: `${data?.scheduleDate} 10:00:00`,
             rescheduleDate: "",
           };

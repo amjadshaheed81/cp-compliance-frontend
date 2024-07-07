@@ -55,3 +55,40 @@ export const addUpdateProject = (formData, projectContractor, folders) => {
       }
     };
   };
+
+  export const deleteScheduleVisit = (id) => {
+    return async () => {
+      try {
+        const url = `/api/project/${id}/delete`;
+        await del(url);
+        return "Success";
+      } catch (error) {
+        return "Error";
+      }
+    };
+  };
+
+  export const terminateContractCall = (id) => {
+    return async () => {
+      try {
+        const url = `/api/project/${id}/terminate`;
+        await get(url);
+        return "Success";
+      } catch (error) {
+        return "Error";
+      }
+    };
+  };
+  
+
+  export const updateScheduleVisit = (visit) => {
+    return async () => {
+      try {
+        await put("api/project/visits", visit)
+        return "Success";
+      } catch (error) {
+        return "Error";
+      }
+    };
+  };
+  

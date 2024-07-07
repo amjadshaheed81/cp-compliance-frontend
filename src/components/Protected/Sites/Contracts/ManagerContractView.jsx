@@ -17,7 +17,15 @@ import {
 import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
 import { get, put } from "../../../../api";
-import MandatoryFolders from "./MandatoryFolders";
+import ChipComponent from "../../../common/Chips/Chips";
+import BusinessIcon from "@mui/icons-material/Business";
+import moment from "moment";
+import {
+  deleteScheduleVisit,
+  terminateContractCall,
+  updateScheduleVisit,
+} from "../../../../store/thunk/projects";
+import Swal from "sweetalert2";
 
 const ManagerContractView = ({
   showAddModal,
@@ -34,6 +42,9 @@ const ManagerContractView = ({
   category,
   subCategory,
   selectedContract,
+  deleteScheduleVisit,
+  terminateContractCall,
+  updateScheduleVisit,
 }) => {
   console.log("selectedContract ===>", selectedContract);
   const handleOpen = () => setShowAddModal(true);
@@ -42,7 +53,7 @@ const ManagerContractView = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   const [selectedAssets, setSelectedAssets] = useState([]);
-  const [currentAssets, setCurrentAssets] = useState([]);
+  const [currentContract, setCurrentContract] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -61,6 +72,7 @@ const ManagerContractView = ({
     formState: { errors },
     handleSubmit,
   } = useForm({});
+  const scheduleDateForm = useForm({});
   const values = watch();
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -79,7 +91,14 @@ const ManagerContractView = ({
     const data = await get(
       `/api/project/${selectedContract?.projectContractId}/details`
     );
-    setCurrentAssets(data);
+    reset({
+      ...data,
+      manager: data?.projectManagerUserId,
+      company: data?.contractorCompanyId,
+      startDate: data?.startDate?.split("T")?.[0],
+      endDate: data?.endDate?.split("T")?.[0],
+    });
+    setCurrentContract(data);
   };
   const getCompanies = async () => {
     const companiesData = await get(`/api/user/companies`);
@@ -148,11 +167,141 @@ const ManagerContractView = ({
       toast.error("Please login with valid user details to proceed.");
     }
   };
+  const deleteAsset = (asset) => {
+    console.log("asset", asset);
+  };
+  const addVisit = async () => {
+    const visitDate = scheduleDateForm.getValues("scheduleDate");
+    if (visitDate) {
+      const visit = {
+        scheduleId: null,
+        projectContractId: selectedContract?.projectContractId,
+        visitPurpose: "Inspection",
+        status: "Scheduled",
+        visitDate: `${visitDate} 10:00:00`,
+        rescheduleDate: "",
+      };
+      try {
+        const res = await updateScheduleVisit(visit);
+        if (res == "Success") {
+          getContractDetail();
+          toast.success("Visit has been successfully scheduled.");
+          scheduleDateForm.reset({ scheduleDate: "" });
+        } else {
+          toast.error("Something went wrong while visit schedule.");
+        }
+      } catch (e) {
+        toast.error("Something went wrong while visit schedule.");
+      }
+    } else {
+      toast.warning("Please select date to schedule visit.");
+    }
+  };
+  const deleteVisit = (itm) => {
+    Swal.fire({
+      target: document.getElementById("Modal-container"),
+      title: `Do you want to delete ${
+        itm?.rescheduleDate
+          ? moment(itm?.rescheduleDate).format("DD-MM-YYYY")
+          : moment(itm?.visitDate).format("DD-MM-YYYY")
+      } visit`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await deleteScheduleVisit(itm?.scheduleId);
+        if (res === "Success") {
+          toast.success(
+            `${
+              itm?.rescheduleDate
+                ? moment(itm?.rescheduleDate).format("DD-MM-YYYY")
+                : moment(itm?.visitDate).format("DD-MM-YYYY")
+            } visit has been deleted successully`
+          );
+          getContractDetail();
+        } else {
+          toast.error(
+            "Something went wrong while deleting scheduled visit. Please try again!"
+          );
+        }
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  };
+  const markAsAccepted = (itm) => {
+    const data = {
+      ...itm,
+      status: "Scheduled",
+      projectContractId: selectedContract?.projectContractId,
+      visitDate: `${itm?.rescheduleDate?.split("T")?.[0]} 10:00:00`,
+      rescheduleDate: "",
+    };
+    Swal.fire({
+      target: document.getElementById("Modal-container"),
+      title: `Do you want to schedule visit to ${moment(itm?.rescheduleDate).format("DD-MM-YYYY")} visit as requested?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Mark Schedule",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await updateScheduleVisit(data);
+        if (res == "Success") {
+          getContractDetail();
+          toast.success("Visit has been successfully re scheduled.");
+        } else {
+          toast.error("Something went wrong while visit re schedule.");
+        }
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  }
+  const terminateContract = () => {
+    Swal.fire({
+      target: document.getElementById("Modal-container"),
+      title: `Do you want to terminate ${selectedContract?.summary} contract?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setIsLoading(true);
+        const res = await terminateContractCall(
+          selectedContract?.projectContractId
+        );
+        if (res === "Success") {
+          toast.success(
+            `${selectedContract?.summary} Contract has been successfully terminated`
+          );
+          handleClose();
+          refresh();
+        } else {
+          toast.error(
+            `Something went wrong while terminating ${selectedContract?.summary} contract. Please try again!`
+          );
+        }
+        setIsLoading(false);
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
+  };
   return (
     <React.Fragment>
-      <Dialog open={showAddModal} onClose={handleClose} maxWidth="lg" fullWidth>
+      <Dialog
+        open={showAddModal}
+        onClose={handleClose}
+        maxWidth="lg"
+        fullWidth
+        id="Modal-container"
+      >
         <form onSubmit={handleSubmit(submitAddContract)}>
-          <DialogTitle>New Contract</DialogTitle>
+          <DialogTitle>
+            View Contract ({currentContract?.category} &gt;{" "}
+            {currentContract?.subCategory})
+          </DialogTitle>
           <DialogContent dividers>
             {isLoading && (
               <Box sx={{ display: "flex" }}>
@@ -163,6 +312,13 @@ const ManagerContractView = ({
             {!isLoading && (
               <Fragment>
                 <div className="row">
+                  <div className="col">
+                    <ChipComponent status={currentContract?.status} />
+                    &nbsp;
+                    <BusinessIcon />
+                    &nbsp;
+                    <span>{currentContract?.siteName}</span>
+                  </div>
                   <div className="col-md-12">
                     <div className="row">
                       <div className="col-md-3">
@@ -281,6 +437,7 @@ const ManagerContractView = ({
                             type="number"
                             className="form-control"
                             id="budget"
+                            disabled={true}
                             {...register("budget", {
                               required: {
                                 value: true,
@@ -303,6 +460,7 @@ const ManagerContractView = ({
                             type="number"
                             className="form-control"
                             id="cost"
+                            disabled={true}
                             {...register("cost", {
                               required: {
                                 value: true,
@@ -325,6 +483,7 @@ const ManagerContractView = ({
                             type="date"
                             className="form-control date-input"
                             id="startDate"
+                            disabled={true}
                             {...register("startDate", {
                               required: {
                                 value: true,
@@ -347,6 +506,7 @@ const ManagerContractView = ({
                             type="date"
                             className="form-control date-input"
                             id="endDate"
+                            disabled={true}
                             {...register("endDate", {
                               required: {
                                 value: true,
@@ -366,6 +526,7 @@ const ManagerContractView = ({
                         <div className="form-group mt-2">
                           <textarea
                             {...register("description")}
+                            disabled={true}
                             className="form-control form-text"
                             placeholder="Enter Notes..."
                           ></textarea>
@@ -377,6 +538,7 @@ const ManagerContractView = ({
                           name="manager"
                           className="form-control form-select"
                           id="manager"
+                          disabled={true}
                           {...register("manager")}
                         >
                           <option value="" selected disabled>
@@ -387,91 +549,221 @@ const ManagerContractView = ({
                           ))}
                         </select>
                       </div>
-                      <div className="col-md-3">
-                        <MandatoryFolders
-                          setSelectedMandatoryFolder={
-                            setSelectedMandatoryFolder
-                          }
-                          selectedMandatoryFolder={selectedMandatoryFolder}
-                        />
-                      </div>
                     </div>
                   </div>
-                  {/** Add Assets start */}
-                  {values?.category !== "Building Project" &&
-                    values?.category !== "" && (
-                      <Fragment>
-                        <div className="d-flex bd-highlight">
-                          <div className="pt-2 bd-highlight">
-                            <div className="row">
-                              <div className="col h6">Add Assets</div>
-                            </div>
-                          </div>
-                          <div className="ms-auto p-2 bd-highlight">
-                            <div className="row" style={{ height: "auto" }}>
-                              <div className="col">
-                                <div className="col">
-                                  <Tooltip title={`Add New row`} arrow>
+                </div>
+                {/* Mandatory folder upload */}
+                <div className="table-responsive mt-2">
+                  <table className="table">
+                    <thead className="table-dark">
+                      <tr>
+                        <td>Mandatory Folders</td>
+                        <td>File</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentContract?.projectContractFolders?.length ===
+                        0 && (
+                        <tr>
+                          <td>No Folders are available to view</td>
+                        </tr>
+                      )}
+                      {currentContract?.projectContractFolders?.map((itm) => (
+                        <tr key={itm?.id}>
+                          <td>{itm?.name}</td>
+                          <td>
+                            <a className="cursor" download href={itm?.files}>
+                              {itm?.name}
+                            </a>
+                          </td>
+                          <td>
+                            {itm?.floorPlanUrl ? (
+                              <a
+                                className="btn btn-sm btn-light"
+                                download
+                                href={itm?.files}
+                              >{`${itm?.name}.png`}</a>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Assets start */}
+                <div className="table-responsive mt-2">
+                  <div>Assets</div>
+                  <table className="table">
+                    <thead className="table-dark">
+                      <tr>
+                        <td>Asset Name</td>
+                        <td>Asset Reference</td>
+                        <td>Location</td>
+                        <td>Category</td>
+                        <td>Action</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentContract?.projectContractAssets?.length === 0 && (
+                        <tr>
+                          <td>No Assets are available</td>
+                        </tr>
+                      )}
+                      {currentContract?.projectContractAssets?.map((itm) => (
+                        <tr key={itm?.assetId}>
+                          <td>{itm?.assetName}</td>
+                          <td>{itm?.model}</td>
+                          <td>
+                            {itm.position ? `${itm.position}` : ""}
+                            {itm.floor ? ` > ${itm.floor}` : ""}
+                            {itm.room ? ` > ${itm.room}` : ""}
+                          </td>
+                          <td>
+                            {itm.category ? `${itm.category}` : ""}
+                            {itm.subCategory ? ` > ${itm.subCategory}` : ""}
+                            {itm.subCategor2 ? ` > ${itm.subCategor2}` : ""}
+                          </td>
+
+                          <td>
+                            <Tooltip title={`View ${itm?.assetName}`} arrow>
+                              <a
+                                target="_blank"
+                                href={`/#/update-asset?assetId=${itm?.assetId}`}
+                              >
+                                <i className="fas fa-eye"></i>
+                              </a>
+                            </Tooltip>
+                            &nbsp;
+                            <Tooltip title={`Delete ${itm?.assetName}`} arrow>
+                              <button
+                                className="btn btn-sm btn-light text-danger"
+                                onClick={() => deleteAsset(itm)}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </Tooltip>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Schedule Visit start */}
+                <div className="row">
+                  <div className="col-6">
+                    <div className="form-group">
+                      <label for="scheduleDate">Schedule Visit</label>
+                      <input
+                        type="date"
+                        className="form-control date-input"
+                        id="scheduleDate"
+                        {...scheduleDateForm.register("scheduleDate")}
+                      />
+                    </div>
+                    <div>
+                      <Tooltip title={`Add New Visit`} arrow>
+                        <button
+                          type="button"
+                          className="mt-2 btn btn-sm btn-light text-primary"
+                          onClick={() => addVisit()}
+                        >
+                          <i className="fas fa-plus"></i>&nbsp;Add New Visit
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="table-responsive mt-2">
+                      <table className="table">
+                        <thead className="table-dark">
+                          <tr>
+                            <td>Visit Date</td>
+                            <td>Status</td>
+                            <td>Action</td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentContract?.projectContractScheduleVisits
+                            ?.length === 0 && (
+                            <tr>
+                              <td>No Assets are available</td>
+                            </tr>
+                          )}
+                          {currentContract?.projectContractScheduleVisits?.map(
+                            (itm) => (
+                              <tr key={itm?.scheduleId}>
+                                <td>
+                                  {itm?.rescheduleDate ? (
+                                    <>
+                                      <del className="text-danger">
+                                        {moment(itm?.visitDate).format(
+                                          "DD-MM-YYYY"
+                                        )}
+                                      </del>
+                                      <br />
+                                      <span>
+                                        {moment(itm?.rescheduleDate).format(
+                                          "DD-MM-YYYY"
+                                        )}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    moment(itm?.visitDate).format("DD-MM-YYYY")
+                                  )}
+                                </td>
+                                <td>{itm?.status}</td>
+                                <td>
+                                  <Tooltip title={`Delete Visit`} arrow>
                                     <button
                                       type="button"
-                                      className="btn btn-light text-primary pr-2"
-                                      onClick={(e) => {
-                                        e?.preventDefault();
-                                        const d = [...assetData];
-                                        d.push({
-                                          assets: [],
-                                          assetRef: " ",
-                                          location: " ",
-                                          category: "New",
-                                        });
-                                        setAssetData(d);
-                                      }}
+                                      className="btn btn-sm btn-light text-danger"
+                                      onClick={() => deleteVisit(itm)}
                                     >
-                                      <i className="fas fa-plus"></i>&nbsp; Add
-                                      More
+                                      <i className="fas fa-trash"></i>
                                     </button>
-                                  </Tooltip>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="row">
-                          <div className="col-md-12">
-                            <AddAssets
-                              setAssetData={setAssetData}
-                              assetData={assetData}
-                              siteAssets={siteAssets}
-                              setSelectedAssets={setSelectedAssets}
-                            />
-                          </div>
-                        </div>
-                        {/** Add Assets end */}
-                        {/* schedule date */}
-                        <div className="col-md-3">
-                          <div className="form-group">
-                            <label for="scheduleDate">Schedule Visit</label>
-                            <input
-                              type="date"
-                              className="form-control date-input"
-                              id="scheduleDate"
-                              {...register("scheduleDate")}
-                            />
-                          </div>
-                        </div>
-                      </Fragment>
-                    )}
+                                  </Tooltip>&nbsp;
+                                  {itm?.status === "Reschedule Requested" && (
+                                    <Tooltip
+                                      title={`Mark visit to schedule as requested`}
+                                      arrow
+                                    >
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-light text-primary"
+                                        onClick={() => markAsAccepted(itm)}
+                                      >
+                                        <i className="fas fa-check"></i>
+                                      </button>
+                                    </Tooltip>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
+                {/** END schedule visit */}
               </Fragment>
             )}
           </DialogContent>
           {!isLoading && (
             <DialogActions>
               <Button onClick={handleClose} className="bg-light text-primary">
-                Cancel
+                Close
+              </Button>
+              <Button
+                type="button"
+                onClick={terminateContract}
+                className="bg-danger text-white"
+              >
+                Terminate Contract
               </Button>
               <Button type="submit" className="bg-primary text-white">
-                Submit
+                Save
               </Button>
             </DialogActions>
           )}
@@ -492,4 +784,7 @@ export default connect(mapStateToProps, {
   getDocumentsRootFolder,
   getManagerList,
   getSiteAssets,
+  deleteScheduleVisit,
+  terminateContractCall,
+  updateScheduleVisit,
 })(ManagerContractView);
