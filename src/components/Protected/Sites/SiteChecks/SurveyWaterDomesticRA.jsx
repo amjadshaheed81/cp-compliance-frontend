@@ -1,24 +1,16 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { CSVLink } from "react-csv";
-import moment from "moment";
-import Header from "../../../common/Header/Header";
-import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { get, post, uploadSiteCheckDoc } from "../../../../api";
+import { get, post } from "../../../../api";
 import {
-  Grid, TextField, Button, Typography, Box, IconButton, MenuItem, Select, InputLabel, FormControl, Checkbox, FormControlLabel,
-  Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete, Divider
+  Grid, TextField, Typography, Box, Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete,
 } from '@mui/material';
-import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
-import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
+import { ExpandMore } from '@mui/icons-material';
+import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
+const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout }) => {
   const navigate = useNavigate();
 
   const [risks, setrisks] = useState([0, 0, 0, 0])
@@ -84,14 +76,14 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
   //     }
   //     await post("/api/site-check/ra-survey-risk-factors", data)
   //   }
-    
-    
+
+
   // }
 
   const getRiskFactor = async () => {
     const riskFactorFromDB = await get("/api/site-check/ra-survey-risk-factors")
     const riskFactorResponse = await get("/api/site-check/domestic-ra-survey/" + checkId)
-    riskFactorFromDB.forEach(q => { 
+    riskFactorFromDB.forEach(q => {
       const resIdx = riskFactorResponse.findIndex(r => r.riskFactorId === q.riskFactorID);
       if (resIdx >= 0) {
         q.status = "Closed";
@@ -118,14 +110,13 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
       } else if (r.totalRiskScore > 1) {
         risksN[3] = risksN[3] + 1;
       }
-      
+
     })
-    console.log('riskFactorFromDBriskFactorFromDB', riskFactorFromDB)
     setrisks(risksN)
     settotalrisks(totalriskFactor)
     setRiskFactor(riskFactorFromDB);
   }
-  
+
   const [riskFactor, setRiskFactor] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
 
@@ -140,22 +131,6 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
     setRiskFactor(uquest);
   };
 
-  useEffect(() => {
-    console.log('riskFactor', riskFactor[0])
-  }, [riskFactor])
-
-  const handleFileChange = (e, idx) => {
-    const uquest = [...riskFactor]
-    uquest[idx].response.file =e.target.files[0]
-    setRiskFactor(uquest);
-  };
-
-  const handleFileDelete = ( idx) => {
-    const uquest = [...riskFactor]
-    uquest[idx].response.file = null
-    setRiskFactor(uquest);
-  };
-
   const saveRiskFactor = async (index) => {
     const dataToSave = riskFactor[index].response;
     if (dataToSave.responseDate) {
@@ -165,24 +140,33 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
     dataToSave.status = "Closed";
     dataToSave.weightedScore = Number(dataToSave.score ?? 0) * Number(riskFactor[index].weight ?? 0)
     dataToSave.totalRiskScore = Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0)
-    console.log(riskFactor[index],dataToSave);
     await post("/api/site-check/domestic-ra-survey", dataToSave);
     await getRiskFactor();
     toast.success("Survey response saved")
   }
 
+
   const getChipColor = (score) => {
-    let color = 'success';
-    if (score > 17) {
-      color = 'error'
-    } else if (score > 10) {
-      color = 'warning'
-    } else if (score > 5) {
-      color = 'info'
-    } else {
-      color = 'success'
+    let style = {
+      marginLeft: '5px',
+      border: '1px solid #0b903f',
+      color: '#0b903f',
+      backgroundColor: '#e2f0e6'
     }
-    return color
+    if (score > 17) {
+      style.color = '#EF0505'
+      style.backgroundColor = '#F6E4E4'
+      style.border = '1px solid #EF0505 '
+    } else if (score > 10) {
+      style.color = '#ff6700'
+      style.border = '1px solid #ff6700'
+      style.backgroundColor = '#ffd7b5'
+    } else if (score > 5) {
+      style.color = '#B39200'
+      style.border = '1px solid #B39200'
+      style.backgroundColor = '#FDF8E1'
+    }
+    return style
   }
 
 
@@ -194,14 +178,14 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
           <Grid container alignItems="center" justifyContent="space-between" mb={2}>
             <Grid item>
               <Typography variant="h6">Risk Factors <span style={{ backgroundColor: '#FF9800', color: 'white', padding: '7px 8px', borderRadius: '5px' }}><InfoOutlinedIcon />&nbsp; Overall Risk Score: {totalrisks}</span></Typography>
-             
+
             </Grid>
-           
-            
+
+
             <Grid item>
-              
+
               <Box display="flex" alignItems="center">
-                
+
                 <Box ml={2} display="flex" alignItems="center">
                   <Box width={32} height={32} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
                     <Typography variant="body2" color="white">{risks[0]}</Typography>
@@ -226,18 +210,14 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Typography>{q.riskFactor}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;
                 {(riskFactor[idx]?.response?.weightedScore ?? 0) > 0 &&
-                <Chip
-                  style={{ marginLeft: '5px' }}
-                  color={getChipColor(riskFactor[idx]?.response?.weightedScore)}
-                  //color={riskFactor[idx]?.response?.weightedScore > 17 ? 'danger' : 'success'}
-                  label={"Weighted Score : " + (riskFactor[idx]?.response?.weightedScore ?? 0)}
-                />
+                  <Chip
+                    style={getChipColor(riskFactor[idx]?.response?.weightedScore)}
+                    label={"Weighted Score : " + (riskFactor[idx]?.response?.weightedScore ?? 0)}
+                  />
                 }
                 {(riskFactor[idx]?.response?.totalRiskScore ?? 0) > 0 &&
                   <Chip
-                    style={{ marginLeft: '5px' }}
-                    color={getChipColor(riskFactor[idx]?.response?.totalRiskScore)}
-                    //color={riskFactor[idx]?.response?.totalRiskScore > 17 ? 'danger' : 'success'}
+                    style={getChipColor(riskFactor[idx]?.response?.totalRiskScore)}
                     label={"Risk Score : " + (riskFactor[idx]?.response?.totalRiskScore ?? 0)}
                   />
                 }
@@ -254,9 +234,9 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       disabled={riskFactor[idx]?.completed}
                       className="form-control"
                       onChange={(e) => handleInputChange(e, idx)}
-                    //value={riskFactor[idx]?.response?.responseDate?.substring(0, 10)}
+                      value={riskFactor[idx]?.response?.responseDate?.substring(0, 10)}
                     />
-                  
+
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <label htmlFor="score" name="score">
@@ -270,11 +250,11 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       value={riskFactor[idx]?.response?.score}
                     >
                       <option value="">Select </option>
-                      <option value={10}> 10 - Fed from poorly treated non mains water source </option>
+                      <option value={"10"}> 10 - Fed from poorly treated non mains water source </option>
                     </select>
                   </Grid>
-                  
-                
+
+
                   <Grid item xs={12}>
                     <label htmlFor="observation" name="observation">
                       Observation
@@ -330,7 +310,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                           type="text"
                           className="form-control"
                           disabled
-                          value={riskFactor[idx]?.weight * (riskFactor[idx]?.response?.score ?? 0)}
+                          value={riskFactor[idx]?.weight * Number(riskFactor[idx]?.response?.score ?? 0)}
                         />
                       </div>
                     </div>
@@ -341,9 +321,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       disabled={riskFactor[idx]?.completed}
                       multiple
                       onChange={(event, item) => {
-                        console.log(item);
                         const uquest = [...riskFactor]
-                        
+
                         uquest[idx].response = {
                           ...uquest[idx].response,
                           assets: item.map(i => i.key).join(",")
@@ -365,10 +344,10 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       )}
                     />
                   </Grid>
-                
-                
-                  
-                  
+
+
+
+
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
                       Risk Score Card (<strong>Total Risk Score = {(riskFactor[idx]?.response?.consequence ?? 0) * (riskFactor[idx]?.response?.likelihood ?? 0)}</strong>)
@@ -391,10 +370,10 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                               <option value={num}>{num} </option>
                             ))}
                           </select>
-                      
+
                         </Grid>
                         <Grid item xs={12} sm={12}>
-                     
+
                           <label htmlFor="likelihood" name="likelihood">
                             Likelihood
                           </label>
@@ -417,14 +396,10 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
-                          //border="1px dashed grey"
                           p={2}
                           mb={2}
                           style={{
-                            //backgroundColor: '#f9f9f9',
                             height: '290px',
-                            //borderRadius: '4px',
-                            //color: '#3f51b5',
                             marginTop: '-70px'
                           }}
                         >
@@ -455,7 +430,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                   </Grid>
                   {!riskFactor[idx]?.completed &&
                     <Grid item xs={12}>
-                    
+
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                         className="btn btn-primary text-white pr-2"
@@ -470,25 +445,12 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                         className="btn btn-primary btn-light"
-                      // onClick={() => { setCreate(false) }}
                       >
                         Cancel
                       </button>
-                    
+
 
                     </Grid>}
-                  {/* {riskFactor[idx]?.completed && <Grid item xs={12}>
-                    
-                    <button
-                      style={{float: 'right'}}
-                    disabled={riskFactor[idx]?.response?.completed}
-                    className="btn btn-sm btn-light text-dark"
-                    onClick={() => {
-
-                    }}
-                  >
-                      <i className="fas fa-download" />&nbsp;Download Attachment
-                  </button></Grid>} */}
                 </Grid>
               </AccordionDetails>
             </Accordion>)
@@ -502,13 +464,11 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
 };
 
 const mapStateToProps = (state) => ({
-  sites: state.site.sites,
-  users: state.site.users,
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { getSiteAssets, deleteUser, getSites, getSiteLayout })(
+export default connect(mapStateToProps, { getSiteAssets, getSiteLayout })(
   SurveyWaterDomesticRA
 );
 

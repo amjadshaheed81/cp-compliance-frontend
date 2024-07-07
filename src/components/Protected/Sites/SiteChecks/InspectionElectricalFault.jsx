@@ -1,52 +1,32 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { CSVLink } from "react-csv";
-import moment from "moment";
-import Header from "../../../common/Header/Header";
-import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
 import { get, post, uploadSiteCheckDoc } from "../../../../api";
 
-import { Button, Modal, Typography, Box, Grid, Divider, TextField, Autocomplete } from "@mui/material";
-import { deleteUser, getSites, getUsers, getSiteAssets } from "../../../../store/thunk/site";
+import { Typography, Grid, Autocomplete } from "@mui/material";
+import { getSiteAssets } from "../../../../store/thunk/site";
 
-const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSiteAssets, siteSelectedForGlobal }) => {
-  const navigate = useNavigate();
+const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal }) => {
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
-      
+
     }
-    getUsers();
     getIpection();
   }, []);
 
   const getIpection = async () => {
 
-    const data = await get("/api/site-check/inspection/fault/"+checkId);
+    const data = await get("/api/site-check/inspection/fault/" + checkId);
     if (data.length > 0) {
-      data.forEach(d => {
-
-        //d.dateRaised = moment(d?.dateRaised).format("DD-MM-YYYY");
-      })
-      console.log("data", data);
       setFormData(data);
       setCompleted(true)
     }
   }
-
   const [formData, setFormData] = useState([{}]);
   const [completed, setCompleted] = useState(false);
 
-  useEffect(() => {
-    console.log('formData', formData)
-  }, [formData]);
-  
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
     const uformData = [...formData]
@@ -59,7 +39,6 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
   };
 
   const handleFileChange = (e, idx) => {
-    console.log(e.target.files[0]);
     const uformData = [...formData]
     const udata = {
       ...formData[idx],
@@ -79,11 +58,10 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
       data.dateRaised = new Date(data.dateRaised);
       data.checkId = checkId;
       data.status = "Open";
-      console.log('data', data)
       await post("/api/site-check/inspection/fault", data)
       toast.success("Fault data saved")
     }
-    
+
     setCompleted(true);
   }
 
@@ -96,7 +74,6 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
         <Typography variant="h6" gutterBottom>
           Faults Identified
         </Typography>
-        {/* <p style={{ fontSize: "20px" }}>Faults Identified</p> */}
       </Grid>
       <Grid sm={4}>
 
@@ -135,130 +112,126 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
               {formData.map((d, idx) => {
                 const assetName = siteAssets.filter(a => a.assetId == formData[idx].assetId).map(option => option.assetName + " - " + option.category)?.[0];
                 return (
-                <tr>
-                  <td>
+                  <tr>
+                    <td>
                       {completed && <input type="text"
                         disabled={completed}
                         className="form-control"
                         value={assetName} />}
-                    {!completed && <Autocomplete
-                      id="assetId"
-                      disabled={completed}
-                      onChange={(event, item) => {
-                        const uformData = [...formData]
-                        uformData[idx].assetId = item?.key;
-                        setFormData(uformData);
-                      }}
-                      //   onInputChange={(event, newInputValue) => {
-                      //     console.log("newInputValue", newInputValue)
-                      //   setFormData({
-                      //     ...formData,
-                      //     asset: siteAssets.filter(s => s.assetName === newInputValue)?.[0]?.id ,
-                      //   });
-                      // }}
-                      //freeSolo
-                      options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-                      getOptionLabel={(option) => option.label}
-                      renderInput={(params) => (
-                        <div ref={params.InputProps.ref} >
-                          <i
-                            style={{
-                              position: "absolute",
-                              padding: "13px",
-                              color: "lightgrey",
-                              paddingLeft: "10rem",
-                              float: 'right'
-                            }}
-                            className="fas fa-search"
-                          ></i>
-                          <input type="text" {...params.inputProps} disabled={completed} className="form-control" />
-                        </div>
-                      
-                      )}
-                    />
-                    }
-                </td>
-                <td>
-                  <input
-                      type="text"
-                      disabled={completed}
-                      name="faultDescription"
-                    className="form-control"
-                      id="faultDescription"
-                      value={formData?.[idx]?.faultDescription}
-                    onChange={(e)=>handleInputChange(e, idx)}
-                  />
-                </td>
-                  <td> <input
-                    disabled={completed}
-                  type="date"
-                    name="dateRaised"
-                      value={formData?.[idx]?.dateRaised?.substring(0, 10)}
-                  className="form-control"
-                    id="dateRaised"
+                      {!completed && <Autocomplete
+                        id="assetId"
+                        disabled={completed}
+                        onChange={(event, item) => {
+                          const uformData = [...formData]
+                          uformData[idx].assetId = item?.key;
+                          setFormData(uformData);
+                        }}
 
-                  onChange={(e)=>handleInputChange(e, idx)}
-                /></td>
-                <td>
-                    <select
+                        options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        getOptionLabel={(option) => option.label}
+                        renderInput={(params) => (
+                          <div ref={params.InputProps.ref} >
+                            <i
+                              style={{
+                                position: "absolute",
+                                padding: "13px",
+                                color: "lightgrey",
+                                paddingLeft: "10rem",
+                                float: 'right'
+                              }}
+                              className="fas fa-search"
+                            ></i>
+                            <input type="text" {...params.inputProps} disabled={completed} className="form-control" />
+                          </div>
+
+                        )}
+                      />
+                      }
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        disabled={completed}
+                        name="faultDescription"
+                        className="form-control"
+                        id="faultDescription"
+                        value={formData?.[idx]?.faultDescription}
+                        onChange={(e) => handleInputChange(e, idx)}
+                      />
+                    </td>
+                    <td> <input
                       disabled={completed}
-                    name="rating"
-                    className="form-control form-select"
-                      id="rating"
-                      value={formData?.[idx]?.rating}
-                    onChange={(e)=>handleInputChange(e, idx)}
-                  >
-                    <option value="">Select Rating</option>
-                      <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                      <option value={4}>4</option>
-                    <option value={5}>5</option>
-                  </select>
-                </td>
-                  <td>
-                    {completed && <button
-                      disabled={completed}
-                      className="btn btn-sm btn-light text-dark"
-                      onClick={() => {
-                       
-                      }}
-                    >
-                      <i className="fas fa-download"></i>
-                    </button>}
-                    {!completed && <input
-                      disabled={completed}
-                      type="file"
-                      name="file"
+                      type="date"
+                      name="dateRaised"
+                      value={formData?.[idx]?.dateRaised?.substring(0, 10)}
                       className="form-control"
-                      id="file"
-                      onChange={(e) => handleFileChange(e, idx)}
-                    />}
-                </td>
-                  <td><input
-                    disabled={completed}
-                    value={formData?.[idx]?.action}
-                  type="text"
-                    name="action"
-                  className="form-control"
-                    id="action"
-                  onChange={(e)=>handleInputChange(e, idx)}
-                /></td>
-                  <td>
-                    <button
+                      id="dateRaised"
+
+                      onChange={(e) => handleInputChange(e, idx)}
+                    /></td>
+                    <td>
+                      <select
+                        disabled={completed}
+                        name="rating"
+                        className="form-control form-select"
+                        id="rating"
+                        value={formData?.[idx]?.rating}
+                        onChange={(e) => handleInputChange(e, idx)}
+                      >
+                        <option value="">Select Rating</option>
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                        <option value={4}>4</option>
+                        <option value={5}>5</option>
+                      </select>
+                    </td>
+                    <td align="center">
+                      {completed &&
+                        <a href={formData?.[idx]?.imageUrl + "?" + sasToken} target="_blank">
+                          <button
+                            disabled={completed}
+                            className="btn btn-sm btn-light text-dark"
+                            onClick={() => {
+
+                            }}
+                          >
+                            <i className="fas fa-download"></i>
+                          </button>
+                        </a>}
+                      {!completed && <input
+                        disabled={completed}
+                        type="file"
+                        name="file"
+                        className="form-control"
+                        id="file"
+                        onChange={(e) => handleFileChange(e, idx)}
+                      />}
+                    </td>
+                    <td><input
                       disabled={completed}
-                      className="btn btn-sm btn-light text-dark"
-                      onClick={() => {
-                        const uformData = [...formData];
-                        uformData.splice(idx, 1);
-                        setFormData(uformData)
-                      }}
-                    >
-                      <i className="fas fa-trash"></i>
-                    </button>
-                </td>
-              </tr>
-              )
+                      value={formData?.[idx]?.action}
+                      type="text"
+                      name="action"
+                      className="form-control"
+                      id="action"
+                      onChange={(e) => handleInputChange(e, idx)}
+                    /></td>
+                    <td>
+                      <button
+                        disabled={completed}
+                        className="btn btn-sm btn-light text-dark"
+                        onClick={() => {
+                          const uformData = [...formData];
+                          uformData.splice(idx, 1);
+                          setFormData(uformData)
+                        }}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                )
               }
               )}
             </tbody>
@@ -267,7 +240,7 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
 
       </Grid>
       {!completed && <Grid sm={12}>
-        
+
         <button
           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
           className="btn btn-primary text-white pr-2"
@@ -275,7 +248,7 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
         >
           Save
         </button>
-       
+
 
       </Grid>}
     </Grid>
@@ -285,11 +258,9 @@ const InspectionElectricalFault = ({ checkId, siteAssets, users, getUsers, getSi
 
 const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
-  sites: state.site.sites,
-  users: state.site.users,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites, getSiteAssets })(
+export default connect(mapStateToProps, { getSiteAssets })(
   InspectionElectricalFault
 );
 

@@ -1,20 +1,13 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { CSVLink } from "react-csv";
-import moment from "moment";
-import Header from "../../../common/Header/Header";
-import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { get, post, uploadSiteCheckDoc } from "../../../../api";
 
-import { Button, Modal, Typography, Box, Grid, Divider, TextField, Autocomplete } from "@mui/material";
+import { Typography, Grid, Autocomplete } from "@mui/material";
 import { deleteUser, getSites, getUsers, getSiteAssets } from "../../../../store/thunk/site";
 
-const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets, siteSelectedForGlobal }) => {
+const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,7 +15,6 @@ const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets
       getSiteAssets(siteSelectedForGlobal?.siteId);
 
     }
-    getUsers();
     getAudit();
   }, []);
 
@@ -38,9 +30,6 @@ const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets
   const [formData, setFormData] = useState([{}]);
   const [completed, setCompleted] = useState(false);
 
-  useEffect(() => {
-    console.log('formData', formData)
-  }, [formData]);
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
@@ -54,7 +43,6 @@ const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets
   };
 
   const handleFileChange = (e, idx) => {
-    console.log(e.target.files[0]);
     const uformData = [...formData]
     const udata = {
       ...formData[idx],
@@ -77,7 +65,6 @@ const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets
       await post("/api/site-check/audit", data)
 
       toast.success("Audit data saved")
-      console.log('data', data)
     }
     setCompleted(true);
   }
@@ -202,16 +189,19 @@ const AuditUnitPeriodic = ({ checkId, siteAssets, users, getUsers, getSiteAssets
                         <option value={5}>5</option>
                       </select>
                     </td>
-                    <td>
-                      {completed && <button
-                        disabled={completed}
-                        className="btn btn-sm btn-light text-dark"
-                        onClick={() => {
+                    <td align="center">
+                      {completed &&
+                        <a href={formData?.[idx]?.imageUrl + "?" + sasToken} target="_blank">
+                          <button
+                            disabled={completed}
+                            className="btn btn-sm btn-light text-dark"
+                            onClick={() => {
 
-                        }}
-                      >
-                        <i className="fas fa-download"></i>
-                      </button>}
+                            }}
+                          >
+                            <i className="fas fa-download"></i>
+                          </button>
+                        </a>}
                       {!completed && <input
                         disabled={completed}
                         type="file"

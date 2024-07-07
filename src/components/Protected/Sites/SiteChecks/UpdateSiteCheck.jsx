@@ -1,7 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { CSVLink } from "react-csv";
-import moment from "moment";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
@@ -11,60 +9,47 @@ import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
-import Tooltip from "@mui/material/Tooltip";
-import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, post } from "../../../../api";
-import { Button, Modal, Typography, Box, Grid, Divider, Stack, Paper, styled } from "@mui/material";
+import { get, getSasToken } from "../../../../api";
+import { Grid, Stack, Paper, styled } from "@mui/material";
 import { deleteUser, getSites, getExternalUsers } from "../../../../store/thunk/site";
 import PrintIcon from '@mui/icons-material/Print';
 
 const Item = styled(Paper)(({ theme }) => ({
-  //backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
-  //...theme.typography.body2,
   padding: theme.spacing(1),
-  //textAlign: 'center',
-  //color: theme.palette.text.secondary,
 }));
 
 
 const SiteChecks = ({ externalusers, getExternalUsers }) => {
 
-  // Get ID from URL
   const params = useParams();
-  const [showSiteCheck, setShowSiteCheck] = useState(true);
+  const [sasToken, setSasToken] = useState();
   const [step, setStep] = useState();
   const checkId = params.id;
-  const site = JSON.parse(localStorage.getItem("site"));
   const [siteCheck, setSiteCheck] = useState();
   const navigate = useNavigate();
-  const goTo = (link) => {
-    navigate(link);
-  };
+
 
   useEffect(() => {
     getExternalUsers();
     getSiteChecks();
+    getToken();
+
   }, [checkId]);
 
+  const getToken = async () => {
+    const token = await getSasToken();
+    setSasToken(token);
+  }
 
-  
-
-
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
   const [formData, setFormData] = useState({
     searchField: "",
     type: "",
     subType: "",
     status: "Open",
   });
-  const [formData2, setFormData2] = useState({
-    searchField: "",
-    type: "",
-    subType: "",
-    status: "Open",
-  });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -84,7 +69,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Outlet Temperature") {
       setStep("survey-water-outlet-temperature")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Domestic RA") {
-      setStep("survey-water-domestic-ra") 
+      setStep("survey-water-domestic-ra")
     }
     setSiteCheck(siteCheck);
   }
@@ -93,11 +78,11 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
   return (
     <Fragment>
       <SidebarNew />
-      
-      <div className="content" style={{ backgroundColor: '#f8f9fa'}}>
+
+      <div className="content" style={{ backgroundColor: '#f8f9fa' }}>
         <Header />
         <div className="container-fluid">
-              <BreadCrumHeader header={`Site Check - (${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category})`} page={"Site Inspection"} />
+          <BreadCrumHeader header={`Site Check - (${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category})`} page={"Site Inspection"} />
           <Stack spacing={2}>
             <Item> <Grid container >
 
@@ -113,7 +98,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     value={siteCheck?.type}
                     className="form-control"
                   />
-                  
+
                 </div>
               </Grid>
               <Grid sm={4}>
@@ -127,7 +112,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     value={siteCheck?.subType}
                     className="form-control"
                   />
-                  
+
                 </div>
               </Grid>
               <Grid sm={4}>
@@ -149,7 +134,6 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     Due Date
                   </label>
                   <input
-                    //value={issueDate}
                     value={siteCheck?.dueDate?.substring(0, 10)}
                     disabled
                     type="date"
@@ -248,19 +232,14 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
 
               </Grid>
 
-
             </Grid></Item>
-            {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} /></Item>}
-            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} /></Item>}
-            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} /></Item>}
-            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} /></Item>}
-            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} /></Item>}
-            {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} /></Item>}
-            
-          </Stack>    
-          
-         
-            
+            {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
+          </Stack>
         </div>
       </div>
     </Fragment>
