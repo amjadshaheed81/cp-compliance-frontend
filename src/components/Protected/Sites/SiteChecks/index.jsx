@@ -574,7 +574,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                 </Grid>
 
                 <Grid sm={4}>
-                  {(formData.type === "Audit" || (formData.type === "Survey" && formData.category === "Outlet Temperature")) && <div style={{ margin: "10px" }}>
+                  {(formData.type === "Audit" || (formData.type === "Survey" && formData.subType === "Water")) && <div style={{ margin: "10px" }}>
                     <label htmlFor="folder" name="folder">
                       Repeats
                     </label>

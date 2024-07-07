@@ -116,18 +116,6 @@ const AssessmentFireRisk = ({ checkId, siteAssets, getSiteAssets, siteSelectedFo
   
   const [quest, setquest] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
-  const [formData, setFormData] = useState({
-    response: '',
-    internalExternal: 'Internal',
-    floor: '',
-    room: '',
-    observation: '',
-    assets: [],
-    consequence: '',
-    likelihood: '',
-    suggestedAction: '',
-    file: null
-  });
 
 
   const handleInputChange = (e, idx) => {
@@ -210,7 +198,7 @@ const AssessmentFireRisk = ({ checkId, siteAssets, getSiteAssets, siteSelectedFo
           {quest.map((q,idx) =>
             <Accordion defaultExpanded={idx === openIndex}>
             <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>Q{idx}. {q.question}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{margin: '-5px', }} color={q.status === "Closed" ? "success" : "primary"} label={ q.status} />
+                <Typography>Q{idx+1}. {q.question}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{margin: '-5px', }} color={q.status === "Closed" ? "success" : "primary"} label={ q.status} />
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>

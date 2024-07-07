@@ -10,6 +10,7 @@ import SurveyWaterOutletTemperature from "./SurveyWaterOutletTemperature";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
+import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -82,7 +83,8 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("audit-unit-maintenance-periodic")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Outlet Temperature") {
       setStep("survey-water-outlet-temperature")
-      
+    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Domestic RA") {
+      setStep("survey-water-domestic-ra") 
     }
     setSiteCheck(siteCheck);
   }
@@ -203,7 +205,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
               </Grid>
 
               <Grid sm={4}>
-                {(siteCheck?.type === "Audit" || (siteCheck?.type === "Survey" && siteCheck?.category === "Outlet Temperature")) && <div style={{ margin: "10px" }}>
+                {(siteCheck?.type === "Audit" || (siteCheck?.type === "Survey" && siteCheck?.subType === "Water")) && <div style={{ margin: "10px" }}>
                   <label htmlFor="folder" name="folder">
                     Repeats
                   </label>
@@ -253,6 +255,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} /></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} /></Item>}
+            {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} /></Item>}
             
           </Stack>    
           
