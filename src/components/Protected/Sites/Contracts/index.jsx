@@ -38,6 +38,7 @@ const Contracts = ({
   const [selectedContract, setSelectedContract] = useState({});
   const [editContractViewType, setEditContractViewType] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
@@ -50,11 +51,22 @@ const Contracts = ({
     getCategories();
     getProjectList();
   }, []);
-  const getProjectList = async () => {
-    const projects = await get(
-      `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
-    );
-    setFilteredContractList(projects?.projectContracts || []);
+  const getProjectList = async (isSiteSelectedForContractor = false) => {
+    if (
+      loggedInUserData?.role === ROLE.ADMIN ||
+      loggedInUserData?.role === ROLE.MANAGER
+    ) {
+      const projects = await get(
+        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+      );
+      setFilteredContractList(projects?.projectContracts || []);
+    } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
+      let url = isSiteSelectedForContractor
+        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorId=${loggedInUserData?.id}`
+        : `/api/project/contracts?contractorId=${loggedInUserData?.id}`;
+      const projects = await get(url);
+      setFilteredContractList(projects?.projectContracts || []);
+    }
   };
   const getCategories = async () => {
     const category = await get("/api/lov/PROJECT_CONTRACT_CATEGORY");
@@ -70,6 +82,10 @@ const Contracts = ({
   const searchContract = (e) => {};
   const categoryChange = (e) => {
     const val = e.target.value;
+    const subCategoryData = subCategory?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategoryList(subCategoryData);
   };
   const openContractDetail = (contract) => {
     setSelectedContract(contract);
@@ -77,10 +93,13 @@ const Contracts = ({
       loggedInUserData?.role === ROLE.ADMIN ||
       loggedInUserData?.role === ROLE.MANAGER
     ) {
+      setShowUpdateModal(true);
       setEditContractViewType(ROLE.MANAGER);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
+      setShowUpdateModal(true);
       setEditContractViewType(ROLE.CONTRACTOR);
     } else {
+      toast.warn("You don't have required access to update the contract");
       setEditContractViewType("");
     }
   };
@@ -99,11 +118,20 @@ const Contracts = ({
               setShowAddModal={setShowAddModal}
               category={category}
               subCategory={subCategory}
-              refresh={() => {}}
+              refresh={() => {
+                getProjectList();
+              }}
             />
           )}
           {editContractViewType === ROLE.MANAGER && (
-            <ManagerContractView selectedContract={selectedContract} />
+            <ManagerContractView
+              selectedContract={selectedContract}
+              showAddModal={showUpdateModal}
+              setShowAddModal={setShowUpdateModal}
+              category={category}
+              subCategory={subCategory}
+              refresh={() => {}}
+            />
           )}
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight">
@@ -132,17 +160,22 @@ const Contracts = ({
                     ))}
                   </select>
                 </div>
-                <div className="col">
-                  <select
-                    name="subCategory"
-                    className="form-control form-select"
-                    id="subCategory"
-                  >
-                    <option value="" selected disabled>
-                      Sub Category
-                    </option>
-                  </select>
-                </div>
+                {subCategoryList?.length > 0 && (
+                  <div className="col">
+                    <select
+                      name="subCategory"
+                      className="form-control form-select"
+                      id="subCategory"
+                    >
+                      <option value="" selected disabled>
+                        Sub Category
+                      </option>
+                      {subCategoryList?.map((itm) => (
+                        <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="col">
                   <select
                     name="status"

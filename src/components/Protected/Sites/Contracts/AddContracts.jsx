@@ -42,6 +42,7 @@ const AddContracts = ({
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
+  const [subCategoryListData, setSubCategoryListData] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [assetData, setAssetData] = useState([
     {
@@ -57,6 +58,7 @@ const AddContracts = ({
     watch,
     formState: { errors },
     handleSubmit,
+    setValue,
   } = useForm({});
   const values = watch();
   useEffect(() => {
@@ -89,6 +91,7 @@ const AddContracts = ({
       return;
     }
     if (loggedInUserData?.id) {
+      setIsLoading(true);
       console.log("data", data);
       const formData = {
         projectContractId: null,
@@ -123,7 +126,7 @@ const AddContracts = ({
             folders
           );
         }
-        let assets = selectedAssets?.map((itm) => {
+        let assets = assetData?.map((itm) => {
           if (!itm?.isSaved) {
             return itm.assetId;
           }
@@ -164,6 +167,14 @@ const AddContracts = ({
     } else {
       toast.error("Please login with valid user details to proceed.");
     }
+  };
+  const categoryChange = (e) => {
+    const val = e.target.value;
+    setValue("category", val, { shouldValidate: true });
+    const subCategoryData = subCategoryList?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategoryListData(subCategoryData);
   };
   return (
     <React.Fragment>
@@ -216,6 +227,7 @@ const AddContracts = ({
                               message: `Please select category`,
                             },
                           })}
+                          onChange={categoryChange}
                         >
                           <option value="" selected disabled>
                             Select category
@@ -233,35 +245,37 @@ const AddContracts = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
-                        <label for="subCategory">Sub Category</label>
-                        <select
-                          name="subCategory"
-                          className="form-control form-select"
-                          id="subCategory"
-                          {...register("subCategory", {
-                            required: {
-                              value: true,
-                              message: `Please select sub category`,
-                            },
-                          })}
-                        >
-                          <option value="" selected disabled>
-                            Select sub category
-                          </option>
-                          {subCategoryList?.map((itm) => (
-                            <option value={itm?.lovValue}>
-                              {itm?.lovValue}
+                      {subCategoryListData?.length > 0 && (
+                        <div className="col-md-3">
+                          <label for="subCategory">Sub Category</label>
+                          <select
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            {...register("subCategory", {
+                              required: {
+                                value: true,
+                                message: `Please select sub category`,
+                              },
+                            })}
+                          >
+                            <option value="" selected disabled>
+                              Select sub category
                             </option>
-                          ))}
-                        </select>
-                        {errors?.subCategory && (
-                          <InputError
-                            message={errors?.subCategory?.message}
-                            key={errors?.subCategory?.message}
-                          />
-                        )}
-                      </div>
+                            {subCategoryListData?.map((itm) => (
+                              <option value={itm?.lovValue}>
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                          {errors?.subCategory && (
+                            <InputError
+                              message={errors?.subCategory?.message}
+                              key={errors?.subCategory?.message}
+                            />
+                          )}
+                        </div>
+                      )}
                       <div className="col-md-3">
                         <label for="company">Company</label>
                         <select

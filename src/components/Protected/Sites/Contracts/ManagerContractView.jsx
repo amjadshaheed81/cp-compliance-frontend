@@ -42,6 +42,7 @@ const ManagerContractView = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   const [selectedAssets, setSelectedAssets] = useState([]);
+  const [currentAssets, setCurrentAssets] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -62,7 +63,6 @@ const ManagerContractView = ({
   } = useForm({});
   const values = watch();
   useEffect(() => {
-    
     if (siteSelectedForGlobal?.siteId) {
       getManagerList();
       getCompanies();
@@ -72,6 +72,15 @@ const ManagerContractView = ({
       toast.error("Please select site from site search.");
     }
   }, []);
+  useEffect(() => {
+    getContractDetail();
+  }, [selectedContract]);
+  const getContractDetail = async () => {
+    const data = await get(
+      `/api/project/${selectedContract?.projectContractId}/details`
+    );
+    setCurrentAssets(data);
+  };
   const getCompanies = async () => {
     const companiesData = await get(`/api/user/companies`);
     setCompanies(companiesData);
