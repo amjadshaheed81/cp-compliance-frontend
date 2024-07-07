@@ -22,6 +22,7 @@ import moment from "moment";
 import { ROLE } from "../../../../Constant/Role";
 import ChipComponent from "../../../common/Chips/Chips";
 import ManagerContractView from "./ManagerContractView";
+import ContractorContractView from "./ContractorContractView";
 
 const Contracts = ({
   getSiteContracts,
@@ -46,6 +47,9 @@ const Contracts = ({
 
   const handleChange = (event) => {
     setChecked(event.target.checked);
+    if(event.target.checked) {
+      getProjectList(true);
+    }
   };
   useEffect(() => {
     getCategories();
@@ -62,7 +66,7 @@ const Contracts = ({
       setFilteredContractList(projects?.projectContracts || []);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       let url = isSiteSelectedForContractor
-        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorId=${loggedInUserData?.id}`
+        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
         : `/api/project/contracts?contractorId=${loggedInUserData?.id}`;
       const projects = await get(url);
       setFilteredContractList(projects?.projectContracts || []);
@@ -125,6 +129,16 @@ const Contracts = ({
           )}
           {editContractViewType === ROLE.MANAGER && (
             <ManagerContractView
+              selectedContract={selectedContract}
+              showAddModal={showUpdateModal}
+              setShowAddModal={setShowUpdateModal}
+              category={category}
+              subCategory={subCategory}
+              refresh={() => {}}
+            />
+          )}
+          {editContractViewType === ROLE.CONTRACTOR && (
+            <ContractorContractView
               selectedContract={selectedContract}
               showAddModal={showUpdateModal}
               setShowAddModal={setShowUpdateModal}
