@@ -126,3 +126,15 @@ export async function uploadSiteCheckDoc(reqData) {
   });
   return data;
 }
+
+export async function getSasToken() {
+  configAxios();
+  const { data } = await axiosInstance({
+    method: "GET",
+    url: "/api/site-check/file/sas-token",
+    headers: getHeaders(),
+  });
+  return data;
+}
+
+
