@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import moment from "moment";
 import {
-  Chip,
   Box,
   Table,
   TableBody,
@@ -21,7 +19,7 @@ const AddAssets = ({
   assetData,
   setAssetData,
 }) => {
-  const [tableData, setTableData] = useState(assetData);
+  const [tableData, setTableData] = useState(assetData || []);
 
   useEffect(() => {
     setTableData(assetData);

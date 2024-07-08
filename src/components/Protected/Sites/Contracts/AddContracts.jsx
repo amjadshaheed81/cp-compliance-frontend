@@ -126,21 +126,24 @@ const AddContracts = ({
             folders
           );
         }
-        let assets = assetData?.map((itm) => {
-          if (!itm?.isSaved) {
-            return itm.assetId;
+        if (data?.category !== "Building Project") {
+          let assets = assetData?.map((itm) => {
+            if (!itm?.isSaved) {
+              return itm.assetId;
+            }
+          });
+          if (assets.length > 0) {
+            const assetData = {
+              addAssets: assets,
+              removeAssets: [],
+            };
+            const assetUpdateAPI = await put(
+              `api/project/${res?.data?.projectContractId}/assets`,
+              assetData
+            );
           }
-        });
-        if (assets.length > 0) {
-          const assetData = {
-            addAssets: assets,
-            removeAssets: [],
-          };
-          const assetUpdateAPI = await put(
-            `api/project/${res?.data?.projectContractId}/assets`,
-            assetData
-          );
         }
+        
         if (data?.scheduleDate) {
           const scheduleData = {
             scheduleId: null,

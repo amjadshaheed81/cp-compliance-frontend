@@ -56,6 +56,7 @@ const ManagerContractView = ({
   const [currentContract, setCurrentContract] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
+  const [subCategoryListData, setSubCategoryListData] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [assetData, setAssetData] = useState([
     {
@@ -71,6 +72,7 @@ const ManagerContractView = ({
     watch,
     formState: { errors },
     handleSubmit,
+    setValue,
   } = useForm({});
   const scheduleDateForm = useForm({});
   const values = watch();
@@ -113,6 +115,14 @@ const ManagerContractView = ({
       setSubCategoryList(subCategory);
     }
   }, [category, subCategory]);
+  const categoryChange = (e) => {
+    const val = e.target.value;
+    setValue("category", val, { shouldValidate: true });
+    const subCategoryData = subCategoryList?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategoryListData(subCategoryData);
+  };
   const submitAddContract = async (data) => {
     console.log("data", data);
     // let form_data = new FormData();
@@ -140,6 +150,23 @@ const ManagerContractView = ({
       const url = "api/project/manage";
       const res = await put(url, formData);
       if (res?.status === 200) {
+        if (data?.category !== "Building Project") {
+          let assets = assetData?.map((itm) => {
+            if (!itm?.isSaved) {
+              return itm.assetId;
+            }
+          });
+          if (assets.length > 0) {
+            const assetData = {
+              addAssets: assets,
+              removeAssets: [],
+            };
+            const assetUpdateAPI = await put(
+              `api/project/${res?.data?.projectContractId}/assets`,
+              assetData
+            );
+          }
+        }
         toast.success("Successully added contract.");
         handleClose();
         refresh();
@@ -343,6 +370,7 @@ const ManagerContractView = ({
                               message: `Please select category`,
                             },
                           })}
+                          onChange={categoryChange}
                         >
                           <option value="" selected disabled>
                             Select category
@@ -360,35 +388,37 @@ const ManagerContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
-                        <label for="subCategory">Sub Category</label>
-                        <select
-                          name="subCategory"
-                          className="form-control form-select"
-                          id="subCategory"
-                          {...register("subCategory", {
-                            required: {
-                              value: true,
-                              message: `Please select sub category`,
-                            },
-                          })}
-                        >
-                          <option value="" selected disabled>
-                            Select sub category
-                          </option>
-                          {subCategoryList?.map((itm) => (
-                            <option value={itm?.lovValue}>
-                              {itm?.lovValue}
+                      {subCategoryListData?.length > 0 && (
+                        <div className="col-md-3">
+                          <label for="subCategory">Sub Category</label>
+                          <select
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            {...register("subCategory", {
+                              required: {
+                                value: true,
+                                message: `Please select sub category`,
+                              },
+                            })}
+                          >
+                            <option value="" selected disabled>
+                              Select sub category
                             </option>
-                          ))}
-                        </select>
-                        {errors?.subCategory && (
-                          <InputError
-                            message={errors?.subCategory?.message}
-                            key={errors?.subCategory?.message}
-                          />
-                        )}
-                      </div>
+                            {subCategoryListData?.map((itm) => (
+                              <option value={itm?.lovValue}>
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                          {errors?.subCategory && (
+                            <InputError
+                              message={errors?.subCategory?.message}
+                              key={errors?.subCategory?.message}
+                            />
+                          )}
+                        </div>
+                      )}
                       <div className="col-md-3">
                         <label for="company">Company</label>
                         <select
@@ -597,7 +627,10 @@ const ManagerContractView = ({
                                     className="btn btn-light text-primary pr-2"
                                     onClick={(e) => {
                                       e?.preventDefault();
-                                      const d = [...assetData];
+                                      let d = [];
+                                      if(assetData) {
+                                        d = [...assetData];
+                                      }
                                       d.push({
                                         assets: [],
                                         assetRef: " ",
