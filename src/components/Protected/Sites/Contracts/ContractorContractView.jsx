@@ -13,10 +13,11 @@ import { Validation } from "../../../../Constant/Validation";
 import {
   getDocumentsRootFolder,
   getSiteAssets,
+  setLoader,
 } from "../../../../store/thunk/site";
 import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
-import { get, put } from "../../../../api";
+import { get, put, uploadPhoto } from "../../../../api";
 import ChipComponent from "../../../common/Chips/Chips";
 import BusinessIcon from "@mui/icons-material/Business";
 import moment from "moment";
@@ -41,6 +42,8 @@ const ContractorContractView = ({
   subCategory,
   selectedContract,
   updateScheduleVisit,
+  uploadPhoto,
+  setLoader,
 }) => {
   console.log("selectedContract ===>", selectedContract);
   const handleOpen = () => setShowAddModal(true);
@@ -67,6 +70,7 @@ const ContractorContractView = ({
     watch,
     formState: { errors },
     handleSubmit,
+    getValues,
   } = useForm({});
   const values = watch();
   useEffect(() => {
@@ -107,61 +111,53 @@ const ContractorContractView = ({
       setSubCategoryList(subCategory);
     }
   }, [category, subCategory]);
-  const submitAddContract = async (data) => {
-    console.log("data", data);
-    // let form_data = new FormData();
-    if (!siteSelectedForGlobal?.siteId) {
-      toast.error("Please select site from site search to proceed.");
-      return;
-    }
-    if (loggedInUserData?.id) {
-      console.log("data", data);
-      const formData = {
-        projectContractId: null,
-        summary: data?.summary,
-        siteId: siteSelectedForGlobal?.siteId,
-        category: data?.category || "",
-        subCategory: data?.subCategory || "",
-        contractorCompanyId: data?.company ? Number(data?.company) : null,
-        status: "Active",
-        budget: data?.cost,
-        cost: data?.cost,
-        startDate: `${data?.startDate} 10:00:00`,
-        endDate: `${data?.endDate} 10:00:00`,
-        projectManagerUserId: data?.manager ? Number(data?.manager) : null,
-        description: data?.description,
-      };
-      const url = "api/project/manage";
-      const res = await put(url, formData);
-      if (res?.status === 200) {
-        let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
-          if (!itm?.isSaved) {
-            return itm.id;
-          }
-        });
-        if (mandatoryFolders.length > 0) {
-          const folders = {
-            mandatoryFolders: mandatoryFolders,
-            removeMandatoryFolders: null,
-          };
-          const folderApi = await put(
-            `api/project/${res?.data?.projectContractId}/folders`,
-            folders
-          );
-        }
-        toast.success("Successully added contract.");
-        handleClose();
-        refresh();
-      } else {
-        toast.error(
-          "Something went wrong while adding contract. Please try again!!"
-        );
-      }
-      setIsLoading(false);
-    } else {
-      toast.error("Please login with valid user details to proceed.");
-    }
+  const fileSelect = (e, folderData) => {
+    console.log(e);
+    console.log(currentContract);
+    const data = {
+      folderId: folderData.id,
+      files: [
+        {
+          ...e?.target?.files[0],
+          fileVersion: 1,
+          siteId: currentContract?.siteId,
+        },
+      ],
+    };
+    data.files[0].name = e?.target?.files[0]?.name;
+    submitFile(data, e?.target?.files[0]);
   };
+  const submitFile = async (data, fileUpload) => {
+    const reqData = {
+      files: fileUpload,
+      documentRequestString: {
+        ...data,
+      },
+    };
+
+    delete reqData.documentRequestString.files[0].fileUpload;
+    reqData.documentRequestString.files[0].uploadDate =
+      moment(new Date()).format("YYYY-MM-DD") + " 00:00:00";
+    reqData.documentRequestString.files[0].issueDate =
+      moment(new Date()).format("YYYY-MM-DD") + " 00:00:00";
+    reqData.documentRequestString.files[0].expiryDate =
+      moment(new Date()).add(1, "years").format("YYYY-MM-DD") + " 00:00:00";
+    setLoader(true);
+    const url = `/api/document/files/upload`;
+    const formData = new FormData();
+    formData.append("files", reqData?.files);
+    formData.append(
+      "documentRequestString",
+      JSON.stringify(reqData?.documentRequestString)
+    );
+
+    const res = await uploadPhoto(url, formData);
+    //uploadDocumentFile(data, folderId);
+    setIsLoading(false);
+    getContractDetail();
+    toast.success("File uploaded successfully");
+  };
+  const submitUpdateContract = async (data) => {};
   const requestReschedule = async (itm, newDate) => {
     const data = {
       ...itm,
@@ -232,7 +228,7 @@ const ContractorContractView = ({
         fullWidth
         id="Modal-container"
       >
-        <form onSubmit={handleSubmit(submitAddContract)}>
+        <form onSubmit={handleSubmit(submitUpdateContract)}>
           <DialogTitle>
             View Contract ({currentContract?.category} &gt;{" "}
             {currentContract?.subCategory})
@@ -256,13 +252,14 @@ const ContractorContractView = ({
                   </div>
                   <div className="col-md-12">
                     <div className="row">
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="summary">Summary</label>
                           <input
                             type="text"
                             className="form-control"
                             id="summary"
+                            disabled
                             {...register("summary", {
                               required: {
                                 value: true,
@@ -278,12 +275,13 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="category">Category</label>
                         <select
                           name="category"
                           className="form-control form-select"
                           id="category"
+                          disabled
                           {...register("category", {
                             required: {
                               value: true,
@@ -307,12 +305,13 @@ const ContractorContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="subCategory">Sub Category</label>
                         <select
                           name="subCategory"
                           className="form-control form-select"
                           id="subCategory"
+                          disabled
                           {...register("subCategory", {
                             required: {
                               value: true,
@@ -336,10 +335,11 @@ const ContractorContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="company">Company</label>
                         <select
                           name="company"
+                          disabled
                           className="form-control form-select"
                           id="company"
                           {...register("company", {
@@ -365,7 +365,7 @@ const ContractorContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="budget">Budget (GBP)</label>
                           <input
@@ -388,7 +388,7 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
@@ -411,7 +411,7 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="startDate">Start Date</label>
                           <input
@@ -434,7 +434,7 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="endDate">End Date</label>
                           <input
@@ -457,7 +457,7 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-6">
+                      <div className="col-md-6 mt-2">
                         <div className="form-group mt-2">
                           <textarea
                             {...register("description")}
@@ -467,7 +467,7 @@ const ContractorContractView = ({
                           ></textarea>
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="manager">Manager</label>
                         <select
                           name="manager"
@@ -494,11 +494,11 @@ const ContractorContractView = ({
                       <tr>
                         <td>Mandatory Folders</td>
                         <td>File (PDF &lt; 1 MB)</td>
+                        <td>Uploaded Version</td>
                       </tr>
                     </thead>
                     <tbody>
-                      {currentContract?.projectContractFolders?.length ===
-                        0 && (
+                      {currentContract?.projectContractFolders == null && (
                         <tr>
                           <td>No Folders are available to select file</td>
                         </tr>
@@ -514,16 +514,22 @@ const ContractorContractView = ({
                               name={`folderImage-${itm?.id}`}
                               accept="image/*, application/pdf"
                               id={`folderImage-${itm?.id}`}
+                              onChange={(e) => fileSelect(e, itm)}
                             />
                           </td>
                           <td>
-                            {itm?.floorPlanUrl ? (
-                              <a
-                                className="btn btn-sm btn-light"
-                                download
-                                href={itm?.files}
-                              >{`${itm?.name}.png`}</a>
-                            ) : null}
+                            {itm?.files?.length === 0
+                              ? "No files are uploaded yet."
+                              : itm?.files?.map((file, index) => (
+                                  <>
+                                    <a
+                                      className="btn btn-sm btn-light"
+                                      download
+                                      href={file?.url}
+                                    >{`version-${index + 1}.png`}</a>
+                                    &nbsp;
+                                  </>
+                                ))}
                           </td>
                         </tr>
                       ))}
@@ -544,7 +550,7 @@ const ContractorContractView = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {currentContract?.projectContractAssets?.length === 0 && (
+                      {!currentContract?.projectContractAssets && (
                         <tr>
                           <td>No Assets are available</td>
                         </tr>
@@ -592,8 +598,7 @@ const ContractorContractView = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {currentContract?.projectContractScheduleVisits
-                            ?.length === 0 && (
+                          {!currentContract?.projectContractScheduleVisits && (
                             <tr>
                               <td>No Assets are available</td>
                             </tr>
@@ -672,9 +677,9 @@ const ContractorContractView = ({
               <Button onClick={handleClose} className="bg-light text-primary">
                 Close
               </Button>
-              <Button type="submit" className="bg-primary text-white">
+              {/* <Button type="submit" className="bg-primary text-white">
                 Save
-              </Button>
+              </Button>*/}
             </DialogActions>
           )}
         </form>
@@ -695,4 +700,6 @@ export default connect(mapStateToProps, {
   getManagerList,
   getSiteAssets,
   updateScheduleVisit,
+  uploadPhoto,
+  setLoader,
 })(ContractorContractView);

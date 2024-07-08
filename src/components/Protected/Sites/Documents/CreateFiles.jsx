@@ -47,7 +47,6 @@ const CreateFiles = ({
     delete reqData.documentRequestString.files[0].fileUpload;
     reqData.documentRequestString.files[0].issueDate = issueDate + " 00:00:00";
     reqData.documentRequestString.files[0].expiryDate = expiryDate + " 00:00:00";
-    setIsLoading(true);
     const url = `/api/document/files/upload`;
     const formData = new FormData();
     formData.append("files", reqData.files);
