@@ -23,6 +23,7 @@ import { ROLE } from "../../../../Constant/Role";
 import ChipComponent from "../../../common/Chips/Chips";
 import ManagerContractView from "./ManagerContractView";
 import ContractorContractView from "./ContractorContractView";
+import Swal from "sweetalert2";
 export const isManagerAdminLogin = (loggedInUserData) => {
   if (
     loggedInUserData?.role === ROLE.ADMIN ||
@@ -86,7 +87,11 @@ const Contracts = ({
   };
   useEffect(() => {
     if (!siteSelectedForGlobal?.siteId) {
-      toast.error("Please select site from site search to proceed.");
+      Swal.fire({
+        icon: "error",
+        title: "Site is not selected",
+        text: "Please select site from site search and try again.",
+      });
       return;
     }
     getCategories();
