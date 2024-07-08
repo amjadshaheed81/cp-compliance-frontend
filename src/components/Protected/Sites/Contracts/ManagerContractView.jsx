@@ -85,6 +85,7 @@ const ManagerContractView = ({
     } else {
       toast.error("Please select site from site search.");
     }
+    setSubCategoryListData(subCategory);
   }, []);
   useEffect(() => {
     getContractDetail();
@@ -390,7 +391,6 @@ const ManagerContractView = ({
                           />
                         )}
                       </div>
-                      {subCategoryListData?.length > 0 && (
                         <div className="col-md-3">
                           <label for="subCategory">Sub Category</label>
                           <select
@@ -420,7 +420,6 @@ const ManagerContractView = ({
                             />
                           )}
                         </div>
-                      )}
                       <div className="col-md-3">
                         <label for="company">Company</label>
                         <select

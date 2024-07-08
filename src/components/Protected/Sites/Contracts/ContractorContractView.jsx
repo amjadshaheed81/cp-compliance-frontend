@@ -155,9 +155,11 @@ const ContractorContractView = ({
     try {
       const res = await uploadPhoto(url, formData);
       //uploadDocumentFile(data, folderId);
+      setTimeout(() => {
+        getContractDetail();
+      }, 1000)
     } catch (e) {}
     setIsLoading(false);
-    getContractDetail();
     toast.success("File uploaded successfully");
   };
   const submitUpdateContract = async (data) => {};
