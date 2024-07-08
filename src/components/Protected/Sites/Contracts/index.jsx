@@ -85,6 +85,10 @@ const Contracts = ({
     }
   };
   useEffect(() => {
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed.");
+      return;
+    }
     getCategories();
     getProjectList();
   }, []);
