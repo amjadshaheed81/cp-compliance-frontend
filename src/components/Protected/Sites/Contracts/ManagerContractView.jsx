@@ -558,7 +558,7 @@ const ManagerContractView = ({
                     <thead className="table-dark">
                       <tr>
                         <td>Mandatory Folders</td>
-                        <td>File</td>
+                        <td>File Version Uploaded</td>
                       </tr>
                     </thead>
                     <tbody>
@@ -572,18 +572,18 @@ const ManagerContractView = ({
                         <tr key={itm?.id}>
                           <td>{itm?.name}</td>
                           <td>
-                            <a className="cursor" download href={itm?.files}>
-                              {itm?.name}
-                            </a>
-                          </td>
-                          <td>
-                            {itm?.floorPlanUrl ? (
-                              <a
-                                className="btn btn-sm btn-light"
-                                download
-                                href={itm?.files}
-                              >{`${itm?.name}.png`}</a>
-                            ) : null}
+                          {itm?.files?.length === 0
+                              ? "No files are uploaded yet."
+                              : itm?.files?.map((file, index) => (
+                                  <>
+                                    <a
+                                      className="btn btn-sm btn-light"
+                                      download
+                                      href={file?.url}
+                                    >{`version-${index + 1}.png`}</a>
+                                    &nbsp;
+                                  </>
+                                ))}
                           </td>
                         </tr>
                       ))}

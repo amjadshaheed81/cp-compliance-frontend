@@ -136,13 +136,15 @@ const ContractorContractView = ({
     };
 
     delete reqData.documentRequestString.files[0].fileUpload;
+
+    reqData.documentRequestString.files[0].reviewerUserId =
+      loggedInUserData?.id;
     reqData.documentRequestString.files[0].uploadDate =
       moment(new Date()).format("YYYY-MM-DD") + " 00:00:00";
     reqData.documentRequestString.files[0].issueDate =
       moment(new Date()).format("YYYY-MM-DD") + " 00:00:00";
     reqData.documentRequestString.files[0].expiryDate =
       moment(new Date()).add(1, "years").format("YYYY-MM-DD") + " 00:00:00";
-    setLoader(true);
     const url = `/api/document/files/upload`;
     const formData = new FormData();
     formData.append("files", reqData?.files);
@@ -150,9 +152,10 @@ const ContractorContractView = ({
       "documentRequestString",
       JSON.stringify(reqData?.documentRequestString)
     );
-
-    const res = await uploadPhoto(url, formData);
-    //uploadDocumentFile(data, folderId);
+    try {
+      const res = await uploadPhoto(url, formData);
+      //uploadDocumentFile(data, folderId);
+    } catch (e) {}
     setIsLoading(false);
     getContractDetail();
     toast.success("File uploaded successfully");
