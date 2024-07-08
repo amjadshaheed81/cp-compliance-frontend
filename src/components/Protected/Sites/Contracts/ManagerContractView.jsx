@@ -562,8 +562,7 @@ const ManagerContractView = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {currentContract?.projectContractFolders?.length ===
-                        0 && (
+                      {!currentContract?.projectContractFolders && (
                         <tr>
                           <td>No Folders are available to view</td>
                         </tr>
@@ -604,7 +603,7 @@ const ManagerContractView = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {currentContract?.projectContractAssets?.length === 0 && (
+                      {!currentContract?.projectContractAssets && (
                         <tr>
                           <td>No Assets are available</td>
                         </tr>
@@ -684,10 +683,9 @@ const ManagerContractView = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {currentContract?.projectContractScheduleVisits
-                            ?.length === 0 && (
+                          {!currentContract?.projectContractScheduleVisits && (
                             <tr>
-                              <td>No Assets are available</td>
+                              <td>No Visits are available</td>
                             </tr>
                           )}
                           {currentContract?.projectContractScheduleVisits?.map(

@@ -503,7 +503,7 @@ const ContractorContractView = ({
                     <tbody>
                       {currentContract?.projectContractFolders == null && (
                         <tr>
-                          <td>No Folders are available to select file</td>
+                          <td>No Folders are available to upload file</td>
                         </tr>
                       )}
                       {currentContract?.projectContractFolders?.map((itm) => (
@@ -603,7 +603,7 @@ const ContractorContractView = ({
                         <tbody>
                           {!currentContract?.projectContractScheduleVisits && (
                             <tr>
-                              <td>No Assets are available</td>
+                              <td>No Visits are available</td>
                             </tr>
                           )}
                           {currentContract?.projectContractScheduleVisits?.map(

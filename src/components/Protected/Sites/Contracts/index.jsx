@@ -23,7 +23,15 @@ import { ROLE } from "../../../../Constant/Role";
 import ChipComponent from "../../../common/Chips/Chips";
 import ManagerContractView from "./ManagerContractView";
 import ContractorContractView from "./ContractorContractView";
-
+export const isManagerAdminLogin = (loggedInUserData) => {
+  if (
+    loggedInUserData?.role === ROLE.ADMIN ||
+    loggedInUserData?.role === ROLE.MANAGER
+  ) {
+    return true;
+  }
+  return false;
+};
 const Contracts = ({
   getSiteContracts,
   getSiteContractDetails,
@@ -36,6 +44,13 @@ const Contracts = ({
   siteSelectedForGlobal,
 }) => {
   const [filteredContractList, setFilteredContractList] = useState([]);
+  const [contractList, setContractList] = useState([]);
+  const [formData, setFormData] = useState({
+    searchField: "",
+    category: "",
+    subCategory: "",
+    status: "",
+  });
   const [selectedContract, setSelectedContract] = useState({});
   const [editContractViewType, setEditContractViewType] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -44,10 +59,28 @@ const Contracts = ({
   const [subCategory, setSubCategory] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [checked, setChecked] = useState(false);
-
+  const handleInputChange = (e) => {
+    console.log("e", e)
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+    if (name === "category") {
+      categoryChange(value);
+    }
+  };
+  useEffect(() => {
+    searchContracts();
+  }, [
+    formData.searchField,
+    formData.category,
+    formData.subCategory,
+    formData.status,
+  ]);
   const handleChange = (event) => {
     setChecked(event.target.checked);
-    if(event.target.checked) {
+    if (event.target.checked) {
       getProjectList(true);
     }
   };
@@ -56,20 +89,19 @@ const Contracts = ({
     getProjectList();
   }, []);
   const getProjectList = async (isSiteSelectedForContractor = false) => {
-    if (
-      loggedInUserData?.role === ROLE.ADMIN ||
-      loggedInUserData?.role === ROLE.MANAGER
-    ) {
+    if (isManagerAdminLogin(loggedInUserData)) {
       const projects = await get(
         `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
       );
       setFilteredContractList(projects?.projectContracts || []);
+      setContractList(projects?.projectContracts || []);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       let url = isSiteSelectedForContractor
         ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
         : `/api/project/contracts?contractorId=${loggedInUserData?.id}`;
       const projects = await get(url);
       setFilteredContractList(projects?.projectContracts || []);
+      setContractList(projects?.projectContracts || []);
     }
   };
   const getCategories = async () => {
@@ -83,9 +115,32 @@ const Contracts = ({
    * @param {event} e
    * search project
    */
-  const searchContract = (e) => {};
-  const categoryChange = (e) => {
-    const val = e.target.value;
+  const searchContracts = () => {
+    const searchField = formData?.searchField;
+    const category = formData?.category;
+    const subCategory = formData?.subCategory;
+    const status = formData?.status;
+    if (searchField || category || subCategory || status) {
+      const list = contractList?.filter(
+        (x) =>
+          String(x?.summary)
+            .toLowerCase()
+            .includes(String(searchField).toLowerCase()) &&
+          String(x?.category)
+            .toLowerCase()
+            .includes(String(category).toLowerCase()) &&
+          String(x?.subCategory)
+            .toLowerCase()
+            .includes(String(subCategory).toLowerCase()) &&
+          String(x?.status).toLowerCase().includes(String(status).toLowerCase())
+      );
+      setFilteredContractList(list);
+    } else {
+      setFilteredContractList(contractList);
+    }
+  };
+  const categoryChange = (value) => {
+    const val = value;
     const subCategoryData = subCategory?.filter(
       (itm) => itm?.attribite1 === val
     );
@@ -93,10 +148,7 @@ const Contracts = ({
   };
   const openContractDetail = (contract) => {
     setSelectedContract(contract);
-    if (
-      loggedInUserData?.role === ROLE.ADMIN ||
-      loggedInUserData?.role === ROLE.MANAGER
-    ) {
+    if (isManagerAdminLogin(loggedInUserData)) {
       setShowUpdateModal(true);
       setEditContractViewType(ROLE.MANAGER);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
@@ -159,18 +211,18 @@ const Contracts = ({
                     type="text"
                     className="form-control"
                     placeholder="Search"
-                    name="project"
-                    onChange={searchContract}
+                    name="searchField"
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="col">
                   <select
-                    name="category"
                     className="form-control form-select"
                     id="startMonth"
-                    onChange={categoryChange}
+                    name="category"
+                    onChange={handleInputChange}
                   >
-                    <option value="" selected disabled>
+                    <option value="">
                       Category
                     </option>
                     {category?.map((itm) => (
@@ -184,8 +236,9 @@ const Contracts = ({
                       name="subCategory"
                       className="form-control form-select"
                       id="subCategory"
+                      onChange={handleInputChange}
                     >
-                      <option value="" selected disabled>
+                      <option value="">
                         Sub Category
                       </option>
                       {subCategoryList?.map((itm) => (
@@ -199,8 +252,9 @@ const Contracts = ({
                     name="status"
                     className="form-control form-select"
                     id="status"
+                    onChange={handleInputChange}
                   >
-                    <option value="" selected disabled>
+                    <option value="">
                       Status
                     </option>
                     <option value="Active">Active</option>
@@ -223,26 +277,29 @@ const Contracts = ({
             </div>
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
+                {isManagerAdminLogin(loggedInUserData) && (
                   <div className="col">
-                    <Tooltip title={`Create New`} arrow>
-                      <button
-                        className="btn btn-primary text-white pr-2"
-                        onClick={() => {
-                          setShowAddModal(true);
-                        }}
-                      >
-                        <i className="fas fa-plus"></i>
-                      </button>
-                    </Tooltip>
+                    <div className="col">
+                      <Tooltip title={`Create New`} arrow>
+                        <button
+                          className="btn btn-primary text-white pr-2"
+                          onClick={() => {
+                            setShowAddModal(true);
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                        </button>
+                      </Tooltip>
+                    </div>
                   </div>
-                </div>
+                )}
+
                 <div className="col">
                   <div className="col">
                     <CSVLink
                       filename={"contracts-lists"}
                       className="btn btn-light bg-white text-primary"
-                      data={[]}
+                      data={filteredContractList}
                     >
                       {" "}
                       <Tooltip title={`Export`} arrow>
@@ -263,10 +320,9 @@ const Contracts = ({
                   <th scope="col">Summary</th>
                   <th scope="col">Category</th>
                   <th scope="col">SubCategory</th>
-                  {loggedInUserData?.role === ROLE.ADMIN ||
-                    (loggedInUserData?.role === ROLE.MANAGER && (
-                      <th scope="col">Company</th>
-                    ))}
+                  {isManagerAdminLogin(loggedInUserData) && (
+                    <th scope="col">Company</th>
+                  )}
                   {loggedInUserData?.role === ROLE.CONTRACTOR && (
                     <th scope="col">Site</th>
                   )}
@@ -294,10 +350,9 @@ const Contracts = ({
                     </td>
                     <td>{itm?.category}</td>
                     <td>{itm?.subCategory}</td>
-                    {loggedInUserData?.role === ROLE.ADMIN ||
-                      (loggedInUserData?.role === ROLE.MANAGER && (
-                        <td>{itm?.contractorCompanyName}</td>
-                      ))}
+                    {isManagerAdminLogin(loggedInUserData) && (
+                      <td>{itm?.contractorCompanyName}</td>
+                    )}
                     {loggedInUserData?.role === ROLE.CONTRACTOR && (
                       <td>{itm?.siteName}</td>
                     )}
@@ -312,7 +367,6 @@ const Contracts = ({
                         : "-"}
                     </td>
                     <td>{itm?.cost}</td>
-
                     <td>
                       <ChipComponent status={itm?.status} />
                     </td>
