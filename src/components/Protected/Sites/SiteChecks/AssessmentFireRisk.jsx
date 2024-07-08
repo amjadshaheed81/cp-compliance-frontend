@@ -1,14 +1,6 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { CSVLink } from "react-csv";
-import moment from "moment";
-import Header from "../../../common/Header/Header";
-import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
 import { get, post, uploadSiteCheckDoc } from "../../../../api";
 import {
   Grid, TextField, Button, Typography, Box, IconButton, MenuItem, Select, InputLabel, FormControl, Checkbox, FormControlLabel,

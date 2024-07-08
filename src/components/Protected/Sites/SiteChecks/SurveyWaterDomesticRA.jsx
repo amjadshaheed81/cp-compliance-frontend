@@ -251,6 +251,10 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     >
                       <option value="">Select </option>
                       <option value={"10"}> 10 - Fed from poorly treated non mains water source </option>
+                      <option value={"9"}> 9 - Fed from poorly treated non mains water source </option>
+                      <option value={"8"}> 8 - Fed from poorly treated non mains water source </option>
+                      <option value={"7"}> 7 - Fed from poorly treated non mains water source </option>
+                      <option value={"6"}> 6 - Fed from poorly treated non mains water source </option>
                     </select>
                   </Grid>
 
