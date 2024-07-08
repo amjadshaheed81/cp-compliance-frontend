@@ -64,7 +64,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     type: "",
     subType: "",
     category: "",
-    status: "Open",
+    status: "",
   });
   const  isDateOlderThanToday = (dateString) => {
     const dateToCheck = moment(dateString, 'YYYY-MM-DD');
@@ -97,6 +97,13 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     searchPreActions();
     if (formData2.type?.length > 0) {
       getsubtypeoptions();
+    } else {
+      setcatoptions([]);
+      setsubtypeoptions([]);
+      setFormData2({
+        ...formData2,
+        subType: ''
+      });
     }
   }, [formData2.type, formData2.searchField, formData2.subType, formData2.status]);
 
@@ -108,6 +115,13 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
       setsubtypeoptions2([]);
       getsubtypeoptions2();
       
+    } else {
+      setsubtypeoptions2([]);
+      setsubtypeoptions([]);
+      setFormData({
+        ...formData,
+        subType: ''
+      });
     }
   }, [formData.type]);
 

@@ -137,4 +137,15 @@ export async function getSasToken() {
   return data;
 }
 
+export async function getPdf(id) {
+  configAxios();
+  const { data } = await axiosInstance({
+    method: "GET",
+    url: "/api/site-check/pdf-report/"+id,
+    headers: getHeaders(),
+    responseType: 'blob',
+  });
+  return data;
+}
+
 

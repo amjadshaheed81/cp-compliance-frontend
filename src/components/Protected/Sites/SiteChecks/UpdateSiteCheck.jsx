@@ -1,6 +1,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import Header from "../../../common/Header/Header";
+import { toast } from "react-toastify";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import InspectionElectricalFault from "./InspectionElectricalFault";
@@ -10,7 +11,7 @@ import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
 import { useNavigate, useParams } from "react-router-dom";
-import { get, getSasToken } from "../../../../api";
+import { get, getSasToken, getPdf } from "../../../../api";
 import { Grid, Stack, Paper, styled } from "@mui/material";
 import { deleteUser, getSites, getExternalUsers } from "../../../../store/thunk/site";
 import PrintIcon from '@mui/icons-material/Print';
@@ -72,6 +73,17 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("survey-water-domestic-ra")
     }
     setSiteCheck(siteCheck);
+  }
+
+  const print = async () => {
+    if (siteCheck.type === "Inspection" && siteCheck.subType === "Electrical") {
+      const pdfBlob = await getPdf(checkId);
+      const url = URL.createObjectURL(pdfBlob);
+      window.open(url, '_blank');
+    } else {
+      toast.warn("Feature coming soon");
+    }
+
   }
 
 
@@ -218,7 +230,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                 <button
                   style={{ width: "200px", marginBottom: '20px', margin: '10px', float: 'right' }}
                   className="btn btn-primary btn-light"
-                  onClick={() => { navigate("/site-checks") }}
+                  onClick={() => { print(); }}
                 >
                   <PrintIcon /> Print PDF Report
                 </button>
