@@ -221,6 +221,7 @@ const ManagerContractView = ({
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Delete",
+      confirmButtonColor: '#da292e',
     }).then(async (result) => {
       if (result.isConfirmed) {
         const res = await deleteScheduleVisit(itm?.scheduleId);
@@ -279,7 +280,8 @@ const ManagerContractView = ({
       title: `Do you want to terminate ${selectedContract?.summary} contract?`,
       showDenyButton: false,
       showCancelButton: true,
-      confirmButtonText: "Delete",
+      confirmButtonText: "Terminate",
+      confirmButtonColor: '#da292e',
     }).then(async (result) => {
       if (result.isConfirmed) {
         setIsLoading(true);
