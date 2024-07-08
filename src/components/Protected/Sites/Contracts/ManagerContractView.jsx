@@ -98,6 +98,7 @@ const ManagerContractView = ({
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });
+    setAssetData(data?.projectContractAssets);
     setCurrentContract(data);
   };
   const getCompanies = async () => {
@@ -122,13 +123,13 @@ const ManagerContractView = ({
     if (loggedInUserData?.id) {
       console.log("data", data);
       const formData = {
-        projectContractId: null,
+        projectContractId: currentContract?.projectContractId,
         summary: data?.summary,
         siteId: siteSelectedForGlobal?.siteId,
         category: data?.category || "",
         subCategory: data?.subCategory || "",
         contractorCompanyId: data?.company ? Number(data?.company) : null,
-        status: "Active",
+        status: currentContract?.status,
         budget: data?.cost,
         cost: data?.cost,
         startDate: `${data?.startDate} 10:00:00`,
@@ -139,21 +140,6 @@ const ManagerContractView = ({
       const url = "api/project/manage";
       const res = await put(url, formData);
       if (res?.status === 200) {
-        let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
-          if (!itm?.isSaved) {
-            return itm.id;
-          }
-        });
-        if (mandatoryFolders.length > 0) {
-          const folders = {
-            mandatoryFolders: mandatoryFolders,
-            removeMandatoryFolders: null,
-          };
-          const folderApi = await put(
-            `api/project/${res?.data?.projectContractId}/folders`,
-            folders
-          );
-        }
         toast.success("Successully added contract.");
         handleClose();
         refresh();
@@ -240,7 +226,9 @@ const ManagerContractView = ({
     };
     Swal.fire({
       target: document.getElementById("Modal-container"),
-      title: `Do you want to schedule visit to ${moment(itm?.rescheduleDate).format("DD-MM-YYYY")} visit as requested?`,
+      title: `Do you want to schedule visit to ${moment(
+        itm?.rescheduleDate
+      ).format("DD-MM-YYYY")} visit as requested?`,
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Mark Schedule",
@@ -257,7 +245,7 @@ const ManagerContractView = ({
         // Swal.fire("Changes are not saved", "", "info");
       }
     });
-  }
+  };
   const terminateContract = () => {
     Swal.fire({
       target: document.getElementById("Modal-container"),
@@ -571,7 +559,7 @@ const ManagerContractView = ({
                         <tr key={itm?.id}>
                           <td>{itm?.name}</td>
                           <td>
-                          {itm?.files?.length === 0
+                            {itm?.files?.length === 0
                               ? "No files are uploaded yet."
                               : itm?.files?.map((file, index) => (
                                   <>
@@ -590,160 +578,160 @@ const ManagerContractView = ({
                   </table>
                 </div>
                 {/* Assets start */}
-                <div className="table-responsive mt-2">
-                  <div>Assets</div>
-                  <table className="table">
-                    <thead className="table-dark">
-                      <tr>
-                        <td>Asset Name</td>
-                        <td>Asset Reference</td>
-                        <td>Location</td>
-                        <td>Category</td>
-                        <td>Action</td>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {!currentContract?.projectContractAssets && (
-                        <tr>
-                          <td>No Assets are available</td>
-                        </tr>
-                      )}
-                      {currentContract?.projectContractAssets?.map((itm) => (
-                        <tr key={itm?.assetId}>
-                          <td>{itm?.assetName}</td>
-                          <td>{itm?.model}</td>
-                          <td>
-                            {itm.position ? `${itm.position}` : ""}
-                            {itm.floor ? ` > ${itm.floor}` : ""}
-                            {itm.room ? ` > ${itm.room}` : ""}
-                          </td>
-                          <td>
-                            {itm.category ? `${itm.category}` : ""}
-                            {itm.subCategory ? ` > ${itm.subCategory}` : ""}
-                            {itm.subCategor2 ? ` > ${itm.subCategor2}` : ""}
-                          </td>
-
-                          <td>
-                            <Tooltip title={`View ${itm?.assetName}`} arrow>
-                              <a
-                                target="_blank"
-                                href={`/#/update-asset?assetId=${itm?.assetId}`}
-                              >
-                                <i className="fas fa-eye"></i>
-                              </a>
-                            </Tooltip>
-                            &nbsp;
-                            <Tooltip title={`Delete ${itm?.assetName}`} arrow>
-                              <button
-                                className="btn btn-sm btn-light text-danger"
-                                onClick={() => deleteAsset(itm)}
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
-                            </Tooltip>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
+                {values?.category !== "Building Project" &&
+                  values?.category !== "" && (
+                    <Fragment>
+                      <div className="d-flex bd-highlight">
+                        <div className="pt-2 bd-highlight">
+                          <div className="row">
+                            <div className="col h6">Add Assets</div>
+                          </div>
+                        </div>
+                        <div className="ms-auto p-2 bd-highlight">
+                          <div className="row" style={{ height: "auto" }}>
+                            <div className="col">
+                              <div className="col">
+                                <Tooltip title={`Add New row`} arrow>
+                                  <button
+                                    type="button"
+                                    className="btn btn-light text-primary pr-2"
+                                    onClick={(e) => {
+                                      e?.preventDefault();
+                                      const d = [...assetData];
+                                      d.push({
+                                        assets: [],
+                                        assetRef: " ",
+                                        location: " ",
+                                        category: "New",
+                                      });
+                                      setAssetData(d);
+                                    }}
+                                  >
+                                    <i className="fas fa-plus"></i>&nbsp; Add
+                                    More
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="row">
+                        <div className="col-md-12">
+                          <AddAssets
+                            setAssetData={setAssetData}
+                            assetData={assetData}
+                            siteAssets={siteAssets}
+                            setSelectedAssets={setSelectedAssets}
+                          />
+                        </div>
+                      </div>
+                      {/** Add Assets end */}
+                    </Fragment>
+                  )}
                 {/* Schedule Visit start */}
-                <div className="row">
-                  <div className="col-6">
-                    <div className="form-group">
-                      <label for="scheduleDate">Schedule Visit</label>
-                      <input
-                        type="date"
-                        className="form-control date-input"
-                        id="scheduleDate"
-                        {...scheduleDateForm.register("scheduleDate")}
-                      />
-                    </div>
-                    <div>
-                      <Tooltip title={`Add New Visit`} arrow>
-                        <button
-                          type="button"
-                          className="mt-2 btn btn-sm btn-light text-primary"
-                          onClick={() => addVisit()}
-                        >
-                          <i className="fas fa-plus"></i>&nbsp;Add New Visit
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                  <div className="col-6">
-                    <div className="table-responsive mt-2">
-                      <table className="table">
-                        <thead className="table-dark">
-                          <tr>
-                            <td>Visit Date</td>
-                            <td>Status</td>
-                            <td>Action</td>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {!currentContract?.projectContractScheduleVisits && (
-                            <tr>
-                              <td>No Visits are available</td>
-                            </tr>
-                          )}
-                          {currentContract?.projectContractScheduleVisits?.map(
-                            (itm) => (
-                              <tr key={itm?.scheduleId}>
-                                <td>
-                                  {itm?.rescheduleDate ? (
-                                    <>
-                                      <del className="text-danger">
-                                        {moment(itm?.visitDate).format(
-                                          "DD-MM-YYYY"
-                                        )}
-                                      </del>
-                                      <br />
-                                      <span>
-                                        {moment(itm?.rescheduleDate).format(
-                                          "DD-MM-YYYY"
-                                        )}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    moment(itm?.visitDate).format("DD-MM-YYYY")
-                                  )}
-                                </td>
-                                <td>{itm?.status}</td>
-                                <td>
-                                  <Tooltip title={`Delete Visit`} arrow>
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-light text-danger"
-                                      onClick={() => deleteVisit(itm)}
-                                    >
-                                      <i className="fas fa-trash"></i>
-                                    </button>
-                                  </Tooltip>&nbsp;
-                                  {itm?.status === "Reschedule Requested" && (
-                                    <Tooltip
-                                      title={`Mark visit to schedule as requested`}
-                                      arrow
-                                    >
-                                      <button
-                                        type="button"
-                                        className="btn btn-sm btn-light text-primary"
-                                        onClick={() => markAsAccepted(itm)}
-                                      >
-                                        <i className="fas fa-check"></i>
-                                      </button>
-                                    </Tooltip>
-                                  )}
-                                </td>
+                {values?.category !== "Building Project" &&
+                  values?.category !== "" && (
+                    <div className="row">
+                      <div className="col-6">
+                        <div className="form-group">
+                          <label for="scheduleDate">Schedule Visit</label>
+                          <input
+                            type="date"
+                            className="form-control date-input"
+                            id="scheduleDate"
+                            {...scheduleDateForm.register("scheduleDate")}
+                          />
+                        </div>
+                        <div>
+                          <Tooltip title={`Add New Visit`} arrow>
+                            <button
+                              type="button"
+                              className="mt-2 btn btn-sm btn-light text-primary"
+                              onClick={() => addVisit()}
+                            >
+                              <i className="fas fa-plus"></i>&nbsp;Add New Visit
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </div>
+                      <div className="col-6">
+                        <div className="table-responsive mt-2">
+                          <table className="table">
+                            <thead className="table-dark">
+                              <tr>
+                                <td>Visit Date</td>
+                                <td>Status</td>
+                                <td>Action</td>
                               </tr>
-                            )
-                          )}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {!currentContract?.projectContractScheduleVisits && (
+                                <tr>
+                                  <td>No Visits are available</td>
+                                </tr>
+                              )}
+                              {currentContract?.projectContractScheduleVisits?.map(
+                                (itm) => (
+                                  <tr key={itm?.scheduleId}>
+                                    <td>
+                                      {itm?.rescheduleDate ? (
+                                        <>
+                                          <del className="text-danger">
+                                            {moment(itm?.visitDate).format(
+                                              "DD-MM-YYYY"
+                                            )}
+                                          </del>
+                                          <br />
+                                          <span>
+                                            {moment(itm?.rescheduleDate).format(
+                                              "DD-MM-YYYY"
+                                            )}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        moment(itm?.visitDate).format(
+                                          "DD-MM-YYYY"
+                                        )
+                                      )}
+                                    </td>
+                                    <td>{itm?.status}</td>
+                                    <td>
+                                      <Tooltip title={`Delete Visit`} arrow>
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-light text-danger"
+                                          onClick={() => deleteVisit(itm)}
+                                        >
+                                          <i className="fas fa-trash"></i>
+                                        </button>
+                                      </Tooltip>
+                                      &nbsp;
+                                      {itm?.status ===
+                                        "Reschedule Requested" && (
+                                        <Tooltip
+                                          title={`Mark visit to schedule as requested`}
+                                          arrow
+                                        >
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-light text-primary"
+                                            onClick={() => markAsAccepted(itm)}
+                                          >
+                                            <i className="fas fa-check"></i>
+                                          </button>
+                                        </Tooltip>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  )}
                 {/** END schedule visit */}
               </Fragment>
             )}

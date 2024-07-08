@@ -98,8 +98,8 @@ const AddAssets = ({
         </TableCell>
         <TableCell>
           <Button
-            variant="contained"
-            color="secondary"
+            variant="outlined"
+            color="error"
             onClick={() => deleteContractById(index)}
           >
             <i className="fas fa-trash"></i>
@@ -124,6 +124,9 @@ const AddAssets = ({
               </TableRow>
             </TableHead>
             <TableBody>
+              {tableData?.length === 0 && (
+                <TableCell>No Assets are added. Please click on Add more button to add assets in this contract.</TableCell>
+              )}
               {tableData?.map((dataItm, index) => (
                 <GetTableRow
                   itm={dataItm}
