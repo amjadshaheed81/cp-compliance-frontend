@@ -83,6 +83,8 @@ const Contracts = ({
     setChecked(event.target.checked);
     if (event.target.checked) {
       getProjectList(true);
+    } else {
+      getProjectList(false);
     }
   };
   useEffect(() => {
