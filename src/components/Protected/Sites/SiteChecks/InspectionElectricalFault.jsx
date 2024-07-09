@@ -159,11 +159,12 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                         onChange={(e) => handleInputChange(e, idx)}
                       />
                     </td>
+                    {console.log('formData?.[idx]?.dateRaised', formData?.[idx]?.dateRaised)}
                     <td> <input
                       disabled={completed}
                       type="date"
                       name="dateRaised"
-                      value={formData?.[idx]?.dateRaised?.substring(0, 10)}
+                      value={String(formData?.[idx]?.dateRaised)?.substring(0, 10)}
                       className="form-control"
                       id="dateRaised"
 

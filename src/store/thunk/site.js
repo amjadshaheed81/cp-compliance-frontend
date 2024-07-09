@@ -460,7 +460,6 @@ export const getSiteInformation = (id, setValue) => {
     try {
       const url = `/api/site/siteinfo/${id}?q=siteInfo`;
       const siteInformation = await get(url);
-      console.log("site information siteInformation", siteInformation);
       setValue("buildYear", siteInformation?.buildYear);
       setValue(
         "buildingUnderClientControl",
@@ -864,12 +863,10 @@ export const getSiteLayout = (id) => {
 };
 
 export const addSiteLayoutNode = (formData) => {
-  console.log("formData", formData);
   return async (dispatch) => {
     try {
       const url = "/api/site/createNode";
       const siteareainfo = await post(url, formData);
-      console.log("siteareainfo", siteareainfo);
       if (siteareainfo?.status === 200) {
         toast.success("Site layout node addedd successfully.");
         const url = `/api/site/layout/${formData?.siteId}`;
@@ -1015,7 +1012,6 @@ export const createDocumentFolder = (formData, folderId) => {
 };
 
 export const selectGlobalSite = (site) => {
-  console.log("site", site);
   return async (dispatch) => {
     try {
       dispatch({
@@ -1199,7 +1195,6 @@ export const addUser = (formData) => {
     try {
       const url = "/api/user/manage";
       const data = await put(url, formData);
-      console.log("data", data);
       if (data?.status === 200) {
         return "success";
       } else {
@@ -1216,7 +1211,6 @@ export const getUsers = () => {
     try {
       const url = `/api/user/all`;
       const userList = await get(url);
-      console.log("userList", userList);
       dispatch({
         type: GET_USER_ALL,
         payload: userList?.users,
@@ -1234,7 +1228,6 @@ export const getExternalUsers = () => {
     try {
       const url = `/api/user/all?userType=External`;
       const userList = await get(url);
-      console.log("userList", userList);
       dispatch({
         type: GET_USER_ALL_EXTERNAL,
         payload: userList?.users,
@@ -1298,7 +1291,6 @@ export const getSiteAssets = (id) => {
     try {
       let url = `/api/site/${id}/assets`;
       const { assets } = await get(url);
-      console.log("assetList", assets);
       dispatch({
         type: GET_SITES_ASSET,
         payload: assets,
@@ -1316,7 +1308,6 @@ export const getSitePFPAssets = (id) => {
     try {
       let url = `/api/site/${id}/assets?pfpItem=true`;
       const { assets } = await get(url);
-      console.log("assetList", assets);
       dispatch({
         type: GET_SITES_PFP_ASSET,
         payload: assets,
@@ -1334,7 +1325,6 @@ export const getSiteDoorAssets = (id) => {
     try {
       let url = `/api/site/${id}/assets?doorItem=true`;
       const { assets } = await get(url);
-      console.log("assetList", assets);
       dispatch({
         type: GET_SITES_DOOR_ASSET,
         payload: assets,
@@ -1352,7 +1342,6 @@ export const getSitePATAssets = (id) => {
     try {
       let url = `/api/site/${id}/assets?patItem=true`;
       const { assets } = await get(url);
-      console.log("assetList", assets);
       dispatch({
         type: GET_SITES_PAT_ASSET,
         payload: assets,

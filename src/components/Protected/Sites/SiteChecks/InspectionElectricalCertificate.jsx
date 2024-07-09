@@ -123,7 +123,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             name="issueDate"
             className="form-control"
             id="issueDate"
-            value={formData.issueDate?.substring(0, 10)}
+            value={String(formData.issueDate)?.substring(0, 10)}
             onChange={handleInputChange}
           />
         </Grid>
@@ -137,7 +137,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             name="expiryDate"
             className="form-control"
             id="expiryDate"
-            value={formData.expiryDate?.substring(0, 10)}
+            value={String(formData.expiryDate)?.substring(0, 10)}
             onChange={handleInputChange}
           />
         </Grid>

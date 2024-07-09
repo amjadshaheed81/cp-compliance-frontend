@@ -146,7 +146,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     Due Date
                   </label>
                   <input
-                    value={siteCheck?.dueDate?.substring(0, 10)}
+                    value={String(siteCheck?.dueDate)?.substring(0, 10)}
                     disabled
                     type="date"
                     name="dueDate"

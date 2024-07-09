@@ -11,10 +11,11 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
 
-import { Button, Modal, Typography, Box, Grid, Divider, Autocomplete, TextField } from "@mui/material";
+import { Button, Modal, Chip, CircularProgress, Box, Grid, Divider, Autocomplete, TextField } from "@mui/material";
 import { deleteUser, getSites, getUsers, getExternalUsers } from "../../../../store/thunk/site";
 
 const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
+  const [isLoading, setIsLoading] = useState(false)
   const [create, setCreate] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
   const [subtypeoptions, setsubtypeoptions] = useState([]);
@@ -109,6 +110,21 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
 
   useEffect(() => {
     searchPreActions();
+    if (formData2.type?.length > 0) {
+      getsubtypeoptions();
+    } else {
+      setcatoptions([]);
+      setsubtypeoptions([]);
+      
+    }
+    setFormData2({
+      ...formData2,
+      subType: ''
+    });
+  }, [formData2.type]);
+
+  useEffect(() => {
+    searchPreActions();
     if (formData.type?.length > 0) {
       setcatoptions([]);
       setsubtypeoptions([]);
@@ -133,6 +149,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }, [formData.subType]);
 
   const searchPreActions = () => {
+    console.log(siteChecks, formData2)
     let filteredSiteChecks2 = siteChecks;
     if (formData2?.type?.length > 0) {
       filteredSiteChecks2 = filteredSiteChecks2.filter(sc => sc.type === formData2.type)
@@ -143,12 +160,18 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     if (formData2?.status?.length > 0) {
        filteredSiteChecks2 = filteredSiteChecks2.filter(sc => sc.status === formData2.status)
     }
-    if (formData2?.searchField?.length > 0) {
+    if (formData2?.searchField?.length > 0 && filteredSiteChecks2?.length > 0) {
+      filteredSiteChecks2.forEach(s => {
+        const lead = externalusers.filter(u => u.id == s.leadUserID);
+        if (lead.length > 0) {
+          s.leadName = lead[0].trade + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].company;
+        }
+      })
       filteredSiteChecks2 = filteredSiteChecks2.filter(sc =>
-        sc?.type.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
-        sc?.subType.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
-        sc?.category.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
-        sc?.leadUserID.toLowerCase().includes(String(formData2?.searchField).toLowerCase())
+        sc?.type?.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
+        sc?.subType?.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
+        sc?.category?.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
+        sc?.leadName?.toLowerCase().includes(String(formData2?.searchField).toLowerCase())
       )
     }
     setFilteredSiteChecks(filteredSiteChecks2);
@@ -192,6 +215,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
       confirmButtonText: "Delete",
     }).then(async (result) => {
       if (result.isConfirmed) {
+        setIsLoading(true);
         await del("/api/site-check/check-id/" + action.checkId);
         getSiteChecks();
         // if (res === "Success") {
@@ -216,6 +240,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
       confirmButtonText: "Confirm",
     }).then(async (result) => {
       if (result.isConfirmed) {
+        setIsLoading(true);
         action.status = "Done";
         await put("/api/site-check/" + action.checkId, action);
         getSiteChecks();
@@ -246,10 +271,11 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }
 
   const getSiteChecks = async () => {
+    setIsLoading(true);
     const siteChecks = await get("/api/site-check/site/" + site.siteId);
-    console.log("siteCheckssiteChecks", siteChecks)
     setFilteredSiteChecks(siteChecks)
     setSiteChecks(siteChecks);
+    setIsLoading(false);
   }
 
 
@@ -294,6 +320,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                       id="subType"
                       disabled={formData2?.type?.length === 0}
                       onChange={handleInputChange2}
+                      value={formData2?.subType}
                   >
                     <option value="">Select Sub Type</option>
                       {subtypeoptions.map(t => <option value={t}>{t}</option>)}
@@ -319,7 +346,16 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   <button
                     style={{ width: "150px" }}
                     className="btn btn-primary text-white pr-2"
-                    onClick={() => { setCreate(true) }}
+                      onClick={() => {
+                        setCreate(true);
+                        setFormData({
+                          searchField: "",
+                          type: "",
+                          subType: "",
+                          category: "",
+                          status: "Open"
+                        })
+                      }}
                   >
                     Start New
                   </button>
@@ -355,12 +391,21 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredSiteChecks?.length === 0 && (
+                {!isLoading && filteredSiteChecks?.length === 0 && (
                   <tr>
                     <td>No search result found!!</td>
                   </tr>
-                )}
-                  {filteredSiteChecks?.map((action) =>
+                  )}
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={8} align="center">
+                        <CircularProgress />
+                      
+                      </td>
+                    </tr>
+                  )}
+                  
+                  {!isLoading && filteredSiteChecks?.map((action) =>
                   {
                     let leanName = "-"
                     const lead = externalusers.filter(u => u.id == action.leadUserID);
@@ -388,7 +433,12 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         <th scope="col" style={{ width: '150px' }}>
                         {moment(action?.dueDate).format("DD-MM-YYYY")}
                       </th>
-                      <th scope="col">{action?.status}</th>
+                        <th scope="col">
+                          <Chip
+                            color={action?.status === "Done" ? "success" : "warning"}
+                            label={action?.status}
+                          />
+                          </th>
                         <th scope="col" style={{ width: '250px' }}>
                         <Tooltip title={`View ${action?.type}`} arrow>
                           <button
@@ -495,7 +545,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                       Due Date
                     </label>
                     <input
-                      value={formData?.dueDate?.substring(0, 10)}
+                      value={String(formData?.dueDate)?.substring(0, 10)}
                       min={new Date().toISOString().split('T')[0]}
                       type="date"
                       name="dueDate"
@@ -514,6 +564,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         uformData.leadUserID = item?.key;
                         setFormData(uformData);
                       }}
+                      value={externalusers.filter(o => String(o.id) === String(formData?.leadUserID)).map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })[0]}
+
                       options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
                       getOptionLabel={(option) => option.label}
                       renderInput={(params) => (
@@ -550,6 +602,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     <label htmlFor="assistantUserID">Assistant</label>
                     <Autocomplete
                       id="assistantUserID"
+                      value={externalusers.filter(o => String(o.id) === String(formData?.assistantUserID)).map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })[0]}
+
                       onChange={(event, item) => {
                         const uformData = { ...formData }
                         uformData.assistantUserID = item?.key;
@@ -597,6 +651,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                       className="form-control form-select"
                       id="repeatFrequency"
                       onChange={handleInputChange}
+                      value={formData?.repeatFrequency}
                     >
                       <option value="None">None</option>
                       <option value="Daily">Daily</option>

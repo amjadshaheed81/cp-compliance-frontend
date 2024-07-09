@@ -15,8 +15,11 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
 
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [totalrisks, settotalrisks] = useState(0)
+  const [scoreoptions, setscoreoptions] = useState(null);
+
 
   useEffect(() => {
+    
     getRiskFactor();
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
@@ -81,6 +84,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
   // }
 
   const getRiskFactor = async () => {
+    const scoreoptionsall = await get("/api/lov/SITE_CHECK_DOMESTIC_RA_SCORES");
+    setscoreoptions(scoreoptionsall);
     const riskFactorFromDB = await get("/api/site-check/ra-survey-risk-factors")
     const riskFactorResponse = await get("/api/site-check/domestic-ra-survey/" + checkId)
     riskFactorFromDB.forEach(q => {
@@ -209,18 +214,15 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
             return (<Accordion defaultExpanded={idx === openIndex}>
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Typography>{q.riskFactor}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;
-                {(riskFactor[idx]?.response?.weightedScore ?? 0) > 0 &&
                   <Chip
                     style={getChipColor(riskFactor[idx]?.response?.weightedScore)}
                     label={"Weighted Score : " + (riskFactor[idx]?.response?.weightedScore ?? 0)}
                   />
-                }
-                {(riskFactor[idx]?.response?.totalRiskScore ?? 0) > 0 &&
                   <Chip
                     style={getChipColor(riskFactor[idx]?.response?.totalRiskScore)}
                     label={"Risk Score : " + (riskFactor[idx]?.response?.totalRiskScore ?? 0)}
                   />
-                }
+                
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={2}>
@@ -234,7 +236,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       disabled={riskFactor[idx]?.completed}
                       className="form-control"
                       onChange={(e) => handleInputChange(e, idx)}
-                      value={riskFactor[idx]?.response?.responseDate?.substring(0, 10)}
+                      value={String(riskFactor[idx]?.response?.responseDate)?.substring(0, 10)}
                     />
 
                   </Grid>
@@ -250,11 +252,9 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       value={riskFactor[idx]?.response?.score}
                     >
                       <option value="">Select </option>
-                      <option value={"10"}> 10 - Fed from poorly treated non mains water source </option>
-                      <option value={"9"}> 9 - Fed from poorly treated non mains water source </option>
-                      <option value={"8"}> 8 - Fed from poorly treated non mains water source </option>
-                      <option value={"7"}> 7 - Fed from poorly treated non mains water source </option>
-                      <option value={"6"}> 6 - Fed from poorly treated non mains water source </option>
+                      {scoreoptions.filter(o => o.attribite1 === String(q?.riskFactorID)).map(o =>(
+                        <option value={o.lovValue}> {o.lovValue} -  {o.lovDesc} </option>
+                      ))}
                     </select>
                   </Grid>
 
