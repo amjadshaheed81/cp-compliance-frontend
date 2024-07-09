@@ -106,7 +106,7 @@ const Contracts = ({
       setContractList(projects?.projectContracts || []);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       let url = isSiteSelectedForContractor
-        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorId=${loggedInUserData?.id}`
         : `/api/project/contracts?contractorId=${loggedInUserData?.id}`;
       const projects = await get(url);
       setFilteredContractList(projects?.projectContracts || []);
