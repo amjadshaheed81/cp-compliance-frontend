@@ -33,6 +33,13 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     getExternalUsers();
     gettypeoptions();
   }, []);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // Number of items per page
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
   
   const gettypeoptions = async () => {
     const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
@@ -490,7 +497,30 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   )
                   })}
               </tbody>
-            </table>
+              </table>
+              <nav aria-label="pagination">
+                <ul className="pagination justify-content-center">
+                  <li className={`page-item`} style={{ marginRight: '20px' }}>
+                    <button className="page-link" onClick={() => handlePageChange(1)}>
+                      <i className="fas fa-arrow-left" />
+                    </button>
+                  </li>
+                  {Array.from({ length: Math.ceil(filteredSiteChecks.length / itemsPerPage) }, (_, index) => (
+                    <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                   
+                      <button className="page-link" onClick={() => handlePageChange(1)}>
+                        {index + 1}
+                      </button>
+                    </li>
+                    
+                  ))}
+                  <li className={`page-item `} style={{marginLeft: '20px'}}>
+                    <button className="page-link" onClick={() => handlePageChange(1)}>
+                      <i className="fas fa-arrow-right" />
+                    </button>
+                  </li>
+                </ul>
+                </nav>
             </div>
           </>}
           {create && 
