@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Tooltip } from "@mui/material";
+import { Button, Box, Tooltip, Autocomplete } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -281,7 +281,25 @@ const AddContracts = ({
                       )}
                       <div className="col-md-3">
                         <label for="company">Company</label>
-                        <select
+                        <Autocomplete
+                            id="leadUserID"
+                            onChange={(event, item) => {
+                              console.log("item", item);
+                              setValue("company", item?.key, {shouldValidate: true});
+                            }}
+                            options={companies.map((option) => { return { key: option.userId, label: option.companyName } })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref} >
+                                <input type="text"
+                                  {...params.inputProps}
+                                  className="form-control"
+                                  placeholder="Select Lead"
+                                />
+                              </div>
+                            )}
+                          />
+                        {/* <select
                           name="company"
                           className="form-control form-select"
                           id="company"
@@ -301,13 +319,14 @@ const AddContracts = ({
                             </option>
                           ))}
                         </select>
+                        */}
                         {errors?.company && (
                           <InputError
                             message={errors?.company?.message}
                             key={errors?.company?.message}
                           />
-                        )}
-                      </div>
+                        )} 
+                      </div> 
                       <div className="col-md-3">
                         <div className="form-group">
                           <label for="budget">Budget (GBP)</label>
