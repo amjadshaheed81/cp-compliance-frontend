@@ -294,7 +294,7 @@ const AddContracts = ({
                                 <input type="text"
                                   {...params.inputProps}
                                   className="form-control"
-                                  placeholder="Select Lead"
+                                  placeholder="Select Company"
                                 />
                               </div>
                             )}
