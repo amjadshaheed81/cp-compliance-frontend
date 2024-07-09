@@ -94,7 +94,11 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       <div className="content" style={{ backgroundColor: '#f8f9fa' }}>
         <Header />
         <div className="container-fluid">
-          <BreadCrumHeader header={`Site Check - (${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category})`} page={"Site Inspection"} />
+          <BreadCrumHeader
+            header={`Site Check - (${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category})`} page={"Site Inspection"}
+            chipColor={siteCheck?.status === "Done" ? "success" : "warning"}
+            chipLabel={siteCheck?.status}
+          />
           <Stack spacing={2}>
             <Item> <Grid container >
 

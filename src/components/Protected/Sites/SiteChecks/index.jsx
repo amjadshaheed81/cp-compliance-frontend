@@ -292,14 +292,27 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search"
-                    name="searchField"
-                      onChange={handleInputChange2}
-                  />
+                  <div className="col">
+                    <div style={{ position: "relative" }}>
+                      <i
+                        style={{
+                          position: "absolute",
+                          padding: "10px",
+                          color: "lightgrey",
+                          paddingLeft: "1.5rem",
+                        }}
+                        className="fas fa-search"
+                      ></i>
+                      <input
+                        type="text"
+                        placeholder="Search"
+                        name="searchField"
+                        style={{ textAlign: "center", width: '250px' }}
+                        className="form-control"
+                        onChange={handleInputChange2}
+                      />
+                    </div>
+                  
                 </div>
                 <div className="col">
                   <select
@@ -308,7 +321,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     id="type"
                       onChange={handleInputChange2}
                   >
-                      <option value="">Select Type</option>
+                      <option value="">Type</option>
                       {typeoptions.map(t => <option value={t}>{t}</option>)}
                    
                   </select>
@@ -322,7 +335,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                       onChange={handleInputChange2}
                       value={formData2?.subType}
                   >
-                    <option value="">Select Sub Type</option>
+                    <option value="">Sub Type</option>
                       {subtypeoptions.map(t => <option value={t}>{t}</option>)}
                   </select>
                 </div>

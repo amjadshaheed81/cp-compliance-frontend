@@ -99,12 +99,12 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
           <table className="table table-bordered f-11">
             <thead className="table-dark">
               <tr>
-                <th scope="col">Asset</th>
-                <th scope="col">Fault</th>
-                <th scope="col">Date Raised</th>
-                <th scope="col">Rating</th>
-                <th scope="col">Image</th>
-                <th scope="col">Suggested Action</th>
+                <th scope="col">ASSET</th>
+                <th scope="col">FAULT</th>
+                <th scope="col">DATE RAISED</th>
+                <th scope="col">RATING</th>
+                <th scope="col">IMAGE</th>
+                <th scope="col">SUGGESTED ACTION</th>
                 <th scope="col"></th>
               </tr>
             </thead>
