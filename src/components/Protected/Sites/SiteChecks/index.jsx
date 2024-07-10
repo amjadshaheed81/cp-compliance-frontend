@@ -35,7 +35,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     gettypeoptions();
   }, []);
 
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
@@ -527,13 +527,12 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   </li>
                 </ul>
                 </nav> */}
-              <div className="row">
                 <Pagination
                   totalPages={Math.ceil(filteredSiteChecks.length / itemsPerPage)}
                   currentPage={currentPage}
                   onPageChange={handlePageChange}
                 />
-              </div>
+              
             </div>
           </>}
           {create && 
