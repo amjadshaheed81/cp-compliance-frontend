@@ -49,7 +49,6 @@ const ViewUsers = ({
       userId: selectedUser?.id,
       firstName: formJson?.firstName || null,
       lastName: formJson?.lastName || null,
-      password: formJson?.password || null,
       email: formJson?.email || null,
       phone: Number(formJson?.phone) || null,
       role: formJson?.role || null,
