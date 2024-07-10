@@ -80,7 +80,6 @@ const AdminDropdowns = ({ }) => {
   }
 
   const save = async (idx) => {
-    console.log('datadatadatadatadatadatadata', data)
     setIsLoading(true);
     const dataTSave = { lovType:selectedLovType, ...data[idx] }
     if (dataTSave.add) {
@@ -90,6 +89,13 @@ const AdminDropdowns = ({ }) => {
     }
     getLovType(selectedLovType)
     
+  }
+
+  const saveNew = async (lovType, lovValue) => {
+    setIsLoading(true);
+    const dataTSave = { lovType, lovValue }
+    await post("/api/lov/", dataTSave);
+    getLovType(lovType)
   }
   
   const handleInputChange = (e, idx) => {
