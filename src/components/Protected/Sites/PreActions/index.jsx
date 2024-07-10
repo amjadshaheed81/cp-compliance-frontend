@@ -40,7 +40,11 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
   }, []);
   const getPreActions = async () => {
     if (!siteSelectedForGlobal?.siteId) {
-      toast.error("Please select site from site search to proceed.");
+      Swal.fire({
+        icon: "error",
+        title: "Site is not selected",
+        text: "Please select site from site search and try again.",
+      });
       return;
     }
     const res = await get(
