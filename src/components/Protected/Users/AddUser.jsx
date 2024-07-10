@@ -306,18 +306,28 @@ const AddUser = ({
                       <div className="form-group">
                         <label for="company">Company Name</label>
                         <Autocomplete
-                          id="company"
-                          onChange={(event, item) => {
-                            setSelectedCompany(item)
-                          }}
-                          onInputChange={(event, newInputValue) => {
+                            id="leadUserID"
+                            onChange={(event, item) => {
+                              console.log("item", item);
+                              setSelectedCompany(item?.key);
+                            }}
+                            freeSolo
+                            onInputChange={(event, newInputValue) => {
+                              console.log("newInputValue", newInputValue);
                             setSelectedCompany(newInputValue);
-                          }}
-                          freeSolo
-                          options={companies.map((option) => option)}
-                          renderInput={(params) => <TextField {...params} />}
-                        />
-                        
+                            }}
+                            options={companies.map((option) => { return { key: option.userId, label: option.companyName } })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref} >
+                                <input type="text"
+                                  {...params.inputProps}
+                                  className="form-control"
+                                  placeholder="Select Company"
+                                />
+                              </div>
+                            )}
+                          />
                       </div>
                     </div>
                   )}
