@@ -29,7 +29,7 @@ const Sites = ({
   selectGlobalSite,
 }) => {
   const [selectedItem, setSelectedItem] = useState("status");
-  const [sitesPerPage] = useState(5);
+  const [sitesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   const indexOfLastSite = currentPage * sitesPerPage;

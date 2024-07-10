@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import AddUser from "./AddUser";
 import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
+import Pagination from "../../common/Pagination/Pagination";
 
 const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
   const [showViewModal, setShowViewModal] = useState(false);
@@ -19,6 +20,18 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
   const [selectedUser, setSelectedUser] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [usersPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const indexOfLastUsers = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUsers - usersPerPage;
+  const currentContracts = filteredUser.slice(
+    indexOfFirstUser,
+    indexOfLastUsers
+  );
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   useEffect(() => {
     getUsers();
@@ -233,12 +246,12 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUser?.length === 0 && (
+                {currentContracts?.length === 0 && (
                   <tr>
                     <td>No search result found!!</td>
                   </tr>
                 )}
-                {filteredUser?.map((user) => (
+                {currentContracts?.map((user) => (
                   <tr key={user?.id}>
                     <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>
@@ -288,6 +301,13 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
             </table>
           </div>
           {/* row end*/}
+          <div className="row">
+            <Pagination
+                totalPages={Math.ceil(filteredUser.length / usersPerPage)}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+          </div>
         </div>
       </div>
     </Fragment>
