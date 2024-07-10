@@ -61,7 +61,7 @@ const Contracts = ({
   const [subCategory, setSubCategory] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [checked, setChecked] = useState(false);
-  const [contractsPerPage] = useState(5);
+  const [contractsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   const indexOfLastContract = currentPage * contractsPerPage;
