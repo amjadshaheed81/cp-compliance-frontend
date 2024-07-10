@@ -4,6 +4,7 @@ import { CSVLink } from "react-csv";
 import moment from "moment";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
+import Pagination from "../../../common/Pagination/Pagination";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
@@ -34,9 +35,14 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     gettypeoptions();
   }, []);
 
+  const [itemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // Number of items per page
-
+  const indexOfLastPreAction = currentPage * itemsPerPage;
+  const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
+  const currentSiteChecks = filteredSiteChecks.slice(
+    indexOfFirstPreAction,
+    indexOfLastPreAction
+  );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -102,7 +108,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   };
 
   useEffect(() => {
-    searchPreActions();
+    searchSiteCheck();
     if (formData2.type?.length > 0) {
       getsubtypeoptions();
     } else {
@@ -116,7 +122,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }, [formData2.type, formData2.searchField, formData2.subType, formData2.status]);
 
   useEffect(() => {
-    searchPreActions();
+    searchSiteCheck();
     if (formData2.type?.length > 0) {
       getsubtypeoptions();
     } else {
@@ -131,7 +137,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }, [formData2.type]);
 
   useEffect(() => {
-    searchPreActions();
+    searchSiteCheck();
     if (formData.type?.length > 0) {
       setcatoptions([]);
       setsubtypeoptions([]);
@@ -149,13 +155,13 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }, [formData.type]);
 
   useEffect(() => {
-    searchPreActions();
+    searchSiteCheck();
     if (formData.subType?.length > 0) {
       getcatoptions();
     }
   }, [formData.subType]);
 
-  const searchPreActions = () => {
+  const searchSiteCheck = () => {
     console.log(siteChecks, formData2)
     let filteredSiteChecks2 = siteChecks;
     if (formData2?.type?.length > 0) {
@@ -425,7 +431,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     </tr>
                   )}
                   
-                  {!isLoading && filteredSiteChecks?.map((action) =>
+                  {!isLoading && currentSiteChecks?.map((action) =>
                   {
                     let leanName = "-"
                     const lead = externalusers.filter(u => u.id == action.leadUserID);
@@ -498,7 +504,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   })}
               </tbody>
               </table>
-              <nav aria-label="pagination">
+              {/* <nav aria-label="pagination">
                 <ul className="pagination justify-content-center">
                   <li className={`page-item`} style={{ marginRight: '20px' }}>
                     <button className="page-link" onClick={() => handlePageChange(1)}>
@@ -520,7 +526,14 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     </button>
                   </li>
                 </ul>
-                </nav>
+                </nav> */}
+              <div className="row">
+                <Pagination
+                  totalPages={Math.ceil(filteredSiteChecks.length / itemsPerPage)}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+                />
+              </div>
             </div>
           </>}
           {create && 
