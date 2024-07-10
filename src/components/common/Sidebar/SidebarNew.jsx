@@ -35,11 +35,12 @@ import ChecklistIcon from "@mui/icons-material/Checklist";
 import SearchIcon from "@mui/icons-material/Search";
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
+import { filterMenuItemsForAdmin } from "../../../Constant/Menu";
 
 const drawerWidth = 240;
 
@@ -189,10 +190,10 @@ const SidebarNew = ({ loggedInUserData }) => {
         navigate("/sites");
         break;
       case "Categories":
-        navigate("/admin/categories")
+        navigate("/admin/categories");
         break;
       case "Dropdowns":
-        navigate("/admin/dropdowns")
+        navigate("/admin/dropdowns");
         break;
       default:
         navigate("/dashboard");
@@ -264,41 +265,35 @@ const SidebarNew = ({ loggedInUserData }) => {
             <p className="text-white ps-5 fs-6">{loggedInUserData?.role}</p>
           </li>
           <p style={{ color: "grey" }}>Genral</p>
-          {[
-            "Dashboard",
-            "Edit Profile",
-            "Portfolio",
-            "Reports",
-            "Users",
-            "Notifications",
-            "Actions",
-          ].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? "initial" : "center",
-                  px: 2.5,
-                }}
-                onClick={() => goTo(text)}
-              >
-                <ListItemIcon
+          {filterMenuItemsForAdmin(loggedInUserData?.role).map(
+            (text, index) => (
+              <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                <ListItemButton
                   sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : "auto",
-                    justifyContent: "center",
+                    minHeight: 48,
+                    justifyContent: open ? "initial" : "center",
+                    px: 2.5,
                   }}
                   onClick={() => goTo(text)}
                 >
-                  {iconComponents[index]}
-                </ListItemIcon>
-                <ListItemText
-                  primary={text}
-                  sx={{ opacity: open ? 1 : 0, color: "white" }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: open ? 3 : "auto",
+                      justifyContent: "center",
+                    }}
+                    onClick={() => goTo(text)}
+                  >
+                    {iconComponents[index]}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={text}
+                    sx={{ opacity: open ? 1 : 0, color: "white" }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            )
+          )}
         </List>
         {/* <Divider /> */}
         <p style={{ color: "grey" }} className="bg-black m-0">
@@ -347,9 +342,7 @@ const SidebarNew = ({ loggedInUserData }) => {
           Admin
         </p>
         <List sx={{ backgroundColor: "black" }}>
-          {[
-            "Categories","Dropdowns"
-          ].map((text, index) => (
+          {["Categories", "Dropdowns"].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 sx={{
