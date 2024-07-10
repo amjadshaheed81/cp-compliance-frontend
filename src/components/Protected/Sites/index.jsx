@@ -17,6 +17,7 @@ import SidebarNew from "../../common/Sidebar/SidebarNew";
 import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from 'react-toastify';
+import Pagination from "../../common/Pagination/Pagination";
 
 const Sites = ({
   filterSite,
@@ -28,6 +29,18 @@ const Sites = ({
   selectGlobalSite,
 }) => {
   const [selectedItem, setSelectedItem] = useState("status");
+  const [sitesPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const indexOfLastSite = currentPage * sitesPerPage;
+  const indexOfFirstSite = indexOfLastSite - sitesPerPage;
+  const currentSites = filterSite.slice(
+    indexOfFirstSite,
+    indexOfLastSite
+  );
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   useEffect(() => {
     getSites();
@@ -206,12 +219,12 @@ const Sites = ({
                 </tr>
               </thead>
               <tbody>
-                {filterSite?.length === 0 && (
+                {currentSites?.length === 0 && (
                   <tr>
                     <td colSpan={5}>No Sites found</td>
                   </tr>
                 )}
-                {filterSite?.map((itm, i) => (
+                {currentSites?.map((itm, i) => (
                   <tr key={i}>
                     <th scope="col">
                       <span className="text-primary cursor" onClick={() => {
@@ -280,6 +293,13 @@ const Sites = ({
             </table>
           </div>
           {/* row end*/}
+          <div className="row">
+            <Pagination
+                totalPages={Math.ceil(filterSite.length / sitesPerPage)}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+          </div>
         </div>
       </div>
     </Fragment>
