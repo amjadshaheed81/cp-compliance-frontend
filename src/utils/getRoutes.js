@@ -17,6 +17,7 @@ import Users from "../components/Protected/Users";
 import AdminCategories from "../components/Protected/Admin/AdminCategories";
 import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd"
 import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit"
+import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns"
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
@@ -133,6 +134,11 @@ export const getRoutes = () => {
       path: "/admin/categories",
       element: <AdminCategories />,
     },
+    {
+      path: "/admin/dropdowns",
+      element: <AdminDropdowns />,
+    },
+    
     {
       path: "/admin/categories/new",
       element: <AdminCategoriesAdd />,

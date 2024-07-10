@@ -36,6 +36,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
@@ -65,6 +66,7 @@ const siteIconComponents = [
 ];
 const adminIconComponents = [
   <AdminPanelSettingsIcon style={{ color: "white" }} />,
+  <FeaturedPlayListIcon style={{ color: "white" }} />,
 ];
 
 const openedMixin = (theme) => ({
@@ -188,6 +190,9 @@ const SidebarNew = ({ loggedInUserData }) => {
         break;
       case "Categories":
         navigate("/admin/categories")
+        break;
+      case "Dropdowns":
+        navigate("/admin/dropdowns")
         break;
       default:
         navigate("/dashboard");
@@ -343,7 +348,7 @@ const SidebarNew = ({ loggedInUserData }) => {
         </p>
         <List sx={{ backgroundColor: "black" }}>
           {[
-            "Categories",
+            "Categories","Dropdowns"
           ].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
