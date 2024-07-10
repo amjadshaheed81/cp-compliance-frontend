@@ -94,10 +94,6 @@ export const getRoutes = () => {
       element: <Document />,
     },
     {
-      path: "/site-projects",
-      element: <Projects />,
-    },
-    {
       path: "/site-contracts",
       element: <Contracts />,
     },
