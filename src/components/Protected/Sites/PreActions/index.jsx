@@ -5,6 +5,7 @@ import moment from "moment";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
+import Pagination from "../../../common/Pagination/Pagination";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -17,6 +18,18 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
   const [filteredPreActions, setFilteredPreActions] = useState([]);
   const [preActions, setPreActions] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [preActionsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const indexOfLastPreAction = currentPage * preActionsPerPage;
+  const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
+  const currentPreActions = filteredPreActions.slice(
+    indexOfFirstPreAction,
+    indexOfLastPreAction
+  );
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
@@ -194,12 +207,12 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredPreActions?.length === 0 && (
+                {currentPreActions?.length === 0 && (
                   <tr>
                     <td>No search result found!!</td>
                   </tr>
                 )}
-                {filteredPreActions?.map((action) => (
+                {currentPreActions?.map((action) => (
                   <tr key={action?.id}>
                     <th scope="col">{action?.actionId}</th>
                     <th scope="col">{action?.raisedByUserName}</th>
@@ -283,6 +296,13 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
             </table>
           </div>
           {/* row end*/}
+          <div className="row">
+            <Pagination
+                totalPages={Math.ceil(filteredPreActions.length / preActionsPerPage)}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+          </div>
         </div>
       </div>
     </Fragment>
