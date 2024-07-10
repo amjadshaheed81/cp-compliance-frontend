@@ -24,6 +24,7 @@ import ChipComponent from "../../../common/Chips/Chips";
 import ManagerContractView from "./ManagerContractView";
 import ContractorContractView from "./ContractorContractView";
 import Swal from "sweetalert2";
+import Pagination from "../../../common/Pagination/Pagination";
 export const isManagerAdminLogin = (loggedInUserData) => {
   if (
     loggedInUserData?.role === ROLE.ADMIN ||
@@ -60,6 +61,18 @@ const Contracts = ({
   const [subCategory, setSubCategory] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [checked, setChecked] = useState(false);
+  const [contractsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const indexOfLastContract = currentPage * contractsPerPage;
+  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
+  const currentContracts = filteredContractList.slice(
+    indexOfFirstContract,
+    indexOfLastContract
+  );
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
   const handleInputChange = (e) => {
     console.log("e", e)
     const { name, value } = e.target;
@@ -344,12 +357,12 @@ const Contracts = ({
                 </tr>
               </thead>
               <tbody>
-                {filteredContractList?.length === 0 && (
+                {currentContracts?.length === 0 && (
                   <tr>
                     <td>No Contracts Found</td>
                   </tr>
                 )}
-                {filteredContractList?.map((itm) => (
+                {currentContracts?.map((itm) => (
                   <tr key={itm?.projectContractId}>
                     <td>
                       <span
@@ -387,6 +400,13 @@ const Contracts = ({
             </table>
           </div>
           {/* row end*/}
+          <div className="row">
+            <Pagination
+                totalPages={Math.ceil(filteredContractList.length / contractsPerPage)}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+          </div>
         </div>
       </div>
     </Fragment>
