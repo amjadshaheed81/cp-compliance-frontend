@@ -31,7 +31,7 @@ export const filterMenuItems = (loggedInRole) => {
 
 export const filterSiteMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
-    return GeneralMenu.filter(
+    return SiteMenu.filter(
       (item) => item !== "Site Details"
     );
   }
