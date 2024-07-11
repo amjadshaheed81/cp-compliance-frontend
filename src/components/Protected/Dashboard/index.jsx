@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
@@ -11,8 +11,23 @@ import DashboardEventCalendar from "./DashboardEventCalendar";
 import DashboardRiskScore from "./DashboardRiskScore";
 import SearchSite from "./SearchSite";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
+import { selectGlobalSite } from "../../../store/thunk/site";
 
-const Dashboard = () => {
+const Dashboard = ({
+  loggedInUserData,
+  selectGlobalSite,
+  siteSelectedForGlobal,
+}) => {
+  useEffect(() => {
+    if (loggedInUserData) {
+      if (!siteSelectedForGlobal?.siteId) {
+        selectGlobalSite({
+          siteName: loggedInUserData?.defaultSiteName,
+          siteId: loggedInUserData?.defaultSiteId,
+        });
+      }
+    }
+  }, [loggedInUserData]);
   return (
     <Fragment>
       <SidebarNew />
@@ -69,4 +84,9 @@ const Dashboard = () => {
   );
 };
 
-export default connect(null, {})(Dashboard);
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+
+export default connect(mapStateToProps, { selectGlobalSite })(Dashboard);
