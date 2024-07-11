@@ -273,8 +273,12 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
 
   useEffect(() => { getSiteChecks() },[])
 
-  const addSiteCheck = async () => {
-    
+  const addSiteCheck = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     const body = formData;
     body.siteId = site.siteId
     body.dueDate = new Date(body.dueDate);
@@ -542,6 +546,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
           </>}
           {create && 
             <div >
+              <form onSubmit={addSiteCheck}>
             <BreadCrumHeader header={"Site Check - New"} page={"New"} />
               <Grid container >
 
@@ -551,7 +556,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         <label htmlFor="folder" name="folder">
                           Type
                         </label>
-                        <select
+                      <select
+                        required
                       name="type"
                       value={formData?.type}
                           className="form-control form-select"
@@ -568,7 +574,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     <label htmlFor="folder" name="folder">
                       Sub Type
                     </label>
-                    <select
+                      <select
+                        required
                       name="subType"
                       value={formData?.subType}
                       className="form-control form-select"
@@ -586,7 +593,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     <label htmlFor="category" name="category">
                       Category
                     </label>
-                    <select
+                      <select
+                        required
                       name="category"
                       value={formData?.category}
                       disabled={formData?.subType?.length === 0}
@@ -604,7 +612,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     <label htmlFor="folder" name="folder">
                       Due Date
                     </label>
-                    <input
+                      <input
+                        required
                       value={String(formData?.dueDate)?.substring(0, 10)}
                       min={new Date().toISOString().split('T')[0]}
                       type="date"
@@ -632,6 +641,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         <div ref={params.InputProps.ref} >
                           <input type="text"
                             {...params.inputProps}
+                            required
                             className="form-control"
                             placeholder="Select Lead"
                           />
@@ -659,29 +669,14 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         <div ref={params.InputProps.ref} >
                           <input type="text"
                             {...params.inputProps}
+                            required
                             className="form-control"
                             placeholder="Select Assistant"
                           />
                         </div>
                       )}
                     />
-                    {/* <label htmlFor="folder" name="folder">
-                      Assistant
-                    </label>
-                    <select
-                      value={formData?.assistantUserID}
-                      name="assistantUserID"
-                      className="form-control form-select"
-                      id="assistantUserID"
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Assistant</option>
-                      {externalusers.map(u => {
-                        return (
-                          <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
-                        )
-                      })}
-                    </select>*/}
+                    
                   </div>
                 </Grid>
 
@@ -724,7 +719,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   <button
                     style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                     className="btn btn-primary text-white pr-2"
-                    onClick={() => { addSiteCheck() }}
+                      //onClick={() => { addSiteCheck() }}
+                      type="submit"
                   >
                     Save & Continue
                   </button>
@@ -740,7 +736,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                 
                     
               </Grid>
-            
+              </form>
             </div>
                 }
         </div>
