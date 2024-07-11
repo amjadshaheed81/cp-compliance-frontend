@@ -15,9 +15,9 @@ import Contracts from "../components/Protected/Sites/Contracts";
 import SubFolder from "../components/Protected/Sites/Documents/SubFolder";
 import Users from "../components/Protected/Users";
 import AdminCategories from "../components/Protected/Admin/AdminCategories";
-import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd"
-import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit"
-import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns"
+import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd";
+import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit";
+import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
@@ -26,6 +26,7 @@ import SiteChecks from "../components/Protected/Sites/SiteChecks";
 import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
+import { ROLE } from "../Constant/Role";
 
 export const getRoutes = () => {
   const tabs = [
@@ -60,7 +61,6 @@ export const getRoutes = () => {
     {
       path: "/",
       element: <LoginForm />,
-      errorElement: <PageNotFound />,
     },
     {
       path: "/login",
@@ -81,14 +81,17 @@ export const getRoutes = () => {
     {
       path: "/add-site",
       element: <Tabs tabs={tabs} isCreateSite={true} />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/update-site",
       element: <Tabs tabs={UpdateSiteTabs} isCreateSite={false} />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/sites",
       element: <Sites />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/documents",
@@ -105,6 +108,7 @@ export const getRoutes = () => {
     {
       path: "/user-management",
       element: <Users />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/assets",
@@ -138,7 +142,6 @@ export const getRoutes = () => {
       path: "/admin/dropdowns",
       element: <AdminDropdowns />,
     },
-    
     {
       path: "/admin/categories/new",
       element: <AdminCategoriesAdd />,
@@ -147,7 +150,6 @@ export const getRoutes = () => {
       path: "/admin/categories/:id/update",
       element: <AdminCategoriesEdit />,
     },
-    
     {
       path: "/update-asset",
       element: <UpdateAsset />,
