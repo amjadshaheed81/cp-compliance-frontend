@@ -40,7 +40,7 @@ import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
-import { filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
+import { GeneralMenu, SiteMenu, filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
 
 const drawerWidth = 240;
 
@@ -265,7 +265,7 @@ const SidebarNew = ({ loggedInUserData }) => {
             <p className="text-white ps-5 fs-6">{loggedInUserData?.role}</p>
           </li>
           <p style={{ color: "grey" }}>Genral</p>
-          {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
+          {GeneralMenu?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 sx={{
@@ -298,7 +298,7 @@ const SidebarNew = ({ loggedInUserData }) => {
           Site Actions
         </p>
         <List sx={{ backgroundColor: "black" }}>
-          {filterSiteMenuItems(loggedInUserData?.role)?.map((text, index) => (
+          {SiteMenu?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 sx={{
@@ -326,42 +326,40 @@ const SidebarNew = ({ loggedInUserData }) => {
             </ListItem>
           ))}
         </List>
-        {loggedInUserData?.role === ROLE.ADMIN && (
-          <>
-            <p style={{ color: "grey" }} className="bg-black m-0">
-              Admin
-            </p>
-            <List sx={{ backgroundColor: "black" }}>
-              {["Categories", "Dropdowns"].map((text, index) => (
-                <ListItem key={text} disablePadding sx={{ display: "block" }}>
-                  <ListItemButton
+        <>
+          <p style={{ color: "grey" }} className="bg-black m-0">
+            Admin
+          </p>
+          <List sx={{ backgroundColor: "black" }}>
+            {["Categories", "Dropdowns"].map((text, index) => (
+              <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                <ListItemButton
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: open ? "initial" : "center",
+                    px: 2.5,
+                  }}
+                  onClick={() => goTo(text)}
+                >
+                  <ListItemIcon
                     sx={{
-                      minHeight: 48,
-                      justifyContent: open ? "initial" : "center",
-                      px: 2.5,
+                      minWidth: 0,
+                      mr: open ? 3 : "auto",
+                      justifyContent: "center",
                     }}
                     onClick={() => goTo(text)}
                   >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 0,
-                        mr: open ? 3 : "auto",
-                        justifyContent: "center",
-                      }}
-                      onClick={() => goTo(text)}
-                    >
-                      {adminIconComponents[index]}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={text}
-                      sx={{ opacity: open ? 1 : 0, color: "white" }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          </>
-        )}
+                    {adminIconComponents[index]}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={text}
+                    sx={{ opacity: open ? 1 : 0, color: "white" }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </>
       </Drawer>
     </Box>
   );
