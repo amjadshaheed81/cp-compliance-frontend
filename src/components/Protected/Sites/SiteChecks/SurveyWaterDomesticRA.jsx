@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { get, post } from "../../../../api";
+import { get, post, put } from "../../../../api";
 import {
   Grid, TextField, Typography, Box, Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete,
 } from '@mui/material';
@@ -118,8 +118,16 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
 
     })
     setrisks(risksN)
+    
     settotalrisks(totalriskFactor)
     setRiskFactor(riskFactorFromDB);
+    const body = {
+      riskScoreRed: risksN[0],
+      riskScoreAmber: risksN[1],
+      riskScoreYellow: risksN[2],
+      riskScoreGreen: risksN[3],
+    }
+    await put("/api/site-check/" + checkId, body);
   }
 
   const [riskFactor, setRiskFactor] = useState([]);
@@ -192,18 +200,30 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
               <Box display="flex" alignItems="center">
 
                 <Box ml={2} display="flex" alignItems="center">
-                  <Box width={32} height={32} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[0]}</Typography>
-                  </Box>
-                  <Box width={32} height={32} bgcolor="#FF9800" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[1]}</Typography>
-                  </Box>
-                  <Box width={32} height={32} bgcolor="#FFEB3B" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[2]}</Typography>
-                  </Box>
-                  <Box width={32} height={32} bgcolor="#4CAF50" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[3]}</Typography>
-                  </Box>
+                  {/* <Box width={32} height={32} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
+                    {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
+                    <span className="badge bg-danger p-2 m-1 risk-span">
+                      {risks[0]}
+                    </span>
+                  {/* </Box> */}
+                  {/* <Box width={32} height={32} bgcolor="#FF9800" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
+                    {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
+                    <span className="badge bg-warning p-2 m-1 risk-span">
+                      {risks[1]}
+                    </span>
+                  {/* </Box> */}
+                  {/* <Box width={32} height={32} bgcolor="#FFEB3B" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
+                    {/* <Typography variant="body2" color="white">{risks[2]}</Typography> */}
+                    <span className="badge bg-info p-2 m-1 risk-span">
+                      {risks[2]}
+                    </span>
+                  {/* </Box> */}
+                  {/* <Box width={32} height={32} bgcolor="#4CAF50" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
+                    {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
+                    <span className="badge bg-success p-2 m-1 risk-span">
+                      {risks[3]}
+                    </span>
+                  {/* </Box> */}
                 </Box>
               </Box>
             </Grid>

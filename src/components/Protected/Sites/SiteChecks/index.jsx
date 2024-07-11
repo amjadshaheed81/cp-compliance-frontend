@@ -454,14 +454,16 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         <th scope="col" style={{width: '250px'}}>{leanName}</th>
                         <th scope="col" style={{ width: '200px' }}>
                         <span className="badge bg-danger p-2 m-1 risk-span">
-                          0
+                            {action?.riskScoreRed??0}
                         </span>
                         <span className="badge bg-warning p-2 m-1 risk-span">
-                          0
+                            {action?.riskScoreAmber ?? 0}
                         </span>
-                        <span className="badge bg-info p-2 m-1 risk-span">0</span>
+                          <span className="badge bg-info p-2 m-1 risk-span">
+                            {action?.riskScoreYellow ?? 0}
+                        </span>
                         <span className="badge bg-success p-2 m-1 risk-span">
-                          0
+                            {action?.riskScoreGreen ?? 0}
                         </span>
                       </th>
                         <th scope="col" style={{ width: '150px' }}>

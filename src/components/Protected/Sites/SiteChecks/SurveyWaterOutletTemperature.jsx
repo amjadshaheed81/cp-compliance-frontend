@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../../../api";
 
-import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
+import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
 import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
 const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSiteAssets, siteSelectedForGlobal, getSiteLayout }) => {
@@ -65,7 +65,12 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
   };
 
 
-  const addSiteCheckSurvey = async () => {
+  const addSiteCheckSurvey = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     for (const data of formData) {
       data.checkId = checkId;
       data.status = "Open";
@@ -90,7 +95,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
   return (
     <>
       <Dialog open={readingPop !== null} onClose={() => { setReadingPop(null) }} maxWidth="lg" fullWidth>
-        <DialogTitle>Add Reading </DialogTitle>
+        <DialogTitle>Add Reading {formData[readingPop]?.assetId ? "("+siteAssets.filter(a => a.assetId == formData[readingPop].assetId).map(option => option.assetName + " - " + option.category)?.[0]+")" : ""}</DialogTitle>
         <DialogContent dividers>
           <Fragment>
             <Grid container>
@@ -217,11 +222,11 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
         </DialogActions>
       </Dialog>
 
-
+      <form onSubmit={addSiteCheckSurvey}>
       <Grid container >
         <Grid sm={4}>
           <Typography variant="h6" gutterBottom>
-            Water - Outlet Temperature - Tests
+            Water - Outlet Temperature - Tests <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
           </Typography>
         </Grid>
         <Grid sm={4}>
@@ -283,7 +288,10 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           renderInput={(params) => (
                             <div ref={params.InputProps.ref} >
 
-                              <input type="text" {...params.inputProps} disabled={completed} className="form-control" />
+                              <input type="text"
+                                {...params.inputProps}
+                                required
+                                disabled={completed} className="form-control" />
                             </div>
 
                           )}
@@ -297,6 +305,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           className="form-control form-select"
                           id="outletType"
                           value={formData?.[idx]?.outletType}
+                          required
                           onChange={(e) => handleInputChange(e, idx)}
                         >
                           <option value="">Select Outlet Type</option>
@@ -310,6 +319,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           name="temperature"
                           className="form-control form-select"
                           id="temperature"
+                          required
                           value={formData?.[idx]?.temperature}
                           onChange={(e) => handleInputChange(e, idx)}
                         >
@@ -325,6 +335,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           name="normalRunTime"
                           className="form-control form-select"
                           id="normalRunTime"
+                          required
                           value={formData?.[idx]?.normalRunTime}
                           onChange={(e) => handleInputChange(e, idx)}
                         >
@@ -339,6 +350,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           name="usageFrequency"
                           className="form-control form-select"
                           id="usageFrequency"
+                          required
                           value={formData?.[idx]?.usageFrequency}
                           onChange={(e) => handleInputChange(e, idx)}
                         >
@@ -357,7 +369,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           className="form-control form-select"
                           name="floor"
                           value={formData?.[idx]?.floor}
-
+                          required
                           onChange={(e) => handleInputChange(e, idx)}
                         >
                           <option value="">Select </option>
@@ -374,7 +386,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           className="form-control form-select"
                           name="room"
                           value={formData?.[idx]?.room}
-
+                          required
                           onChange={(e) => handleInputChange(e, idx)}
                         >
                           <option value="">Select </option>
@@ -429,12 +441,14 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
           <button
             style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
             className="btn btn-primary text-white pr-2"
-            onClick={() => { addSiteCheckSurvey() }}
+              //onClick={() => { addSiteCheckSurvey() }}
+              type="submit"
           >
             Save
           </button>
         </Grid>}
-      </Grid>
+        </Grid>
+        </form>
     </>
   );
 };
