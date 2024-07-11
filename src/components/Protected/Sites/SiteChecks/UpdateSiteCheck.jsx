@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useRef } from "react";
 import { connect } from "react-redux";
 import Header from "../../../common/Header/Header";
 import { toast } from "react-toastify";
@@ -15,6 +15,8 @@ import { get, getSasToken, getPdf } from "../../../../api";
 import { Grid, Stack, Paper, styled } from "@mui/material";
 import { deleteUser, getSites, getExternalUsers } from "../../../../store/thunk/site";
 import PrintIcon from '@mui/icons-material/Print';
+import html2pdf from 'html2pdf.js';
+import "./Print.css"
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -22,6 +24,8 @@ const Item = styled(Paper)(({ theme }) => ({
 
 
 const SiteChecks = ({ externalusers, getExternalUsers }) => {
+
+  const printRef = useRef();
 
   const params = useParams();
   const [sasToken, setSasToken] = useState();
@@ -75,7 +79,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     setSiteCheck(siteCheck);
   }
 
-  const print = async () => {
+  const handlePrint = async () => {
     if (siteCheck.type === "Inspection" && siteCheck.subType === "Electrical") {
       const pdfBlob = await getPdf(checkId);
       const url = URL.createObjectURL(pdfBlob);
@@ -86,16 +90,65 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
 
   }
 
+  const handlePrint2 = () => {
+    const accordions = document.querySelectorAll('.MuiAccordion-root');
+    const originalStates = [];
+
+    accordions.forEach((accordion, index) => {
+      const summary = accordion.querySelector('.MuiAccordionSummary-root');
+      const details = accordion.querySelector('.MuiCollapse-root');
+      console.log('details.style.display', summary.style.display, details.style.details);
+
+      // Store the original state
+      //originalStates[index] = details.style.display !== 'none';
+
+      // Expand the accordion if it's not already expanded
+      // if (details.style.display === 'none') {
+         summary.click();
+      // }
+    });
+   
+    // document.querySelectorAll('.navbar, .sidebar, button, .dont-print ').forEach(el => {
+    //   el.classList.add('no-print');
+    // });
+    const element = printRef.current;
+    const options = {
+      margin: 1,
+      filename: 'document.pdf',
+      //html2canvas: { scale: 1 },
+      jsPDF: {
+        //unit: 'in',
+        //format: 'letter',
+        orientation: 'landscape'
+      },
+    };
+    html2pdf().from(element).set(options).save()
+      .then(() => {
+        document.querySelectorAll('.navbar, .sidebar, button, .dont-print ').forEach(el => {
+          el.classList.remove('no-print');
+        });
+         accordions.forEach((accordion, index) => {
+          const summary = accordion.querySelector('.MuiAccordionSummary-root');
+          const details = accordion.querySelector('.MuiAccordionDetails-root');
+
+          //if (!originalStates[index] && details.style.display !== 'none') {
+            summary.click();
+          //}
+        });
+    });
+  };
+
+
 
   return (
     <Fragment>
       <SidebarNew />
 
-      <div className="content" style={{ backgroundColor: '#f8f9fa' }}>
+      <div className="content" ref={printRef} style={{ backgroundColor: '#f8f9fa' }}>
         <Header />
         <div className="container-fluid">
           <BreadCrumHeader
-            header={`Site Check - (${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category})`} page={"Site Inspection"}
+            header={`Site Check ${siteCheck?.type ? "- (" : ""}${siteCheck?.type ?? ''} ${siteCheck?.type ? "-" : ""} ${siteCheck?.subType ?? ''} ${siteCheck?.type ? "-" : ""} ${siteCheck?.category ?? ''}${siteCheck?.type ? ")" : ""}`} page={"Site Inspection"}
             chipColor={siteCheck?.status === "Done" ? "success" : "warning"}
             chipLabel={siteCheck?.status}
           />
@@ -234,14 +287,16 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                 <button
                   style={{ width: "200px", marginBottom: '20px', margin: '10px', float: 'right' }}
                   className="btn btn-primary btn-light"
-                  onClick={() => { print(); }}
+                  onClick={() => { handlePrint() }}
+                  id="lklkl1"
                 >
                   <PrintIcon /> Print PDF Report
                 </button>
-                <button
-                  style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
+              <button
+                  style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right',  }}
                   className="btn btn-primary btn-light"
                   onClick={() => { navigate("/site-checks") }}
+                  id="lklkl2"
                 >
                   Back
                 </button>

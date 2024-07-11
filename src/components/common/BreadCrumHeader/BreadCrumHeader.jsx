@@ -5,17 +5,18 @@ import { Chip } from "@mui/material";
 const BreadCrumHeader = ({ header, page, style, chipColor, chipLabel }) => {
   return (
     <Fragment>
-      <div className="d-flex bd-highlight">
-        <div className="pt-2 bd-highlight">
+      <div className="d-flex bd-highlight ">
+        <div className="pt-2 bd-highlight" style={{display: 'flex'}}>
           <h4 style={style}>{header}
-            {chipLabel && <Chip
-              color={chipColor}
-              label={chipLabel}
-              style={{ marginLeft: '10px' }}
-            />}
+            
           </h4>
+          {chipLabel && <Chip
+            color={chipColor}
+            label={chipLabel}
+            style={{ marginLeft: '10px' }}
+          />}
         </div>
-        <div className="ms-auto p-2 bd-highlight">
+        <div className="ms-auto p-2 bd-highlight dont-print">
           <nav aria-label="breadcrumb pt-1">
             <ol className="breadcrumb">
               <li className="breadcrumb-item pt-0">

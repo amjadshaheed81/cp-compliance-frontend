@@ -42,13 +42,13 @@ const Header = ({ siteSelectedForGlobal, isLoading, logoutUser }) => {
         <div style={{ flexGrow: 1 }}></div>
         {/* Empty div to push user icon to right */}
         <div className="nav-icon">
-          <div className="icon">
+          <div className="icon dont-print">
             <GridViewIcon className="grid-icon" />
           </div>
-          <div className="icon">
+          <div className="icon dont-print">
             <NotificationsNoneIcon className="grid-icon" />
           </div>
-          <div className="icon cursor" onClick={() => logout()}>
+          <div className="icon cursor dont-print" onClick={() => logout()}>
             <LogoutIcon className="grid-icon" />
           </div>
           <div className="text-dark mt-2">
