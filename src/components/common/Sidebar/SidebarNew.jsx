@@ -40,7 +40,7 @@ import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
-import { filterMenuItemsForAdmin } from "../../../Constant/Menu";
+import { filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
 
 const drawerWidth = 240;
 
@@ -265,52 +265,40 @@ const SidebarNew = ({ loggedInUserData }) => {
             <p className="text-white ps-5 fs-6">{loggedInUserData?.role}</p>
           </li>
           <p style={{ color: "grey" }}>Genral</p>
-          {filterMenuItemsForAdmin(loggedInUserData?.role).map(
-            (text, index) => (
-              <ListItem key={text} disablePadding sx={{ display: "block" }}>
-                <ListItemButton
+          {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
+            <ListItem key={text} disablePadding sx={{ display: "block" }}>
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? "initial" : "center",
+                  px: 2.5,
+                }}
+                onClick={() => goTo(text)}
+              >
+                <ListItemIcon
                   sx={{
-                    minHeight: 48,
-                    justifyContent: open ? "initial" : "center",
-                    px: 2.5,
+                    minWidth: 0,
+                    mr: open ? 3 : "auto",
+                    justifyContent: "center",
                   }}
                   onClick={() => goTo(text)}
                 >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : "auto",
-                      justifyContent: "center",
-                    }}
-                    onClick={() => goTo(text)}
-                  >
-                    {iconComponents[index]}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={text}
-                    sx={{ opacity: open ? 1 : 0, color: "white" }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            )
-          )}
+                  {iconComponents[index]}
+                </ListItemIcon>
+                <ListItemText
+                  primary={text}
+                  sx={{ opacity: open ? 1 : 0, color: "white" }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
         </List>
         {/* <Divider /> */}
         <p style={{ color: "grey" }} className="bg-black m-0">
           Site Actions
         </p>
         <List sx={{ backgroundColor: "black" }}>
-          {[
-            "Create Site",
-            "Site Details",
-            "Site Documents",
-            "Site Assets",
-            "Site Contracts",
-            "Pre-Action",
-            "Site Checks",
-            "Energy Cost",
-            "Site Calendar",
-          ].map((text, index) => (
+          {filterSiteMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 sx={{
@@ -338,38 +326,42 @@ const SidebarNew = ({ loggedInUserData }) => {
             </ListItem>
           ))}
         </List>
-        <p style={{ color: "grey" }} className="bg-black m-0">
-          Admin
-        </p>
-        <List sx={{ backgroundColor: "black" }}>
-          {["Categories", "Dropdowns"].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? "initial" : "center",
-                  px: 2.5,
-                }}
-                onClick={() => goTo(text)}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : "auto",
-                    justifyContent: "center",
-                  }}
-                  onClick={() => goTo(text)}
-                >
-                  {adminIconComponents[index]}
-                </ListItemIcon>
-                <ListItemText
-                  primary={text}
-                  sx={{ opacity: open ? 1 : 0, color: "white" }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+        {loggedInUserData?.role === ROLE.ADMIN && (
+          <>
+            <p style={{ color: "grey" }} className="bg-black m-0">
+              Admin
+            </p>
+            <List sx={{ backgroundColor: "black" }}>
+              {["Categories", "Dropdowns"].map((text, index) => (
+                <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                  <ListItemButton
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: open ? "initial" : "center",
+                      px: 2.5,
+                    }}
+                    onClick={() => goTo(text)}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: open ? 3 : "auto",
+                        justifyContent: "center",
+                      }}
+                      onClick={() => goTo(text)}
+                    >
+                      {adminIconComponents[index]}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={text}
+                      sx={{ opacity: open ? 1 : 0, color: "white" }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </>
+        )}
       </Drawer>
     </Box>
   );
