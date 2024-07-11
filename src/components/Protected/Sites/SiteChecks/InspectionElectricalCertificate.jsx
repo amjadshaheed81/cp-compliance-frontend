@@ -50,7 +50,12 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     }
   }
 
-  const certify = async () => {
+  const certify = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     const data = { ...formData }
     if (data?.file?.name) {
       data.certificateUrl = await uploadSiteCheckDoc(data);
@@ -70,10 +75,10 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
 
 
   return (
-
+    <form onSubmit={certify}>
     <Box p={3}>
       <Typography variant="h6" gutterBottom>
-        Certificate
+        Certificate  <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
       </Typography>
       <Divider />
       <br />
@@ -90,7 +95,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             className="form-control"
             id="certificateName"
             value={formData.certificateName}
-            onChange={handleInputChange}
+              onChange={handleInputChange}
+              required
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -109,7 +115,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             })}
           </select>}
           {!completed &&
-            <Autocomplete
+              <Autocomplete
+              
               id="reviewerUserId"
               disabled={completed}
               onChange={(event, item) => {
@@ -122,6 +129,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
               renderInput={(params) => (
                 <div ref={params.InputProps.ref} >
                   <input type="text"
+                    required
                     {...params.inputProps}
                     className="form-control"
                   />
@@ -130,31 +138,13 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             />
           }
 
-          {/* <label htmlFor="reviewerUserId" name="reviewerUserId">
-            Need review by
-          </label>
-          <select
-            disabled={completed}
-            name="reviewerUserId"
-            className="form-control form-select"
-            id="reviewerUserId"
-            onChange={handleInputChange}
-
-            value={formData.reviewerUserId}
-          >
-            <option value="">Select</option>
-            {externalusers.map(u => {
-              return (
-                <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
-              )
-            })}
-          </select> */}
         </Grid>
         <Grid item xs={12} sm={6}>
           <label htmlFor="issueDate" name="issueDate">
             Issue Date
           </label>
-          <input
+            <input
+              required
             disabled={completed}
             type="date"
             name="issueDate"
@@ -168,7 +158,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
           <label htmlFor="expiryDate" name="expiryDate">
             Expiry Date
           </label>
-          <input
+            <input
+              required
             disabled={completed}
             type="date"
             name="expiryDate"
@@ -179,7 +170,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
           />
         </Grid>
         <Grid item xs={12}>
-          <textarea
+            <textarea
+              required
             disabled={completed}
             name="note"
             className="form-control"
@@ -206,7 +198,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             }}
           >
             <IconButton component="label">
-              <input hidden type="file"
+                <input hidden type="file"
+                  
                 onChange={handleFileChange}
               />
               <UploadFile />
@@ -230,8 +223,9 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
         <Grid item xs={12}>
           {!completed && <button
             style={{ width: "250px", marginBottom: '20px', margin: '10px', float: 'right' }}
-            className="btn btn-primary btn-dark"
-            onClick={() => { certify() }}
+              className="btn btn-primary btn-dark"
+              type="submit"
+            //onClick={() => { certify() }}
           >
             Sign Off & Certify
           </button>}
@@ -248,7 +242,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
         </Grid>
       </Grid>
     </Box>
-
+</form>
   );
 };
 

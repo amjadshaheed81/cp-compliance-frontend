@@ -53,7 +53,13 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
   };
 
 
-  const addSiteCheckAudit = async () => {
+  const addSiteCheckAudit = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+       form.reportValidity();
+    }
+  
     for (const data of formData) {
       if (data?.file?.name) {
         data.imageUrl = await uploadSiteCheckDoc(data);
@@ -71,7 +77,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
 
 
   return (
-
+    <form onSubmit={addSiteCheckAudit}>
     <Grid container >
 
       <Grid sm={4}>
@@ -121,6 +127,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
                       <input
                         type="text"
                         disabled={completed}
+                        required
                         name="summary"
                         className="form-control"
                         id="summary"
@@ -155,7 +162,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
                               }}
                               className="fas fa-search"
                             ></i>
-                            <input type="text" {...params.inputProps} disabled={completed} className="form-control" />
+                            <input type="text" required {...params.inputProps} disabled={completed} className="form-control" />
                           </div>
 
                         )}
@@ -166,6 +173,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
                       disabled={completed}
                       type="date"
                       name="dateRaised"
+                      required
                       value={String(formData?.[idx]?.dateRaised)?.substring(0, 10)}
                       className="form-control"
                       id="dateRaised"
@@ -175,6 +183,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
                     <td>
                       <select
                         disabled={completed}
+                        required
                         name="rating"
                         className="form-control form-select"
                         id="rating"
@@ -208,6 +217,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
                         name="file"
                         className="form-control"
                         id="file"
+                        required
                         onChange={(e) => handleFileChange(e, idx)}
                       />}
                     </td>
@@ -219,15 +229,19 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
                       className="form-control"
                       id="action"
                       onChange={(e) => handleInputChange(e, idx)}
+                      required
                     /></td>
                     <td>
                       <button
                         disabled={completed}
                         className="btn btn-sm btn-light text-dark"
                         onClick={() => {
+                          
                           const uformData = [...formData];
-                          uformData.splice(idx, 1);
-                          setFormData(uformData)
+                          if (uformData.length > 1) {
+                            uformData.splice(idx, 1);
+                            setFormData(uformData)
+                          }
                         }}
                       >
                         <i className="fas fa-trash"></i>
@@ -244,17 +258,19 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
       </Grid>
       {!completed && <Grid sm={12}>
 
-        <button
+          <button
+            type="submit"
           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
           className="btn btn-primary text-white pr-2"
-          onClick={() => { addSiteCheckAudit() }}
+          //onClick={() => { addSiteCheckAudit() }}
         >
           Save
         </button>
 
 
       </Grid>}
-    </Grid>
+      </Grid>
+    </form>
 
   );
 };

@@ -489,7 +489,8 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         <Tooltip title={`${action?.type} mark as closed`} arrow>
                           <button
                             className="btn btn-sm btn-light"
-                            onClick={() => markAsDone(action)}
+                              onClick={() => markAsDone(action)}
+                              disabled={action.status === "Done"}
                           >
                             <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
                           </button>{" "}

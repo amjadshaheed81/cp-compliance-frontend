@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post, uploadSiteCheckDoc } from "../../../../api";
 
-import { Typography, Grid, Autocomplete } from "@mui/material";
+import { Typography, Grid, Autocomplete, Chip, Divider } from "@mui/material";
 import { getSiteAssets } from "../../../../store/thunk/site";
 
 const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal }) => {
@@ -49,7 +49,12 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
   };
 
 
-  const addSiteCheckFault = async () => {
+  const addSiteCheckFault = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     for (const data of formData) {
       if (data?.file?.name) {
         data.imageUrl = await uploadSiteCheckDoc(data);
@@ -67,13 +72,18 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
 
 
   return (
-
+    <form onSubmit={addSiteCheckFault}>
     <Grid container >
 
       <Grid sm={4}>
+        <br />
         <Typography variant="h6" gutterBottom>
-          Faults Identified
+          Faults Identified <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
         </Typography>
+        <br />
+
+      
+       
       </Grid>
       <Grid sm={4}>
 
@@ -105,7 +115,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                 <th scope="col">RATING</th>
                 <th scope="col">IMAGE</th>
                 <th scope="col">SUGGESTED ACTION</th>
-                <th scope="col"></th>
+                {!completed && <th scope="col"></th>}
               </tr>
             </thead>
             <tbody>
@@ -141,7 +151,8 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                               }}
                               className="fas fa-search"
                             ></i>
-                            <input type="text" {...params.inputProps} disabled={completed} className="form-control" />
+                            <input type="text" {...params.inputProps}
+                              required disabled={completed} className="form-control" />
                           </div>
 
                         )}
@@ -152,6 +163,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       <input
                         type="text"
                         disabled={completed}
+                        required
                         name="faultDescription"
                         className="form-control"
                         id="faultDescription"
@@ -162,6 +174,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                     <td> <input
                       disabled={completed}
                       type="date"
+                      required
                       name="dateRaised"
                       value={String(formData?.[idx]?.dateRaised)?.substring(0, 10)}
                       className="form-control"
@@ -173,6 +186,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       <select
                         disabled={completed}
                         name="rating"
+                        required
                         className="form-control form-select"
                         id="rating"
                         value={formData?.[idx]?.rating}
@@ -205,6 +219,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                         name="file"
                         className="form-control"
                         id="file"
+                        required
                         onChange={(e) => handleFileChange(e, idx)}
                       />}
                     </td>
@@ -215,21 +230,24 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       name="action"
                       className="form-control"
                       id="action"
+                      required
                       onChange={(e) => handleInputChange(e, idx)}
                     /></td>
-                    <td>
+                    {!completed && <td>
                       <button
                         disabled={completed}
                         className="btn btn-sm btn-light text-dark"
                         onClick={() => {
                           const uformData = [...formData];
-                          uformData.splice(idx, 1);
-                          setFormData(uformData)
+                          if (uformData.length > 1) {
+                            uformData.splice(idx, 1);
+                            setFormData(uformData)
+                          }
                         }}
                       >
                         <i className="fas fa-trash"></i>
                       </button>
-                    </td>
+                    </td>}
                   </tr>
                 )
               }
@@ -244,14 +262,16 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
         <button
           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
           className="btn btn-primary text-white pr-2"
-          onClick={() => { addSiteCheckFault() }}
+            //onClick={() => { addSiteCheckFault() }}
+            type="submit"
         >
           Save
         </button>
 
 
       </Grid>}
-    </Grid>
+      </Grid>
+      </form>
 
   );
 };

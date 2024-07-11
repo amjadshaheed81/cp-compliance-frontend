@@ -7,6 +7,7 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import InspectionElectricalFault from "./InspectionElectricalFault";
 import SurveyWaterOutletTemperature from "./SurveyWaterOutletTemperature";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
+import AsbestosSurvey from "./AsbestosSurvey";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
@@ -310,6 +311,8 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
+            {/* {step === "inspection-electrical" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>} */}
+            
           </Stack>
         </div>
       </div>
