@@ -89,7 +89,7 @@ export const getRoutes = () => {
     {
       path: "/sites",
       element: <Sites />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/documents",
@@ -106,7 +106,7 @@ export const getRoutes = () => {
     {
       path: "/user-management",
       element: <Users />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/assets",
@@ -135,22 +135,22 @@ export const getRoutes = () => {
     {
       path: "/admin/categories",
       element: <AdminCategories />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/dropdowns",
       element: <AdminDropdowns />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/categories/new",
       element: <AdminCategoriesAdd />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/categories/:id/update",
       element: <AdminCategoriesEdit />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/update-asset",
