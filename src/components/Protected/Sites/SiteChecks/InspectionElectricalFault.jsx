@@ -159,7 +159,6 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                         onChange={(e) => handleInputChange(e, idx)}
                       />
                     </td>
-                    {console.log('formData?.[idx]?.dateRaised', formData?.[idx]?.dateRaised)}
                     <td> <input
                       disabled={completed}
                       type="date"

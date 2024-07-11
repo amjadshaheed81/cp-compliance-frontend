@@ -386,9 +386,9 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                         </select>
                       </td>
                       <td style={{ width: '200px' }}>
-                        <p style={{ lineHeight: '3px' }}>1st : {formData?.[idx]?.reading1} ({String(formData?.[idx]?.r1Date)?.substring(0, 10)})</p>
-                        <p style={{ lineHeight: '3px' }}>2nd : {formData?.[idx]?.reading2} ({String(formData?.[idx]?.r2Date)?.substring(0, 10)})</p>
-                        <p style={{ lineHeight: '3px' }}>3rd : {formData?.[idx]?.reading3} ({String(formData?.[idx]?.r3Date)?.substring(0, 10)})</p>
+                        <p style={{ lineHeight: '3px' }}>1st : {formData?.[idx]?.reading1 ?? ""} {formData?.[idx]?.r1Date ? "("+String(formData?.[idx]?.r1Date)?.substring(0, 10)+")" : "N/A"}</p>
+                        <p style={{ lineHeight: '3px' }}>2nd : {formData?.[idx]?.reading2 ?? ""} {formData?.[idx]?.r2Date ? "(" + String(formData?.[idx]?.r2Date)?.substring(0, 10) + ")" : "N/A"}</p>
+                        <p style={{ lineHeight: '3px' }}>3rd : {formData?.[idx]?.reading3 ?? ""} {formData?.[idx]?.r3Date ? "(" + String(formData?.[idx]?.r3Date)?.substring(0, 10) + ")" : "N/A"}</p>
                       </td>
 
                       <td style={{ width: '90px' }}>

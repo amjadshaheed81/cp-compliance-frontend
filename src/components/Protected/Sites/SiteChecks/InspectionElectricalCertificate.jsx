@@ -2,7 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post, uploadSiteCheckDoc } from "../../../../api";
-import { Grid, Chip, Typography, Box, IconButton, Divider } from '@mui/material';
+import { Grid, Chip, Typography, Box, IconButton, Divider, Autocomplete } from '@mui/material';
 import { UploadFile } from '@mui/icons-material';
 
 import { getSites, getExternalUsers } from "../../../../store/thunk/site";
@@ -19,6 +19,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     note: '',
     file: null
   });
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -93,7 +94,43 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
           />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <label htmlFor="reviewerUserId" name="reviewerUserId">
+          <label htmlFor="reviewerUserId">Need review by</label>
+          {completed && <select
+            name="reviewerUserId"
+            className="form-control form-select"
+            id="reviewerUserId"
+            disabled
+            value={formData?.reviewerUserId}
+          >
+            {externalusers.map(u => {
+              return (
+                <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
+              )
+            })}
+          </select>}
+          {!completed &&
+            <Autocomplete
+              id="reviewerUserId"
+              disabled={completed}
+              onChange={(event, item) => {
+                const uformData = { ...formData }
+                uformData.reviewerUserId = item?.key;
+                setFormData(uformData);
+              }}
+              options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
+              getOptionLabel={(option) => option.label}
+              renderInput={(params) => (
+                <div ref={params.InputProps.ref} >
+                  <input type="text"
+                    {...params.inputProps}
+                    className="form-control"
+                  />
+                </div>
+              )}
+            />
+          }
+
+          {/* <label htmlFor="reviewerUserId" name="reviewerUserId">
             Need review by
           </label>
           <select
@@ -111,7 +148,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
                 <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
               )
             })}
-          </select>
+          </select> */}
         </Grid>
         <Grid item xs={12} sm={6}>
           <label htmlFor="issueDate" name="issueDate">

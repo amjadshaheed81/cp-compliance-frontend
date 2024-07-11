@@ -35,7 +35,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     gettypeoptions();
   }, []);
 
-  const [itemsPerPage] = useState(1);
+  const [itemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
@@ -284,8 +284,12 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   }
 
   const getSiteChecks = async () => {
+    if (!site?.siteId) {
+      toast.error("Please select site from site search to proceed....");
+      return;
+    }
     setIsLoading(true);
-    const siteChecks = await get("/api/site-check/site/" + site.siteId);
+    const siteChecks = await get("/api/site-check/site/" + site?.siteId);
     setFilteredSiteChecks(siteChecks)
     setSiteChecks(siteChecks);
     setIsLoading(false);
@@ -419,7 +423,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
               <tbody>
                 {!isLoading && filteredSiteChecks?.length === 0 && (
                   <tr>
-                    <td>No search result found!!</td>
+                    <td>No result found!!</td>
                   </tr>
                   )}
                   {isLoading && (
@@ -633,23 +637,7 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         </div>
                       )}
                     />
-                    {/* <label htmlFor="folder" name="folder">
-                      Lead
-                    </label>
-                    <select
-                      value={formData?.leadUserID}
-                      name="leadUserID"
-                      className="form-control form-select"
-                      id="leadUserID"
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Lead</option>
-                      {externalusers.map(u => {
-                        return (
-                          <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
-                        )
-                      })}
-                    </select> */}
+                    
                   </div>
                 </Grid>
                 <Grid sm={4}>
