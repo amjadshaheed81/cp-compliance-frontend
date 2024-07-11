@@ -8,6 +8,7 @@ import InspectionElectricalFault from "./InspectionElectricalFault";
 import SurveyWaterOutletTemperature from "./SurveyWaterOutletTemperature";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AsbestosSurvey from "./AsbestosSurvey";
+import AsbestonSample from "./AsbestonSample"
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
@@ -76,6 +77,8 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("survey-water-outlet-temperature")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Domestic RA") {
       setStep("survey-water-domestic-ra")
+    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Asbestos") {
+      setStep("survey-asbestos")
     }
     setSiteCheck(siteCheck);
   }
@@ -311,7 +314,8 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
-            {/* {step === "inspection-electrical" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>} */}
+            {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-asbestos" && <Item><AsbestonSample checkId={checkId} sasToken={sasToken} /></Item>}
             
           </Stack>
         </div>

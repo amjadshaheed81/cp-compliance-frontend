@@ -32,7 +32,8 @@ const AdminCategoriesAdd = ({ }) => {
 
   const handleCategoryChange = (subtypeIndex, categoryIndex, value) => {
     const updatedSubtypes = [...subtypes];
-    updatedSubtypes[subtypeIndex].categories[categoryIndex].category = value;
+    console.log('updatedSubtypes', updatedSubtypes)
+    updatedSubtypes[subtypeIndex].categories[categoryIndex] = { category: value, ...updatedSubtypes[subtypeIndex].categories[categoryIndex] }
     setSubtypes(updatedSubtypes);
   };
 
@@ -61,7 +62,6 @@ const AdminCategoriesAdd = ({ }) => {
       lovValue: type,
       id: typeId
     }
-    console.log("typeBody", typeBody)
     await put("/api/lov/id/" + typeBody.id, typeBody);
     for (let subtype of subtypes) {
       const subtypeBody = {
@@ -70,8 +70,12 @@ const AdminCategoriesAdd = ({ }) => {
         attribite1: type,
         id: subtype.id
       }
-      console.log("subtypeBody", subtypeBody)
-      await put("/api/lov/id/" + subtypeBody.id, subtypeBody);
+      if (subtypeBody.id) {
+        await put("/api/lov/id/" + subtypeBody.id, subtypeBody);
+      } else {
+        await post("/api/lov/", subtypeBody);
+      }
+      
       for (let category of subtype.categories) { 
         const categoryBody = {
           lovType: "SITE_CHECK_CATEGORY",
@@ -79,9 +83,12 @@ const AdminCategoriesAdd = ({ }) => {
           attribite1: subtype.name,
           id: category.id
         }
-        console.log("categoryBody", categoryBody)
-        console.log("categoryBody", "/api/lov/id/" + categoryBody.id, subtypes)
-        await put("/api/lov/id/" + categoryBody.id, categoryBody);
+        if (categoryBody.id) {
+          await put("/api/lov/id/" + categoryBody.id, categoryBody);
+        } else {
+          await post("/api/lov/", categoryBody);
+        }
+        
       }
     }
     navigate("/admin/categories")

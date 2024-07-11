@@ -47,7 +47,12 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
     }
   }
 
-  const certify = async () => {
+  const saveSurvey = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     const data = { ...formData }
     if (data?.file?.name) {
       data.reportUrl = await uploadSiteCheckDoc(data);
@@ -55,6 +60,7 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
     }
     data.reportDate = new Date(data.reportDate);
     data.checkId = checkId;
+    console.log(data)
     await post("/api/site-check/asbestos-survey", data)
     toast.success("Inspection data saved")
     setCompleted(true);
@@ -65,7 +71,7 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
 
 
   return (
-
+    <form onSubmit={saveSurvey}>
     <Box p={3}>
       {/* <Typography variant="h6" gutterBottom>
         Certificate
@@ -74,7 +80,7 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
       <br />
       <br />
       <Grid container spacing={2}>
-        <Grid sm={8} style={{marginLeft: '20px'}}>
+          <Grid sm={completed ? 12 : 8} style={{marginLeft: '20px'}}>
           <Grid container spacing={3}>
 
             <Grid item xs={12} sm={6}>
@@ -82,7 +88,8 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
                 Survey Company
               </label>
               <input
-                type="text"
+                  type="text"
+                  required
                 disabled={completed}
                 name="surveyCompany"
                 className="form-control"
@@ -95,7 +102,8 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
               <label htmlFor="ukasLab" name="ukasLab">
                 UKAS Laboratory
               </label>
-              <input
+                <input
+                  required
                 type="text"
                 disabled={completed}
                 name="ukasLab"
@@ -109,7 +117,8 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
               <label htmlFor="reportDate" name="reportDate">
                 Report Date
               </label>
-              <input
+                <input
+                  required
                 disabled={completed}
                 type="date"
                 name="reportDate"
@@ -123,7 +132,8 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
               <label htmlFor="surveyReference" name="surveyReference">
                 Survey Reference Number
               </label>
-              <input
+                <input
+                  required
                 type="text"
                 disabled={formData.surveyReference}
                 name="surveyReference"
@@ -136,63 +146,65 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
             
           </Grid>
         </Grid>
-        <Grid sm={3}>
-          <Grid container >
-            <Grid item xs={12}>
-              {!completed && <Box
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                border="1px dashed grey"
-                p={2}
-                mb={2}
-                style={{
-                  backgroundColor: '#f9f9f9',
-                  height: '130px',
-                  borderRadius: '4px',
-                  color: '#3f51b5',
-                  margin: '20px',
-                  width: '400px'
-                }}
-              >
-                <IconButton component="label">
-                  <input hidden type="file"
-                    onChange={handleFileChange}
-                  />
-                  <UploadFile />
-                </IconButton>
-                <Typography align="center">
-                  Click to upload or drag and drop Image File (PDF) (max, 1MB)
-                </Typography>
-              </Box>}
-            </Grid>
-
-
-            {formData.file && (
-              <Grid xs={12} alignItems="center" style={{ margin: '5px' }}>
-                <Chip
-                  label={formData.file.name}
-                  onDelete={handleFileDelete}
-                />
-
+          {!completed && <Grid sm={3}>
+            <Grid container >
+              <Grid item xs={12}>
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                  justifyContent="center"
+                  border="1px dashed grey"
+                  p={2}
+                  mb={2}
+                  style={{
+                    backgroundColor: '#f9f9f9',
+                    height: '130px',
+                    borderRadius: '4px',
+                    color: '#3f51b5',
+                    margin: '20px',
+                    width: '400px'
+                  }}
+                >
+                  <IconButton component="label">
+                    <input hidden type="file"
+                      onChange={handleFileChange}
+                    />
+                    <UploadFile />
+                  </IconButton>
+                  <Typography align="center">
+                    Click to upload or drag and drop Image File (PDF) (max, 1MB)
+                  </Typography>
+                </Box>
               </Grid>
-            )}
-          </Grid>
-        </Grid>
+          
+
+              {!completed && formData.file && (
+                <Grid xs={12} alignItems="center" style={{ margin: '5px' }}>
+                  <Chip
+                    label={formData.file.name}
+                    onDelete={handleFileDelete}
+                  />
+
+                </Grid>
+              )}
+            </Grid>
+            
+          </Grid>}
         <Grid item xs={12}>
           {!completed && <button
             style={{ width: "250px", marginBottom: '20px', margin: '10px', float: 'right' }}
-            className="btn btn-primary btn-dark"
-            onClick={() => { certify() }}
+            className="btn btn-primary "
+            type="submit"
           >
-            Sign Off & Certify
+            Save
           </button>}
-          {completed &&
-            <a href={formData?.certificateUrl + "?" + sasToken} target="_blank">
+            {completed && formData?.reportUrl  &&
+              <a href={formData?.reportUrl + "?" + sasToken} target="_blank">
               <button
                 style={{ width: "250px", marginBottom: '20px', margin: '10px', float: 'right' }}
-                className="btn btn-primary btn-dark"
+                  className="btn btn-primary btn-dark"
+                  onClick={(e)=> e.preventDefault()}
               >
                 <i className="fas fa-download" />&nbsp;Download Certificate
               </button>
@@ -202,7 +214,8 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
 
       </Grid>
       
-    </Box>
+      </Box>
+      </form>
 
   );
 };
