@@ -9,12 +9,23 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import StarIcon from '@mui/icons-material/Star';
+import StarIcon from "@mui/icons-material/Star";
 import { useNavigate } from "react-router-dom";
+import { AccountCircle } from "@mui/icons-material";
 import { get } from "../../../api";
-import { getSites, selectGlobalSite, setLoader } from "../../../store/thunk/site";
+import {
+  getSites,
+  selectGlobalSite,
+  setLoader,
+} from "../../../store/thunk/site";
 
-function SearchSite({ getSites, sites, selectGlobalSite, setLoader }) {
+function SearchSite({
+  getSites,
+  sites,
+  selectGlobalSite,
+  setLoader,
+  siteSelectedForGlobal,
+}) {
   const [allSites, setSites] = useState([]);
   const [error, setError] = useState("");
   const [state, setState] = React.useState({
@@ -103,7 +114,7 @@ function SearchSite({ getSites, sites, selectGlobalSite, setLoader }) {
             <ListItemButton
               onClick={() => {
                 selectGlobalSite(site);
-                localStorage.setItem("site", JSON.stringify(site))
+                localStorage.setItem("site", JSON.stringify(site));
               }}
             >
               <ListItemIcon>
@@ -119,7 +130,7 @@ function SearchSite({ getSites, sites, selectGlobalSite, setLoader }) {
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                selectGlobalSite(site)
+                selectGlobalSite(site);
               }}
             >
               <ListItemText primary={site?.siteName} />
@@ -135,13 +146,20 @@ function SearchSite({ getSites, sites, selectGlobalSite, setLoader }) {
     <div>
       {["right"].map((anchor) => (
         <React.Fragment key={anchor}>
-          <Button
-            style={{ backgroundColor: "#384bd3", color: "white" }}
-            className="btn float-end m-4"
-            onClick={toggleDrawer(anchor, true)}
-          >
-            Search Site
-          </Button>
+          {siteSelectedForGlobal?.siteImageUrl ? (
+            <span onClick={toggleDrawer(anchor, true)} className="cursor">
+              <img
+                src={siteSelectedForGlobal?.siteImageUrl}
+                style={{ height: "35px", borderRadius: "50%" }}
+              />
+              <span>{siteSelectedForGlobal?.siteName}</span>
+            </span>
+          ) : (
+            <span onClick={toggleDrawer(anchor, true)} className="cursor">
+              <AccountCircle style={{ color: "grey" }} />
+              <span>{siteSelectedForGlobal?.siteName}</span>
+            </span>
+          )}
           <Drawer
             anchor={anchor}
             open={state[anchor]}
@@ -159,5 +177,10 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   sites: state.site.sites,
   filterSite: state.site.filterSite,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, { getSites, selectGlobalSite, setLoader })(SearchSite);
+export default connect(mapStateToProps, {
+  getSites,
+  selectGlobalSite,
+  setLoader,
+})(SearchSite);

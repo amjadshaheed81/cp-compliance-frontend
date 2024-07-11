@@ -18,7 +18,6 @@ const Dashboard = () => {
       <SidebarNew />
       <div className="content">
         <Header />
-        <SearchSite />
         <div className="container-fluid">
           <BreadCrumHeader header={"Welcome"} page={"Home"} />
           <div className="d-flex bd-highlight p-0">
@@ -27,7 +26,10 @@ const Dashboard = () => {
             </div>
             <div className="ms-auto bd-highlight">
               <div className="form-check form-switch">
-                <label className="form-check-label" for="flexSwitchCheckChecked">
+                <label
+                  className="form-check-label"
+                  for="flexSwitchCheckChecked"
+                >
                   All Sites
                 </label>
                 <input
