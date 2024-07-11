@@ -21,6 +21,7 @@ import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
+import SiteCalendar from "../components/Protected/Sites/SiteCalendar";
 import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewCreatePreActions";
 import SiteChecks from "../components/Protected/Sites/SiteChecks";
 import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
@@ -159,6 +160,10 @@ export const getRoutes = () => {
     {
       path: "/pre-action-detail",
       element: <ViewEditPreAction />,
+    },
+    {
+      path: "/site-calendar",
+      element: <SiteCalendar />,
     },
   ];
 };

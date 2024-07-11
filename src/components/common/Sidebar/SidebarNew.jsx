@@ -187,7 +187,7 @@ const SidebarNew = ({ loggedInUserData }) => {
         navigate("/sites");
         break;
       case "Site Calendar":
-        navigate("/sites");
+        navigate("/site-calendar");
         break;
       case "Categories":
         navigate("/admin/categories");
