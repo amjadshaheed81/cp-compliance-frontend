@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { get, post, uploadSiteCheckDoc } from "../../../../api";
+import { get, post, put, uploadSiteCheckDoc } from "../../../../api";
 import {
   Grid, TextField, Button, Typography, Box, IconButton, MenuItem, Select, InputLabel, FormControl, Checkbox, FormControlLabel,
   Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete
@@ -103,6 +103,13 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
 
     })
     setrisks(risksN)
+    const body = {
+      riskScoreRed: risksN[0],
+      riskScoreAmber: risksN[1],
+      riskScoreYellow: risksN[2],
+      riskScoreGreen: risksN[3],
+    }
+    await put("/api/site-check/" + checkId, body);
     setquest(questionsFromDB);
   }
 
@@ -132,7 +139,12 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
     setquest(uquest);
   };
 
-  const saveAssessmentResponse = async (index) => {
+  const saveAssessmentResponse = async (event, index) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     const dataToSave = quest[index].response;
     if (dataToSave?.file?.name) {
       dataToSave.file = await uploadSiteCheckDoc(dataToSave);
@@ -164,27 +176,44 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                 </Typography>
                 <Box ml={2} display="flex" alignItems="center">
                   <Box width={24} height={24} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[0]}</Typography>
+                    {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
+                    <span className="badge bg-danger p-2 m-1 risk-span">
+                      {risks[0]}
+                    </span>
+                   
+                   
+                  
                   </Box>
                   <Box width={24} height={24} bgcolor="#FF9800" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[1]}</Typography>
+                    {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
+                    <span className="badge bg-warning p-2 m-1 risk-span">
+                      {risks[1]}
+                    </span>
                   </Box>
                   <Box width={24} height={24} bgcolor="#FFEB3B" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[2]}</Typography>
+                    {/* <Typography variant="body2" color="white">{risks[2]}</Typography> */}
+                    <span className="badge bg-info p-2 m-1 risk-span">
+                      {risks[2]}
+                    </span>
                   </Box>
                   <Box width={24} height={24} bgcolor="#4CAF50" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
-                    <Typography variant="body2" color="white">{risks[3]}</Typography>
+                    {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
+                    <span className="badge bg-success p-2 m-1 risk-span">
+                      {risks[3]}
+                    </span>
                   </Box>
                 </Box>
               </Box>
             </Grid>
           </Grid>
+
           {quest.map((q, idx) =>
             <Accordion defaultExpanded={idx === openIndex}>
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Typography>Q{idx + 1}. {q.question}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{ margin: '-5px', }} color={q.status === "Closed" ? "success" : "primary"} label={q.status} />
               </AccordionSummary>
               <AccordionDetails>
+                <form>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <label htmlFor="response" name="response">
@@ -193,7 +222,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                     <select
                       disabled={quest[idx]?.completed}
                       className="form-control form-select"
-                      name="response"
+                        name="response"
+                        required
                       value={quest[idx]?.response?.response}
                       onChange={(e) => handleInputChange(e, idx)}
                     >
@@ -211,7 +241,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                     <select
                       disabled={quest[idx]?.completed}
                       className="form-control form-select"
-                      name="riskType"
+                        name="riskType"
+                        required
 
                       onChange={(e) => handleInputChange(e, idx)}
                       value={quest[idx]?.response?.riskType}
@@ -231,7 +262,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                     <select
                       disabled={quest[idx]?.completed}
                       className="form-control form-select"
-                      name="floor"
+                        name="floor"
+                        required
                       value={quest[idx]?.response?.floor}
 
                       onChange={(e) => handleInputChange(e, idx)}
@@ -252,7 +284,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                     <select
                       disabled={quest[idx]?.completed}
                       className="form-control form-select"
-                      name="room"
+                        name="room"
+                        required
                       value={quest[idx]?.response?.room}
                       onChange={(e) => handleInputChange(e, idx)}
                     >
@@ -274,7 +307,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                       name="position"
                       className="form-control"
                       id="position"
-                      rows="4"
+                        rows="4"
+                        required
                       placeholder="Enter notes..."
                       value={quest[idx]?.response?.position}
                       onChange={(e) => handleInputChange(e, idx)}
@@ -298,8 +332,10 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                       options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                       getOptionLabel={(option) => option.label}
 
-                      renderInput={(params) => (
+                        renderInput={(params) => (
+                        
                         <TextField
+                          //required
                           {...params}
                           variant="outlined"
                           label="Search Asset"
@@ -314,7 +350,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                     </label>
                     <textarea
                       disabled={quest[idx]?.completed}
-                      name="action"
+                        name="action"
+                        required
                       className="form-control"
                       id="action"
                       rows="4"
@@ -372,7 +409,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                           <label htmlFor="consequence" name="consequence">
                             Consequence
                           </label>
-                          <select
+                            <select
+                              required
                             disabled={quest[idx]?.completed}
                             className="form-control form-select"
                             name="consequence"
@@ -391,7 +429,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                           <label htmlFor="likelihood" name="likelihood">
                             Likelihood
                           </label>
-                          <select
+                            <select
+                              required
                             disabled={quest[idx]?.completed}
                             className="form-control form-select"
                             name="likelihood"
@@ -432,11 +471,11 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                         className="btn btn-primary text-white pr-2"
-                        onClick={() => {
+                        onSubmit={(e) => {
                           setOpenIndex(idx + 1);
-                          saveAssessmentResponse(idx);
-                          //temp()
-                        }}
+                          saveAssessmentResponse(e, idx);
+                          }}
+                          type="submit"
                       >
                         Save & Continue
                       </button>
@@ -449,7 +488,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
 
 
                     </Grid>}
-                  {quest[idx]?.completed && <Grid item xs={12}>
+                    {quest[idx]?.completed && quest[idx]?.response?.file  && <Grid item xs={12}>
                     <a href={quest[idx]?.response?.file + "?" + sasToken} target="_blank">
                       <button
                         style={{ float: 'right' }}
@@ -459,7 +498,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                         <i className="fas fa-download" />&nbsp;Download Attachment
                       </button>
                     </a></Grid>}
-                </Grid>
+                  </Grid>
+                </form>
               </AccordionDetails>
             </Accordion>
           )}

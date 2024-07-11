@@ -3,19 +3,21 @@ import { connect } from "react-redux";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
-import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../api";
 import CircularProgress from '@mui/material/CircularProgress';
-import { TextField, Grid } from "@mui/material";
+import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
+
 import { toast } from "react-toastify";
 
 
 const AdminDropdowns = ({ }) => {
   
   const [data, setData] = useState([]);
+  const [formData, setFormData] = useState({});
   const [lovTypes, setLovTypes] = useState([]);
   const [selectedLovType, setselectedLovType] = useState();
   const [isLoading, setIsLoading] = useState(false);
+  const [addNewDrp, setAddNewDrp] = useState(false);
 
   useEffect(() => {
     getLovTypes();
@@ -91,11 +93,11 @@ const AdminDropdowns = ({ }) => {
     
   }
 
-  const saveNew = async (lovType, lovValue) => {
+  const saveNew = async () => {
     setIsLoading(true);
-    const dataTSave = { lovType, lovValue }
-    await post("/api/lov/", dataTSave);
-    getLovType(lovType)
+    await post("/api/lov/", formData);
+    setselectedLovType(formData.lovType)
+    setAddNewDrp(false);
   }
   
   const handleInputChange = (e, idx) => {
@@ -108,10 +110,71 @@ const AdminDropdowns = ({ }) => {
     uAllData[idx] = udata
     setData(uAllData);
   };
+
+  const handleInputChange2 = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
   
   return (
     <Fragment>
       <SidebarNew />
+      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false) }} maxWidth="lg" fullWidth>
+        <DialogTitle>Add New Dropdown </DialogTitle>
+        <DialogContent dividers>
+          <Fragment>
+            
+            <Grid container>
+              <Grid sm={4}>
+                <label for="lovType">Type</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="lovType"
+                  className="form-control"
+                  name="lovType"
+                  onChange={handleInputChange2}
+
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label for="lovValue">Value</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="lovValue"
+                  className="form-control"
+                  name="lovValue"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label for="attribite1">Depends On</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="attribite1"
+                  className="form-control"
+                  name="attribite1"
+                  onChange={handleInputChange2}
+
+                />
+              </Grid>
+             
+            </Grid>
+
+          </Fragment>
+
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddNewDrp(false)} className="bg-light text-primary">
+            Cancel
+          </Button>
+          <Button className="bg-primary text-white" onClick={() => saveNew()}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
       <div className="content">
         <Header />
         <div className="container-fluid">
@@ -119,7 +182,7 @@ const AdminDropdowns = ({ }) => {
           <BreadCrumHeader header={"Dropdown Management"} page={"Manage"} />
 
           <Grid container >
-            <Grid>
+            <Grid sm={4}>
               <label htmlFor="score" name="score">
                 Dropdown Type
               </label>
@@ -127,6 +190,7 @@ const AdminDropdowns = ({ }) => {
                 className="form-control form-select"
                 name="score"
                 onChange={(e) => setselectedLovType(e.target.value)}
+                value={selectedLovType}
                
               >
                 <option value={null}>Select</option>
@@ -135,19 +199,32 @@ const AdminDropdowns = ({ }) => {
                 ))}
               </select>
             </Grid>
-            {data.length > 0 && <Grid sm={6}>
-             
-              <button
-                style={{ width: "250px", margin: '20px' }}
-                className="btn btn-primary btn-light"
-                onClick={() => {
-                  addNew()
-                }}
-              >
-                Add New
-              </button>
+            <Grid sm={4}>
+              {data.length > 0 &&
+                <button
+                  style={{ width: "250px", margin: '20px' }}
+                  className="btn btn-primary btn-light"
+                  onClick={() => {
+                    addNew()
+                  }}
+                >
 
-            </Grid>}
+                  <i className="fas fa-arrow-left" /> Add new value
+                </button>
+              }
+            </Grid>
+            <Grid sm={4}>
+                <button
+                  style={{ width: "250px", margin: '20px' }}
+                  className="btn btn-primary btn-primary"
+                  onClick={() => {
+                    setAddNewDrp(true)
+                  }}
+                >
+
+                  <i className="fas fa-plus" /> Add new dropdown
+                </button>
+            </Grid>
           </Grid>
          
          
@@ -158,7 +235,7 @@ const AdminDropdowns = ({ }) => {
                 <tr>
                   <th scope="col" style={{ border: "2px groove"}}>Value</th>
                   <th scope="col" style={{ border: "2px groove" }}>Description</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Depends</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Depends On</th>
                   <th scope="col" style={{ border: "2px groove" }}>Actions</th>
                 </tr>
               </thead>
