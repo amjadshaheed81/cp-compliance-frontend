@@ -269,7 +269,7 @@ const Sites = ({
                           className="btn btn-sm btn-light"
                           onClick={() => {
                             setTimeout(() => {
-                              goTo("/update-site");
+                              goTo(`/update-site?siteId=${itm?.siteId}&isViewMode=edit`);
                             }, 1000);
                             updateSiteData({ ...itm, isViewMode: false });
                           }}

@@ -22,6 +22,7 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import BusinessIcon from "@mui/icons-material/Business";
 import { toast } from "react-toastify";
+import { useSearchParams } from "react-router-dom";
 
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
@@ -59,10 +60,17 @@ const UpdateSite = ({
     defaultValues,
   });
   const values = watch();
+  const [searchParams] = useSearchParams();
+  const paramSiteId = searchParams.get("siteId");
+  const paramViewMode = searchParams.get("isViewMode");
   const isViewMode = updateSite?.isViewMode;
   useEffect(() => {
     setLoader(true);
-    getSiteDetailsById(updateSite?.siteId, isViewMode);
+    if (updateSite?.siteId) {
+      getSiteDetailsById(updateSite?.siteId, isViewMode);
+    } else {
+      getSiteDetailsById(paramSiteId, paramViewMode === "edit" ? true : false);
+    }
   }, []);
   useEffect(() => {
     console.log("updateSite", updateSite);
@@ -138,7 +146,7 @@ const UpdateSite = ({
           {/* row start*/}
           <div className="row p-2" style={{ backgroundColor: "white" }}>
             <div className="col-md-8">
-              <div className="row bg-white" style={{ height: 'auto'}}>
+              <div className="row bg-white" style={{ height: "auto" }}>
                 <p className="pt-2 pb-2 border-bottom">Property Detail</p>
                 <form className="p-2" onSubmit={handleSubmit(submitSite)}>
                   <div className="row">

@@ -8,7 +8,8 @@ import {
   setLoader,
 } from "./../../../../store/thunk/site";
 import Error from "../../../common/Alert/Error";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+import { useSearchParams } from "react-router-dom";
 
 const KeyContacts = ({
   updateSite,
@@ -28,9 +29,14 @@ const KeyContacts = ({
   } = useForm({});
   const [selectedItem, setSelectedItem] = useState("");
   const isViewMode = updateSite?.isViewMode;
-
+  const [searchParams] = useSearchParams();
+  const paramSiteId = searchParams.get("siteId");
   useEffect(() => {
-    getKeyContact(updateSite?.siteId);
+    if (updateSite?.siteId) {
+      getKeyContact(updateSite?.siteId);
+    } else {
+      getKeyContact(paramSiteId);
+    }
   }, []);
   const submitKeyContact = (data) => {
     console.log(data);
@@ -39,11 +45,11 @@ const KeyContacts = ({
     setLoader(true);
     const res = await deleteKeyContact(itm?.id);
     if (res === "Success") {
-      toast.success("Key contact has been deleted succesfully.")
+      toast.success("Key contact has been deleted succesfully.");
       setLoader(false);
       getKeyContact(updateSite?.siteId);
-    } else{
-      toast.error("Something went wrong while deleting key contact.")
+    } else {
+      toast.error("Something went wrong while deleting key contact.");
     }
   };
   const addKeyContactClick = () => {
