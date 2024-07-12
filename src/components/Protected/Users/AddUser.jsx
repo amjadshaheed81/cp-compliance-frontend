@@ -316,7 +316,7 @@ const AddUser = ({
                               console.log("newInputValue", newInputValue);
                             setSelectedCompany(newInputValue);
                             }}
-                            options={companies.map((option) => { return { key: option.userId, label: option.companyName } })}
+                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >

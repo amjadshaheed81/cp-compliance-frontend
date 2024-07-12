@@ -93,7 +93,7 @@ const ContractorContractView = ({
     reset({
       ...data,
       manager: data?.projectManagerUserId,
-      company: data?.contractorCompanyId,
+      company: data?.contractorCompanyName,
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });

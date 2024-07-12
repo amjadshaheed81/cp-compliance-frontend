@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Tooltip } from "@mui/material";
+import { Button, Box, Tooltip, Autocomplete } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -97,7 +97,7 @@ const ManagerContractView = ({
     reset({
       ...data,
       manager: data?.projectManagerUserId,
-      company: data?.contractorCompanyId,
+      company: data?.contractorCompanyName,
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });
@@ -139,7 +139,7 @@ const ManagerContractView = ({
         siteId: siteSelectedForGlobal?.siteId,
         category: data?.category || "",
         subCategory: data?.subCategory || "",
-        contractorCompanyId: data?.company ? Number(data?.company) : null,
+        contractorCompanyName: data?.company || "",
         status: currentContract?.status,
         budget: data?.cost,
         cost: data?.cost,
@@ -422,26 +422,23 @@ const ManagerContractView = ({
                         </div>
                       <div className="col-md-3">
                         <label for="company">Company</label>
-                        <select
-                          name="company"
-                          className="form-control form-select"
-                          id="company"
-                          {...register("company", {
-                            required: {
-                              value: true,
-                              message: `Please select company`,
-                            },
-                          })}
-                        >
-                          <option value="" selected disabled>
-                            Select company
-                          </option>
-                          {companies?.map((itm) => (
-                            <option value={itm?.userId}>
-                              {itm?.companyName}
-                            </option>
-                          ))}
-                        </select>
+                        <Autocomplete
+                            id="leadUserID"
+                            onChange={(event, item) => {
+                              setValue("company", item?.key, {shouldValidate: true});
+                            }}
+                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref} >
+                                <input type="text"
+                                  {...params.inputProps}
+                                  className="form-control"
+                                  placeholder="Select Company"
+                                />
+                              </div>
+                            )}
+                          />
                         {errors?.company && (
                           <InputError
                             message={errors?.company?.message}

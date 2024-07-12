@@ -99,7 +99,7 @@ const AddContracts = ({
         siteId: siteSelectedForGlobal?.siteId,
         category: data?.category || "",
         subCategory: data?.subCategory || "",
-        contractorCompanyId: data?.company ? Number(data?.company) : null,
+        contractorCompanyName: data?.company || "",
         status: "Active",
         budget: data?.cost,
         cost: data?.cost,
@@ -284,10 +284,9 @@ const AddContracts = ({
                         <Autocomplete
                             id="leadUserID"
                             onChange={(event, item) => {
-                              console.log("item", item);
                               setValue("company", item?.key, {shouldValidate: true});
                             }}
-                            options={companies.map((option) => { return { key: option.userId, label: option.companyName } })}
+                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
