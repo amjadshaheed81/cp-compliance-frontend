@@ -299,27 +299,6 @@ const AddContracts = ({
                               </div>
                             )}
                           />
-                        {/* <select
-                          name="company"
-                          className="form-control form-select"
-                          id="company"
-                          {...register("company", {
-                            required: {
-                              value: true,
-                              message: `Please select company`,
-                            },
-                          })}
-                        >
-                          <option value="" selected disabled>
-                            Select company
-                          </option>
-                          {companies?.map((itm) => (
-                            <option value={itm?.userId}>
-                              {itm?.companyName}
-                            </option>
-                          ))}
-                        </select>
-                        */}
                         {errors?.company && (
                           <InputError
                             message={errors?.company?.message}
@@ -426,19 +405,23 @@ const AddContracts = ({
                       </div>
                       <div className="col-md-3">
                         <label for="manager">Manager</label>
-                        <select
-                          name="manager"
-                          className="form-control form-select"
-                          id="manager"
-                          {...register("manager")}
-                        >
-                          <option value="" selected disabled>
-                            Select manager
-                          </option>
-                          {ManagerList?.map((itm) => (
-                            <option value={itm?.id}>{itm?.name}</option>
-                          ))}
-                        </select>
+                        <Autocomplete
+                            id="managerId"
+                            onChange={(event, item) => {
+                              setValue("manager", item?.key, {shouldValidate: true});
+                            }}
+                            options={ManagerList.map((option) => { return { key: option.id, label: option.name } })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref} >
+                                <input type="text"
+                                  {...params.inputProps}
+                                  className="form-control"
+                                  placeholder="Select Manager"
+                                />
+                              </div>
+                            )}
+                          />
                       </div>
                       <div className="col-md-3">
                         <MandatoryFolders
