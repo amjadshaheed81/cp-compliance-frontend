@@ -37,10 +37,13 @@ import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
+import DescriptionIcon from '@mui/icons-material/Description';
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
 import { GeneralMenu, SiteMenu, filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
+import { setSideBarView } from "../../../store/thunk/site";
+import CloseIcon from "@mui/icons-material/Close";
 
 const drawerWidth = 240;
 
@@ -57,6 +60,7 @@ const siteIconComponents = [
   <AddIcon style={{ color: "white" }} />,
   <BusinessIcon style={{ color: "white" }} />,
   <FolderIcon style={{ color: "white" }} />,
+  <DescriptionIcon style={{ color: "white" }} />,
   <BuildIcon style={{ color: "white" }} />,
   <BackupTableIcon style={{ color: "white" }} />,
   <BeenhereIcon style={{ color: "white" }} />,
@@ -135,9 +139,8 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-const SidebarNew = ({ loggedInUserData }) => {
+const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
   const theme = useTheme();
-  const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
   const goTo = (text) => {
     switch (text) {
@@ -171,6 +174,9 @@ const SidebarNew = ({ loggedInUserData }) => {
       case "Site Documents":
         navigate("/documents");
         break;
+      case "Statutory Register":
+        navigate("/statutory-register");
+        break;
       case "Site Assets":
         navigate("/assets");
         break;
@@ -200,11 +206,11 @@ const SidebarNew = ({ loggedInUserData }) => {
     }
   };
   const sideBarOpenClose = (status) => {
-    setOpen(status);
+    setSideBarView(status);
   };
 
   const handleDrawerClose = () => {
-    setOpen(false);
+    setSideBarView(false);
   };
 
   return (
@@ -213,34 +219,12 @@ const SidebarNew = ({ loggedInUserData }) => {
       <Drawer
         sx={{ backgroundColor: "black !important" }}
         variant="permanent"
-        open={open}
+        open={isSideBarOpen}
         onMouseEnter={() => sideBarOpenClose(true)}
         onMouseLeave={() => sideBarOpenClose(false)}
         className="sidebar"
       >
-        {/* <IconButton
-          aria-label="open drawer"
-          
-          sx={{
-            backgroundColor: "black",
-            ...(open && { display: "none" }),
-          }}
-          // className="m-0"
-        >
-          <MenuIcon sx={{ color: "white" }} />
-        </IconButton> */}
-        {/* <DrawerHeader sx={{ backgroundColor: "black" }}>
-          {open && (
-            <IconButton onClick={handleDrawerClose}>
-              {theme.direction === "rtl" ? (
-                <ChevronRightIcon sx={{ backgroundColor: "white" }} />
-              ) : (
-                <ChevronLeftIcon sx={{ backgroundColor: "white" }} />
-              )}
-            </IconButton>
-          )}
-        </DrawerHeader> */}
-        {/* <Divider /> */}
+        
         <List sx={{ backgroundColor: "black" }}>
           <li style={{ textAlign: "center" }}>
             <img
@@ -250,6 +234,7 @@ const SidebarNew = ({ loggedInUserData }) => {
               className="img img-responsive"
               alt="side logo"
             />
+            <CloseIcon className="grid-icon" onClick={() => setSideBarView(false)}/>
           </li>
           <li className="m-0">
             <img
@@ -270,7 +255,7 @@ const SidebarNew = ({ loggedInUserData }) => {
               <ListItemButton
                 sx={{
                   minHeight: 48,
-                  justifyContent: open ? "initial" : "center",
+                  justifyContent: isSideBarOpen ? "initial" : "center",
                   px: 2.5,
                 }}
                 onClick={() => goTo(text)}
@@ -278,7 +263,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
-                    mr: open ? 3 : "auto",
+                    mr: isSideBarOpen ? 3 : "auto",
                     justifyContent: "center",
                   }}
                   onClick={() => goTo(text)}
@@ -287,7 +272,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                 </ListItemIcon>
                 <ListItemText
                   primary={text}
-                  sx={{ opacity: open ? 1 : 0, color: "white" }}
+                  sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
                 />
               </ListItemButton>
             </ListItem>
@@ -303,7 +288,7 @@ const SidebarNew = ({ loggedInUserData }) => {
               <ListItemButton
                 sx={{
                   minHeight: 48,
-                  justifyContent: open ? "initial" : "center",
+                  justifyContent: isSideBarOpen ? "initial" : "center",
                   px: 2.5,
                 }}
                 onClick={() => goTo(text)}
@@ -311,7 +296,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
-                    mr: open ? 3 : "auto",
+                    mr: isSideBarOpen ? 3 : "auto",
                     justifyContent: "center",
                   }}
                   onClick={() => goTo(text)}
@@ -320,7 +305,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                 </ListItemIcon>
                 <ListItemText
                   primary={text}
-                  sx={{ opacity: open ? 1 : 0, color: "white" }}
+                  sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
                 />
               </ListItemButton>
             </ListItem>
@@ -336,7 +321,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                 <ListItemButton
                   sx={{
                     minHeight: 48,
-                    justifyContent: open ? "initial" : "center",
+                    justifyContent: isSideBarOpen ? "initial" : "center",
                     px: 2.5,
                   }}
                   onClick={() => goTo(text)}
@@ -344,7 +329,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                   <ListItemIcon
                     sx={{
                       minWidth: 0,
-                      mr: open ? 3 : "auto",
+                      mr: isSideBarOpen ? 3 : "auto",
                       justifyContent: "center",
                     }}
                     onClick={() => goTo(text)}
@@ -353,7 +338,7 @@ const SidebarNew = ({ loggedInUserData }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={text}
-                    sx={{ opacity: open ? 1 : 0, color: "white" }}
+                    sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
                   />
                 </ListItemButton>
               </ListItem>
@@ -367,5 +352,6 @@ const SidebarNew = ({ loggedInUserData }) => {
 
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
+  isSideBarOpen: state.site.isSideBarOpen,
 });
-export default connect(mapStateToProps, {})(SidebarNew);
+export default connect(mapStateToProps, { setSideBarView })(SidebarNew);

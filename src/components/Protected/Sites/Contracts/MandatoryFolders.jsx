@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { connect } from "react-redux";
 import { getDocumentsRootFolder } from "../../../../store/thunk/site";
+import { toast } from "react-toastify";
 
 const MandatoryFolders = ({
   getDocumentsRootFolder,
@@ -40,7 +41,13 @@ const MandatoryFolders = ({
   };
 
   const handleAddFolder = (folder) => {
-    setSelectedMandatoryFolder((prev) => [...prev, folder]);
+    console.log("folder", folder);
+    const isFolderAlreadySelected = selectedMandatoryFolder?.filter(itm => itm?.id === folder?.id);
+    if(isFolderAlreadySelected?.length > 0) {
+      toast.warn(`${folder?.name} is already selected`);
+    } else{
+      setSelectedMandatoryFolder((prev) => [...prev, folder]);
+    }
   };
 
   return (

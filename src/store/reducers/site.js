@@ -68,6 +68,7 @@ import {
   GET_USER_ALL_EXTERNAL,
   USER_LOGIN,
   USER_LOGOUT,
+  SET_SIDEBAR_VIEW,
 } from "./../actionTypes";
 
 const initialState = {
@@ -102,6 +103,7 @@ const initialState = {
   siteDoorItems: [],
   sitePATItems: [],
   sitePFPItems: [],
+  isSideBarOpen: false,
 };
 
 const reducer = (state = initialState, action) => {
@@ -586,6 +588,11 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: action.payload,
+      };
+    case SET_SIDEBAR_VIEW:
+      return {
+        ...state,
+        isSideBarOpen: action.payload,
       };
     case RESET_SITE_MESSAGES:
       return {

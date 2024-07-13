@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box } from "@mui/material";
+import { Button, Box, Autocomplete } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
+import { get } from "../../../api";
 
 const ViewUsers = ({
   showEditModal,
@@ -25,6 +26,9 @@ const ViewUsers = ({
   const handleOpen = () => setShowEditModal(true);
   const handleClose = () => setShowEditModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [companies, setcompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany ] = useState();
+
   const {
     register,
     reset,
@@ -43,8 +47,16 @@ const ViewUsers = ({
       isCompany: selectedUser?.company ? true : false,
     });
     getSites();
+    getCompanies();
   }, []);
+  const getCompanies = async () => {
+    const url = `/api/user/companies`;
+    let response = await get(url);
+    response = response.filter(r=> r!== null)
+    setcompanies(response);
+  }
   const submitUser = async (formJson) => {
+    formJson.company = selectedCompany;
     const data = {
       userId: selectedUser?.id,
       firstName: formJson?.firstName || null,
@@ -304,12 +316,29 @@ const ViewUsers = ({
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <label for="company">Company Name</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="company"
-                          {...register("company")}
-                        />
+                        <Autocomplete
+                            id="leadUserID"
+                            onChange={(event, item) => {
+                              console.log("item", item);
+                              setSelectedCompany(item?.key);
+                            }}
+                            freeSolo
+                            onInputChange={(event, newInputValue) => {
+                              console.log("newInputValue", newInputValue);
+                            setSelectedCompany(newInputValue);
+                            }}
+                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref} >
+                                <input type="text"
+                                  {...params.inputProps}
+                                  className="form-control"
+                                  placeholder="Select Company"
+                                />
+                              </div>
+                            )}
+                          />
                       </div>
                     </div>
                   )}

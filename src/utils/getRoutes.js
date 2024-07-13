@@ -28,6 +28,7 @@ import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSite
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
 import { ROLE } from "../Constant/Role";
+import StatutoryRegister from "../components/Protected/Sites/StatutoryRegister";
 
 export const getRoutes = () => {
   const tabs = [
@@ -95,6 +96,10 @@ export const getRoutes = () => {
     {
       path: "/documents",
       element: <Document />,
+    },
+    {
+      path: "/statutory-register",
+      element: <StatutoryRegister />,
     },
     {
       path: "/site-contracts",
