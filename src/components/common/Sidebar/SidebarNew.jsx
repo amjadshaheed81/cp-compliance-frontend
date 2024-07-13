@@ -37,6 +37,7 @@ import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
+import DescriptionIcon from '@mui/icons-material/Description';
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
@@ -59,6 +60,7 @@ const siteIconComponents = [
   <AddIcon style={{ color: "white" }} />,
   <BusinessIcon style={{ color: "white" }} />,
   <FolderIcon style={{ color: "white" }} />,
+  <DescriptionIcon style={{ color: "white" }} />,
   <BuildIcon style={{ color: "white" }} />,
   <BackupTableIcon style={{ color: "white" }} />,
   <BeenhereIcon style={{ color: "white" }} />,
@@ -171,6 +173,9 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         break;
       case "Site Documents":
         navigate("/documents");
+        break;
+      case "Statutory Register":
+        navigate("/statutory-register");
         break;
       case "Site Assets":
         navigate("/assets");

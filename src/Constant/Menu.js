@@ -14,6 +14,7 @@ export const SiteMenu = [
   "Create Site",
   "Site Details",
   "Site Documents",
+  "Statutory Register",
   "Site Assets",
   "Site Contracts",
   "Pre-Action",

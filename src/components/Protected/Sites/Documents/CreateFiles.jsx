@@ -146,7 +146,7 @@ const CreateFiles = ({
                   type="text"
                       name="name"
                       disabled
-                      value={folderData.name}
+                      value={folderData?.name}
                   className="form-control"
                   {...register("folderName")}
                     />
