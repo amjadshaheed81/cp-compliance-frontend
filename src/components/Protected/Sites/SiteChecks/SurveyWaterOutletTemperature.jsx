@@ -6,6 +6,7 @@ import { get, post } from "../../../../api";
 
 import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
 import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
+import { blueGrey } from "@mui/material/colors";
 
 const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSiteAssets, siteSelectedForGlobal, getSiteLayout }) => {
   const navigate = useNavigate();
@@ -76,13 +77,15 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
       data.status = "Open";
       if (data.r1Date) {
         data.r1Date = new Date(data.r1Date);
+        data.r2Date = data.r1Date;
+        data.r3Date = data.r1Date;
       }
-      if (data.r2Date) {
-        data.r2Date = new Date(data.r2Date);
-      }
-      if (data.r3Date) {
-        data.r3Date = new Date(data.r3Date);
-      }
+      // if (data.r2Date) {
+      //   data.r2Date = new Date(data.r2Date);
+      // }
+      // if (data.r3Date) {
+      //   data.r3Date = new Date(data.r3Date);
+      // }
 
       await post("/api/site-check/water-outlet-temp", data)
       toast.success("Fault data saved")
@@ -147,8 +150,8 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                     </thead>
                     <tbody>
                       <tr>
-                        <td>READING 1</td>
-                        <td><input
+                        <td>Reading 1 <b style={{color: "red"}}>( 30 seconds )</b></td>
+                        <td rowSpan={3} style={{ verticalAlign: 'middle' }}><input
                           type="date"
                           className="form-control"
                           name="r1Date"
@@ -166,14 +169,14 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                         </td>
                       </tr>
                       <tr>
-                        <td>READING 2</td>
-                        <td><input
+                        <td>Reading 2 <b style={{ color: "red" }}> ( 1 minute )</b></td>
+                        {/* <td rowSpan={3}><input
                           type="date"
                           className="form-control"
                           name="r2Date"
                           onChange={(e) => handleInputChange(e, readingPop)}
                         />
-                        </td>
+                        </td> */}
                         <td>
                           <input
                             type="number"
@@ -185,14 +188,14 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                         </td>
                       </tr>
                       <tr>
-                        <td>READING 3</td>
-                        <td><input
+                        <td>Reading 3 <b style={{ color: "red" }}>( 2 minutes )</b></td>
+                        {/* <td><input
                           type="date"
                           className="form-control"
                           name="r3Date"
                           onChange={(e) => handleInputChange(e, readingPop)}
                         />
-                        </td>
+                        </td> */}
                         <td>
                           <input
                             type="number"

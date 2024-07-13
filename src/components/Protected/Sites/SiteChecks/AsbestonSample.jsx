@@ -79,7 +79,7 @@ const AsbestonSample = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSele
     e.preventDefault();
     const udata = [...formData]
     udata[idx].expanded = !udata[idx].expanded;
-    setFormData(udata)
+    setFormData(udata)  
   }
 
   return (

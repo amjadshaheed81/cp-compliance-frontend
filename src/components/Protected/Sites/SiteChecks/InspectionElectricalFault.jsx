@@ -24,7 +24,9 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
       setCompleted(true)
     }
   }
-  const [formData, setFormData] = useState([{}]);
+  const [formData, setFormData] = useState([{
+    add:true
+  }]);
   const [completed, setCompleted] = useState(false);
 
   const handleInputChange = (e, idx) => {
@@ -56,17 +58,18 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
       form.reportValidity();
     }
     for (const data of formData) {
-      if (data?.file?.name) {
-        data.imageUrl = await uploadSiteCheckDoc(data);
-        delete data.file;
-      }
-      data.dateRaised = new Date(data.dateRaised);
-      data.checkId = checkId;
-      data.status = "Open";
-      await post("/api/site-check/inspection/fault", data)
-      toast.success("Fault data saved")
+      if (data.add) {
+        if (data?.file?.name) {
+          data.imageUrl = await uploadSiteCheckDoc(data);
+          delete data.file;
+        }
+        data.dateRaised = new Date(data.dateRaised);
+        data.checkId = checkId;
+        data.status = "Open";
+        await post("/api/site-check/inspection/fault", data)
+      } 
     }
-
+    toast.success("Fault data saved")
     setCompleted(true);
   }
 
@@ -77,9 +80,12 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
 
       <Grid sm={4}>
         <br />
-        <Typography variant="h6" gutterBottom>
+        {/* <Typography variant="h6" gutterBottom>
           Faults Identified <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
-        </Typography>
+        </Typography> */}
+          <Typography variant="h6" gutterBottom>
+            Faults Identified <Chip color={'warning'} label={'Open'} />
+          </Typography>
         <br />
 
       
@@ -89,18 +95,18 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
 
       </Grid>
       <Grid sm={4}>
-        {!completed &&
+       
           <button
             style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
             className="btn btn-primary btn-light"
             onClick={() => {
               const uformData = [...formData];
-              uformData.push({});
+              uformData.push({add: true});
               setFormData(uformData)
             }}
           >
             Record New
-          </button>}
+          </button>
 
       </Grid>
 
@@ -115,11 +121,12 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                 <th scope="col">RATING</th>
                 <th scope="col">IMAGE</th>
                 <th scope="col">SUGGESTED ACTION</th>
-                {!completed && <th scope="col"></th>}
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>
-              {formData.map((d, idx) => {
+                {formData.map((d, idx) => {
+                  const completed = formData?.[idx]?.faultId && !formData?.[idx]?.edit;
                 const assetName = siteAssets.filter(a => a.assetId == formData[idx].assetId).map(option => option.assetName + " - " + option.category)?.[0];
                 return (
                   <tr>
@@ -201,7 +208,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       </select>
                     </td>
                     <td align="center">
-                      {completed &&
+                      {completed && formData?.[idx]?.imageUrl &&
                         <a href={formData?.[idx]?.imageUrl + "?" + sasToken} target="_blank">
                           <button
                             disabled={completed}
@@ -233,21 +240,33 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       required
                       onChange={(e) => handleInputChange(e, idx)}
                     /></td>
-                    {!completed && <td>
-                      <button
-                        disabled={completed}
-                        className="btn btn-sm btn-light text-dark"
-                        onClick={() => {
-                          const uformData = [...formData];
-                          if (uformData.length > 1) {
-                            uformData.splice(idx, 1);
+                    <td>
+                      {!completed && !formData?.[idx]?.edit && 
+                        <button
+                          disabled={completed}
+                          className="btn btn-sm btn-light text-dark"
+                          onClick={() => {
+                            const uformData = [...formData];
+                            if (uformData.length > 1) {
+                              uformData.splice(idx, 1);
+                              setFormData(uformData)
+                            }
+                          }}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>}
+                      {completed &&
+                        <button
+                          className="btn btn-sm btn-light text-dark"
+                          onClick={() => {
+                            const uformData = [...formData];
+                            uformData[idx].edit = true;
                             setFormData(uformData)
-                          }
-                        }}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </td>}
+                          }}
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>}
+                    </td>
                   </tr>
                 )
               }
@@ -257,7 +276,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
         </div>
 
       </Grid>
-      {!completed && <Grid sm={12}>
+       <Grid sm={12}>
 
         <button
           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
@@ -269,7 +288,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
         </button>
 
 
-      </Grid>}
+      </Grid>
       </Grid>
       </form>
 
