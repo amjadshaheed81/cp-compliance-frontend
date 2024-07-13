@@ -18,6 +18,7 @@ import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
 import { get, put } from "../../../../api";
 import MandatoryFolders from "./MandatoryFolders";
+import moment from "moment";
 
 const AddContracts = ({
   showAddModal,
@@ -59,6 +60,7 @@ const AddContracts = ({
     formState: { errors },
     handleSubmit,
     setValue,
+    getValues,
   } = useForm({});
   const values = watch();
   useEffect(() => {
@@ -67,6 +69,7 @@ const AddContracts = ({
       getCompanies();
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      setSelectedMandatoryFolder([]);
     } else {
       toast.error("Please select site from site search.");
     }
@@ -360,6 +363,13 @@ const AddContracts = ({
                               required: {
                                 value: true,
                                 message: `${Validation.REQUIRED} start date`,
+                              },
+                              validate: (value) => {
+                                var startDate = moment(value)
+                                var endDate = moment(getValues().endDate);
+                                if (startDate > endDate) {
+                                  return "Start date should be in past or earlier than the end date.";
+                                }
                               },
                             })}
                           />

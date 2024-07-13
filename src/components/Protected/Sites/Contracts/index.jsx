@@ -4,7 +4,7 @@ import { CSVLink } from "react-csv";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import { Box, Modal, Typography, Chip, Switch } from "@mui/material";
+import { Switch, CircularProgress } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 import {
   getSiteContracts,
@@ -12,9 +12,6 @@ import {
   updateContractDetail,
   setLoader,
 } from "../../../../store/thunk/contracts";
-import Success from "../../../common/Alert/Success";
-import Status from "../../../common/Alert/Status/Status";
-import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { get } from "../../../../api";
 import AddContracts from "./AddContracts";
@@ -35,13 +32,6 @@ export const isManagerAdminLogin = (loggedInUserData) => {
   return false;
 };
 const Contracts = ({
-  getSiteContracts,
-  getSiteContractDetails,
-  updateContractDetail,
-  contractDetail,
-  error,
-  success,
-  setLoader,
   loggedInUserData,
   siteSelectedForGlobal,
 }) => {
@@ -63,6 +53,7 @@ const Contracts = ({
   const [checked, setChecked] = useState(false);
   const [contractsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
@@ -113,6 +104,7 @@ const Contracts = ({
     getProjectList();
   }, []);
   const getProjectList = async (isSiteSelectedForContractor = false) => {
+    setIsLoading(true);
     if (isManagerAdminLogin(loggedInUserData)) {
       const projects = await get(
         `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
@@ -127,6 +119,7 @@ const Contracts = ({
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);
     }
+    setIsLoading(false);
   };
   const getCategories = async () => {
     const category = await get("/api/lov/PROJECT_CONTRACT_CATEGORY");
@@ -246,9 +239,7 @@ const Contracts = ({
                     name="category"
                     onChange={handleInputChange}
                   >
-                    <option value="">
-                      Category
-                    </option>
+                    <option value="">Category</option>
                     {category?.map((itm) => (
                       <option value={itm?.lovValue}>{itm?.lovValue}</option>
                     ))}
@@ -262,9 +253,7 @@ const Contracts = ({
                       id="subCategory"
                       onChange={handleInputChange}
                     >
-                      <option value="">
-                        Sub Category
-                      </option>
+                      <option value="">Sub Category</option>
                       {subCategoryList?.map((itm) => (
                         <option value={itm?.lovValue}>{itm?.lovValue}</option>
                       ))}
@@ -278,9 +267,7 @@ const Contracts = ({
                     id="status"
                     onChange={handleInputChange}
                   >
-                    <option value="">
-                      Status
-                    </option>
+                    <option value="">Status</option>
                     <option value="Active">Active</option>
                     <option value="Expired">Expired</option>
                     <option value="Terminated">Terminated</option>
@@ -354,12 +341,20 @@ const Contracts = ({
                   <th scope="col">End date</th>
                   <th scope="col">Cost</th>
                   <th scope="col">Status</th>
+                  <th scope="col">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {currentContracts?.length === 0 && (
+                {!isLoading && currentContracts?.length === 0 && (
                   <tr>
                     <td>No Contracts Found</td>
+                  </tr>
+                )}
+                {isLoading && (
+                  <tr>
+                    <td colSpan={8} align="center">
+                      <CircularProgress />
+                    </td>
                   </tr>
                 )}
                 {currentContracts?.map((itm) => (
@@ -394,6 +389,18 @@ const Contracts = ({
                     <td>
                       <ChipComponent status={itm?.status} />
                     </td>
+                    <td>
+                      <Tooltip title={`View ${itm?.summary}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            openContractDetail(itm);
+                          }}
+                        >
+                          <i className="fas fa-eye"></i>
+                        </button>{" "}
+                      </Tooltip>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -402,10 +409,12 @@ const Contracts = ({
           {/* row end*/}
           <div className="row">
             <Pagination
-                totalPages={Math.ceil(filteredContractList.length / contractsPerPage)}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-              />
+              totalPages={Math.ceil(
+                filteredContractList.length / contractsPerPage
+              )}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </div>
@@ -419,7 +428,6 @@ const mapStateToProps = (state) => ({
   filterContract: state.siteContracts.filterContract,
   contractDetail: state.siteContracts.contractDetail,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
-  isLoading: state.siteContracts.isLoading,
   loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
