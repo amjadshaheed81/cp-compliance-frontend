@@ -71,3 +71,4 @@ export const CREATE_FOLDER = "CREATE_FOLDER";
 // user login logout
 export const USER_LOGIN = "USER_LOGIN";
 export const USER_LOGOUT = "USER_LOGOUT";
+export const SET_SIDEBAR_VIEW = "SET_SIDEBAR_VIEW";

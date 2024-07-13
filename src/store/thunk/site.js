@@ -73,6 +73,7 @@ import {
   GET_USER_ALL_EXTERNAL,
   USER_LOGIN,
   USER_LOGOUT,
+  SET_SIDEBAR_VIEW,
 } from "../actionTypes";
 import {
   ADD_SITE_ASSET,
@@ -1176,6 +1177,15 @@ export const setLoader = (value) => {
   return async (dispatch) => {
     dispatch({
       type: SET_SITE_LOADER,
+      payload: value,
+    });
+  };
+};
+
+export const setSideBarView = (value) => {
+  return async (dispatch) => {
+    dispatch({
+      type: SET_SIDEBAR_VIEW,
       payload: value,
     });
   };
