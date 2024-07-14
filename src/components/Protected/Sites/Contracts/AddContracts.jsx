@@ -251,63 +251,69 @@ const AddContracts = ({
                           />
                         )}
                       </div>
-                      {subCategoryListData?.length > 0 && (
-                        <div className="col-md-3">
-                          <label for="subCategory">Sub Category</label>
-                          <select
-                            name="subCategory"
-                            className="form-control form-select"
-                            id="subCategory"
-                            {...register("subCategory", {
-                              required: {
-                                value: true,
-                                message: `Please select sub category`,
-                              },
-                            })}
-                          >
-                            <option value="" selected disabled>
-                              Select sub category
+                      <div className="col-md-3">
+                        <label for="subCategory">Sub Category</label>
+                        <select
+                          name="subCategory"
+                          className="form-control form-select"
+                          id="subCategory"
+                          {...register("subCategory", {
+                            required: {
+                              value: true,
+                              message: `Please select sub category`,
+                            },
+                          })}
+                        >
+                          <option value="" selected disabled>
+                            Select sub category
+                          </option>
+                          {subCategoryListData?.map((itm) => (
+                            <option value={itm?.lovValue}>
+                              {itm?.lovValue}
                             </option>
-                            {subCategoryListData?.map((itm) => (
-                              <option value={itm?.lovValue}>
-                                {itm?.lovValue}
-                              </option>
-                            ))}
-                          </select>
-                          {errors?.subCategory && (
-                            <InputError
-                              message={errors?.subCategory?.message}
-                              key={errors?.subCategory?.message}
-                            />
-                          )}
-                        </div>
-                      )}
+                          ))}
+                        </select>
+                        {errors?.subCategory && (
+                          <InputError
+                            message={errors?.subCategory?.message}
+                            key={errors?.subCategory?.message}
+                          />
+                        )}
+                      </div>
                       <div className="col-md-3">
                         <label for="company">Company</label>
                         <Autocomplete
-                            id="leadUserID"
-                            onChange={(event, item) => {
-                              setValue("company", item?.key, {shouldValidate: true});
-                            }}
-                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
-                            getOptionLabel={(option) => option.label}
-                            renderInput={(params) => (
-                              <div ref={params.InputProps.ref} >
-                                <input type="text"
-                                  {...params.inputProps}
-                                  className="form-control"
-                                  placeholder="Select Company"
-                                />
-                              </div>
-                            )}
-                          />
+                          id="leadUserID"
+                          onChange={(event, item) => {
+                            setValue("company", item?.key, {
+                              shouldValidate: true,
+                            });
+                          }}
+                          options={companies.map((option) => {
+                            return {
+                              key: option.companyName,
+                              label: option.companyName,
+                            };
+                          })}
+                          getOptionLabel={(option) => option.label}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <input
+                                type="text"
+                                {...params.inputProps}
+                                className="form-control"
+                                placeholder="Select Company"
+                              />
+                            </div>
+                          )}
+                        />
                         {errors?.company && (
                           <InputError
                             message={errors?.company?.message}
                             key={errors?.company?.message}
                           />
-                        )} 
-                      </div> 
+                        )}
+                      </div>
                       <div className="col-md-3">
                         <div className="form-group">
                           <label for="budget">Budget (GBP)</label>
@@ -365,7 +371,7 @@ const AddContracts = ({
                                 message: `${Validation.REQUIRED} start date`,
                               },
                               validate: (value) => {
-                                var startDate = moment(value)
+                                var startDate = moment(value);
                                 var endDate = moment(getValues().endDate);
                                 if (startDate > endDate) {
                                   return "Start date should be in past or earlier than the end date.";
@@ -415,22 +421,27 @@ const AddContracts = ({
                       <div className="col-md-3">
                         <label for="manager">Manager</label>
                         <Autocomplete
-                            id="managerId"
-                            onChange={(event, item) => {
-                              setValue("manager", item?.key, {shouldValidate: true});
-                            }}
-                            options={ManagerList.map((option) => { return { key: option.id, label: option.name } })}
-                            getOptionLabel={(option) => option.label}
-                            renderInput={(params) => (
-                              <div ref={params.InputProps.ref} >
-                                <input type="text"
-                                  {...params.inputProps}
-                                  className="form-control"
-                                  placeholder="Select Manager"
-                                />
-                              </div>
-                            )}
-                          />
+                          id="managerId"
+                          onChange={(event, item) => {
+                            setValue("manager", item?.key, {
+                              shouldValidate: true,
+                            });
+                          }}
+                          options={ManagerList.map((option) => {
+                            return { key: option.id, label: option.name };
+                          })}
+                          getOptionLabel={(option) => option.label}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <input
+                                type="text"
+                                {...params.inputProps}
+                                className="form-control"
+                                placeholder="Select Manager"
+                              />
+                            </div>
+                          )}
+                        />
                       </div>
                       <div className="col-md-3">
                         <MandatoryFolders
