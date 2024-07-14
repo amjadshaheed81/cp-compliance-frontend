@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import DescriptionIcon from '@mui/icons-material/Description';
 import SidebarNew from '../../../common/Sidebar/SidebarNew';
 import Header from '../../../common/Header/Header';
@@ -6,10 +6,55 @@ import BreadCrumHeader from '../../../common/BreadCrumHeader/BreadCrumHeader';
 import { CSVLink } from 'react-csv';
 import { Chip } from '@mui/material';
 import CreateFiles from '../Documents/CreateFiles';
+import { toast } from 'react-toastify';
+import { get, put } from '../../../../api';
+import Swal from 'sweetalert2';
+import { connect } from 'react-redux';
 
-const StatutoryRegister = () => {
+const StatutoryRegister = ({ siteSelectedForGlobal }) => {
     const [showModal, setShowModal] = useState(false);
-
+    const [isLoading, setIsLoading] = useState(false);
+    const [statutory, setStatutory] = useState([]);
+    const [folder, setFolder] = useState({});
+    const getStatutory = async (siteId) => {
+        setIsLoading(true);
+        const getStatutoryDocuments = await get(`/api/document/${siteId}/statutoryRegister`);
+        setStatutory(getStatutoryDocuments);
+        setIsLoading(false);
+    }
+    let chipColor;
+    const getChipStatus = () => {
+        return(
+            chipColor = statutory.filter((item) => {
+                return item.status === "Passed";
+            })
+        )   
+    }
+    useEffect(() => {
+        if (siteSelectedForGlobal?.siteId) {
+            getStatutory(siteSelectedForGlobal?.siteId);
+            getChipStatus();
+        } else {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Please select site from site search and try again.",
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [siteSelectedForGlobal?.siteId]);
+    const handleCheckboxField = async (e,item) => {
+        // setFolder(item);
+        const folderId = item.id;
+        const formData = {
+            required: e.target.checked,
+            status: ((e.target.checked === true && item.files !== null) ? "Passed" : "Open"),
+        };
+        const url = `/api/document/folder/${folderId}/manage`;
+        const res = await put(url, formData);
+        if (res?.status === 200) {
+        }
+    }
     return (
         <>
             <SidebarNew />
@@ -60,75 +105,95 @@ const StatutoryRegister = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <th scope="col">
-                                        <span className="text-primary cursor" onClick={() => {
+                                {!isLoading && statutory.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} align="center">No result found!!</td>
+                                    </tr>
+                                )}
+                                {statutory?.map((item) => {
 
-                                        }}>
-                                            1.1
-                                        </span>
-                                    </th>
-                                    <th scope="col">(Asbestos) Management Survey
-                                        (Type 2)
-                                        <div>
-                                            <button className="btn btn-primary mt-3">View Evidence</button>
-                                        </div>
-                                    </th>
-                                    <th scope="col">
-                                        <input type="checkbox" />
-                                    </th>
-                                    <th scope="col">
-                                        <table className="table">
-                                            <thead className="table-active">
-                                                <tr>
-                                                    <th scope="col">File</th>
-                                                    <th scope="col">Version</th>
-                                                    <th scope="col">Date</th>
-                                                    <th scope="col">Expiry</th>
-                                                    <th scope="col">Author</th>
-                                                    <th scope="col">Ref No.</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <th scope="col">File</th>
-                                                    <th scope="col">1</th>
-                                                    <th scope="col">dd/mm/yyyy</th>
-                                                    <th scope="col">dd/mm/yyyy</th>
-                                                    <th scope="col">Bond</th>
-                                                    <th scope="col">007</th>
-                                                </tr>
-                                                <tr>
-                                                    <td colspan="6"><div className='upload-file'>
-                                                        <label id="upload-file" class="text-decoration-underline" onClick={() => { setShowModal(true);}}
-                    style={{ color: "384bd3", cursor: "pointer" }}>Upload New File</label>
-                                                    </div></td>
-                                                </tr>
-                                            </tbody></table>
-                                    </th>
-                                    <th scope="col">
-                                        <Chip
-                                            color={"success"}
-                                            label={"passed"}
-                                            style={{ marginLeft: '10px' }}
-                                        />
-                                    </th>
-                                </tr>
+                                    return (
+                                        <tr>
+                                            <th scope="col">
+                                                <span className="text-primary cursor" onClick={() => {
+
+                                                }}>
+                                                    {item.id}
+                                                </span>
+                                            </th>
+                                            <th scope="col">{item.name}
+                                                <div>
+                                                    <button className="btn btn-primary mt-3">View Evidence</button>
+                                                </div>
+                                            </th>
+                                            <th scope="col">
+                                                <input type="checkbox" onChange={(e) => { handleCheckboxField(e, item) }} />
+                                            </th>
+                                            <th scope="col">
+                                                <table className="table">
+                                                    <thead className="table-active">
+                                                        <tr>
+                                                            <th scope="col">File</th>
+                                                            <th scope="col">Version</th>
+                                                            <th scope="col">Date</th>
+                                                            <th scope="col">Expiry</th>
+                                                            <th scope="col">Author</th>
+                                                            <th scope="col">Ref No.</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {item.files?.map((itm) => {
+                                                            return (
+                                                                <tr>
+                                                                    <th scope="col">{itm.name}</th>
+                                                                    <th scope="col">{itm.fileVersion}</th>
+                                                                    <th scope="col">{itm.uploadDate}</th>
+                                                                    <th scope="col">{itm.expiryDate}</th>
+                                                                    <th scope="col">{itm.uploaderUserName}</th>
+                                                                    <th scope="col">{itm.uploaderUserId}</th>
+                                                                </tr>
+                                                            )
+
+                                                        })}
+
+                                                        <tr>
+                                                            <td colspan="6"><div className='upload-file'>
+                                                                <label id="upload-file" class="text-decoration-underline" onClick={() => { setFolder(item);setShowModal(true); }}
+                                                                    style={{ color: "384bd3", cursor: "pointer" }}>Upload New File</label>
+                                                            </div></td>
+                                                        </tr>
+                                                    </tbody></table>
+                                            </th>
+                                            <th scope="col">
+                                            <Chip
+                            color={chipColor?.status === "Passed" ? "success" : "warning"}
+                            label={chipColor?.status === "Passed" ? "Passed" : "Open"}
+                          />
+                                            </th>
+                                        </tr>
+                                    )
+                                })}
+
                             </tbody>
                         </table>
                     </div>
                     {showModal && (
-          <CreateFiles
-            showModal={showModal}
-            setShowModal={setShowModal}
-            // folderData={folderData}
-            // refresh={() => { getSubFilesAndFolder(folderId); }}
-          />
-        )}
+                        <CreateFiles
+                            showModal={showModal}
+                            setShowModal={setShowModal}
+                            isStatutory={true}
+                            folderData={folder}
+                            refresh={() => { getStatutory(siteSelectedForGlobal?.siteId); }}
+                        />
+                    )}
                 </div>
             </div>
         </>
     )
 }
 
-export default StatutoryRegister;
+const mapStateToProps = (state) => ({
+    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, {
+})(StatutoryRegister);

@@ -23,7 +23,8 @@ const CreateFiles = ({
   folderId,
   folderData,
   refresh,
-  siteSelectedForGlobal
+  siteSelectedForGlobal,
+  isStatutory
 }) => {
   // const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -112,8 +113,10 @@ const CreateFiles = ({
             event.preventDefault();
             const formData = new FormData(event.currentTarget);
             const formJson = Object.fromEntries((formData).entries());
+            console.log('formJson', formJson);
+            delete formJson.folder;
             const data = {
-              folderId: folderData.id,
+              folderId: folderData?.id,
               files: [
                 {
                   ...formJson,
@@ -251,235 +254,14 @@ const CreateFiles = ({
               </div>
             </Grid>
           </Grid>
-          {/* <div className="col-md-8">
-                    <label htmlFor="folder" name="folder">
-                      Folder
-                    </label>
-                    <input
-                      type="text"
-                      name="folderName"
-                      className="form-control"
-                      {...register("folderName")}
-                    />
-                    <div className="d-flex mt-2">
-                      <div className="col-md-6" style={{ marginRight: "1rem" }}>
-                        <label htmlFor="fileName" name="fileName">
-                          File Name
-                        </label>
-                        <input
-                          type="text"
-                          name="fileName"
-                          className="form-control"
-                          {...register("fileName")}
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label htmlFor="version" name="version">
-                          Version
-                        </label>
-                        <input
-                          type="text"
-                          name="version"
-                          className="form-control"
-                          {...register("version")}
-                        />
-                      </div>
-                    </div>
-                    <div className="d-flex mt-2">
-                      <div className="col-md-4" style={{ marginRight: "1rem" }}>
-                        <label htmlFor="issueDate" name="folder">
-                          Issue Date
-                        </label>
-                        <input
-                          type="time"
-                          name="folder"
-                          className="form-control"
-                          {...register("issueDate")}
-                        />
-                      </div>
-                      <div className="col-md-4" style={{ marginRight: "1rem" }}>
-                        <label htmlFor="expiryDate" name="expiryDate">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="time"
-                          name="expiryDate"
-                          className="form-control"
-                          {...register("expiryDate")}
-                        />
-                      </div>
-                      <div className="col-md-4">
-                        <label htmlFor="reviewer" name="reviewer">
-                          Reviewer
-                        </label>
-                        <input
-                          type="text"
-                          name="reviewer"
-                          className="form-control w-75"
-                          {...register("reviewer")}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div style={{ backgroundColor: "#f1f5f9" }}>
-                      <div className="uploadPhotoButton">
-                        <FileUploadOutlinedIcon
-                          style={{
-                            color: "blue",
-                            fontSize: "50px",
-                            marginLeft: "4rem",
-                          }}
-                        />
-                        <label htmlFor="fileUpload" name="fileUpload">
-                          Upload New Version
-                        </label>
-                        <input
-                          type="file"
-                          name="fileUpload"
-                          className="form-control"
-                          {...register("fileUpload")}
-                        />
-                        <span>or drag and drop</span>
-                        <p>SVG, PNG, JPG or GIF</p>
-                        <p>(max 1 MB)</p>
-                      </div>
-                    </div>
-                    
-                  </div> */}
           
         </DialogContent>
-        {/* {!isLoading && */}
           <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
           <Button type="submit">Save</Button>
         </DialogActions>
-        {/* } */}
       </Dialog>
     </React.Fragment>
-    // <>
-    //   <Button onClick={handleOpen}>Upload New Files</Button>
-    //   <Modal
-    //     open={showModal}
-    //     onClose={handleClose}
-    //     aria-labelledby="modal-modal-title"
-    //     aria-describedby="modal-modal-description"
-    //   >
-    //     <Box sx={style}>
-    //       <Typography id="modal-modal-title" variant="h6" component="h2">
-    //         Upload New File
-    //       </Typography>
-    //       <form className="row" onSubmit={handleSubmit(submitFile)}>
-    //         <div className="col-md-8">
-    //           <label htmlFor="folder" name="folder">
-    //             Folder
-    //           </label>
-    //           <input
-    //             type="text"
-    //             name="folderName"
-    //             className="form-control"
-    //             {...register("folderName")}
-    //           />
-    //           <div className="d-flex mt-2">
-    //             <div className="col-md-6" style={{ marginRight: "1rem" }}>
-    //               <label htmlFor="fileName" name="fileName">
-    //                 File Name
-    //               </label>
-    //               <input
-    //                 type="text"
-    //                 name="fileName"
-    //                 className="form-control"
-    //                 {...register("fileName")}
-    //               />
-    //             </div>
-    //             <div className="col-md-6">
-    //               <label htmlFor="version" name="version">
-    //                 Version
-    //               </label>
-    //               <input
-    //                 type="text"
-    //                 name="version"
-    //                 className="form-control"
-    //                 {...register("version")}
-    //               />
-    //             </div>
-    //           </div>
-    //           <div className="d-flex mt-2">
-    //             <div className="col-md-4" style={{ marginRight: "1rem" }}>
-    //               <label htmlFor="issueDate" name="folder">
-    //                 Issue Date
-    //               </label>
-    //               <input
-    //                 type="time"
-    //                 name="folder"
-    //                 className="form-control"
-    //                 {...register("issueDate")}
-    //               />
-    //             </div>
-    //             <div className="col-md-4" style={{ marginRight: "1rem" }}>
-    //               <label htmlFor="expiryDate" name="expiryDate">
-    //                 Expiry Date
-    //               </label>
-    //               <input
-    //                 type="time"
-    //                 name="expiryDate"
-    //                 className="form-control"
-    //                 {...register("expiryDate")}
-    //               />
-    //             </div>
-    //             <div className="col-md-4">
-    //               <label htmlFor="reviewer" name="reviewer">
-    //                 Reviewer
-    //               </label>
-    //               <input
-    //                 type="text"
-    //                 name="reviewer"
-    //                 className="form-control w-75"
-    //                 {...register("reviewer")}
-    //               />
-    //             </div>
-    //           </div>
-    //         </div>
-    //         <div className="col-md-4">
-    //           <div style={{ backgroundColor: "#f1f5f9" }}>
-    //             <div className="uploadPhotoButton">
-    //               <FileUploadOutlinedIcon
-    //                 style={{
-    //                   color: "blue",
-    //                   fontSize: "50px",
-    //                   marginLeft: "4rem",
-    //                 }}
-    //               />
-    //               <label htmlFor="fileUpload" name="fileUpload">
-    //                 Upload New Version
-    //               </label>
-    //               <input
-    //                 type="file"
-    //                 name="fileUpload"
-    //                 className="form-control"
-    //                 {...register("fileUpload")}
-    //               />
-    //               <span>or drag and drop</span>
-    //               <p>SVG, PNG, JPG or GIF</p>
-    //               <p>(max 1 MB)</p>
-    //             </div>
-    //           </div>
-    //           <div>
-    //             <button className="btn btn-primary float-end mt-5">Save</button>
-    //           </div>
-    //           <div>
-    //             <button
-    //               className="btn btn-primary float-end mt-5"
-    //               style={{ marginRight: "1rem" }}
-    //             >
-    //               Cancel
-    //             </button>
-    //           </div>
-    //         </div>
-    //       </form>
-    //     </Box>
-    //   </Modal>
-    // </>
   );
 };
 
