@@ -65,7 +65,7 @@ const siteIconComponents = [
   <BackupTableIcon style={{ color: "white" }} />,
   <BeenhereIcon style={{ color: "white" }} />,
   <ChecklistIcon style={{ color: "white" }} />,
-  <SearchIcon style={{ color: "white" }} />,
+  // <SearchIcon style={{ color: "white" }} />,
   <EnergySavingsLeafIcon style={{ color: "white" }} />,
   <CalendarMonthIcon style={{ color: "white" }} />,
 ];
@@ -190,7 +190,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         navigate("/site-checks");
         break;
       case "Energy Cost":
-        navigate("/sites");
+        navigate("/energy-cost");
         break;
       case "Site Calendar":
         navigate("/site-calendar");

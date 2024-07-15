@@ -29,6 +29,7 @@ import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
 import { ROLE } from "../Constant/Role";
 import StatutoryRegister from "../components/Protected/Sites/StatutoryRegister";
+import EnergyCost from "../components/Protected/Sites/EnergyCost";
 
 export const getRoutes = () => {
   const tabs = [
@@ -133,6 +134,10 @@ export const getRoutes = () => {
     {
       path: "/site-checks",
       element: <SiteChecks />,
+    },
+    {
+      path: "/energy-cost",
+      element: <EnergyCost />,
     },
     {
       path: "/site-checks/:id/update",
