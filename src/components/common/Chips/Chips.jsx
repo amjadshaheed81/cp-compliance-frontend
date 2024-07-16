@@ -5,9 +5,9 @@ const ChipComponent = ({ status }) => {
   return (
     <Fragment>
       <Chip
-        label={status}
+        label={status === 'Open' ? 'Open' : status}
         color={
-          status === "Active"
+          status === "Active" || status === "Passed"
             ? "success"
             : status === "Terminated"
             ? "error"

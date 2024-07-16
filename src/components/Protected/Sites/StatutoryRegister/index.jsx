@@ -10,30 +10,54 @@ import { toast } from 'react-toastify';
 import { get, put } from '../../../../api';
 import Swal from 'sweetalert2';
 import { connect } from 'react-redux';
+import ChipComponent from '../../../common/Chips/Chips';
 
 const StatutoryRegister = ({ siteSelectedForGlobal }) => {
+    let chipColor;
     const [showModal, setShowModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [statutory, setStatutory] = useState([]);
     const [folder, setFolder] = useState({});
+    let dutiesIdentified = 0; let dutiesMet = 0;let dutiesNotMet;
+    const getDutiesIdentified = (item, dutieMet) => {
+        console.log('item', item);
+        let obj = {};
+        for(let i=0;i<item.length;i++){
+            
+            if((item[i].status === 'Passed' || item[i].status === 'Open') && item[i].required === true){
+                dutiesIdentified++;
+            }
+            if((item[i].files !== null && item[i].status === 'Passed' && dutieMet===true)){
+                dutiesMet++;
+            }
+        }
+        
+        obj.dutiesIdentified = dutiesIdentified;
+        obj.dutiesMet = dutiesMet;
+        obj.dutiesNotMet = dutiesIdentified-dutiesMet;
+        console.log('obj', obj);
+        return obj;
+    }
     const getStatutory = async (siteId) => {
         setIsLoading(true);
         const getStatutoryDocuments = await get(`/api/document/${siteId}/statutoryRegister`);
         setStatutory(getStatutoryDocuments);
+        
+        chipColor = statutory.filter((item) => {
+            return item.status === "Passed";
+        })
         setIsLoading(false);
     }
-    let chipColor;
-    const getChipStatus = () => {
-        return(
-            chipColor = statutory.filter((item) => {
-                return item.status === "Passed";
-            })
-        )   
+   
+    const getChipStatus = (item) => {
+        return item.status === 'Passed' ? 'Passed'  : 'Open'
     }
+    console.log('chip color', chipColor);
+    console.log('statutory', statutory);
     useEffect(() => {
         if (siteSelectedForGlobal?.siteId) {
             getStatutory(siteSelectedForGlobal?.siteId);
-            getChipStatus();
+            // getChipStatus();
         } else {
             Swal.fire({
                 icon: "error",
@@ -69,17 +93,17 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "blue", fontSize: "2rem" }} />,
                                     <span>Duties Identified</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>5</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory).dutiesIdentified}</p>
                                 </div>
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "green", fontSize: "2rem" }} />,
                                     <span>Duties Met</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>2</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory, true).dutiesMet}</p>
                                 </div>
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "yellow", fontSize: "2rem" }} />,
                                     <span>Duties Not Met</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>1</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory).dutiesNotMet}</p>
                                 </div>
                                 <div className="col">
                                     <CSVLink
@@ -165,10 +189,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                                     </tbody></table>
                                             </th>
                                             <th scope="col">
-                                            <Chip
-                            color={chipColor?.status === "Passed" ? "success" : "warning"}
-                            label={chipColor?.status === "Passed" ? "Passed" : "Open"}
-                          />
+                                            <ChipComponent status={getChipStatus(item)} />
                                             </th>
                                         </tr>
                                     )

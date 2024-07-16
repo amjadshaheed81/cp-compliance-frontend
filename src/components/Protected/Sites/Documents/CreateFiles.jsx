@@ -142,9 +142,11 @@ const CreateFiles = ({
               <Grid container>
                 <Grid sm={6}>
                   <div style={{margin: "10px"}}>
-                <label htmlFor="folder" name="folder">
+                {isStatutory ?<label htmlFor="folder" name="folder">
+                  Requirement
+                </label> : <label htmlFor="folder" name="folder">
                   Folder
-                </label>
+                </label> }
                 <input
                   type="text"
                       name="name"
@@ -217,9 +219,9 @@ const CreateFiles = ({
                 <Grid sm={12}>
                   <div style={{ margin: "10px" }}>
                 <input
-                  type="textarea"
+                  type={isStatutory ? "input" : "textarea" }
                   name="note"
-                  placeholder="Enter notes..."
+                  placeholder={isStatutory ? "Reference Number" : "Enter notes..." }
                   className="form-control w-75"
                   {...register("note")}
                     />
