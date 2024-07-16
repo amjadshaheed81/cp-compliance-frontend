@@ -1,0 +1,1 @@
+export const CPCOM_STATE_STORE = "CPCOM_STATE_STORE";

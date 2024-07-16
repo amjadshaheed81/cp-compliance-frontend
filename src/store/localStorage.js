@@ -1,7 +1,9 @@
+import { CPCOM_STATE_STORE } from "../Constant/Session";
+
 export const saveState = (state) => {
   try {
     const serializedState = JSON.stringify(state);
-    localStorage.setItem("state", serializedState);
+    localStorage.setItem(CPCOM_STATE_STORE, serializedState);
   } catch (err) {
     console.error("Could not save state", err);
   }
@@ -9,7 +11,7 @@ export const saveState = (state) => {
 
 export const loadState = () => {
   try {
-    const serializedState = localStorage.getItem("state");
+    const serializedState = localStorage.getItem(CPCOM_STATE_STORE);
     if (serializedState === null) {
       return undefined;
     }

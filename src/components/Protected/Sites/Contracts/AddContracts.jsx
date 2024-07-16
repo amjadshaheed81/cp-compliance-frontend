@@ -443,14 +443,16 @@ const AddContracts = ({
                           )}
                         />
                       </div>
-                      <div className="col-md-3">
-                        <MandatoryFolders
-                          setSelectedMandatoryFolder={
-                            setSelectedMandatoryFolder
-                          }
-                          selectedMandatoryFolder={selectedMandatoryFolder}
-                        />
-                      </div>
+                      {values?.category === "Building Project" && (
+                        <div className="col-md-3">
+                          <MandatoryFolders
+                            setSelectedMandatoryFolder={
+                              setSelectedMandatoryFolder
+                            }
+                            selectedMandatoryFolder={selectedMandatoryFolder}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   {/** Add Assets start */}
