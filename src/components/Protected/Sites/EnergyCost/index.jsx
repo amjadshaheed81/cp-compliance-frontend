@@ -14,12 +14,13 @@ import { get, post, del, put } from "../../../../api";
 import Cost from "./Cost";
 import Reading from "./Reading";
 
-import { Button, Modal, Chip, CircularProgress, Box, Grid, Divider, Autocomplete, TextField, Typography } from "@mui/material";
+import { DialogContent, DialogTitle, Link, Dialog, CircularProgress, Box, Grid, Divider, Autocomplete, TextField, Typography } from "@mui/material";
 import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
 
 const EnergyCost = ({ users, getUsers }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [openCost, setOpenCost] = useState(false)
+  const [openBulk, setopenBulk] = useState(false)
   const [actionSurvey, setActionSurvey] = useState()
   const [openReading, setOpenReading] = useState(false)
   const [typeoptions, settypeoptions] = useState([]);
@@ -177,6 +178,55 @@ const EnergyCost = ({ users, getUsers }) => {
 
   return (
     <Fragment>
+      <Dialog open={openBulk} onClose={() => { setopenBulk(false) }} maxWidth="lg" fullWidth>
+        <DialogTitle>Bulk Upload</DialogTitle>
+        <DialogContent dividers>
+          <Fragment>
+
+            <h5>Bulk Upload Energy Cost</h5>
+            <p style={{ color: 'red' }}>Download the template <Link href="cost-template.xlsx" download="cost-template.xlsx">here</Link> and populate the values before you upload using the file selection below</p>
+            <input
+              type="file"
+              name="file"
+              className="form-control"
+            />
+            <button
+              style={{ marginTop: '10px'}}
+              className="btn btn-primary text-white pr-2"
+              onClick={(e) => setopenBulk(false)}
+            >
+              Upload Energy Cost
+            </button>
+
+            <br />
+            <br />
+            <hr />
+            <br />
+            <br />
+
+            <h5>Bulk Upload Energy Reading</h5>
+            <p style={{ color: 'red' }}>Download the template <Link href="reading-template.xlsx" download="reading-template.xlsx">here</Link> and populate the values before you upload using the file selection below</p>
+            <input
+              type="file"
+              name="file"
+              className="form-control"
+            />
+            <button
+              style={{ marginTop: '10px' }}
+              className="btn btn-primary text-white pr-2"
+              onClick={(e) => setopenBulk(false)}
+            >
+              Upload Energy Reading
+            </button>
+
+            <br />
+            <br />
+           
+
+          </Fragment>
+
+        </DialogContent>
+      </Dialog>
       <Cost
         open={openCost}
         setOpen={setOpenCost}
@@ -298,13 +348,14 @@ const EnergyCost = ({ users, getUsers }) => {
               <div className="row" style={{ height: "auto" }}>
                 
                 <div className="col">
-                  <CSVLink
-                      filename={"energy_cost" + moment(new Date()).format("DD-MM-YYYY")}
-                    className="btn btn-light bg-white text-primary"
-                      data={filteredEnergyCost}
+                  <button
+                    style={{ width: "150px" }}
+                    className="btn btn-primary btn-light"
+                    onClick={() => { setopenBulk(true)}}
                   >
-                      <i className="fas fa-upload"/> &nbsp; Buld Upload
-                    </CSVLink>
+                    
+                      <i className="fas fa-upload"/> &nbsp; Bulk Upload
+                  </button>
                 </div>
               </div>
             </div>
