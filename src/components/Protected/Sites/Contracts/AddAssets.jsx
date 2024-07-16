@@ -9,8 +9,8 @@ import {
   TableHead,
   TableRow,
   Button,
-  Select,
-  MenuItem,
+  TextField,
+  Autocomplete,
 } from "@mui/material";
 
 const AddAssets = ({
@@ -32,12 +32,12 @@ const AddAssets = ({
 
   const handleAssetChange = (index, selectedValue) => {
     const updatedAssets = siteAssets?.filter(
-      (asset) => asset?.assetId == selectedValue
+      (asset) => asset?.assetId === selectedValue?.assetId
     );
     const updatedRow = {
       ...tableData[index],
-      assetId: selectedValue,
-      ...updatedAssets?.[0]
+      assetId: selectedValue?.assetId,
+      ...updatedAssets?.[0],
     };
 
     setTableData((prev) => {
@@ -68,20 +68,19 @@ const AddAssets = ({
     return (
       <TableRow key={index}>
         <TableCell>
-          <Select
-            value={itm.assetId || ""}
-            onChange={(e) => handleAssetChange(index, e.target.value)}
-            displayEmpty
-          >
-            <MenuItem value="" disabled>
-              Select Asset
-            </MenuItem>
-            {siteAssets?.map((asset) => (
-              <MenuItem key={asset.assetId} value={asset.assetId}>
-                {asset.assetName}
-              </MenuItem>
-            ))}
-          </Select>
+          <Autocomplete
+            value={siteAssets.find(asset => asset.assetId === itm.assetId) || null}
+            onChange={(event, newValue) => handleAssetChange(index, newValue)}
+            options={siteAssets}
+            getOptionLabel={(option) => option.assetName || ""}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Select Asset"
+                variant="outlined"
+              />
+            )}
+          />
         </TableCell>
         <TableCell>{itm.assetName || ""}</TableCell>
         <TableCell>
@@ -123,7 +122,7 @@ const AddAssets = ({
             </TableHead>
             <TableBody>
               {tableData?.length === 0 && (
-                <TableCell>No Assets are added. Please click on Add more button to add assets in this contract.</TableCell>
+                <TableCell colSpan={5}>No Assets are added. Please click on Add more button to add assets in this contract.</TableCell>
               )}
               {tableData?.map((dataItm, index) => (
                 <GetTableRow
