@@ -183,7 +183,7 @@ const CreateAsset = ({
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
                               value={siteAssets.find(asset => asset.assetId === getValues('relatedAssetId')) || null}
-                              onChange={(event, newValue) => setValue('relatedAssetId', newValue)}
+                              onChange={(event, newValue) => setValue('relatedAssetId', newValue?.assetId)}
                               options={siteAssets}
                               getOptionLabel={(option) => option.assetName || ""}
                               renderInput={(params) => (
