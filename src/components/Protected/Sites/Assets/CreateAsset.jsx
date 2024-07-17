@@ -12,6 +12,7 @@ import siteDummy from "../../../../images/site-dummy.png";
 import {
   addSiteAsset,
   getDocumentsRootFolder,
+  getSiteAssets,
   setLoader,
 } from "../../../../store/thunk/site";
 import { Validation } from "../../../../Constant/Validation";
@@ -19,6 +20,10 @@ import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import {
+  TextField,
+  Autocomplete,
+} from "@mui/material";
 
 const CreateAsset = ({
   setLoader,
@@ -26,11 +31,14 @@ const CreateAsset = ({
   getDocumentsRootFolder,
   rootFolder,
   addSiteAsset,
+  getSiteAssets,
+  siteAssets,
 }) => {
   const [patRecord, setPatRecord] = useState([]);
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+      getSiteAssets(siteSelectedForGlobal?.siteId);
     } else {
       toast.error("Please select site from site search to proceed....");
     }
@@ -108,7 +116,7 @@ const CreateAsset = ({
               <div className="row p-2 border">
                 <div className="col-md-12">
                   <div className="float-end">
-                    <button type="button" className="btn btn-light mb-3 mr-4">
+                    <button type="button" className="btn btn-light mb-3 mr-4" onClick={() => window.history.back()}>
                       Close
                     </button>
                     &nbsp; &nbsp;
@@ -173,12 +181,18 @@ const CreateAsset = ({
                         <div className="col-md-6">
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              id="relatedAssetId"
-                              name="relatedAssetId"
-                              placeholder=""
+                            <Autocomplete
+                              value={siteAssets.find(asset => asset.assetId === getValues('relatedAssetId')) || null}
+                              onChange={(event, newValue) => setValue('relatedAssetId', newValue)}
+                              options={siteAssets}
+                              getOptionLabel={(option) => option.assetName || ""}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  label="Select Asset"
+                                  variant="outlined"
+                                />
+                              )}
                             />
                           </div>
                         </div>
@@ -450,9 +464,11 @@ const CreateAsset = ({
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
   setLoader,
   getDocumentsRootFolder,
   addSiteAsset,
+  getSiteAssets,
 })(CreateAsset);

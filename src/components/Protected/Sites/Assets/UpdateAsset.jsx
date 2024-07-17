@@ -9,8 +9,13 @@ import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
 import {
+  TextField,
+  Autocomplete,
+} from "@mui/material";
+import {
   addSiteAsset,
   getDocumentsRootFolder,
+  getSiteAssets,
   getUsers,
   setLoader,
   updateDoorSpecification,
@@ -39,15 +44,17 @@ const UpdateAsset = ({
   updateDoorSpecification,
   updatepspDetails,
   updatePatDetails,
+  getSiteAssets,
+  siteAssets,
 }) => {
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [tester, setTester] = useState([]);
   const assetId = searchParams.get("assetId");
-  const [value, setValue] = useState("1");
+  const [value, setTabValue] = useState("1");
   const tabChange = (event, newValue) => {
     event?.preventDefault();
-    setValue(newValue);
+    setTabValue(newValue);
   };
   const [patRecord, setPatRecord] = useState([]);
   useEffect(() => {
@@ -56,6 +63,7 @@ const UpdateAsset = ({
       getAssetDetails();
       getUsers();
       getTester();
+      getSiteAssets(siteSelectedForGlobal?.siteId);
     } else {
       toast.error("Please select site from site search to proceed....");
     }
@@ -76,9 +84,14 @@ const UpdateAsset = ({
         patNextDate: itm?.patNextDate?.replace(/T/g, " "),
       };
     });
-    await updatePatDetails(data, selectedAsset?.assetId, deleteSavedPatItems);
-    getAssetDetails();
-    setLoader(false);
+    try{
+      await updatePatDetails(data, selectedAsset?.assetId, deleteSavedPatItems);
+      getAssetDetails();
+      setLoader(false);
+    }catch(e) {
+      toast.error("Something went wrong while update. Please try again.")
+      setLoader(false);
+    }
   };
 
   const getAssetDetails = async () => {
@@ -175,6 +188,7 @@ const UpdateAsset = ({
     formState: { errors },
     getValues,
     watch,
+    setValue,
   } = useForm({
     defaultValues,
   });
@@ -212,8 +226,13 @@ const UpdateAsset = ({
       barcode: "code",
     };
     form_data.append("assetRequestString", JSON.stringify(formDetails));
-    addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
-    // reset(defaultValues);
+    try{
+      addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+      setLoader(false);
+    }catch(e) {
+      toast.error("Something went wrong while update asset. Please try again.")
+      setLoader(false);
+    }
   };
 
   const purchaseDetailForm = useForm({});
@@ -307,7 +326,7 @@ const UpdateAsset = ({
               <div className="row p-2 border">
                 <div className="col-md-12">
                   <div className="float-end">
-                    <button type="button" className="btn btn-light mb-3 mr-4">
+                    <button type="button" className="btn btn-light mb-3 mr-4" onClick={() => window.history.back()}>
                       Close
                     </button>
                     &nbsp; &nbsp;
@@ -372,12 +391,21 @@ const UpdateAsset = ({
                         <div className="col-md-6">
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              id="relatedAssetId"
-                              name="relatedAssetId"
-                              placeholder=""
+                            <Autocomplete
+                              value={siteAssets.find(asset => asset.assetId === getValues('relatedAssetId')) || null}
+                              onChange={(event, newValue) => {
+                                console.log("newValue", newValue);
+                                setValue('relatedAssetId', newValue?.assetId)
+                              }}
+                              options={siteAssets}
+                              getOptionLabel={(option) => option.assetName || ""}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  label="Select Asset"
+                                  variant="outlined"
+                                />
+                              )}
                             />
                           </div>
                         </div>
@@ -1261,6 +1289,7 @@ const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   users: state.site.users,
+  siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
   setLoader,
@@ -1271,4 +1300,5 @@ export default connect(mapStateToProps, {
   updateDoorSpecification,
   updatepspDetails,
   updatePatDetails,
+  getSiteAssets,
 })(UpdateAsset);
