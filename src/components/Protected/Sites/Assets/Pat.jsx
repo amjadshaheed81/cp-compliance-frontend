@@ -20,8 +20,9 @@ const Pat = ({
 }) => {
   const [filteredSitePATItems, setFilteredSitePATItems] = useState([]);
   const [category, setCategory] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   useEffect(() => {
-    if(sitePATItems){
+    if (sitePATItems) {
       setFilteredSitePATItems(sitePATItems);
     }
   }, [sitePATItems]);
@@ -67,7 +68,9 @@ const Pat = ({
           String(x?.location)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+          String(x?.manufacturer)
+            .toLowerCase()
+            .includes(String(manufacturer).toLowerCase())
       );
       setFilteredSitePATItems(list);
     } else {
@@ -81,7 +84,7 @@ const Pat = ({
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
-  }
+  };
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -105,6 +108,31 @@ const Pat = ({
         // Swal.fire("Changes are not saved", "", "info");
       }
     });
+  };
+  const cloneSelectedAsset = () => {
+    if (selectedItems?.length === 0) {
+      toast.warn("Please select asset first to clone.");
+    } else {
+    }
+  };
+  const handleCheckboxChange = (e, asset) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems([...selectedItems, asset]);
+    } else {
+      setSelectedItems(
+        selectedItems.filter((item) => item.assetId !== asset.assetId)
+      );
+    }
+  };
+
+  const handleSelectAllChange = (e) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems(filteredSitePATItems);
+    } else {
+      setSelectedItems([]);
+    }
   };
   return (
     <Fragment>
@@ -160,7 +188,9 @@ const Pat = ({
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
-                  onClick={() => {}}
+                  onClick={() => {
+                    cloneSelectedAsset();
+                  }}
                 >
                   Clone
                 </button>
@@ -186,10 +216,17 @@ const Pat = ({
         <table className="table">
           <thead className="table-dark">
             <tr>
-              <th scope="col">
-                <input type="checkbox" />
-                &nbsp;Asset Name
+              <th>
+                <input
+                  type="checkbox"
+                  onChange={handleSelectAllChange}
+                  className="form-check-input"
+                  checked={
+                    selectedItems.length === filteredSitePATItems.length
+                  }
+                />
               </th>
+              <th scope="col">Asset Name</th>
               <th scope="col">Manufactrurer</th>
               <th scope="col">Category</th>
               <th scope="col">Location</th>
@@ -207,10 +244,17 @@ const Pat = ({
             )}
             {filteredSitePATItems?.map((asset) => (
               <tr key={asset?.id}>
-                <th scope="col">
-                  <input type="checkbox" />
-                  &nbsp;{asset?.assetName}
+                <th>
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    onChange={(e) => handleCheckboxChange(e, asset)}
+                    checked={selectedItems.some(
+                      (item) => item.assetId === asset.assetId
+                    )}
+                  />
                 </th>
+                <th scope="col">{asset?.assetName}</th>
                 <th scope="col">{asset?.manufacturer}</th>
                 <th scope="col">{asset?.category}</th>
                 <th scope="col">{asset?.location}</th>

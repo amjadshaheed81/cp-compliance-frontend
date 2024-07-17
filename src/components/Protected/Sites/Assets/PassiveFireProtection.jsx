@@ -20,8 +20,9 @@ const PassiveFireProtection = ({
 }) => {
   const [filteredSitePFPItems, setfilteredSitePFPItems] = useState([]);
   const [category, setCategory] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   useEffect(() => {
-    if(sitePFPItems){
+    if (sitePFPItems) {
       setfilteredSitePFPItems(sitePFPItems);
     }
   }, [sitePFPItems]);
@@ -63,7 +64,9 @@ const PassiveFireProtection = ({
           String(x?.location)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+          String(x?.manufacturer)
+            .toLowerCase()
+            .includes(String(manufacturer).toLowerCase())
       );
       setfilteredSitePFPItems(list);
     } else {
@@ -81,7 +84,7 @@ const PassiveFireProtection = ({
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
-  }
+  };
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -106,6 +109,32 @@ const PassiveFireProtection = ({
       }
     });
   };
+  const cloneSelectedAsset = () => {
+    if (selectedItems?.length === 0) {
+      toast.warn("Please select asset first to clone.");
+    } else {
+    }
+  };
+  const handleCheckboxChange = (e, asset) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems([...selectedItems, asset]);
+    } else {
+      setSelectedItems(
+        selectedItems.filter((item) => item.assetId !== asset.assetId)
+      );
+    }
+  };
+
+  const handleSelectAllChange = (e) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems(filteredSitePFPItems);
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
   return (
     <Fragment>
       <div className="d-flex bd-highlight">
@@ -160,7 +189,9 @@ const PassiveFireProtection = ({
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
-                  onClick={() => {}}
+                  onClick={() => {
+                    cloneSelectedAsset();
+                  }}
                 >
                   Clone
                 </button>
@@ -186,10 +217,17 @@ const PassiveFireProtection = ({
         <table className="table">
           <thead className="table-dark">
             <tr>
-              <th scope="col">
-                <input type="checkbox" />
-                &nbsp;Asset Name
+              <th>
+                <input
+                  type="checkbox"
+                  onChange={handleSelectAllChange}
+                  className="form-check-input"
+                  checked={
+                    selectedItems.length === filteredSitePFPItems.length
+                  }
+                />
               </th>
+              <th scope="col">Asset Name</th>
               <th scope="col">Material</th>
               <th scope="col">Product</th>
               <th scope="col">Location</th>
@@ -208,10 +246,17 @@ const PassiveFireProtection = ({
             )}
             {filteredSitePFPItems?.map((asset) => (
               <tr key={asset?.id}>
-                <th scope="col">
-                  <input type="checkbox" />
-                  &nbsp;{asset?.assetName}
+                <th>
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    onChange={(e) => handleCheckboxChange(e, asset)}
+                    checked={selectedItems.some(
+                      (item) => item.assetId === asset.assetId
+                    )}
+                  />
                 </th>
+                <th scope="col">{asset?.assetName}</th>
                 <th scope="col">{asset?.assetPFPItem?.material}</th>
                 <th scope="col">{asset?.assetPFPItem?.product}</th>
                 <th scope="col">{asset?.assetPFPItem?.access}</th>

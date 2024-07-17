@@ -20,21 +20,26 @@ const Door = ({
 }) => {
   const [filteredSiteDoorItems, setFilteredSiteDoorItems] = useState([]);
   const [category, setCategory] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   const navigate = useNavigate();
+
   const goTo = (link) => {
     navigate(link);
   };
+
   useEffect(() => {
-    if(siteDoorItems){
+    if (siteDoorItems) {
       setFilteredSiteDoorItems(siteDoorItems);
     }
   }, [siteDoorItems]);
+
   const [formData, setFormData] = useState({
     assetName: "",
     manufacturer: "",
     category: "",
     location: "",
   });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -42,6 +47,7 @@ const Door = ({
       [name]: value,
     });
   };
+
   useEffect(() => {
     searchAssets();
   }, [
@@ -50,6 +56,7 @@ const Door = ({
     formData.location,
     formData.manufacturer,
   ]);
+
   const searchAssets = () => {
     const assetName = formData?.assetName;
     const category = formData?.category;
@@ -67,21 +74,26 @@ const Door = ({
           String(x?.location)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+          String(x?.manufacturer)
+            .toLowerCase()
+            .includes(String(manufacturer).toLowerCase())
       );
       setFilteredSiteDoorItems(list);
     } else {
       setFilteredSiteDoorItems(siteDoorItems);
     }
   };
+
   useEffect(() => {
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
-    getCategory()
+    getCategory();
   }, []);
+
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
-  }
+  };
+
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -93,7 +105,7 @@ const Door = ({
         const res = await deleteSiteAsset(itm?.assetId);
         if (res === "Success") {
           toast.success(
-            `${itm?.assetName} site asset has been deleted successully`
+            `${itm?.assetName} site asset has been deleted successfully`
           );
           getSiteDoorAssets(siteSelectedForGlobal?.siteId);
         } else {
@@ -106,10 +118,36 @@ const Door = ({
       }
     });
   };
+  const cloneSelectedAsset = () => {
+    if (selectedItems?.length === 0) {
+      toast.warn("Please select asset first to clone.");
+    } else {
+    }
+  };
+  const handleCheckboxChange = (e, asset) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems([...selectedItems, asset]);
+    } else {
+      setSelectedItems(
+        selectedItems.filter((item) => item.assetId !== asset.assetId)
+      );
+    }
+  };
+
+  const handleSelectAllChange = (e) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems(filteredSiteDoorItems);
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
   return (
     <Fragment>
       <div className="d-flex bd-highlight">
-        <div className="pt-2 bd-highlight ">
+        <div className="pt-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
             <div className="col">
               <input
@@ -160,7 +198,9 @@ const Door = ({
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
-                  onClick={() => {}}
+                  onClick={() => {
+                    cloneSelectedAsset();
+                  }}
                 >
                   Clone
                 </button>
@@ -186,10 +226,17 @@ const Door = ({
         <table className="table">
           <thead className="table-dark">
             <tr>
-              <th scope="col">
-                <input type="checkbox" />
-                &nbsp;Asset Name
+              <th>
+                <input
+                  type="checkbox"
+                  onChange={handleSelectAllChange}
+                  className="form-check-input"
+                  checked={
+                    selectedItems.length === filteredSiteDoorItems.length
+                  }
+                />
               </th>
+              <th scope="col">Asset Name</th>
               <th scope="col">Door Size</th>
               <th scope="col">Fire Rating</th>
               <th scope="col">Location</th>
@@ -207,16 +254,34 @@ const Door = ({
             )}
             {filteredSiteDoorItems?.map((asset) => (
               <tr key={asset?.id}>
-                <th scope="col">
-                  <input type="checkbox" />
-                  &nbsp;{asset?.assetName}
+                <th>
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    onChange={(e) => handleCheckboxChange(e, asset)}
+                    checked={selectedItems.some(
+                      (item) => item.assetId === asset.assetId
+                    )}
+                  />
                 </th>
-                <th scope="col">{asset?.assetDoorSpecifications?.width} * {asset?.assetDoorSpecifications?.height}</th>
-                <th scope="col">{asset?.assetDoorSpecifications?.fireRating}</th>
+                <th scope="col">{asset?.assetName}</th>
+                <th scope="col">
+                  {asset?.assetDoorSpecifications?.width} *{" "}
+                  {asset?.assetDoorSpecifications?.height}
+                </th>
+                <th scope="col">
+                  {asset?.assetDoorSpecifications?.fireRating}
+                </th>
                 <th scope="col">{asset?.assetDoorSpecifications?.location}</th>
-                <th scope="col">{asset?.assetDoorSpecifications?.doorFinish}</th>
-                <th scope="col">{asset?.assetDoorSpecifications?.visionPanel}</th>
-                <th scope="col">{asset?.assetDoorSpecifications?.frameMaterial}</th>
+                <th scope="col">
+                  {asset?.assetDoorSpecifications?.doorFinish}
+                </th>
+                <th scope="col">
+                  {asset?.assetDoorSpecifications?.visionPanel}
+                </th>
+                <th scope="col">
+                  {asset?.assetDoorSpecifications?.frameMaterial}
+                </th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
                     <button

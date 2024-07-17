@@ -17,6 +17,7 @@ const Summary = ({
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
   const [category, setCategory] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   useEffect(() => {
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getCategory();
@@ -24,9 +25,9 @@ const Summary = ({
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
-  }
+  };
   useEffect(() => {
-    if(siteAssets){
+    if (siteAssets) {
       setFilteredSiteAssets(siteAssets);
     }
   }, [siteAssets]);
@@ -72,7 +73,9 @@ const Summary = ({
           String(x?.location)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+          String(x?.manufacturer)
+            .toLowerCase()
+            .includes(String(manufacturer).toLowerCase())
       );
       setFilteredSiteAssets(list);
     } else {
@@ -102,6 +105,31 @@ const Summary = ({
         // Swal.fire("Changes are not saved", "", "info");
       }
     });
+  };
+  const cloneSelectedAsset = () => {
+    if (selectedItems?.length === 0) {
+      toast.warn("Please select asset first to clone.");
+    } else {
+    }
+  };
+  const handleCheckboxChange = (e, asset) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems([...selectedItems, asset]);
+    } else {
+      setSelectedItems(
+        selectedItems.filter((item) => item.assetId !== asset.assetId)
+      );
+    }
+  };
+
+  const handleSelectAllChange = (e) => {
+    const { checked } = e.target;
+    if (checked) {
+      setSelectedItems(filteredSiteAssets);
+    } else {
+      setSelectedItems([]);
+    }
   };
   return (
     <Fragment>
@@ -170,7 +198,9 @@ const Summary = ({
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
-                  onClick={() => {}}
+                  onClick={() => {
+                    cloneSelectedAsset();
+                  }}
                 >
                   Clone
                 </button>
@@ -196,10 +226,15 @@ const Summary = ({
         <table className="table">
           <thead className="table-dark">
             <tr>
-              <th scope="col">
-                <input type="checkbox" />
-                &nbsp;Asset Name
+              <th>
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  onChange={handleSelectAllChange}
+                  checked={selectedItems.length === filteredSiteAssets.length}
+                />
               </th>
+              <th scope="col">Asset Name</th>
               <th scope="col">Manufacturer</th>
               <th scope="col">Category</th>
               <th scope="col">Location</th>
@@ -216,10 +251,17 @@ const Summary = ({
             )}
             {filteredSiteAssets?.map((asset) => (
               <tr key={asset?.assetId}>
-                <th scope="col">
-                  <input type="checkbox" />
-                  &nbsp;{asset?.assetName}
+                <th>
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    onChange={(e) => handleCheckboxChange(e, asset)}
+                    checked={selectedItems.some(
+                      (item) => item.assetId === asset.assetId
+                    )}
+                  />
                 </th>
+                <th scope="col">{asset?.assetName}</th>
                 <th scope="col">{asset?.manufacturer}</th>
                 <th scope="col">{asset?.category}</th>
                 <th scope="col">{asset?.location}</th>
