@@ -10,6 +10,7 @@ import {
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { get } from "../../../../api";
 
 const Pat = ({
   sitePATItems,
@@ -18,6 +19,7 @@ const Pat = ({
   getSitePATAssets,
 }) => {
   const [filteredSitePATItems, setFilteredSitePATItems] = useState([]);
+  const [category, setCategory] = useState([]);
   useEffect(() => {
     if(sitePATItems){
       setFilteredSitePATItems(sitePATItems);
@@ -74,7 +76,12 @@ const Pat = ({
   };
   useEffect(() => {
     getSitePATAssets(siteSelectedForGlobal?.siteId);
+    getCategory();
   }, []);
+  const getCategory = async () => {
+    const category = await get("/api/lov/ASSET_CATEGORY");
+    setCategory(category);
+  }
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -130,6 +137,9 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Category</option>
+                {category?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
               </select>
             </div>
             <div className="col">

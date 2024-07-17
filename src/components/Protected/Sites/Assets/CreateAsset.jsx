@@ -20,10 +20,8 @@ import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import {
-  TextField,
-  Autocomplete,
-} from "@mui/material";
+import { TextField, Autocomplete } from "@mui/material";
+import { get } from "../../../../api";
 
 const CreateAsset = ({
   setLoader,
@@ -35,14 +33,29 @@ const CreateAsset = ({
   siteAssets,
 }) => {
   const [patRecord, setPatRecord] = useState([]);
+  const [category, setCategory] = useState([]);
+  const [subCategory, setSubCategory] = useState([]);
+  const [subCategoryList, setSubCategoryList] = useState([]);
+  const [subCategory2, setSubCategory2] = useState([]);
+  const [subCategory2List, setSubCategory2List] = useState([]);
+
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getCategories();
     } else {
       toast.error("Please select site from site search to proceed....");
     }
   }, []);
+  const getCategories = async () => {
+    const category = await get("/api/lov/ASSET_CATEGORY");
+    const subCategory = await get("/api/lov/ASSET_SUB_CATEGORY");
+    const subCategory2 = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    setCategory(category);
+    setSubCategory(subCategory);
+    setSubCategory2(subCategory2);
+  };
 
   const addPatRecord = () => {
     setPatRecord([
@@ -116,7 +129,11 @@ const CreateAsset = ({
               <div className="row p-2 border">
                 <div className="col-md-12">
                   <div className="float-end">
-                    <button type="button" className="btn btn-light mb-3 mr-4" onClick={() => window.history.back()}>
+                    <button
+                      type="button"
+                      className="btn btn-light mb-3 mr-4"
+                      onClick={() => window.history.back()}
+                    >
                       Close
                     </button>
                     &nbsp; &nbsp;
@@ -182,10 +199,20 @@ const CreateAsset = ({
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
-                              value={siteAssets.find(asset => asset.assetId === getValues('relatedAssetId')) || null}
-                              onChange={(event, newValue) => setValue('relatedAssetId', newValue?.assetId)}
+                              value={
+                                siteAssets.find(
+                                  (asset) =>
+                                    asset.assetId ===
+                                    getValues("relatedAssetId")
+                                ) || null
+                              }
+                              onChange={(event, newValue) =>
+                                setValue("relatedAssetId", newValue?.assetId)
+                              }
                               options={siteAssets}
-                              getOptionLabel={(option) => option.assetName || ""}
+                              getOptionLabel={(option) =>
+                                option.assetName || ""
+                              }
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
@@ -281,8 +308,19 @@ const CreateAsset = ({
                         <input
                           type="file"
                           className="form-control"
-                          {...register("assetImage")}
+                          {...register("assetImage", {
+                            required: {
+                              value: true,
+                              message: `Please select asset image.`,
+                            },
+                          })}
                         />
+                        {errors?.assetImage && (
+                          <InputError
+                            message={errors?.assetImage?.message}
+                            key={errors?.assetImage?.message}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -299,21 +337,21 @@ const CreateAsset = ({
                             message: `Please select category`,
                           },
                         })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValue("category", val);
+                          const subCategoryData = subCategory?.filter(
+                            (itm) => itm?.attribite1 === val
+                          );
+                          setSubCategoryList(subCategoryData);
+                        }}
                       >
                         <option value="" selected disabled>
-                          Select Folder
+                          Select Category
                         </option>
-                        <option value="Lifting Machinery / Equipment">
-                          Lifting Machinery / Equipment
-                        </option>
-                        <option value="Central Heating">Central Heating</option>
-                        <option value="Air Conditioning">
-                          Air Conditioning
-                        </option>
-                        <option value="Sanitary">Sanitary</option>
-                        <option value="Vantilation">Vantilation</option>
-                        <option value="Gas">Gas</option>
-                        <option value="Drainage">Drainage</option>
+                        {category?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                        ))}
                       </select>
                       {errors?.category && (
                         <InputError
@@ -328,36 +366,22 @@ const CreateAsset = ({
                         name="subCategory"
                         className="form-control form-select"
                         id="subCategory"
-                        {...register("subCategory", {
-                          required: {
-                            value: true,
-                            message: `Please select sub category 1`,
-                          },
-                        })}
+                        {...register("subCategory")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValue("subCategory", val);
+                          const subCategoryData = subCategory2?.filter(
+                            (itm) => itm?.attribite1 === val
+                          );
+                          setSubCategory2List(subCategoryData);
+                        }}
                       >
-                        <option value="" selected disabled>
-                          Select Folder
+                        <option value="">
+                          Select Sub Category
                         </option>
-                        <option value="Fire Fighting Equipment">
-                          Fire Fighting Equipment
-                        </option>
-                        <option value="Internal Finishes">
-                          Internal Finishes
-                        </option>
-                        <option value="Mechanical">Mechanical</option>
-                        <option value="Electrical">Electrical</option>
-                        <option value="Building Envelop">
-                          Building Envelop
-                        </option>
-                        <option value="Maintanance Plant & Equipment">
-                          Maintanance Plant & Equipment
-                        </option>
-                        <option value="Landscaping">Landscaping</option>
-                        <option value="Waste Disposal">Waste Disposal</option>
-                        <option value="COVID Items">COVID Items</option>
-                        <option value="First Aid Equipment">
-                          First Aid Equipment
-                        </option>
+                        {subCategoryList?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                        ))}
                       </select>
                       {errors?.subCategory && (
                         <InputError
@@ -372,35 +396,14 @@ const CreateAsset = ({
                         name="subCategory2"
                         className="form-control form-select"
                         id="subCategory2"
-                        {...register("subCategory2", {
-                          required: {
-                            value: true,
-                            message: `Please select sub category 2`,
-                          },
-                        })}
+                        {...register("subCategory2")}
                       >
-                        <option value="" selected disabled>
-                          Select Folder
+                        <option value="">
+                          Select Sub Category 2
                         </option>
-                        <option value="Water Meter">Water Meter</option>
-                        <option value="Cold Water Storage Tank">
-                          Cold Water Storage Tank
-                        </option>
-                        <option value="Calorifier">Calorifier</option>
-                        <option value="Distribution Pipework hot">
-                          Distribution Pipework hot
-                        </option>
-                        <option value="Distribution Pipework cold">
-                          Distribution Pipework cold
-                        </option>
-                        <option value="Hot Water Cylinder">
-                          Hot Water Cylinder
-                        </option>
-                        <option value="Controls">Controls</option>
-                        <option value="Outlet">Outlet</option>
-                        <option value="Pipework Dead Leg">
-                          Pipework Dead Leg
-                        </option>
+                        {subCategory2List?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                        ))}
                       </select>
                       {errors?.subCategory2 && (
                         <InputError

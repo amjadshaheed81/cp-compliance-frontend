@@ -7,6 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { deleteSiteAsset, getSiteAssets } from "../../../../store/thunk/site";
+import { get } from "../../../../api";
 
 const Summary = ({
   siteAssets,
@@ -15,9 +16,15 @@ const Summary = ({
   siteSelectedForGlobal,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
+  const [category, setCategory] = useState([]);
   useEffect(() => {
     getSiteAssets(siteSelectedForGlobal?.siteId);
+    getCategory();
   }, []);
+  const getCategory = async () => {
+    const category = await get("/api/lov/ASSET_CATEGORY");
+    setCategory(category);
+  }
   useEffect(() => {
     if(siteAssets){
       setFilteredSiteAssets(siteAssets);
@@ -127,6 +134,9 @@ const Summary = ({
                 onChange={handleInputChange}
               >
                 <option value="">Category</option>
+                {category?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
               </select>
             </div>
             <div className="col">
@@ -217,9 +227,12 @@ const Summary = ({
                 <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
                 <th scope="col">
                   <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button className="btn btn-sm btn-light" onClick={() => {
-                      goTo(`/update-asset?assetId=${asset?.assetId}`)
-                    }}>
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                      }}
+                    >
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>

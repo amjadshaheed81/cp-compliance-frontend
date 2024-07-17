@@ -8,10 +8,7 @@ import Tab from "@mui/material/Tab";
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
-import {
-  TextField,
-  Autocomplete,
-} from "@mui/material";
+import { TextField, Autocomplete } from "@mui/material";
 import {
   addSiteAsset,
   getDocumentsRootFolder,
@@ -52,6 +49,12 @@ const UpdateAsset = ({
   const [tester, setTester] = useState([]);
   const assetId = searchParams.get("assetId");
   const [value, setTabValue] = useState("1");
+  const [category, setCategory] = useState([]);
+  const [subCategory, setSubCategory] = useState([]);
+  const [subCategoryList, setSubCategoryList] = useState([]);
+  const [subCategory2, setSubCategory2] = useState([]);
+  const [subCategory2List, setSubCategory2List] = useState([]);
+
   const tabChange = (event, newValue) => {
     event?.preventDefault();
     setTabValue(newValue);
@@ -64,10 +67,20 @@ const UpdateAsset = ({
       getUsers();
       getTester();
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getCategories();
     } else {
       toast.error("Please select site from site search to proceed....");
     }
   }, []);
+
+  const getCategories = async () => {
+    const category = await get("/api/lov/ASSET_CATEGORY");
+    const subCategory = await get("/api/lov/ASSET_SUB_CATEGORY");
+    const subCategory2 = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    setCategory(category);
+    setSubCategory(subCategory);
+    setSubCategory2(subCategory2);
+  };
 
   const getTester = async () => {
     const url = `/api/user/all?userRole=${ROLE.TESTER}`;
@@ -84,12 +97,12 @@ const UpdateAsset = ({
         patNextDate: itm?.patNextDate?.replace(/T/g, " "),
       };
     });
-    try{
+    try {
       await updatePatDetails(data, selectedAsset?.assetId, deleteSavedPatItems);
       getAssetDetails();
       setLoader(false);
-    }catch(e) {
-      toast.error("Something went wrong while update. Please try again.")
+    } catch (e) {
+      toast.error("Something went wrong while update. Please try again.");
       setLoader(false);
     }
   };
@@ -99,6 +112,12 @@ const UpdateAsset = ({
     const response = await get(url);
     setSelectedAsset(response);
     setPatRecord(response?.assetPATItems);
+    if(response?.category) {
+      categoryChange(response?.category);
+    }
+    if(response?.subCategory) {
+      subCategoryChange(response?.subCategory)
+    }
     purchaseDetailForm.reset({
       invoiceFile: response?.invoiceFile,
       purchaseDate: response?.purchaseDate,
@@ -226,11 +245,11 @@ const UpdateAsset = ({
       barcode: "code",
     };
     form_data.append("assetRequestString", JSON.stringify(formDetails));
-    try{
+    try {
       addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
       setLoader(false);
-    }catch(e) {
-      toast.error("Something went wrong while update asset. Please try again.")
+    } catch (e) {
+      toast.error("Something went wrong while update asset. Please try again.");
       setLoader(false);
     }
   };
@@ -310,6 +329,20 @@ const UpdateAsset = ({
     setLoader(false);
     getAssetDetails();
   };
+  const subCategoryChange = (val) => {
+    setValue("subCategory", val);
+    const subCategoryData = subCategory2?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategory2List(subCategoryData);
+  }
+  const categoryChange = (val) => {
+    setValue("category", val);
+    const subCategoryData = subCategory?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategoryList(subCategoryData);
+  };
   return (
     <Fragment>
       <SidebarNew />
@@ -326,7 +359,11 @@ const UpdateAsset = ({
               <div className="row p-2 border">
                 <div className="col-md-12">
                   <div className="float-end">
-                    <button type="button" className="btn btn-light mb-3 mr-4" onClick={() => window.history.back()}>
+                    <button
+                      type="button"
+                      className="btn btn-light mb-3 mr-4"
+                      onClick={() => window.history.back()}
+                    >
                       Close
                     </button>
                     &nbsp; &nbsp;
@@ -392,13 +429,21 @@ const UpdateAsset = ({
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
-                              value={siteAssets.find(asset => asset.assetId === getValues('relatedAssetId')) || null}
+                              value={
+                                siteAssets.find(
+                                  (asset) =>
+                                    asset.assetId ===
+                                    getValues("relatedAssetId")
+                                ) || null
+                              }
                               onChange={(event, newValue) => {
                                 console.log("newValue", newValue);
-                                setValue('relatedAssetId', newValue?.assetId)
+                                setValue("relatedAssetId", newValue?.assetId);
                               }}
                               options={siteAssets}
-                              getOptionLabel={(option) => option.assetName || ""}
+                              getOptionLabel={(option) =>
+                                option.assetName || ""
+                              }
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
@@ -502,8 +547,19 @@ const UpdateAsset = ({
                         <input
                           type="file"
                           className="form-control"
-                          {...register("assetImage")}
+                          {...register("assetImage", {
+                            required: {
+                              value: true,
+                              message: `Please select asset image.`,
+                            },
+                          })}
                         />
+                        {errors?.assetImage && (
+                          <InputError
+                            message={errors?.assetImage?.message}
+                            key={errors?.assetImage?.message}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -520,21 +576,16 @@ const UpdateAsset = ({
                             message: `Please select category`,
                           },
                         })}
+                        onChange={(e) => {
+                          categoryChange(e.target.value);
+                        }}
                       >
-                        <option value="" selected disabled>
-                          Select Folder
+                        <option value="">
+                          Select category
                         </option>
-                        <option value="Lifting Machinery / Equipment">
-                          Lifting Machinery / Equipment
-                        </option>
-                        <option value="Central Heating">Central Heating</option>
-                        <option value="Air Conditioning">
-                          Air Conditioning
-                        </option>
-                        <option value="Sanitary">Sanitary</option>
-                        <option value="Vantilation">Vantilation</option>
-                        <option value="Gas">Gas</option>
-                        <option value="Drainage">Drainage</option>
+                        {category?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                        ))}
                       </select>
                       {errors?.category && (
                         <InputError
@@ -549,43 +600,18 @@ const UpdateAsset = ({
                         name="subCategory"
                         className="form-control form-select"
                         id="subCategory"
-                        {...register("subCategory", {
-                          required: {
-                            value: true,
-                            message: `Please select sub category 1`,
-                          },
-                        })}
+                        {...register("subCategory")}
+                        onChange={(e) => {
+                          subCategoryChange(e.target.value);
+                        }}
                       >
-                        <option value="" selected disabled>
-                          Select Folder
+                        <option value="">
+                          Select Sub Category
                         </option>
-                        <option value="Fire Fighting Equipment">
-                          Fire Fighting Equipment
-                        </option>
-                        <option value="Internal Finishes">
-                          Internal Finishes
-                        </option>
-                        <option value="Mechanical">Mechanical</option>
-                        <option value="Electrical">Electrical</option>
-                        <option value="Building Envelop">
-                          Building Envelop
-                        </option>
-                        <option value="Maintanance Plant & Equipment">
-                          Maintanance Plant & Equipment
-                        </option>
-                        <option value="Landscaping">Landscaping</option>
-                        <option value="Waste Disposal">Waste Disposal</option>
-                        <option value="COVID Items">COVID Items</option>
-                        <option value="First Aid Equipment">
-                          First Aid Equipment
-                        </option>
+                        {subCategoryList?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                        ))}
                       </select>
-                      {errors?.subCategory && (
-                        <InputError
-                          message={errors?.subCategory?.message}
-                          key={errors?.subCategory?.message}
-                        />
-                      )}
                     </div>
                     <div className="col-md-4">
                       <label for="subCategory2">Sub Category 2</label>
@@ -593,42 +619,15 @@ const UpdateAsset = ({
                         name="subCategory2"
                         className="form-control form-select"
                         id="subCategory2"
-                        {...register("subCategory2", {
-                          required: {
-                            value: true,
-                            message: `Please select sub category 2`,
-                          },
-                        })}
+                        {...register("subCategory2")}
                       >
-                        <option value="" selected disabled>
-                          Select Folder
+                        <option value="">
+                          Select Sub Category 2
                         </option>
-                        <option value="Water Meter">Water Meter</option>
-                        <option value="Cold Water Storage Tank">
-                          Cold Water Storage Tank
-                        </option>
-                        <option value="Calorifier">Calorifier</option>
-                        <option value="Distribution Pipework hot">
-                          Distribution Pipework hot
-                        </option>
-                        <option value="Distribution Pipework cold">
-                          Distribution Pipework cold
-                        </option>
-                        <option value="Hot Water Cylinder">
-                          Hot Water Cylinder
-                        </option>
-                        <option value="Controls">Controls</option>
-                        <option value="Outlet">Outlet</option>
-                        <option value="Pipework Dead Leg">
-                          Pipework Dead Leg
-                        </option>
+                        {subCategory2List?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                        ))}
                       </select>
-                      {errors?.subCategory2 && (
-                        <InputError
-                          message={errors?.subCategory2?.message}
-                          key={errors?.subCategory2?.message}
-                        />
-                      )}
                     </div>
                     <div className="col-md-4 mt-2">
                       <input

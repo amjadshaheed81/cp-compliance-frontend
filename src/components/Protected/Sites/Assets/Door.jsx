@@ -10,6 +10,7 @@ import {
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { get } from "../../../../api";
 
 const Door = ({
   siteDoorItems,
@@ -18,6 +19,7 @@ const Door = ({
   deleteSiteAsset,
 }) => {
   const [filteredSiteDoorItems, setFilteredSiteDoorItems] = useState([]);
+  const [category, setCategory] = useState([]);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
@@ -74,7 +76,12 @@ const Door = ({
   };
   useEffect(() => {
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+    getCategory()
   }, []);
+  const getCategory = async () => {
+    const category = await get("/api/lov/ASSET_CATEGORY");
+    setCategory(category);
+  }
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -130,6 +137,9 @@ const Door = ({
                 onChange={handleInputChange}
               >
                 <option value="">Category</option>
+                {category?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
               </select>
             </div>
             <div className="col">
