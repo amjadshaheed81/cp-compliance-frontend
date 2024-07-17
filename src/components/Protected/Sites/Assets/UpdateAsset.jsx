@@ -374,7 +374,7 @@ const UpdateAsset = ({
                 </div>
                 <div className="col-md-12 p-2">
                   <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-8">
+                    <div className="col-md-8" style={{ height: "fit-content" }}>
                       <div className="row">
                         <div className="col-md-6">
                           <div className="form-group mt-2">
@@ -541,6 +541,7 @@ const UpdateAsset = ({
                         {selectedAsset?.image && (
                           <img
                             src={selectedAsset?.image}
+                            style={{ width: '100%'}}
                             className="img img-responsive"
                           />
                         )}
