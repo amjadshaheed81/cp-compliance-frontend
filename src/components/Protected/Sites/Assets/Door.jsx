@@ -17,9 +17,60 @@ const Door = ({
   getSiteDoorAssets,
   deleteSiteAsset,
 }) => {
+  const [filteredSiteDoorItems, setFilteredSiteDoorItems] = useState([]);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
+  };
+  useEffect(() => {
+    if(siteDoorItems){
+      setFilteredSiteDoorItems(siteDoorItems);
+    }
+  }, [siteDoorItems]);
+  const [formData, setFormData] = useState({
+    assetName: "",
+    manufacturer: "",
+    category: "",
+    location: "",
+  });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+  useEffect(() => {
+    searchAssets();
+  }, [
+    formData.assetName,
+    formData.category,
+    formData.location,
+    formData.manufacturer,
+  ]);
+  const searchAssets = () => {
+    const assetName = formData?.assetName;
+    const category = formData?.category;
+    const location = formData?.location;
+    const manufacturer = formData?.manufacturer;
+    if (assetName || category || location || manufacturer) {
+      const list = siteDoorItems?.filter(
+        (x) =>
+          String(x?.assetName)
+            .toLowerCase()
+            .includes(String(assetName).toLowerCase()) &&
+          String(x?.category)
+            .toLowerCase()
+            .includes(String(category).toLowerCase()) &&
+          String(x?.location)
+            .toLowerCase()
+            .includes(String(location).toLowerCase()) &&
+          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+      );
+      setFilteredSiteDoorItems(list);
+    } else {
+      setFilteredSiteDoorItems(siteDoorItems);
+    }
   };
   useEffect(() => {
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
@@ -59,6 +110,7 @@ const Door = ({
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -67,6 +119,7 @@ const Door = ({
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -74,6 +127,7 @@ const Door = ({
                 name="category"
                 className="form-control form-select"
                 id="category"
+                onChange={handleInputChange}
               >
                 <option value="">Category</option>
               </select>
@@ -83,6 +137,7 @@ const Door = ({
                 name="location"
                 className="form-control form-select"
                 id="location"
+                onChange={handleInputChange}
               >
                 <option value="">Location</option>
               </select>
@@ -135,12 +190,12 @@ const Door = ({
             </tr>
           </thead>
           <tbody>
-            {siteDoorItems?.length === 0 && (
+            {filteredSiteDoorItems?.length === 0 && (
               <tr>
                 <td>No Result Found !!</td>
               </tr>
             )}
-            {siteDoorItems?.map((asset) => (
+            {filteredSiteDoorItems?.map((asset) => (
               <tr key={asset?.id}>
                 <th scope="col">
                   <input type="checkbox" />

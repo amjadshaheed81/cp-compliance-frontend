@@ -17,9 +17,60 @@ const Pat = ({
   siteSelectedForGlobal,
   getSitePATAssets,
 }) => {
+  const [filteredSitePATItems, setFilteredSitePATItems] = useState([]);
+  useEffect(() => {
+    if(sitePATItems){
+      setFilteredSitePATItems(sitePATItems);
+    }
+  }, [sitePATItems]);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
+  };
+  const [formData, setFormData] = useState({
+    assetName: "",
+    manufacturer: "",
+    category: "",
+    location: "",
+  });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+  useEffect(() => {
+    searchAssets();
+  }, [
+    formData.assetName,
+    formData.category,
+    formData.location,
+    formData.manufacturer,
+  ]);
+  const searchAssets = () => {
+    const assetName = formData?.assetName;
+    const category = formData?.category;
+    const location = formData?.location;
+    const manufacturer = formData?.manufacturer;
+    if (assetName || category || location || manufacturer) {
+      const list = sitePATItems?.filter(
+        (x) =>
+          String(x?.assetName)
+            .toLowerCase()
+            .includes(String(assetName).toLowerCase()) &&
+          String(x?.category)
+            .toLowerCase()
+            .includes(String(category).toLowerCase()) &&
+          String(x?.location)
+            .toLowerCase()
+            .includes(String(location).toLowerCase()) &&
+          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+      );
+      setFilteredSitePATItems(list);
+    } else {
+      setFilteredSitePATItems(sitePATItems);
+    }
   };
   useEffect(() => {
     getSitePATAssets(siteSelectedForGlobal?.siteId);
@@ -59,6 +110,7 @@ const Pat = ({
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -67,6 +119,7 @@ const Pat = ({
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -74,6 +127,7 @@ const Pat = ({
                 name="category"
                 className="form-control form-select"
                 id="category"
+                onChange={handleInputChange}
               >
                 <option value="">Category</option>
               </select>
@@ -83,6 +137,7 @@ const Pat = ({
                 name="location"
                 className="form-control form-select"
                 id="location"
+                onChange={handleInputChange}
               >
                 <option value="">Location</option>
               </select>
@@ -135,12 +190,12 @@ const Pat = ({
             </tr>
           </thead>
           <tbody>
-            {sitePATItems?.length === 0 && (
+            {filteredSitePATItems?.length === 0 && (
               <tr>
                 <td>No Result Found !!</td>
               </tr>
             )}
-            {sitePATItems?.map((asset) => (
+            {filteredSitePATItems?.map((asset) => (
               <tr key={asset?.id}>
                 <th scope="col">
                   <input type="checkbox" />

@@ -17,6 +17,57 @@ const PassiveFireProtection = ({
   deleteSiteAsset,
   getSitePFPAssets,
 }) => {
+  const [filteredSitePFPItems, setfilteredSitePFPItems] = useState([]);
+  useEffect(() => {
+    if(sitePFPItems){
+      setfilteredSitePFPItems(sitePFPItems);
+    }
+  }, [sitePFPItems]);
+  const [formData, setFormData] = useState({
+    assetName: "",
+    manufacturer: "",
+    category: "",
+    location: "",
+  });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+  useEffect(() => {
+    searchAssets();
+  }, [
+    formData.assetName,
+    formData.category,
+    formData.location,
+    formData.manufacturer,
+  ]);
+  const searchAssets = () => {
+    const assetName = formData?.assetName;
+    const category = formData?.category;
+    const location = formData?.location;
+    const manufacturer = formData?.manufacturer;
+    if (assetName || category || location || manufacturer) {
+      const list = sitePFPItems?.filter(
+        (x) =>
+          String(x?.assetName)
+            .toLowerCase()
+            .includes(String(assetName).toLowerCase()) &&
+          String(x?.category)
+            .toLowerCase()
+            .includes(String(category).toLowerCase()) &&
+          String(x?.location)
+            .toLowerCase()
+            .includes(String(location).toLowerCase()) &&
+          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+      );
+      setfilteredSitePFPItems(list);
+    } else {
+      setfilteredSitePFPItems(sitePFPItems);
+    }
+  };
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
@@ -59,6 +110,7 @@ const PassiveFireProtection = ({
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -67,6 +119,7 @@ const PassiveFireProtection = ({
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -74,6 +127,7 @@ const PassiveFireProtection = ({
                 name="category"
                 className="form-control form-select"
                 id="category"
+                onChange={handleInputChange}
               >
                 <option value="">Category</option>
               </select>
@@ -83,6 +137,7 @@ const PassiveFireProtection = ({
                 name="location"
                 className="form-control form-select"
                 id="location"
+                onChange={handleInputChange}
               >
                 <option value="">Location</option>
               </select>
@@ -136,12 +191,12 @@ const PassiveFireProtection = ({
             </tr>
           </thead>
           <tbody>
-            {sitePFPItems?.length === 0 && (
+            {filteredSitePFPItems?.length === 0 && (
               <tr>
                 <td>No Result Found !!</td>
               </tr>
             )}
-            {sitePFPItems?.map((asset) => (
+            {filteredSitePFPItems?.map((asset) => (
               <tr key={asset?.id}>
                 <th scope="col">
                   <input type="checkbox" />

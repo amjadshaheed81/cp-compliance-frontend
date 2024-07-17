@@ -14,12 +14,63 @@ const Summary = ({
   getSiteAssets,
   siteSelectedForGlobal,
 }) => {
+  const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
   useEffect(() => {
     getSiteAssets(siteSelectedForGlobal?.siteId);
   }, []);
+  useEffect(() => {
+    if(siteAssets){
+      setFilteredSiteAssets(siteAssets);
+    }
+  }, [siteAssets]);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
+  };
+  const [formData, setFormData] = useState({
+    assetName: "",
+    manufacturer: "",
+    category: "",
+    location: "",
+  });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+  useEffect(() => {
+    searchAssets();
+  }, [
+    formData.assetName,
+    formData.category,
+    formData.location,
+    formData.manufacturer,
+  ]);
+  const searchAssets = () => {
+    const assetName = formData?.assetName;
+    const category = formData?.category;
+    const location = formData?.location;
+    const manufacturer = formData?.manufacturer;
+    if (assetName || category || location || manufacturer) {
+      const list = siteAssets?.filter(
+        (x) =>
+          String(x?.assetName)
+            .toLowerCase()
+            .includes(String(assetName).toLowerCase()) &&
+          String(x?.category)
+            .toLowerCase()
+            .includes(String(category).toLowerCase()) &&
+          String(x?.location)
+            .toLowerCase()
+            .includes(String(location).toLowerCase()) &&
+          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase())
+      );
+      setFilteredSiteAssets(list);
+    } else {
+      setFilteredSiteAssets(siteAssets);
+    }
   };
   const deleteAsset = (itm) => {
     Swal.fire({
@@ -56,6 +107,7 @@ const Summary = ({
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -64,6 +116,7 @@ const Summary = ({
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
+                onChange={handleInputChange}
               />
             </div>
             <div className="col">
@@ -71,6 +124,7 @@ const Summary = ({
                 name="category"
                 className="form-control form-select"
                 id="category"
+                onChange={handleInputChange}
               >
                 <option value="">Category</option>
               </select>
@@ -80,6 +134,7 @@ const Summary = ({
                 name="location"
                 className="form-control form-select"
                 id="location"
+                onChange={handleInputChange}
               >
                 <option value="">Location</option>
               </select>
@@ -144,12 +199,12 @@ const Summary = ({
             </tr>
           </thead>
           <tbody>
-            {siteAssets?.length === 0 && (
+            {filteredSiteAssets?.length === 0 && (
               <tr>
                 <td>No Result Found !!</td>
               </tr>
             )}
-            {siteAssets?.map((asset) => (
+            {filteredSiteAssets?.map((asset) => (
               <tr key={asset?.assetId}>
                 <th scope="col">
                   <input type="checkbox" />
