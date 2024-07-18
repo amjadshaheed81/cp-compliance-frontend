@@ -417,6 +417,7 @@ const CreateAsset = ({
                         type="checkbox"
                         id="patItem"
                         name="patItem"
+                        className="form-check-input"
                         {...register("patItem")}
                       />
                       &nbsp;
@@ -429,10 +430,11 @@ const CreateAsset = ({
                         type="checkbox"
                         id="pfpItem"
                         name="pfpItem"
+                        className="form-check-input"
                         {...register("pfpItem")}
                       />
                       &nbsp;
-                      <label for="passiveFireSchedule">
+                      <label for="pfpItem">
                         Passive fire schedule required (fill PFS details below
                         below)
                       </label>
@@ -442,10 +444,11 @@ const CreateAsset = ({
                         type="checkbox"
                         id="doorItem"
                         name="doorItem"
+                        className="form-check-input"
                         {...register("doorItem")}
                       />
                       &nbsp;
-                      <label for="passiveFireSchedule">
+                      <label for="doorItem">
                         Door Assets (fill Door assets details below below)
                       </label>
                     </div>

@@ -1,3 +1,8 @@
 .no-print {
       display: none !important;
 }
+@media print {
+      .no-print-element {
+            display: none !important;
+      }   
+}

@@ -11,6 +11,7 @@ import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
+import ShowQRCode from "./ShowQRCode";
 
 const PassiveFireProtection = ({
   sitePFPItems,
@@ -21,6 +22,8 @@ const PassiveFireProtection = ({
   const [filteredSitePFPItems, setfilteredSitePFPItems] = useState([]);
   const [category, setCategory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState({});
   useEffect(() => {
     if (sitePFPItems) {
       setfilteredSitePFPItems(sitePFPItems);
@@ -137,6 +140,13 @@ const PassiveFireProtection = ({
 
   return (
     <Fragment>
+      {showAddModal && (
+        <ShowQRCode
+          showAddModal={showAddModal}
+          setShowAddModal={setShowAddModal}
+          selectedAsset={selectedAsset}
+        />
+      )}
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight ">
           <div className="row" style={{ height: "auto" }}>
@@ -287,11 +297,16 @@ const PassiveFireProtection = ({
                   </Tooltip>
                   <Tooltip title={`View QR code for ${asset.assetName}`} arrow>
                     <QRCodeSVG
-                      value="https://reactjs.org/"
+                      onClick={() => {
+                        setShowAddModal(true);
+                        setSelectedAsset(asset);
+                      }}
+                      value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
                       style={{
                         height: "30px",
                         width: "30px",
                         margin: "0px 6px",
+                        cursor: 'pointer',
                       }}
                     />
                   </Tooltip>
