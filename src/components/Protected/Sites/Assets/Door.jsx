@@ -283,17 +283,27 @@ const Door = ({
                   {asset?.assetDoorSpecifications?.frameMaterial}
                 </th>
                 <th scope="col">
-                  <Tooltip title={`View ${asset.assetName}`} arrow>
+                <Tooltip title={`View ${asset.assetName}`} arrow>
                     <button
                       className="btn btn-sm btn-light"
                       onClick={() => {
-                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                        goTo(`/view-asset?assetId=${asset?.assetId}`);
                       }}
                     >
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>
                   <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                      }}
+                    >
+                      <i className="fas fa-pen"></i>
+                    </button>{" "}
+                  </Tooltip>
+                  <Tooltip title={`View QR code for ${asset.assetName}`} arrow>
                     <QRCodeSVG
                       value="https://reactjs.org/"
                       style={{

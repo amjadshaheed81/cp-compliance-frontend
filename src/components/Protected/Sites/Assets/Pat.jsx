@@ -221,9 +221,7 @@ const Pat = ({
                   type="checkbox"
                   onChange={handleSelectAllChange}
                   className="form-check-input"
-                  checked={
-                    selectedItems.length === filteredSitePATItems.length
-                  }
+                  checked={selectedItems.length === filteredSitePATItems.length}
                 />
               </th>
               <th scope="col">Asset Name</th>
@@ -266,13 +264,23 @@ const Pat = ({
                     <button
                       className="btn btn-sm btn-light"
                       onClick={() => {
-                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                        goTo(`/view-asset?assetId=${asset?.assetId}`);
                       }}
                     >
                       <i className="fas fa-eye"></i>
                     </button>{" "}
                   </Tooltip>
                   <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        goTo(`/update-asset?assetId=${asset?.assetId}`);
+                      }}
+                    >
+                      <i className="fas fa-pen"></i>
+                    </button>{" "}
+                  </Tooltip>
+                  <Tooltip title={`View QR Code for ${asset.assetName}`} arrow>
                     <QRCodeSVG
                       value="https://reactjs.org/"
                       style={{

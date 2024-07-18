@@ -29,7 +29,7 @@ import { get } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
 import moment from "moment";
 
-const UpdateAsset = ({
+const ViewAsset = ({
   setLoader,
   siteSelectedForGlobal,
   getDocumentsRootFolder,
@@ -86,25 +86,6 @@ const UpdateAsset = ({
     const url = `/api/user/all?userRole=${ROLE.TESTER}`;
     const data = await get(url);
     setTester(data?.users);
-  };
-
-  const savePatDetails = async () => {
-    setLoader(true);
-    const data = patRecord?.map((itm) => {
-      return {
-        ...itm,
-        patDate: itm?.patDate?.replace(/T/g, " "),
-        patNextDate: itm?.patNextDate?.replace(/T/g, " "),
-      };
-    });
-    try {
-      await updatePatDetails(data, selectedAsset?.assetId, deleteSavedPatItems);
-      getAssetDetails();
-      setLoader(false);
-    } catch (e) {
-      toast.error("Something went wrong while update. Please try again.");
-      setLoader(false);
-    }
   };
 
   const getAssetDetails = async () => {
@@ -215,120 +196,18 @@ const UpdateAsset = ({
   const goTo = (link) => {
     navigate(link);
   };
-  const submitSiteAsset = (data) => {
-    setLoader(true);
-    let form_data = new FormData();
-    const { assetImage, ...formData } = data;
-    if (data?.assetImage?.length > 0) {
-      form_data.append(
-        "assetImage",
-        data?.assetImage?.[0],
-        data?.assetImage?.[0]?.name
-      );
-    } else {
-      form_data.append("assetImage", JSON.stringify(data?.image));
-    }
-    const formDetails = {
-      assetId: formData?.assetId,
-      assetName: formData?.assetName,
-      manufacturer: formData?.manufacturer,
-      category: formData?.category,
-      subCategory: formData?.subCategory,
-      subCategory2: formData?.subCategory2,
-      model: formData?.model,
-      serialNumber: formData?.serialNumber,
-      relatedAssetId: formData?.relatedAssetId,
-      folderId: formData?.folderId,
-      patItem: formData?.patItem,
-      pfpItem: formData?.pfpItem,
-      doorItem: formData?.doorItem,
-      barcode: "code",
-    };
-    form_data.append("assetRequestString", JSON.stringify(formDetails));
-    try {
-      addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
-      setLoader(false);
-    } catch (e) {
-      toast.error("Something went wrong while update asset. Please try again.");
-      setLoader(false);
-    }
-  };
 
   const purchaseDetailForm = useForm({});
   const purchaseFrormValues = purchaseDetailForm.watch();
-  const submitSiteAssetPurchaseDetail = async (data) => {
-    let form_data = new FormData();
-    const { purchaseInvoice, ...formData } = data;
-    if (purchaseInvoice) {
-      form_data.append(
-        "purchaseInvoice",
-        data?.purchaseInvoice?.[0],
-        data?.purchaseInvoice?.[0]?.name
-      );
-    }
-    const submitData = {
-      ...formData,
-      purchaseDate: formData?.purchaseDate + " 10:00:00",
-      assetId: selectedAsset?.assetId,
-    };
-    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-    setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
-  };
-
+  
   const locationForm = useForm({});
-  const submitLocationForm = async (data) => {
-    console.log("data", data);
-    let form_data = new FormData();
-    const submitData = { ...data, assetId: selectedAsset?.assetId };
-    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-    setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
-  };
+  
 
   const valudationForm = useForm({});
-  const submitValudationForm = async (data) => {
-    let form_data = new FormData();
-    const submitData = {
-      ...data,
-      assetId: selectedAsset?.assetId,
-      valuationDate: data?.valuationDate + " 10:00:00",
-      disposalDate: data?.disposalDate + " 10:00:00",
-    };
-    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-    setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
-  };
+  
 
   const passiveFireProtectionForm = useForm({});
-  const submitPassiveFireProtectionForm = async (data) => {
-    const submitData = {
-      ...data,
-      assetId: selectedAsset?.assetId,
-    };
-    setLoader(true);
-    await updatepspDetails(submitData, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
-  };
-
   const doorSpecificationForm = useForm({});
-  const submitDoorSpecificationForm = async (data) => {
-    const submitData = {
-      ...data,
-      assetId: selectedAsset?.assetId,
-    };
-    setLoader(true);
-    await updateDoorSpecification(submitData, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
-  };
   const subCategoryChange = (val) => {
     setValue("subCategory", val);
     const subCategoryData = subCategory2?.filter(
@@ -355,7 +234,7 @@ const UpdateAsset = ({
           />
 
           <Box sx={{ width: "100%", typography: "body1" }}>
-            <form onSubmit={handleSubmit(submitSiteAsset)}>
+            <form>
               <div className="row p-2 border">
                 <div className="col-md-12">
                   <div className="float-end">
@@ -365,10 +244,6 @@ const UpdateAsset = ({
                       onClick={() => window.history.back()}
                     >
                       Close
-                    </button>
-                    &nbsp; &nbsp;
-                    <button type="submit" className="btn btn-primary mb-3 mr-4">
-                      Save
                     </button>
                   </div>
                 </div>
@@ -383,21 +258,11 @@ const UpdateAsset = ({
                               type="text"
                               className="form-control"
                               id="assetName"
+                              disabled
                               name="assetName"
                               placeholder=""
-                              {...register("assetName", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} asset name`,
-                                },
-                              })}
+                              {...register("assetName")}
                             />
-                            {errors?.assetName && (
-                              <InputError
-                                message={errors?.assetName?.message}
-                                key={errors?.assetName?.message}
-                              />
-                            )}
                           </div>
                         </div>
                         <div className="col-md-6">
@@ -409,19 +274,9 @@ const UpdateAsset = ({
                               id="manufacturer"
                               name="manufacturer"
                               placeholder=""
-                              {...register("manufacturer", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} manufacturer`,
-                                },
-                              })}
+                              disabled
+                              {...register("manufacturer")}
                             />
-                            {errors?.manufacturer && (
-                              <InputError
-                                message={errors?.manufacturer?.message}
-                                key={errors?.manufacturer?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -440,6 +295,7 @@ const UpdateAsset = ({
                                 console.log("newValue", newValue);
                                 setValue("relatedAssetId", newValue?.assetId);
                               }}
+                              disabled
                               options={siteAssets}
                               getOptionLabel={(option) =>
                                 option.assetName || ""
@@ -461,12 +317,8 @@ const UpdateAsset = ({
                             name="folderId"
                             className="form-control form-select"
                             id="folderId"
-                            {...register("folderId", {
-                              required: {
-                                value: true,
-                                message: `Please select folder`,
-                              },
-                            })}
+                            disabled
+                            {...register("folderId")}
                           >
                             <option value="" selected disabled>
                               Select Folder
@@ -477,12 +329,6 @@ const UpdateAsset = ({
                               </option>
                             ))}
                           </select>
-                          {errors?.folderId && (
-                            <InputError
-                              message={errors?.folderId?.message}
-                              key={errors?.folderId?.message}
-                            />
-                          )}
                         </div>
 
                         <div className="col-md-6">
@@ -493,20 +339,10 @@ const UpdateAsset = ({
                               className="form-control"
                               id="model"
                               name="model"
+                              disabled
                               placeholder=""
-                              {...register("model", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} model`,
-                                },
-                              })}
+                              {...register("model")}
                             />
-                            {errors?.model && (
-                              <InputError
-                                message={errors?.model?.message}
-                                key={errors?.model?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -519,19 +355,9 @@ const UpdateAsset = ({
                               id="serialNumber"
                               name="serialNumber"
                               placeholder=""
-                              {...register("serialNumber", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} serial number`,
-                                },
-                              })}
+                              disabled
+                              {...register("serialNumber")}
                             />
-                            {errors?.serialNumber && (
-                              <InputError
-                                message={errors?.serialNumber?.message}
-                                key={errors?.serialNumber?.message}
-                              />
-                            )}
                           </div>
                         </div>
                       </div>
@@ -541,25 +367,12 @@ const UpdateAsset = ({
                         {selectedAsset?.image && (
                           <img
                             src={selectedAsset?.image}
-                            style={{ width: '100px', height: '100px'}}
+                            style={{ width: "100px", height: "100px" }}
                             className="img img-responsive border p-2 m-2"
                           />
                         )}
-                        <input
-                          type="file"
-                          className="form-control"
-                          {...register("assetImage", {
-                            required: {
-                              value: true,
-                              message: `Please select asset image.`,
-                            },
-                          })}
-                        />
-                        {errors?.assetImage && (
-                          <InputError
-                            message={errors?.assetImage?.message}
-                            key={errors?.assetImage?.message}
-                          />
+                        {!selectedAsset?.image && (
+                          <strong>Asset image is not available</strong>
                         )}
                       </div>
                     </div>
@@ -569,31 +382,19 @@ const UpdateAsset = ({
                       <label for="category">Category</label>
                       <select
                         name="category"
+                        disabled
                         className="form-control form-select"
                         id="category"
-                        {...register("category", {
-                          required: {
-                            value: true,
-                            message: `Please select category`,
-                          },
-                        })}
+                        {...register("category")}
                         onChange={(e) => {
                           categoryChange(e.target.value);
                         }}
                       >
-                        <option value="">
-                          Select category
-                        </option>
+                        <option value="">Select category</option>
                         {category?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
                       </select>
-                      {errors?.category && (
-                        <InputError
-                          message={errors?.category?.message}
-                          key={errors?.category?.message}
-                        />
-                      )}
                     </div>
                     <div className="col-md-4">
                       <label for="subCategory">Sub Category 1</label>
@@ -601,14 +402,13 @@ const UpdateAsset = ({
                         name="subCategory"
                         className="form-control form-select"
                         id="subCategory"
+                        disabled
                         {...register("subCategory")}
                         onChange={(e) => {
                           subCategoryChange(e.target.value);
                         }}
                       >
-                        <option value="">
-                          Select Sub Category
-                        </option>
+                        <option value="">Select Sub Category</option>
                         {subCategoryList?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
@@ -620,55 +420,14 @@ const UpdateAsset = ({
                         name="subCategory2"
                         className="form-control form-select"
                         id="subCategory2"
+                        disabled
                         {...register("subCategory2")}
                       >
-                        <option value="">
-                          Select Sub Category 2
-                        </option>
+                        <option value="">Select Sub Category 2</option>
                         {subCategory2List?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
                       </select>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="patItem"
-                        name="patItem"
-                        className="form-check-input"
-                        {...register("patItem")}
-                      />
-                      &nbsp;&nbsp;
-                      <label for="patItem">
-                        PAT item (fill PAT details below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="pfpItem"
-                        name="pfpItem"
-                        className="form-check-input"
-                        {...register("pfpItem")}
-                      />
-                      &nbsp;&nbsp;
-                      <label for="pfpItem">
-                        Passive fire schedule required (fill PFS details below
-                        below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="doorItem"
-                        name="doorItem"
-                        className="form-check-input"
-                        {...register("doorItem")}
-                      />
-                      &nbsp;&nbsp;
-                      <label for="doorItem">
-                        Door Assets (fill Door assets details below below)
-                      </label>
                     </div>
                   </div>
                   {/* start */}
@@ -702,17 +461,14 @@ const UpdateAsset = ({
                 </TabList>
               </Box>
               <TabPanel value="1">
-                <form
-                  onSubmit={purchaseDetailForm.handleSubmit(
-                    submitSiteAssetPurchaseDetail
-                  )}
-                >
+                <form>
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
                         <label for="purchaseDate">Purchase Date</label>
                         <input
                           type="date"
+                          disabled
                           className="form-control"
                           id="purchaseDate"
                           name="purchaseDate"
@@ -728,6 +484,7 @@ const UpdateAsset = ({
                           type="text"
                           className="form-control"
                           id="supplier"
+                          disabled
                           name="supplier"
                           placeholder=""
                           {...purchaseDetailForm.register("supplier")}
@@ -740,6 +497,7 @@ const UpdateAsset = ({
                         <input
                           type="number"
                           className="form-control"
+                          disabled
                           id="transactionId"
                           name="transactionId"
                           placeholder=""
@@ -753,6 +511,7 @@ const UpdateAsset = ({
                         <input
                           type="number"
                           className="form-control"
+                          disabled
                           id="cost"
                           name="cost"
                           placeholder=""
@@ -762,33 +521,17 @@ const UpdateAsset = ({
                     </div>
 
                     <div className="col-md-8">
-                      <div className="form-group mt-2">
-                        <label for="purchaseInvoice">Invoice</label>
-                        <input
-                          type="file"
-                          className="form-control"
-                          id="purchaseInvoice"
-                          name="purchaseInvoice"
-                          placeholder=""
-                          {...purchaseDetailForm.register("purchaseInvoice")}
-                        />
-                      </div>
                       {purchaseFrormValues.invoiceFile && (
                         <a href={purchaseFrormValues.invoiceFile} download>
                           Download Uploaded Invoice
                         </a>
                       )}
                     </div>
-                    <div>
-                      <button type="submit" className="btn btn-primary mt-2">
-                        Save
-                      </button>
-                    </div>
                   </div>
                 </form>
               </TabPanel>
               <TabPanel value="2">
-                <form onSubmit={locationForm.handleSubmit(submitLocationForm)}>
+                <form>
                   <div className="row">
                     <div className="col-md-4">
                       <label for="position">Internal/External</label>
@@ -796,6 +539,7 @@ const UpdateAsset = ({
                         name="position"
                         className="form-control form-select"
                         id="position"
+                        disabled
                         {...locationForm.register("position")}
                       >
                         <option value="">Select Internal/External</option>
@@ -809,6 +553,7 @@ const UpdateAsset = ({
                         name="floor"
                         className="form-control form-select"
                         id="floor"
+                        disabled
                         {...locationForm.register("floor")}
                       >
                         <option value="">Select Floor</option>
@@ -822,6 +567,7 @@ const UpdateAsset = ({
                       <label for="room">Room</label>
                       <select
                         name="room"
+                        disabled
                         className="form-control form-select"
                         id="room"
                         {...locationForm.register("room")}
@@ -831,24 +577,18 @@ const UpdateAsset = ({
                         <option value="G2">G2</option>
                       </select>
                     </div>
-                    <div>
-                      <button type="submit" className="btn btn-primary mt-2">
-                        Save
-                      </button>
-                    </div>
                   </div>
                 </form>
               </TabPanel>
               <TabPanel value="3">
-                <form
-                  onSubmit={valudationForm.handleSubmit(submitValudationForm)}
-                >
+                <form>
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
                         <label for="valuationDate">Valuation Date</label>
                         <input
                           type="date"
+                          disabled
                           className="form-control"
                           id="valuationDate"
                           name="valuationDate"
@@ -865,6 +605,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="valuationValue"
                           name="valuationValue"
+                          disabled
                           placeholder=""
                           {...valudationForm.register("valuationValue")}
                         />
@@ -876,6 +617,7 @@ const UpdateAsset = ({
                         name="valuationUserId"
                         className="form-control form-select"
                         id="valuationUserId"
+                        disabled
                         {...valudationForm.register("valuationUserId")}
                       >
                         <option value=""></option>
@@ -894,6 +636,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="disposalDate"
                           name="disposalDate"
+                          disabled
                           placeholder=""
                           {...valudationForm.register("disposalDate")}
                         />
@@ -908,6 +651,7 @@ const UpdateAsset = ({
                           id="disposalValue"
                           name="disposalValue"
                           placeholder=""
+                          disabled
                           {...valudationForm.register("disposalValue")}
                         />
                       </div>
@@ -920,15 +664,11 @@ const UpdateAsset = ({
                           className="form-control"
                           id="disposalTo"
                           name="disposalTo"
+                          disabled
                           placeholder=""
                           {...valudationForm.register("disposalTo")}
                         />
                       </div>
-                    </div>
-                    <div>
-                      <button type="submit" className="btn btn-primary mt-2">
-                        Save
-                      </button>
                     </div>
                   </div>
                 </form>
@@ -936,14 +676,6 @@ const UpdateAsset = ({
               <TabPanel value="4">
                 {" "}
                 <div className="row">
-                  <div>
-                    <button
-                      onClick={() => addPatRecord()}
-                      className="btn btn-light text-primary"
-                    >
-                      <i className="fas fa-plus"></i>&nbsp;Add PAT Record
-                    </button>
-                  </div>
                   <div className="col-md-12 mt-2">
                     <div className="table-responsive">
                       <table className="table table-bordered f-11">
@@ -952,10 +684,14 @@ const UpdateAsset = ({
                             <th scope="col">Tester</th>
                             <th scope="col">Test Date</th>
                             <th scope="col">Next Test Date</th>
-                            <th scope="col">Action</th>
                           </tr>
                         </thead>
                         <tbody>
+                          {patRecord?.length === 0 && (
+                            <tr>
+                              <td colSpan={3}>No Result Found</td>
+                            </tr>
+                          )}
                           {patRecord?.map((itm, index) => (
                             <tr>
                               <td>
@@ -1025,41 +761,16 @@ const UpdateAsset = ({
                                   />
                                 )}
                               </td>
-                              <td>
-                                <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
-                                &nbsp;
-                                <i class="fas fa-regular fa-thumbs-down cursor"></i>{" "}
-                                &nbsp;
-                                <i
-                                  className="fas fa-trash cursor"
-                                  onClick={() => deletePatRecord(index, itm)}
-                                ></i>
-                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   </div>
-                  <div>
-                    <button
-                      type="button"
-                      className="btn btn-primary mt-2"
-                      onClick={() => {
-                        savePatDetails();
-                      }}
-                    >
-                      Save
-                    </button>
-                  </div>
                 </div>
               </TabPanel>
               <TabPanel value="5">
-                <form
-                  onSubmit={passiveFireProtectionForm.handleSubmit(
-                    submitPassiveFireProtectionForm
-                  )}
-                >
+                <form>
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
@@ -1069,6 +780,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="product"
                           name="product"
+                          disabled
                           placeholder=""
                           {...passiveFireProtectionForm.register("product")}
                         />
@@ -1082,6 +794,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="access"
                           name="access"
+                          disabled
                           placeholder=""
                           {...passiveFireProtectionForm.register("access")}
                         />
@@ -1094,6 +807,7 @@ const UpdateAsset = ({
                           name="material"
                           className="form-control form-select"
                           id="material"
+                          disabled
                           {...passiveFireProtectionForm.register("material")}
                         >
                           <option value="">Select Material</option>
@@ -1109,6 +823,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="service"
                           name="service"
+                          disabled
                           placeholder=""
                           {...passiveFireProtectionForm.register("service")}
                         />
@@ -1122,6 +837,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="dimension"
                           name="dimension"
+                          disabled
                           placeholder=""
                           {...passiveFireProtectionForm.register("dimension")}
                         />
@@ -1134,6 +850,7 @@ const UpdateAsset = ({
                           type="text"
                           className="form-control"
                           id="quantity"
+                          disabled
                           name="quantity"
                           placeholder=""
                           {...passiveFireProtectionForm.register("quantity")}
@@ -1147,26 +864,18 @@ const UpdateAsset = ({
                           type="text"
                           className="form-control"
                           id="area"
+                          disabled
                           name="area"
                           placeholder=""
                           {...passiveFireProtectionForm.register("area")}
                         />
                       </div>
                     </div>
-                    <div>
-                      <button type="submit" className="btn btn-primary mt-2">
-                        Save
-                      </button>
-                    </div>
                   </div>
                 </form>
               </TabPanel>
               <TabPanel value="6">
-                <form
-                  onSubmit={doorSpecificationForm.handleSubmit(
-                    submitDoorSpecificationForm
-                  )}
-                >
+                <form>
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
@@ -1176,6 +885,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="width"
                           name="width"
+                          disabled
                           placeholder=""
                           {...doorSpecificationForm.register("width")}
                         />
@@ -1189,6 +899,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="height"
                           name="height"
+                          disabled
                           placeholder=""
                           {...doorSpecificationForm.register("height")}
                         />
@@ -1201,6 +912,7 @@ const UpdateAsset = ({
                           type="text"
                           className="form-control"
                           id="depth"
+                          disabled
                           name="depth"
                           placeholder=""
                           {...doorSpecificationForm.register("depth")}
@@ -1215,6 +927,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="finish"
                           name="finish"
+                          disabled
                           placeholder=""
                           {...doorSpecificationForm.register("finish")}
                         />
@@ -1227,6 +940,7 @@ const UpdateAsset = ({
                           type="text"
                           className="form-control"
                           id="visionPanel"
+                          disabled
                           name="visionPanel"
                           placeholder=""
                           {...doorSpecificationForm.register("visionPanel")}
@@ -1242,6 +956,7 @@ const UpdateAsset = ({
                           id="fireRating"
                           name="fireRating"
                           placeholder=""
+                          disabled
                           {...doorSpecificationForm.register("fireRating")}
                         />
                       </div>
@@ -1255,6 +970,7 @@ const UpdateAsset = ({
                           id="frameMaterial"
                           name="frameMaterial"
                           placeholder=""
+                          disabled
                           {...doorSpecificationForm.register("frameMaterial")}
                         />
                       </div>
@@ -1268,14 +984,10 @@ const UpdateAsset = ({
                           id="frameFinish"
                           name="frameFinish"
                           placeholder=""
+                          disabled
                           {...doorSpecificationForm.register("frameFinish")}
                         />
                       </div>
-                    </div>
-                    <div>
-                      <button type="submit" className="btn btn-primary mt-2">
-                        Save
-                      </button>
                     </div>
                   </div>
                 </form>
@@ -1304,4 +1016,4 @@ export default connect(mapStateToProps, {
   updatepspDetails,
   updatePatDetails,
   getSiteAssets,
-})(UpdateAsset);
+})(ViewAsset);
