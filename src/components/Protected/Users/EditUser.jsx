@@ -50,7 +50,7 @@ const ViewUsers = ({
     getCompanies();
   }, []);
   const getCompanies = async () => {
-    const url = `/api/user/companies`;
+    const url = `/api/companies/all`;
     let response = await get(url);
     response = response.filter(r=> r!== null)
     setcompanies(response);
@@ -69,7 +69,7 @@ const ViewUsers = ({
         formJson?.userType === "Internal"
           ? Number(formJson?.defaultSiteId)
           : null,
-      company: formJson?.company || null,
+      companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
       status: formJson?.status || null,
     };
@@ -327,7 +327,7 @@ const ViewUsers = ({
                               console.log("newInputValue", newInputValue);
                             setSelectedCompany(newInputValue);
                             }}
-                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
+                            options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
