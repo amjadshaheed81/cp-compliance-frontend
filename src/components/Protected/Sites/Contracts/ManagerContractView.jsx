@@ -97,7 +97,7 @@ const ManagerContractView = ({
     reset({
       ...data,
       manager: data?.projectManagerUserId,
-      company: data?.contractorCompanyName,
+      company: data?.contractorCompanyId ? Number(data?.contractorCompanyId) : '',
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });
@@ -105,7 +105,7 @@ const ManagerContractView = ({
     setCurrentContract(data);
   };
   const getCompanies = async () => {
-    const companiesData = await get(`/api/user/companies`);
+    const companiesData = await get(`/api/companies/all`);
     setCompanies(companiesData);
   };
   useEffect(() => {
@@ -139,7 +139,7 @@ const ManagerContractView = ({
         siteId: siteSelectedForGlobal?.siteId,
         category: data?.category || "",
         subCategory: data?.subCategory || "",
-        contractorCompanyName: data?.company || "",
+        contractorCompanyId: data?.company || "",
         status: currentContract?.status,
         budget: data?.cost,
         cost: data?.cost,
@@ -427,7 +427,7 @@ const ManagerContractView = ({
                             onChange={(event, item) => {
                               setValue("company", item?.key, {shouldValidate: true});
                             }}
-                            options={companies.map((option) => { return { key: option.companyName, label: option.companyName } })}
+                            options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >

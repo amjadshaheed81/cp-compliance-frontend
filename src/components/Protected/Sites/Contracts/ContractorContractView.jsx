@@ -93,14 +93,14 @@ const ContractorContractView = ({
     reset({
       ...data,
       manager: data?.projectManagerUserId,
-      company: data?.contractorCompanyName,
+      company: data?.contractorCompanyId,
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });
     setCurrentContract(data);
   };
   const getCompanies = async () => {
-    const companiesData = await get(`/api/user/companies`);
+    const companiesData = await get(`/api/companies/all`);
     setCompanies(companiesData);
   };
   useEffect(() => {

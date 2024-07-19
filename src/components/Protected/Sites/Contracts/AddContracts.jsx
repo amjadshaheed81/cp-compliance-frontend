@@ -75,7 +75,7 @@ const AddContracts = ({
     }
   }, []);
   const getCompanies = async () => {
-    const companiesData = await get(`/api/user/companies`);
+    const companiesData = await get(`/api/companies/all`);
     setCompanies(companiesData);
   };
   useEffect(() => {
@@ -102,7 +102,7 @@ const AddContracts = ({
         siteId: siteSelectedForGlobal?.siteId,
         category: data?.category || "",
         subCategory: data?.subCategory || "",
-        contractorCompanyName: data?.company || "",
+        contractorCompanyId: data?.company || "",
         status: "Active",
         budget: data?.cost,
         cost: data?.cost,
@@ -291,7 +291,7 @@ const AddContracts = ({
                           }}
                           options={companies.map((option) => {
                             return {
-                              key: option.companyName,
+                              key: option.companyId,
                               label: option.companyName,
                             };
                           })}
