@@ -18,7 +18,7 @@ const NotAuthorized = () => {
         You do not have permission to view this page.
       </Typography>
       <Button variant="contained" color="primary" onClick={handleRedirect}>
-        Go to Login
+        Go Back
       </Button>
     </Container>
   );

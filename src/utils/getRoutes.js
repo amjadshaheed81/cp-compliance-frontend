@@ -114,7 +114,7 @@ export const getRoutes = () => {
     {
       path: "/user-management",
       element: <Users />,
-      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/assets",
