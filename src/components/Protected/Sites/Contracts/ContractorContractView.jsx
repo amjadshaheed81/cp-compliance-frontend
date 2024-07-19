@@ -578,7 +578,7 @@ const ContractorContractView = ({
                           <td>
                             <a
                               target="_blank"
-                              href={`/#/update-asset?assetId=${itm?.assetId}`}
+                              href={`/#/view-asset?assetId=${itm?.assetId}`}
                             >
                               <i className="fas fa-eye"></i>
                             </a>
