@@ -18,6 +18,7 @@ import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from 'react-toastify';
 import Pagination from "../../common/Pagination/Pagination";
+import { ROLE } from "../../../Constant/Role";
 
 const Sites = ({
   filterSite,
@@ -27,6 +28,7 @@ const Sites = ({
   setFilterSite,
   updateSiteData,
   selectGlobalSite,
+  loggedInUserData,
 }) => {
   const [selectedItem, setSelectedItem] = useState("status");
   const [sitesPerPage] = useState(10);
@@ -185,24 +187,28 @@ const Sites = ({
                     <option value="sold">Sold</option>
                   </select>
                 </div>
-                <div className="col">
-                  <CSVLink
-                    filename={"site-lists"}
-                    className="btn btn-light bg-white text-primary"
-                    data={sites}
-                  >
-                    <i className="fas fa-download"></i>&nbsp;Export
-                  </CSVLink>
-                </div>
+                {loggedInUserData?.role === ROLE.ADMIN && (
+                  <div className="col">
+                    <CSVLink
+                      filename={"site-lists"}
+                      className="btn btn-light bg-white text-primary"
+                      data={sites}
+                    >
+                      <i className="fas fa-download"></i>&nbsp;Export
+                    </CSVLink>
+                  </div>
+                )}
               </div>
             </div>
             <div className="ms-auto p-2 bd-highlight">
-              <button
-                className="btn btn-primary text-white"
-                onClick={() => goTo("/add-site")}
-              >
-                <i className="fas fa-plus"></i>&nbsp; Create New Site
-              </button>
+              {loggedInUserData?.role === ROLE.ADMIN && (
+                <button
+                  className="btn btn-primary text-white"
+                  onClick={() => goTo("/add-site")}
+                >
+                  <i className="fas fa-plus"></i>&nbsp; Create New Site
+                </button>
+              )}
             </div>
           </div>
           {/* row start*/}
@@ -227,9 +233,12 @@ const Sites = ({
                 {currentSites?.map((itm, i) => (
                   <tr key={i}>
                     <th scope="col">
-                      <span className="text-primary cursor" onClick={() => {
-                        selectGlobalSite(itm);
-                      }}>
+                      <span
+                        className="text-primary cursor"
+                        onClick={() => {
+                          selectGlobalSite(itm);
+                        }}
+                      >
                         {itm?.siteName}
                       </span>
                     </th>
@@ -264,28 +273,34 @@ const Sites = ({
                         </button>{" "}
                       </Tooltip>
                       &nbsp;
-                      <Tooltip title={`Edit ${itm?.siteName}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            setTimeout(() => {
-                              goTo(`/update-site?siteId=${itm?.siteId}&isViewMode=edit`);
-                            }, 1000);
-                            updateSiteData({ ...itm, isViewMode: false });
-                          }}
-                        >
-                          <i className="fas fa-pen"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      &nbsp;
-                      <Tooltip title={`Delete ${itm?.siteName}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light text-danger"
-                          onClick={() => deleteSiteById(itm)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </Tooltip>
+                      {loggedInUserData?.role === ROLE.ADMIN && (
+                        <Fragment>
+                          <Tooltip title={`Edit ${itm?.siteName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                setTimeout(() => {
+                                  goTo(
+                                    `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
+                                  );
+                                }, 1000);
+                                updateSiteData({ ...itm, isViewMode: false });
+                              }}
+                            >
+                              <i className="fas fa-pen"></i>
+                            </button>{" "}
+                          </Tooltip>
+                          &nbsp;
+                          <Tooltip title={`Delete ${itm?.siteName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light text-danger"
+                              onClick={() => deleteSiteById(itm)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </Tooltip>
+                        </Fragment>
+                      )}
                     </th>
                   </tr>
                 ))}
@@ -295,10 +310,10 @@ const Sites = ({
           {/* row end*/}
           <div className="row">
             <Pagination
-                totalPages={Math.ceil(filterSite.length / sitesPerPage)}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-              />
+              totalPages={Math.ceil(filterSite.length / sitesPerPage)}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </div>
@@ -310,6 +325,7 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   sites: state.site.sites,
   filterSite: state.site.filterSite,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   getSites,
