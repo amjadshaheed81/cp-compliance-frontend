@@ -36,6 +36,7 @@ const MandatoryFolders = ({
 
   const handleFolderClose = () => {
     setFolderOpen(false);
+    setFilteredFolders(rootFolder?.parentFolders || []);
   };
 
   const handleRemoveFolder = (id) => {

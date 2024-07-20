@@ -403,55 +403,63 @@ const ManagerContractView = ({
                           />
                         )}
                       </div>
-                        <div className="col-md-3">
-                          <label for="subCategory">Sub Category</label>
-                          <select
-                            name="subCategory"
-                            className="form-control form-select"
-                            id="subCategory"
-                            {...register("subCategory", {
-                              required: {
-                                value: true,
-                                message: `Please select sub category`,
-                              },
-                            })}
-                          >
-                            <option value="" selected disabled>
-                              Select sub category
+                      <div className="col-md-3">
+                        <label for="subCategory">Sub Category</label>
+                        <select
+                          name="subCategory"
+                          className="form-control form-select"
+                          id="subCategory"
+                          {...register("subCategory", {
+                            required: {
+                              value: true,
+                              message: `Please select sub category`,
+                            },
+                          })}
+                        >
+                          <option value="" selected disabled>
+                            Select sub category
+                          </option>
+                          {subCategoryListData?.map((itm) => (
+                            <option value={itm?.lovValue}>
+                              {itm?.lovValue}
                             </option>
-                            {subCategoryListData?.map((itm) => (
-                              <option value={itm?.lovValue}>
-                                {itm?.lovValue}
-                              </option>
-                            ))}
-                          </select>
-                          {errors?.subCategory && (
-                            <InputError
-                              message={errors?.subCategory?.message}
-                              key={errors?.subCategory?.message}
-                            />
-                          )}
-                        </div>
+                          ))}
+                        </select>
+                        {errors?.subCategory && (
+                          <InputError
+                            message={errors?.subCategory?.message}
+                            key={errors?.subCategory?.message}
+                          />
+                        )}
+                      </div>
                       <div className="col-md-3">
                         <label for="company">Company</label>
                         <Autocomplete
-                            id="leadUserID"
-                            onChange={(event, item) => {
-                              setValue("company", item?.key, {shouldValidate: true});
-                            }}
-                            value={getSelectedValue()}
-                            options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
-                            getOptionLabel={(option) => option.label}
-                            renderInput={(params) => (
-                              <div ref={params.InputProps.ref} >
-                                <input type="text"
-                                  {...params.inputProps}
-                                  className="form-control"
-                                  placeholder="Select Company"
-                                />
-                              </div>
-                            )}
-                          />
+                          id="leadUserID"
+                          onChange={(event, item) => {
+                            setValue("company", item?.key, {
+                              shouldValidate: true,
+                            });
+                          }}
+                          value={getSelectedValue()}
+                          options={companies.map((option) => {
+                            return {
+                              key: option.companyId,
+                              label: option.companyName,
+                            };
+                          })}
+                          getOptionLabel={(option) => option.label}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <input
+                                type="text"
+                                {...params.inputProps}
+                                className="form-control"
+                                placeholder="Select Company"
+                              />
+                            </div>
+                          )}
+                        />
                         {errors?.company && (
                           <InputError
                             message={errors?.company?.message}
@@ -639,7 +647,7 @@ const ManagerContractView = ({
                                     onClick={(e) => {
                                       e?.preventDefault();
                                       let d = [];
-                                      if(assetData) {
+                                      if (assetData) {
                                         d = [...assetData];
                                       }
                                       d.push({
@@ -687,17 +695,20 @@ const ManagerContractView = ({
                             {...scheduleDateForm.register("scheduleDate")}
                           />
                         </div>
-                        <div>
-                          <Tooltip title={`Add New Visit`} arrow>
-                            <button
-                              type="button"
-                              className="mt-2 btn btn-sm btn-light text-primary"
-                              onClick={() => addVisit()}
-                            >
-                              <i className="fas fa-plus"></i>&nbsp;Add New Visit
-                            </button>
-                          </Tooltip>
-                        </div>
+                        {currentContract?.status !== "TERMINATED" && (
+                          <div>
+                            <Tooltip title={`Add New Visit`} arrow>
+                              <button
+                                type="button"
+                                className="mt-2 btn btn-sm btn-light text-primary"
+                                onClick={() => addVisit()}
+                              >
+                                <i className="fas fa-plus"></i>&nbsp;Add New
+                                Visit
+                              </button>
+                            </Tooltip>
+                          </div>
+                        )}
                       </div>
                       <div className="col-6">
                         <div className="table-responsive mt-2">
@@ -741,15 +752,18 @@ const ManagerContractView = ({
                                     </td>
                                     <td>{itm?.status}</td>
                                     <td>
-                                      <Tooltip title={`Delete Visit`} arrow>
-                                        <button
-                                          type="button"
-                                          className="btn btn-sm btn-light text-danger"
-                                          onClick={() => deleteVisit(itm)}
-                                        >
-                                          <i className="fas fa-trash"></i>
-                                        </button>
-                                      </Tooltip>
+                                      {currentContract?.status !==
+                                        "TERMINATED" && (
+                                        <Tooltip title={`Delete Visit`} arrow>
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-light text-danger"
+                                            onClick={() => deleteVisit(itm)}
+                                          >
+                                            <i className="fas fa-trash"></i>
+                                          </button>
+                                        </Tooltip>
+                                      )}
                                       &nbsp;
                                       {itm?.status ===
                                         "Reschedule Requested" && (
@@ -785,16 +799,20 @@ const ManagerContractView = ({
               <Button onClick={handleClose} className="bg-light text-primary">
                 Close
               </Button>
-              <Button
-                type="button"
-                onClick={terminateContract}
-                className="bg-danger text-white"
-              >
-                Terminate Contract
-              </Button>
-              <Button type="submit" className="bg-primary text-white">
-                Save
-              </Button>
+              {currentContract?.status !== "TERMINATED" && (
+                <>
+                  <Button
+                    type="button"
+                    onClick={terminateContract}
+                    className="bg-danger text-white"
+                  >
+                    Terminate Contract
+                  </Button>
+                  <Button type="submit" className="bg-primary text-white">
+                    Save
+                  </Button>
+                </>
+              )}
             </DialogActions>
           )}
         </form>
