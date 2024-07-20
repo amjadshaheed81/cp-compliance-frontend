@@ -93,14 +93,14 @@ const ContractorContractView = ({
     reset({
       ...data,
       manager: data?.projectManagerUserId,
-      company: data?.contractorCompanyName,
+      company: Number(data?.contractorCompanyId),
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });
     setCurrentContract(data);
   };
   const getCompanies = async () => {
-    const companiesData = await get(`/api/user/companies`);
+    const companiesData = await get(`/api/companies/all`);
     setCompanies(companiesData);
   };
   useEffect(() => {
@@ -157,7 +157,7 @@ const ContractorContractView = ({
       //uploadDocumentFile(data, folderId);
       setTimeout(() => {
         getContractDetail();
-      }, 1000)
+      }, 1000);
     } catch (e) {}
     setIsLoading(false);
     toast.success("File uploaded successfully");
@@ -342,33 +342,13 @@ const ContractorContractView = ({
                       </div>
                       <div className="col-md-3 mt-2">
                         <label for="company">Company</label>
-                        <select
-                          name="company"
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="contractorCompanyName"
                           disabled
-                          className="form-control form-select"
-                          id="company"
-                          {...register("company", {
-                            required: {
-                              value: true,
-                              message: `Please select company`,
-                            },
-                          })}
-                        >
-                          <option value="" selected disabled>
-                            Select company
-                          </option>
-                          {companies?.map((itm) => (
-                            <option value={itm?.userId}>
-                              {itm?.companyName}
-                            </option>
-                          ))}
-                        </select>
-                        {errors?.company && (
-                          <InputError
-                            message={errors?.company?.message}
-                            key={errors?.company?.message}
-                          />
-                        )}
+                          {...register("contractorCompanyName")}
+                        />
                       </div>
                       <div className="col-md-3 mt-2">
                         <div className="form-group">
@@ -578,7 +558,7 @@ const ContractorContractView = ({
                           <td>
                             <a
                               target="_blank"
-                              href={`/#/update-asset?assetId=${itm?.assetId}`}
+                              href={`/#/view-asset?assetId=${itm?.assetId}`}
                             >
                               <i className="fas fa-eye"></i>
                             </a>

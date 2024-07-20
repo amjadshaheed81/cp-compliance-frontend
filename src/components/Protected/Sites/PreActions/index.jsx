@@ -13,8 +13,9 @@ import { useNavigate } from "react-router-dom";
 import AddPreActions from "./AddPreActions";
 import { get } from "../../../../api";
 import { deletePreAction } from "../../../../store/thunk/preActions";
+import { ROLE } from "../../../../Constant/Role";
 
-const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
+const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) => {
   const [filteredPreActions, setFilteredPreActions] = useState([]);
   const [preActions, setPreActions] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -169,29 +170,33 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
             </div>
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
-                  <Tooltip title={`Create New`} arrow>
-                    <button
-                      className="btn btn-primary text-white pr-2"
-                      onClick={() => {
-                        setShowAddModal(true);
-                      }}
-                    >
-                      <i className="fas fa-plus"></i>
-                    </button>
-                  </Tooltip>
-                </div>
-                <div className="col">
-                  <CSVLink
-                    filename={"pre-action-list"}
-                    className="btn btn-light bg-white text-primary"
-                    data={filteredPreActions}
-                  >
-                    <Tooltip title={`Export`} arrow>
-                      <i className="fas fa-download"></i>
-                    </Tooltip>
-                  </CSVLink>
-                </div>
+                {loggedInUserData?.role !== ROLE.SITE_USERS && (
+                  <Fragment>
+                    <div className="col">
+                      <Tooltip title={`Create New`} arrow>
+                        <button
+                          className="btn btn-primary text-white pr-2"
+                          onClick={() => {
+                            setShowAddModal(true);
+                          }}
+                        >
+                          <i className="fas fa-plus"></i>
+                        </button>
+                      </Tooltip>
+                    </div>
+                    <div className="col">
+                      <CSVLink
+                        filename={"pre-action-list"}
+                        className="btn btn-light bg-white text-primary"
+                        data={filteredPreActions}
+                      >
+                        <Tooltip title={`Export`} arrow>
+                          <i className="fas fa-download"></i>
+                        </Tooltip>
+                      </CSVLink>
+                    </div>
+                  </Fragment>
+                )}
               </div>
             </div>
           </div>
@@ -222,7 +227,8 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
                     <th scope="col">{action?.raisedByUserName}</th>
                     <th scope="col">{action?.description}</th>
                     <th scope="col">
-                      {action?.category} &gt; {action?.floor} &gt; {action?.room}
+                      {action?.category} &gt; {action?.floor} &gt;{" "}
+                      {action?.room}
                     </th>
                     <th scope="col">
                       {moment(action?.raisedDate).format("DD-MM-YYYY")}
@@ -245,54 +251,48 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
                           <i className="fas fa-eye"></i>
                         </button>{" "}
                       </Tooltip>
-                      {/* <Tooltip title={`Edit ${action?.actionId}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            goTo(`/pre-action-detail?id=${action?.actionId}&viewMode=editOnly`);
-                          }}
-                        >
-                          <i className="fas fa-pen"></i>
-                        </button>{" "}
-                      </Tooltip> */}
-                      <Tooltip
-                        title={`${action?.actionId} mark as approve`}
-                        arrow
-                      >
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            goTo(
-                              `/pre-action-detail?id=${action?.actionId}&viewMode=markApproved`
-                            );
-                          }}
-                        >
-                          <i className="fas fa-check"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip
-                        title={`${action?.actionId} mark as closed`}
-                        arrow
-                      >
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            goTo(
-                              `/pre-action-detail?id=${action?.actionId}&viewMode=markClosed`
-                            );
-                          }}
-                        >
-                          <i className="fas fa-window-close"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip title={`Delete ${action?.actionId}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light text-dark"
-                          onClick={() => deleteActionCall(action)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>{" "}
-                      </Tooltip>
+                      {loggedInUserData?.role !== ROLE.SITE_USERS && (
+                        <Fragment>
+                          <Tooltip
+                            title={`${action?.actionId} mark as approve`}
+                            arrow
+                          >
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                goTo(
+                                  `/pre-action-detail?id=${action?.actionId}&viewMode=markApproved`
+                                );
+                              }}
+                            >
+                              <i className="fas fa-check"></i>
+                            </button>{" "}
+                          </Tooltip>
+                          <Tooltip
+                            title={`${action?.actionId} mark as closed`}
+                            arrow
+                          >
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                goTo(
+                                  `/pre-action-detail?id=${action?.actionId}&viewMode=markClosed`
+                                );
+                              }}
+                            >
+                              <i className="fas fa-window-close"></i>
+                            </button>{" "}
+                          </Tooltip>
+                          <Tooltip title={`Delete ${action?.actionId}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light text-dark"
+                              onClick={() => deleteActionCall(action)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>{" "}
+                          </Tooltip>
+                        </Fragment>
+                      )}
                     </th>
                   </tr>
                 ))}
@@ -302,10 +302,12 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
           {/* row end*/}
           <div className="row">
             <Pagination
-                totalPages={Math.ceil(filteredPreActions.length / preActionsPerPage)}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-              />
+              totalPages={Math.ceil(
+                filteredPreActions.length / preActionsPerPage
+              )}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </div>
@@ -313,6 +315,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction }) => {
   );
 };
 const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, { deletePreAction })(PreActions);

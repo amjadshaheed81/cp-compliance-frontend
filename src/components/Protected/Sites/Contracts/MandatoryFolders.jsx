@@ -11,6 +11,7 @@ import {
 import { connect } from "react-redux";
 import { getDocumentsRootFolder } from "../../../../store/thunk/site";
 import { toast } from "react-toastify";
+import { get } from "../../../../api";
 
 const MandatoryFolders = ({
   getDocumentsRootFolder,
@@ -20,7 +21,10 @@ const MandatoryFolders = ({
   siteSelectedForGlobal,
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
-
+  const [filteredFolders, setFilteredFolders] = useState([]);
+  useEffect(() => {
+    setFilteredFolders(rootFolder?.parentFolders || []);
+  }, [rootFolder]);
   useEffect(() => {
     getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
   }, [getDocumentsRootFolder, siteSelectedForGlobal]);
@@ -32,6 +36,7 @@ const MandatoryFolders = ({
 
   const handleFolderClose = () => {
     setFolderOpen(false);
+    setFilteredFolders(rootFolder?.parentFolders || []);
   };
 
   const handleRemoveFolder = (id) => {
@@ -41,7 +46,6 @@ const MandatoryFolders = ({
   };
 
   const handleAddFolder = (folder) => {
-    console.log("folder", folder);
     const isFolderAlreadySelected = selectedMandatoryFolder?.filter(itm => itm?.id === folder?.id);
     if(isFolderAlreadySelected?.length > 0) {
       toast.warn(`${folder?.name} is already selected`);
@@ -49,7 +53,17 @@ const MandatoryFolders = ({
       setSelectedMandatoryFolder((prev) => [...prev, folder]);
     }
   };
-
+  const checkSubFolder = async (folderId) => {
+    const res = await get(`/api/document/parent/${folderId}/folders`);
+    if(res?.document?.childFolders?.length > 0) {
+      setFilteredFolders(res?.document?.childFolders || []);
+    } else {
+      toast.warn("There is no sub folders available for selected parent folder.")
+    }
+  };
+  const goToRootFolder = () => {
+    setFilteredFolders(rootFolder?.parentFolders || []);
+  }
   return (
     <>
       <div className="row mb-2" style={{ height: "auto" }}>
@@ -86,12 +100,8 @@ const MandatoryFolders = ({
           <form className="row border-top">
             <div className="col-md-12 p-2 border-top">
               <div className="float-end">
-                <Button type="button" className="btn btn-light text-primary">
+                <Button type="button" className="btn btn-light text-primary" onClick={() => goToRootFolder()}>
                   <i className="fas fa-home"></i> Root
-                </Button>
-                &nbsp; &nbsp;
-                <Button type="button" className="btn btn-light text-primary">
-                  <i className="fas fa-arrow-left"></i> Back
                 </Button>
               </div>
             </div>
@@ -104,14 +114,19 @@ const MandatoryFolders = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {rootFolder?.parentFolders?.map((folder) => (
+                  {
+                    filteredFolders?.length === 0 && <tr>
+                      <td colSpan={2}>No Result Found</td>
+                    </tr>
+                  }
+                  {filteredFolders?.map((folder) => (
                     <tr key={folder.id}>
                       <td>
                         <i
                           style={{ color: "#384BD3" }}
                           className="fas fa-folder fa-2x"
                         ></i>
-                        <span className="p-3">{folder.name}</span>
+                        <span className="p-3 text-primary cursor" onClick={() => checkSubFolder(folder.id)}>{folder.name}</span>
                       </td>
                       <td>
                         <span

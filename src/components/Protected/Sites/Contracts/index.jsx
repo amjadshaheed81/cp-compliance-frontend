@@ -113,8 +113,8 @@ const Contracts = ({
       setContractList(projects?.projectContracts || []);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       let url = isSiteSelectedForContractor
-        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&companyName=${loggedInUserData?.company}`
-        : `/api/project/contracts?companyName=${loggedInUserData?.company}`;
+        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorCompanyId=${loggedInUserData?.companyId}`
+        : `/api/project/contracts?contractorCompanyId=${loggedInUserData?.companyId}`;
       const projects = await get(url);
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);
@@ -289,36 +289,37 @@ const Contracts = ({
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
                 {isManagerAdminLogin(loggedInUserData) && (
-                  <div className="col">
+                  <>
                     <div className="col">
-                      <Tooltip title={`Create New`} arrow>
-                        <button
-                          className="btn btn-primary text-white pr-2"
-                          onClick={() => {
-                            setShowAddModal(true);
-                          }}
-                        >
-                          <i className="fas fa-plus"></i>
-                        </button>
-                      </Tooltip>
+                      <div className="col">
+                        <Tooltip title={`Create New`} arrow>
+                          <button
+                            className="btn btn-primary text-white pr-2"
+                            onClick={() => {
+                              setShowAddModal(true);
+                            }}
+                          >
+                            <i className="fas fa-plus"></i>
+                          </button>
+                        </Tooltip>
+                      </div>
                     </div>
-                  </div>
+                    <div className="col">
+                      <div className="col">
+                        <CSVLink
+                          filename={"contracts-lists"}
+                          className="btn btn-light bg-white text-primary"
+                          data={filteredContractList}
+                        >
+                          {" "}
+                          <Tooltip title={`Export`} arrow>
+                            <i className="fas fa-download"></i>
+                          </Tooltip>
+                        </CSVLink>
+                      </div>
+                    </div>
+                  </>
                 )}
-
-                <div className="col">
-                  <div className="col">
-                    <CSVLink
-                      filename={"contracts-lists"}
-                      className="btn btn-light bg-white text-primary"
-                      data={filteredContractList}
-                    >
-                      {" "}
-                      <Tooltip title={`Export`} arrow>
-                        <i className="fas fa-download"></i>
-                      </Tooltip>
-                    </CSVLink>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
