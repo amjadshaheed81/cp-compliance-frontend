@@ -261,7 +261,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
                       {moment(user?.creationDate).format("DD-MM-YYYY")}
                     </th>
                     <th scope="col">{user?.userType}</th>
-                    <th scope="col">{user?.company}</th>
+                    <th scope="col">{user?.companyName}</th>
                     <th scope="col">{user?.status}</th>
                     <th scope="col">
                       <Tooltip title={`View ${user?.name}`} arrow>

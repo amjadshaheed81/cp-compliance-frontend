@@ -113,8 +113,8 @@ const Contracts = ({
       setContractList(projects?.projectContracts || []);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       let url = isSiteSelectedForContractor
-        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&companyId=${loggedInUserData?.companyId}`
-        : `/api/project/contracts?companyId=${loggedInUserData?.companyId}`;
+        ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorCompanyId=${loggedInUserData?.companyId}`
+        : `/api/project/contracts?contractorCompanyId=${loggedInUserData?.companyId}`;
       const projects = await get(url);
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);

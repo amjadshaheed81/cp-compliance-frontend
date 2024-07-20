@@ -35,17 +35,18 @@ const ViewUsers = ({
     watch,
     formState: { errors },
     handleSubmit,
+    getValues,
   } = useForm({});
   const values = watch();
   useEffect(() => {
-    console.log("selectedUser", selectedUser);
     const name = selectedUser?.name?.split(" ");
     reset({
       ...selectedUser,
       firstName: name?.[0] || "",
       lastName: name?.[1] || "",
-      isCompany: selectedUser?.company ? true : false,
+      isCompany: selectedUser?.companyId ? true : false,
     });
+    setSelectedCompany(selectedUser?.companyId);
     getSites();
     getCompanies();
   }, []);
@@ -93,6 +94,17 @@ const ViewUsers = ({
       setIsLoading(false);
     }
   };
+  const getSelectedValue = () => {
+    const selectedValue = companies.find(
+      (itm) =>
+        itm.companyId ===
+       selectedCompany
+    ) || null;
+    if (selectedValue) {
+      return { key: selectedValue?.companyId, label: selectedValue?.companyName};
+    }
+    return null;
+  }
   return (
     <React.Fragment>
       <Dialog
@@ -319,12 +331,11 @@ const ViewUsers = ({
                         <Autocomplete
                             id="leadUserID"
                             onChange={(event, item) => {
-                              console.log("item", item);
                               setSelectedCompany(item?.key);
                             }}
                             freeSolo
+                            value={getSelectedValue()}
                             onInputChange={(event, newInputValue) => {
-                              console.log("newInputValue", newInputValue);
                             setSelectedCompany(newInputValue);
                             }}
                             options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
