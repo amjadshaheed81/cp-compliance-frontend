@@ -10,6 +10,7 @@ import { deleteSiteAsset, getSiteAssets } from "../../../../store/thunk/site";
 import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
+import Pagination from "../../../common/Pagination/Pagination";
 
 const Summary = ({
   siteAssets,
@@ -24,6 +25,18 @@ const Summary = ({
   const [selectedAsset, setSelectedAsset] = useState({});
   const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [preActionsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const indexOfLastPreAction = currentPage * preActionsPerPage;
+  const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
+  const currentSiteAssets = filteredSiteAssets.slice(
+    indexOfFirstPreAction,
+    indexOfLastPreAction
+  );
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
   useEffect(() => {
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getCategory();
@@ -248,102 +261,110 @@ const Summary = ({
         </div>
       </div>
       {/* row start*/}
-      <div className="row p-2"></div>
-      <div className="col-md-12 table-responsive">
-        <table className="table">
-          <thead className="table-dark">
-            <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  disabled
-                  onChange={handleSelectAllChange}
-                  checked={selectedItems.length === filteredSiteAssets.length}
-                />
-              </th>
-              <th scope="col">Asset Name</th>
-              <th scope="col">Manufacturer</th>
-              <th scope="col">Category</th>
-              <th scope="col">Location</th>
-              <th scope="col">Passive Fire Sch</th>
-              <th scope="col">PAT Item</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSiteAssets?.length === 0 && (
+      <div className="row p-2">
+        <div className="col-md-12 table-responsive">
+          <table className="table">
+            <thead className="table-dark">
               <tr>
-                <td>No Result Found !!</td>
-              </tr>
-            )}
-            {filteredSiteAssets?.map((asset) => (
-              <tr key={asset?.assetId}>
                 <th>
                   <input
                     type="checkbox"
                     className="form-check-input"
-                    onChange={(e) => handleCheckboxChange(e, asset)}
-                    checked={selectedItems.some(
-                      (item) => item.assetId === asset.assetId
-                    )}
+                    disabled
+                    onChange={handleSelectAllChange}
+                    checked={selectedItems.length === filteredSiteAssets.length}
                   />
                 </th>
-                <th scope="col">{asset?.assetName}</th>
-                <th scope="col">{asset?.manufacturer}</th>
-                <th scope="col">{asset?.category}</th>
-                <th scope="col">{asset?.location}</th>
-                <th scope="col">{asset?.passiveFireSch ? "YES" : "NO"}</th>
-                <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
-                <th scope="col">
-                  <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button
-                      className="btn btn-sm btn-light"
-                      onClick={() => {
-                        goTo(`/view-asset?assetId=${asset?.assetId}`);
-                      }}
-                    >
-                      <i className="fas fa-eye"></i>
-                    </button>{" "}
-                  </Tooltip>
-                  <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                    <button
-                      className="btn btn-sm btn-light"
-                      onClick={() => {
-                        goTo(`/update-asset?assetId=${asset?.assetId}`);
-                      }}
-                    >
-                      <i className="fas fa-pen"></i>
-                    </button>{" "}
-                  </Tooltip>
-                  <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                    <QRCodeSVG
-                      onClick={() => {
-                        setShowAddModal(true);
-                        setSelectedAsset(asset);
-                      }}
-                      value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
-                      style={{
-                        height: "30px",
-                        width: "30px",
-                        margin: "0px 6px",
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </Tooltip>
-                  <Tooltip title={`Delete ${asset.assetName}`} arrow>
-                    <button
-                      className="btn btn-sm btn-light text-danger"
-                      onClick={() => deleteAsset(asset)}
-                    >
-                      <i className="fas fa-trash"></i>
-                    </button>{" "}
-                  </Tooltip>
-                </th>
+                <th scope="col">Asset Name</th>
+                <th scope="col">Manufacturer</th>
+                <th scope="col">Category</th>
+                <th scope="col">Location</th>
+                <th scope="col">Passive Fire Sch</th>
+                <th scope="col">PAT Item</th>
+                <th scope="col">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {currentSiteAssets?.length === 0 && (
+                <tr>
+                  <td>No Result Found !!</td>
+                </tr>
+              )}
+              {currentSiteAssets?.map((asset) => (
+                <tr key={asset?.assetId}>
+                  <th>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      onChange={(e) => handleCheckboxChange(e, asset)}
+                      checked={selectedItems.some(
+                        (item) => item.assetId === asset.assetId
+                      )}
+                    />
+                  </th>
+                  <th scope="col">{asset?.assetName}</th>
+                  <th scope="col">{asset?.manufacturer}</th>
+                  <th scope="col">{asset?.category}</th>
+                  <th scope="col">{asset?.location}</th>
+                  <th scope="col">{asset?.passiveFireSch ? "YES" : "NO"}</th>
+                  <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
+                  <th scope="col">
+                    <Tooltip title={`View ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/view-asset?assetId=${asset?.assetId}`);
+                        }}
+                      >
+                        <i className="fas fa-eye"></i>
+                      </button>{" "}
+                    </Tooltip>
+                    <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/update-asset?assetId=${asset?.assetId}`);
+                        }}
+                      >
+                        <i className="fas fa-pen"></i>
+                      </button>{" "}
+                    </Tooltip>
+                    <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                      <QRCodeSVG
+                        onClick={() => {
+                          setShowAddModal(true);
+                          setSelectedAsset(asset);
+                        }}
+                        value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
+                        style={{
+                          height: "30px",
+                          width: "30px",
+                          margin: "0px 6px",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title={`Delete ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light text-danger"
+                        onClick={() => deleteAsset(asset)}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>{" "}
+                    </Tooltip>
+                  </th>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="row">
+        <Pagination
+          totalPages={Math.ceil(filteredSiteAssets.length / preActionsPerPage)}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+        />
       </div>
       {/* row end*/}
     </Fragment>

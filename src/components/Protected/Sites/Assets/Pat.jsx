@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
+import Pagination from "../../../common/Pagination/Pagination";
 
 const Pat = ({
   sitePATItems,
@@ -27,6 +28,18 @@ const Pat = ({
   const [selectedAsset, setSelectedAsset] = useState({});
   const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [preActionsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const indexOfLastPreAction = currentPage * preActionsPerPage;
+  const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
+  const currentSiteAssets = filteredSitePATItems.slice(
+    indexOfFirstPreAction,
+    indexOfLastPreAction
+  );
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
   useEffect(() => {
     if (sitePATItems) {
       setFilteredSitePATItems(sitePATItems);
@@ -122,7 +135,7 @@ const Pat = ({
       toast.warn("Please select only one asset.");
     } else {
       setSelectedAssetForClone(selectedItems[0]);
-      setShowCloneModal(true)
+      setShowCloneModal(true);
     }
   };
   const handleCheckboxChange = (e, asset) => {
@@ -238,104 +251,119 @@ const Pat = ({
         </div>
       </div>
       {/* row start*/}
-      <div className="row p-2"></div>
-      <div className="col-md-12 table-responsive">
-        <table className="table">
-          <thead className="table-dark">
-            <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  disabled
-                  onChange={handleSelectAllChange}
-                  className="form-check-input"
-                  checked={selectedItems.length === filteredSitePATItems.length}
-                />
-              </th>
-              <th scope="col">Asset Name</th>
-              <th scope="col">Manufactrurer</th>
-              <th scope="col">Category</th>
-              <th scope="col">Location</th>
-              <th scope="col">Date Tested</th>
-              <th scope="col">Next Test</th>
-              <th scope="col">Status</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSitePATItems?.length === 0 && (
+      <div className="row p-2">
+        <div className="col-md-12 table-responsive">
+          <table className="table">
+            <thead className="table-dark">
               <tr>
-                <td>No Result Found !!</td>
-              </tr>
-            )}
-            {filteredSitePATItems?.map((asset) => (
-              <tr key={asset?.id}>
                 <th>
                   <input
                     type="checkbox"
+                    disabled
+                    onChange={handleSelectAllChange}
                     className="form-check-input"
-                    onChange={(e) => handleCheckboxChange(e, asset)}
-                    checked={selectedItems.some(
-                      (item) => item.assetId === asset.assetId
-                    )}
+                    checked={
+                      selectedItems.length === filteredSitePATItems.length
+                    }
                   />
                 </th>
-                <th scope="col">{asset?.assetName}</th>
-                <th scope="col">{asset?.manufacturer}</th>
-                <th scope="col">{asset?.category}</th>
-                <th scope="col">{asset?.location}</th>
-                <th scope="col">{asset?.dateTested}</th>
-                <th scope="col">{asset?.nextTest}</th>
-                <th scope="col">{asset?.status}</th>
-                <th scope="col">
-                  <Tooltip title={`View ${asset.assetName}`} arrow>
-                    <button
-                      className="btn btn-sm btn-light"
-                      onClick={() => {
-                        goTo(`/view-asset?assetId=${asset?.assetId}`);
-                      }}
-                    >
-                      <i className="fas fa-eye"></i>
-                    </button>{" "}
-                  </Tooltip>
-                  <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                    <button
-                      className="btn btn-sm btn-light"
-                      onClick={() => {
-                        goTo(`/update-asset?assetId=${asset?.assetId}`);
-                      }}
-                    >
-                      <i className="fas fa-pen"></i>
-                    </button>{" "}
-                  </Tooltip>
-                  <Tooltip title={`View QR Code for ${asset.assetName}`} arrow>
-                    <QRCodeSVG
-                      onClick={() => {
-                        setShowAddModal(true);
-                        setSelectedAsset(asset);
-                      }}
-                      value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
-                      style={{
-                        height: "30px",
-                        width: "30px",
-                        margin: "0px 6px",
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </Tooltip>
-                  <Tooltip title={`Delete ${asset.assetName}`} arrow>
-                    <button
-                      className="btn btn-sm btn-light text-danger"
-                      onClick={() => deleteAsset(asset)}
-                    >
-                      <i className="fas fa-trash"></i>
-                    </button>{" "}
-                  </Tooltip>
-                </th>
+                <th scope="col">Asset Name</th>
+                <th scope="col">Manufactrurer</th>
+                <th scope="col">Category</th>
+                <th scope="col">Location</th>
+                <th scope="col">Date Tested</th>
+                <th scope="col">Next Test</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {currentSiteAssets?.length === 0 && (
+                <tr>
+                  <td>No Result Found !!</td>
+                </tr>
+              )}
+              {currentSiteAssets?.map((asset) => (
+                <tr key={asset?.id}>
+                  <th>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      onChange={(e) => handleCheckboxChange(e, asset)}
+                      checked={selectedItems.some(
+                        (item) => item.assetId === asset.assetId
+                      )}
+                    />
+                  </th>
+                  <th scope="col">{asset?.assetName}</th>
+                  <th scope="col">{asset?.manufacturer}</th>
+                  <th scope="col">{asset?.category}</th>
+                  <th scope="col">{asset?.location}</th>
+                  <th scope="col">{asset?.dateTested}</th>
+                  <th scope="col">{asset?.nextTest}</th>
+                  <th scope="col">{asset?.status}</th>
+                  <th scope="col">
+                    <Tooltip title={`View ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/view-asset?assetId=${asset?.assetId}`);
+                        }}
+                      >
+                        <i className="fas fa-eye"></i>
+                      </button>{" "}
+                    </Tooltip>
+                    <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/update-asset?assetId=${asset?.assetId}`);
+                        }}
+                      >
+                        <i className="fas fa-pen"></i>
+                      </button>{" "}
+                    </Tooltip>
+                    <Tooltip
+                      title={`View QR Code for ${asset.assetName}`}
+                      arrow
+                    >
+                      <QRCodeSVG
+                        onClick={() => {
+                          setShowAddModal(true);
+                          setSelectedAsset(asset);
+                        }}
+                        value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
+                        style={{
+                          height: "30px",
+                          width: "30px",
+                          margin: "0px 6px",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title={`Delete ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light text-danger"
+                        onClick={() => deleteAsset(asset)}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>{" "}
+                    </Tooltip>
+                  </th>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="row">
+        <Pagination
+          totalPages={Math.ceil(
+            filteredSitePATItems.length / preActionsPerPage
+          )}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+        />
       </div>
       {/* row end*/}
     </Fragment>
