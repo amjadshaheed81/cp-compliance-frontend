@@ -174,7 +174,7 @@ export const getRoutes = () => {
     {
       path: "/admin/company",
       element: <CompanyManagement />,
-      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/categories/new",
