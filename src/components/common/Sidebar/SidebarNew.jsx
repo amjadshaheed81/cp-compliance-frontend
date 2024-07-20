@@ -33,6 +33,7 @@ import BackupTableIcon from "@mui/icons-material/BackupTable";
 import BeenhereIcon from "@mui/icons-material/Beenhere";
 import ChecklistIcon from "@mui/icons-material/Checklist";
 import SearchIcon from "@mui/icons-material/Search";
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
@@ -72,6 +73,8 @@ const siteIconComponents = [
 const adminIconComponents = [
   <AdminPanelSettingsIcon style={{ color: "white" }} />,
   <FeaturedPlayListIcon style={{ color: "white" }} />,
+  <AccountBalanceIcon style={{ color: "white" }} />,
+  
 ];
 
 const openedMixin = (theme) => ({
@@ -201,6 +204,9 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
       case "Dropdowns":
         navigate("/admin/dropdowns");
         break;
+      case "Company":
+        navigate("/admin/company");
+        break;
       default:
         navigate("/dashboard");
     }
@@ -316,7 +322,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
             Admin
           </p>
           <List sx={{ backgroundColor: "black" }}>
-            {["Categories", "Dropdowns"].map((text, index) => (
+            {["Categories", "Dropdowns", "Company"].map((text, index) => (
               <ListItem key={text} disablePadding sx={{ display: "block" }}>
                 <ListItemButton
                   sx={{
