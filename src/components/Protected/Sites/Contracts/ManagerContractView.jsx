@@ -73,6 +73,7 @@ const ManagerContractView = ({
     formState: { errors },
     handleSubmit,
     setValue,
+    getValues,
   } = useForm({});
   const scheduleDateForm = useForm({});
   const values = watch();
@@ -306,6 +307,17 @@ const ManagerContractView = ({
       }
     });
   };
+  const getSelectedValue = () => {
+    const selectedValue = companies.find(
+      (itm) =>
+        itm.companyId ===
+        getValues("company")
+    ) || null;
+    if (selectedValue) {
+      return { key: selectedValue?.companyId, label: selectedValue?.companyName};
+    }
+    return null;
+  }
   return (
     <React.Fragment>
       <Dialog
@@ -427,6 +439,7 @@ const ManagerContractView = ({
                             onChange={(event, item) => {
                               setValue("company", item?.key, {shouldValidate: true});
                             }}
+                            value={getSelectedValue()}
                             options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (

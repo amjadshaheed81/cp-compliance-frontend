@@ -113,6 +113,7 @@ export const getRoutes = () => {
         ROLE.SITE_ACTION_MANAGER,
         ROLE.SITE_USERS,
         ROLE.CARE_TAKER,
+        ROLE.CONTRACTOR,
       ],
     },
     {
