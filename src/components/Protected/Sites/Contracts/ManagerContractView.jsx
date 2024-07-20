@@ -455,7 +455,7 @@ const ManagerContractView = ({
                               <input
                                 type="text"
                                 {...params.inputProps}
-                                className="form-control"
+                                className="form-control form-select"
                                 placeholder="Select Company"
                               />
                             </div>

@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Tooltip, TextField, IconButton } from "@mui/material";
+import { Button, Box, Tooltip, IconButton } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -13,11 +13,9 @@ import { Validation } from "../../../../Constant/Validation";
 import {
   getDocumentsRootFolder,
   getSiteAssets,
-  setLoader,
 } from "../../../../store/thunk/site";
 import { getManagerList } from "../../../../store/thunk/user";
-import AddAssets from "./AddAssets";
-import { get, put, uploadPhoto } from "../../../../api";
+import { get, uploadPhoto } from "../../../../api";
 import ChipComponent from "../../../common/Chips/Chips";
 import BusinessIcon from "@mui/icons-material/Business";
 import moment from "moment";
@@ -29,50 +27,30 @@ import "react-datepicker/dist/react-datepicker.css";
 const ContractorContractView = ({
   showAddModal,
   setShowAddModal,
-  refresh,
   loggedInUserData,
   siteSelectedForGlobal,
-  rootFolder,
   getDocumentsRootFolder,
   getManagerList,
   ManagerList,
   getSiteAssets,
-  siteAssets,
   category,
   subCategory,
   selectedContract,
   updateScheduleVisit,
   uploadPhoto,
-  setLoader,
 }) => {
-  console.log("selectedContract ===>", selectedContract);
-  const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
-  const [showMandatoryModal, setShowMandatoryModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
-  const [selectedAssets, setSelectedAssets] = useState([]);
   const [currentContract, setCurrentContract] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [assetData, setAssetData] = useState([
-    {
-      assets: [],
-      assetRef: " ",
-      location: " ",
-      category: "New",
-    },
-  ]);
   const {
     register,
     reset,
-    watch,
     formState: { errors },
     handleSubmit,
-    getValues,
   } = useForm({});
-  const values = watch();
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getManagerList();
@@ -676,10 +654,8 @@ const ContractorContractView = ({
 
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
-  rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   ManagerList: state.userReducer.ManagerList,
-  siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
   getDocumentsRootFolder,
@@ -687,5 +663,4 @@ export default connect(mapStateToProps, {
   getSiteAssets,
   updateScheduleVisit,
   uploadPhoto,
-  setLoader,
 })(ContractorContractView);

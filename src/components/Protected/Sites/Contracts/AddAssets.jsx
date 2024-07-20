@@ -15,7 +15,6 @@ import {
 
 const AddAssets = ({
   siteAssets,
-  setSelectedAssets,
   assetData,
   setAssetData,
 }) => {

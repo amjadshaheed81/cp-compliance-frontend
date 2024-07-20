@@ -25,7 +25,7 @@ export const SiteMenu = [
 
 export const filterMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
-    return GeneralMenu.filter((item) => item !== "Portfolio");
+    return GeneralMenu.filter((item) => item !== "Users");
   }
   return GeneralMenu;
 };
@@ -33,8 +33,8 @@ export const filterMenuItems = (loggedInRole) => {
 export const filterSiteMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
     return SiteMenu.filter(
-      (item) => item !== "Site Details"
+      (item) => item !== "Create Site"
     );
   }
-  return GeneralMenu;
+  return SiteMenu;
 };

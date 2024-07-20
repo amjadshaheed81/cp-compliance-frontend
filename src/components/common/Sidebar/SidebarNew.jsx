@@ -230,7 +230,6 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         onMouseLeave={() => sideBarOpenClose(false)}
         className="sidebar"
       >
-        
         <List sx={{ backgroundColor: "black" }}>
           <li style={{ textAlign: "center" }}>
             <img
@@ -240,7 +239,10 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
               className="img img-responsive"
               alt="side logo"
             />
-            <CloseIcon className="grid-icon" onClick={() => setSideBarView(false)}/>
+            <CloseIcon
+              className="grid-icon"
+              onClick={() => setSideBarView(false)}
+            />
           </li>
           <li className="m-0">
             <img
@@ -256,7 +258,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
             <p className="text-white ps-5 fs-6">{loggedInUserData?.role}</p>
           </li>
           <p style={{ color: "grey" }}>Genral</p>
-          {GeneralMenu?.map((text, index) => (
+          {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 sx={{
@@ -289,7 +291,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
           Site Actions
         </p>
         <List sx={{ backgroundColor: "black" }}>
-          {SiteMenu?.map((text, index) => (
+          {filterSiteMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 sx={{
@@ -317,40 +319,42 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
             </ListItem>
           ))}
         </List>
-        <>
-          <p style={{ color: "grey" }} className="bg-black m-0">
-            Admin
-          </p>
-          <List sx={{ backgroundColor: "black" }}>
-            {["Categories", "Dropdowns", "Company"].map((text, index) => (
-              <ListItem key={text} disablePadding sx={{ display: "block" }}>
-                <ListItemButton
-                  sx={{
-                    minHeight: 48,
-                    justifyContent: isSideBarOpen ? "initial" : "center",
-                    px: 2.5,
-                  }}
-                  onClick={() => goTo(text)}
-                >
-                  <ListItemIcon
+        {loggedInUserData?.role === ROLE.ADMIN && (
+          <>
+            <p style={{ color: "grey" }} className="bg-black m-0">
+              Admin
+            </p>
+            <List sx={{ backgroundColor: "black" }}>
+              {["Categories", "Dropdowns", "Company"].map((text, index) => (
+                <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                  <ListItemButton
                     sx={{
-                      minWidth: 0,
-                      mr: isSideBarOpen ? 3 : "auto",
-                      justifyContent: "center",
+                      minHeight: 48,
+                      justifyContent: isSideBarOpen ? "initial" : "center",
+                      px: 2.5,
                     }}
                     onClick={() => goTo(text)}
                   >
-                    {adminIconComponents[index]}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={text}
-                    sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </>
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: isSideBarOpen ? 3 : "auto",
+                        justifyContent: "center",
+                      }}
+                      onClick={() => goTo(text)}
+                    >
+                      {adminIconComponents[index]}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={text}
+                      sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </>
+        )}
       </Drawer>
     </Box>
   );

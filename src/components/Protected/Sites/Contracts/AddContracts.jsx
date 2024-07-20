@@ -303,7 +303,7 @@ const AddContracts = ({
                               <input
                                 type="text"
                                 {...params.inputProps}
-                                className="form-control"
+                                className="form-control form-select"
                                 placeholder="Select Company"
                               />
                             </div>
@@ -438,7 +438,7 @@ const AddContracts = ({
                               <input
                                 type="text"
                                 {...params.inputProps}
-                                className="form-control"
+                                className="form-control form-select"
                                 placeholder="Select Manager"
                               />
                             </div>
