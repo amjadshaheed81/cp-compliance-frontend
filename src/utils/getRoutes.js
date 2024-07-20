@@ -107,6 +107,13 @@ export const getRoutes = () => {
     {
       path: "/site-contracts",
       element: <Contracts />,
+      allowedRoles: [
+        ROLE.ADMIN,
+        ROLE.MANAGER,
+        ROLE.SITE_ACTION_MANAGER,
+        ROLE.SITE_USERS,
+        ROLE.CARE_TAKER,
+      ],
     },
     {
       path: "/subfolder",
@@ -128,6 +135,13 @@ export const getRoutes = () => {
     {
       path: "/pre-actions",
       element: <PreActions />,
+      allowedRoles: [
+        ROLE.ADMIN,
+        ROLE.MANAGER,
+        ROLE.SITE_ACTION_MANAGER,
+        ROLE.SITE_USERS,
+        ROLE.CARE_TAKER,
+      ],
     },
     {
       path: "/view-update-pre-actions",
@@ -158,12 +172,12 @@ export const getRoutes = () => {
     {
       path: "/admin/categories/new",
       element: <AdminCategoriesAdd />,
-      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/categories/:id/update",
       element: <AdminCategoriesEdit />,
-      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/update-asset",
