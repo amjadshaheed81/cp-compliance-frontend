@@ -85,6 +85,7 @@ export const getRoutes = () => {
     {
       path: "/add-site",
       element: <Tabs tabs={tabs} isCreateSite={true} />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/update-site",
@@ -147,12 +148,12 @@ export const getRoutes = () => {
     {
       path: "/admin/categories",
       element: <AdminCategories />,
-      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/dropdowns",
       element: <AdminDropdowns />,
-      // allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/admin/categories/new",
