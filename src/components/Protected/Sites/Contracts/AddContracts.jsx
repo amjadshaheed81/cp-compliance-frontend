@@ -14,7 +14,6 @@ import {
   getDocumentsRootFolder,
   getSiteAssets,
 } from "../../../../store/thunk/site";
-import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
 import { get, put } from "../../../../api";
 import MandatoryFolders from "./MandatoryFolders";
@@ -28,8 +27,6 @@ const AddContracts = ({
   siteSelectedForGlobal,
   rootFolder,
   getDocumentsRootFolder,
-  getManagerList,
-  ManagerList,
   getSiteAssets,
   siteAssets,
   category,
@@ -45,6 +42,7 @@ const AddContracts = ({
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [subCategoryListData, setSubCategoryListData] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [managerList, setManagerList] = useState([]);
   const [assetData, setAssetData] = useState([
     {
       assets: [],
@@ -74,6 +72,10 @@ const AddContracts = ({
       toast.error("Please select site from site search.");
     }
   }, []);
+  const getManagerList = async () => {
+    const data = await get(`/api/user/all?userRole=Manager&siteId=${siteSelectedForGlobal?.siteId}`);
+    setManagerList(data?.users || []);
+  };
   const getCompanies = async () => {
     const companiesData = await get(`/api/companies/all`);
     setCompanies(companiesData);
@@ -427,7 +429,7 @@ const AddContracts = ({
                               shouldValidate: true,
                             });
                           }}
-                          options={ManagerList.map((option) => {
+                          options={managerList.map((option) => {
                             return { key: option.id, label: option.name };
                           })}
                           getOptionLabel={(option) => option.label}
@@ -543,11 +545,9 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
-  ManagerList: state.userReducer.ManagerList,
   siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
   getDocumentsRootFolder,
-  getManagerList,
   getSiteAssets,
 })(AddContracts);

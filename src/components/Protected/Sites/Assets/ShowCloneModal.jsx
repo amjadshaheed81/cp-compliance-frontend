@@ -57,14 +57,14 @@ const ShowCloneModal = ({
         fullWidth
       >
         <form onSubmit={handleSubmit(submitClone)}>
-          <DialogTitle>{currentAsset?.assetName} - Asset QR Code</DialogTitle>
+          <DialogTitle>Clone Asset</DialogTitle>
           <DialogContent dividers>
             {!isLoading && (
               <Fragment>
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="assetName">AssetName</label>
+                      <label for="assetName">Asset Name</label>
                       <input
                         type="text"
                         className="form-control"
