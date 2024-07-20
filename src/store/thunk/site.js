@@ -1404,6 +1404,22 @@ export const deleteSiteAsset = (id) => {
   };
 };
 
+export const cloneAsset = (asetId, numberOfClones) => {
+  return async () => {
+    try {
+      const url = `/api/site/assets/clone/${asetId}/${numberOfClones}`;
+      const res = await post(url, {});
+      if(res?.status === 200 || res?.status === 201) {
+        return "Success";
+      } else {
+        return "Error";
+      }
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
+
 
 export const updatePurchaseDetails = (data, assetId) => {
   return async (dispatch) => {

@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
+import ShowCloneModal from "./ShowCloneModal";
 
 const Pat = ({
   sitePATItems,
@@ -24,6 +25,8 @@ const Pat = ({
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState({});
+  const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
+  const [showCloneModal, setShowCloneModal] = useState(false);
   useEffect(() => {
     if (sitePATItems) {
       setFilteredSitePATItems(sitePATItems);
@@ -114,8 +117,12 @@ const Pat = ({
   };
   const cloneSelectedAsset = () => {
     if (selectedItems?.length === 0) {
-      toast.warn("Please select asset first to clone.");
+      toast.warn("Please select asset to clone.");
+    } else if (selectedItems?.length > 1) {
+      toast.warn("Please select only one asset.");
     } else {
+      setSelectedAssetForClone(selectedItems[0]);
+      setShowCloneModal(true)
     }
   };
   const handleCheckboxChange = (e, asset) => {
@@ -144,6 +151,16 @@ const Pat = ({
           showAddModal={showAddModal}
           setShowAddModal={setShowAddModal}
           selectedAsset={selectedAsset}
+        />
+      )}
+      {showCloneModal && (
+        <ShowCloneModal
+          showCloneModal={showCloneModal}
+          setShowCloneModal={setShowCloneModal}
+          selectedAsset={selectedAssetForClone}
+          refresh={() => {
+            getSitePATAssets(siteSelectedForGlobal?.siteId);
+          }}
         />
       )}
       <div className="d-flex bd-highlight">
@@ -229,6 +246,7 @@ const Pat = ({
               <th>
                 <input
                   type="checkbox"
+                  disabled
                   onChange={handleSelectAllChange}
                   className="form-check-input"
                   checked={selectedItems.length === filteredSitePATItems.length}
