@@ -201,7 +201,7 @@ const AddContracts = ({
                 <div className="row">
                   <div className="col-md-12">
                     <div className="row">
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="summary">Summary</label>
                           <input
@@ -223,7 +223,7 @@ const AddContracts = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="category">Category</label>
                         <select
                           name="category"
@@ -253,7 +253,7 @@ const AddContracts = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="subCategory">Sub Category</label>
                         <select
                           name="subCategory"
@@ -282,7 +282,7 @@ const AddContracts = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="company">Company</label>
                         <Autocomplete
                           id="leadUserID"
@@ -316,7 +316,7 @@ const AddContracts = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="budget">Budget (GBP)</label>
                           <input
@@ -338,7 +338,7 @@ const AddContracts = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
@@ -360,7 +360,7 @@ const AddContracts = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="startDate">Start Date</label>
                           <input
@@ -389,7 +389,7 @@ const AddContracts = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="endDate">End Date</label>
                           <input
@@ -411,7 +411,7 @@ const AddContracts = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-6">
+                      <div className="col-md-6 mt-2">
                         <div className="form-group mt-2">
                           <textarea
                             {...register("description")}
@@ -420,7 +420,7 @@ const AddContracts = ({
                           ></textarea>
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="manager">Manager</label>
                         <Autocomplete
                           id="managerId"

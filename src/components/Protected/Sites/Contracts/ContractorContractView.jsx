@@ -248,9 +248,10 @@ const ContractorContractView = ({
             {!isLoading && (
               <Fragment>
                 <div className="row">
-                  <div className="col">
+                  <div className="col-md-1">
                     <ChipComponent status={currentContract?.status} />
-                    &nbsp;
+                  </div>
+                  <div className="col-md-11 pt-1">
                     <BusinessIcon />
                     &nbsp;
                     <span>{currentContract?.siteName}</span>

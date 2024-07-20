@@ -342,16 +342,17 @@ const ManagerContractView = ({
             {!isLoading && (
               <Fragment>
                 <div className="row">
-                  <div className="col">
+                  <div className="col-md-1">
                     <ChipComponent status={currentContract?.status} />
-                    &nbsp;
+                  </div>
+                  <div className="col-md-11 pt-1">
                     <BusinessIcon />
                     &nbsp;
                     <span>{currentContract?.siteName}</span>
                   </div>
                   <div className="col-md-12">
                     <div className="row">
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="summary">Summary</label>
                           <input
@@ -373,7 +374,7 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="category">Category</label>
                         <select
                           name="category"
@@ -403,7 +404,7 @@ const ManagerContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="subCategory">Sub Category</label>
                         <select
                           name="subCategory"
@@ -432,7 +433,7 @@ const ManagerContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <label for="company">Company</label>
                         <Autocomplete
                           id="leadUserID"
@@ -467,7 +468,7 @@ const ManagerContractView = ({
                           />
                         )}
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="budget">Budget (GBP)</label>
                           <input
@@ -490,7 +491,7 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
@@ -513,7 +514,7 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="startDate">Start Date</label>
                           <input
@@ -536,7 +537,7 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="endDate">End Date</label>
                           <input
@@ -559,7 +560,7 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-6">
+                      <div className="col-md-6 mt-2">
                         <div className="form-group mt-2">
                           <textarea
                             {...register("description")}
