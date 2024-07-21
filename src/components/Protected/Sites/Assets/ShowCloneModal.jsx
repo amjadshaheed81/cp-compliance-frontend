@@ -39,14 +39,16 @@ const ShowCloneModal = ({
     window.print();
   };
   const submitClone = async (data) => {
+    setIsLoading(true);
     const res = await cloneAsset(data?.assetId, Number(data?.numberOfClones));
-    if(res === "Success") {
+    if(res) {
         toast.success("Asset cloning is successfully completed.");
         setShowCloneModal(false);
         refresh();
     } else {
         toast.error("Something wentwrong while asset clone.");
     }
+    setIsLoading(false);
   };
   return (
     <React.Fragment>

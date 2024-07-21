@@ -312,10 +312,12 @@ const Door = ({
                     {asset?.assetDoorSpecifications?.fireRating}
                   </th>
                   <th scope="col">
-                    {asset?.assetDoorSpecifications?.location}
+                    {asset.position ? `${asset.position}` : ""}
+                    {asset.floor ? ` > ${asset.floor}` : ""}
+                    {asset.room ? ` > ${asset.room}` : ""}
                   </th>
                   <th scope="col">
-                    {asset?.assetDoorSpecifications?.doorFinish}
+                    {asset?.assetDoorSpecifications?.frameFinish}
                   </th>
                   <th scope="col">
                     {asset?.assetDoorSpecifications?.visionPanel}

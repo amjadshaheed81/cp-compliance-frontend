@@ -28,6 +28,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { get } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
 import moment from "moment";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import "./AssetStyle.css";
 
 const UpdateAsset = ({
   setLoader,
@@ -83,6 +86,8 @@ const UpdateAsset = ({
     setSubCategory(subCategory);
     setSubCategory2(subCategory2);
     setPassiveFireMaterial(material);
+    setSubCategoryList(subCategory);
+    setSubCategory2List(subCategory2);
   };
 
   const getTester = async () => {
@@ -123,7 +128,7 @@ const UpdateAsset = ({
     }
     purchaseDetailForm.reset({
       invoiceFile: response?.invoiceFile,
-      purchaseDate: response?.purchaseDate,
+      purchaseDate: response?.purchaseDate?.split("T")?.[0],
       supplier: response?.supplier,
       transactionId: response?.transactionId,
       cost: response?.cost,
@@ -134,11 +139,11 @@ const UpdateAsset = ({
       room: response?.room,
     });
     valudationForm.reset({
-      valuationDate: response?.valuationDate,
+      valuationDate: response?.valuationDate?.split("T")?.[0],
       valuationUserId: response?.valuationUserId,
       valuationUserName: response?.valuationUserName,
       valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate,
+      disposalDate: response?.disposalDate?.split("T")?.[0],
       disposalTo: response?.disposalTo,
       disposalValue: response?.disposalValue,
     });
@@ -272,6 +277,17 @@ const UpdateAsset = ({
       ...formData,
       purchaseDate: formData?.purchaseDate + " 10:00:00",
       assetId: selectedAsset?.assetId,
+      position: selectedAsset?.position,
+      floor: selectedAsset?.floor,
+      room: selectedAsset?.room,
+      valuationDate: `${
+        selectedAsset?.valuationDate?.split("T")?.[0]
+      } 10:00:00`,
+      disposalDate: `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`,
+      disposalTo: selectedAsset?.disposalTo,
+      disposalValue: selectedAsset?.disposalValue,
+      valuationUserId: selectedAsset?.valuationUserId,
+      valuationValue: selectedAsset?.valuationValue,
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
@@ -284,7 +300,22 @@ const UpdateAsset = ({
   const submitLocationForm = async (data) => {
     console.log("data", data);
     let form_data = new FormData();
-    const submitData = { ...data, assetId: selectedAsset?.assetId };
+    const submitData = {
+      ...data,
+      assetId: selectedAsset?.assetId,
+      purchaseDate: `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`,
+      supplier: selectedAsset?.supplier,
+      transactionId: selectedAsset?.transactionId,
+      cost: selectedAsset?.cost,
+      valuationDate: `${
+        selectedAsset?.valuationDate?.split("T")?.[0]
+      } 10:00:00`,
+      disposalDate: `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`,
+      disposalTo: selectedAsset?.disposalTo,
+      disposalValue: selectedAsset?.disposalValue,
+      valuationUserId: selectedAsset?.valuationUserId,
+      valuationValue: selectedAsset?.valuationValue,
+    };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
     await updatePurchaseDetails(form_data, selectedAsset?.assetId);
@@ -300,6 +331,13 @@ const UpdateAsset = ({
       assetId: selectedAsset?.assetId,
       valuationDate: data?.valuationDate + " 10:00:00",
       disposalDate: data?.disposalDate + " 10:00:00",
+      position: selectedAsset?.position,
+      floor: selectedAsset?.floor,
+      room: selectedAsset?.room,
+      purchaseDate: `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`,
+      supplier: selectedAsset?.supplier,
+      transactionId: selectedAsset?.transactionId,
+      cost: selectedAsset?.cost,
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
@@ -593,7 +631,12 @@ const UpdateAsset = ({
                       >
                         <option value="">Select category</option>
                         {category?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          <option
+                            selected={selectedAsset?.category === itm?.lovValue}
+                            value={itm?.lovValue}
+                          >
+                            {itm?.lovValue}
+                          </option>
                         ))}
                       </select>
                       {errors?.category && (
@@ -616,7 +659,14 @@ const UpdateAsset = ({
                       >
                         <option value="">Select Sub Category</option>
                         {subCategoryList?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          <option
+                            selected={
+                              selectedAsset?.subCategory === itm?.lovValue
+                            }
+                            value={itm?.lovValue}
+                          >
+                            {itm?.lovValue}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -630,7 +680,14 @@ const UpdateAsset = ({
                       >
                         <option value="">Select Sub Category 2</option>
                         {subCategory2List?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          <option
+                            selected={
+                              selectedAsset?.subCategory2 === itm?.lovValue
+                            }
+                            value={itm?.lovValue}
+                          >
+                            {itm?.lovValue}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -688,20 +745,128 @@ const UpdateAsset = ({
               <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
                   <Tab
+                    className={
+                      selectedAsset?.purchaseDate &&
+                      selectedAsset?.supplier &&
+                      selectedAsset?.transactionId &&
+                      selectedAsset?.cost &&
+                      selectedAsset?.invoiceFile
+                        ? "text-success"
+                        : "text-warning"
+                    }
+                    icon={
+                      selectedAsset?.purchaseDate &&
+                      selectedAsset?.supplier &&
+                      selectedAsset?.transactionId &&
+                      selectedAsset?.cost &&
+                      selectedAsset?.invoiceFile ? (
+                        <CheckCircleOutlineIcon />
+                      ) : (
+                        <WarningAmberIcon />
+                      )
+                    }
                     label="Purchase Details"
                     value="1"
-                    icon={<i className="fa fa-circle-exclamation"></i>}
                   />
-                  <Tab label="Location" value="2" />
-                  <Tab label="Valuation & Disposal" value="3" />
+                  <Tab
+                    icon={
+                      selectedAsset?.position &&
+                      selectedAsset?.floor &&
+                      selectedAsset?.room ? (
+                        <CheckCircleOutlineIcon />
+                      ) : (
+                        <WarningAmberIcon />
+                      )
+                    }
+                    className={
+                      selectedAsset?.position &&
+                      selectedAsset?.floor &&
+                      selectedAsset?.room
+                        ? "text-success"
+                        : "text-warning"
+                    }
+                    label="Location"
+                    value="2"
+                  />
+                  <Tab
+                    className={
+                      selectedAsset?.valuationDate &&
+                      selectedAsset?.disposalDate &&
+                      selectedAsset?.disposalTo &&
+                      selectedAsset?.disposalValue &&
+                      selectedAsset?.valuationUserId &&
+                      selectedAsset?.valuationValue
+                        ? "text-success"
+                        : "text-warning"
+                    }
+                    icon={
+                      selectedAsset?.valuationDate &&
+                      selectedAsset?.disposalDate &&
+                      selectedAsset?.disposalTo &&
+                      selectedAsset?.disposalValue &&
+                      selectedAsset?.valuationUserId &&
+                      selectedAsset?.valuationValue ? (
+                        <CheckCircleOutlineIcon />
+                      ) : (
+                        <WarningAmberIcon />
+                      )
+                    }
+                    label="Valuation & Disposal"
+                    value="3"
+                  />
                   {selectedAsset?.patItem && (
-                    <Tab label="PAT Details" value="4" className="text-warning"/>
+                    <Tab
+                      icon={
+                        selectedAsset?.assetPATItems?.length > 0 ? (
+                          <CheckCircleOutlineIcon />
+                        ) : (
+                          <WarningAmberIcon />
+                        )
+                      }
+                      label="PAT Details"
+                      value="4"
+                      className={
+                        selectedAsset?.assetPATItems?.length > 0
+                          ? "text-success"
+                          : "text-warning"
+                      }
+                    />
                   )}
                   {selectedAsset?.pfpItem && (
-                    <Tab label="Passive Fire Protection" value="5" />
+                    <Tab
+                      icon={
+                        selectedAsset?.assetPFPItem ? (
+                          <CheckCircleOutlineIcon />
+                        ) : (
+                          <WarningAmberIcon />
+                        )
+                      }
+                      className={
+                        selectedAsset?.assetPFPItem
+                          ? "text-success"
+                          : "text-warning"
+                      }
+                      label="Passive Fire Protection"
+                      value="5"
+                    />
                   )}
                   {selectedAsset?.patItem && (
-                    <Tab label="Door Specifications" value="6" />
+                    <Tab
+                      icon={
+                        selectedAsset?.assetDoorSpecifications ? (
+                          <CheckCircleOutlineIcon />
+                        ) : (
+                          <WarningAmberIcon />
+                        )
+                      }
+                      className={
+                        selectedAsset?.assetDoorSpecifications
+                          ? "text-success"
+                          : "text-warning"
+                      }
+                      label="Door Specifications"
+                      value="6"
+                    />
                   )}
                 </TabList>
               </Box>
@@ -721,8 +886,25 @@ const UpdateAsset = ({
                           id="purchaseDate"
                           name="purchaseDate"
                           placeholder=""
-                          {...purchaseDetailForm.register("purchaseDate")}
+                          {...purchaseDetailForm.register("purchaseDate", {
+                            required: {
+                              value: true,
+                              message: `Please enter purchase date.`,
+                            },
+                          })}
                         />
+                        {purchaseDetailForm.formState.errors?.purchaseDate && (
+                          <InputError
+                            message={
+                              purchaseDetailForm.formState.errors?.purchaseDate
+                                ?.message
+                            }
+                            key={
+                              purchaseDetailForm.formState.errors?.purchaseDate
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -734,21 +916,55 @@ const UpdateAsset = ({
                           id="supplier"
                           name="supplier"
                           placeholder=""
-                          {...purchaseDetailForm.register("supplier")}
+                          {...purchaseDetailForm.register("supplier", {
+                            required: {
+                              value: true,
+                              message: `Please enter supplier`,
+                            },
+                          })}
                         />
+                        {purchaseDetailForm.formState.errors?.supplier && (
+                          <InputError
+                            message={
+                              purchaseDetailForm.formState.errors?.supplier
+                                ?.message
+                            }
+                            key={
+                              purchaseDetailForm.formState.errors?.supplier
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="transactionId">Tramsaction ID</label>
+                        <label for="transactionId">Transaction ID</label>
                         <input
                           type="number"
                           className="form-control"
                           id="transactionId"
                           name="transactionId"
                           placeholder=""
-                          {...purchaseDetailForm.register("transactionId")}
+                          {...purchaseDetailForm.register("transactionId", {
+                            required: {
+                              value: true,
+                              message: `Please enter transaction ID`,
+                            },
+                          })}
                         />
+                        {purchaseDetailForm.formState.errors?.transactionId && (
+                          <InputError
+                            message={
+                              purchaseDetailForm.formState.errors?.transactionId
+                                ?.message
+                            }
+                            key={
+                              purchaseDetailForm.formState.errors?.transactionId
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -760,8 +976,23 @@ const UpdateAsset = ({
                           id="cost"
                           name="cost"
                           placeholder=""
-                          {...purchaseDetailForm.register("cost")}
+                          {...purchaseDetailForm.register("cost", {
+                            required: {
+                              value: true,
+                              message: `Please enter cost`,
+                            },
+                          })}
                         />
+                        {purchaseDetailForm.formState.errors?.cost && (
+                          <InputError
+                            message={
+                              purchaseDetailForm.formState.errors?.cost?.message
+                            }
+                            key={
+                              purchaseDetailForm.formState.errors?.cost?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
 
@@ -774,8 +1005,26 @@ const UpdateAsset = ({
                           id="purchaseInvoice"
                           name="purchaseInvoice"
                           placeholder=""
-                          {...purchaseDetailForm.register("purchaseInvoice")}
+                          {...purchaseDetailForm.register("purchaseInvoice", {
+                            required: {
+                              value: true,
+                              message: `Please select invoice file`,
+                            },
+                          })}
                         />
+                        {purchaseDetailForm.formState.errors
+                          ?.purchaseInvoice && (
+                          <InputError
+                            message={
+                              purchaseDetailForm.formState.errors
+                                ?.purchaseInvoice?.message
+                            }
+                            key={
+                              purchaseDetailForm.formState.errors
+                                ?.purchaseInvoice?.message
+                            }
+                          />
+                        )}
                       </div>
                       {purchaseFrormValues.invoiceFile && (
                         <a href={purchaseFrormValues.invoiceFile} download>
@@ -800,12 +1049,25 @@ const UpdateAsset = ({
                         name="position"
                         className="form-control form-select"
                         id="position"
-                        {...locationForm.register("position")}
+                        {...locationForm.register("position", {
+                          required: {
+                            value: true,
+                            message: `Please select Internal/External`,
+                          },
+                        })}
                       >
                         <option value="">Select Internal/External</option>
                         <option value={"Internal"}>Internal</option>
                         <option value={"External"}>External</option>
                       </select>
+                      {locationForm.formState.errors?.position && (
+                        <InputError
+                          message={
+                            locationForm.formState.errors?.position?.message
+                          }
+                          key={locationForm.formState.errors?.position?.message}
+                        />
+                      )}
                     </div>
                     <div className="col-md-4">
                       <label for="floor">Floor</label>
@@ -813,7 +1075,12 @@ const UpdateAsset = ({
                         name="floor"
                         className="form-control form-select"
                         id="floor"
-                        {...locationForm.register("floor")}
+                        {...locationForm.register("floor", {
+                          required: {
+                            value: true,
+                            message: `Please select floor`,
+                          },
+                        })}
                       >
                         <option value="">Select Floor</option>
                         <option value={"Ground"}>Ground</option>
@@ -821,6 +1088,14 @@ const UpdateAsset = ({
                         <option value={"Second"}>Second</option>
                         <option value={"Third"}>Third</option>
                       </select>
+                      {locationForm.formState.errors?.floor && (
+                        <InputError
+                          message={
+                            locationForm.formState.errors?.floor?.message
+                          }
+                          key={locationForm.formState.errors?.floor?.message}
+                        />
+                      )}
                     </div>
                     <div className="col-md-4">
                       <label for="room">Room</label>
@@ -828,12 +1103,23 @@ const UpdateAsset = ({
                         name="room"
                         className="form-control form-select"
                         id="room"
-                        {...locationForm.register("room")}
+                        {...locationForm.register("room", {
+                          required: {
+                            value: true,
+                            message: `Please select room`,
+                          },
+                        })}
                       >
                         <option value="">Select Room</option>
                         <option value="G1">G1</option>
                         <option value="G2">G2</option>
                       </select>
+                      {locationForm.formState.errors?.room && (
+                        <InputError
+                          message={locationForm.formState.errors?.room?.message}
+                          key={locationForm.formState.errors?.room?.message}
+                        />
+                      )}
                     </div>
                     <div>
                       <button type="submit" className="btn btn-primary mt-2">
@@ -857,8 +1143,25 @@ const UpdateAsset = ({
                           id="valuationDate"
                           name="valuationDate"
                           placeholder=""
-                          {...valudationForm.register("valuationDate")}
+                          {...valudationForm.register("valuationDate", {
+                            required: {
+                              value: true,
+                              message: `Please enter valuation date`,
+                            },
+                          })}
                         />
+                        {valudationForm.formState.errors?.valuationDate && (
+                          <InputError
+                            message={
+                              valudationForm.formState.errors?.valuationDate
+                                ?.message
+                            }
+                            key={
+                              valudationForm.formState.errors?.valuationDate
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -870,8 +1173,25 @@ const UpdateAsset = ({
                           id="valuationValue"
                           name="valuationValue"
                           placeholder=""
-                          {...valudationForm.register("valuationValue")}
+                          {...valudationForm.register("valuationValue", {
+                            required: {
+                              value: true,
+                              message: `Please enter valuation value`,
+                            },
+                          })}
                         />
+                        {valudationForm.formState.errors?.valuationValue && (
+                          <InputError
+                            message={
+                              valudationForm.formState.errors?.valuationValue
+                                ?.message
+                            }
+                            key={
+                              valudationForm.formState.errors?.valuationValue
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -880,7 +1200,12 @@ const UpdateAsset = ({
                         name="valuationUserId"
                         className="form-control form-select"
                         id="valuationUserId"
-                        {...valudationForm.register("valuationUserId")}
+                        {...valudationForm.register("valuationUserId", {
+                          required: {
+                            value: true,
+                            message: `Please select valuation done by`,
+                          },
+                        })}
                       >
                         <option value=""></option>
                         {users?.map((itm) => (
@@ -889,6 +1214,18 @@ const UpdateAsset = ({
                           </option>
                         ))}
                       </select>
+                      {valudationForm.formState.errors?.valuationUserId && (
+                        <InputError
+                          message={
+                            valudationForm.formState.errors?.valuationUserId
+                              ?.message
+                          }
+                          key={
+                            valudationForm.formState.errors?.valuationUserId
+                              ?.message
+                          }
+                        />
+                      )}
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
@@ -899,8 +1236,25 @@ const UpdateAsset = ({
                           id="disposalDate"
                           name="disposalDate"
                           placeholder=""
-                          {...valudationForm.register("disposalDate")}
+                          {...valudationForm.register("disposalDate", {
+                            required: {
+                              value: true,
+                              message: `Please enter disposal date`,
+                            },
+                          })}
                         />
+                        {valudationForm.formState.errors?.disposalDate && (
+                          <InputError
+                            message={
+                              valudationForm.formState.errors?.disposalDate
+                                ?.message
+                            }
+                            key={
+                              valudationForm.formState.errors?.disposalDate
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -912,8 +1266,25 @@ const UpdateAsset = ({
                           id="disposalValue"
                           name="disposalValue"
                           placeholder=""
-                          {...valudationForm.register("disposalValue")}
+                          {...valudationForm.register("disposalValue", {
+                            required: {
+                              value: true,
+                              message: `Please enter disposal value`,
+                            },
+                          })}
                         />
+                        {valudationForm.formState.errors?.disposalValue && (
+                          <InputError
+                            message={
+                              valudationForm.formState.errors?.disposalValue
+                                ?.message
+                            }
+                            key={
+                              valudationForm.formState.errors?.disposalValue
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -925,8 +1296,25 @@ const UpdateAsset = ({
                           id="disposalTo"
                           name="disposalTo"
                           placeholder=""
-                          {...valudationForm.register("disposalTo")}
+                          {...valudationForm.register("disposalTo", {
+                            required: {
+                              value: true,
+                              message: `Please enter disposal to`,
+                            },
+                          })}
                         />
+                        {valudationForm.formState.errors?.disposalTo && (
+                          <InputError
+                            message={
+                              valudationForm.formState.errors?.disposalTo
+                                ?.message
+                            }
+                            key={
+                              valudationForm.formState.errors?.disposalTo
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div>
@@ -1079,8 +1467,26 @@ const UpdateAsset = ({
                           id="product"
                           name="product"
                           placeholder=""
-                          {...passiveFireProtectionForm.register("product")}
+                          {...passiveFireProtectionForm.register("product", {
+                            required: {
+                              value: true,
+                              message: `Please enter product name`,
+                            },
+                          })}
                         />
+                        {passiveFireProtectionForm.formState.errors
+                          ?.product && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors
+                                ?.product?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors
+                                ?.product?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1092,8 +1498,25 @@ const UpdateAsset = ({
                           id="access"
                           name="access"
                           placeholder=""
-                          {...passiveFireProtectionForm.register("access")}
+                          {...passiveFireProtectionForm.register("access", {
+                            required: {
+                              value: true,
+                              message: `Please enter Access/Position`,
+                            },
+                          })}
                         />
+                        {passiveFireProtectionForm.formState.errors?.access && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors?.access
+                                ?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors?.access
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1103,7 +1526,12 @@ const UpdateAsset = ({
                           name="material"
                           className="form-control form-select"
                           id="material"
-                          {...passiveFireProtectionForm.register("material")}
+                          {...passiveFireProtectionForm.register("material", {
+                            required: {
+                              value: true,
+                              message: `Please select material`,
+                            },
+                          })}
                         >
                           <option value="">Select Material</option>
                           {passiveFireMaterial?.map((itm) => (
@@ -1112,6 +1540,19 @@ const UpdateAsset = ({
                             </option>
                           ))}
                         </select>
+                        {passiveFireProtectionForm.formState.errors
+                          ?.material && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors
+                                ?.material?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors
+                                ?.material?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1123,8 +1564,26 @@ const UpdateAsset = ({
                           id="service"
                           name="service"
                           placeholder=""
-                          {...passiveFireProtectionForm.register("service")}
+                          {...passiveFireProtectionForm.register("service", {
+                            required: {
+                              value: true,
+                              message: `Please enter service`,
+                            },
+                          })}
                         />
+                        {passiveFireProtectionForm.formState.errors
+                          ?.service && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors
+                                ?.service?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors
+                                ?.service?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1136,8 +1595,26 @@ const UpdateAsset = ({
                           id="dimension"
                           name="dimension"
                           placeholder=""
-                          {...passiveFireProtectionForm.register("dimension")}
+                          {...passiveFireProtectionForm.register("dimension", {
+                            required: {
+                              value: true,
+                              message: `Please enter dimension`,
+                            },
+                          })}
                         />
+                        {passiveFireProtectionForm.formState.errors
+                          ?.dimension && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors
+                                ?.dimension?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors
+                                ?.dimension?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1149,8 +1626,26 @@ const UpdateAsset = ({
                           id="quantity"
                           name="quantity"
                           placeholder=""
-                          {...passiveFireProtectionForm.register("quantity")}
+                          {...passiveFireProtectionForm.register("quantity", {
+                            required: {
+                              value: true,
+                              message: `Please enter quantity`,
+                            },
+                          })}
                         />
+                        {passiveFireProtectionForm.formState.errors
+                          ?.quantity && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors
+                                ?.quantity?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors
+                                ?.quantity?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1162,8 +1657,25 @@ const UpdateAsset = ({
                           id="area"
                           name="area"
                           placeholder=""
-                          {...passiveFireProtectionForm.register("area")}
+                          {...passiveFireProtectionForm.register("area", {
+                            required: {
+                              value: true,
+                              message: `Please enter area (in sq m)`,
+                            },
+                          })}
                         />
+                        {passiveFireProtectionForm.formState.errors?.area && (
+                          <InputError
+                            message={
+                              passiveFireProtectionForm.formState.errors?.area
+                                ?.message
+                            }
+                            key={
+                              passiveFireProtectionForm.formState.errors?.area
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div>
@@ -1190,8 +1702,25 @@ const UpdateAsset = ({
                           id="width"
                           name="width"
                           placeholder=""
-                          {...doorSpecificationForm.register("width")}
+                          {...doorSpecificationForm.register("width", {
+                            required: {
+                              value: true,
+                              message: `Please enter door width (in cm)`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors?.width && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors?.width
+                                ?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors?.width
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1203,8 +1732,25 @@ const UpdateAsset = ({
                           id="height"
                           name="height"
                           placeholder=""
-                          {...doorSpecificationForm.register("height")}
+                          {...doorSpecificationForm.register("height", {
+                            required: {
+                              value: true,
+                              message: `Please enter door height (in cm)`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors?.height && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors?.height
+                                ?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors?.height
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1216,8 +1762,25 @@ const UpdateAsset = ({
                           id="depth"
                           name="depth"
                           placeholder=""
-                          {...doorSpecificationForm.register("depth")}
+                          {...doorSpecificationForm.register("depth", {
+                            required: {
+                              value: true,
+                              message: `Please enter door depth (in cm)`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors?.depth && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors?.depth
+                                ?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors?.depth
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1229,8 +1792,25 @@ const UpdateAsset = ({
                           id="finish"
                           name="finish"
                           placeholder=""
-                          {...doorSpecificationForm.register("finish")}
+                          {...doorSpecificationForm.register("finish", {
+                            required: {
+                              value: true,
+                              message: `Please enter door finish`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors?.finish && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors?.finish
+                                ?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors?.finish
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1242,8 +1822,26 @@ const UpdateAsset = ({
                           id="visionPanel"
                           name="visionPanel"
                           placeholder=""
-                          {...doorSpecificationForm.register("visionPanel")}
+                          {...doorSpecificationForm.register("visionPanel", {
+                            required: {
+                              value: true,
+                              message: `Please enter vision panel`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors
+                          ?.visionPanel && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors
+                                ?.visionPanel?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors
+                                ?.visionPanel?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1255,8 +1853,25 @@ const UpdateAsset = ({
                           id="fireRating"
                           name="fireRating"
                           placeholder=""
-                          {...doorSpecificationForm.register("fireRating")}
+                          {...doorSpecificationForm.register("fireRating", {
+                            required: {
+                              value: true,
+                              message: `Please enter fire rating`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors?.fireRating && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors?.fireRating
+                                ?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors?.fireRating
+                                ?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1268,8 +1883,26 @@ const UpdateAsset = ({
                           id="frameMaterial"
                           name="frameMaterial"
                           placeholder=""
-                          {...doorSpecificationForm.register("frameMaterial")}
+                          {...doorSpecificationForm.register("frameMaterial", {
+                            required: {
+                              value: true,
+                              message: `Please enter fire material`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors
+                          ?.frameMaterial && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors
+                                ?.frameMaterial?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors
+                                ?.frameMaterial?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="col-md-4">
@@ -1281,8 +1914,26 @@ const UpdateAsset = ({
                           id="frameFinish"
                           name="frameFinish"
                           placeholder=""
-                          {...doorSpecificationForm.register("frameFinish")}
+                          {...doorSpecificationForm.register("frameFinish", {
+                            required: {
+                              value: true,
+                              message: `Please enter frame finish`,
+                            },
+                          })}
                         />
+                        {doorSpecificationForm.formState.errors
+                          ?.frameFinish && (
+                          <InputError
+                            message={
+                              doorSpecificationForm.formState.errors
+                                ?.frameFinish?.message
+                            }
+                            key={
+                              doorSpecificationForm.formState.errors
+                                ?.frameFinish?.message
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     <div>

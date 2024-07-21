@@ -300,7 +300,11 @@ const PassiveFireProtection = ({
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.assetPFPItem?.material}</th>
                   <th scope="col">{asset?.assetPFPItem?.product}</th>
-                  <th scope="col">{asset?.assetPFPItem?.access}</th>
+                  <th scope="col">
+                    {asset.position ? `${asset.position}` : ""}
+                    {asset.floor ? ` > ${asset.floor}` : ""}
+                    {asset.room ? ` > ${asset.room}` : ""}
+                  </th>
                   <th scope="col">{asset?.assetPFPItem?.service}</th>
                   <th scope="col">{asset?.assetPFPItem?.dimension}</th>
                   <th scope="col">{asset?.assetPFPItem?.quantity}</th>

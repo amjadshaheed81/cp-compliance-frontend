@@ -298,7 +298,11 @@ const Pat = ({
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{asset?.category}</th>
-                  <th scope="col">{asset?.location}</th>
+                  <th scope="col">
+                    {asset.position ? `${asset.position}` : ""}
+                    {asset.floor ? ` > ${asset.floor}` : ""}
+                    {asset.room ? ` > ${asset.room}` : ""}
+                  </th>
                   <th scope="col">{asset?.dateTested}</th>
                   <th scope="col">{asset?.nextTest}</th>
                   <th scope="col">{asset?.status}</th>
