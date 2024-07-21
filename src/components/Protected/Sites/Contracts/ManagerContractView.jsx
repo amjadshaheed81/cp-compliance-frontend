@@ -617,7 +617,7 @@ const ManagerContractView = ({
                                       className="btn btn-sm btn-light"
                                       download
                                       href={file?.url}
-                                    >{`version-${index + 1}.png`}</a>
+                                    >{`version-${index + 1}`}</a>
                                     &nbsp;
                                   </>
                                 ))}

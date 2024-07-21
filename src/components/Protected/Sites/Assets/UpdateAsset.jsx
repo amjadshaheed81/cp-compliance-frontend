@@ -695,7 +695,7 @@ const UpdateAsset = ({
                   <Tab label="Location" value="2" />
                   <Tab label="Valuation & Disposal" value="3" />
                   {selectedAsset?.patItem && (
-                    <Tab label="PAT Details" value="4" />
+                    <Tab label="PAT Details" value="4" className="text-warning"/>
                   )}
                   {selectedAsset?.pfpItem && (
                     <Tab label="Passive Fire Protection" value="5" />

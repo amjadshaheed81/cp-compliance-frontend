@@ -1257,7 +1257,7 @@ export const deleteUser = (id) => {
       await del(url);
       return "Success";
     } catch (error) {
-      return "Error";
+      return error?.response?.data?.message || "Error";
     }
   };
 };

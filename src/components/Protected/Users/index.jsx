@@ -41,6 +41,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
   useEffect(() => {
     if (users?.length > 0) {
       setFilteredUser(users);
+      searchUser();
     }
   }, [users]);
   const [formData, setFormData] = useState({
@@ -71,7 +72,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
             .toLowerCase()
             .includes(String(searchField).toLowerCase()) &&
           String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
-          String(x?.defaultSiteName)
+          String(x?.defaultSiteId)
             .toLowerCase()
             .includes(String(site).toLowerCase()) &&
           String(x?.status).toLowerCase().includes(String(status).toLowerCase())
@@ -93,6 +94,14 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
         if (res === "Success") {
           toast.success(`${user?.name} user has been deleted successully`);
           getUsers();
+        } else if (res?.includes("pre_actions")){
+          toast.error(
+            `User can not be deleted due to an existing pre actions.`
+          );
+        } else if (res?.includes("site_project_contractors")){
+          toast.error(
+            `User can not be deleted due to an existing site projects.`
+          );
         } else {
           toast.error(
             `Something went wrong while deleting user. Please try again.`

@@ -490,7 +490,7 @@ const ContractorContractView = ({
                                       className="btn btn-sm btn-light"
                                       download
                                       href={file?.url}
-                                    >{`version-${index + 1}.png`}</a>
+                                    >{`version-${index + 1}`}</a>
                                     &nbsp;
                                   </>
                                 ))}
@@ -550,7 +550,7 @@ const ContractorContractView = ({
 
                 {/* Mandatory folder upload */}
                 <div className="row">
-                  <div className="col-6">
+                  <div className="col-md-6">
                     <div className="table-responsive mt-2">
                       <div>Schedule Visit</div>
                       <table className="table">
