@@ -25,7 +25,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
 
   const indexOfLastUsers = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUsers - usersPerPage;
-  const currentContracts = filteredUser.slice(
+  const currentUsers = filteredUser.slice(
     indexOfFirstUser,
     indexOfLastUsers
   );
@@ -246,12 +246,12 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
                 </tr>
               </thead>
               <tbody>
-                {currentContracts?.length === 0 && (
+                {currentUsers?.length === 0 && (
                   <tr>
                     <td>No search result found!!</td>
                   </tr>
                 )}
-                {currentContracts?.map((user) => (
+                {currentUsers?.map((user) => (
                   <tr key={user?.id}>
                     <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>

@@ -236,7 +236,11 @@ const Sites = ({
                       <span
                         className="text-primary cursor"
                         onClick={() => {
-                          selectGlobalSite(itm);
+                          if (loggedInUserData?.role === ROLE.ADMIN) {
+                            selectGlobalSite(itm);
+                          } else {
+                            toast.warn("Only admin role can select the site from portfolio management.")
+                          }
                         }}
                       >
                         {itm?.siteName}

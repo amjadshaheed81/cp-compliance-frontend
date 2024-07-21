@@ -21,6 +21,8 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
       <SquarePagination
         count={totalPages}
         page={currentPage}
+        showFirstButton={true}
+        showLastButton={true}
         onChange={handleChange}
         color="primary"
       />
