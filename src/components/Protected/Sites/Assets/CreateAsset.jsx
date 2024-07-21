@@ -199,26 +199,24 @@ const CreateAsset = ({
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
-                              value={
-                                siteAssets.find(
-                                  (asset) =>
-                                    asset.assetId ===
-                                    getValues("relatedAssetId")
-                                ) || null
-                              }
                               onChange={(event, newValue) =>
-                                setValue("relatedAssetId", newValue?.assetId)
+                                setValue("relatedAssetId", newValue?.key)
                               }
-                              options={siteAssets}
+                              options={siteAssets.map((option) => {
+                                return { key: option.assetId, label: option.assetName };
+                              })}
                               getOptionLabel={(option) =>
-                                option.assetName || ""
+                                option.label || ""
                               }
                               renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  label="Select Asset"
-                                  variant="outlined"
-                                />
+                                <div ref={params.InputProps.ref}>
+                                  <input
+                                    type="text"
+                                    {...params.inputProps}
+                                    className="form-control form-select"
+                                    placeholder="Select Manager"
+                                  />
+                                </div>
                               )}
                             />
                           </div>
@@ -376,9 +374,7 @@ const CreateAsset = ({
                           setSubCategory2List(subCategoryData);
                         }}
                       >
-                        <option value="">
-                          Select Sub Category
-                        </option>
+                        <option value="">Select Sub Category</option>
                         {subCategoryList?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
@@ -398,9 +394,7 @@ const CreateAsset = ({
                         id="subCategory2"
                         {...register("subCategory2")}
                       >
-                        <option value="">
-                          Select Sub Category 2
-                        </option>
+                        <option value="">Select Sub Category 2</option>
                         {subCategory2List?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}

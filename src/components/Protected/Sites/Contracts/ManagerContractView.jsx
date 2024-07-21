@@ -686,7 +686,7 @@ const ManagerContractView = ({
                 {values?.category !== "Building Project" &&
                   values?.category !== "" && (
                     <div className="row">
-                      <div className="col-6">
+                      <div className="col-md-6">
                         <div className="form-group">
                           <label for="scheduleDate">Schedule Visit</label>
                           <input
@@ -711,7 +711,7 @@ const ManagerContractView = ({
                           </div>
                         )}
                       </div>
-                      <div className="col-6">
+                      <div className="col-md-6">
                         <div className="table-responsive mt-2">
                           <table className="table">
                             <thead className="table-dark">

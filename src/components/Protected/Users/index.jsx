@@ -13,6 +13,7 @@ import Swal from "sweetalert2";
 import AddUser from "./AddUser";
 import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import Pagination from "../../common/Pagination/Pagination";
+import { ROLE } from "../../../Constant/Role";
 
 const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
   const [showViewModal, setShowViewModal] = useState(false);
@@ -162,16 +163,17 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
                     onChange={handleInputChange}
                   >
                     <option value="">Role</option>
-                    <option value={"Admin"}>Admin</option>
-                    <option value={"Manager"}>Property Manager</option>
-                    <option value={"Site Action Manager"}>
+                    <option value={ROLE.ADMIN}>Admin</option>
+                    <option value={ROLE.MANAGER}>Property Manager</option>
+                    <option value={ROLE.SITE_ACTION_MANAGER}>
                       Site Action Manager
                     </option>
-                    <option value={"Site Users"}>Site Users</option>
-                    <option value={"Care Taker"}>Care Taker</option>
-                    <option value={"Contractor"}>Contractor</option>
-                    <option value={"Surveyor"}>Surveyor</option>
-                    <option value={"Tradesman"}>Tradesman</option>
+                    <option value={ROLE.SITE_USERS}>Site Users</option>
+                    <option value={ROLE.CARE_TAKER}>Care Taker</option>
+                    <option value={ROLE.CONTRACTOR}>Contractor</option>
+                    <option value={ROLE.SURVEYOR}>Surveyor</option>
+                    <option value={ROLE.TRADESMAN}>Tradesman</option>
+                    <option value={ROLE.TESTER}>Tester</option>
                   </select>
                 </div>
                 <div className="col">

@@ -54,6 +54,7 @@ const UpdateAsset = ({
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [subCategory2, setSubCategory2] = useState([]);
   const [subCategory2List, setSubCategory2List] = useState([]);
+  const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
@@ -77,9 +78,11 @@ const UpdateAsset = ({
     const category = await get("/api/lov/ASSET_CATEGORY");
     const subCategory = await get("/api/lov/ASSET_SUB_CATEGORY");
     const subCategory2 = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    const material = await get("/api/lov/PASSIVE_FIRE_PROTECTION");
     setCategory(category);
     setSubCategory(subCategory);
     setSubCategory2(subCategory2);
+    setPassiveFireMaterial(material);
   };
 
   const getTester = async () => {
@@ -111,12 +114,12 @@ const UpdateAsset = ({
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
     setSelectedAsset(response);
-    setPatRecord(response?.assetPATItems);
-    if(response?.category) {
+    setPatRecord(response?.assetPATItems || []);
+    if (response?.category) {
       categoryChange(response?.category);
     }
-    if(response?.subCategory) {
-      subCategoryChange(response?.subCategory)
+    if (response?.subCategory) {
+      subCategoryChange(response?.subCategory);
     }
     purchaseDetailForm.reset({
       invoiceFile: response?.invoiceFile,
@@ -145,17 +148,16 @@ const UpdateAsset = ({
   };
 
   const addPatRecord = () => {
-    setPatRecord([
-      ...patRecord,
-      {
-        patId: null,
-        assetId: selectedAsset?.assetId,
-        patUserId: null,
-        patDate: null,
-        patNextDate: null,
-        patStatus: "",
-      },
-    ]);
+    const d = [...patRecord];
+    d.push({
+      patId: null,
+      assetId: selectedAsset?.assetId,
+      patUserId: null,
+      patDate: null,
+      patNextDate: null,
+      patStatus: "",
+    });
+    setPatRecord(d);
   };
   const [deleteSavedPatItems, setDeleteSavedPatItems] = useState([]);
   const deletePatRecord = (index, item) => {
@@ -335,13 +337,22 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setSubCategory2List(subCategoryData);
-  }
+  };
   const categoryChange = (val) => {
     setValue("category", val);
     const subCategoryData = subCategory?.filter(
       (itm) => itm?.attribite1 === val
     );
     setSubCategoryList(subCategoryData);
+  };
+  const getSelectedValue = () => {
+    const selectedValue =
+      siteAssets.find((itm) => itm.assetId == getValues("relatedAssetId")) ||
+      null;
+    if (selectedValue) {
+      return { key: selectedValue?.assetId, label: selectedValue?.assetName };
+    }
+    return null;
   };
   return (
     <Fragment>
@@ -429,27 +440,26 @@ const UpdateAsset = ({
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
-                              value={
-                                siteAssets.find(
-                                  (asset) =>
-                                    asset.assetId ===
-                                    getValues("relatedAssetId")
-                                ) || null
-                              }
+                              value={getSelectedValue()}
                               onChange={(event, newValue) => {
-                                console.log("newValue", newValue);
-                                setValue("relatedAssetId", newValue?.assetId);
+                                setValue("relatedAssetId", newValue?.key);
                               }}
-                              options={siteAssets}
-                              getOptionLabel={(option) =>
-                                option.assetName || ""
-                              }
+                              options={siteAssets.map((option) => {
+                                return {
+                                  key: option.assetId,
+                                  label: option.assetName,
+                                };
+                              })}
+                              getOptionLabel={(option) => option.label || ""}
                               renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  label="Select Asset"
-                                  variant="outlined"
-                                />
+                                <div ref={params.InputProps.ref}>
+                                  <input
+                                    type="text"
+                                    {...params.inputProps}
+                                    className="form-control form-select"
+                                    placeholder="Select Manager"
+                                  />
+                                </div>
                               )}
                             />
                           </div>
@@ -541,7 +551,7 @@ const UpdateAsset = ({
                         {selectedAsset?.image && (
                           <img
                             src={selectedAsset?.image}
-                            style={{ width: '100px', height: '100px'}}
+                            style={{ width: "100px", height: "100px" }}
                             className="img img-responsive border p-2 m-2"
                           />
                         )}
@@ -581,9 +591,7 @@ const UpdateAsset = ({
                           categoryChange(e.target.value);
                         }}
                       >
-                        <option value="">
-                          Select category
-                        </option>
+                        <option value="">Select category</option>
                         {category?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
@@ -606,9 +614,7 @@ const UpdateAsset = ({
                           subCategoryChange(e.target.value);
                         }}
                       >
-                        <option value="">
-                          Select Sub Category
-                        </option>
+                        <option value="">Select Sub Category</option>
                         {subCategoryList?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
@@ -622,9 +628,7 @@ const UpdateAsset = ({
                         id="subCategory2"
                         {...register("subCategory2")}
                       >
-                        <option value="">
-                          Select Sub Category 2
-                        </option>
+                        <option value="">Select Sub Category 2</option>
                         {subCategory2List?.map((itm) => (
                           <option value={itm?.lovValue}>{itm?.lovValue}</option>
                         ))}
@@ -947,7 +951,7 @@ const UpdateAsset = ({
                   <div className="col-md-12 mt-2">
                     <div className="table-responsive">
                       <table className="table table-bordered f-11">
-                        <thead className="table-lght">
+                        <thead className="table-dark">
                           <tr>
                             <th scope="col">Tester</th>
                             <th scope="col">Test Date</th>
@@ -956,6 +960,11 @@ const UpdateAsset = ({
                           </tr>
                         </thead>
                         <tbody>
+                          {patRecord?.length === 0 && (
+                            <tr>
+                              <td colSpan={4}>No PAT Record Found.</td>
+                            </tr>
+                          )}
                           {patRecord?.map((itm, index) => (
                             <tr>
                               <td>
@@ -1026,12 +1035,12 @@ const UpdateAsset = ({
                                 )}
                               </td>
                               <td>
-                                <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
+                                {/* <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
                                 &nbsp;
                                 <i class="fas fa-regular fa-thumbs-down cursor"></i>{" "}
-                                &nbsp;
+                                &nbsp; */}
                                 <i
-                                  className="fas fa-trash cursor"
+                                  className="fas fa-trash cursor text-danger pt-2"
                                   onClick={() => deletePatRecord(index, itm)}
                                 ></i>
                               </td>
@@ -1097,7 +1106,11 @@ const UpdateAsset = ({
                           {...passiveFireProtectionForm.register("material")}
                         >
                           <option value="">Select Material</option>
-                          <option value={"Test Material"}>Test Material</option>
+                          {passiveFireMaterial?.map((itm) => (
+                            <option value={itm?.lovValue}>
+                              {itm?.lovValue}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
