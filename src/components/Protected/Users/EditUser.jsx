@@ -7,7 +7,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import { addUser, getSites } from "../../../store/thunk/site";
+import { addUser, addUserTagSite, getSites } from "../../../store/thunk/site";
 import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
@@ -22,6 +22,7 @@ const ViewUsers = ({
   sites,
   getSites,
   addUser,
+  addUserTagSite,
 }) => {
   const handleOpen = () => setShowEditModal(true);
   const handleClose = () => setShowEditModal(false);
@@ -44,6 +45,7 @@ const ViewUsers = ({
       ...selectedUser,
       firstName: name?.[0] || "",
       lastName: name?.[1] || "",
+      tagSite: selectedUser?.taggedSites?.[0]?.id,
       isCompany: selectedUser?.companyId ? true : false,
     });
     setSelectedCompany(selectedUser?.companyId);
@@ -68,7 +70,7 @@ const ViewUsers = ({
       userType: formJson?.userType || null,
       defaultSiteId:
         formJson?.userType === "Internal"
-          ? Number(formJson?.defaultSiteId)
+          ? selectedUser?.defaultSiteId
           : null,
       companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
@@ -77,7 +79,17 @@ const ViewUsers = ({
     setIsLoading(true);
     try {
       const res = await addUser(data);
-      if (res === "success") {
+      if (res) {
+        const tagSite = {
+          addedSites: [formJson?.tagSite],
+          removedSites: [],
+        };
+        if(formJson?.tagSite) {
+          if (formJson?.tagSite != selectedUser?.taggedSites?.[0]?.id) {
+            tagSite.removedSites = [selectedUser?.taggedSites?.[0]?.id]
+          }
+        }
+        const tagRes = await addUserTagSite(data?.userId, tagSite);
         toast.success(
           `${formJson?.firstName} user has been updated successfully.`
         );
@@ -286,13 +298,13 @@ const ViewUsers = ({
                   {values?.userType === "Internal" && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
-                        <label for="defaultSiteId">
+                        <label for="tagSite">
                           Tag Site (if internal)
                         </label>
                         <select
-                          id="defaultSiteId"
-                          name="defaultSiteId"
-                          {...register("defaultSiteId")}
+                          id="tagSite"
+                          name="tagSite"
+                          {...register("tagSite")}
                           className="form-control form-select"
                         >
                           <option value={""} selected disabled>
@@ -333,11 +345,7 @@ const ViewUsers = ({
                             onChange={(event, item) => {
                               setSelectedCompany(item?.key);
                             }}
-                            freeSolo
                             value={getSelectedValue()}
-                            onInputChange={(event, newInputValue) => {
-                            setSelectedCompany(newInputValue);
-                            }}
                             options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
@@ -460,4 +468,4 @@ const ViewUsers = ({
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
 });
-export default connect(mapStateToProps, { getSites, addUser })(ViewUsers);
+export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(ViewUsers);

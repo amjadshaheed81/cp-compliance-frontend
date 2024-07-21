@@ -7,7 +7,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import { getSites, addUser } from "../../../store/thunk/site";
+import { getSites, addUser, addUserTagSite } from "../../../store/thunk/site";
 import { get } from "../../../api";
 import { getCurrentDate } from "../../../utils/dateMethod";
 import { toast } from "react-toastify";
@@ -24,12 +24,14 @@ const AddUser = ({
   getSites,
   sites,
   addUser,
+  siteSelectedForGlobal,
+  addUserTagSite,
 }) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
-  const [selectedCompany, setSelectedCompany ] = useState();
+  const [selectedCompany, setSelectedCompany] = useState();
   const {
     register,
     reset,
@@ -43,13 +45,13 @@ const AddUser = ({
     getSites();
     getCompanies();
   }, []);
-  
+
   const getCompanies = async () => {
     const url = `/api/companies/all`;
     let response = await get(url);
-    response = response.filter(r=> r!== null)
+    response = response.filter((r) => r !== null);
     setcompanies(response);
-  }
+  };
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -62,15 +64,21 @@ const AddUser = ({
       role: formJson?.role || null,
       userType: formJson?.userType || null,
       defaultSiteId:
-        formJson?.userType === "Internal" ? Number(formJson?.tagSite) : null,
+        formJson?.userType === "Internal" ? siteSelectedForGlobal?.siteId : null,
       companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
       status: formJson?.status || null,
     };
+    // formJson?.tagSite
     setIsLoading(true);
     try {
       const res = await addUser(data);
-      if (res === "success") {
+      if (res) {
+        const tagSite = {
+          addedSites: [formJson?.tagSite],
+          removedSites: [],
+        };
+        const tagRes = await addUserTagSite(res?.id, tagSite); 
         toast.success(`${formJson?.firstName} has been added successfully.`);
         refresh();
         reset({});
@@ -306,28 +314,29 @@ const AddUser = ({
                       <div className="form-group">
                         <label for="company">Company Name</label>
                         <Autocomplete
-                            id="leadUserID"
-                            onChange={(event, item) => {
-                              console.log("item", item);
-                              setSelectedCompany(item?.key);
-                            }}
-                            freeSolo
-                            onInputChange={(event, newInputValue) => {
-                              console.log("newInputValue", newInputValue);
-                            setSelectedCompany(newInputValue);
-                            }}
-                            options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
-                            getOptionLabel={(option) => option.label}
-                            renderInput={(params) => (
-                              <div ref={params.InputProps.ref} >
-                                <input type="text"
-                                  {...params.inputProps}
-                                  className="form-control"
-                                  placeholder="Select Company"
-                                />
-                              </div>
-                            )}
-                          />
+                          id="leadUserID"
+                          onChange={(event, item) => {
+                            console.log("item", item);
+                            setSelectedCompany(item?.key);
+                          }}
+                          options={companies.map((option) => {
+                            return {
+                              key: option.companyId,
+                              label: option.companyName,
+                            };
+                          })}
+                          getOptionLabel={(option) => option.label}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <input
+                                type="text"
+                                {...params.inputProps}
+                                className="form-control"
+                                placeholder="Select Company"
+                              />
+                            </div>
+                          )}
+                        />
                       </div>
                     </div>
                   )}
@@ -440,4 +449,4 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, { getSites, addUser })(AddUser);
+export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(AddUser);

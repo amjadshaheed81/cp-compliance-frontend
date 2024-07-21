@@ -1206,6 +1206,21 @@ export const addUser = (formData) => {
       const url = "/api/user/manage";
       const data = await put(url, formData);
       if (data?.status === 200) {
+        return data?.data;
+      } else {
+        return "error";
+      }
+    } catch (error) {
+      toast.error("Something went wrong while adding user. Please try again.");
+    }
+  };
+};
+export const addUserTagSite = (userId, formData) => {
+  return async (dispatch) => {
+    try {
+      const url = `/api/user/${userId}/site/manage`;
+      const data = await post(url, formData);
+      if (data?.status === 200) {
         return "success";
       } else {
         return "error";
