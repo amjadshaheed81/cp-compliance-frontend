@@ -13,6 +13,7 @@ import {
   addSiteAsset,
   getDocumentsRootFolder,
   getSiteAssets,
+  getSiteLayout,
   getUsers,
   setLoader,
   updateDoorSpecification,
@@ -31,6 +32,7 @@ import moment from "moment";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import "./AssetStyle.css";
+import Swal from "sweetalert2";
 
 const UpdateAsset = ({
   setLoader,
@@ -46,6 +48,8 @@ const UpdateAsset = ({
   updatePatDetails,
   getSiteAssets,
   siteAssets,
+  getSiteLayout,
+  siteLayout,
 }) => {
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -71,9 +75,15 @@ const UpdateAsset = ({
       getUsers();
       getTester();
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteLayout(siteSelectedForGlobal?.siteId)
       getCategories();
     } else {
-      toast.error("Please select site from site search to proceed....");
+      Swal.fire({
+        icon: "error",
+        title: "Site is not selected",
+        text: "Please select site from site search and try again.",
+      });
+      return;
     }
   }, []);
 
@@ -280,10 +290,12 @@ const UpdateAsset = ({
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-      valuationDate: `${
-        selectedAsset?.valuationDate?.split("T")?.[0]
-      } 10:00:00`,
-      disposalDate: `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`,
+      valuationDate: selectedAsset?.valuationDate
+        ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
+        : null,
+      disposalDate: selectedAsset?.disposalDate
+        ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
+        : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
       valuationUserId: selectedAsset?.valuationUserId,
@@ -303,14 +315,18 @@ const UpdateAsset = ({
     const submitData = {
       ...data,
       assetId: selectedAsset?.assetId,
-      purchaseDate: `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`,
+      purchaseDate: selectedAsset?.purchaseDate
+        ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+        : null,
       supplier: selectedAsset?.supplier,
       transactionId: selectedAsset?.transactionId,
       cost: selectedAsset?.cost,
-      valuationDate: `${
-        selectedAsset?.valuationDate?.split("T")?.[0]
-      } 10:00:00`,
-      disposalDate: `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`,
+      valuationDate: selectedAsset?.valuationDate
+        ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
+        : null,
+      disposalDate: selectedAsset?.disposalDate
+        ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
+        : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
       valuationUserId: selectedAsset?.valuationUserId,
@@ -334,7 +350,9 @@ const UpdateAsset = ({
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-      purchaseDate: `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`,
+      purchaseDate: selectedAsset?.purchaseDate
+        ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+        : null,
       supplier: selectedAsset?.supplier,
       transactionId: selectedAsset?.transactionId,
       cost: selectedAsset?.cost,
@@ -1057,8 +1075,9 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Internal/External</option>
-                        <option value={"Internal"}>Internal</option>
-                        <option value={"External"}>External</option>
+                        {["Internal", "External"].map((num) => (
+                          <option value={num}>{num} </option>
+                        ))}
                       </select>
                       {locationForm.formState.errors?.position && (
                         <InputError
@@ -1083,10 +1102,11 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Floor</option>
-                        <option value={"Ground"}>Ground</option>
-                        <option value={"First"}>First</option>
-                        <option value={"Second"}>Second</option>
-                        <option value={"Third"}>Third</option>
+                        {siteLayout
+                          .filter((site) => site.nodeType === "floor")
+                          .map((site) => (
+                            <option value={site.nodeName}>{site.nodeName} </option>
+                          ))}
                       </select>
                       {locationForm.formState.errors?.floor && (
                         <InputError
@@ -1111,8 +1131,11 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Room</option>
-                        <option value="G1">G1</option>
-                        <option value="G2">G2</option>
+                        {siteLayout
+                          .filter((site) => site.nodeType === "room")
+                          .map((site) => (
+                            <option value={site.nodeName}>{site.nodeName}</option>
+                          ))}
                       </select>
                       {locationForm.formState.errors?.room && (
                         <InputError
@@ -1957,6 +1980,7 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   users: state.site.users,
   siteAssets: state.site.siteAssets,
+  siteLayout: state.site.siteLayout,
 });
 export default connect(mapStateToProps, {
   setLoader,
@@ -1968,4 +1992,5 @@ export default connect(mapStateToProps, {
   updatepspDetails,
   updatePatDetails,
   getSiteAssets,
+  getSiteLayout,
 })(UpdateAsset);

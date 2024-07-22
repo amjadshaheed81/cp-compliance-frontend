@@ -310,7 +310,7 @@ const Summary = ({
                     {asset.floor ? ` > ${asset.floor}` : ""}
                     {asset.room ? ` > ${asset.room}` : ""}
                   </th>
-                  <th scope="col">{asset?.passiveFireSch ? "YES" : "NO"}</th>
+                  <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
                   <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
                   <th scope="col">
                     <Tooltip title={`View ${asset.assetName}`} arrow>
