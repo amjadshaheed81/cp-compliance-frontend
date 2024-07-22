@@ -11,12 +11,14 @@ import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const Summary = ({
   siteAssets,
   deleteSiteAsset,
   getSiteAssets,
   siteSelectedForGlobal,
+  loggedInUserData,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
@@ -35,11 +37,14 @@ const Summary = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  const locationFilter = siteAssetsList.map((itm) => {
-    return { location: itm.location };
-  }).filter((obj1, i, arr) => 
-    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
-  );
+  const locationFilter = siteAssetsList
+    .map((itm) => {
+      return { location: itm.location };
+    })
+    .filter(
+      (obj1, i, arr) =>
+        arr.findIndex((obj2) => obj2.location === obj1.location) === i
+    );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -53,12 +58,22 @@ const Summary = ({
   };
   useEffect(() => {
     if (siteAssets) {
-      setFilteredSiteAssets(siteAssets?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
-      }));
-      setSiteAssetsList(siteAssets?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
-      }));
+      setFilteredSiteAssets(
+        siteAssets?.map((itm) => {
+          return {
+            ...itm,
+            location: `${itm?.position} > ${itm?.floor} > ${itm?.room}`,
+          };
+        })
+      );
+      setSiteAssetsList(
+        siteAssets?.map((itm) => {
+          return {
+            ...itm,
+            location: `${itm?.position} > ${itm?.floor} > ${itm?.room}`,
+          };
+        })
+      );
     }
   }, [siteAssets]);
   const navigate = useNavigate();
@@ -143,7 +158,7 @@ const Summary = ({
       toast.warn("Please select only one asset.");
     } else {
       setSelectedAssetForClone(selectedItems[0]);
-      setShowCloneModal(true)
+      setShowCloneModal(true);
     }
   };
   const handleCheckboxChange = (e, asset) => {
@@ -235,38 +250,41 @@ const Summary = ({
         </div>
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
-              <Tooltip title={`Add New Asset`} arrow>
-                <button
-                  className="btn btn-primary text-white pr-2"
-                  onClick={() => {
-                    goTo("/create-asset");
-                  }}
-                >
-                  <i className="fas fa-plus"></i>
-                </button>
-              </Tooltip>
-              &nbsp;
-              <Tooltip title={`Clone`} arrow>
-                <button
-                  className="btn btn-light text-primary pr-2"
-                  onClick={() => {
-                    cloneSelectedAsset();
-                  }}
-                >
-                  Clone
-                </button>
-              </Tooltip>
-              <CSVLink
-                filename={"site-assets-lists"}
-                className="btn btn-light bg-white text-primary"
-                data={siteAssetsList}
-              >
-                <Tooltip title={`Export`} arrow>
-                  <i className="fas fa-download"></i>
+            {isManagerAdminLogin(loggedInUserData) && (
+              <div className="col">
+                <Tooltip title={`Add New Asset`} arrow>
+                  <button
+                    className="btn btn-primary text-white pr-2"
+                    onClick={() => {
+                      goTo("/create-asset");
+                    }}
+                  >
+                    <i className="fas fa-plus"></i>
+                  </button>
                 </Tooltip>
-              </CSVLink>
-            </div>
+                &nbsp;
+                <Tooltip title={`Clone`} arrow>
+                  <button
+                    className="btn btn-light text-primary pr-2"
+                    onClick={() => {
+                      cloneSelectedAsset();
+                    }}
+                  >
+                    Clone
+                  </button>
+                </Tooltip>
+                &nbsp;
+                <CSVLink
+                  filename={"site-assets-lists"}
+                  className="btn btn-light bg-white text-primary"
+                  data={siteAssetsList}
+                >
+                  <Tooltip title={`Export`} arrow>
+                    <i className="fas fa-download"></i>
+                  </Tooltip>
+                </CSVLink>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -329,39 +347,43 @@ const Summary = ({
                         <i className="fas fa-eye"></i>
                       </button>{" "}
                     </Tooltip>
-                    <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => {
-                          goTo(`/update-asset?assetId=${asset?.assetId}`);
-                        }}
-                      >
-                        <i className="fas fa-pen"></i>
-                      </button>{" "}
-                    </Tooltip>
-                    <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                      <QRCodeSVG
-                        onClick={() => {
-                          setShowAddModal(true);
-                          setSelectedAsset(asset);
-                        }}
-                        value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
-                        style={{
-                          height: "30px",
-                          width: "30px",
-                          margin: "0px 6px",
-                          cursor: "pointer",
-                        }}
-                      />
-                    </Tooltip>
-                    <Tooltip title={`Delete ${asset.assetName}`} arrow>
-                      <button
-                        className="btn btn-sm btn-light text-danger"
-                        onClick={() => deleteAsset(asset)}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>{" "}
-                    </Tooltip>
+                    {isManagerAdminLogin(loggedInUserData) && (
+                      <>
+                        <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => {
+                              goTo(`/update-asset?assetId=${asset?.assetId}`);
+                            }}
+                          >
+                            <i className="fas fa-pen"></i>
+                          </button>{" "}
+                        </Tooltip>
+                        <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                          <QRCodeSVG
+                            onClick={() => {
+                              setShowAddModal(true);
+                              setSelectedAsset(asset);
+                            }}
+                            value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
+                            style={{
+                              height: "30px",
+                              width: "30px",
+                              margin: "0px 6px",
+                              cursor: "pointer",
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title={`Delete ${asset.assetName}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light text-danger"
+                            onClick={() => deleteAsset(asset)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>{" "}
+                        </Tooltip>
+                      </>
+                    )}
                   </th>
                 </tr>
               ))}
@@ -384,6 +406,7 @@ const Summary = ({
 const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { deleteSiteAsset, getSiteAssets })(
   Summary

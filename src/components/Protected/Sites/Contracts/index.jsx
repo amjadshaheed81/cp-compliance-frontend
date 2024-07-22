@@ -22,15 +22,8 @@ import ManagerContractView from "./ManagerContractView";
 import ContractorContractView from "./ContractorContractView";
 import Swal from "sweetalert2";
 import Pagination from "../../../common/Pagination/Pagination";
-export const isManagerAdminLogin = (loggedInUserData) => {
-  if (
-    loggedInUserData?.role === ROLE.ADMIN ||
-    loggedInUserData?.role === ROLE.MANAGER
-  ) {
-    return true;
-  }
-  return false;
-};
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+
 const Contracts = ({
   loggedInUserData,
   siteSelectedForGlobal,
