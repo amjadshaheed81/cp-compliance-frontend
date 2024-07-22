@@ -18,6 +18,8 @@ import {
   selectGlobalSite,
   setLoader,
 } from "../../../store/thunk/site";
+import { ROLE } from "../../../Constant/Role";
+import { toast } from "react-toastify";
 
 function SearchSite({
   getSites,
@@ -25,6 +27,7 @@ function SearchSite({
   selectGlobalSite,
   setLoader,
   siteSelectedForGlobal,
+  loggedInUserData,
 }) {
   const [allSites, setSites] = useState([]);
   const [error, setError] = useState("");
@@ -113,8 +116,12 @@ function SearchSite({
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                selectGlobalSite(site);
-                localStorage.setItem("site", JSON.stringify(site));
+                if (loggedInUserData?.role === ROLE.ADMIN) {
+                  selectGlobalSite(site);
+                  localStorage.setItem("site", JSON.stringify(site));
+                } else {
+                  toast.warn("Only admin role can select the site from portfolio management.")
+                }
               }}
             >
               <ListItemIcon>
@@ -130,7 +137,11 @@ function SearchSite({
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                selectGlobalSite(site);
+                if (loggedInUserData?.role === ROLE.ADMIN) {
+                  selectGlobalSite(site);
+                } else {
+                  toast.warn("Only admin role can select the site from portfolio management.")
+                }
               }}
             >
               <ListItemText primary={site?.siteName} />
@@ -178,6 +189,7 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   filterSite: state.site.filterSite,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   getSites,
