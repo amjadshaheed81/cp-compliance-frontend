@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../../../api";
 
-import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
+import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete, Box } from "@mui/material";
 import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
 
@@ -12,6 +12,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
   const [tempratureoptions, settempratureoptions] = useState([]);
+  const [action, setAction] = useState(false)
   const [normruntime, setnormruntime] = useState([]);
   const [readingPop, setReadingPop] = useState(null);
 
@@ -37,6 +38,8 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
       setCompleted(true)
     }
   }
+
+ 
 
   const [formData, setFormData] = useState([{}]);
   const [completed, setCompleted] = useState(false);
@@ -93,6 +96,28 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
 
     setCompleted(true);
   }
+
+  useEffect(() => {
+    if (readingPop != null) {
+      const data = formData[readingPop];
+      if (data.reading1 && data.reading2 && data.reading3 && data.temperature) {
+        const tapOption = tempratureoptions.filter(t => t === data.temperature)
+        console.log('tapOption', tapOption)
+
+        if (tapOption.length > 0) {
+          const avgTemp = (Number(data.reading1) + Number(data.reading2) + Number(data.reading3)) / 3;
+          console.log('avgTemp', avgTemp)
+          if ((tapOption[0] === "Hot" && avgTemp > 50)
+            || (tapOption[0] === "Cold" && avgTemp < 20)) {
+            setAction(true);
+          } else {
+            setAction(false);
+          }
+
+        }
+      }
+    }
+  }, [formData, readingPop])
 
 
   return (
@@ -210,6 +235,68 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                   </table>
                 </div>
               </Grid>
+              {action && <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                Action  
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <Grid item xs={12} sm={12}>
+                      <label htmlFor="consequence" name="consequence">
+                        Consequence
+                      </label>
+                      <select
+                        required
+                        className="form-control form-select"
+                        name="consequence"
+                        onChange={(e) => handleInputChange(e, readingPop)}
+                      >
+                        <option value="">Select </option>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option value={num}>{num} </option>
+                        ))}
+                      </select>
+
+                    </Grid>
+                    <Grid item xs={12} sm={12}>
+
+                      <label htmlFor="likelihood" name="likelihood">
+                        Likelihood
+                      </label>
+                      <select
+                        required
+                        className="form-control form-select"
+                        name="likelihood"
+                        onChange={(e) => handleInputChange(e, readingPop)}
+                      >
+                        <option value="">Select </option>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option value={num}>{num} </option>
+                        ))}
+                      </select>
+                    </Grid>
+                  </Grid>
+                  <Grid item xs={12} sm={8}>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      p={2}
+                      mb={2}
+                      style={{
+                        height: '290px',
+                        marginTop: '-20px'
+                      }}
+                    >
+                      <img
+                        src="/RiskScore.png"
+                        alt="Risk Score Matrix"
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>}
             </Grid>
 
           </Fragment>
