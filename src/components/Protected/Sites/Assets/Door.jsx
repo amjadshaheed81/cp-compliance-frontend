@@ -22,6 +22,7 @@ const Door = ({
   deleteSiteAsset,
 }) => {
   const [filteredSiteDoorItems, setFilteredSiteDoorItems] = useState([]);
+  const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,6 +38,11 @@ const Door = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  const locationFilter = siteAssetsList.map((itm) => {
+    return { location: itm.location };
+  }).filter((obj1, i, arr) => 
+    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
+  );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -46,7 +52,12 @@ const Door = ({
 
   useEffect(() => {
     if (siteDoorItems) {
-      setFilteredSiteDoorItems(siteDoorItems);
+      setFilteredSiteDoorItems(siteDoorItems?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
+      setSiteAssetsList(siteDoorItems?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
     }
   }, [siteDoorItems]);
 
@@ -80,7 +91,7 @@ const Door = ({
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
     if (assetName || category || location || manufacturer) {
-      const list = siteDoorItems?.filter(
+      const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
             .toLowerCase()
@@ -97,7 +108,7 @@ const Door = ({
       );
       setFilteredSiteDoorItems(list);
     } else {
-      setFilteredSiteDoorItems(siteDoorItems);
+      setFilteredSiteDoorItems(siteAssetsList);
     }
   };
 
@@ -226,6 +237,9 @@ const Door = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
+                {locationFilter.map((site) => (
+                  <option value={site.location}>{site.location}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -312,9 +326,7 @@ const Door = ({
                     {asset?.assetDoorSpecifications?.fireRating}
                   </th>
                   <th scope="col">
-                    {asset.position ? `${asset.position}` : ""}
-                    {asset.floor ? ` > ${asset.floor}` : ""}
-                    {asset.room ? ` > ${asset.room}` : ""}
+                    {asset?.location}
                   </th>
                   <th scope="col">
                     {asset?.assetDoorSpecifications?.frameFinish}

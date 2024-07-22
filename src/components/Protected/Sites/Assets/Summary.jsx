@@ -19,6 +19,7 @@ const Summary = ({
   siteSelectedForGlobal,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
+  const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -34,6 +35,11 @@ const Summary = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  const locationFilter = siteAssetsList.map((itm) => {
+    return { location: itm.location };
+  }).filter((obj1, i, arr) => 
+    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
+  );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -47,7 +53,12 @@ const Summary = ({
   };
   useEffect(() => {
     if (siteAssets) {
-      setFilteredSiteAssets(siteAssets);
+      setFilteredSiteAssets(siteAssets?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
+      setSiteAssetsList(siteAssets?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
     }
   }, [siteAssets]);
   const navigate = useNavigate();
@@ -81,7 +92,7 @@ const Summary = ({
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
     if (assetName || category || location || manufacturer) {
-      const list = siteAssets?.filter(
+      const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
             .toLowerCase()
@@ -98,7 +109,7 @@ const Summary = ({
       );
       setFilteredSiteAssets(list);
     } else {
-      setFilteredSiteAssets(siteAssets);
+      setFilteredSiteAssets(siteAssetsList);
     }
   };
   const deleteAsset = (itm) => {
@@ -215,6 +226,9 @@ const Summary = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
+                {locationFilter.map((site) => (
+                  <option value={site.location}>{site.location}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -233,8 +247,6 @@ const Summary = ({
                 </button>
               </Tooltip>
               &nbsp;
-            </div>
-            <div className="col">
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
@@ -245,12 +257,10 @@ const Summary = ({
                   Clone
                 </button>
               </Tooltip>
-            </div>
-            <div className="col">
               <CSVLink
                 filename={"site-assets-lists"}
                 className="btn btn-light bg-white text-primary"
-                data={siteAssets}
+                data={siteAssetsList}
               >
                 <Tooltip title={`Export`} arrow>
                   <i className="fas fa-download"></i>
@@ -305,11 +315,7 @@ const Summary = ({
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{asset?.category}</th>
-                  <th scope="col">
-                    {asset.position ? `${asset.position}` : ""}
-                    {asset.floor ? ` > ${asset.floor}` : ""}
-                    {asset.room ? ` > ${asset.room}` : ""}
-                  </th>
+                  <th scope="col">{asset?.location}</th>
                   <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
                   <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
                   <th scope="col">

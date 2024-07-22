@@ -22,6 +22,7 @@ const Pat = ({
   getSitePATAssets,
 }) => {
   const [filteredSitePATItems, setFilteredSitePATItems] = useState([]);
+  const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,12 +38,22 @@ const Pat = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  const locationFilter = siteAssetsList.map((itm) => {
+    return { location: itm.location };
+  }).filter((obj1, i, arr) => 
+    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
+  );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
   useEffect(() => {
     if (sitePATItems) {
-      setFilteredSitePATItems(sitePATItems);
+      setFilteredSitePATItems(sitePATItems?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
+      setSiteAssetsList(sitePATItems?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
     }
   }, [sitePATItems]);
   const navigate = useNavigate();
@@ -76,7 +87,7 @@ const Pat = ({
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
     if (assetName || category || location || manufacturer) {
-      const list = sitePATItems?.filter(
+      const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
             .toLowerCase()
@@ -93,7 +104,7 @@ const Pat = ({
       );
       setFilteredSitePATItems(list);
     } else {
-      setFilteredSitePATItems(sitePATItems);
+      setFilteredSitePATItems(siteAssetsList);
     }
   };
   useEffect(() => {
@@ -218,6 +229,9 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
+                {locationFilter.map((site) => (
+                  <option value={site.location}>{site.location}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -298,11 +312,7 @@ const Pat = ({
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{asset?.category}</th>
-                  <th scope="col">
-                    {asset.position ? `${asset.position}` : ""}
-                    {asset.floor ? ` > ${asset.floor}` : ""}
-                    {asset.room ? ` > ${asset.room}` : ""}
-                  </th>
+                  <th scope="col">{asset?.location}</th>
                   <th scope="col">{asset?.dateTested}</th>
                   <th scope="col">{asset?.nextTest}</th>
                   <th scope="col">{asset?.status}</th>

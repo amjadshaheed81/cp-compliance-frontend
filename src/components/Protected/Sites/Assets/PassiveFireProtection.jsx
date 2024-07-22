@@ -22,6 +22,7 @@ const PassiveFireProtection = ({
   getSitePFPAssets,
 }) => {
   const [filteredSitePFPItems, setfilteredSitePFPItems] = useState([]);
+  const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,11 +38,22 @@ const PassiveFireProtection = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  const locationFilter = siteAssetsList.map((itm) => {
+    return { location: itm.location };
+  }).filter((obj1, i, arr) => 
+    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
+  );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
   useEffect(() => {
     if (sitePFPItems) {
+      setfilteredSitePFPItems(sitePFPItems?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
+      setSiteAssetsList(sitePFPItems?.map((itm) => {
+        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+      }));
       setfilteredSitePFPItems(sitePFPItems);
     }
   }, [sitePFPItems]);
@@ -72,7 +84,7 @@ const PassiveFireProtection = ({
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
     if (assetName || category || location || manufacturer) {
-      const list = sitePFPItems?.filter(
+      const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
             .toLowerCase()
@@ -89,7 +101,7 @@ const PassiveFireProtection = ({
       );
       setfilteredSitePFPItems(list);
     } else {
-      setfilteredSitePFPItems(sitePFPItems);
+      setfilteredSitePFPItems(siteAssetsList);
     }
   };
   const navigate = useNavigate();
@@ -219,6 +231,9 @@ const PassiveFireProtection = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
+                {locationFilter.map((site) => (
+                  <option value={site.location}>{site.location}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -300,11 +315,7 @@ const PassiveFireProtection = ({
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.assetPFPItem?.material}</th>
                   <th scope="col">{asset?.assetPFPItem?.product}</th>
-                  <th scope="col">
-                    {asset.position ? `${asset.position}` : ""}
-                    {asset.floor ? ` > ${asset.floor}` : ""}
-                    {asset.room ? ` > ${asset.room}` : ""}
-                  </th>
+                  <th scope="col">{asset?.location}</th>
                   <th scope="col">{asset?.assetPFPItem?.service}</th>
                   <th scope="col">{asset?.assetPFPItem?.dimension}</th>
                   <th scope="col">{asset?.assetPFPItem?.quantity}</th>
