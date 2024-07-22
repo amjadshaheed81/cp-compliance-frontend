@@ -16,7 +16,7 @@ import "./Sites.css";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import ListStatusBadge from "../../common/Alert/Status/ListStatusBadge";
 import Tooltip from "@mui/material/Tooltip";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
 
@@ -36,9 +36,12 @@ const Sites = ({
 
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;
-  const currentSites = filterSite.slice(
-    indexOfFirstSite,
-    indexOfLastSite
+  const currentSites = filterSite.slice(indexOfFirstSite, indexOfLastSite);
+  const cityOptions = sites.filter(
+    (obj1, i, arr) => arr.findIndex((obj2) => obj2.city === obj1.city) === i
+  );
+  const areaOption = sites.filter(
+    (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
   );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -57,10 +60,12 @@ const Sites = ({
       if (result.isConfirmed) {
         const res = await deleteSite(itm?.siteId);
         if (res === "Success") {
-          toast.success(`${itm?.siteName} site has been deleted successully`)
+          toast.success(`${itm?.siteName} site has been deleted successully`);
           getSites();
         } else {
-          toast.error("Something went wrong while deleting site. Please try again!")
+          toast.error(
+            "Something went wrong while deleting site. Please try again!"
+          );
         }
       } else if (result.isDenied) {
         // Swal.fire("Changes are not saved", "", "info");
@@ -155,7 +160,7 @@ const Sites = ({
                     onChange={searchSitesWithCity}
                   >
                     <option value="city">City</option>
-                    {filterSite?.map((site) => (
+                    {cityOptions?.map((site) => (
                       <option value={site.city}>{site.city}</option>
                     ))}
                   </select>
@@ -168,7 +173,7 @@ const Sites = ({
                     onChange={searchSitesWithArea}
                   >
                     <option value="area">Area</option>
-                    {filterSite?.map((site) => (
+                    {areaOption?.map((site) => (
                       <option value={site.area}>{site.area}</option>
                     ))}
                   </select>
@@ -239,7 +244,9 @@ const Sites = ({
                           if (loggedInUserData?.role === ROLE.ADMIN) {
                             selectGlobalSite(itm);
                           } else {
-                            toast.warn("Only admin role can select the site from portfolio management.")
+                            toast.warn(
+                              "Only admin role can select the site from portfolio management."
+                            );
                           }
                         }}
                       >
