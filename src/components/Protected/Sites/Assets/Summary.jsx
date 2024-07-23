@@ -51,7 +51,7 @@ const Summary = ({
   useEffect(() => {
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getCategory();
-  }, []);
+  }, [siteSelectedForGlobal]);
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);

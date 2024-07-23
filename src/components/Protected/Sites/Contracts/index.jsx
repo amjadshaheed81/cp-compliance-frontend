@@ -95,7 +95,7 @@ const Contracts = ({
     }
     getCategories();
     getProjectList();
-  }, []);
+  }, [siteSelectedForGlobal]);
   const getProjectList = async (isSiteSelectedForContractor = false) => {
     setIsLoading(true);
     if (isManagerAdminLogin(loggedInUserData)) {

@@ -38,7 +38,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
 
   useEffect(() => {
     getPreActions();
-  }, []);
+  }, [siteSelectedForGlobal]);
   const getPreActions = async () => {
     if (!siteSelectedForGlobal?.siteId) {
       Swal.fire({

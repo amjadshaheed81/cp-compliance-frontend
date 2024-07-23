@@ -31,7 +31,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
         text: "Please select site from site search and try again.",
       });
     }
-  }, []);
+  }, [siteSelectedForGlobal]);
   const navigateToSubFolder = (id) => {
     console.log("target", id);
     navigate(`/subfolder/?id=${id}`);
