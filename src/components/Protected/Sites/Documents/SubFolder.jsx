@@ -32,6 +32,7 @@ import BulkUpload from "./BulkUpload";
 import VersionHistory from "./VersionHistory";
 import CreateFolder from "./CreateFolder";
 import { get } from "../../../../api";
+import Swal from "sweetalert2";
 
 const SubFolder = ({
   deleteFile,
@@ -120,10 +121,21 @@ const SubFolder = ({
     }
   }
   const deleteFile2 = async (id) => {
-    deleteFile(id);
-    getSubFilesAndFolder(folderId);
-    toast.warn("File deleted");
-
+    Swal.fire({
+      title: `Do you want to delete file ?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: '#da292e',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await deleteFile(id);
+        getSubFilesAndFolder(folderId);
+        toast.success("File deleted succesfully!!");
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
   }
 
   const navigateToSubFolder = (id) => {
@@ -224,7 +236,7 @@ const SubFolder = ({
                   <a href={itm.fileBlobUrl} download key={itm?.id}>
                     <span><i
                       style={{ color: "#384BD3" }}
-                      className="fas fa-folder fa-1x"
+                      className="fas fa-folder fa-1x cursor"
                     ></i> {itm?.folderName}/<b>{itm?.name}</b></span>
                   </a>
                 );
@@ -296,7 +308,7 @@ const SubFolder = ({
                           &nbsp; &nbsp;
                         
                           <FolderOpenIcon style={{ color: "#384BD3" }} />
-                        <span className="p-3">{folder?.name}</span>
+                        <span className="p-3 cursor">{folder?.name}</span>
                         </div>
                       </td>
                       <td>--</td>
@@ -333,7 +345,7 @@ const SubFolder = ({
                       <div>
                           &nbsp;&nbsp;
                           <TextSnippetOutlinedIcon style={{ color: "#384BD3" }} />
-                        <span className="p-3">{file?.name}</span>
+                        <span className="p-3 cursor">{file?.name}</span>
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
