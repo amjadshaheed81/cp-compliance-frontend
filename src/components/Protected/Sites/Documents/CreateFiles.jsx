@@ -24,7 +24,9 @@ const CreateFiles = ({
   folderData,
   refresh,
   siteSelectedForGlobal,
-  isStatutory
+  isStatutory,
+  uploaderUserId,
+  reviewerUserId
 }) => {
   // const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,22 +39,23 @@ const CreateFiles = ({
   const handleClose = () => setShowModal(false);
   const { register, handleSubmit, getValues } = useForm({});
   const submitFile = async (data, fileUpload) => {
-    
+
     const reqData = {
       files: fileUpload,
       documentRequestString: {
-        ...data
+        ...data,
       },
     };
-    
     delete reqData.documentRequestString.files[0].fileUpload;
     reqData.documentRequestString.files[0].issueDate = issueDate + " 00:00:00";
     reqData.documentRequestString.files[0].expiryDate = expiryDate + " 00:00:00";
+    reqData.documentRequestString.files[0].uploaderUserId = uploaderUserId || "";
+    reqData.documentRequestString.files[0].reviewerUserId = uploaderUserId || "";
+    reqData.documentRequestString.files[0].referenceNumber = data.files[0].note || "";
     const url = `/api/document/files/upload`;
     const formData = new FormData();
     formData.append("files", reqData.files);
     formData.append("documentRequestString", JSON.stringify(reqData.documentRequestString));
-
     const res = await uploadPhoto(url, formData);
     //uploadDocumentFile(data, folderId);
     setIsLoading(false);

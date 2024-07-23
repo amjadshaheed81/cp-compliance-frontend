@@ -11,32 +11,35 @@ import { get, put } from '../../../../api';
 import Swal from 'sweetalert2';
 import { connect } from 'react-redux';
 import ChipComponent from '../../../common/Chips/Chips';
+import { getSiteAssets } from '../../../../store/thunk/site';
+import { useNavigate } from 'react-router-dom';
 
-const StatutoryRegister = ({ siteSelectedForGlobal }) => {
+const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAssets, siteAssets }) => {
     let chipColor;
     const [showModal, setShowModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isChecked, setIsChecked] = useState(true);
     const [statutory, setStatutory] = useState([]);
     const [folder, setFolder] = useState({});
-    let dutiesIdentified = 0; let dutiesMet = 0;let dutiesNotMet;
-    const getDutiesIdentified = (item, dutieMet) => {
-        console.log('item', item);
-        let obj = {};
-        for(let i=0;i<item.length;i++){
-            
-            if((item[i].status === 'Passed' || item[i].status === 'Open') && item[i].required === true){
+    const navigate = useNavigate();
+    let dutiesIdentified = 0; let dutiesMet = 0;
+    console.log('logged in', loggedInUserData);
+    const getDutiesIdentified = (item) => {
+        for(let i=0;i<item.length;i++){  
+            if(item[i].required === true){        
                 dutiesIdentified++;
             }
-            if((item[i].files !== null && item[i].status === 'Passed' && dutieMet===true)){
+        }
+        return dutiesIdentified;
+    }
+
+    const getDutiesMet = (item) => {
+        for(let i=0;i<item.length;i++){
+            if((item[i].files !== null && item[i].status === 'Passed')){
                 dutiesMet++;
             }
         }
-        
-        obj.dutiesIdentified = dutiesIdentified;
-        obj.dutiesMet = dutiesMet;
-        obj.dutiesNotMet = dutiesIdentified-dutiesMet;
-        console.log('obj', obj);
-        return obj;
+        return dutiesMet;
     }
     const getStatutory = async (siteId) => {
         setIsLoading(true);
@@ -50,14 +53,24 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
     }
    
     const getChipStatus = (item) => {
-        return item.status === 'Passed' ? 'Passed'  : 'Open'
+        return item.status === 'Passed' ? 'Passed'  : item.status === 'Open' ? 'Open' : '';
     }
-    console.log('chip color', chipColor);
-    console.log('statutory', statutory);
+    const handleCheckboxField = async (e,item) => {
+        setIsChecked(e.target.checked);
+        const folderId = item.id;
+        const formData = {
+            required: e.target.checked,
+            status: ((e.target.checked === true && item.files !== null) ? "Passed" : "Open"),
+        };
+        const url = `/api/document/folder/${folderId}/manage`;
+        const res = await put(url, formData);
+        if (res?.status === 200) {
+            getStatutory(siteSelectedForGlobal?.siteId);        }
+    }
     useEffect(() => {
         if (siteSelectedForGlobal?.siteId) {
             getStatutory(siteSelectedForGlobal?.siteId);
-            // getChipStatus();
+            getSiteAssets(siteSelectedForGlobal?.siteId);
         } else {
             Swal.fire({
                 icon: "error",
@@ -67,18 +80,6 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [siteSelectedForGlobal?.siteId]);
-    const handleCheckboxField = async (e,item) => {
-        // setFolder(item);
-        const folderId = item.id;
-        const formData = {
-            required: e.target.checked,
-            status: ((e.target.checked === true && item.files !== null) ? "Passed" : "Open"),
-        };
-        const url = `/api/document/folder/${folderId}/manage`;
-        const res = await put(url, formData);
-        if (res?.status === 200) {
-        }
-    }
     return (
         <>
             <SidebarNew />
@@ -93,17 +94,17 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "blue", fontSize: "2rem" }} />,
                                     <span>Duties Identified</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory).dutiesIdentified}</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory)}</p>
                                 </div>
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "green", fontSize: "2rem" }} />,
                                     <span>Duties Met</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory, true).dutiesMet}</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesMet(statutory)}</p>
                                 </div>
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "yellow", fontSize: "2rem" }} />,
                                     <span>Duties Not Met</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory).dutiesNotMet}</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{dutiesIdentified-dutiesMet}</p>
                                 </div>
                                 <div className="col">
                                     <CSVLink
@@ -134,7 +135,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                         <td colSpan={4} align="center">No result found!!</td>
                                     </tr>
                                 )}
-                                {statutory?.map((item) => {
+                                {statutory?.map((item,index) => {
 
                                     return (
                                         <tr>
@@ -147,11 +148,11 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                             </th>
                                             <th scope="col">{item.name}
                                                 <div>
-                                                    <button className="btn btn-primary mt-3">View Evidence</button>
+                                                    <a href='#/view-asset' className="btn btn-primary mt-3 text-bg-primary">View Evidence</a>
                                                 </div>
                                             </th>
                                             <th scope="col">
-                                                <input type="checkbox" onChange={(e) => { handleCheckboxField(e, item) }} />
+                                                <input type="checkbox" id="chkbox" checked={item.required === true ? isChecked : false} onChange={(e) => { setIsChecked(!isChecked);handleCheckboxField(e, item) }} />
                                             </th>
                                             <th scope="col">
                                                 <table className="table">
@@ -166,12 +167,12 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {item.files?.map((itm) => {
+                                                        {item.files?.map((itm, index) => {
                                                             return (
                                                                 <tr>
                                                                     <th scope="col">{itm.name}</th>
-                                                                    <th scope="col">{itm.fileVersion}</th>
-                                                                    <th scope="col">{itm.uploadDate}</th>
+                                                                    <th scope="col">{`version-${index + 1}.png`}</th>
+                                                                    <th scope="col">{itm.issueDate}</th>
                                                                     <th scope="col">{itm.expiryDate}</th>
                                                                     <th scope="col">{itm.uploaderUserName}</th>
                                                                     <th scope="col">{itm.uploaderUserId}</th>
@@ -189,7 +190,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                                                     </tbody></table>
                                             </th>
                                             <th scope="col">
-                                            <ChipComponent status={getChipStatus(item)} />
+                                            <ChipComponent status={getChipStatus(item)} isStatutory={true} />
                                             </th>
                                         </tr>
                                     )
@@ -204,6 +205,8 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
                             setShowModal={setShowModal}
                             isStatutory={true}
                             folderData={folder}
+                            uploaderUserId={loggedInUserData?.id}
+                            reviewerUserId={loggedInUserData?.id}
                             refresh={() => { getStatutory(siteSelectedForGlobal?.siteId); }}
                         />
                     )}
@@ -214,7 +217,10 @@ const StatutoryRegister = ({ siteSelectedForGlobal }) => {
 }
 
 const mapStateToProps = (state) => ({
+    loggedInUserData: state.site.loggedInUserData,
     siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
+    getSiteAssets,
 })(StatutoryRegister);

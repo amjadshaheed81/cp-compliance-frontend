@@ -1,11 +1,12 @@
 import { Chip } from "@mui/material";
 import React, { Fragment } from "react";
 
-const ChipComponent = ({ status }) => {
+const ChipComponent = ({ status, isStatutory }) => {
+
   return (
     <Fragment>
       <Chip
-        label={status === 'Open' ? 'Open' : status}
+        label={isStatutory ? (status === 'Open' ? 'Open' : status === 'Passed' ? 'Passed' : '' ) : status}
         color={
           status === "Active" || status === "Passed"
             ? "success"
