@@ -241,7 +241,7 @@ const Sites = ({
                       <span
                         className="text-primary cursor"
                         onClick={() => {
-                          selectGlobalSite(site);
+                          selectGlobalSite(itm);
                         }}
                       >
                         {itm?.siteName}
