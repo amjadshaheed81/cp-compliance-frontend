@@ -123,16 +123,16 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
                 return (
                   <tr>
                     <td>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => navigateToSubFolder(folder?.id)}
-                    >
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-2x"
-                      ></i>
-                      <span className="p-3">{folder?.name}</span>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => navigateToSubFolder(folder?.id)}
+                      >
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-folder fa-2x"
+                        ></i>
+                        <span className="p-3">{folder?.name}</span>
                       </div>
                     </td>
                     <td>--</td>
@@ -140,7 +140,11 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
                     <td>--</td>
                     <td>--</td>
                     <td>
-                      <span style={{ color: "gray" }}>
+                      <span
+                        style={{ color: "gray" }}
+                        className="cursor"
+                        onClick={() => navigateToSubFolder(folder?.id)}
+                      >
                         <i
                           className="fa fa-eye fa-2x"
                           aria-hidden="true"

@@ -116,12 +116,8 @@ function SearchSite({
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                if (loggedInUserData?.role === ROLE.ADMIN) {
-                  selectGlobalSite(site);
-                  localStorage.setItem("site", JSON.stringify(site));
-                } else {
-                  toast.warn("Only admin role can select the site from portfolio management.")
-                }
+                selectGlobalSite(site);
+                localStorage.setItem("site", JSON.stringify(site));
               }}
             >
               <ListItemIcon>
@@ -137,11 +133,7 @@ function SearchSite({
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
-                if (loggedInUserData?.role === ROLE.ADMIN) {
-                  selectGlobalSite(site);
-                } else {
-                  toast.warn("Only admin role can select the site from portfolio management.")
-                }
+                selectGlobalSite(site);
               }}
             >
               <ListItemText primary={site?.siteName} />
