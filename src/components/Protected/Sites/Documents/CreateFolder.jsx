@@ -31,7 +31,7 @@ const CreateFolder = ({
 
   const submitFolder = async (data) => {
     if(data.parentFolderId === '1'){
-      data.isStatutory = true;
+      data.isStatutoryRegister = true;
     }
     setIsLoading(true);
     await post("/api/document/folder", data);
