@@ -13,6 +13,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
   const [outletoptions, setoutletoptions] = useState([]);
   const [tempratureoptions, settempratureoptions] = useState([]);
   const [action, setAction] = useState(false)
+  const [action2, setAction2] = useState(false)
   const [normruntime, setnormruntime] = useState([]);
   const [readingPop, setReadingPop] = useState(null);
 
@@ -68,6 +69,10 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
     setFormData(uformData);
   };
 
+  useEffect(() => {
+    setAction(false);
+    setAction2(false);
+  },[])
 
   const addSiteCheckSurvey = async (event) => {
     event.preventDefault();
@@ -97,27 +102,28 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
     setCompleted(true);
   }
 
-  useEffect(() => {
-    if (readingPop != null) {
-      const data = formData[readingPop];
-      if (data.reading1 && data.reading2 && data.reading3 && data.temperature) {
-        const tapOption = tempratureoptions.filter(t => t === data.temperature)
-        console.log('tapOption', tapOption)
+  // useEffect(() => {
+  //   if (readingPop != null) {
+  //     const data = formData[readingPop];
+  //     if (data.reading1 && data.reading2 && data.reading3 && data.temperature) {
+  //       const tapOption = tempratureoptions.filter(t => t === data.temperature)
+  //       console.log('tapOption', tapOption)
 
-        if (tapOption.length > 0) {
-          const avgTemp = (Number(data.reading1) + Number(data.reading2) + Number(data.reading3)) / 3;
-          console.log('avgTemp', avgTemp)
-          if ((tapOption[0] === "Hot" && avgTemp > 50)
-            || (tapOption[0] === "Cold" && avgTemp < 20)) {
-            setAction(true);
-          } else {
-            setAction(false);
-          }
+  //       if (tapOption.length > 0) {
+  //         const avgTemp = (Number(data.reading1) + Number(data.reading2) + Number(data.reading3)) / 3;
+  //         console.log('avgTemp', avgTemp)
+  //         if ((tapOption[0] === "Hot" && avgTemp > 50)
+  //           || (tapOption[0] === "Cold" && avgTemp < 20)) {
+  //           setAction(true);
+  //         } else {
+  //           setAction(false);
+  //         }
 
-        }
-      }
-    }
-  }, [formData, readingPop])
+  //       }
+  //     }
+  //   }
+  // }, [formData, readingPop])
+
 
 
   return (
@@ -127,6 +133,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
         <DialogContent dividers>
           <Fragment>
             <Grid container>
+              {!action2 && !action && <>
               <Grid sm={4}>
                 <label for="outletType">Outlet Type</label>
                 <input
@@ -187,7 +194,13 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           <input
                             type="number"
                             className="form-control"
-                            name="reading1"
+                              name="reading1"
+                              style={{
+                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading1) > 50)
+                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading1) < 20)
+                                  ? 'red' : 'green',
+                                fontWeight:'600'
+                              }}
                             onChange={(e) => handleInputChange(e, readingPop)}
                           />
 
@@ -206,7 +219,12 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           <input
                             type="number"
                             className="form-control"
-                            name="reading2"
+                              name="reading2"
+                              style={{
+                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading2) > 50)
+                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading2) < 20)
+                                  ? 'red' : 'green',
+                              fontWeight: '600'}}
                             onChange={(e) => handleInputChange(e, readingPop)}
                           />
 
@@ -225,7 +243,13 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                           <input
                             type="number"
                             className="form-control"
-                            name="reading3"
+                              name="reading3"
+                              style={{
+                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading3) > 50)
+                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading3) < 20)
+                                  ? 'red' : 'green',
+                                fontWeight:'600'
+                              }}
                             onChange={(e) => handleInputChange(e, readingPop)}
                           />
 
@@ -234,8 +258,24 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                     </tbody>
                   </table>
                 </div>
-              </Grid>
-              {action && <Grid item xs={12}>
+                </Grid></>}
+              {action && <Grid item xs={12}>  <Typography variant="h6" gutterBottom>
+                Action
+              </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <button
+                      className="btn btn-sm btn-danger text-light"
+                      onClick={() => { setAction2(true); setAction(false) }}
+                    >
+                     
+                      <i className="fas fa-circle-exclamation" /> Add Action
+                    </button>
+                   
+                  </Grid>
+                </Grid>
+              </Grid>}
+              {action2 && <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
                 Action  
                 </Typography>
@@ -306,7 +346,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
           <Button onClick={() => setReadingPop(null)} className="bg-light text-primary">
             Cancel
           </Button>
-          <Button className="bg-primary text-white" onClick={() => setReadingPop(null)}>
+          <Button className="bg-primary text-white" onClick={() => { setAction2(false); setAction(true); }}>
             Save
           </Button>
         </DialogActions>
