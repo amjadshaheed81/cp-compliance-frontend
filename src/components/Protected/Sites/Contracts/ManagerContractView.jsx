@@ -157,6 +157,8 @@ const ManagerContractView = ({
             if (!itm?.isSaved) {
               return itm.assetId;
             }
+          }).filter(function (el) {
+            return el != null;
           });
           if (assets.length > 0) {
             const assetData = {
@@ -437,6 +439,12 @@ const ManagerContractView = ({
                         <label for="company">Company</label>
                         <Autocomplete
                           id="leadUserID"
+                          {...register("company", {
+                            required: {
+                              value: true,
+                              message: `${Validation.REQUIRED} company`,
+                            },
+                          })}
                           onChange={(event, item) => {
                             setValue("company", item?.key, {
                               shouldValidate: true,

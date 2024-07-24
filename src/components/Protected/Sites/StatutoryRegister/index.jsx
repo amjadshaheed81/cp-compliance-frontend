@@ -13,6 +13,7 @@ import { connect } from 'react-redux';
 import ChipComponent from '../../../common/Chips/Chips';
 import { getSiteAssets } from '../../../../store/thunk/site';
 import { useNavigate } from 'react-router-dom';
+import moment from 'moment';
 
 const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAssets, siteAssets }) => {
     let chipColor;
@@ -92,17 +93,17 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                         <div className="pt-2 bd-highlight ">
                             <div className="row" style={{ height: "auto" }}>
                                 <div className="col">
-                                    <DescriptionIcon style={{ color: "blue", fontSize: "2rem" }} />,
+                                    <DescriptionIcon style={{ color: "blue", fontSize: "2rem" }} />
                                     <span>Duties Identified</span>
                                     <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesIdentified(statutory)}</p>
                                 </div>
                                 <div className="col">
-                                    <DescriptionIcon style={{ color: "green", fontSize: "2rem" }} />,
+                                    <DescriptionIcon style={{ color: "green", fontSize: "2rem" }} />
                                     <span>Duties Met</span>
                                     <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{getDutiesMet(statutory)}</p>
                                 </div>
                                 <div className="col">
-                                    <DescriptionIcon style={{ color: "yellow", fontSize: "2rem" }} />,
+                                    <DescriptionIcon style={{ color: "yellow", fontSize: "2rem" }} />
                                     <span>Duties Not Met</span>
                                     <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{dutiesIdentified-dutiesMet}</p>
                                 </div>
@@ -172,8 +173,8 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                                                 <tr>
                                                                     <th scope="col">{itm.name}</th>
                                                                     <th scope="col">{`version-${index + 1}.png`}</th>
-                                                                    <th scope="col">{itm.issueDate}</th>
-                                                                    <th scope="col">{itm.expiryDate}</th>
+                                                                    <th scope="col">{moment(itm.issueDate).format("YYYY-MM-DD")}</th>
+                                                                    <th scope="col">{moment(itm.expiryDate).format("YYYY-MM-DD")}</th>
                                                                     <th scope="col">{itm.uploaderUserName}</th>
                                                                     <th scope="col">{itm.uploaderUserId}</th>
                                                                 </tr>
