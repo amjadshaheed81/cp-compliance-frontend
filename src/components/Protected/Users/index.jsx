@@ -15,7 +15,7 @@ import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
 
-const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
+const Users = ({ users, getUsers, deleteUser, getSites, sites, loggedInUserData }) => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [filteredUser, setFilteredUser] = useState([]);
   const [selectedUser, setSelectedUser] = useState({});
@@ -33,7 +33,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
 
   useEffect(() => {
     getUsers();
-    getSites();
+    getSites(loggedInUserData);
   }, []);
   useEffect(() => {
     if (users?.length > 0) {
@@ -326,6 +326,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
   Users

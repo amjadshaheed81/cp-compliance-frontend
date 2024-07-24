@@ -43,6 +43,7 @@ const AddUser = ({
   addUser,
   siteSelectedForGlobal,
   addUserTagSite,
+  loggedInUserData,
 }) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
@@ -70,7 +71,7 @@ const AddUser = ({
   const values = watch();
   useEffect(() => {
     reset(selectedUser);
-    getSites();
+    getSites(loggedInUserData);
     getCompanies();
   }, []);
 
@@ -508,6 +509,7 @@ const AddUser = ({
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(
   AddUser

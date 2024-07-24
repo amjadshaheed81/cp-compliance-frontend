@@ -43,25 +43,30 @@ function SearchSite({
   };
 
   useEffect(() => {
-    getSites();
+    getSites(loggedInUserData);
   }, []);
   let initialSite = sites?.slice(0, 2);
   const searchSite = async (e) => {
+
     const value = e?.target?.value;
-    const url = `/api/site/site/all?q=${value}`;
-    setLoader(true);
-    try {
-      const response = await get(url);
-      if (response.includes("Unable to Fetch the Site Search Results")) {
-        setError("No Sites found. Please check the input");
-        setSites([]);
-      } else {
-        setSites(response);
-      }
-    } catch (e) {
-      setError("No Sites found. Please check the input");
-    }
-    setLoader(false);
+    const list = sites?.filter((x) =>
+      String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
+    );
+    setSites(list);
+    // const url = `/api/site/site/all?q=${value}`;
+    // setLoader(true);
+    // try {
+    //   const response = await get(url);
+    //   if (response.includes("Unable to Fetch the Site Search Results")) {
+    //     setError("No Sites found. Please check the input");
+    //     setSites([]);
+    //   } else {
+    //     setSites(response);
+    //   }
+    // } catch (e) {
+    //   setError("No Sites found. Please check the input");
+    // }
+    // setLoader(false);
   };
   const toggleDrawer = (anchor, open) => (event) => {
     if (

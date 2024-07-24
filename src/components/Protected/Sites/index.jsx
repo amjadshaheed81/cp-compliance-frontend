@@ -48,7 +48,7 @@ const Sites = ({
   };
 
   useEffect(() => {
-    getSites();
+    getSites(loggedInUserData);
   }, []);
   const deleteSiteById = (itm) => {
     Swal.fire({
@@ -61,7 +61,7 @@ const Sites = ({
         const res = await deleteSite(itm?.siteId);
         if (res === "Success") {
           toast.success(`${itm?.siteName} site has been deleted successully`);
-          getSites();
+          getSites(loggedInUserData);
         } else {
           toast.error(
             "Something went wrong while deleting site. Please try again!"

@@ -24,6 +24,7 @@ const ViewUsers = ({
   getSites,
   addUser,
   addUserTagSite,
+  loggedInUserData,
 }) => {
   const handleOpen = () => setShowEditModal(true);
   const handleClose = () => setShowEditModal(false);
@@ -59,7 +60,7 @@ const ViewUsers = ({
     });
     setTagSite(selectedUser?.taggedSites?.map(itm => itm?.id))
     setSelectedCompany(selectedUser?.companyId);
-    getSites();
+    getSites(loggedInUserData);
     getCompanies();
   }, []);
   const getCompanies = async () => {
@@ -495,5 +496,6 @@ const ViewUsers = ({
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(ViewUsers);

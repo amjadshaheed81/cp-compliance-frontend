@@ -82,6 +82,7 @@ import {
   GET_SITES_PAT_ASSET,
   GET_SITES_PFP_ASSET,
 } from "../actions/siteAssets";
+import { ROLE } from "../../Constant/Role";
 
 export const addSite = (formData, goTo) => {
   return async (dispatch) => {
@@ -215,17 +216,27 @@ export const deleteSite = (id) => {
   };
 };
 
-export const getSites = () => {
+export const getSites = (loggedInUserData) => {
   return async (dispatch) => {
     try {
       const url = "/api/site/site/all";
       const siteList = await get(url);
-      if (siteList) {
-        dispatch({
-          type: GET_SITES_SUCCESS,
-          payload: siteList,
-        });
+      let sites = [];
+      const taggedSites = loggedInUserData?.taggedSites?.map((itm) => itm?.id);
+      if (loggedInUserData?.role === ROLE.ADMIN) {
+        sites = siteList;
+      } else {
+        for (const iterator of siteList) {
+          if (taggedSites?.includes(iterator?.siteId)) {
+            sites.push(iterator);
+          }
+        }
       }
+
+      dispatch({
+        type: GET_SITES_SUCCESS,
+        payload: sites,
+      });
     } catch (error) {
       toast.error(
         "Something went wrong while fetching site. Please try again."
@@ -1379,7 +1390,6 @@ export const getSitePATAssets = (id) => {
   };
 };
 
-
 export const addSiteAsset = (data, goTo, siteId) => {
   return async (dispatch) => {
     try {
@@ -1426,11 +1436,10 @@ export const cloneAsset = (asetId, numberOfClones) => {
       const res = await get(url);
       return "Success";
     } catch (error) {
-      return error?.response?.data?.message || "Error";;
+      return error?.response?.data?.message || "Error";
     }
   };
 };
-
 
 export const updatePurchaseDetails = (data, assetId) => {
   return async (dispatch) => {
@@ -1457,14 +1466,15 @@ export const updateDoorSpecification = (formData, assetId) => {
     try {
       const url = `/api/site/assets/${assetId}/doorSpecification`;
       const res = await put(url, formData);
-      if(res?.status === 200) {
-        toast.success("Door specification details has been updated successfully.");
-      } else{
+      if (res?.status === 200) {
+        toast.success(
+          "Door specification details has been updated successfully."
+        );
+      } else {
         toast.error(
           "Something went wrong while updating door specification. Please try again."
         );
       }
-      
     } catch (error) {
       toast.error(
         "Something went wrong while updating door specification. Please try again."
@@ -1478,14 +1488,15 @@ export const updatepspDetails = (formData, assetId) => {
     try {
       const url = `/api/site/assets/${assetId}/pspDetails`;
       const res = await put(url, formData);
-      if(res?.status === 200) {
-        toast.success("Passive fire protection details has been updated successfully.");
-      } else{
+      if (res?.status === 200) {
+        toast.success(
+          "Passive fire protection details has been updated successfully."
+        );
+      } else {
         toast.error(
           "Something went wrong while updating Passive fire protection details. Please try again."
         );
       }
-      
     } catch (error) {
       toast.error(
         "Something went wrong while updating Passive fire protection details. Please try again."
@@ -1500,16 +1511,17 @@ export const updatePatDetails = (formData, assetId, deleteSavedPatItems) => {
       const url = `/api/site/assets/${assetId}/patDetails`;
       const res = await put(url, {
         assetPATItems: formData,
-        deletedPatIds: deleteSavedPatItems
+        deletedPatIds: deleteSavedPatItems,
       });
-      if(res?.status === 200) {
-        toast.success("Passive fire protection details has been updated successfully.");
-      } else{
+      if (res?.status === 200) {
+        toast.success(
+          "Passive fire protection details has been updated successfully."
+        );
+      } else {
         toast.error(
           "Something went wrong while updating Passive fire protection details. Please try again."
         );
       }
-      
     } catch (error) {
       toast.error(
         "Something went wrong while updating Passive fire protection details. Please try again."
