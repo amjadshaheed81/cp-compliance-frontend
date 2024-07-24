@@ -34,12 +34,14 @@ import CreateFolder from "./CreateFolder";
 import { get } from "../../../../api";
 import Swal from "sweetalert2";
 import { Tooltip } from "@mui/material";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const SubFolder = ({
   deleteFile,
   getDocumentsRootFolder,
   getSubFilesAndFolder,
   subfolderFiles,
+  loggedInUserData,
 }) => {
   const [searchParams] = useSearchParams();
 
@@ -309,30 +311,34 @@ const SubFolder = ({
                       style={{ color: "384bd3", cursor: "pointer" }}
                     />
                   </Tooltip>
-                  <Tooltip title={`Create New Foler`} arrow>
-                    <CreateNewFolderIcon
-                      onClick={() => {
-                        setShowFolderModal(true);
-                        setFolderId2(folderId);
-                      }}
-                      style={{ color: "384bd3", cursor: "pointer" }}
-                    />
-                  </Tooltip>
-                  <Tooltip title={`Upload New File`} arrow>
-                    <NoteAddIcon
-                      onClick={() => {
-                        setShowModal(true);
-                        setfolder(subfolderFiles?.document);
-                      }}
-                      style={{ color: "384bd3", cursor: "pointer" }}
-                    />
-                  </Tooltip>
-                  <Tooltip title={`Bulk Upload`} arrow>
-                    <FolderCopyIcon
-                      onClick={() => setBulkUploadModal(true)}
-                      style={{ color: "384bd3", cursor: "pointer" }}
-                    />
-                  </Tooltip>
+                  {isManagerAdminLogin(loggedInUserData) && (
+                    <>
+                      <Tooltip title={`Create New Foler`} arrow>
+                        <CreateNewFolderIcon
+                          onClick={() => {
+                            setShowFolderModal(true);
+                            setFolderId2(folderId);
+                          }}
+                          style={{ color: "384bd3", cursor: "pointer" }}
+                        />
+                      </Tooltip>
+                      <Tooltip title={`Upload New File`} arrow>
+                        <NoteAddIcon
+                          onClick={() => {
+                            setShowModal(true);
+                            setfolder(subfolderFiles?.document);
+                          }}
+                          style={{ color: "384bd3", cursor: "pointer" }}
+                        />
+                      </Tooltip>
+                      <Tooltip title={`Bulk Upload`} arrow>
+                        <FolderCopyIcon
+                          onClick={() => setBulkUploadModal(true)}
+                          style={{ color: "384bd3", cursor: "pointer" }}
+                        />
+                      </Tooltip>
+                    </>
+                  )}
                 </td>
               </tr>
 
@@ -357,32 +363,36 @@ const SubFolder = ({
                       <td>--</td>
                       <td>--</td>
                       <td>
-                        <Tooltip title={`Create New Folder`} arrow>
-                          <CreateNewFolderIcon
-                            onClick={() => {
-                              setShowFolderModal(true);
-                              setFolderId2(folder?.id);
-                            }}
-                            style={{ color: "384bd3", cursor: "pointer" }}
-                          />
-                        </Tooltip>
+                        {isManagerAdminLogin(loggedInUserData) && (
+                          <>
+                            <Tooltip title={`Create New Folder`} arrow>
+                              <CreateNewFolderIcon
+                                onClick={() => {
+                                  setShowFolderModal(true);
+                                  setFolderId2(folder?.id);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
 
-                        <Tooltip title={`Upload New File`} arrow>
-                          <NoteAddIcon
-                            onClick={() => {
-                              setShowModal(true);
-                              setfolder(folder);
-                            }}
-                            style={{ color: "384bd3", cursor: "pointer" }}
-                          />
-                        </Tooltip>
+                            <Tooltip title={`Upload New File`} arrow>
+                              <NoteAddIcon
+                                onClick={() => {
+                                  setShowModal(true);
+                                  setfolder(folder);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
 
-                        <Tooltip title={`Buld Upload`} arrow>
-                          <FolderCopyIcon
-                            onClick={() => setBulkUploadModal(true)}
-                            style={{ color: "384bd3", cursor: "pointer" }}
-                          />
-                        </Tooltip>
+                            <Tooltip title={`Buld Upload`} arrow>
+                              <FolderCopyIcon
+                                onClick={() => setBulkUploadModal(true)}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                          </>
+                        )}
                       </td>
                     </tr>
                   </>
@@ -402,34 +412,46 @@ const SubFolder = ({
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
-                      <td>{file?.issueDate ? moment(file?.issueDate).format("DD-MM-YYYY") : '--'}</td>
-                      <td>{file?.expiryDate ? moment(file?.expiryDate).format("DD-MM-YYYY") : '--'}</td>
+                      <td>
+                        {file?.issueDate
+                          ? moment(file?.issueDate).format("DD-MM-YYYY")
+                          : "--"}
+                      </td>
+                      <td>
+                        {file?.expiryDate
+                          ? moment(file?.expiryDate).format("DD-MM-YYYY")
+                          : "--"}
+                      </td>
                       <td>{file?.source}</td>
                       <td>
-                        <Tooltip title={`Replace with new version`} arrow>
-                          <RestorePageIcon
-                            onClick={() => {
-                              setShowModal(true);
-                              setfolder(file);
-                            }}
-                            style={{ color: "384bd3", cursor: "pointer" }}
-                          />
-                        </Tooltip>
-                        <Tooltip title={`Version History`} arrow>
-                          <HistoryIcon
-                            onClick={() => {
-                              setVersionHistory(true);
-                              setFileId(file?.id);
-                            }}
-                            style={{ color: "384bd3", cursor: "pointer" }}
-                          />
-                        </Tooltip>
-                        <Tooltip title={`Delete File`} arrow>
-                          <DeleteIcon
-                            onClick={() => deleteFile2(file?.id)}
-                            style={{ color: "384bd3", cursor: "pointer" }}
-                          />
-                        </Tooltip>
+                        {isManagerAdminLogin(loggedInUserData) && (
+                          <>
+                            <Tooltip title={`Replace with new version`} arrow>
+                              <RestorePageIcon
+                                onClick={() => {
+                                  setShowModal(true);
+                                  setfolder(file);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Version History`} arrow>
+                              <HistoryIcon
+                                onClick={() => {
+                                  setVersionHistory(true);
+                                  setFileId(file?.id);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Delete File`} arrow>
+                              <DeleteIcon
+                                onClick={() => deleteFile2(file?.id)}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                          </>
+                        )}
                       </td>
                     </tr>
                   </>
@@ -446,6 +468,7 @@ const SubFolder = ({
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   subfolderFiles: state.site.subfolderFiles,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   deleteFile,
