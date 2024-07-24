@@ -76,15 +76,17 @@ const SubFolder = ({
   };
 
   const navigate2 = () => {
-    const previos = previousFolderId[previousFolderId.length - 2];
-    if (previos.isParent === true) {
+    if (previousFolderId.length) {
       navigate("/documents");
     } else {
-      navigateToSubFolder(previos.id);
+      const previos = previousFolderId[previousFolderId.length - 2];
+      if (previos?.isParent === true) {
+        navigate("/documents");
+      } else {
+        navigateToSubFolder(previos.id);
+      }
     }
-    
-   
-  }
+  };
 
   useEffect( () => {
     if (subfolderFiles) {
