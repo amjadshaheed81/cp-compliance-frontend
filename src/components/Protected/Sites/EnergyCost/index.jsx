@@ -156,6 +156,14 @@ const EnergyCost = ({ users, getUsers }) => {
     }
     setIsLoading(true);
     const energyCost = await get("/api/energy/site/survey/" + site?.siteId);
+    energyCost.forEach(energy => {
+      const dates = energy.costList.map(c => new Date(c.fromDate));
+      const minDate = new Date(Math.min(...dates));
+      const dates2 = energy.costList.map(c => new Date(c.toDate));
+      const maxDate = new Date(Math.max(...dates2));
+      energy.minDate = minDate;
+      energy.maxDate = maxDate;
+    });
     setFilteredEnergyCost(energyCost)
     setEnergyCost(energyCost);
     setIsLoading(false);
@@ -403,10 +411,10 @@ const EnergyCost = ({ users, getUsers }) => {
                         <th scope="col">{action?.reference}</th>
                         <th scope="col">{action?.budgetCategory}</th>
                         <th scope="col" style={{ width: '150px' }}>
-                          {moment(action?.dueDate).format("DD-MM-YYYY")}
+                          {action?.minDate ? moment(action?.minDate).format("DD-MM-YYYY") : "-"}
                         </th>
                         <th scope="col" style={{ width: '150px' }}>
-                          {moment(action?.dueDate).format("DD-MM-YYYY")}
+                          {action?.maxDate ? moment(action?.maxDate).format("DD-MM-YYYY") : "-"}
                         </th>
                         <th scope="col">{action?.costList?.map(c => c.cost).reduce((a,b)=>{return a+b}, 0)}</th>
                         <th scope="col">{action?.readingList?.map(c => c.readingValue).reduce((a, b) => { return a + b }, 0)}</th>
