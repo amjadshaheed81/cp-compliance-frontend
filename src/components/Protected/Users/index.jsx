@@ -228,7 +228,16 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites, loggedInUserData 
                   <CSVLink
                     filename={"user-lists"}
                     className="btn btn-light bg-white text-primary"
-                    data={users || []}
+                    data={
+                      users?.map((itm) => {
+                        return {
+                          ...itm,
+                          taggedSites: itm?.taggedSites?.map((tag) =>
+                            tag?.name
+                          ).join(", "),
+                        };
+                      }) || []
+                    }
                   >
                     <i className="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
@@ -264,7 +273,9 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites, loggedInUserData 
                     <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>
                     <th scope="col">
-                      {user?.taggedSites?.map((itm) => itm?.name)?.join(", ")}
+                      {user?.taggedSites?.map((itm) => (
+                        <span className="badge bg-primary">{itm?.name}</span>
+                      ))}
                     </th>
                     <th scope="col">{user?.role}</th>
                     <th scope="col">
