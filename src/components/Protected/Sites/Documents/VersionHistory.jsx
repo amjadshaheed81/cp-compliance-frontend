@@ -28,7 +28,6 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
     try {
       setIsLoading(true);
       const versions = await get(`/api/document/file/${fileId}/history`);
-      console.log("versions", versions);
       setFileVerions(versions?.files || []);
       setIsLoading(false);
     } catch (e) {

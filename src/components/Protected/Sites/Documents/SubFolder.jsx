@@ -402,11 +402,11 @@ const SubFolder = ({
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
-                      <td>{moment(file?.issueDate).format("DD-MM-YYYY")}</td>
-                      <td>{moment(file?.expiryDate).format("DD-MM-YYYY")}</td>
+                      <td>{file?.issueDate ? moment(file?.issueDate).format("DD-MM-YYYY") : '--'}</td>
+                      <td>{file?.expiryDate ? moment(file?.expiryDate).format("DD-MM-YYYY") : '--'}</td>
                       <td>{file?.source}</td>
                       <td>
-                        <Tooltip title={`Re upload file`} arrow>
+                        <Tooltip title={`Replace with new version`} arrow>
                           <RestorePageIcon
                             onClick={() => {
                               setShowModal(true);

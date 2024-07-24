@@ -1,21 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Modal, Typography, Box, Grid } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useForm } from "react-hook-form";
 import { uploadDocumentFile } from "../../../../store/thunk/site";
 import { connect } from "react-redux";
 
-
-import TextField from '@mui/material/TextField';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import CircularProgress from '@mui/material/CircularProgress';
-import DialogTitle from '@mui/material/DialogTitle';
+import TextField from "@mui/material/TextField";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import CircularProgress from "@mui/material/CircularProgress";
+import DialogTitle from "@mui/material/DialogTitle";
 import { post, uploadPhoto } from "../../../../api";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import moment from "moment";
+import { InputError } from "../../../common/InputError";
 
 const CreateFiles = ({
   showModal,
@@ -26,9 +26,8 @@ const CreateFiles = ({
   siteSelectedForGlobal,
   isStatutory,
   uploaderUserId,
-  reviewerUserId
+  reviewerUserId,
 }) => {
-  // const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -37,9 +36,17 @@ const CreateFiles = ({
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
-  const { register, handleSubmit, getValues } = useForm({});
-  const submitFile = async (data, fileUpload) => {
 
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+  } = useForm({});
+  useEffect(()=>{
+    console.log("folderData", folderData);
+  },[])
+  const submitFile = async (data, fileUpload) => {
     const reqData = {
       files: fileUpload,
       documentRequestString: {
@@ -47,36 +54,39 @@ const CreateFiles = ({
       },
     };
     delete reqData.documentRequestString.files[0].fileUpload;
-    reqData.documentRequestString.files[0].issueDate = issueDate + " 00:00:00";
-    reqData.documentRequestString.files[0].expiryDate = expiryDate + " 00:00:00";
-    reqData.documentRequestString.files[0].uploaderUserId = uploaderUserId || "";
-    reqData.documentRequestString.files[0].reviewerUserId = uploaderUserId || "";
-    reqData.documentRequestString.files[0].referenceNumber = data.files[0].note || "";
+    reqData.documentRequestString.files[0].issueDate = data?.issueDate;
+    reqData.documentRequestString.files[0].expiryDate =
+    data?.expiryDate;
+    reqData.documentRequestString.files[0].uploaderUserId =
+      uploaderUserId || "";
+    reqData.documentRequestString.files[0].reviewerUserId =
+      uploaderUserId || "";
+    reqData.documentRequestString.files[0].referenceNumber =
+      data.files[0].note || "";
     const url = `/api/document/files/upload`;
     const formData = new FormData();
     formData.append("files", reqData.files);
-    formData.append("documentRequestString", JSON.stringify(reqData.documentRequestString));
+    formData.append(
+      "documentRequestString",
+      JSON.stringify(reqData.documentRequestString)
+    );
     const res = await uploadPhoto(url, formData);
-    //uploadDocumentFile(data, folderId);
     setIsLoading(false);
-    toast.success("File uploaded successfully")
+    toast.success("File uploaded successfully");
     handleClose();
     refresh();
-    
   };
-  
-  
-  const setExpiry = (e) => {
-    setExpiryDate(e.target.value)
-  }
-  const setIssue = (e) => {
-    console.log(e.target.value);
-    setIssueDate(e.target.value)
-    const date = moment(e.target.value).add(1, 'years').format('YYYY-MM-DD');
-    setExpiryDate(date)
-  }
 
-  
+  const setExpiry = (e) => {
+    setExpiryDate(e.target.value);
+  };
+
+  const setIssue = (e) => {
+    setIssueDate(e.target.value);
+    const date = moment(e.target.value).add(1, "years").format("YYYY-MM-DD");
+    setExpiryDate(date);
+  };
+
   const style = {
     position: "absolute",
     top: "50%",
@@ -91,14 +101,8 @@ const CreateFiles = ({
   };
 
   const handleFileChange = (e) => {
-    console.log("input1Value", e.target.files[0].name)
-    setFileName(e?.target?.files?.[0]?.name)
-    
-    // Update input2 value based on input1 value
-    // Assuming you want to set input2 to the same value as input1
-    // You can modify this logic as per your requirement
-    //setValue('input2', input1Value);
-  }
+    setFileName(e?.target?.files?.[0]?.name);
+  };
 
   return (
     <React.Fragment>
@@ -111,129 +115,147 @@ const CreateFiles = ({
         maxWidth="lg"
         fullWidth
         PaperProps={{
-          component: 'form',
-          onSubmit: (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.currentTarget);
-            const formJson = Object.fromEntries((formData).entries());
-            console.log('formJson', formJson);
-            delete formJson.folder;
-            const data = {
-              folderId: folderData?.id,
-              files: [
-                {
-                  ...formJson,
-                  fileVersion: 1,
-                  siteId: siteSelectedForGlobal?.siteId
-                }
-              ]
+          component: "form",
+          onSubmit: handleSubmit(async (formData) => {
+            console.log("formData", formData);
+            try {
+              setIsLoading(true);
+              const data = {
+                folderId: folderData?.id,
+                files: [
+                  {
+                    ...formData,
+                    name: formData?.fileUpload?.[0]?.name,
+                    fileVersion: folderData?.fileVersion
+                    ? Number(folderData?.fileVersion) + 1
+                    : 1,
+                    siteId: siteSelectedForGlobal?.siteId,
+                    issueDate: `${formData?.issueDate} 10:00:00`,
+                    expiryDate: `${formData?.expiryDate} 10:00:00`,
+                  },
+                ],
+              };
+              data.files[0].name = formData.fileUpload[0].name;
+              await submitFile(data, formData.fileUpload[0]);
+              setIsLoading(false);
+            } catch (e) {
+              toast.error(
+                "Something went wrong while adding new file. Please try again!!"
+              );
+              setIsLoading(false);
             }
-            data.files[0].name = formJson.fileUpload.name;
-            submitFile(data, formJson.fileUpload)
-            //handleClose();
-          },
+          }),
         }}
       >
         <DialogTitle>Upload New Files</DialogTitle>
         <DialogContent dividers>
-          {isLoading && <Box sx={{ display: 'flex' }}>
-            <CircularProgress />
-          </Box>}
           <Grid container>
-
             <Grid sm={8}>
               <Grid container>
                 <Grid sm={6}>
-                  <div style={{margin: "10px"}}>
-                {isStatutory ?<label htmlFor="folder" name="folder">
-                  Requirement
-                </label> : <label htmlFor="folder" name="folder">
-                  Folder
-                </label> }
-                <input
-                  type="text"
-                      name="name"
-                      disabled
-                      value={folderData?.name}
-                  className="form-control"
-                  {...register("folderName")}
-                    />
-                  </div>
-              </Grid>
-                <Grid sm={6}>
                   <div style={{ margin: "10px" }}>
-                <label htmlFor="fileName" name="fileName">
-                  File Name
-                </label>
-                <input
-                  type="text"
-                      name="name"
-                      disabled
-                      value={fileName?.split(".")[0]}
-                  className="form-control"
-                      {...register("name")}
-                    />
-                  </div>
-              </Grid>
-                <Grid sm={4}>
-                  <div style={{ margin: "10px" }}>
-                  <label htmlFor="version" name="version">
-
-                Version
-              </label>
-                <input
+                    {isStatutory ? (
+                      <label htmlFor="folder">Requirement</label>
+                    ) : (
+                      <label htmlFor="folder">Folder</label>
+                    )}
+                    <input
                       type="text"
                       disabled
-                      value="1"
-                  name="version"
-                  className="form-control"
-                  {...register("version")}
+                      value={folderData?.folderName ? folderData?.folderName : folderData?.name}
+                      className="form-control"
+                      {...register("folderName")}
+                    />
+                  </div>
+                </Grid>
+                <Grid sm={6}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="fileName">File Name</label>
+                    <input
+                      type="text"
+                      value={folderData?.folderName ? folderData?.name : ''}
+                      disabled
+                      className="form-control"
+                      {...register("name")}
                     />
                   </div>
                 </Grid>
                 <Grid sm={4}>
                   <div style={{ margin: "10px" }}>
-                <label htmlFor="issueDate" name="folder">
-                  Issue Date
-                </label>
+                    <label htmlFor="version">Version</label>
                     <input
-                      value={issueDate}
-                  type="date"
-                  name="folder"
-                  className="form-control"
-                      onChange={setIssue}
+                      type="text"
+                      disabled
+                      value={
+                        folderData?.fileVersion
+                          ? Number(folderData?.fileVersion) + 1
+                          : 1
+                      }
+                      className="form-control"
+                      {...register("version")}
                     />
                   </div>
-              </Grid>
+                </Grid>
                 <Grid sm={4}>
                   <div style={{ margin: "10px" }}>
-                  <label htmlFor="expiryDate" name="expiryDate">
-                Expiry Date
-              </label>
+                    <label htmlFor="issueDate">Issue Date</label>
                     <input
-                      value={expiryDate}
-                    type="date"
-                  name="expiryDate"
-                  className="form-control"
-                  onChange={setExpiry}
+                      type="date"
+                      className="form-control"
+                      {...register("issueDate", {
+                        required: "Issue Date is required",
+                      })}
                     />
+                    {errors.issueDate && (
+                      <InputError
+                        message={errors?.issueDate?.message}
+                        key={errors?.issueDate?.message}
+                      />
+                    )}
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+                  <div style={{ margin: "10px" }}>
+                    <label htmlFor="expiryDate">Expiry Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      {...register("expiryDate", {
+                        required: "Expiry Date is required",
+                        validate: (value) => {
+                          var expiryDate = moment(value);
+                          var issueDate = moment(getValues().issueDate);
+                          if (issueDate > expiryDate) {
+                            return "Expiry date should be in past or earlier than the end date.";
+                          }
+                        },
+                      })}
+                    />
+                    {errors.expiryDate && (
+                      <InputError
+                        message={errors?.expiryDate?.message}
+                        key={errors?.expiryDate?.message}
+                      />
+                    )}
                   </div>
                 </Grid>
                 <Grid sm={12}>
                   <div style={{ margin: "10px" }}>
-                <input
-                  type={isStatutory ? "input" : "textarea" }
-                  name="note"
-                  placeholder={isStatutory ? "Reference Number" : "Enter notes..." }
-                  className="form-control w-75"
-                  {...register("note")}
+                    <input
+                      type={isStatutory ? "input" : "textarea"}
+                      name="note"
+                      placeholder={
+                        isStatutory ? "Reference Number" : "Enter notes..."
+                      }
+                      className="form-control w-75"
+                      {...register("note")}
                     />
                   </div>
                 </Grid>
               </Grid>
             </Grid>
             <Grid sm={4}>
-              <div style={{ backgroundColor: "#f1f5f9", margin:'10px' }}>
+              <div style={{ backgroundColor: "#f1f5f9", margin: "10px" }}>
                 <div className="uploadPhotoButton">
                   <FileUploadOutlinedIcon
                     style={{
@@ -242,16 +264,21 @@ const CreateFiles = ({
                       marginLeft: "4rem",
                     }}
                   />
-                  <label htmlFor="fileUpload" name="fileUpload">
-                    Upload New Version
-                  </label>
+                  <label htmlFor="fileUpload">Upload New Version</label>
                   <input
                     type="file"
                     name="fileUpload"
                     className="form-control"
-                    {...register("fileUpload")}
-                    onChange={handleFileChange}
+                    {...register("fileUpload", {
+                      required: "A file is required",
+                    })}
                   />
+                  {errors.fileUpload && (
+                    <InputError
+                      message={errors?.fileUpload?.message}
+                      key={errors?.fileUpload?.message}
+                    />
+                  )}
                   <span>or drag and drop</span>
                   <p>SVG, PNG, JPG or GIF</p>
                   <p>(max 1 MB)</p>
@@ -259,11 +286,19 @@ const CreateFiles = ({
               </div>
             </Grid>
           </Grid>
-          
         </DialogContent>
-          <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit">Save</Button>
+        <DialogActions>
+          {isLoading && (
+            <Box sx={{ display: "flex" }}>
+              <CircularProgress />
+            </Box>
+          )}
+          {!isLoading && (
+            <>
+              <Button onClick={handleClose}>Cancel</Button>
+              <Button type="submit">Save</Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
     </React.Fragment>
@@ -275,6 +310,7 @@ const mapStateToProps = (state) => ({
   error: state.site.error,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, {
   uploadDocumentFile,
 })(CreateFiles);
