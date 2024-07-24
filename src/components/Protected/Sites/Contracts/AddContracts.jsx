@@ -73,7 +73,9 @@ const AddContracts = ({
     }
   }, []);
   const getManagerList = async () => {
-    const data = await get(`/api/user/all?userRole=Manager&siteId=${siteSelectedForGlobal?.siteId}`);
+    const data = await get(
+      `/api/user/all?userRole=Manager&siteId=${siteSelectedForGlobal?.siteId}`
+    );
     setManagerList(data?.users || []);
   };
   const getCompanies = async () => {
@@ -96,82 +98,89 @@ const AddContracts = ({
       return;
     }
     if (loggedInUserData?.id) {
-      setIsLoading(true);
-      console.log("data", data);
-      const formData = {
-        projectContractId: null,
-        summary: data?.summary,
-        siteId: siteSelectedForGlobal?.siteId,
-        category: data?.category || "",
-        subCategory: data?.subCategory || "",
-        contractorCompanyId: data?.company || "",
-        status: "Active",
-        budget: data?.cost,
-        cost: data?.cost,
-        startDate: `${data?.startDate} 10:00:00`,
-        endDate: `${data?.endDate} 10:00:00`,
-        projectManagerUserId: data?.manager ? Number(data?.manager) : null,
-        description: data?.description,
-      };
-      const url = "api/project/manage";
-      const res = await put(url, formData);
-      if (res?.status === 200) {
-        let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
-          if (!itm?.isSaved) {
-            return itm.id;
-          }
-        });
-        if (mandatoryFolders.length > 0) {
-          const folders = {
-            mandatoryFolders: mandatoryFolders,
-            removeMandatoryFolders: null,
-          };
-          const folderApi = await put(
-            `api/project/${res?.data?.projectContractId}/folders`,
-            folders
-          );
-        }
-        if (data?.category !== "Building Project") {
-          let assets = assetData?.map((itm) => {
+      try {
+        setIsLoading(true);
+        console.log("data", data);
+        const formData = {
+          projectContractId: null,
+          summary: data?.summary,
+          siteId: siteSelectedForGlobal?.siteId,
+          category: data?.category || "",
+          subCategory: data?.subCategory || "",
+          contractorCompanyId: data?.company || "",
+          status: "Active",
+          budget: data?.cost,
+          cost: data?.cost,
+          startDate: `${data?.startDate} 10:00:00`,
+          endDate: `${data?.endDate} 10:00:00`,
+          projectManagerUserId: data?.manager ? Number(data?.manager) : null,
+          description: data?.description,
+        };
+        const url = "api/project/manage";
+        const res = await put(url, formData);
+        if (res?.status === 200) {
+          let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
             if (!itm?.isSaved) {
-              return itm.assetId;
+              return itm.id;
             }
           });
-          if (assets.length > 0) {
-            const assetData = {
-              addAssets: assets,
-              removeAssets: [],
+          if (mandatoryFolders.length > 0) {
+            const folders = {
+              mandatoryFolders: mandatoryFolders,
+              removeMandatoryFolders: null,
             };
-            const assetUpdateAPI = await put(
-              `api/project/${res?.data?.projectContractId}/assets`,
-              assetData
+            const folderApi = await put(
+              `api/project/${res?.data?.projectContractId}/folders`,
+              folders
             );
           }
-        }
-        
-        if (data?.scheduleDate) {
-          const scheduleData = {
-            scheduleId: null,
-            projectContractId: res?.data?.projectContractId,
-            visitPurpose: "Inspection",
-            status: "Scheduled",
-            visitDate: `${data?.scheduleDate} 10:00:00`,
-            rescheduleDate: "",
-          };
-          const scheduleVisitApi = await put(
-            `api/project/visits`,
-            scheduleData
+          if (data?.category !== "Building Project") {
+            let assets = assetData?.map((itm) => {
+              if (!itm?.isSaved) {
+                return itm.assetId;
+              }
+            });
+            if (assets.length > 0) {
+              const assetData = {
+                addAssets: assets,
+                removeAssets: [],
+              };
+              const assetUpdateAPI = await put(
+                `api/project/${res?.data?.projectContractId}/assets`,
+                assetData
+              );
+            }
+          }
+
+          if (data?.scheduleDate) {
+            const scheduleData = {
+              scheduleId: null,
+              projectContractId: res?.data?.projectContractId,
+              visitPurpose: "Inspection",
+              status: "Scheduled",
+              visitDate: `${data?.scheduleDate} 10:00:00`,
+              rescheduleDate: "",
+            };
+            const scheduleVisitApi = await put(
+              `api/project/visits`,
+              scheduleData
+            );
+          }
+          toast.success("Successully added contract.");
+          handleClose();
+          refresh();
+        } else {
+          toast.error(
+            "Something went wrong while adding contract. Please try again!!"
           );
         }
-        toast.success("Successully added contract.");
-        handleClose();
-        refresh();
-      } else {
+        setIsLoading(false);
+      } catch (e) {
+        setIsLoading(false);
         toast.error(
           "Something went wrong while adding contract. Please try again!!"
         );
       }
-      setIsLoading(false);
     } else {
       toast.error("Please login with valid user details to proceed.");
     }
