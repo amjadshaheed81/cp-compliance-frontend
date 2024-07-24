@@ -1,39 +1,51 @@
-import React, { useState } from "react";
-import { Button, Modal, Typography, Box } from "@mui/material";
-import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import React, { useEffect, useState } from "react";
+import {
+  Button,
+  Modal,
+  Typography,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
+import { get } from "../../../../api";
+import { toast } from "react-toastify";
+import moment from "moment";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState([]);
+  const [fileVerions, setFileVerions] = useState([]);
   const handleOpen = () => setVersionHistory(true);
   const handleClose = () => setVersionHistory(false);
-  const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 700,
-    height: 500,
-    bgcolor: "background.paper",
-    border: "2px solid #fff",
-    boxShadow: 24,
-    p: 4,
+  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    getVerions();
+  }, []);
+  const getVerions = async () => {
+    try {
+      setIsLoading(true);
+      const versions = await get(`/api/document/file/${fileId}/history`);
+      console.log("versions", versions);
+      setFileVerions(versions?.files || []);
+      setIsLoading(false);
+    } catch (e) {
+      setIsLoading(false);
+      toast.error("Something went wrong while fetching file verions.");
+      setFileVerions([]);
+    }
   };
 
   return (
     <>
       <Button onClick={handleOpen}>Version History</Button>
-      <Modal
-        open={versionHistory}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Version History
-          </Typography>
+      <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
+        <DialogTitle> Version History</DialogTitle>
+        <DialogContent>
           <form className="row">
-            <div className="d-flex">
+            {/* <div className="d-flex">
               <div>
                 <label htmlFor="folder" name="folder">
                   Folder
@@ -52,10 +64,10 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
                 </label>
                 <input type="file" name="fileUpload" className="form-control" />
               </div>
-            </div>
+            </div> */}
             <div className="table-responsive">
-              <table className="f-11">
-                <thead>
+              <table className="table f-11">
+                <thead className="table-dark">
                   <tr>
                     <th scope="col">File</th>
                     <th scope="col">Version</th>
@@ -65,47 +77,71 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <div>
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-2x"
-                      ></i>
-                      <span className="p-3">Statutory Documents</span>
-                    </div>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>
-                      <span style={{ color: "gray" }}>
-                        <i
-                          className="fa fa-eye fa-2x"
-                          aria-hidden="true"
-                          size="md"
-                        ></i>
-                      </span>
-                    </td>
-                  </tr>
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={4} align="center">
+                        <CircularProgress />
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && fileVerions?.length === 0 && (
+                    <tr>
+                      <td colSpan={5}>No Result Found</td>
+                    </tr>
+                  )}
+                  {!isLoading &&
+                    fileVerions?.map((file) => (
+                      <tr>
+                        <div>
+                          <TextSnippetOutlinedIcon
+                            style={{ color: "#384BD3" }}
+                          />
+                          <span className="p-3 cursor">{file?.name}</span>
+                        </div>
+                        <td>{file?.fileVersion ? file?.fileVersion : "--"}</td>
+                        <td>
+                          {file?.uploaderUserName
+                            ? file?.uploaderUserName
+                            : "--"}
+                        </td>
+                        <td>
+                          {file?.expiryDate
+                            ? moment(file?.expiryDate).format("YYYY-MM-DD")
+                            : "--"}
+                        </td>
+                        <td>
+                          <a
+                            style={{ color: "gray", cursor: "pointer" }}
+                            download
+                            href={file?.fileBlobUrl}
+                          >
+                            <i
+                              className="fa fa-eye fa-2x"
+                              aria-hidden="true"
+                              size="md"
+                            ></i>
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
-            <div className="d-flex d-flex flex-lg-row-reverse">
-              <div>
-                <button className="btn btn-primary float-end">Save</button>
-              </div>
-              <div>
-                <button
-                  className="btn btn-primary float-end"
-                  style={{ marginRight: "1rem" }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
           </form>
-        </Box>
-      </Modal>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            type="button"
+            onClick={handleClose}
+            className="bg-light text-primary"
+          >
+            Close
+          </Button>
+          <Button onClick={handleClose} className="bg-primary text-light">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
