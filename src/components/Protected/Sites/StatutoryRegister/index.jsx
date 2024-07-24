@@ -44,7 +44,8 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
     }
     const getStatutory = async (siteId) => {
         setIsLoading(true);
-        const getStatutoryDocuments = await get(`/api/document/${siteId}/statutoryRegister`);
+        let getStatutoryDocuments = await get(`/api/document/${siteId}/statutoryRegister`);
+        getStatutoryDocuments = getStatutoryDocuments.sort( (a, b) => { return a.id - b.id })
         setStatutory(getStatutoryDocuments);
         
         chipColor = statutory.filter((item) => {
@@ -56,7 +57,7 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
     const getChipStatus = (item) => {
         return item.status === 'Passed' ? 'Passed'  : item.status === 'Open' ? 'Open' : '';
     }
-    const handleCheckboxField = async (e,item) => {
+    const handleCheckboxField = async (e,item, idx) => {
         setIsChecked(e.target.checked);
         const folderId = item.id;
         const formData = {
@@ -66,7 +67,8 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
         const url = `/api/document/folder/${folderId}/manage`;
         const res = await put(url, formData);
         if (res?.status === 200) {
-            getStatutory(siteSelectedForGlobal?.siteId);        }
+            getStatutory(siteSelectedForGlobal?.siteId);
+        }
     }
     useEffect(() => {
         if (siteSelectedForGlobal?.siteId) {
@@ -149,11 +151,11 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                             </th>
                                             <th scope="col">{item.name}
                                                 <div>
-                                                    <a href='#/view-asset' className="btn btn-primary mt-3 text-bg-primary">View Evidence</a>
+                                                    <a href='/#/site-checks' className="btn btn-primary mt-3 text-bg-primary">View Evidence</a>
                                                 </div>
                                             </th>
                                             <th scope="col">
-                                                <input type="checkbox" id="chkbox" checked={item.required === true ? isChecked : false} onChange={(e) => { setIsChecked(!isChecked);handleCheckboxField(e, item) }} />
+                                                <input type="checkbox" id="chkbox" checked={item.required} onChange={(e) => { handleCheckboxField(e, item, index) }} />
                                             </th>
                                             <th scope="col">
                                                 <table className="table">
