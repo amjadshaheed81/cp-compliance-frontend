@@ -41,12 +41,16 @@ const ShowCloneModal = ({
   const submitClone = async (data) => {
     setIsLoading(true);
     const res = await cloneAsset(data?.assetId, Number(data?.numberOfClones));
-    if(res) {
-        toast.success("Asset cloning is successfully completed.");
+    if (res === "Success") {
+      toast.success("Asset cloning is successfully completed.");
         setShowCloneModal(false);
         refresh();
+    } else if (res?.includes("BlobNotFound")) {
+      toast.error(
+        `Site image blob not found.`
+      );
     } else {
-        toast.error("Something wentwrong while asset clone.");
+      toast.error("Something went wrong while asset clone.");
     }
     setIsLoading(false);
   };

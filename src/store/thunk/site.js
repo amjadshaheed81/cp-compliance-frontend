@@ -1211,7 +1211,7 @@ export const addUser = (formData) => {
         return "error";
       }
     } catch (error) {
-      toast.error("Something went wrong while adding user. Please try again.");
+      return error?.response?.data?.message || "Error";
     }
   };
 };
@@ -1423,14 +1423,10 @@ export const cloneAsset = (asetId, numberOfClones) => {
   return async () => {
     try {
       const url = `/api/site/assets/clone/${asetId}/${numberOfClones}`;
-      const res = await post(url, {});
-      if(res?.status === 200 || res?.status === 201) {
-        return "Success";
-      } else {
-        return "Error";
-      }
+      const res = await get(url);
+      return "Success";
     } catch (error) {
-      return "Error";
+      return error?.response?.data?.message || "Error";;
     }
   };
 };

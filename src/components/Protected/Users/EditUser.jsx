@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Autocomplete } from "@mui/material";
+import { Button, Box, Autocomplete, Select, OutlinedInput, MenuItem, Checkbox, ListItemText } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -13,6 +13,7 @@ import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
+import { MenuProps } from "./AddUser";
 
 const ViewUsers = ({
   showEditModal,
@@ -29,7 +30,16 @@ const ViewUsers = ({
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany ] = useState();
-
+  const [tagSite, setTagSite] = useState([]);
+  const handleChange = (event) => {
+    const {
+      target: { value },
+    } = event;
+    console.log("event", event);
+    event?.view?.focus();
+    console.log("value", value);
+    setTagSite(typeof value ? value : value);
+  };
   const {
     register,
     reset,
@@ -45,9 +55,9 @@ const ViewUsers = ({
       ...selectedUser,
       firstName: name?.[0] || "",
       lastName: name?.[1] || "",
-      tagSite: selectedUser?.taggedSites?.[0]?.id,
       isCompany: selectedUser?.companyId ? true : false,
     });
+    setTagSite(selectedUser?.taggedSites?.map(itm => itm?.id))
     setSelectedCompany(selectedUser?.companyId);
     getSites();
     getCompanies();
@@ -80,16 +90,16 @@ const ViewUsers = ({
     try {
       const res = await addUser(data);
       if (res) {
-        const tagSite = {
-          addedSites: [formJson?.tagSite],
+        const tagSiteValue = {
+          addedSites: tagSite,
           removedSites: [],
         };
-        if(formJson?.tagSite) {
-          if (formJson?.tagSite != selectedUser?.taggedSites?.[0]?.id) {
-            tagSite.removedSites = [selectedUser?.taggedSites?.[0]?.id]
+        for (const iterator of selectedUser?.taggedSites) {
+          if(!tagSite?.includes(iterator?.id)) {
+            tagSiteValue.removedSites.push(iterator?.id)
           }
         }
-        const tagRes = await addUserTagSite(data?.userId, tagSite);
+        const tagRes = await addUserTagSite(data?.userId, tagSiteValue);
         toast.success(
           `${formJson?.firstName} user has been updated successfully.`
         );
@@ -301,21 +311,35 @@ const ViewUsers = ({
                         <label for="tagSite">
                           Tag Site (if internal)
                         </label>
-                        <select
+                        <Select
+                          labelId="tagSite"
                           id="tagSite"
-                          name="tagSite"
-                          {...register("tagSite")}
-                          className="form-control form-select"
+                          multiple
+                          style={{
+                            height: "2.5rem",
+                            width: "100%",
+                            listStyleType:'none'
+                          }}
+                          value={tagSite}
+                          onChange={handleChange}
+                          input={<OutlinedInput label="Tag" />}
+                          renderValue={(selected) =>
+                            `${selected?.length} site tagged`
+                          }
+                          MenuProps={MenuProps}
                         >
-                          <option value={""} selected disabled>
-                            Tag Site
-                          </option>
-                          {sites?.map((itm) => (
-                            <option value={itm?.siteId} key={itm?.siteId}>
-                              {itm?.siteName}
-                            </option>
+                          {sites?.length === 0 &&
+                          <div key={'no-result'}>
+                            No Site Result Found</div>}
+                          {sites.map((site) => (
+                            <MenuItem key={site?.siteId} value={site?.siteId}>
+                              <Checkbox
+                                checked={tagSite.indexOf(site?.siteId) > -1}
+                              />
+                              <ListItemText primary={site?.siteName} />
+                            </MenuItem>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
                   )}
@@ -401,18 +425,22 @@ const ViewUsers = ({
                       </div>
                     </div>
                   )}
-                  {values?.tagSite && (
+                  {tagSite && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <label for="trade">Selected Sites</label>
                         <div>
-                          <button className="btn btn-sm btn-light text-primary">
-                            {
-                              sites?.filter(
-                                (itm) => itm.siteId == values?.tagSite
-                              )?.[0]?.siteName
-                            }
-                          </button>
+                          {tagSite?.map((itm) => {
+                              return (
+                                <button className="btn btn-sm btn-light text-primary">
+                                  {
+                                    sites?.filter(
+                                      (site) => site?.siteId == itm
+                                    )?.[0]?.siteName
+                                  }
+                                </button>
+                              );
+                            })}
                         </div>
                       </div>
                     </div>

@@ -26,10 +26,7 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
 
   const indexOfLastUsers = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUsers - usersPerPage;
-  const currentUsers = filteredUser.slice(
-    indexOfFirstUser,
-    indexOfLastUsers
-  );
+  const currentUsers = filteredUser.slice(indexOfFirstUser, indexOfLastUsers);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -94,11 +91,11 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
         if (res === "Success") {
           toast.success(`${user?.name} user has been deleted successully`);
           getUsers();
-        } else if (res?.includes("pre_actions")){
+        } else if (res?.includes("pre_actions")) {
           toast.error(
             `User can not be deleted due to an existing pre actions.`
           );
-        } else if (res?.includes("site_project_contractors")){
+        } else if (res?.includes("site_project_contractors")) {
           toast.error(
             `User can not be deleted due to an existing site projects.`
           );
@@ -266,7 +263,9 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
                   <tr key={user?.id}>
                     <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>
-                    <th scope="col">{user?.defaultSiteName}</th>
+                    <th scope="col">
+                      {user?.taggedSites?.map((itm) => itm?.name)?.join(", ")}
+                    </th>
                     <th scope="col">{user?.role}</th>
                     <th scope="col">
                       {moment(user?.creationDate).format("DD-MM-YYYY")}
@@ -314,10 +313,10 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites }) => {
           {/* row end*/}
           <div className="row">
             <Pagination
-                totalPages={Math.ceil(filteredUser.length / usersPerPage)}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-              />
+              totalPages={Math.ceil(filteredUser.length / usersPerPage)}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </div>

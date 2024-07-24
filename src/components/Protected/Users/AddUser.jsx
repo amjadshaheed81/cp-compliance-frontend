@@ -1,5 +1,14 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Autocomplete, TextField } from "@mui/material";
+import {
+  Button,
+  Box,
+  Autocomplete,
+  Select,
+  OutlinedInput,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+} from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -9,12 +18,20 @@ import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
 import { getSites, addUser, addUserTagSite } from "../../../store/thunk/site";
 import { get } from "../../../api";
-import { getCurrentDate } from "../../../utils/dateMethod";
 import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
 import { ROLE } from "../../../Constant/Role";
-import axios from "axios";
+
+export const ITEM_HEIGHT = 48;
+export const ITEM_PADDING_TOP = 8;
+export const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+    },
+  },
+};
 
 const AddUser = ({
   showAddModal,
@@ -31,6 +48,16 @@ const AddUser = ({
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
+  const [tagSite, setTagSite] = useState([]);
+  const handleChange = (event) => {
+    const {
+      target: { value },
+    } = event;
+    console.log("event", event);
+    event?.view?.focus();
+    console.log("value", value);
+    setTagSite(typeof value ? value : value);
+  };
   const [selectedCompany, setSelectedCompany] = useState();
   const {
     register,
@@ -38,6 +65,7 @@ const AddUser = ({
     watch,
     formState: { errors },
     handleSubmit,
+    setValue,
   } = useForm({});
   const values = watch();
   useEffect(() => {
@@ -64,29 +92,42 @@ const AddUser = ({
       role: formJson?.role || null,
       userType: formJson?.userType || null,
       defaultSiteId:
-        formJson?.userType === "Internal" ? siteSelectedForGlobal?.siteId : null,
+        formJson?.userType === "Internal"
+          ? siteSelectedForGlobal?.siteId
+          : null,
       companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
       status: formJson?.status || null,
     };
-    // formJson?.tagSite
     setIsLoading(true);
     try {
       const res = await addUser(data);
-      if (res) {
-        const tagSite = {
-          addedSites: [formJson?.tagSite],
+      console.log("res", res);
+      if (res?.id) {
+        const tagSiteArray = {
+          addedSites: tagSite,
           removedSites: [],
         };
-        const tagRes = await addUserTagSite(res?.id, tagSite); 
+        const tagRes = await addUserTagSite(res?.id, tagSiteArray);
         toast.success(`${formJson?.firstName} has been added successfully.`);
         refresh();
         reset({});
         handleClose();
+        setIsLoading(false);
+        return;
       } else {
-        toast.error(
-          `Something went wrong while adding ${formJson?.firstName}.`
-        );
+        if (res?.includes("User Email Already Registered")) {
+          toast.error(
+            "User Email Already Registered. Please try again with new email address."
+          );
+          setIsLoading(false);
+          return;
+        } else {
+          toast.error(
+            `Something went wrong while adding ${formJson?.firstName}.`
+          );
+          setIsLoading(false);
+        }
       }
       setIsLoading(false);
     } catch (e) {
@@ -191,6 +232,7 @@ const AddUser = ({
                         type="text"
                         className="form-control"
                         id="phone"
+                        maxLength={10}
                         {...register("phone", {
                           required: {
                             value: true,
@@ -273,21 +315,35 @@ const AddUser = ({
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <label for="tagSite">Tag Site (if internal)</label>
-                        <select
+                        <Select
+                          labelId="tagSite"
                           id="tagSite"
-                          name="tagSite"
-                          {...register("tagSite")}
-                          className="form-control form-select"
+                          multiple
+                          style={{
+                            height: "2.5rem",
+                            width: "100%",
+                            listStyleType:'none'
+                          }}
+                          value={tagSite}
+                          onChange={handleChange}
+                          input={<OutlinedInput label="Tag" />}
+                          renderValue={(selected) =>
+                            `${selected?.length} site tagged`
+                          }
+                          MenuProps={MenuProps}
                         >
-                          <option value={""} selected disabled>
-                            Tag Site
-                          </option>
-                          {sites?.map((itm) => (
-                            <option value={itm?.siteId} key={itm?.siteId}>
-                              {itm?.siteName}
-                            </option>
+                          {sites?.length === 0 &&
+                          <div key={'no-result'}>
+                            No Site Result Found</div>}
+                          {sites.map((site) => (
+                            <MenuItem key={site?.siteId} value={site?.siteId}>
+                              <Checkbox
+                                checked={tagSite.indexOf(site?.siteId) > -1}
+                              />
+                              <ListItemText primary={site?.siteName} />
+                            </MenuItem>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                     </div>
                   )}
@@ -381,18 +437,22 @@ const AddUser = ({
                       </div>
                     </div>
                   )}
-                  {values?.tagSite && (
+                  {tagSite?.length > 0 && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <label for="trade">Selected Sites</label>
                         <div>
-                          <button className="btn btn-sm btn-light text-primary">
-                            {
-                              sites?.filter(
-                                (itm) => itm.siteId == values?.tagSite
-                              )?.[0]?.siteName
-                            }
-                          </button>
+                          {tagSite?.map((itm) => {
+                            return (
+                              <button className="btn btn-sm btn-light text-primary">
+                                {
+                                  sites?.filter(
+                                    (site) => site?.siteId == itm
+                                  )?.[0]?.siteName
+                                }
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -449,4 +509,6 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(AddUser);
+export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(
+  AddUser
+);
