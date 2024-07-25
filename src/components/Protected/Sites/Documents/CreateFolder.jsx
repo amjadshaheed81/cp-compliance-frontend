@@ -20,6 +20,7 @@ const CreateFolder = ({
   showFolderModal,
   setShowFolderModal,
   folderId,
+  folder2,
   uploadDocumentFile,
   refresh,
   siteSelectedForGlobal
@@ -30,7 +31,7 @@ const CreateFolder = ({
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const submitFolder = async (data) => {
-    if(data.parentFolderId === '1'){
+    if (folder2.name === 'Statutory Documents'){
       data.isStatutoryRegister = true;
     }
     setIsLoading(true);
@@ -68,6 +69,7 @@ const CreateFolder = ({
           onSubmit: handleSubmit((data) => {
             data.parentFolderId = folderId;
             data.siteId = siteSelectedForGlobal?.siteId;
+            //data.parentFolderName = 
             submitFolder(data);
           }),
         }}

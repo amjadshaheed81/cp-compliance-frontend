@@ -54,6 +54,8 @@ const SubFolder = ({
   const [fileList, setFileList] = useState([]);
   const [error, setError] = useState("");
   const [folderId2, setFolderId2] = useState();
+  const [folder2, setFolder2] = useState();
+
   const [folderData, setfolder] = useState();
   const [fileId, setFileId] = useState();
   const [previousFolderId, setPreviousFolderId] = useState([]);
@@ -175,6 +177,7 @@ const SubFolder = ({
             setShowFolderModal={setShowFolderModal}
             //folderId={folder.id}
             folderId={folderId2}
+            folder2={subfolderFiles?.document}
             refresh={() => {
               getSubFilesAndFolder(folderId);
             }}
@@ -367,6 +370,7 @@ const SubFolder = ({
                                 onClick={() => {
                                   setShowFolderModal(true);
                                   setFolderId2(folder?.id);
+                                  setFolder2(folder);
                                 }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
                               />
