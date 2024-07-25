@@ -8,41 +8,36 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
 import "./calendar.css";
+import { get } from "../../../../api";
 
 const SiteCalendar = ({ siteSelectedForGlobal }) => {
   let momentX = new Date();
   let date2 = moment(new Date()).add(5, 'days').toDate();
   const [clickedDate, setClickedDate] = useState(undefined);
 
-  const [calendarEvent, setCalendarEvent] = useState();
+  const [calendarEvent, setCalendarEvent] = useState([]);
+  //const [data, setData] = useState([]);
   useEffect(() => {
-    setCalendarEvent([
-      {
+    getData();
+  }, [])
+  const getData = async () => {
+    
+    const data = await get("/api/user/calendar/events");
+    const event = data.map(d => {
+      return {
         title: JSON.stringify([
           {
-            label: "WC Alarm Test",
-            type: "Inspection",
-          },
-          {
-            label: "Fire Risk Assessment",
-            type: "Assessment",
-          },
-        ]),
-        date: moment(momentX).format("YYYY-MM-DD"),
-        getDate: moment(momentX).format("YYYY-MM-DD"),
-      },
-      {
-        title: JSON.stringify([
-          {
-            label: "Water Outlet Temp Survey",
-            type: "Water Survey",
-          },
-        ]),
-        date: moment(date2).format("YYYY-MM-DD"),
-        getDate: moment(date2).format("YYYY-MM-DD"),
+            label: d.shortText,
+            type: d.shortText,
+          }]),
+        date: moment(d.expiryDate).format("YYYY-MM-DD"),
+        getDate: moment(d.expiryDate).format("YYYY-MM-DD"),
       }
-    ]);
-  }, []);
+    })
+    console.log("datatatatat", event)
+    setCalendarEvent(event);
+  }
+ 
   const [formData, setFormData] = useState({
     searchField: "",
     month: "",
@@ -77,7 +72,8 @@ const SiteCalendar = ({ siteSelectedForGlobal }) => {
         <p onClick={() => msg(eventInfo.event)}>
           {title?.map((itm, index) => (
             <>
-              {itm?.type === "Audit" && (
+              <p><span class="badge bg-primary">{itm?.label}</span></p>
+              {/* {itm?.type === "Audit" && (
                 <p><span class="badge bg-primary">{itm?.label}</span></p>
               )}
               {itm?.type === "Assessment" && (
@@ -94,7 +90,7 @@ const SiteCalendar = ({ siteSelectedForGlobal }) => {
               )}
               {itm?.type === "PAT Testing" && (
                 <span class="badge bg-info text-dark">{itm?.label}</span>
-              )}
+              )} */}
             </>
           ))}
         </p>

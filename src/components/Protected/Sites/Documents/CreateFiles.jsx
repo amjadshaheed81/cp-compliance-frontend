@@ -12,7 +12,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import { post, uploadPhoto } from "../../../../api";
+import { post, put, uploadPhoto } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import { InputError } from "../../../common/InputError";
@@ -27,6 +27,7 @@ const CreateFiles = ({
   isStatutory,
   uploaderUserId,
   reviewerUserId,
+  loggedInUserData
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -104,6 +105,23 @@ const CreateFiles = ({
     setFileName(e?.target?.files?.[0]?.name);
   };
 
+  const checkAndAddExpiryCalenderEvent = async (data) => {
+
+    console.log("expiryDate", data)
+    const body = {
+      siteId: siteSelectedForGlobal?.siteId,
+      startDate: moment(data.expiryDate),
+      endDate: moment(data.expiryDate),
+      shortText: "Document Expiring : " + data.name,
+      eventType: "DOCUMENT_EXPIRY",
+      userId: loggedInUserData?.id
+    }
+    await put("/api/user/calendar", body);
+
+   
+
+  }
+
   return (
     <React.Fragment>
       <Button variant="outlined" onClick={handleOpen}>
@@ -137,6 +155,7 @@ const CreateFiles = ({
               };
               data.files[0].name = formData.fileUpload[0].name;
               await submitFile(data, formData.fileUpload[0]);
+              checkAndAddExpiryCalenderEvent(data.files[0]);
               setIsLoading(false);
             } catch (e) {
               toast.error(
@@ -309,6 +328,7 @@ const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
