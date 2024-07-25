@@ -5,7 +5,6 @@ import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import CircularProgress from '@mui/material/CircularProgress';
 import DialogTitle from '@mui/material/DialogTitle';
 import { toast } from 'react-toastify';
@@ -55,9 +54,6 @@ const CreateFolder = ({
 
   return (
     <React.Fragment>
-      <Button variant="outlined" onClick={handleOpen}>
-        Create New Folder
-      </Button>
       <Dialog
         open={showFolderModal}
         onClose={handleClose}

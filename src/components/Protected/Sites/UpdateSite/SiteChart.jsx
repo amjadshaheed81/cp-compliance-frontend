@@ -11,6 +11,7 @@ import {
   addSiteLayoutNode,
   setLoader,
 } from "./../../../../store/thunk/site";
+import { toast } from "react-toastify";
 
 const InteriorExteriorStyledNode = styled.div`
   padding: 5px;
@@ -81,6 +82,20 @@ const SiteChart = ({
   const [parentNodeOptions, setParntNodeOptions] = useState([]);
   const [floorOptions, setFloorOptions] = useState([]);
   const submitNode = (values) => {
+    if (values?.nodeType === "floor") {
+      const nodes = siteLayout?.filter((itm) => itm?.nodeType === "position");
+      if (nodes?.length === 0) {
+        toast.error("Please add node position first to add floor type node.");
+        return;
+      }
+    }
+    if (values?.nodeType === "room") {
+      const nodes = siteLayout?.filter((itm) => itm?.nodeType === "floor");
+      if (nodes?.length === 0) {
+        toast.error("Please add floor first to add floor node type.");
+        return;
+      }
+    }
     const data = {
       siteId: updateSite?.siteId,
       nodeName: values?.typeOfNode,
