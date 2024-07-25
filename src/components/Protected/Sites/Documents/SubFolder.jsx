@@ -77,15 +77,12 @@ const SubFolder = ({
   };
 
   const navigate2 = () => {
-    if (previousFolderId.length) {
+    console.log("previousFolderId", previousFolderId);
+    const previos = previousFolderId[previousFolderId?.length - 2];
+    if (previos?.isParent === true || !previos) {
       navigate("/documents");
     } else {
-      const previos = previousFolderId[previousFolderId.length - 2];
-      if (previos?.isParent === true) {
-        navigate("/documents");
-      } else {
-        navigateToSubFolder(previos.id);
-      }
+      navigateToSubFolder(previos?.id);
     }
   };
 
@@ -103,15 +100,15 @@ const SubFolder = ({
         name: subfolderFiles.document.name,
         isParent: false,
       });
-      let parentFolderId = subfolderFiles.document.parentFolderId;
+      let parentFolderId = subfolderFiles?.document?.parentFolderId;
       for (let i = 0; i < 10; i = i + 1) {
         if (parentFolderId !== null) {
           const url = `/api/document/parent/${parentFolderId}/folders`;
           const response = await get(url);
-          parentFolderId = response.document.parentFolderId;
+          parentFolderId = response?.document?.parentFolderId;
           foldersList.push({
-            id: response.document.id,
-            name: response.document.name,
+            id: response?.document?.id,
+            name: response?.document?.name,
             isParent: parentFolderId === null,
           });
           if (parentFolderId === null) {
