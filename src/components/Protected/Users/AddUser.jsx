@@ -312,42 +312,40 @@ const AddUser = ({
                       )}
                     </div>
                   </div>
-                  {values?.userType === "Internal" && (
-                    <div className="col-md-4 mt-2">
-                      <div className="form-group">
-                        <label for="tagSite">Tag Site (if internal)</label>
-                        <Select
-                          labelId="tagSite"
-                          id="tagSite"
-                          multiple
-                          style={{
-                            height: "2.5rem",
-                            width: "100%",
-                            listStyleType:'none'
-                          }}
-                          value={tagSite}
-                          onChange={handleChange}
-                          input={<OutlinedInput label="Tag" />}
-                          renderValue={(selected) =>
-                            `${selected?.length} site tagged`
-                          }
-                          MenuProps={MenuProps}
-                        >
-                          {sites?.length === 0 &&
-                          <div key={'no-result'}>
-                            No Site Result Found</div>}
-                          {sites.map((site) => (
-                            <MenuItem key={site?.siteId} value={site?.siteId}>
-                              <Checkbox
-                                checked={tagSite.indexOf(site?.siteId) > -1}
-                              />
-                              <ListItemText primary={site?.siteName} />
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </div>
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label for="tagSite">Tag Site</label>
+                      <Select
+                        labelId="tagSite"
+                        id="tagSite"
+                        multiple
+                        style={{
+                          height: "2.5rem",
+                          width: "100%",
+                          listStyleType: "none",
+                        }}
+                        value={tagSite}
+                        onChange={handleChange}
+                        input={<OutlinedInput label="Tag" />}
+                        renderValue={(selected) =>
+                          `${selected?.length} site tagged`
+                        }
+                        MenuProps={MenuProps}
+                      >
+                        {sites?.length === 0 && (
+                          <div key={"no-result"}>No Site Result Found</div>
+                        )}
+                        {sites?.map((site) => (
+                          <MenuItem key={site?.siteId} value={site?.siteId}>
+                            <Checkbox
+                              checked={tagSite?.indexOf(site?.siteId) > -1}
+                            />
+                            <ListItemText primary={site?.siteName} />
+                          </MenuItem>
+                        ))}
+                      </Select>
                     </div>
-                  )}
+                  </div>
 
                   <div className="col-md-4 mt-2">
                     <div className="form-check form-switch">

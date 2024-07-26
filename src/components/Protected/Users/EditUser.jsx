@@ -58,7 +58,12 @@ const ViewUsers = ({
       lastName: name?.[1] || "",
       isCompany: selectedUser?.companyId ? true : false,
     });
-    setTagSite(selectedUser?.taggedSites?.map(itm => itm?.id))
+    console.log("selectedUser", selectedUser);
+    setTagSite(
+      selectedUser?.taggedSites
+        ? selectedUser?.taggedSites?.map((itm) => itm?.id)
+        : []
+    );
     setSelectedCompany(selectedUser?.companyId);
     getSites(loggedInUserData);
     getCompanies();
@@ -90,14 +95,16 @@ const ViewUsers = ({
     setIsLoading(true);
     try {
       const res = await addUser(data);
-      if (res) {
+      if (res.id) {
         const tagSiteValue = {
           addedSites: tagSite,
           removedSites: [],
         };
-        for (const iterator of selectedUser?.taggedSites) {
-          if(!tagSite?.includes(iterator?.id)) {
-            tagSiteValue.removedSites.push(iterator?.id)
+        if(selectedUser?.taggedSites) {
+          for (const iterator of selectedUser?.taggedSites) {
+            if(!tagSite?.includes(iterator?.id)) {
+              tagSiteValue.removedSites.push(iterator?.id)
+            }
           }
         }
         const tagRes = await addUserTagSite(data?.userId, tagSiteValue);
@@ -114,6 +121,7 @@ const ViewUsers = ({
       }
       setIsLoading(false);
     } catch (e) {
+      console.log(e);
       setIsLoading(false);
     }
   };
@@ -306,11 +314,10 @@ const ViewUsers = ({
                       )}
                     </div>
                   </div>
-                  {values?.userType === "Internal" && (
-                    <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <label for="tagSite">
-                          Tag Site (if internal)
+                          Tag Site
                         </label>
                         <Select
                           labelId="tagSite"
@@ -332,10 +339,10 @@ const ViewUsers = ({
                           {sites?.length === 0 &&
                           <div key={'no-result'}>
                             No Site Result Found</div>}
-                          {sites.map((site) => (
+                          {sites?.map((site) => (
                             <MenuItem key={site?.siteId} value={site?.siteId}>
                               <Checkbox
-                                checked={tagSite.indexOf(site?.siteId) > -1}
+                                checked={tagSite?.indexOf(site?.siteId) > -1}
                               />
                               <ListItemText primary={site?.siteName} />
                             </MenuItem>
@@ -343,7 +350,6 @@ const ViewUsers = ({
                         </Select>
                       </div>
                     </div>
-                  )}
                   <div className="col-md-4 mt-2">
                     <div className="form-check form-switch">
                       <label
