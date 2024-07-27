@@ -419,10 +419,12 @@ const SubFolder = ({
                       <td>
                         <div>
                           &nbsp;&nbsp;
-                          <TextSnippetOutlinedIcon
-                            style={{ color: "#384BD3" }}
-                          />
-                          <span className="p-3 cursor">{file?.name}</span>
+                          <a href={file?.fileBlobUrl} download>
+                            <TextSnippetOutlinedIcon
+                              style={{ color: "#384BD3" }}
+                            />
+                            <span className="p-3 cursor">{file?.name}</span>
+                          </a>
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
