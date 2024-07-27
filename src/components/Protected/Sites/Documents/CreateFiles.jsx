@@ -221,16 +221,8 @@ const CreateFiles = ({
                     <input
                       type="date"
                       className="form-control"
-                      {...register("issueDate", {
-                        required: "Issue Date is required",
-                      })}
+                      {...register("issueDate")}
                     />
-                    {errors.issueDate && (
-                      <InputError
-                        message={errors?.issueDate?.message}
-                        key={errors?.issueDate?.message}
-                      />
-                    )}
                   </div>
                 </Grid>
                 <Grid sm={4}>
@@ -239,23 +231,8 @@ const CreateFiles = ({
                     <input
                       type="date"
                       className="form-control"
-                      {...register("expiryDate", {
-                        required: "Expiry Date is required",
-                        validate: (value) => {
-                          var expiryDate = moment(value);
-                          var issueDate = moment(getValues().issueDate);
-                          if (issueDate > expiryDate) {
-                            return "Expiry date should be in past or earlier than the end date.";
-                          }
-                        },
-                      })}
+                      {...register("expiryDate")}
                     />
-                    {errors.expiryDate && (
-                      <InputError
-                        message={errors?.expiryDate?.message}
-                        key={errors?.expiryDate?.message}
-                      />
-                    )}
                   </div>
                 </Grid>
                 <Grid sm={12}>
