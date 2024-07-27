@@ -204,6 +204,19 @@ const SubFolder = ({
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
         >
+          <Link
+            underline="hover"
+            key="1"
+            color="inherit"
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/documents");
+            }}
+          >
+            <i style={{ color: "#384BD3" }} className="fas fa-folder fa-1x"></i>
+            &nbsp; Documents
+          </Link>
           {previousFolderId.map((pr) => {
             return (
               <Link
