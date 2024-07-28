@@ -103,23 +103,23 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
       }
     })
     const risksN = [0, 0, 0, 0]
-    let totalriskFactor = 0
+    let weightedScore = 0
     riskFactorResponse.forEach(r => {
-      totalriskFactor = totalriskFactor + r.totalRiskScore;
-      if (r.totalRiskScore > 17) {
+      weightedScore = weightedScore + r.weightedScore;
+      if (r.weightedScore > 17) {
         risksN[0] = risksN[0] + 1;
-      } else if (r.totalRiskScore > 10) {
+      } else if (r.weightedScore > 10) {
         risksN[1] = risksN[1] + 1;
-      } else if (r.totalRiskScore > 5) {
+      } else if (r.weightedScore > 5) {
         risksN[2] = risksN[2] + 1;
-      } else if (r.totalRiskScore > 1) {
+      } else if (r.weightedScore > 1) {
         risksN[3] = risksN[3] + 1;
       }
 
     })
     setrisks(risksN)
     
-    settotalrisks(totalriskFactor)
+    settotalrisks(weightedScore)
     setRiskFactor(riskFactorFromDB);
     const body = {
       riskScoreRed: risksN[0],
@@ -238,10 +238,10 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     style={getChipColor(riskFactor[idx]?.response?.weightedScore)}
                     label={"Weighted Score : " + (riskFactor[idx]?.response?.weightedScore ?? 0)}
                   />
-                  <Chip
+                  {/* <Chip
                     style={getChipColor(riskFactor[idx]?.response?.totalRiskScore)}
                     label={"Risk Score : " + (riskFactor[idx]?.response?.totalRiskScore ?? 0)}
-                  />
+                  /> */}
                 
               </AccordionSummary>
               <AccordionDetails>
@@ -372,7 +372,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
 
 
 
-                  <Grid item xs={12}>
+                  {/* <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
                       Risk Score Card (<strong>Total Risk Score = {(riskFactor[idx]?.response?.consequence ?? 0) * (riskFactor[idx]?.response?.likelihood ?? 0)}</strong>)
                     </Typography>
@@ -434,8 +434,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                           />
                         </Box>
                       </Grid>
-                    </Grid>
-                  </Grid>
+                    </Grid> 
+                  </Grid>*/}
                   <Grid item xs={12}>
                     <label htmlFor="action" name="action">
                       Suggested Action

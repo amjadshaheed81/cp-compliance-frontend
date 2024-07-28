@@ -182,7 +182,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                     </thead>
                     <tbody>
                       <tr>
-                        <td>Reading 1 <b style={{color: "red"}}>( 30 seconds )</b></td>
+                        <td>Reading 1 <b style={{color: "red"}}> 30 seconds </b></td>
                         <td rowSpan={3} style={{ verticalAlign: 'middle' }}><input
                           type="date"
                           className="form-control"
@@ -196,8 +196,8 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                             className="form-control"
                               name="reading1"
                               style={{
-                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading1) > 50)
-                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading1) < 20)
+                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading1) < 50)
+                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading1) > 20)
                                   ? 'red' : 'green',
                                 fontWeight:'600'
                               }}
@@ -207,7 +207,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                         </td>
                       </tr>
                       <tr>
-                        <td>Reading 2 <b style={{ color: "red" }}> ( 1 minute )</b></td>
+                        <td> <b style={{ color: "red" }}>  60 seconds </b></td>
                         {/* <td rowSpan={3}><input
                           type="date"
                           className="form-control"
@@ -221,8 +221,8 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                             className="form-control"
                               name="reading2"
                               style={{
-                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading2) > 50)
-                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading2) < 20)
+                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading2) < 50)
+                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading2) > 20)
                                   ? 'red' : 'green',
                               fontWeight: '600'}}
                             onChange={(e) => handleInputChange(e, readingPop)}
@@ -231,7 +231,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                         </td>
                       </tr>
                       <tr>
-                        <td>Reading 3 <b style={{ color: "red" }}>( 2 minutes )</b></td>
+                        <td>Reading 3 <b style={{ color: "red" }}> 120 seconds </b></td>
                         {/* <td><input
                           type="date"
                           className="form-control"
@@ -245,8 +245,8 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                             className="form-control"
                               name="reading3"
                               style={{
-                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading3) > 50)
-                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading3) < 20)
+                                color: (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading3) < 50)
+                                  || (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading3) > 20)
                                   ? 'red' : 'green',
                                 fontWeight:'600'
                               }}
@@ -373,7 +373,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
                 setFormData(uformData)
               }}
             >
-              Record New
+              Add outlet
             </button>}
 
         </Grid>
