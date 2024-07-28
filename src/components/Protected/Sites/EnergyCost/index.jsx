@@ -13,14 +13,17 @@ import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
 import Cost from "./Cost";
 import Reading from "./Reading";
+import * as XLSX from 'xlsx';
 
 import { DialogContent, DialogTitle, Link, Dialog, CircularProgress, Box, Grid, Divider, Autocomplete, TextField, Typography } from "@mui/material";
-import { deleteUser, getSites, getUsers } from "../../../../store/thunk/site";
+import {  getSites } from "../../../../store/thunk/site";
 
-const EnergyCost = ({ users, getUsers }) => {
+const EnergyCost = ({  loggedInUserData}) => {
   const [isLoading, setIsLoading] = useState(false)
   const [openCost, setOpenCost] = useState(false)
   const [openBulk, setopenBulk] = useState(false)
+  const [bulkUploadCost, setbulkUploadCost] = useState([]);
+  const [bulkUploadReading, setbulkUploadReading] = useState([]);
   const [actionSurvey, setActionSurvey] = useState()
   const [openReading, setOpenReading] = useState(false)
   const [typeoptions, settypeoptions] = useState([]);
@@ -33,9 +36,13 @@ const EnergyCost = ({ users, getUsers }) => {
   };
 
   useEffect(() => {
-    getUsers();
     gettypeoptions();
   }, []);
+
+ 
+
+  const customColumnNamesCost = ['reference','fromDate', 'toDate', 'cost'];
+  const customColumnNamesReading = ['reference', 'readingDate', 'readingValue'];
 
   const [itemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
@@ -110,7 +117,8 @@ const EnergyCost = ({ users, getUsers }) => {
     
     if (formData2?.searchField?.length > 0 && filteredEnergyCost2?.length > 0) {
       filteredEnergyCost2 = filteredEnergyCost2.filter(sc =>
-        sc?.reference?.toLowerCase().includes(String(formData2?.searchField).toLowerCase())
+        sc?.reference?.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) || 
+        sc?.budgetCategory?.toLowerCase().includes(String(formData2?.searchField).toLowerCase())
       )
     }
     setFilteredEnergyCost(filteredEnergyCost2);
@@ -134,7 +142,132 @@ const EnergyCost = ({ users, getUsers }) => {
     });
   };
 
-  useEffect(() => { getEnergyCost() },[])
+  useEffect(() => { getEnergyCost() }, [])
+
+  
+
+  const handleFileUploadReading = (event) => {
+    setbulkUploadReading([]);
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const binaryStr = e.target.result;
+        const workbook = XLSX.read(binaryStr, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+        const mappedData = json.map(row => {
+          let rowData = {
+            submittedBy: loggedInUserData?.id,
+            readingUnit:"kWh"
+          };
+          const rowValues = Object.values(row);
+          customColumnNamesReading.forEach((col, index) => {
+
+            if (index === 0) {
+              const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
+              if (dupIdx < 0) {
+                toast.error("Invalid Reference")
+                return;
+              } else {
+                rowData.energyId = energyCost[dupIdx]?.energyId
+                rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory
+              }
+            } else if (index === 1) {
+
+              if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
+                toast("Invalid data present in attached file at row no " + index);
+                return;
+              } else {
+                rowValues[index] = new Date(rowValues[index]);
+              }
+            } else {
+              if (isNaN(rowValues[index])) {
+                toast("Invalid data present in attached file at row no " + index)
+                return;
+              }
+            }
+            rowData[col] = rowValues[index] || null;
+          });
+          return rowData;
+        });
+        setbulkUploadReading(mappedData);
+      };
+
+      reader.readAsBinaryString(file);
+    };
+  
+  const handleFileUploadCost = (event) => {
+    setbulkUploadCost([]);
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const binaryStr = e.target.result;
+      const workbook = XLSX.read(binaryStr, { type: 'binary' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      const mappedData = json.map(row => {
+        let rowData = {
+          submittedBy: loggedInUserData?.id,
+        };
+        const rowValues = Object.values(row);
+        customColumnNamesCost.forEach((col, index) => {
+          
+          if (index === 0) {
+            const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
+            if (dupIdx < 0) {
+              toast.error("Invalid Reference")
+              return;
+            } else {
+              rowData.energyId = energyCost[dupIdx]?.energyId
+              rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory
+            }
+          } else if (index === 1 || index === 2) {
+
+            if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
+              toast("Invalid data present in attached file at row no " + index);
+              return;
+            } else {
+              rowValues[index] = new Date(rowValues[index]);
+            }
+          } else{
+            if (isNaN(rowValues[index])) {
+              toast("Invalid data present in attached file at row no " + index)
+              return;
+            }
+          }
+          rowData[col] = rowValues[index] || null;
+        });
+        return rowData;
+      });
+      setbulkUploadCost(mappedData);
+    };
+
+    reader.readAsBinaryString(file);
+  };
+
+  const callbulkUploadCost = async () => {
+    setopenBulk(false);
+    for (const data of bulkUploadCost) {
+      saveCost(data);
+    }
+    setbulkUploadCost([]);
+    getEnergyCost();
+
+  }
+
+  const callbulkUploadReading = async () => {
+    setopenBulk(false);
+    for (const data of bulkUploadReading) {
+      saveReading(data);
+    }
+    setbulkUploadReading([]);
+    getEnergyCost();
+
+  }
 
   const addEnergyCost = async (event) => {
     event.preventDefault();
@@ -144,6 +277,12 @@ const EnergyCost = ({ users, getUsers }) => {
     }
     const body = formData;
     body.siteId = site.siteId
+    const dupIdx = energyCost.findIndex(e => e.reference === body.reference);
+    if (dupIdx >= 0) {
+      toast.error("Reference already exist")
+      return;
+    }
+
     await post("/api/energy/survey", body);
     setFormData({})
     await getEnergyCost();
@@ -158,27 +297,27 @@ const EnergyCost = ({ users, getUsers }) => {
     const energyCost = await get("/api/energy/site/survey/" + site?.siteId);
     energyCost.forEach(energy => {
       const dates = energy.costList.map(c => new Date(c.fromDate));
-      const minDate = new Date(Math.min(...dates));
+      const minDate = Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
       const dates2 = energy.costList.map(c => new Date(c.toDate));
-      const maxDate = new Date(Math.max(...dates2));
+      const maxDate = Math.max(...dates2) !== -Infinity ? new Date(Math.max(...dates2)) : null;
       energy.minDate = minDate;
       energy.maxDate = maxDate;
     });
+   
     setFilteredEnergyCost(energyCost)
     setEnergyCost(energyCost);
     setIsLoading(false);
   }
 
   const saveCost = async (data) => {
-    data.submittedBy = users?.[0]?.id
+    data.submittedBy = loggedInUserData?.id;
     await post("/api/energy/cost", data);
     getEnergyCost();
     
   }
 
   const saveReading = async (data) => {
-    data.submittedBy = users?.[0]?.id;
-    console.log(data)
+    data.submittedBy = loggedInUserData?.id;
     await post("/api/energy/reading", data);
     getEnergyCost();
   }
@@ -197,11 +336,12 @@ const EnergyCost = ({ users, getUsers }) => {
               type="file"
               name="file"
               className="form-control"
+              onChange={handleFileUploadCost}
             />
             <button
               style={{ marginTop: '10px'}}
               className="btn btn-primary text-white pr-2"
-              onClick={(e) => setopenBulk(false)}
+              onClick={(e) => callbulkUploadCost()}
             >
               Upload Energy Cost
             </button>
@@ -218,11 +358,12 @@ const EnergyCost = ({ users, getUsers }) => {
               type="file"
               name="file"
               className="form-control"
+              onChange={handleFileUploadReading}
             />
             <button
               style={{ marginTop: '10px' }}
               className="btn btn-primary text-white pr-2"
-              onClick={(e) => setopenBulk(false)}
+              onClick={(e) => callbulkUploadReading()}
             >
               Upload Energy Reading
             </button>
@@ -401,11 +542,7 @@ const EnergyCost = ({ users, getUsers }) => {
                   
                 {!isLoading && filteredEnergyCost?.map((action) =>
                   {
-                    let leanName = "-"
-                    const lead = users.filter(u => u.id == action.leadUserID);
-                    if (lead.length > 0) {
-                      leanName = lead[0].trade  + ' - ' +lead[0].name + ' ('+lead[0].email +') - ' + lead[0].company;
-                    }
+                   
                     return (
                     <tr key={action?.id}>
                         <th scope="col">{action?.reference}</th>
@@ -416,9 +553,8 @@ const EnergyCost = ({ users, getUsers }) => {
                         <th scope="col" style={{ width: '150px' }}>
                           {action?.maxDate ? moment(action?.maxDate).format("DD-MM-YYYY") : "-"}
                         </th>
-                        <th scope="col">{action?.costList?.map(c => c.cost).reduce((a,b)=>{return a+b}, 0)}</th>
                         <th scope="col">{action?.readingList?.map(c => c.readingValue).reduce((a, b) => { return a + b }, 0)}</th>
-
+                        <th scope="col">{action?.costList?.map(c => c.cost).reduce((a, b) => { return a + b }, 0)}</th>
                        
                         <th scope="col" style={{ width: '250px' }}>
                         <Tooltip title={`View/Edit Energy Cost`} arrow>
@@ -469,9 +605,10 @@ const EnergyCost = ({ users, getUsers }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  users: state.site.users,
+  loggedInUserData: state.site.loggedInUserData
+  
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
+export default connect(mapStateToProps, { getSites })(
   EnergyCost
 );
 

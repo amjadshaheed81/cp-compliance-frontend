@@ -356,14 +356,14 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
       <Grid container >
         <Grid sm={4}>
           <Typography variant="h6" gutterBottom>
-            Water - Outlet Temperature - Tests <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
+            Water - Outlet Temperature - Tests <Chip color={completed ? 'success' : 'warning'} label={'In progress'} />
           </Typography>
         </Grid>
         <Grid sm={4}>
 
         </Grid>
         <Grid sm={4}>
-          {!completed &&
+          {/* {!completed && */}
             <button
               style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
               className="btn btn-primary btn-light"
@@ -374,7 +374,8 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
               }}
             >
               Add outlet
-            </button>}
+            </button>
+            {/* } */}
 
         </Grid>
 
@@ -535,7 +536,7 @@ const SurveyWaterOutletTemperature = ({ checkId, siteAssets, siteLayout, getSite
 
                       <td style={{ width: '90px' }}>
                         <button
-                          disabled={completed}
+                          //disabled={completed}
                           className="btn btn-sm btn-light text-dark"
                           onClick={() => {
                             setReadingPop(idx)

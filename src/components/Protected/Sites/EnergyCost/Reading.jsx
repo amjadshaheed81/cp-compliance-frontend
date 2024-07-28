@@ -64,9 +64,10 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                   name="budgetCategory"
                   className="form-control form-select"
                   id="budgetCategory"
-                  value={formData?.budgetCategory}
+                    value={survey?.budgetCategory}
                   onChange={handleInputChange}
-                  required
+                    required
+                    disabled
                 >
                   <option value="">Budget Category</option>
                   {typeoptions.map(t => <option value={t}>{t}</option>)}
