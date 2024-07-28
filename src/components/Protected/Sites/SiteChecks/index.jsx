@@ -13,9 +13,9 @@ import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
 
 import { Button, Modal, Chip, CircularProgress, Box, Grid, Divider, Autocomplete, TextField } from "@mui/material";
-import { deleteUser, getSites, getUsers, getExternalUsers } from "../../../../store/thunk/site";
+import { getSites } from "../../../../store/thunk/site";
 
-const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
+const SiteChecks = ({ siteSelectedForGlobal }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [create, setCreate] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
@@ -25,15 +25,23 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
   const site = JSON.parse(localStorage.getItem("site"))
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
+  const [managerList, setManagerList] = useState([]);
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
   };
 
   useEffect(() => {
-    getExternalUsers();
+    getManagerList();
     gettypeoptions();
   }, []);
+
+  const getManagerList = async () => {
+    const data = await get(
+      `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
+    );
+    setManagerList(data?.users || []);
+  };
 
   const [itemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,9 +183,9 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
     }
     if (formData2?.searchField?.length > 0 && filteredSiteChecks2?.length > 0) {
       filteredSiteChecks2.forEach(s => {
-        const lead = externalusers.filter(u => u.id == s.leadUserID);
+        const lead = managerList.filter(u => u.id == s.leadUserID);
         if (lead.length > 0) {
-          s.leadName = lead[0].trade + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].company;
+          s.leadName = lead[0].role + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].companyName;
         }
       })
       filteredSiteChecks2 = filteredSiteChecks2.filter(sc =>
@@ -442,9 +450,9 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                   {!isLoading && currentSiteChecks?.map((action) =>
                   {
                     let leanName = "-"
-                    const lead = externalusers.filter(u => u.id == action.leadUserID);
+                    const lead = managerList.filter(u => u.id == action.leadUserID);
                     if (lead.length > 0) {
-                      leanName = lead[0].trade  + ' - ' +lead[0].name + ' ('+lead[0].email +') - ' + lead[0].company;
+                      leanName = lead[0].role + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].companyName;
                     }
                     return (
                     <tr key={action?.id}>
@@ -635,9 +643,9 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                         uformData.leadUserID = item?.key;
                         setFormData(uformData);
                       }}
-                      value={externalusers.filter(o => String(o.id) === String(formData?.leadUserID)).map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })[0]}
+                        value={managerList.filter(o => String(o.id) === String(formData?.leadUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })[0]}
 
-                      options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
+                        options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })}
                       getOptionLabel={(option) => option.label}
                       renderInput={(params) => (
                         <div ref={params.InputProps.ref} >
@@ -658,14 +666,14 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
                     <label htmlFor="assistantUserID">Assistant</label>
                     <Autocomplete
                       id="assistantUserID"
-                      value={externalusers.filter(o => String(o.id) === String(formData?.assistantUserID)).map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })[0]}
+                        value={managerList.filter(o => String(o.id) === String(formData?.assistantUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })[0]}
 
                       onChange={(event, item) => {
                         const uformData = { ...formData }
                         uformData.assistantUserID = item?.key;
                         setFormData(uformData);
                       }}
-                      options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
+                        options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })}
                       getOptionLabel={(option) => option.label}
                       renderInput={(params) => (
                         <div ref={params.InputProps.ref} >
@@ -749,9 +757,9 @@ const SiteChecks = ({ externalusers, getUsers, getExternalUsers }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  externalusers: state.site.externalusers,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal
 });
-export default connect(mapStateToProps, { getUsers, deleteUser, getSites, getExternalUsers })(
+export default connect(mapStateToProps, {getSites })(
   SiteChecks
 );
 
