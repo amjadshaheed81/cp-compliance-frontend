@@ -241,7 +241,10 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                 &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{ margin: '5px', marginLeft: '30px'}} color={q.status === "Closed" ? "success" : "primary"} label={q.status} />
               </AccordionSummary>
               {quest[idx]?.response?.response === "No" && <AccordionDetails>
-                <form>
+                <form onSubmit={(e) => {
+                  setOpenIndex(idx + 1);
+                  saveAssessmentResponse(e, idx);
+                }}>
                   <Grid container spacing={2}>
                     {/* <Grid item xs={6}>
                       <label htmlFor="response" name="response">
@@ -499,10 +502,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                         <button
                           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                           className="btn btn-primary text-white pr-2"
-                          onSubmit={(e) => {
-                            setOpenIndex(idx + 1);
-                            saveAssessmentResponse(e, idx);
-                          }}
+                          
                           type="submit"
                         >
                           Save & Continue
