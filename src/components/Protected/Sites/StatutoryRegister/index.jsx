@@ -14,20 +14,23 @@ import ChipComponent from '../../../common/Chips/Chips';
 import { getSiteAssets } from '../../../../store/thunk/site';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
+import PdfViewer from '../Documents/PdfViewer';
 
 const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAssets, siteAssets }) => {
     let chipColor;
     const [showModal, setShowModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isChecked, setIsChecked] = useState(true);
+    const [showPdfModal, setShowPdfModal] = useState(false);
+    const [selectedPdf, setSelectedPdf] = useState("");
     const [statutory, setStatutory] = useState([]);
     const [folder, setFolder] = useState({});
     const navigate = useNavigate();
     let dutiesIdentified = 0; let dutiesMet = 0;
     console.log('logged in', loggedInUserData);
     const getDutiesIdentified = (item) => {
-        for(let i=0;i<item.length;i++){  
-            if(item[i].required === true){        
+        for (let i = 0; i < item.length; i++) {
+            if (item[i].required === true) {
                 dutiesIdentified++;
             }
         }
@@ -35,8 +38,8 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
     }
 
     const getDutiesMet = (item) => {
-        for(let i=0;i<item.length;i++){
-            if((item[i].files !== null && item[i].status === 'Passed')){
+        for (let i = 0; i < item.length; i++) {
+            if ((item[i].files !== null && item[i].status === 'Passed')) {
                 dutiesMet++;
             }
         }
@@ -45,19 +48,19 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
     const getStatutory = async (siteId) => {
         setIsLoading(true);
         let getStatutoryDocuments = await get(`/api/document/${siteId}/statutoryRegister`);
-        getStatutoryDocuments = getStatutoryDocuments.sort( (a, b) => { return a.id - b.id })
+        getStatutoryDocuments = getStatutoryDocuments.sort((a, b) => { return a.id - b.id })
         setStatutory(getStatutoryDocuments);
-        
+
         chipColor = statutory.filter((item) => {
             return item.status === "Passed";
         })
         setIsLoading(false);
     }
-   
+
     const getChipStatus = (item) => {
-        return item.status === 'Passed' ? 'Passed'  : item.status === 'Open' ? 'Open' : '';
+        return item.status === 'Passed' ? 'Passed' : item.status === 'Open' ? 'Open' : '';
     }
-    const handleCheckboxField = async (e,item, idx) => {
+    const handleCheckboxField = async (e, item, idx) => {
         setIsChecked(e.target.checked);
         const folderId = item.id;
         const formData = {
@@ -107,7 +110,7 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                 <div className="col">
                                     <DescriptionIcon style={{ color: "yellow", fontSize: "2rem" }} />
                                     <span>Duties Not Met</span>
-                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{dutiesIdentified-dutiesMet}</p>
+                                    <p class="fw-bold fs-3" style={{ marginLeft: "2.5rem" }}>{dutiesIdentified - dutiesMet}</p>
                                 </div>
                                 <div className="col">
                                     <CSVLink
@@ -132,13 +135,20 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                     <th scope="col">Status</th>
                                 </tr>
                             </thead>
+                            {showPdfModal && (
+                                <PdfViewer
+                                    showPdfModal={showPdfModal}
+                                    setShowPdfModal={setShowPdfModal}
+                                    selectedPdf={selectedPdf}
+                                />
+                            )}
                             <tbody>
                                 {!isLoading && statutory.length === 0 && (
                                     <tr>
                                         <td colSpan={4} align="center">No result found!!</td>
                                     </tr>
                                 )}
-                                {statutory?.map((item,index) => {
+                                {statutory?.map((item, index) => {
 
                                     return (
                                         <tr>
@@ -173,7 +183,12 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                                         {item.files?.map((itm, index) => {
                                                             return (
                                                                 <tr>
-                                                                    <th scope="col">{itm.name}</th>
+                                                                    <button style={{ border: 'none', cursor: 'pointer', color: 'blue' }} onClick={(e) => {
+                                                                        e?.preventDefault();
+                                                                        setShowPdfModal(true);
+                                                                        setSelectedPdf(itm?.fileBlobUrl)
+                                                                    }}>{itm.name}</button>
+                                                                    {/* <th scope="col">{itm.name}</th> */}
                                                                     <th scope="col">{`version-${index + 1}.png`}</th>
                                                                     <th scope="col">{moment(itm.issueDate).format("YYYY-MM-DD")}</th>
                                                                     <th scope="col">{moment(itm.expiryDate).format("YYYY-MM-DD")}</th>
@@ -181,19 +196,18 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                                                     <th scope="col">{itm.uploaderUserId}</th>
                                                                 </tr>
                                                             )
-
                                                         })}
 
                                                         <tr>
                                                             <td colspan="6"><div className='upload-file'>
-                                                                <label id="upload-file" class="text-decoration-underline" onClick={() => { setFolder(item);setShowModal(true); }}
+                                                                <label id="upload-file" class="text-decoration-underline" onClick={() => { setFolder(item); setShowModal(true); }}
                                                                     style={{ color: "384bd3", cursor: "pointer" }}>Upload New File</label>
                                                             </div></td>
                                                         </tr>
                                                     </tbody></table>
                                             </th>
                                             <th scope="col">
-                                            <ChipComponent status={getChipStatus(item)} isStatutory={true} />
+                                                <ChipComponent status={getChipStatus(item)} isStatutory={true} />
                                             </th>
                                         </tr>
                                     )
