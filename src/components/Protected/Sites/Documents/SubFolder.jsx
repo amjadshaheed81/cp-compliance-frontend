@@ -35,6 +35,7 @@ import { get } from "../../../../api";
 import Swal from "sweetalert2";
 import { Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import PdfViewer from "./PdfViewer";
 
 const SubFolder = ({
   deleteFile,
@@ -51,6 +52,8 @@ const SubFolder = ({
   const navigate = useNavigate();
   const [bulkUploadModal, setBulkUploadModal] = useState(false);
   const [versionHistory, setVersionHistory] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
   const [fileList, setFileList] = useState([]);
   const [error, setError] = useState("");
   const [folderId2, setFolderId2] = useState();
@@ -169,6 +172,13 @@ const SubFolder = ({
             setVersionHistory={setVersionHistory}
             //fileId={file?.id}
             fileId={fileId}
+          />
+        )}
+        {showPdfModal && (
+          <PdfViewer
+            showPdfModal={showPdfModal}
+            setShowPdfModal={setShowPdfModal}
+            selectedPdf={selectedPdf}
           />
         )}
         {showFolderModal && (
@@ -419,12 +429,16 @@ const SubFolder = ({
                       <td>
                         <div>
                           &nbsp;&nbsp;
-                          <a href={file?.fileBlobUrl} download>
+                          <button onClick={(e) => {
+                            e?.preventDefault();
+                            setShowPdfModal(true);
+                            setSelectedPdf(file?.fileBlobUrl)
+                          }}>
                             <TextSnippetOutlinedIcon
                               style={{ color: "#384BD3" }}
                             />
                             <span className="p-3 cursor">{file?.name}</span>
-                          </a>
+                          </button>
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
