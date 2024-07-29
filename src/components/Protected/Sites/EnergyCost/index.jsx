@@ -176,12 +176,9 @@ const EnergyCost = ({  loggedInUserData}) => {
               }
             } else if (index === 1) {
 
-              if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
-                toast("Invalid data present in attached file at row no " + index);
-                return;
-              } else {
+             
                 rowValues[index] = new Date(rowValues[index]);
-              }
+              
             } else {
               if (isNaN(rowValues[index])) {
                 toast("Invalid data present in attached file at row no " + index)
@@ -232,6 +229,7 @@ const EnergyCost = ({  loggedInUserData}) => {
               return;
             } else {
               rowValues[index] = new Date(rowValues[index]);
+              
             }
           } else{
             if (isNaN(rowValues[index])) {
