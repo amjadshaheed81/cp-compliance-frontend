@@ -232,11 +232,10 @@ const UpdateAsset = ({
   const goTo = (link) => {
     navigate(link);
   };
-  const submitSiteAsset = (data) => {
+  const submitSiteAsset = async (data) => {
     setLoader(true);
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
-    console.log("assetImage", assetImage);
     if (data?.assetImage) {
       form_data.append(
         "assetImage",
@@ -264,7 +263,7 @@ const UpdateAsset = ({
     };
     form_data.append("assetRequestString", JSON.stringify(formDetails));
     try {
-      addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+      await addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
       setLoader(false);
     } catch (e) {
       toast.error("Something went wrong while update asset. Please try again.");
