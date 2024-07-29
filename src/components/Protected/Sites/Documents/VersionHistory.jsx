@@ -14,6 +14,10 @@ import { get } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useForm } from "react-hook-form";
+import { Validation } from "../../../../Constant/Validation";
+import { InputError } from "../../../common/InputError";
+import PdfViewer from "./PdfViewer";
 
 const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
   const [open, setOpen] = useState([]);
@@ -21,6 +25,14 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
   const handleOpen = () => setVersionHistory(true);
   const handleClose = () => setVersionHistory(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
+  const {
+    register,
+    formState: { errors },
+    handleSubmit,
+    setValue,
+  } = useForm({});
   useEffect(() => {
     getVerions();
   }, []);
@@ -29,6 +41,7 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
       setIsLoading(true);
       const versions = await get(`/api/document/file/${fileId}/history`);
       setFileVerions(versions?.files || []);
+      setValue("folder", versions?.files?.[0]?.folderName);
       setIsLoading(false);
     } catch (e) {
       setIsLoading(false);
@@ -36,34 +49,95 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
       setFileVerions([]);
     }
   };
-
+  const handleVersionSubmit = async (data) => {
+    console.log("data", data);
+  };
   return (
     <>
+      {showPdfModal && (
+        <PdfViewer
+          showPdfModal={showPdfModal}
+          setShowPdfModal={setShowPdfModal}
+          selectedPdf={selectedPdf}
+        />
+      )}
       <Button onClick={handleOpen}>Version History</Button>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
-        <DialogTitle> Version History</DialogTitle>
-        <DialogContent>
-          <form className="row">
-            {/* <div className="d-flex">
-              <div>
+        <form
+          className="container-fluid"
+          onSubmit={handleSubmit(handleVersionSubmit)}
+        >
+          <DialogTitle> Version History</DialogTitle>
+          <DialogContent>
+            <div className="row mb-2" style={{ height: "auto" }}>
+              <div className="col-md-4">
                 <label htmlFor="folder" name="folder">
                   Folder
                 </label>
-                <input type="text" name="folder" className="form-control" />
+                <input
+                  disabled
+                  {...register("folder", {
+                    required: {
+                      value: true,
+                      message: `${Validation.REQUIRED} folder `,
+                    },
+                  })}
+                  type="text"
+                  name="folder"
+                  className="form-control"
+                />
+                {errors?.folder && (
+                  <InputError
+                    message={errors?.folder?.message}
+                    key={errors?.folder?.message}
+                  />
+                )}
               </div>
-              <div>
-                <label htmlFor="file" name="file">
-                  File
+              <div className="col-md-4">
+                <label htmlFor="fileName" name="fileName">
+                  File Name
                 </label>
-                <input type="text" name="file" className="form-control" />
+                <input
+                  {...register("fileName", {
+                    required: {
+                      value: true,
+                      message: `${Validation.REQUIRED} file name`,
+                    },
+                  })}
+                  type="text"
+                  name="fileName"
+                  className="form-control"
+                />
+                {errors?.fileName && (
+                  <InputError
+                    message={errors?.fileName?.message}
+                    key={errors?.fileName?.message}
+                  />
+                )}
               </div>
-              <div>
+              <div className="col-md-4">
                 <label htmlFor="fileUpload" name="fileUpload">
                   Upload New Version
                 </label>
-                <input type="file" name="fileUpload" className="form-control" />
+                <input
+                  type="file"
+                  {...register("fileUpload", {
+                    required: {
+                      value: true,
+                      message: `Please select file`,
+                    },
+                  })}
+                  name="fileUpload"
+                  className="form-control"
+                />
+                {errors?.fileUpload && (
+                  <InputError
+                    message={errors?.fileUpload?.message}
+                    key={errors?.fileUpload?.message}
+                  />
+                )}
               </div>
-            </div> */}
+            </div>
             <div className="table-responsive">
               <table className="table f-11">
                 <thead className="table-dark">
@@ -92,10 +166,18 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
                     fileVerions?.map((file) => (
                       <tr>
                         <div>
-                          <TextSnippetOutlinedIcon
-                            style={{ color: "#384BD3" }}
-                          />
-                          <span className="p-3 cursor">{file?.name}</span>
+                          <button
+                            onClick={(e) => {
+                              e?.preventDefault();
+                              setShowPdfModal(true);
+                              setSelectedPdf(file?.fileBlobUrl);
+                            }}
+                          >
+                            <TextSnippetOutlinedIcon
+                              style={{ color: "#384BD3" }}
+                            />
+                            <span className="p-3 cursor">{file?.name}</span>
+                          </button>
                         </div>
                         <td>{file?.fileVersion ? file?.fileVersion : "--"}</td>
                         <td>
@@ -109,37 +191,40 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
                             : "--"}
                         </td>
                         <td>
-                          <a
-                            style={{ color: "gray", cursor: "pointer" }}
-                            download
-                            href={file?.fileBlobUrl}
+                          <button
+                            className="btn btn-sm boder-less"
+                            onClick={(e) => {
+                              e?.preventDefault();
+                              setShowPdfModal(true);
+                              setSelectedPdf(file?.fileBlobUrl);
+                            }}
                           >
                             <i
                               className="fa fa-eye fa-2x"
                               aria-hidden="true"
                               size="md"
                             ></i>
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}
                 </tbody>
               </table>
             </div>
-          </form>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            type="button"
-            onClick={handleClose}
-            className="bg-light text-primary"
-          >
-            Close
-          </Button>
-          <Button onClick={handleClose} className="bg-primary text-light">
-            Close
-          </Button>
-        </DialogActions>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              type="button"
+              onClick={handleClose}
+              className="bg-light text-primary"
+            >
+              Close
+            </Button>
+            <Button type="submit" className="bg-primary text-light">
+              Save New Version
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
     </>
   );

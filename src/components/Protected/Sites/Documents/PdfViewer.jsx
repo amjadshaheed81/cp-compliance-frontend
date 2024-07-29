@@ -37,9 +37,16 @@ const PdfViewer = ({ showPdfModal, setShowPdfModal, selectedPdf }) => {
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} className="bg-primary text-light">
+          <Button onClick={handleClose} className="bg-light text-primary">
             Close
           </Button>
+          <a
+            className="btn btn-primary bg-primary text-light"
+            href={selectedPdf}
+            download
+          >
+            Download
+          </a>
         </DialogActions>
       </Dialog>
     </>
