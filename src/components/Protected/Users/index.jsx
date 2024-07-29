@@ -15,7 +15,14 @@ import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
 
-const Users = ({ users, getUsers, deleteUser, getSites, sites, loggedInUserData }) => {
+const Users = ({
+  users,
+  getUsers,
+  deleteUser,
+  getSites,
+  sites,
+  loggedInUserData,
+}) => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [filteredUser, setFilteredUser] = useState([]);
   const [selectedUser, setSelectedUser] = useState({});
@@ -232,9 +239,9 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites, loggedInUserData 
                       users?.map((itm) => {
                         return {
                           ...itm,
-                          taggedSites: itm?.taggedSites?.map((tag) =>
-                            tag?.name
-                          ).join(", "),
+                          taggedSites: itm?.taggedSites
+                            ?.map((tag) => tag?.name)
+                            .join(", "),
                         };
                       }) || []
                     }
@@ -273,9 +280,26 @@ const Users = ({ users, getUsers, deleteUser, getSites, sites, loggedInUserData 
                     <th scope="col">{user?.name}</th>
                     <th scope="col">{user?.email}</th>
                     <th scope="col">
-                      {user?.taggedSites?.map((itm) => (
-                        <span className="badge bg-primary">{itm?.name}</span>
-                      ))}
+                      {user?.taggedSites?.length > 3 && (
+                        <>
+                          <Tooltip
+                            title={user?.taggedSites
+                              ?.map((itm) => itm?.name)
+                              ?.join(", ")}
+                          >
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light text-primary"
+                            >
+                              {user?.taggedSites?.length} Sites
+                            </button>
+                          </Tooltip>
+                        </>
+                      )}
+                      {user?.taggedSites?.length < 4 &&
+                        user?.taggedSites?.map((itm) => (
+                          <span className="badge bg-primary">{itm?.name}</span>
+                        ))}
                     </th>
                     <th scope="col">{user?.role}</th>
                     <th scope="col">

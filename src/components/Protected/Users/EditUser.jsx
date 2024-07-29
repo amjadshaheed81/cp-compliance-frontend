@@ -1,5 +1,14 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Button, Box, Autocomplete, Select, OutlinedInput, MenuItem, Checkbox, ListItemText } from "@mui/material";
+import {
+  Button,
+  Box,
+  Autocomplete,
+  Select,
+  OutlinedInput,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+} from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
@@ -14,6 +23,7 @@ import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
 import { MenuProps } from "./AddUser";
+import Tooltip from "@mui/material/Tooltip";
 
 const ViewUsers = ({
   showEditModal,
@@ -30,7 +40,7 @@ const ViewUsers = ({
   const handleClose = () => setShowEditModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
-  const [selectedCompany, setSelectedCompany ] = useState();
+  const [selectedCompany, setSelectedCompany] = useState();
   const [tagSite, setTagSite] = useState([]);
   const handleChange = (event) => {
     const {
@@ -71,9 +81,9 @@ const ViewUsers = ({
   const getCompanies = async () => {
     const url = `/api/companies/all`;
     let response = await get(url);
-    response = response.filter(r=> r!== null)
+    response = response.filter((r) => r !== null);
     setcompanies(response);
-  }
+  };
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -85,9 +95,7 @@ const ViewUsers = ({
       role: formJson?.role || null,
       userType: formJson?.userType || null,
       defaultSiteId:
-        formJson?.userType === "Internal"
-          ? selectedUser?.defaultSiteId
-          : null,
+        formJson?.userType === "Internal" ? selectedUser?.defaultSiteId : null,
       companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
       status: formJson?.status || null,
@@ -100,10 +108,10 @@ const ViewUsers = ({
           addedSites: tagSite,
           removedSites: [],
         };
-        if(selectedUser?.taggedSites) {
+        if (selectedUser?.taggedSites) {
           for (const iterator of selectedUser?.taggedSites) {
-            if(!tagSite?.includes(iterator?.id)) {
-              tagSiteValue.removedSites.push(iterator?.id)
+            if (!tagSite?.includes(iterator?.id)) {
+              tagSiteValue.removedSites.push(iterator?.id);
             }
           }
         }
@@ -126,16 +134,16 @@ const ViewUsers = ({
     }
   };
   const getSelectedValue = () => {
-    const selectedValue = companies.find(
-      (itm) =>
-        itm.companyId ===
-       selectedCompany
-    ) || null;
+    const selectedValue =
+      companies.find((itm) => itm.companyId === selectedCompany) || null;
     if (selectedValue) {
-      return { key: selectedValue?.companyId, label: selectedValue?.companyName};
+      return {
+        key: selectedValue?.companyId,
+        label: selectedValue?.companyName,
+      };
     }
     return null;
-  }
+  };
   return (
     <React.Fragment>
       <Dialog
@@ -247,8 +255,8 @@ const ViewUsers = ({
                           },
                           pattern: {
                             value: /^[0-9]+$/,
-                            message: 'Please enter a number',
-                          }
+                            message: "Please enter a number",
+                          },
                         })}
                       />
                       {errors?.phone && (
@@ -320,41 +328,39 @@ const ViewUsers = ({
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">
-                      <div className="form-group">
-                        <label for="tagSite">
-                          Tag Site
-                        </label>
-                        <Select
-                          labelId="tagSite"
-                          id="tagSite"
-                          multiple
-                          style={{
-                            height: "2.5rem",
-                            width: "100%",
-                            listStyleType:'none'
-                          }}
-                          value={tagSite}
-                          onChange={handleChange}
-                          input={<OutlinedInput label="Tag" />}
-                          renderValue={(selected) =>
-                            `${selected?.length} site tagged`
-                          }
-                          MenuProps={MenuProps}
-                        >
-                          {sites?.length === 0 &&
-                          <div key={'no-result'}>
-                            No Site Result Found</div>}
-                          {sites?.map((site) => (
-                            <MenuItem key={site?.siteId} value={site?.siteId}>
-                              <Checkbox
-                                checked={tagSite?.indexOf(site?.siteId) > -1}
-                              />
-                              <ListItemText primary={site?.siteName} />
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </div>
+                    <div className="form-group">
+                      <label for="tagSite">Tag Site</label>
+                      <Select
+                        labelId="tagSite"
+                        id="tagSite"
+                        multiple
+                        style={{
+                          height: "2.5rem",
+                          width: "100%",
+                          listStyleType: "none",
+                        }}
+                        value={tagSite}
+                        onChange={handleChange}
+                        input={<OutlinedInput label="Tag" />}
+                        renderValue={(selected) =>
+                          `${selected?.length} site tagged`
+                        }
+                        MenuProps={MenuProps}
+                      >
+                        {sites?.length === 0 && (
+                          <div key={"no-result"}>No Site Result Found</div>
+                        )}
+                        {sites?.map((site) => (
+                          <MenuItem key={site?.siteId} value={site?.siteId}>
+                            <Checkbox
+                              checked={tagSite?.indexOf(site?.siteId) > -1}
+                            />
+                            <ListItemText primary={site?.siteName} />
+                          </MenuItem>
+                        ))}
+                      </Select>
                     </div>
+                  </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-check form-switch">
                       <label
@@ -377,23 +383,29 @@ const ViewUsers = ({
                       <div className="form-group">
                         <label for="company">Company Name</label>
                         <Autocomplete
-                            id="leadUserID"
-                            onChange={(event, item) => {
-                              setSelectedCompany(item?.key);
-                            }}
-                            value={getSelectedValue()}
-                            options={companies.map((option) => { return { key: option.companyId, label: option.companyName } })}
-                            getOptionLabel={(option) => option.label}
-                            renderInput={(params) => (
-                              <div ref={params.InputProps.ref} >
-                                <input type="text"
-                                  {...params.inputProps}
-                                  className="form-control"
-                                  placeholder="Select Company"
-                                />
-                              </div>
-                            )}
-                          />
+                          id="leadUserID"
+                          onChange={(event, item) => {
+                            setSelectedCompany(item?.key);
+                          }}
+                          value={getSelectedValue()}
+                          options={companies.map((option) => {
+                            return {
+                              key: option.companyId,
+                              label: option.companyName,
+                            };
+                          })}
+                          getOptionLabel={(option) => option.label}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <input
+                                type="text"
+                                {...params.inputProps}
+                                className="form-control"
+                                placeholder="Select Company"
+                              />
+                            </div>
+                          )}
+                        />
                       </div>
                     </div>
                   )}
@@ -440,9 +452,30 @@ const ViewUsers = ({
                   {tagSite && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
-                        <label for="trade">Selected Sites</label>
                         <div>
-                          {tagSite?.map((itm) => {
+                          {tagSite?.length > 3 && (
+                            <>
+                              <Tooltip
+                                title={tagSite
+                                  ?.map(
+                                    (itm) =>
+                                      sites?.filter(
+                                        (site) => site?.siteId == itm
+                                      )?.[0]?.siteName
+                                  )
+                                  ?.join(", ")}
+                              >
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-light text-primary"
+                                >
+                                  {tagSite?.length} Site Tagged
+                                </button>
+                              </Tooltip>
+                            </>
+                          )}
+                          {tagSite?.length < 4 &&
+                            tagSite?.map((itm) => {
                               return (
                                 <button className="btn btn-sm btn-light text-primary">
                                   {
@@ -509,4 +542,6 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
 });
-export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(ViewUsers);
+export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(
+  ViewUsers
+);

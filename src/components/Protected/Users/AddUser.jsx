@@ -22,6 +22,7 @@ import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
 import { ROLE } from "../../../Constant/Role";
+import Tooltip from "@mui/material/Tooltip";
 
 export const ITEM_HEIGHT = 48;
 export const ITEM_PADDING_TOP = 8;
@@ -241,8 +242,8 @@ const AddUser = ({
                           },
                           pattern: {
                             value: /^[0-9]+$/,
-                            message: 'Please enter a number',
-                          }
+                            message: "Please enter a number",
+                          },
                         })}
                       />
                       {errors?.phone && (
@@ -445,17 +446,39 @@ const AddUser = ({
                       <div className="form-group">
                         <label for="trade">Selected Sites</label>
                         <div>
-                          {tagSite?.map((itm) => {
-                            return (
-                              <button className="btn btn-sm btn-light text-primary">
-                                {
-                                  sites?.filter(
-                                    (site) => site?.siteId == itm
-                                  )?.[0]?.siteName
-                                }
-                              </button>
-                            );
-                          })}
+                          {tagSite?.length > 3 && (
+                            <>
+                              <Tooltip
+                                title={tagSite
+                                  ?.map(
+                                    (itm) =>
+                                      sites?.filter(
+                                        (site) => site?.siteId == itm
+                                      )?.[0]?.siteName
+                                  )
+                                  ?.join(", ")}
+                              >
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-light text-primary"
+                                >
+                                  {tagSite?.length} Site Tagged
+                                </button>
+                              </Tooltip>
+                            </>
+                          )}
+                          {tagSite?.length < 4 &&
+                            tagSite?.map((itm) => {
+                              return (
+                                <button className="btn btn-sm btn-light text-primary">
+                                  {
+                                    sites?.filter(
+                                      (site) => site?.siteId == itm
+                                    )?.[0]?.siteName
+                                  }
+                                </button>
+                              );
+                            })}
                         </div>
                       </div>
                     </div>
