@@ -27,7 +27,7 @@ const CreateFiles = ({
   isStatutory,
   uploaderUserId,
   reviewerUserId,
-  loggedInUserData
+  loggedInUserData,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -42,11 +42,12 @@ const CreateFiles = ({
     register,
     handleSubmit,
     getValues,
+    setValue,
     formState: { errors },
   } = useForm({});
-  useEffect(()=>{
+  useEffect(() => {
     console.log("folderData", folderData);
-  },[])
+  }, []);
   const submitFile = async (data, fileUpload) => {
     const reqData = {
       files: fileUpload,
@@ -56,8 +57,7 @@ const CreateFiles = ({
     };
     delete reqData.documentRequestString.files[0].fileUpload;
     reqData.documentRequestString.files[0].issueDate = data?.issueDate;
-    reqData.documentRequestString.files[0].expiryDate =
-    data?.expiryDate;
+    reqData.documentRequestString.files[0].expiryDate = data?.expiryDate;
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
     reqData.documentRequestString.files[0].reviewerUserId =
@@ -106,21 +106,17 @@ const CreateFiles = ({
   };
 
   const checkAndAddExpiryCalenderEvent = async (data) => {
-
-    console.log("expiryDate", data)
+    console.log("expiryDate", data);
     const body = {
       siteId: siteSelectedForGlobal?.siteId,
       startDate: moment(data.expiryDate),
       endDate: moment(data.expiryDate),
       shortText: "Document Expiring : " + data.name,
       eventType: "DOCUMENT_EXPIRY",
-      userId: loggedInUserData?.id
-    }
+      userId: loggedInUserData?.id,
+    };
     await put("/api/user/calendar", body);
-
-   
-
-  }
+  };
 
   return (
     <React.Fragment>
@@ -145,8 +141,8 @@ const CreateFiles = ({
                     ...formData,
                     name: formData?.fileUpload?.[0]?.name,
                     fileVersion: folderData?.fileVersion
-                    ? Number(folderData?.fileVersion) + 1
-                    : 1,
+                      ? Number(folderData?.fileVersion) + 1
+                      : 1,
                     siteId: siteSelectedForGlobal?.siteId,
                     issueDate: `${formData?.issueDate} 10:00:00`,
                     expiryDate: `${formData?.expiryDate} 10:00:00`,
@@ -181,7 +177,11 @@ const CreateFiles = ({
                     <input
                       type="text"
                       disabled
-                      value={folderData?.folderName ? folderData?.folderName : folderData?.name}
+                      value={
+                        folderData?.folderName
+                          ? folderData?.folderName
+                          : folderData?.name
+                      }
                       className="form-control"
                       {...register("folderName")}
                     />
@@ -192,7 +192,7 @@ const CreateFiles = ({
                     <label htmlFor="fileName">File Name</label>
                     <input
                       type="text"
-                      value={folderData?.folderName ? folderData?.name : ''}
+                      value={folderData?.folderName ? folderData?.name : ""}
                       disabled
                       className="form-control"
                       {...register("name")}
@@ -222,6 +222,16 @@ const CreateFiles = ({
                       type="date"
                       className="form-control"
                       {...register("issueDate")}
+                      onChange={(e) => {
+                        e?.preventDefault();
+                        setValue("issueDate", e?.target?.value);
+                        setValue(
+                          "expiryDate",
+                          moment(new Date(e?.target?.value))
+                            .add(1, "years")
+                            .format("YYYY-MM-DD")
+                        );
+                      }}
                     />
                   </div>
                 </Grid>
