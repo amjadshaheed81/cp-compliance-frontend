@@ -3,7 +3,6 @@ import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../../../api";
-
 import {
   Button,
   Chip,
@@ -37,6 +36,7 @@ const SurveyWaterOutletTemperature = ({
   const [showHistory, setShowHistory] = useState(false);
   const [formData, setFormData] = useState([{}]);
   const [completed, setCompleted] = useState(false);
+  const [alldata, setalldata] = useState([]);
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -57,33 +57,51 @@ const SurveyWaterOutletTemperature = ({
       "/api/lov/SITE_CHECK_SURVEY_NORM_RUN_TIME"
     );
     setnormruntime(normruntimetypes.map((l) => l.lovValue));
-    const data = await get("/api/site-check/water-outlet-temp/" + checkId);
+    let data = await get("/api/site-check/water-outlet-temp/" + checkId);
     if (data.length > 0) {
+      data.forEach((_) => {
+        _.completed = true;
+      });
+      setalldata(data);
+      data = data.reverse();
+      data = removeduplciate(data);
       setFormData(data);
-      setCompleted(true);
     }
   };
 
-  useEffect(() => {
-    console.log(formData);
+  const removeduplciate = (array) => {
+    const seen = new Map();
 
-    // Function to check for duplicates
-    const isDuplicate = (newItem, completedItems) => {
-      return completedItems.some((item) =>
-        Object.keys(item)
-          .filter((i) => i !== "completed")
-          .every((key) => item[key] === newItem[key])
-      );
-    };
+    return array.filter(item => {
+      const key = `${item.assetId}-${item.outletType}-${item.temperature}-${item.normalRunTime}-${item.floor}-${item.room}`;
+      if (!seen.has(key)) {
+        seen.set(key, true);
+        return true;
+      }
+      return false;
+    });
+  }
 
-    // Filter completed items
+  const isDuplicate = (newItem) => {
     const completedItems = formData.filter((item) => item.completed);
+    return (
+      completedItems.filter(
+        (i) =>
+          newItem?.assetId === i?.assetId &&
+          newItem?.floor === i?.floor &&
+          newItem?.normalRunTime === i?.normalRunTime &&
+          newItem?.outletType === i?.outletType &&
+          newItem?.temperature === i?.temperature &&
+          newItem?.room === i?.room
+      )?.length > 0
+    );
+  };
 
+  useEffect(() => {
     formData.forEach((item, idx) => {
       if (!item.completed) {
-        if (isDuplicate(item, completedItems)) {
-          console.log("Duplicate item found:", item);
-          // Handle the duplicate case (e.g., prevent adding the item or notify the user)
+        if (isDuplicate(item)) {
+          toast.error("Duplicate item found:");
         }
       }
     });
@@ -112,6 +130,7 @@ const SurveyWaterOutletTemperature = ({
     const udata = {
       ...formData[idx],
       [name]: value,
+      update: true
     };
     uformData[idx] = udata;
     setFormData(uformData);
@@ -129,52 +148,31 @@ const SurveyWaterOutletTemperature = ({
       form.reportValidity();
     }
     for (const data of formData) {
-      data.checkId = checkId;
-      data.status = "Open";
-      if (data.r1Date) {
-        data.r1Date = new Date(data.r1Date);
-        data.r2Date = data.r1Date;
-        data.r3Date = data.r1Date;
+      console.log('data', data)
+      if (!data.completed || data.update) {
+        if (isDuplicate(data) && !data.update) {
+          toast.error("Duplicate data!!!");
+          return;
+        }
+        data.checkId = checkId;
+        data.status = "Open";
+        if (data.update) {
+          data.id = undefined
+        }
+        if (data.r1Date) {
+          data.r1Date = new Date(data.r1Date);
+          data.r2Date = data.r1Date;
+          data.r3Date = data.r1Date;
+        }
+        await post("/api/site-check/water-outlet-temp", data);
+        toast.success("Fault data saved");
       }
-      // if (data.r2Date) {
-      //   data.r2Date = new Date(data.r2Date);
-      // }
-      // if (data.r3Date) {
-      //   data.r3Date = new Date(data.r3Date);
-      // }
-
-      await post("/api/site-check/water-outlet-temp", data);
-      toast.success("Fault data saved");
     }
-
-    setCompleted(true);
+    getSurvey()
   };
-
-  // useEffect(() => {
-  //   if (readingPop != null) {
-  //     const data = formData[readingPop];
-  //     if (data.reading1 && data.reading2 && data.reading3 && data.temperature) {
-  //       const tapOption = tempratureoptions.filter(t => t === data.temperature)
-  //       console.log('tapOption', tapOption)
-
-  //       if (tapOption.length > 0) {
-  //         const avgTemp = (Number(data.reading1) + Number(data.reading2) + Number(data.reading3)) / 3;
-  //         console.log('avgTemp', avgTemp)
-  //         if ((tapOption[0] === "Hot" && avgTemp > 50)
-  //           || (tapOption[0] === "Cold" && avgTemp < 20)) {
-  //           setAction(true);
-  //         } else {
-  //           setAction(false);
-  //         }
-
-  //       }
-  //     }
-  //   }
-  // }, [formData, readingPop])
 
   return (
     <>
-      {/* Add reading popup */}
       <Dialog
         open={readingPop !== null}
         onClose={() => {
@@ -187,12 +185,10 @@ const SurveyWaterOutletTemperature = ({
           Add Reading{" "}
           {formData[readingPop]?.assetId
             ? "(" +
-              siteAssets
-                .filter((a) => a.assetId == formData[readingPop].assetId)
-                .map(
-                  (option) => option.assetName + " - " + option.category
-                )?.[0] +
-              ")"
+            siteAssets
+              .filter((a) => a.assetId == formData[readingPop].assetId)
+              .map((option) => option.assetName + " - " + option.category)[0] +
+            ")"
             : ""}
         </DialogTitle>
         <DialogContent dividers>
@@ -201,10 +197,10 @@ const SurveyWaterOutletTemperature = ({
               {!action2 && !action && (
                 <>
                   <Grid sm={4}>
-                    <label for="outletType">Outlet Type</label>
+                    <label htmlFor="outletType">Outlet Type</label>
                     <input
                       style={{ maxWidth: "300px" }}
-                      type="outletType"
+                      type="text"
                       className="form-control"
                       id="outletType"
                       disabled
@@ -212,10 +208,10 @@ const SurveyWaterOutletTemperature = ({
                     />
                   </Grid>
                   <Grid sm={4}>
-                    <label for="outletType">Temperature</label>
+                    <label htmlFor="outletType">Temperature</label>
                     <input
                       style={{ maxWidth: "300px" }}
-                      type="outletType"
+                      type="text"
                       className="form-control"
                       id="outletType"
                       disabled
@@ -223,10 +219,10 @@ const SurveyWaterOutletTemperature = ({
                     />
                   </Grid>
                   <Grid sm={4}>
-                    <label for="outletType">Location</label>
+                    <label htmlFor="outletType">Location</label>
                     <input
                       style={{ maxWidth: "300px" }}
-                      type="outletType"
+                      type="text"
                       className="form-control"
                       id="outletType"
                       disabled
@@ -249,17 +245,14 @@ const SurveyWaterOutletTemperature = ({
                         <tbody>
                           <tr>
                             <td>
-                              Reading 1{" "}
-                              <b style={{ color: "red" }}> 30 seconds </b>
+                              Reading 1 <b style={{ color: "red" }}> 30 seconds </b>
                             </td>
                             <td rowSpan={3} style={{ verticalAlign: "middle" }}>
                               <input
                                 type="date"
                                 className="form-control"
                                 name="r1Date"
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                onChange={(e) => handleInputChange(e, readingPop)}
                               />
                             </td>
                             <td>
@@ -272,18 +265,16 @@ const SurveyWaterOutletTemperature = ({
                                     (formData?.[readingPop]?.temperature ===
                                       "Hot" &&
                                       Number(formData[readingPop].reading1) <
-                                        50) ||
-                                    (formData?.[readingPop]?.temperature ===
-                                      "Cold" &&
-                                      Number(formData[readingPop].reading1) >
+                                      50) ||
+                                      (formData?.[readingPop]?.temperature ===
+                                        "Cold" &&
+                                        Number(formData[readingPop].reading1) >
                                         20)
                                       ? "red"
                                       : "green",
                                   fontWeight: "600",
                                 }}
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                onChange={(e) => handleInputChange(e, readingPop)}
                               />
                             </td>
                           </tr>
@@ -292,13 +283,6 @@ const SurveyWaterOutletTemperature = ({
                               {" "}
                               <b style={{ color: "red" }}> 60 seconds </b>
                             </td>
-                            {/* <td rowSpan={3}><input
-                          type="date"
-                          className="form-control"
-                          name="r2Date"
-                          onChange={(e) => handleInputChange(e, readingPop)}
-                        />
-                        </td> */}
                             <td>
                               <input
                                 type="number"
@@ -309,33 +293,23 @@ const SurveyWaterOutletTemperature = ({
                                     (formData?.[readingPop]?.temperature ===
                                       "Hot" &&
                                       Number(formData[readingPop].reading2) <
-                                        50) ||
-                                    (formData?.[readingPop]?.temperature ===
-                                      "Cold" &&
-                                      Number(formData[readingPop].reading2) >
+                                      50) ||
+                                      (formData?.[readingPop]?.temperature ===
+                                        "Cold" &&
+                                        Number(formData[readingPop].reading2) >
                                         20)
                                       ? "red"
                                       : "green",
                                   fontWeight: "600",
                                 }}
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                onChange={(e) => handleInputChange(e, readingPop)}
                               />
                             </td>
                           </tr>
                           <tr>
                             <td>
-                              Reading 3{" "}
-                              <b style={{ color: "red" }}> 120 seconds </b>
+                              Reading 3 <b style={{ color: "red" }}> 120 seconds </b>
                             </td>
-                            {/* <td><input
-                          type="date"
-                          className="form-control"
-                          name="r3Date"
-                          onChange={(e) => handleInputChange(e, readingPop)}
-                        />
-                        </td> */}
                             <td>
                               <input
                                 type="number"
@@ -346,18 +320,16 @@ const SurveyWaterOutletTemperature = ({
                                     (formData?.[readingPop]?.temperature ===
                                       "Hot" &&
                                       Number(formData[readingPop].reading3) <
-                                        50) ||
-                                    (formData?.[readingPop]?.temperature ===
-                                      "Cold" &&
-                                      Number(formData[readingPop].reading3) >
+                                      50) ||
+                                      (formData?.[readingPop]?.temperature ===
+                                        "Cold" &&
+                                        Number(formData[readingPop].reading3) >
                                         20)
                                       ? "red"
                                       : "green",
                                   fontWeight: "600",
                                 }}
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                onChange={(e) => handleInputChange(e, readingPop)}
                               />
                             </td>
                           </tr>
@@ -369,7 +341,6 @@ const SurveyWaterOutletTemperature = ({
               )}
               {action && (
                 <Grid item xs={12}>
-                  {" "}
                   <Typography variant="h6" gutterBottom>
                     Action
                   </Typography>
@@ -447,6 +418,40 @@ const SurveyWaterOutletTemperature = ({
                         />
                       </Box>
                     </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <label htmlFor="position" name="position">
+                        Observation
+                      </label>
+                      <textarea
+                        //disabled={quest[idx]?.completed}
+                        name="position"
+                        className="form-control"
+                        id="position"
+                        rows="2"
+                        required
+                        //placeholder="Enter notes..."
+                        //value={quest[idx]?.response?.position}
+                        //onChange={(e) => handleInputChange(e, idx)}
+                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <label htmlFor="position" name="position">
+                        Required Action
+                      </label>
+                      <textarea
+                        //disabled={quest[idx]?.completed}
+                        name="position"
+                        className="form-control"
+                        id="position"
+                        rows="2"
+                        required
+                        //placeholder="Enter notes..."
+                        //value={quest[idx]?.response?.position}
+                        //onChange={(e) => handleInputChange(e, idx)}
+                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                      />
+                    </Grid>
                   </Grid>
                 </Grid>
               )}
@@ -463,8 +468,21 @@ const SurveyWaterOutletTemperature = ({
           <Button
             className="bg-primary text-white"
             onClick={() => {
-              setAction2(false);
-              setAction(true);
+              if (action2) {
+                setReadingPop(null)
+                setAction(false);
+                setAction2(false);
+
+              } else if (action && !action2) {
+                setReadingPop(null);
+                setAction2(false);
+                setAction(false);
+              
+              } else {
+                setAction2(false);
+                setAction(true);
+              }
+              
             }}
           >
             Save
@@ -472,7 +490,6 @@ const SurveyWaterOutletTemperature = ({
         </DialogActions>
       </Dialog>
 
-      {/* Reading history popup */}
       <Dialog
         open={showHistory}
         onClose={() => {
@@ -485,57 +502,40 @@ const SurveyWaterOutletTemperature = ({
         <DialogContent dividers>
           <Fragment>
             <Grid container>
-              {!action2 && !action && (
-                <>
-                  <Grid sm={12}>
-                    <div
-                      className="table-responsive"
-                      style={{ marginTop: "30px" }}
-                    >
-                      <table className="table table-bordered f-11">
-                        <thead className="table-dark">
-                          <tr>
-                            <th>Test Date</th>
-                            <th>Reading 1</th>
-                            <th>Reading 2</th>
-                            <th>Reading 3</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>29th July</td>
-                            <td>XXXX</td>
-                            <td>YYYY</td>
-                            <td>ZZZZ</td>
-                          </tr>
-                          <tr>
-                            <td>29th July</td>
-                            <td>XXXX</td>
-                            <td>YYYY</td>
-                            <td>ZZZZ</td>
-                          </tr>
-                          <tr>
-                            <td>29th July</td>
-                            <td>XXXX</td>
-                            <td>YYYY</td>
-                            <td>ZZZZ</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </Grid>
-                </>
-              )}
+              <Grid sm={12}>
+                <div
+                  className="table-responsive"
+                  style={{ marginTop: "30px" }}
+                >
+                  <table className="table table-bordered f-11">
+                    <thead className="table-dark">
+                      <tr>
+                        <th>Test Date</th>
+                        <th>Reading 1</th>
+                        <th>Reading 2</th>
+                        <th>Reading 3</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alldata?.map(i =>
+                        <tr>
+                          <td>{i?.r1Date?.split("T")?.[0]}</td>
+                          <td>{i?.reading1}</td>
+                          <td>{i?.reading2}</td>
+                          <td>{i?.reading3}</td>
+                         
+                        </tr>
+                      )}
+                      
+                     
+                    </tbody>
+                  </table>
+                </div>
+              </Grid>
             </Grid>
           </Fragment>
         </DialogContent>
         <DialogActions>
-          {/* <Button
-            onClick={() => setReadingPop(null)}
-            className="bg-light text-primary"
-          >
-            Okay
-          </Button> */}
           <Button
             className="bg-primary text-white"
             onClick={() => {
@@ -560,7 +560,6 @@ const SurveyWaterOutletTemperature = ({
           </Grid>
           <Grid sm={4}></Grid>
           <Grid sm={4}>
-            {/* {!completed && */}
             <button
               type="button"
               style={{
@@ -579,7 +578,6 @@ const SurveyWaterOutletTemperature = ({
             >
               Add outlet
             </button>
-            {/* } */}
           </Grid>
 
           <Grid sm={12}>
@@ -606,32 +604,29 @@ const SurveyWaterOutletTemperature = ({
                         (option) => option.assetName + " - " + option.category
                       )?.[0];
                     return (
-                      <tr>
+                      <tr key={idx}>
                         <td>
-                          {completed && (
+                          {formData?.[idx]?.completed ? (
                             <input
                               type="text"
-                              disabled={completed}
+                              disabled={formData?.[idx]?.completed}
                               className="form-control"
                               value={assetName}
                             />
-                          )}
-                          {!completed && (
+                          ) : (
                             <Autocomplete
                               id="assetId"
-                              disabled={completed}
+                              disabled={formData?.[idx]?.completed}
                               onChange={(event, item) => {
                                 const uformData = [...formData];
                                 uformData[idx].assetId = item?.key;
                                 setFormData(uformData);
                               }}
-                              options={siteAssets.map((option) => {
-                                return {
-                                  key: option.assetId,
-                                  label:
-                                    option.assetName + " - " + option.category,
-                                };
-                              })}
+                              options={siteAssets.map((option) => ({
+                                key: option.assetId,
+                                label:
+                                  option.assetName + " - " + option.category,
+                              }))}
                               getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
                                 <div ref={params.InputProps.ref}>
@@ -639,7 +634,7 @@ const SurveyWaterOutletTemperature = ({
                                     type="text"
                                     {...params.inputProps}
                                     required
-                                    disabled={completed}
+                                    disabled={formData?.[idx]?.completed}
                                     className="form-control"
                                   />
                                 </div>
@@ -649,7 +644,7 @@ const SurveyWaterOutletTemperature = ({
                         </td>
                         <td>
                           <select
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             name="outletType"
                             className="form-control form-select"
                             id="outletType"
@@ -659,13 +654,15 @@ const SurveyWaterOutletTemperature = ({
                           >
                             <option value="">Select Outlet Type</option>
                             {outletoptions.map((option) => (
-                              <option value={option}>{option}</option>
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
                             ))}
                           </select>
                         </td>
                         <td>
                           <select
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             name="temperature"
                             className="form-control form-select"
                             id="temperature"
@@ -675,14 +672,16 @@ const SurveyWaterOutletTemperature = ({
                           >
                             <option value="">Select temperature</option>
                             {tempratureoptions.map((option) => (
-                              <option value={option}>{option}</option>
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
                             ))}
                           </select>
                         </td>
 
                         <td style={{ width: "150px" }}>
                           <select
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             name="normalRunTime"
                             className="form-control form-select"
                             id="normalRunTime"
@@ -692,13 +691,15 @@ const SurveyWaterOutletTemperature = ({
                           >
                             <option value="">Select</option>
                             {normruntime.map((option) => (
-                              <option value={option}>{option}</option>
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
                             ))}
                           </select>
                         </td>
                         <td>
                           <select
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             name="usageFrequency"
                             className="form-control form-select"
                             id="usageFrequency"
@@ -716,7 +717,7 @@ const SurveyWaterOutletTemperature = ({
                         </td>
                         <td>
                           <select
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             className="form-control form-select"
                             name="floor"
                             value={formData?.[idx]?.floor}
@@ -727,7 +728,7 @@ const SurveyWaterOutletTemperature = ({
                             {siteLayout
                               .filter((site) => site.nodeType === "floor")
                               .map((site) => (
-                                <option value={site.id}>
+                                <option key={site.id} value={site.id}>
                                   {site.nodeName}{" "}
                                 </option>
                               ))}
@@ -735,7 +736,7 @@ const SurveyWaterOutletTemperature = ({
                         </td>
                         <td>
                           <select
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             className="form-control form-select"
                             name="room"
                             value={formData?.[idx]?.room}
@@ -746,7 +747,7 @@ const SurveyWaterOutletTemperature = ({
                             {siteLayout
                               .filter((site) => site.nodeType === "room")
                               .map((site) => (
-                                <option value={site.id}>
+                                <option key={site.id} value={site.id}>
                                   {site.nodeName}{" "}
                                 </option>
                               ))}
@@ -757,40 +758,30 @@ const SurveyWaterOutletTemperature = ({
                             1st : {formData?.[idx]?.reading1 ?? ""}{" "}
                             {formData?.[idx]?.r1Date
                               ? "(" +
-                                String(formData?.[idx]?.r1Date)?.substring(
-                                  0,
-                                  10
-                                ) +
-                                ")"
+                              String(formData?.[idx]?.r1Date)?.substring(0, 10) +
+                              ")"
                               : "N/A"}
                           </p>
                           <p style={{ lineHeight: "3px" }}>
                             2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
                             {formData?.[idx]?.r2Date
                               ? "(" +
-                                String(formData?.[idx]?.r2Date)?.substring(
-                                  0,
-                                  10
-                                ) +
-                                ")"
+                              String(formData?.[idx]?.r2Date)?.substring(0, 10) +
+                              ")"
                               : "N/A"}
                           </p>
                           <p style={{ lineHeight: "3px" }}>
                             3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
                             {formData?.[idx]?.r3Date
                               ? "(" +
-                                String(formData?.[idx]?.r3Date)?.substring(
-                                  0,
-                                  10
-                                ) +
-                                ")"
+                              String(formData?.[idx]?.r3Date)?.substring(0, 10) +
+                              ")"
                               : "N/A"}
                           </p>
                         </td>
 
                         <td style={{ width: "120px" }}>
                           <button
-                            //disabled={completed}
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => {
                               setReadingPop(idx);
@@ -800,17 +791,16 @@ const SurveyWaterOutletTemperature = ({
                           </button>
                           &nbsp;
                           <button
-                            //disabled={completed}
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => {
                               setShowHistory(true);
                             }}
                           >
-                            <i class="fas fa-clock"></i>
+                            <i className="fas fa-clock"></i>
                           </button>
                           &nbsp;
                           <button
-                            disabled={completed}
+                            disabled={formData?.[idx]?.completed}
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => {
                               const uformData = [...formData];
@@ -828,23 +818,20 @@ const SurveyWaterOutletTemperature = ({
               </table>
             </div>
           </Grid>
-          {!completed && (
-            <Grid sm={12}>
-              <button
-                style={{
-                  width: "150px",
-                  marginBottom: "20px",
-                  margin: "10px",
-                  float: "right",
-                }}
-                className="btn btn-primary text-white pr-2"
-                //onClick={() => { addSiteCheckSurvey() }}
-                type="submit"
-              >
-                Save
-              </button>
-            </Grid>
-          )}
+          <Grid sm={12}>
+            <button
+              style={{
+                width: "150px",
+                marginBottom: "20px",
+                margin: "10px",
+                float: "right",
+              }}
+              className="btn btn-primary text-white pr-2"
+              type="submit"
+            >
+              Save
+            </button>
+          </Grid>
         </Grid>
       </form>
     </>
@@ -856,6 +843,7 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
 });
+
 export default connect(mapStateToProps, { getSiteAssets, getSiteLayout })(
   SurveyWaterOutletTemperature
 );
