@@ -31,6 +31,7 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
     data.fromDate = new Date(data.fromDate);
     data.toDate = new Date(data.toDate);
     data.energyId = survey.energyId;
+    data.budgetCategory = survey?.budgetCategory
     saveData(data)
     setOpen(false);
   }
