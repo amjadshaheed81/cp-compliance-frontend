@@ -1727,7 +1727,7 @@ const UpdateAsset = ({
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="width">Door Width (cm)</label>
+                        <label for="width">Door Width (mm)</label>
                         <input
                           type="text"
                           className="form-control"
@@ -1737,7 +1737,7 @@ const UpdateAsset = ({
                           {...doorSpecificationForm.register("width", {
                             required: {
                               value: true,
-                              message: `Please enter door width (in cm)`,
+                              message: `Please enter door width (in mm)`,
                             },
                           })}
                         />
@@ -1757,7 +1757,7 @@ const UpdateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="height">Door Height (cm)</label>
+                        <label for="height">Door Height (mm)</label>
                         <input
                           type="text"
                           className="form-control"
@@ -1767,7 +1767,7 @@ const UpdateAsset = ({
                           {...doorSpecificationForm.register("height", {
                             required: {
                               value: true,
-                              message: `Please enter door height (in cm)`,
+                              message: `Please enter door height (in mm)`,
                             },
                           })}
                         />
@@ -1787,7 +1787,7 @@ const UpdateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="depth">Door Depth (cm)</label>
+                        <label for="depth">Door Depth (mm)</label>
                         <input
                           type="text"
                           className="form-control"
@@ -1797,7 +1797,7 @@ const UpdateAsset = ({
                           {...doorSpecificationForm.register("depth", {
                             required: {
                               value: true,
-                              message: `Please enter door depth (in cm)`,
+                              message: `Please enter door depth (in mm)`,
                             },
                           })}
                         />
