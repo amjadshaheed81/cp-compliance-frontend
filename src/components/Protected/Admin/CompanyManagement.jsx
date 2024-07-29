@@ -132,7 +132,8 @@ const CompanyManagement = ({ }) => {
                 <label for="phone">Phone</label>
                 <input
                   style={{ maxWidth: '300px' }}
-                  type="text"
+                  type="tel"
+                  maxLength={11}
                   className="form-control"
                   name="phone"
                   onChange={handleInputChange2}

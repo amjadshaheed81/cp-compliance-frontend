@@ -230,15 +230,19 @@ const AddUser = ({
                     <div className="form-group">
                       <label for="phone">Phone Number</label>
                       <input
-                        type="text"
+                        type="tel"
+                        maxLength={11}
                         className="form-control"
                         id="phone"
-                        maxLength={10}
                         {...register("phone", {
                           required: {
                             value: true,
                             message: `${Validation.REQUIRED} phone`,
                           },
+                          pattern: {
+                            value: /^[0-9]+$/,
+                            message: 'Please enter a number',
+                          }
                         })}
                       />
                       {errors?.phone && (

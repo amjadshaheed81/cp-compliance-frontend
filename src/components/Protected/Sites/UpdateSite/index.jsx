@@ -398,9 +398,9 @@ const UpdateSite = ({
               </div>
             </div>
             <div className="col-md-4">
-              <div className="pic-container pic-medium pic-circle">
+              <div className="pic-medium pic-circle">
                 <img
-                  className="pic"
+                  className="img img-responsive w-100"
                   src={
                     updateSiteImageSuccess
                       ? updateSiteImageSuccess?.data?.url
@@ -409,10 +409,8 @@ const UpdateSite = ({
                       : userDefault
                   }
                   alt=""
-                  width="64px"
-                  height="64px"
+                  width="auto"
                 />
-                <span>Upload your site photo</span>
                 <div
                   style={{
                     display: isViewMode ? "none" : "block",
@@ -457,7 +455,7 @@ const UpdateSite = ({
                     htmlFor="siteImage"
                     className="text-primary cursor mt-4"
                   >
-                    Click to upload
+                    Click to upload your site image
                   </label>
                   &nbsp;
                   <span>or drag and drop</span>

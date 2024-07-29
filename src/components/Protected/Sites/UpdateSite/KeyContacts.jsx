@@ -122,7 +122,9 @@ const KeyContacts = ({
                 <td>
                   <input
                     className="contact-input form-control"
-                    type="phone"
+                    type="tel"
+                    maxLength={11}
+                    pattern="[0-9]*"
                     disabled={isViewMode}
                     {...register("phone")}
                   />
