@@ -4,11 +4,6 @@ import Box from "@mui/material/Box";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import siteDummy from "../../../../images/site-dummy.png";
 import {
   addSiteAsset,
   getDocumentsRootFolder,
@@ -106,7 +101,7 @@ const CreateAsset = ({
       form_data.append(
         "assetImage",
         data?.assetImage?.[0],
-        data?.assetImage?.[0]?.name
+        formData?.assetName
       );
     } else {
       form_data.append("assetImage", "", "");
@@ -203,11 +198,12 @@ const CreateAsset = ({
                                 setValue("relatedAssetId", newValue?.key)
                               }
                               options={siteAssets.map((option) => {
-                                return { key: option.assetId, label: option.assetName };
+                                return {
+                                  key: option.assetId,
+                                  label: option.assetName,
+                                };
                               })}
-                              getOptionLabel={(option) =>
-                                option.label || ""
-                              }
+                              getOptionLabel={(option) => option.label || ""}
                               renderInput={(params) => (
                                 <div ref={params.InputProps.ref}>
                                   <input

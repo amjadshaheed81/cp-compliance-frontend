@@ -53,10 +53,10 @@ const Door = ({
   useEffect(() => {
     if (siteDoorItems) {
       setFilteredSiteDoorItems(siteDoorItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
       }));
       setSiteAssetsList(siteDoorItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
       }));
     }
   }, [siteDoorItems]);

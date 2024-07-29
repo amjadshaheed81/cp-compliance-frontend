@@ -49,10 +49,10 @@ const PassiveFireProtection = ({
   useEffect(() => {
     if (sitePFPItems) {
       setfilteredSitePFPItems(sitePFPItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
       }));
       setSiteAssetsList(sitePFPItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
       }));
       setfilteredSitePFPItems(sitePFPItems);
     }

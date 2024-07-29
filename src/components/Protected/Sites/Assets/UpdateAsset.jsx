@@ -75,7 +75,7 @@ const UpdateAsset = ({
       getUsers();
       getTester();
       getSiteAssets(siteSelectedForGlobal?.siteId);
-      getSiteLayout(siteSelectedForGlobal?.siteId)
+      getSiteLayout(siteSelectedForGlobal?.siteId);
       getCategories();
     } else {
       Swal.fire({
@@ -236,14 +236,15 @@ const UpdateAsset = ({
     setLoader(true);
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
-    if (data?.assetImage?.length > 0) {
+    console.log("assetImage", assetImage);
+    if (data?.assetImage) {
       form_data.append(
         "assetImage",
         data?.assetImage?.[0],
-        data?.assetImage?.[0]?.name
+        formData?.assetName
       );
     } else {
-      form_data.append("assetImage", JSON.stringify(data?.image));
+      form_data.append("assetImage", "", "");
     }
     const formDetails = {
       assetId: formData?.assetId,
@@ -600,15 +601,138 @@ const UpdateAsset = ({
                             )}
                           </div>
                         </div>
+                        <div className="col-md-6 mt-2">
+                          <label for="category">Category</label>
+                          <select
+                            name="category"
+                            className="form-control form-select"
+                            id="category"
+                            {...register("category", {
+                              required: {
+                                value: true,
+                                message: `Please select category`,
+                              },
+                            })}
+                            onChange={(e) => {
+                              categoryChange(e.target.value);
+                            }}
+                          >
+                            <option value="">Select category</option>
+                            {category?.map((itm) => (
+                              <option
+                                selected={
+                                  selectedAsset?.category === itm?.lovValue
+                                }
+                                value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                          {errors?.category && (
+                            <InputError
+                              message={errors?.category?.message}
+                              key={errors?.category?.message}
+                            />
+                          )}
+                        </div>
+                        <div className="col-md-6 mt-2">
+                          <label for="subCategory">Sub Category 1</label>
+                          <select
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            {...register("subCategory")}
+                            onChange={(e) => {
+                              subCategoryChange(e.target.value);
+                            }}
+                          >
+                            <option value="">Select Sub Category</option>
+                            {subCategoryList?.map((itm) => (
+                              <option
+                                selected={
+                                  selectedAsset?.subCategory === itm?.lovValue
+                                }
+                                value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <div className="col-md-6 mt-2">
+                            <label for="subCategory2">Sub Category 2</label>
+                            <select
+                              name="subCategory2"
+                              className="form-control form-select"
+                              id="subCategory2"
+                              {...register("subCategory2")}
+                            >
+                              <option value="">Select Sub Category 2</option>
+                              {subCategory2List?.map((itm) => (
+                                <option
+                                  selected={
+                                    selectedAsset?.subCategory2 ===
+                                    itm?.lovValue
+                                  }
+                                  value={itm?.lovValue}
+                                >
+                                  {itm?.lovValue}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="col-md-4 mt-2">
+                          <input
+                            type="checkbox"
+                            id="patItem"
+                            name="patItem"
+                            className="form-check-input"
+                            {...register("patItem")}
+                          />
+                          &nbsp;&nbsp;
+                          <label for="patItem">
+                            PAT item (fill PAT details below)
+                          </label>
+                        </div>
+                        <div className="col-md-4 mt-2">
+                          <input
+                            type="checkbox"
+                            id="pfpItem"
+                            name="pfpItem"
+                            className="form-check-input"
+                            {...register("pfpItem")}
+                          />
+                          &nbsp;&nbsp;
+                          <label for="pfpItem">
+                            Passive fire schedule required (fill PFS details
+                            below below)
+                          </label>
+                        </div>
+                        <div className="col-md-4 mt-2">
+                          <input
+                            type="checkbox"
+                            id="doorItem"
+                            name="doorItem"
+                            className="form-check-input"
+                            {...register("doorItem")}
+                          />
+                          &nbsp;&nbsp;
+                          <label for="doorItem">
+                            Door Assets (fill Door assets details below below)
+                          </label>
+                        </div>
                       </div>
                     </div>
-                    <div className="col-md-4 text-center">
+                    <div className="col-md-4 text-center mt-2">
                       <div className="form-group">
                         {selectedAsset?.image && (
                           <img
                             src={selectedAsset?.image}
-                            style={{ width: "100px", height: "100px" }}
-                            className="img img-responsive border p-2 m-2"
+                            className="img img-responsive border p-2 m-2 w-100"
                           />
                         )}
                         <input
@@ -630,126 +754,7 @@ const UpdateAsset = ({
                       </div>
                     </div>
                   </div>
-                  <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-4">
-                      <label for="category">Category</label>
-                      <select
-                        name="category"
-                        className="form-control form-select"
-                        id="category"
-                        {...register("category", {
-                          required: {
-                            value: true,
-                            message: `Please select category`,
-                          },
-                        })}
-                        onChange={(e) => {
-                          categoryChange(e.target.value);
-                        }}
-                      >
-                        <option value="">Select category</option>
-                        {category?.map((itm) => (
-                          <option
-                            selected={selectedAsset?.category === itm?.lovValue}
-                            value={itm?.lovValue}
-                          >
-                            {itm?.lovValue}
-                          </option>
-                        ))}
-                      </select>
-                      {errors?.category && (
-                        <InputError
-                          message={errors?.category?.message}
-                          key={errors?.category?.message}
-                        />
-                      )}
-                    </div>
-                    <div className="col-md-4">
-                      <label for="subCategory">Sub Category 1</label>
-                      <select
-                        name="subCategory"
-                        className="form-control form-select"
-                        id="subCategory"
-                        {...register("subCategory")}
-                        onChange={(e) => {
-                          subCategoryChange(e.target.value);
-                        }}
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subCategoryList?.map((itm) => (
-                          <option
-                            selected={
-                              selectedAsset?.subCategory === itm?.lovValue
-                            }
-                            value={itm?.lovValue}
-                          >
-                            {itm?.lovValue}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label for="subCategory2">Sub Category 2</label>
-                      <select
-                        name="subCategory2"
-                        className="form-control form-select"
-                        id="subCategory2"
-                        {...register("subCategory2")}
-                      >
-                        <option value="">Select Sub Category 2</option>
-                        {subCategory2List?.map((itm) => (
-                          <option
-                            selected={
-                              selectedAsset?.subCategory2 === itm?.lovValue
-                            }
-                            value={itm?.lovValue}
-                          >
-                            {itm?.lovValue}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="patItem"
-                        name="patItem"
-                        className="form-check-input"
-                        {...register("patItem")}
-                      />
-                      &nbsp;&nbsp;
-                      <label for="patItem">
-                        PAT item (fill PAT details below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="pfpItem"
-                        name="pfpItem"
-                        className="form-check-input"
-                        {...register("pfpItem")}
-                      />
-                      &nbsp;&nbsp;
-                      <label for="pfpItem">
-                        Passive fire schedule required (fill PFS details below
-                        below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="doorItem"
-                        name="doorItem"
-                        className="form-check-input"
-                        {...register("doorItem")}
-                      />
-                      &nbsp;&nbsp;
-                      <label for="doorItem">
-                        Door Assets (fill Door assets details below below)
-                      </label>
-                    </div>
-                  </div>
+                  <div className="row" style={{ height: "auto" }}></div>
                   {/* start */}
 
                   {/* end */}
@@ -1105,7 +1110,9 @@ const UpdateAsset = ({
                         {siteLayout
                           .filter((site) => site.nodeType === "floor")
                           .map((site) => (
-                            <option value={site.nodeName}>{site.nodeName} </option>
+                            <option value={site.nodeName}>
+                              {site.nodeName}{" "}
+                            </option>
                           ))}
                       </select>
                       {locationForm.formState.errors?.floor && (
@@ -1134,7 +1141,9 @@ const UpdateAsset = ({
                         {siteLayout
                           .filter((site) => site.nodeType === "room")
                           .map((site) => (
-                            <option value={site.nodeName}>{site.nodeName}</option>
+                            <option value={site.nodeName}>
+                              {site.nodeName}
+                            </option>
                           ))}
                       </select>
                       {locationForm.formState.errors?.room && (

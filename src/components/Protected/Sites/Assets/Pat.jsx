@@ -49,10 +49,10 @@ const Pat = ({
   useEffect(() => {
     if (sitePATItems) {
       setFilteredSitePATItems(sitePATItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
       }));
       setSiteAssetsList(sitePATItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position} > ${itm?.floor} > ${itm?.room}` };
+        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
       }));
     }
   }, [sitePATItems]);

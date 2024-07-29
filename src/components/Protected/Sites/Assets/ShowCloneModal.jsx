@@ -129,25 +129,19 @@ const ShowCloneModal = ({
                   <div className="col-md-12">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="numberOfClones">Select Number of Clones to Create</label>
-                        <select
-                          name="numberOfClones"
-                          className="form-control form-select"
-                          id="numberOfClones"
+                        <label for="numberOfClones">
+                          Select Number of Clones to Create
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
                           {...register("numberOfClones", {
                             required: {
                               value: true,
                               message: `Please select number of clones to create`,
                             },
                           })}
-                        >
-                          <option value="" selected disabled></option>
-                          <option value={1}>1</option>
-                          <option value={2}>2</option>
-                          <option value={3}>3</option>
-                          <option value={4}>4</option>
-                          <option value={5}>5</option>
-                        </select>
+                        />
                         {errors?.numberOfClones && (
                           <InputError
                             message={errors?.numberOfClones?.message}
