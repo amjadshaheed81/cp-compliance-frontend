@@ -52,6 +52,7 @@ const SubFolder = ({
   const navigate = useNavigate();
   const [bulkUploadModal, setBulkUploadModal] = useState(false);
   const [versionHistory, setVersionHistory] = useState(false);
+  const [isVersionModeEdit, setIsVersionModeEdit] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
   const [fileList, setFileList] = useState([]);
@@ -169,9 +170,13 @@ const SubFolder = ({
         {versionHistory && (
           <VersionHistory
             versionHistory={versionHistory}
+            isVersionModeEdit={isVersionModeEdit}
             setVersionHistory={setVersionHistory}
             //fileId={file?.id}
             fileId={fileId}
+            refresh={() => {
+              getSubFilesAndFolder(folderId);
+            }}
           />
         )}
         {showPdfModal && (
@@ -465,8 +470,9 @@ const SubFolder = ({
                             <Tooltip title={`Replace with new version`} arrow>
                               <RestorePageIcon
                                 onClick={() => {
-                                  setShowModal(true);
-                                  setfolder(file);
+                                  setIsVersionModeEdit(true);
+                                  setVersionHistory(true);
+                                  setFileId(file?.id);
                                 }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
                               />
@@ -474,6 +480,7 @@ const SubFolder = ({
                             <Tooltip title={`Version History`} arrow>
                               <HistoryIcon
                                 onClick={() => {
+                                  setIsVersionModeEdit(false);
                                   setVersionHistory(true);
                                   setFileId(file?.id);
                                 }}
