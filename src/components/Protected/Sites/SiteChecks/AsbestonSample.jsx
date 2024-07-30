@@ -10,8 +10,15 @@ import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "..
 const AsbestonSample = ({ sasToken, checkId, siteAssets, siteLayout, getSiteAssets, siteSelectedForGlobal, getSiteLayout }) => {
   const navigate = useNavigate();
 
+  const [materialAssProductType, setmaterialAssProductType] = useState([]);
+
+  const getDropDowns = async () => {
+    const materialAssProductTypes = await get("/api/lov/ASBESTOS_MATERIAL_ASSESSMENT_PRODUCT_TYPE");
+    setmaterialAssProductType(materialAssProductTypes);
+  }
+
   useEffect(() => {
-    
+    getDropDowns();
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId)
@@ -428,8 +435,8 @@ const AsbestonSample = ({ sasToken, checkId, siteAssets, siteLayout, getSiteAsse
                                         style={{ maxWidth: '300px', marginLeft: '5px' }}
                                       >
                                         <option value="">Select </option>
-                                        {["Yes", "No"].map((num) => (
-                                          <option value={num}>{num} </option>
+                                        {materialAssProductType.map((num) => (
+                                          <option value={num.lovValue}>{num.lovValue} - {num.lovDesc} </option>
                                         ))}
                                       </select>
 
