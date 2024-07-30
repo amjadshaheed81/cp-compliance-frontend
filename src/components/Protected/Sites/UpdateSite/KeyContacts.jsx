@@ -77,7 +77,7 @@ const KeyContacts = ({
         <h2 className="fs-6 mt-4 bg-white">Key Contacts</h2>
         <div className="table-responsive">
           <table className="table">
-            <thead>
+            <thead className="table-dark">
               <tr>
                 <th>Name</th>
                 <th>Phone</th>
@@ -87,7 +87,12 @@ const KeyContacts = ({
               </tr>
             </thead>
             <tbody>
-              {keyContacts.map((row) => (
+              {keyContacts?.length === 0 && (
+                <tr>
+                  <td colSpan={4}>No Contacts Found!!</td>
+                </tr>
+              )}
+              {keyContacts?.map((row) => (
                 <tr key={row?.id}>
                   <td>{row?.contactName}</td>
                   <td>{row?.phone}</td>
