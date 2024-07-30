@@ -113,6 +113,16 @@ export function uploadPhoto(url, formData) {
   });
 }
 
+export function uploadNewVersion(url, formData) {
+  configAxios();
+  return axiosInstance({
+    method: "PUT",
+    url,
+    data: formData,
+    headers: {...getHeaders(), 'Content-Type': `multipart/form-data`},
+  });
+}
+
 export async function uploadSiteCheckDoc(reqData) {
   const formData = new FormData();
   formData.append("file", reqData.file);

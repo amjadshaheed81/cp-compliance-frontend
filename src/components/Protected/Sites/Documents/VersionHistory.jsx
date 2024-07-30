@@ -10,7 +10,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
-import { get } from "../../../../api";
+import { get, put, uploadNewVersion } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -18,8 +18,16 @@ import { useForm } from "react-hook-form";
 import { Validation } from "../../../../Constant/Validation";
 import { InputError } from "../../../common/InputError";
 import PdfViewer from "./PdfViewer";
+import { connect } from "react-redux";
 
-const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
+const VersionHistory = ({
+  versionHistory,
+  setVersionHistory,
+  fileId,
+  siteSelectedForGlobal,
+  uploadNewVersion,
+  loggedInUserData,
+}) => {
   const [open, setOpen] = useState([]);
   const [fileVerions, setFileVerions] = useState([]);
   const handleOpen = () => setVersionHistory(true);
@@ -49,8 +57,81 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
       setFileVerions([]);
     }
   };
-  const handleVersionSubmit = async (data) => {
-    console.log("data", data);
+  const checkAndAddExpiryCalenderEvent = async (data) => {
+    console.log("expiryDate", data);
+    const body = {
+      siteId: siteSelectedForGlobal?.siteId,
+      startDate: moment(data.expiryDate),
+      endDate: moment(data.expiryDate),
+      shortText: "Document Expiring : " + data.name,
+      eventType: "DOCUMENT_EXPIRY",
+      userId: loggedInUserData?.id,
+    };
+    await put("/api/user/calendar", body);
+  };
+  const handleVersionSubmit = async (formData) => {
+    console.log("formData", formData);
+    try {
+      setIsLoading(true);
+      const data = {
+        folderId: fileVerions?.files?.[0]?.folderId,
+        files: [
+          {
+            ...formData,
+            name: formData?.fileUpload?.[0]?.name,
+            fileVersion: fileVerions?.files?.length,
+            siteId: siteSelectedForGlobal?.siteId,
+            issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
+            expiryDate: `${moment(new Date())
+              .add(1, "years")
+              .format("YYYY-MM-DD")} 10:00:00`,
+          },
+        ],
+      };
+      data.files[0].name = formData.fileUpload[0].name;
+      await submitFile(data, formData.fileUpload[0]);
+      checkAndAddExpiryCalenderEvent(data.files[0]);
+    } catch (e) {
+      toast.error(
+        "Something went wrong while adding new file. Please try again!!"
+      );
+      setIsLoading(false);
+    }
+  };
+  const submitFile = async (data, fileUpload) => {
+    setIsLoading(true);
+    const reqData = {
+      files: fileUpload,
+      documentRequestString: {
+        ...data,
+      },
+    };
+    delete reqData.documentRequestString.files[0].fileUpload;
+    delete reqData.documentRequestString.files[0].folder;
+    reqData.documentRequestString.files[0].issueDate = data?.issueDate;
+    reqData.documentRequestString.files[0].expiryDate = data?.expiryDate;
+    reqData.documentRequestString.files[0].uploaderUserId =
+      loggedInUserData?.id || "";
+    reqData.documentRequestString.files[0].reviewerUserId =
+      loggedInUserData?.id || "";
+    reqData.documentRequestString.files[0].referenceNumber =
+      data.files[0].note || "";
+    const url = `/api/document/file/newVersion/upload`;
+    const formData = new FormData();
+    formData.append("file", reqData.files);
+    formData.append(
+      "documentRequestString",
+      JSON.stringify(reqData.documentRequestString)
+    );
+    try{
+      const res = await uploadNewVersion(url, formData);
+      setIsLoading(false);
+      toast.success("New Version uploaded successfully");
+    }catch(e) {
+      toast.error("Something went wrong while uploading new version.");
+      setIsLoading(false);
+    }
+    handleClose();
   };
   return (
     <>
@@ -94,24 +175,24 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
                 )}
               </div>
               <div className="col-md-4">
-                <label htmlFor="fileName" name="fileName">
+                <label htmlFor="name">
                   File Name
                 </label>
                 <input
-                  {...register("fileName", {
+                  {...register("name", {
                     required: {
                       value: true,
                       message: `${Validation.REQUIRED} file name`,
                     },
                   })}
                   type="text"
-                  name="fileName"
+                  name="name"
                   className="form-control"
                 />
-                {errors?.fileName && (
+                {errors?.name && (
                   <InputError
-                    message={errors?.fileName?.message}
-                    key={errors?.fileName?.message}
+                    message={errors?.name?.message}
+                    key={errors?.name?.message}
                   />
                 )}
               </div>
@@ -230,4 +311,9 @@ const VersionHistory = ({ versionHistory, setVersionHistory, fileId }) => {
   );
 };
 
-export default VersionHistory;
+const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
+});
+
+export default connect(mapStateToProps, { uploadNewVersion })(VersionHistory);
