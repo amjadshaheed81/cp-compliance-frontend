@@ -3,11 +3,8 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import CreateFiles from "./CreateFiles";
-import BulkUpload from "./BulkUpload";
-import VersionHistory from "./VersionHistory";
 import { connect } from "react-redux";
 import { getDocumentsRootFolder } from "../../../../store/thunk/site";
-import SubFolder from "./SubFolder";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import "./Documents.css";
@@ -158,9 +155,6 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
             </tbody>
           </table>
         </div>
-        {/* <CreateFiles />
-                <BulkUpload />
-                <VersionHistory /> */}
       </div>
     </>
   );

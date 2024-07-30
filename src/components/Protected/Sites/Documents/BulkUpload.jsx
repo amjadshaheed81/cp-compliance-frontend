@@ -1,18 +1,77 @@
-import React, { useState } from "react";
-import { Button, Box, DialogActions, DialogContent, DialogTitle, Dialog } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import {
+  Button,
+  Box,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Dialog,
+} from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useForm } from "react-hook-form";
-import CircularProgress from '@mui/material/CircularProgress';
+import CircularProgress from "@mui/material/CircularProgress";
+import moment from "moment";
+import { connect } from "react-redux";
+import { toast } from "react-toastify";
+import { uploadPhoto } from "../../../../api";
 
-const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
+const BulkUpload = ({
+  bulkUploadModal,
+  setBulkUploadModal,
+  folder,
+  siteSelectedForGlobal,
+  loggedInUserData,
+  uploadPhoto,
+}) => {
   const handleOpen = () => setBulkUploadModal(true);
   const handleClose = () => setBulkUploadModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [files, setFiles] = useState([]);
+  useEffect(() => {
+    console.log("folder", folder);
+    setFiles(folder?.files || []);
+  }, [folder]);
   const { register, handleSubmit } = useForm({});
-  const handleFileSelect = async (event) => {
-    console.log("event", event);
+  const submitBulkUpload = async (formData) => {
+    setIsLoading(true);
+    const filesToUpload = [];
+    for (const iterator of formData?.bulkUpload) {
+      filesToUpload.push({
+        ...iterator,
+        fileVersion: 1,
+        siteId: siteSelectedForGlobal?.siteId,
+        uploaderUserId: loggedInUserData?.id,
+        issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
+        expiryDate: `${moment(new Date())
+          .add(1, "years")
+          .format("YYYY-MM-DD")} 10:00:00`,
+      });
+    }
+    const {bulkUpload, ...filesData } = formData?.bulkUpload;
+    const data = {
+      files: filesData,
+      documentRequestString: {
+        folderId: folder?.id,
+        files: filesToUpload,
+      },
+    };
+    const url = `/api/document/files/upload`;
+    const formDataPayload = new FormData();
+    formDataPayload.append("files", data.files);
+    formDataPayload.append(
+      "documentRequestString",
+      JSON.stringify(data.documentRequestString)
+    );
+    try {
+      const res = await uploadPhoto(url, formDataPayload);
+      setIsLoading(false);
+      toast.success("Files uploaded successfully");
+      handleClose();
+    } catch (e) {
+      setIsLoading(false);
+      toast.error("Something went wrong while uploading files.");
+    }
   };
-  console.log("folder", folder);
   return (
     <>
       <Dialog
@@ -22,9 +81,7 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
         fullWidth
         PaperProps={{
           component: "form",
-          onSubmit: handleSubmit((data) => {
-            console.log(data);
-          }),
+          onSubmit: handleSubmit(submitBulkUpload),
         }}
       >
         <DialogTitle>Bulk Upload Files</DialogTitle>
@@ -63,12 +120,12 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
                       className="uploadButton-input"
                       type="file"
                       name="bulkUpload"
+                      multiple
                       accept="image/*, application/pdf"
                       id="bulkUpload"
-                      onChange={handleFileSelect}
                     />
                     <label
-                      htmlFor="siteImage"
+                      htmlFor="bulkUpload"
                       style={{ color: "blue" }}
                       className="btn"
                     >
@@ -81,10 +138,10 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
                 </div>
               </div>
               <div className="table-responsive">
-                <table className="f-11">
-                  <thead>
+                <table className="table f-11">
+                  <thead className="table-dark">
                     <tr>
-                      <th scope="col">File</th>
+                      <th scope="col">Folder</th>
                       <th scope="col">File Name</th>
                       <th scope="col">Issue Date</th>
                       <th scope="col">Expiry Date</th>
@@ -92,19 +149,26 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <div>
-                        <i
-                          style={{ color: "#384BD3" }}
-                          className="fas fa-folder fa-2x"
-                        ></i>
-                        <span className="p-3">Statutory Documents</span>
-                      </div>
-                      <td>--</td>
-                      <td>--</td>
-                      <td>--</td>
-                      <td>--</td>
-                    </tr>
+                    {files?.length === 0 && (
+                      <tr>
+                        <td colSpan={5}>No Files Found!!</td>
+                      </tr>
+                    )}
+                    {files?.map((file) => (
+                      <tr>
+                        <div>
+                          <i
+                            style={{ color: "#384BD3" }}
+                            className="fas fa-folder fa-2x"
+                          ></i>
+                          <span className="p-3">{file?.folderName}</span>
+                        </div>
+                        <td>{file?.name}</td>
+                        <td>{moment(file?.issueDate).format("DD-MM-YYYY")}</td>
+                        <td>{moment(file?.expiryDate).format("DD-MM-YYYY")}</td>
+                        <td>{file?.fileVersion}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -114,7 +178,9 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
         {!isLoading && (
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit">Save</Button>
+            <Button className="bg-primary text-light" type="submit">
+              Save
+            </Button>
           </DialogActions>
         )}
       </Dialog>
@@ -122,4 +188,9 @@ const BulkUpload = ({ bulkUploadModal, setBulkUploadModal, folder }) => {
   );
 };
 
-export default BulkUpload;
+const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
+});
+
+export default connect(mapStateToProps, { uploadPhoto })(BulkUpload);

@@ -206,6 +206,7 @@ const SubFolder = ({
         {bulkUploadModal && (
           <BulkUpload
             bulkUploadModal={bulkUploadModal}
+            folder={folderData}
             setBulkUploadModal={setBulkUploadModal}
           />
         )}
@@ -356,7 +357,10 @@ const SubFolder = ({
                       </Tooltip>
                       <Tooltip title={`Bulk Upload`} arrow>
                         <FolderCopyIcon
-                          onClick={() => setBulkUploadModal(true)}
+                          onClick={() => {
+                            setBulkUploadModal(true);
+                            setfolder(subfolderFiles?.document);
+                          }}
                           style={{ color: "384bd3", cursor: "pointer" }}
                         />
                       </Tooltip>
@@ -411,7 +415,9 @@ const SubFolder = ({
 
                             <Tooltip title={`Buld Upload`} arrow>
                               <FolderCopyIcon
-                                onClick={() => setBulkUploadModal(true)}
+                                onClick={() => { setBulkUploadModal(true) 
+                                  setfolder(folder);
+                                }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
                               />
                             </Tooltip>
