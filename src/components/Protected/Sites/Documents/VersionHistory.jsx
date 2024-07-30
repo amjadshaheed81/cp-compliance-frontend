@@ -78,6 +78,7 @@ const VersionHistory = ({
         files: [
           {
             ...formData,
+            id: fileId,
             name: formData?.fileUpload?.[0]?.name,
             fileVersion: fileVerions?.files?.length,
             siteId: siteSelectedForGlobal?.siteId,
@@ -118,7 +119,7 @@ const VersionHistory = ({
       data.files[0].note || "";
     const url = `/api/document/file/newVersion/upload`;
     const formData = new FormData();
-    formData.append("file", reqData.files);
+    formData.append("files", reqData.files);
     formData.append(
       "documentRequestString",
       JSON.stringify(reqData.documentRequestString)
