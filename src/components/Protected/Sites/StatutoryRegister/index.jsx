@@ -168,38 +168,41 @@ const StatutoryRegister = ({ loggedInUserData, siteSelectedForGlobal, getSiteAss
                                                 <input type="checkbox" id="chkbox" checked={item.required} onChange={(e) => { handleCheckboxField(e, item, index) }} />
                                             </th>
                                             <th scope="col">
-                                                <table className="table">
+                                                <table className="table" style={{ border: '1px solid #5A6371'}}>
                                                     <thead className="table-active">
-                                                        <tr>
-                                                            <th scope="col">File</th>
-                                                            <th scope="col">Version</th>
-                                                            <th scope="col">Date</th>
-                                                            <th scope="col">Expiry</th>
-                                                            <th scope="col">Author</th>
-                                                            <th scope="col">Ref No.</th>
+                                                        <tr >
+                                                            <th scope="col" style={{ backgroundColor: "#7D8793", color: "#FFFFFF" }}>File</th>
+                                                            <th scope="col" style={{ backgroundColor: "#7D8793", color: "#FFFFFF" }}>Version</th>
+                                                            <th scope="col" style={{ backgroundColor: "#7D8793", color: "#FFFFFF" }}>Date</th>
+                                                            <th scope="col" style={{ backgroundColor: "#7D8793", color: "#FFFFFF" }}>Expiry</th>
+                                                            <th scope="col" style={{ backgroundColor: "#7D8793", color: "#FFFFFF" }}>Author</th>
+                                                            <th scope="col" style={{ backgroundColor: "#7D8793", color: "#FFFFFF" }}>Ref No.</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {item.files?.map((itm, index) => {
                                                             return (
                                                                 <tr>
+                                                                    <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
                                                                     <button style={{ border: 'none', cursor: 'pointer', color: 'blue' }} onClick={(e) => {
                                                                         e?.preventDefault();
                                                                         setShowPdfModal(true);
                                                                         setSelectedPdf(itm?.fileBlobUrl)
                                                                     }}>{itm.name}</button>
+                                                                    </th>
                                                                     {/* <th scope="col">{itm.name}</th> */}
-                                                                    <th scope="col">{`version-${index + 1}.png`}</th>
-                                                                    <th scope="col">{moment(itm.issueDate).format("YYYY-MM-DD")}</th>
-                                                                    <th scope="col">{moment(itm.expiryDate).format("YYYY-MM-DD")}</th>
-                                                                    <th scope="col">{itm.uploaderUserName}</th>
-                                                                    <th scope="col">{itm.uploaderUserId}</th>
+                                                                    <th scope="col" style={{ backgroundColor: "#DEE3E9", color: "#5A6371", border: '1px solid #5A6371' }}>{itm.fileVersion}</th>
+                                                                    <th scope="col" style={{ backgroundColor: "#DEE3E9", color: "#5A6371", border: '1px solid #5A6371' }}>{itm.issueDate ? moment(itm.issueDate).format("YYYY-MM-DD") : '-'}</th>
+                                                                    <th scope="col" style={{ backgroundColor: "#DEE3E9", color: "#5A6371", border: '1px solid #5A6371' }}>{itm.expiryDate ? moment(itm.expiryDate).format("YYYY-MM-DD") : '-'}</th>
+                                                                    <th scope="col" style={{ backgroundColor: "#DEE3E9", color: "#5A6371", border: '1px solid #5A6371' }}>{itm.uploaderUserName}</th>
+                                                                    <th scope="col" style={{ backgroundColor: "#DEE3E9", color: "#5A6371", border: '1px solid #5A6371' }}>{itm.uploaderUserId}</th>
+                                                                    
                                                                 </tr>
                                                             )
                                                         })}
 
                                                         <tr>
-                                                            <td colspan="6"><div className='upload-file'>
+                                                            <td colspan="6" style={{ backgroundColor: "#5A6371", color: "#FFFFFF" }} align='center'><div className='upload-file'>
                                                                 <label id="upload-file" class="text-decoration-underline" onClick={() => { setFolder(item); setShowModal(true); }}
                                                                     style={{ color: "384bd3", cursor: "pointer" }}>Upload New File</label>
                                                             </div></td>

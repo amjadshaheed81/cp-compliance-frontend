@@ -56,8 +56,8 @@ const CreateFiles = ({
       },
     };
     delete reqData.documentRequestString.files[0].fileUpload;
-    reqData.documentRequestString.files[0].issueDate = data?.issueDate;
-    reqData.documentRequestString.files[0].expiryDate = data?.expiryDate;
+    reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate
+    reqData.documentRequestString.files[0].expiryDate = data?.files[0].expiryDate
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
     reqData.documentRequestString.files[0].reviewerUserId =
