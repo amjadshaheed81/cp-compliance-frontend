@@ -14,6 +14,7 @@ import {
   uploadDocumentFile,
 } from "../../../../store/thunk/site";
 import { connect } from "react-redux";
+import { isAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const CreateFolder = ({
   showFolderModal,
@@ -22,7 +23,8 @@ const CreateFolder = ({
   folder2,
   uploadDocumentFile,
   refresh,
-  siteSelectedForGlobal
+  siteSelectedForGlobal,
+  loggedInUserData
 }) => {
   const handleOpen = () => setShowFolderModal(true);
   const handleClose = () => setShowFolderModal(false);
@@ -30,16 +32,30 @@ const CreateFolder = ({
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const submitFolder = async (data) => {
-    if (folder2.name === 'Statutory Documents'){
+    if (folder2.name === 'Statutory Documents') {
       data.isStatutoryRegister = true;
+      if (isAdminLogin(loggedInUserData)) {
+        setIsLoading(true);
+        await post("/api/document/folder", data);
+        //createDocumentFolder(data, folderId);
+        setIsLoading(false);
+        handleClose();
+        refresh();
+        toast.success("Folder added successfully");
+      }
+      else {
+        toast.error("Only Admin can create folder in statutory");
+      }
     }
-    setIsLoading(true);
-    await post("/api/document/folder", data);
-    //createDocumentFolder(data, folderId);
-    setIsLoading(false);
-    handleClose();
-    refresh();
-    toast.success("Folder added successfully");
+    else {
+      setIsLoading(true);
+      await post("/api/document/folder", data);
+      //createDocumentFolder(data, folderId);
+      setIsLoading(false);
+      handleClose();
+      refresh();
+      toast.success("Folder added successfully");
+    }
   };
 
   const style = {
@@ -65,7 +81,7 @@ const CreateFolder = ({
           onSubmit: handleSubmit((data) => {
             data.parentFolderId = folderId;
             data.siteId = siteSelectedForGlobal?.siteId;
-            //data.parentFolderName = 
+            //data.parentFolderName =
             submitFolder(data);
           }),
         }}
@@ -109,6 +125,7 @@ const mapStateToProps = (state) => ({
   success: state.site.success,
   error: state.site.error,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   uploadDocumentFile,

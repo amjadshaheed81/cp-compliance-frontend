@@ -9,3 +9,12 @@ export const isManagerAdminLogin = (loggedInUserData) => {
   }
   return false;
 };
+
+export const isAdminLogin = (loggedInUserData) => {
+  if (
+    loggedInUserData?.role === ROLE.ADMIN
+  ) {
+    return true;
+  }
+  return false;
+};

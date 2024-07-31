@@ -33,7 +33,7 @@ export const filterMenuItems = (loggedInRole) => {
 export const filterSiteMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
     return SiteMenu.filter(
-      (item) => item !== "Create Site" && item !== "Statutory Register"
+      (item) => item !== "Create Site"
     );
   }
   return SiteMenu;

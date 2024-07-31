@@ -27,6 +27,8 @@ const VersionHistory = ({
   siteSelectedForGlobal,
   uploadNewVersion,
   loggedInUserData,
+  refresh,
+  isVersionModeEdit,
 }) => {
   const [open, setOpen] = useState([]);
   const [fileVerions, setFileVerions] = useState([]);
@@ -50,6 +52,7 @@ const VersionHistory = ({
       const versions = await get(`/api/document/file/${fileId}/history`);
       setFileVerions(versions?.files || []);
       setValue("folder", versions?.files?.[0]?.folderName);
+      setValue("name", versions?.files?.[0]?.name);
       setIsLoading(false);
     } catch (e) {
       setIsLoading(false);
@@ -74,23 +77,19 @@ const VersionHistory = ({
     try {
       setIsLoading(true);
       const data = {
-        folderId: fileVerions?.files?.[0]?.folderId,
+        folderId: fileVerions?.[0]?.folderId,
         files: [
           {
-            ...formData,
+            ...formData?.fileUpload[0],
+            id: fileId,
             name: formData?.fileUpload?.[0]?.name,
-            fileVersion: fileVerions?.files?.length,
+            fileVersion: fileVerions?.length + 1,
             siteId: siteSelectedForGlobal?.siteId,
-            issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
-            expiryDate: `${moment(new Date())
-              .add(1, "years")
-              .format("YYYY-MM-DD")} 10:00:00`,
           },
         ],
       };
-      data.files[0].name = formData.fileUpload[0].name;
       await submitFile(data, formData.fileUpload[0]);
-      checkAndAddExpiryCalenderEvent(data.files[0]);
+      await checkAndAddExpiryCalenderEvent(data.files[0]);
     } catch (e) {
       toast.error(
         "Something went wrong while adding new file. Please try again!!"
@@ -106,16 +105,24 @@ const VersionHistory = ({
         ...data,
       },
     };
-    delete reqData.documentRequestString.files[0].fileUpload;
-    delete reqData.documentRequestString.files[0].folder;
+
+    reqData.documentRequestString.folderId = fileVerions?.[0]?.folderId;
     reqData.documentRequestString.files[0].issueDate = data?.issueDate;
-    reqData.documentRequestString.files[0].expiryDate = data?.expiryDate;
+    reqData.documentRequestString.files[0].name = fileUpload?.name;
+    reqData.documentRequestString.files[0].id = fileId;
+    reqData.documentRequestString.files[0].issueDate = `${moment(
+      new Date()
+    ).format("YYYY-MM-DD")} 10:00:00`;
+    reqData.documentRequestString.files[0].expiryDate = `${moment(new Date())
+      .add(1, "years")
+      .format("YYYY-MM-DD")} 10:00:00`;
     reqData.documentRequestString.files[0].uploaderUserId =
       loggedInUserData?.id || "";
     reqData.documentRequestString.files[0].reviewerUserId =
       loggedInUserData?.id || "";
     reqData.documentRequestString.files[0].referenceNumber =
       data.files[0].note || "";
+    delete reqData.documentRequestString.files[0].folder;
     const url = `/api/document/file/newVersion/upload`;
     const formData = new FormData();
     formData.append("file", reqData.files);
@@ -123,14 +130,10 @@ const VersionHistory = ({
       "documentRequestString",
       JSON.stringify(reqData.documentRequestString)
     );
-    try{
-      const res = await uploadNewVersion(url, formData);
-      setIsLoading(false);
-      toast.success("New Version uploaded successfully");
-    }catch(e) {
-      toast.error("Something went wrong while uploading new version.");
-      setIsLoading(false);
-    }
+    const res = await uploadNewVersion(url, formData);
+    setIsLoading(false);
+    toast.success("New Version uploaded successfully");
+    refresh();
     handleClose();
   };
   return (
@@ -150,75 +153,76 @@ const VersionHistory = ({
         >
           <DialogTitle> Version History</DialogTitle>
           <DialogContent>
-            <div className="row mb-2" style={{ height: "auto" }}>
-              <div className="col-md-4">
-                <label htmlFor="folder" name="folder">
-                  Folder
-                </label>
-                <input
-                  disabled
-                  {...register("folder", {
-                    required: {
-                      value: true,
-                      message: `${Validation.REQUIRED} folder `,
-                    },
-                  })}
-                  type="text"
-                  name="folder"
-                  className="form-control"
-                />
-                {errors?.folder && (
-                  <InputError
-                    message={errors?.folder?.message}
-                    key={errors?.folder?.message}
+            {isVersionModeEdit && (
+              <div className="row mb-2" style={{ height: "auto" }}>
+                <div className="col-md-4">
+                  <label htmlFor="folder" name="folder">
+                    Folder
+                  </label>
+                  <input
+                    disabled
+                    {...register("folder", {
+                      required: {
+                        value: true,
+                        message: `${Validation.REQUIRED} folder `,
+                      },
+                    })}
+                    type="text"
+                    name="folder"
+                    className="form-control"
                   />
-                )}
-              </div>
-              <div className="col-md-4">
-                <label htmlFor="name">
-                  File Name
-                </label>
-                <input
-                  {...register("name", {
-                    required: {
-                      value: true,
-                      message: `${Validation.REQUIRED} file name`,
-                    },
-                  })}
-                  type="text"
-                  name="name"
-                  className="form-control"
-                />
-                {errors?.name && (
-                  <InputError
-                    message={errors?.name?.message}
-                    key={errors?.name?.message}
+                  {errors?.folder && (
+                    <InputError
+                      message={errors?.folder?.message}
+                      key={errors?.folder?.message}
+                    />
+                  )}
+                </div>
+                <div className="col-md-4">
+                  <label htmlFor="name">File Name</label>
+                  <input
+                    disabled
+                    {...register("name", {
+                      required: {
+                        value: true,
+                        message: `${Validation.REQUIRED} file name`,
+                      },
+                    })}
+                    type="text"
+                    name="name"
+                    className="form-control"
                   />
-                )}
-              </div>
-              <div className="col-md-4">
-                <label htmlFor="fileUpload" name="fileUpload">
-                  Upload New Version
-                </label>
-                <input
-                  type="file"
-                  {...register("fileUpload", {
-                    required: {
-                      value: true,
-                      message: `Please select file`,
-                    },
-                  })}
-                  name="fileUpload"
-                  className="form-control"
-                />
-                {errors?.fileUpload && (
-                  <InputError
-                    message={errors?.fileUpload?.message}
-                    key={errors?.fileUpload?.message}
+                  {errors?.name && (
+                    <InputError
+                      message={errors?.name?.message}
+                      key={errors?.name?.message}
+                    />
+                  )}
+                </div>
+                <div className="col-md-4">
+                  <label htmlFor="fileUpload" name="fileUpload">
+                    Upload New Version
+                  </label>
+                  <input
+                    type="file"
+                    {...register("fileUpload", {
+                      required: {
+                        value: true,
+                        message: `Please select file`,
+                      },
+                    })}
+                    name="fileUpload"
+                    className="form-control"
                   />
-                )}
+                  {errors?.fileUpload && (
+                    <InputError
+                      message={errors?.fileUpload?.message}
+                      key={errors?.fileUpload?.message}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             <div className="table-responsive">
               <table className="table f-11">
                 <thead className="table-dark">
@@ -301,9 +305,11 @@ const VersionHistory = ({
             >
               Close
             </Button>
-            <Button type="submit" className="bg-primary text-light">
-              Save New Version
-            </Button>
+            {isVersionModeEdit && (
+              <Button type="submit" className="bg-primary text-light">
+                Save New Version
+              </Button>
+            )}
           </DialogActions>
         </form>
       </Dialog>
