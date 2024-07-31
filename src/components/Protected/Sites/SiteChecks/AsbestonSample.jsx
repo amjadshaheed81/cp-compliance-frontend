@@ -113,11 +113,11 @@ const AsbestonSample = ({
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId);
     }
-    getAudit();
+    getAsbestosSample();
   }, []);
 
-  const getAudit = async () => {
-    const data = await get("/api/site-check/audit/" + checkId);
+  const getAsbestosSample = async () => {
+    const data = await get("/api/site-check/asbestos-sample/" + checkId);
     if (data.length > 0) {
       setFormData(data);
       setCompleted(true);
@@ -160,7 +160,7 @@ const AsbestonSample = ({
     setFormData(uformData);
   };
 
-  const addSiteCheckAudit = async (event) => {
+  const addAsbestosSample = async (event) => {
     event.preventDefault();
     const form = event.target;
     if (!form.checkValidity()) {
@@ -170,17 +170,18 @@ const AsbestonSample = ({
     for (const data of formData) {
       if (data?.file?.name) {
         data.siteId = siteSelectedForGlobal?.siteId;
-        data.imageUrl = await uploadSiteCheckDoc(data);
+        //data.imageUrl = await uploadSiteCheckDoc(data);
         delete data.file;
       }
       data.dateRaised = new Date(data.dateRaised);
       data.checkId = checkId;
       data.status = "Open";
-      await post("/api/site-check/audit", data);
+      console.log(formData);
+      //await post("/api/site-check/audit", data);
 
       toast.success("Audit data saved");
     }
-    setCompleted(true);
+    //setCompleted(true);
   };
 
   const expandRow = (e, idx) => {
@@ -191,7 +192,7 @@ const AsbestonSample = ({
   };
 
   return (
-    <form onSubmit={addSiteCheckAudit}>
+    <form onSubmit={addAsbestosSample}>
       <Grid container>
         <Grid sm={6}>
           <br />
@@ -1485,10 +1486,10 @@ const AsbestonSample = ({
                                           </button>
                                           <button
                                             className="btn btn-primary"
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                            }}
-                                            type="button"
+                                            // onClick={(e) => {
+                                            //   e.preventDefault();
+                                            // }}
+                                            type="submit"
                                           >
                                             Save
                                           </button>

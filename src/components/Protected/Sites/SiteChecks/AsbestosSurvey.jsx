@@ -229,6 +229,7 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
             {completed && formData?.reportUrl && (
               <a href={formData?.reportUrl + "?" + sasToken} target="_blank">
                 <button
+                  type="button"
                   style={{
                     width: "250px",
                     marginBottom: "20px",
@@ -236,7 +237,7 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
                     float: "right",
                   }}
                   className="btn btn-primary btn-dark"
-                  onClick={(e) => e.preventDefault()}
+                  //onClick={(e) => e.preventDefault()}
                 >
                   <i className="fas fa-download" />
                   &nbsp;Download Certificate
