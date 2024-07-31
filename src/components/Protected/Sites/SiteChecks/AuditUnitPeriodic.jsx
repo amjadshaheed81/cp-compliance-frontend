@@ -62,6 +62,7 @@ const AuditUnitPeriodic = ({ sasToken, checkId, siteAssets, getSiteAssets, siteS
   
     for (const data of formData) {
       if (data?.file?.name) {
+        data.siteId = siteSelectedForGlobal?.siteId;
         data.imageUrl = await uploadSiteCheckDoc(data);
         delete data.file;
       }

@@ -114,6 +114,7 @@ const CreateFiles = ({
       shortText: "Document Expiring : " + data.name,
       eventType: "DOCUMENT_EXPIRY",
       userId: loggedInUserData?.id,
+      includeCompanyUsers: true
     };
     await put("/api/user/calendar", body);
   };

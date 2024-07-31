@@ -169,6 +169,7 @@ const AsbestonSample = ({
 
     for (const data of formData) {
       if (data?.file?.name) {
+        data.siteId = siteSelectedForGlobal?.siteId;
         data.imageUrl = await uploadSiteCheckDoc(data);
         delete data.file;
       }

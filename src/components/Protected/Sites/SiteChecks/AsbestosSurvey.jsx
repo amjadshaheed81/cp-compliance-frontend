@@ -15,7 +15,7 @@ import { UploadFile } from "@mui/icons-material";
 
 import { getSites, getExternalUsers } from "../../../../store/thunk/site";
 
-const AsbestosSurvey = ({ sasToken, checkId }) => {
+const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
   useEffect(() => {
     getAsbestosSurvey();
   }, []);
@@ -62,6 +62,7 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
     }
     const data = { ...formData };
     if (data?.file?.name) {
+      data.siteId = siteSelectedForGlobal?.siteId;
       data.reportUrl = await uploadSiteCheckDoc(data);
       delete data.file;
     }
@@ -252,5 +253,6 @@ const AsbestosSurvey = ({ sasToken, checkId }) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   externalusers: state.site.externalusers,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {})(AsbestosSurvey);

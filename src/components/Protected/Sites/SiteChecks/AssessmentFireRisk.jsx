@@ -171,6 +171,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
     }
     const dataToSave = quest[index].response;
     if (dataToSave?.file?.name) {
+      dataToSave.siteId = siteSelectedForGlobal?.siteId;
       dataToSave.file = await uploadSiteCheckDoc(dataToSave);
     }
     dataToSave.responseDate = new Date();

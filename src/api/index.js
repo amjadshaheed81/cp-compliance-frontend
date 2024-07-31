@@ -125,6 +125,7 @@ export function uploadNewVersion(url, formData) {
 
 export async function uploadSiteCheckDoc(reqData) {
   const formData = new FormData();
+  formData.append("siteId", reqData.siteId);
   formData.append("file", reqData.file);
   formData.append("fileName", reqData.file?.name);
   configAxios();

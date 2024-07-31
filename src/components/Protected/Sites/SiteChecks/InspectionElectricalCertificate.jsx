@@ -7,7 +7,7 @@ import { UploadFile } from '@mui/icons-material';
 
 import { getSites, getExternalUsers } from "../../../../store/thunk/site";
 
-const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, getExternalUsers }) => {
+const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, getExternalUsers, siteSelectedForGlobal }) => {
   useEffect(() => {
     getExternalUsers();
     getIpection();
@@ -58,6 +58,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     }
     const data = { ...formData }
     if (data?.file?.name) {
+      data.siteId = siteSelectedForGlobal?.siteId;
       data.certificateUrl = await uploadSiteCheckDoc(data);
       delete data.file;
     }
@@ -249,6 +250,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   externalusers: state.site.externalusers,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, { getSites, getExternalUsers })(
   InspectionElectricalCertificate
