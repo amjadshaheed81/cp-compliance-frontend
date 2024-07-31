@@ -185,7 +185,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       filteredSiteChecks2.forEach(s => {
         const lead = managerList.filter(u => u.id == s.leadUserID);
         if (lead.length > 0) {
-          s.leadName = lead[0].role + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].companyName;
+          s.leadName = lead[0].role + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].companyName??"";
         }
       })
       filteredSiteChecks2 = filteredSiteChecks2.filter(sc =>
@@ -452,7 +452,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                     let leanName = "-"
                     const lead = managerList.filter(u => u.id == action.leadUserID);
                     if (lead.length > 0) {
-                      leanName = lead[0].role + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].companyName;
+                      leanName = lead[0].role + ' - ' + lead[0].name + ' (' + lead[0].email + ') - ' + lead[0].companyName??"";
                     }
                     return (
                     <tr key={action?.id}>
@@ -643,9 +643,9 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                         uformData.leadUserID = item?.key;
                         setFormData(uformData);
                       }}
-                        value={managerList.filter(o => String(o.id) === String(formData?.leadUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })[0]}
+                        value={managerList.filter(o => String(o.id) === String(formData?.leadUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName??"" } })[0]}
 
-                        options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })}
+                        options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName??"" } })}
                       getOptionLabel={(option) => option.label}
                       renderInput={(params) => (
                         <div ref={params.InputProps.ref} >
@@ -666,14 +666,14 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                     <label htmlFor="assistantUserID">Assistant</label>
                     <Autocomplete
                       id="assistantUserID"
-                        value={managerList.filter(o => String(o.id) === String(formData?.assistantUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })[0]}
+                        value={managerList.filter(o => String(o.id) === String(formData?.assistantUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName??"" } })[0]}
 
                       onChange={(event, item) => {
                         const uformData = { ...formData }
                         uformData.assistantUserID = item?.key;
                         setFormData(uformData);
                       }}
-                        options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName } })}
+                        options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ') - ' + option.companyName??"" } })}
                       getOptionLabel={(option) => option.label}
                       renderInput={(params) => (
                         <div ref={params.InputProps.ref} >
