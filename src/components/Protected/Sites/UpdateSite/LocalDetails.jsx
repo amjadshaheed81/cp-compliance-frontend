@@ -331,6 +331,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("monEndTime", "");
+                              timingForm.setValue("monStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isMondayDisable: e.target.checked,
@@ -374,6 +378,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("tuesEndTime", "");
+                              timingForm.setValue("tuesStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isTuesdayDisable: e.target.checked,
@@ -417,6 +425,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("wedEndTime", "");
+                              timingForm.setValue("wedStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isWednesdayDisable: e.target.checked,
@@ -460,6 +472,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("thurEndTime", "");
+                              timingForm.setValue("thurStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isThursdayDisable: e.target.checked,
@@ -503,6 +519,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("friEndTime", "");
+                              timingForm.setValue("friStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isFridayDisable: e.target.checked,
@@ -546,6 +566,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("satEndTime", "");
+                              timingForm.setValue("satStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isSaturdayDisable: e.target.checked,
@@ -589,6 +613,10 @@ const LocalDetails = ({
                           type="checkbox"
                           className="form-check-input"
                           onChange={(e) => {
+                            if(e.target.checked) {
+                              timingForm.setValue("sunEndTime", "");
+                              timingForm.setValue("sunStartTime", "");
+                            }
                             setTimingDisable({
                               ...timingDisable,
                               isSundayDisable: e.target.checked,
