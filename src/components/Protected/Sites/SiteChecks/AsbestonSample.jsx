@@ -199,6 +199,7 @@ const AsbestonSample = ({
     const udata = {
       ...formData[idx],
       removedFromSite: e.target.checked,
+      update: true
     };
     uformData[idx] = udata;
     setFormData(uformData);
@@ -209,6 +210,7 @@ const AsbestonSample = ({
     const udata = {
       ...formData[idx],
       file: e.target.files[0],
+      update: true
     };
     uformData[idx] = udata;
     setFormData(uformData);
@@ -223,19 +225,20 @@ const AsbestonSample = ({
     }
 
     for (const data of formData) {
-      if (data?.file?.name) {
-        data.siteId = siteSelectedForGlobal?.siteId;
-        data.sampleFileUrl = await uploadSiteCheckDoc(data);
-        delete data.file;
+      if (data.update) {
+        if (data?.file?.name) {
+          data.siteId = siteSelectedForGlobal?.siteId;
+          data.sampleFileUrl = await uploadSiteCheckDoc(data);
+          delete data.file;
+        }
+        data.nextInspectionDate = new Date(data.nextInspectionDate);
+        data.checkId = checkId;
+        data.status = "Pending";
+        console.log(formData);
+        await post("/api/site-check/asbestos-sample", data);
       }
-      data.nextInspectionDate = new Date(data.nextInspectionDate);
-      data.checkId = checkId;
-      data.status = "Pending";
-      console.log(formData);
-      await post("/api/site-check/asbestos-sample", data);
-
-      toast.success("Audit data saved");
     }
+    toast.success("Asbestos data saved");
     setCompleted(true);
   };
 
@@ -256,8 +259,8 @@ const AsbestonSample = ({
           </Typography>
         </Grid>
         <Grid sm={6}>
-          {!completed && (
-            <button
+          <button
+            type="button"
               style={{
                 width: "250px",
                 marginBottom: "30px",
@@ -267,13 +270,14 @@ const AsbestonSample = ({
               className="btn btn-primary btn-light"
               onClick={() => {
                 const uformData = [...formData];
-                uformData.push({});
+                uformData.push({
+                  sampleNo: "AS00" + (formData[formData.length - 1].sampleId + 1)
+                });
                 setFormData(uformData);
               }}
             >
               <i className="fas fa-plus" /> Add New Sample
             </button>
-          )}
         </Grid>
 
         <Grid sm={12}>
@@ -301,17 +305,19 @@ const AsbestonSample = ({
                   return (
                     <>
                       <tr>
-                        <td>{d.sampleNo}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        {/* aaquib */}
+                        <td>{d.sampleId ? ("AS00"+ d.sampleId) : d.sampleNo  }</td>
+                        <td>{location?.filter((num) => num.lovValue === d.location)?.[0]?.lovDesc}</td>
+                        <td>{materialAssProductType?.filter((num) => num.lovValue === d.productType)?.[0]?.lovDesc}</td>
+                        <td>{d.quantity}</td>
+                        <td>{materialSurface?.filter((num) => num.lovValue === d.surfaceTreatment)?.[0]?.lovDesc}</td>
+                        <td>{materialDamage?.filter((num) => num.lovValue === d.damage)?.[0]?.lovDesc}</td>
+                        <td>{accessibility?.filter((num) => num.lovValue === d.accessibility)?.[0]?.lovDesc}</td>
+                        <td>{materialAsbestosType?.filter((num) => num.lovValue === d.asbestosType)?.[0]?.lovDesc}</td>
+
+                        <td>{d.totalMatScore}</td>
+                        <td>{d.totalPriScore}</td>
+                        <td>{d.totalRiskScore}</td>
                         <td
                           style={{ width: "80px" }}
                           align="center"
@@ -1450,9 +1456,11 @@ const AsbestonSample = ({
                                                 handleInputChange(e, idx)
                                               }
                                               value={
+                                                String(
                                                 formData[idx]
-                                                  ?.nextInspectionDate
-                                              }
+                                                    ?.nextInspectionDate
+                                                )?.substring(0, 10)}
+                                              
                                               name="nextInspectionDate"
                                               className="form-control"
                                               style={{
