@@ -14,6 +14,7 @@ import AddUser from "./AddUser";
 import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
+import TagSites from "./TagSites";
 
 const Users = ({
   users,
@@ -28,6 +29,7 @@ const Users = ({
   const [selectedUser, setSelectedUser] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
   const [usersPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -141,6 +143,13 @@ const Users = ({
               refresh={() => {
                 getUsers();
               }}
+            />
+          )}
+          {showSiteTagModal && (
+            <TagSites
+              taggedSites={selectedUser?.taggedSites}
+              showSiteTagModal={showSiteTagModal}
+              setShowSiteTagModal={setShowSiteTagModal}
             />
           )}
           {showEditModal && (
@@ -282,18 +291,16 @@ const Users = ({
                     <th scope="col">
                       {user?.taggedSites?.length > 3 && (
                         <>
-                          <Tooltip
-                            title={user?.taggedSites
-                              ?.map((itm) => itm?.name)
-                              ?.join(", ")}
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-light text-primary"
+                            onClick={() => {
+                              setShowSiteTagModal(true);
+                              setSelectedUser(user);
+                            }}
                           >
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-light text-primary"
-                            >
-                              {user?.taggedSites?.length} Sites
-                            </button>
-                          </Tooltip>
+                            {user?.taggedSites?.length} Sites
+                          </button>
                         </>
                       )}
                       {user?.taggedSites?.length < 4 &&

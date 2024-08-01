@@ -23,6 +23,7 @@ import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
 import { ROLE } from "../../../Constant/Role";
 import Tooltip from "@mui/material/Tooltip";
+import TagSites from "./TagSites";
 
 export const ITEM_HEIGHT = 48;
 export const ITEM_PADDING_TOP = 8;
@@ -51,6 +52,8 @@ const AddUser = ({
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [tagSite, setTagSite] = useState([]);
+  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
+  const [taggedSites, setTaggedSites] = useState([]);
   const handleChange = (event) => {
     const {
       target: { value },
@@ -138,6 +141,13 @@ const AddUser = ({
   };
   return (
     <React.Fragment>
+      {showSiteTagModal && (
+        <TagSites
+          taggedSites={taggedSites}
+          showSiteTagModal={showSiteTagModal}
+          setShowSiteTagModal={setShowSiteTagModal}
+        />
+      )}
       <Dialog open={showAddModal} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(submitUser)}>
           <DialogTitle>Add User</DialogTitle>
@@ -448,23 +458,23 @@ const AddUser = ({
                         <div>
                           {tagSite?.length > 3 && (
                             <>
-                              <Tooltip
-                                title={tagSite
-                                  ?.map(
-                                    (itm) =>
-                                      sites?.filter(
-                                        (site) => site?.siteId == itm
-                                      )?.[0]?.siteName
-                                  )
-                                  ?.join(", ")}
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-light text-primary"
+                                onClick={() => {
+                                  setTaggedSites(
+                                    tagSite?.map(
+                                      (itm) =>
+                                        sites?.filter(
+                                          (site) => site?.siteId == itm
+                                        )?.[0]?.siteName
+                                    )
+                                  );
+                                  setShowSiteTagModal(true);
+                                }}
                               >
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-light text-primary"
-                                >
-                                  {tagSite?.length} Site Tagged
-                                </button>
-                              </Tooltip>
+                                {tagSite?.length} Site Tagged
+                              </button>
                             </>
                           )}
                           {tagSite?.length < 4 &&

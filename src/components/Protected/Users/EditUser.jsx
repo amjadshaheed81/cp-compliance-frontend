@@ -24,6 +24,7 @@ import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
 import { MenuProps } from "./AddUser";
 import Tooltip from "@mui/material/Tooltip";
+import TagSites from "./TagSites";
 
 const ViewUsers = ({
   showEditModal,
@@ -42,6 +43,8 @@ const ViewUsers = ({
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState();
   const [tagSite, setTagSite] = useState([]);
+  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
+  const [taggedSites, setTaggedSites] = useState([]);
   const handleChange = (event) => {
     const {
       target: { value },
@@ -146,6 +149,13 @@ const ViewUsers = ({
   };
   return (
     <React.Fragment>
+      {showSiteTagModal && (
+        <TagSites
+          taggedSites={taggedSites}
+          showSiteTagModal={showSiteTagModal}
+          setShowSiteTagModal={setShowSiteTagModal}
+        />
+      )}
       <Dialog
         open={showEditModal}
         onClose={handleClose}
@@ -455,23 +465,23 @@ const ViewUsers = ({
                         <div>
                           {tagSite?.length > 3 && (
                             <>
-                              <Tooltip
-                                title={tagSite
-                                  ?.map(
-                                    (itm) =>
-                                      sites?.filter(
-                                        (site) => site?.siteId == itm
-                                      )?.[0]?.siteName
-                                  )
-                                  ?.join(", ")}
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-light text-primary"
+                                onClick={() => {
+                                  setTaggedSites(
+                                    tagSite?.map(
+                                      (itm) =>
+                                        sites?.filter(
+                                          (site) => site?.siteId == itm
+                                        )?.[0]?.siteName
+                                    )
+                                  );
+                                  setShowSiteTagModal(true);
+                                }}
                               >
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-light text-primary"
-                                >
-                                  {tagSite?.length} Site Tagged
-                                </button>
-                              </Tooltip>
+                                {tagSite?.length} Site Tagged
+                              </button>
                             </>
                           )}
                           {tagSite?.length < 4 &&
