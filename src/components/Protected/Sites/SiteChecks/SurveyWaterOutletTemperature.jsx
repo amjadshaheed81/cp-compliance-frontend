@@ -33,7 +33,7 @@ const SurveyWaterOutletTemperature = ({
   const [action2, setAction2] = useState(false);
   const [normruntime, setnormruntime] = useState([]);
   const [readingPop, setReadingPop] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(null);
   const [formData, setFormData] = useState([{}]);
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
@@ -171,8 +171,48 @@ const SurveyWaterOutletTemperature = ({
     getSurvey()
   };
 
+  const addReadingSave = (event) => {
+    event.preventDefault();
+    
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
+    const isReading1ok = (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading1) < 50) ||
+      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading1) > 20)
+    const isReading2ok = (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading2) < 50) ||
+      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading2) > 20)
+    const isReading3ok = (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading3) < 50) ||
+      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading3) > 20)
+    if (!isReading1ok && !isReading2ok && !isReading3ok) {
+      setReadingPop(null)
+      setAction(false);
+      setAction2(false);
+      addSiteCheckSurvey(event)
+      return;
+    }
+  if (action2) {
+    setReadingPop(null)
+    setAction(false);
+    setAction2(false);
+    addSiteCheckSurvey(event)
+
+  } else if (action && !action2) {
+    setReadingPop(null);
+    setAction2(false);
+    setAction(false);
+    addSiteCheckSurvey(event)
+
+  } else {
+    setAction2(false);
+    setAction(true);
+  }
+
+  }
+
   return (
     <>
+      
       <Dialog
         open={readingPop !== null}
         onClose={() => {
@@ -181,6 +221,7 @@ const SurveyWaterOutletTemperature = ({
         maxWidth="lg"
         fullWidth
       >
+        <form onSubmit={addReadingSave}>
         <DialogTitle>
           Add Reading{" "}
           {formData[readingPop]?.assetId
@@ -193,6 +234,7 @@ const SurveyWaterOutletTemperature = ({
         </DialogTitle>
         <DialogContent dividers>
           <Fragment>
+           
             <Grid container>
               {!action2 && !action && (
                 <>
@@ -251,7 +293,8 @@ const SurveyWaterOutletTemperature = ({
                               <input
                                 type="date"
                                 className="form-control"
-                                name="r1Date"
+                                  name="r1Date"
+                                  required
                                 onChange={(e) => handleInputChange(e, readingPop)}
                               />
                             </td>
@@ -259,7 +302,8 @@ const SurveyWaterOutletTemperature = ({
                               <input
                                 type="number"
                                 className="form-control"
-                                name="reading1"
+                                  name="reading1"
+                                  required
                                 style={{
                                   color:
                                     (formData?.[readingPop]?.temperature ===
@@ -287,7 +331,8 @@ const SurveyWaterOutletTemperature = ({
                               <input
                                 type="number"
                                 className="form-control"
-                                name="reading2"
+                                  name="reading2"
+                                  required
                                 style={{
                                   color:
                                     (formData?.[readingPop]?.temperature ===
@@ -312,7 +357,8 @@ const SurveyWaterOutletTemperature = ({
                             </td>
                             <td>
                               <input
-                                type="number"
+                                  type="number"
+                                  required
                                 className="form-control"
                                 name="reading3"
                                 style={{
@@ -346,7 +392,8 @@ const SurveyWaterOutletTemperature = ({
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
-                      <button
+                        <button
+                          type="button"
                         className="btn btn-sm btn-danger text-light"
                         onClick={() => {
                           setAction2(true);
@@ -459,41 +506,35 @@ const SurveyWaterOutletTemperature = ({
           </Fragment>
         </DialogContent>
         <DialogActions>
-          <Button
+            <Button
+              type="cancel"
             onClick={() => setReadingPop(null)}
             className="bg-light text-primary"
           >
             Cancel
           </Button>
-          <Button
-            className="bg-primary text-white"
-            onClick={() => {
-              if (action2) {
-                setReadingPop(null)
-                setAction(false);
-                setAction2(false);
-
-              } else if (action && !action2) {
-                setReadingPop(null);
-                setAction2(false);
-                setAction(false);
-              
-              } else {
-                setAction2(false);
-                setAction(true);
-              }
-              
-            }}
+            <button
+              type="submit"
+              //onClick={addReadingSave}
+            style={{
+                width: "150px",
+                marginBottom: "20px",
+                margin: "10px",
+                float: "right",
+              }}
+              className="btn btn-primary text-white pr-2"
           >
             Save
-          </Button>
-        </DialogActions>
+            </button>
+          </DialogActions>
+        </form >
       </Dialog>
+    
 
       <Dialog
-        open={showHistory}
+        open={showHistory !== null}
         onClose={() => {
-          setShowHistory(false);
+          setShowHistory(null);
         }}
         maxWidth="lg"
         fullWidth
@@ -517,7 +558,13 @@ const SurveyWaterOutletTemperature = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {alldata?.map(i =>
+                      {alldata?.filter(a => a.assetId === formData[showHistory]?.assetId &&
+                        a.temperature === formData[showHistory]?.temperature &&
+                        a.normalRunTime === formData[showHistory]?.normalRunTime &&
+                        a.outletType === formData[showHistory]?.outletType &&
+                        a.usageFrequency === formData[showHistory]?.usageFrequency &&
+                        a.floor === formData[showHistory]?.floor &&
+                        a.room === formData[showHistory]?.room)?.map(i =>
                         <tr>
                           <td>{i?.r1Date?.split("T")?.[0]}</td>
                           <td>{i?.reading1}</td>
@@ -539,7 +586,7 @@ const SurveyWaterOutletTemperature = ({
           <Button
             className="bg-primary text-white"
             onClick={() => {
-              setShowHistory(false);
+              setShowHistory(null);
             }}
           >
             Close
@@ -598,6 +645,9 @@ const SurveyWaterOutletTemperature = ({
                 </thead>
                 <tbody>
                   {formData.map((d, idx) => {
+                    const isAllFilled = formData[idx].assetId && formData?.[idx]?.outletType
+                      && formData?.[idx]?.temperature && formData?.[idx]?.normalRunTime && formData?.[idx]?.usageFrequency
+                      && formData?.[idx]?.floor && formData?.[idx]?.room;
                     const assetName = siteAssets
                       .filter((a) => a.assetId == formData[idx].assetId)
                       .map(
@@ -781,23 +831,25 @@ const SurveyWaterOutletTemperature = ({
                         </td>
 
                         <td style={{ width: "120px" }}>
-                          <button
+                          {isAllFilled && <button
+                            type="button"
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => {
                               setReadingPop(idx);
                             }}
                           >
                             <i className="fas fa-chart-line"></i>
-                          </button>
+                          </button>}
                           &nbsp;
-                          <button
+                          {isAllFilled && <button
+                            type="button"
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => {
-                              setShowHistory(true);
+                              setShowHistory(idx);
                             }}
                           >
                             <i className="fas fa-clock"></i>
-                          </button>
+                          </button>}
                           &nbsp;
                           <button
                             disabled={formData?.[idx]?.completed}
