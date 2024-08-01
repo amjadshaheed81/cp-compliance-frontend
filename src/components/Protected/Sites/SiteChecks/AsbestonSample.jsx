@@ -33,6 +33,11 @@ const AsbestonSample = ({
 }) => {
   const navigate = useNavigate();
 
+  const [formData, setFormData] = useState([
+    { sampleNo: "AS001", expanded: false },
+  ]);
+  const [completed, setCompleted] = useState(false);
+
   // Material Assessment Dropdowns Data
   const [materialAssProductType, setmaterialAssProductType] = useState([]);
   const [materialDamage, setMaterialDamage] = useState([]);
@@ -124,20 +129,69 @@ const AsbestonSample = ({
     }
   };
 
-  const [formData, setFormData] = useState([
-    { sampleNo: "AS001", expanded: false },
-  ]);
-  const [completed, setCompleted] = useState(false);
+  useEffect(() => {
+    console.log("Aesbestos Sample:: ", formData);
+  }, [formData]);
+
+  const calculateScores = (data) => {
+    // Destructure the relevant fields for totalMatScore
+    const { productType, damage, asbestosType, surfaceTreatment } = data;
+
+    // Calculate totalMatScore
+    const totalMatScore =
+      (Number.parseInt(productType, 10) || 0) +
+      (Number.parseInt(damage, 10) || 0) +
+      (Number.parseInt(asbestosType, 10) || 0) +
+      (Number.parseInt(surfaceTreatment, 10) || 0);
+
+    // Calculate totalPriScore (sum of remaining properties except the 4 above)
+    const totalPriScore = Object.keys(data).reduce((sum, key) => {
+      if (
+        [
+          "mainActivityScore",
+          "secondaryActivityScore",
+          "location",
+          "accessibility",
+          "extent",
+          "occupants",
+          "frequencyOfUse",
+          "avgTimeInUse",
+          "maintenanceActivityType",
+          "maintenanceFrequency",
+        ].includes(key)
+      ) {
+        sum += Number.parseInt(data[key], 10) || 0;
+      }
+      return sum;
+    }, 0);
+
+    // Calculate totalRiskScore
+    const totalRiskScore = totalMatScore + totalPriScore;
+
+    return { totalMatScore, totalPriScore, totalRiskScore };
+  };
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
-    const uformData = [...formData];
-    const udata = {
-      ...formData[idx],
+    const updatedFormData = [...formData];
+    const updatedData = {
+      ...updatedFormData[idx],
       [name]: value,
     };
-    uformData[idx] = udata;
-    setFormData(uformData);
+
+    // Calculate the scores
+    const { totalMatScore, totalPriScore, totalRiskScore } =
+      calculateScores(updatedData);
+
+    // Update the form data with the calculated scores
+    updatedFormData[idx] = {
+      ...updatedData,
+      totalMatScore,
+      totalPriScore,
+      totalRiskScore,
+    };
+
+    setFormData(updatedFormData);
   };
 
   const handleCheckChange = (e, idx) => {
@@ -163,6 +217,7 @@ const AsbestonSample = ({
   const addAsbestosSample = async (event) => {
     event.preventDefault();
     const form = event.target;
+
     if (!form.checkValidity()) {
       form.reportValidity();
     }
@@ -170,18 +225,18 @@ const AsbestonSample = ({
     for (const data of formData) {
       if (data?.file?.name) {
         data.siteId = siteSelectedForGlobal?.siteId;
-        //data.imageUrl = await uploadSiteCheckDoc(data);
+        data.sampleFileUrl = await uploadSiteCheckDoc(data);
         delete data.file;
       }
-      data.dateRaised = new Date(data.dateRaised);
+      data.nextInspectionDate = new Date(data.nextInspectionDate);
       data.checkId = checkId;
-      data.status = "Open";
+      data.status = "Pending";
       console.log(formData);
-      //await post("/api/site-check/audit", data);
+      await post("/api/site-check/asbestos-sample", data);
 
       toast.success("Audit data saved");
     }
-    //setCompleted(true);
+    setCompleted(true);
   };
 
   const expandRow = (e, idx) => {
@@ -428,7 +483,7 @@ const AsbestonSample = ({
                                           className="form-control form-select"
                                           name="room"
                                           required
-                                          value={formData[idx]?.floor}
+                                          value={formData[idx]?.room}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
                                           }
@@ -1196,19 +1251,25 @@ const AsbestonSample = ({
                                             >
                                               <div>
                                                 <label
-                                                  htmlFor="score1"
-                                                  name="score1"
+                                                  htmlFor="totalMatScore"
+                                                  name="totalMatScore"
                                                 >
                                                   Mat Score
                                                 </label>
                                                 <input
-                                                  name="score1"
-                                                  id="score1"
+                                                  name="totalMatScore"
+                                                  id="totalMatScore"
                                                   //style={{ width: '100px'  }}
                                                   type="text"
                                                   className="form-control"
                                                   disabled
-                                                  //value={riskFactor[idx]?.response?.score ?? 0}
+                                                  // value={
+                                                  //   riskFactor[idx]?.response
+                                                  //     ?.score ?? 0
+                                                  // }
+                                                  value={
+                                                    formData[idx]?.totalMatScore
+                                                  }
                                                 />
                                               </div>
                                               <h1 style={{ lineHeight: "2" }}>
@@ -1216,8 +1277,8 @@ const AsbestonSample = ({
                                               </h1>
                                               <div>
                                                 <label
-                                                  htmlFor="score1"
-                                                  name="score1"
+                                                  htmlFor="totalPriScore"
+                                                  name="totalPriScore"
                                                 >
                                                   Pri Score
                                                 </label>
@@ -1226,7 +1287,12 @@ const AsbestonSample = ({
                                                   //style={{ width: '100px' }}
                                                   className="form-control"
                                                   disabled
-                                                  //value={riskFactor[idx]?.weight}
+                                                  // value={
+                                                  //   riskFactor[idx]?.weight
+                                                  // }
+                                                  value={
+                                                    formData[idx]?.totalPriScore
+                                                  }
                                                 />
                                               </div>
                                               <h1 style={{ lineHeight: "2" }}>
@@ -1234,8 +1300,8 @@ const AsbestonSample = ({
                                               </h1>
                                               <div>
                                                 <label
-                                                  htmlFor="score1"
-                                                  name="score1"
+                                                  htmlFor="totalRiskScore"
+                                                  name="totalRiskScore"
                                                 >
                                                   Total Score
                                                 </label>
@@ -1244,7 +1310,17 @@ const AsbestonSample = ({
                                                   type="text"
                                                   className="form-control"
                                                   disabled
-                                                  //value={formData[idx]?.weight * Number(riskFactor[idx]?.response?.score ?? 0)}
+                                                  // value={
+                                                  //   formData[idx]?.weight *
+                                                  //   Number(
+                                                  //     riskFactor[idx]?.response
+                                                  //       ?.score ?? 0
+                                                  //   )
+                                                  // }
+                                                  value={
+                                                    formData[idx]
+                                                      ?.totalRiskScore
+                                                  }
                                                 />
                                               </div>
                                             </div>
@@ -1479,6 +1555,12 @@ const AsbestonSample = ({
                                             className="btn btn-secondary"
                                             onClick={(e) => {
                                               e.preventDefault();
+                                              setFormData([
+                                                {
+                                                  sampleNo: "AS001",
+                                                  expanded: false,
+                                                },
+                                              ]);
                                             }}
                                             type="button"
                                           >
@@ -1486,9 +1568,6 @@ const AsbestonSample = ({
                                           </button>
                                           <button
                                             className="btn btn-primary"
-                                            // onClick={(e) => {
-                                            //   e.preventDefault();
-                                            // }}
                                             type="submit"
                                           >
                                             Save
