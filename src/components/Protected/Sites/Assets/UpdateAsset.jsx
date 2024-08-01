@@ -61,6 +61,8 @@ const UpdateAsset = ({
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [subCategory2, setSubCategory2] = useState([]);
   const [subCategory2List, setSubCategory2List] = useState([]);
+  const [subCategory3, setSubCategory3] = useState([]);
+  const [subCategory3List, setSubCategory3List] = useState([]);
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
 
   const tabChange = (event, newValue) => {
@@ -91,6 +93,7 @@ const UpdateAsset = ({
     const category = await get("/api/lov/ASSET_CATEGORY");
     const subCategory = await get("/api/lov/ASSET_SUB_CATEGORY");
     const subCategory2 = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    const subCategory3 = await get("/api/lov/ASSET_SUB_CATEGORY_3");
     const material = await get("/api/lov/PASSIVE_FIRE_PROTECTION");
     setCategory(category);
     setSubCategory(subCategory);
@@ -98,6 +101,8 @@ const UpdateAsset = ({
     setPassiveFireMaterial(material);
     setSubCategoryList(subCategory);
     setSubCategory2List(subCategory2);
+    setSubCategory3(subCategory3);
+    setSubCategory3List(subCategory3);
   };
 
   const getTester = async () => {
@@ -252,6 +257,7 @@ const UpdateAsset = ({
       category: formData?.category,
       subCategory: formData?.subCategory,
       subCategory2: formData?.subCategory2,
+      subCategory3: formData?.subCategory3,
       model: formData?.model,
       serialNumber: formData?.serialNumber,
       relatedAssetId: formData?.relatedAssetId,
@@ -659,7 +665,7 @@ const UpdateAsset = ({
                             ))}
                           </select>
                         </div>
-                        <div>
+                        <div className="row">
                           <div className="col-md-6 mt-2">
                             <label for="subCategory2">Sub Category 2</label>
                             <select
@@ -667,12 +673,42 @@ const UpdateAsset = ({
                               className="form-control form-select"
                               id="subCategory2"
                               {...register("subCategory2")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setValue("subCategory2", val);
+                                const subCategoryData = subCategory3?.filter(
+                                  (itm) => itm?.attribite1 === val
+                                );
+                                setSubCategory3List(subCategoryData);
+                              }}
                             >
                               <option value="">Select Sub Category 2</option>
                               {subCategory2List?.map((itm) => (
                                 <option
                                   selected={
                                     selectedAsset?.subCategory2 ===
+                                    itm?.lovValue
+                                  }
+                                  value={itm?.lovValue}
+                                >
+                                  {itm?.lovValue}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6 mt-2">
+                            <label for="subCategory3">Sub Category 3</label>
+                            <select
+                              name="subCategory3"
+                              className="form-control form-select"
+                              id="subCategory3"
+                              {...register("subCategory3")}
+                            >
+                              <option value="">Select Sub Category 3</option>
+                              {subCategory3List?.map((itm) => (
+                                <option
+                                  selected={
+                                    selectedAsset?.subCategory3 ===
                                     itm?.lovValue
                                   }
                                   value={itm?.lovValue}

@@ -61,6 +61,8 @@ const UpdateAsset = ({
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [subCategory2, setSubCategory2] = useState([]);
   const [subCategory2List, setSubCategory2List] = useState([]);
+  const [subCategory3, setSubCategory3] = useState([]);
+  const [subCategory3List, setSubCategory3List] = useState([]);
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
 
   const tabChange = (event, newValue) => {
@@ -91,6 +93,7 @@ const UpdateAsset = ({
     const category = await get("/api/lov/ASSET_CATEGORY");
     const subCategory = await get("/api/lov/ASSET_SUB_CATEGORY");
     const subCategory2 = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    const subCategory3 = await get("/api/lov/ASSET_SUB_CATEGORY_3");
     const material = await get("/api/lov/PASSIVE_FIRE_PROTECTION");
     setCategory(category);
     setSubCategory(subCategory);
@@ -98,6 +101,8 @@ const UpdateAsset = ({
     setPassiveFireMaterial(material);
     setSubCategoryList(subCategory);
     setSubCategory2List(subCategory2);
+    setSubCategory3(subCategory3);
+    setSubCategory3List(subCategory3);
   };
 
   const getTester = async () => {
@@ -700,6 +705,30 @@ const UpdateAsset = ({
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <div className="col-md-4">
+                      <label for="subCategory3">Sub Category 3</label>
+                      <select
+                        name="subCategory3"
+                        disabled
+                        className="form-control form-select"
+                        id="subCategory3"
+                        {...register("subCategory3")}
+                      >
+                        <option value=""></option>
+                        {subCategory3List?.map((itm) => (
+                          <option
+                            selected={
+                              selectedAsset?.subCategory3 === itm?.lovValue
+                            }
+                            value={itm?.lovValue}
+                          >
+                            {itm?.lovValue}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="col-md-4 mt-2">
                     <input
