@@ -90,6 +90,22 @@ const AddContracts = ({
       setSubCategoryList(subCategory);
     }
   }, [category, subCategory]);
+
+  const checkAndAddExpiryCalenderEvent = async (data) => {
+    const body = {
+      siteId: siteSelectedForGlobal?.siteId,
+      startDate: moment(data.scheduleDate),
+      endDate: moment(data.scheduleDate),
+      shortText: "Contract : "+data.summary,
+      eventType: "Contract",
+      userId: loggedInUserData?.id,
+      includeCompanyUsers: true
+    };
+    await put("/api/user/calendar", body);
+  };
+
+
+
   const submitAddContract = async (data) => {
     console.log("data", data);
     // let form_data = new FormData();
@@ -116,6 +132,7 @@ const AddContracts = ({
           projectManagerUserId: data?.manager ? Number(data?.manager) : null,
           description: data?.description,
         };
+        checkAndAddExpiryCalenderEvent(data)
         const url = "api/project/manage";
         const res = await put(url, formData);
         if (res?.status === 200) {
