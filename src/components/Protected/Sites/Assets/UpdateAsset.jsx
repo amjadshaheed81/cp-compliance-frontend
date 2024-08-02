@@ -567,7 +567,7 @@ const UpdateAsset = ({
 
                         <div className="col-md-6">
                           <div className="form-group mt-2">
-                            <label for="modal">Modal</label>
+                            <label for="model">Model</label>
                             <input
                               type="text"
                               className="form-control"
