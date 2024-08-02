@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +13,7 @@ import {
   Checkbox,
   Box,
   Button,
+  Chip,
 } from "@mui/material";
 import {
   deleteUser,
@@ -55,7 +56,7 @@ const AsbestonSample = ({
   const [averageUse, setAverageUse] = useState([]);
   const [maintenanceActivityType, setMaintenanceActivityType] = useState([]);
   const [maintenanceActivityFreq, setMaintenanceActivityFreq] = useState([]);
-
+  const fileInputRefs = useRef([]);
   const getDropDowns = async () => {
     // Material Assessment Dropdowns
     const materialAssProductTypes = await get(
@@ -199,19 +200,38 @@ const AsbestonSample = ({
     const udata = {
       ...formData[idx],
       removedFromSite: e.target.checked,
-      update: true
+      update: true,
     };
     uformData[idx] = udata;
     setFormData(uformData);
   };
 
+  const handleFileDelete = (idx) => {
+    console.log("Set the file object as null for the index:: ", idx);
+    const uformData = [...formData];
+    const udata = {
+      ...formData[idx],
+    };
+    if (formData[idx]?.file) delete udata["file"];
+    uformData[idx] = udata;
+    setFormData(uformData);
+
+    // Reset the file input element to allow user to upload
+    if (fileInputRefs.current[idx]) {
+      fileInputRefs.current[idx].value = "";
+    }
+  };
+
   const handleFileChange = (e, idx) => {
+    console.log("FIle uplaoded at data index:: ", idx);
     const uformData = [...formData];
     const udata = {
       ...formData[idx],
       file: e.target.files[0],
-      update: true
+      update: true,
     };
+    console.log("uFormdata:: ", uformData);
+    console.log("udata:: ", udata);
     uformData[idx] = udata;
     setFormData(uformData);
   };
@@ -261,23 +281,23 @@ const AsbestonSample = ({
         <Grid sm={6}>
           <button
             type="button"
-              style={{
-                width: "250px",
-                marginBottom: "30px",
-                margin: "10px",
-                float: "right",
-              }}
-              className="btn btn-primary btn-light"
-              onClick={() => {
-                const uformData = [...formData];
-                uformData.push({
-                  sampleNo: "AS00" + (formData[formData.length - 1].sampleId + 1)
-                });
-                setFormData(uformData);
-              }}
-            >
-              <i className="fas fa-plus" /> Add New Sample
-            </button>
+            style={{
+              width: "250px",
+              marginBottom: "30px",
+              margin: "10px",
+              float: "right",
+            }}
+            className="btn btn-primary btn-light"
+            onClick={() => {
+              const uformData = [...formData];
+              uformData.push({
+                sampleNo: "AS00" + (formData[formData.length - 1].sampleId + 1),
+              });
+              setFormData(uformData);
+            }}
+          >
+            <i className="fas fa-plus" /> Add New Sample
+          </button>
         </Grid>
 
         <Grid sm={12}>
@@ -306,14 +326,50 @@ const AsbestonSample = ({
                     <>
                       <tr>
                         {/* aaquib */}
-                        <td>{d.sampleId ? ("AS00"+ d.sampleId) : d.sampleNo  }</td>
-                        <td>{location?.filter((num) => num.lovValue === d.location)?.[0]?.lovDesc}</td>
-                        <td>{materialAssProductType?.filter((num) => num.lovValue === d.productType)?.[0]?.lovDesc}</td>
+                        <td>{d.sampleId ? "AS00" + d.sampleId : d.sampleNo}</td>
+                        <td>
+                          {
+                            location?.filter(
+                              (num) => num.lovValue === d.location
+                            )?.[0]?.lovDesc
+                          }
+                        </td>
+                        <td>
+                          {
+                            materialAssProductType?.filter(
+                              (num) => num.lovValue === d.productType
+                            )?.[0]?.lovDesc
+                          }
+                        </td>
                         <td>{d.quantity}</td>
-                        <td>{materialSurface?.filter((num) => num.lovValue === d.surfaceTreatment)?.[0]?.lovDesc}</td>
-                        <td>{materialDamage?.filter((num) => num.lovValue === d.damage)?.[0]?.lovDesc}</td>
-                        <td>{accessibility?.filter((num) => num.lovValue === d.accessibility)?.[0]?.lovDesc}</td>
-                        <td>{materialAsbestosType?.filter((num) => num.lovValue === d.asbestosType)?.[0]?.lovDesc}</td>
+                        <td>
+                          {
+                            materialSurface?.filter(
+                              (num) => num.lovValue === d.surfaceTreatment
+                            )?.[0]?.lovDesc
+                          }
+                        </td>
+                        <td>
+                          {
+                            materialDamage?.filter(
+                              (num) => num.lovValue === d.damage
+                            )?.[0]?.lovDesc
+                          }
+                        </td>
+                        <td>
+                          {
+                            accessibility?.filter(
+                              (num) => num.lovValue === d.accessibility
+                            )?.[0]?.lovDesc
+                          }
+                        </td>
+                        <td>
+                          {
+                            materialAsbestosType?.filter(
+                              (num) => num.lovValue === d.asbestosType
+                            )?.[0]?.lovDesc
+                          }
+                        </td>
 
                         <td>{d.totalMatScore}</td>
                         <td>{d.totalPriScore}</td>
@@ -372,15 +428,62 @@ const AsbestonSample = ({
                                             <input
                                               hidden
                                               type="file"
-                                              onChange={handleFileChange}
+                                              ref={(el) =>
+                                                (fileInputRefs.current[idx] =
+                                                  el)
+                                              }
+                                              onChange={(e) =>
+                                                handleFileChange(e, idx)
+                                              }
                                             />
                                             <UploadFile />
                                           </IconButton>
                                           <Typography align="center">
-                                            Click to upload or drag and drop
-                                            Image File (PDF) (max, 1MB)
+                                            {formData?.[idx]?.sampleFileUrl ||
+                                            formData?.[idx]?.file
+                                              ? "File Uploaded Successfully!"
+                                              : " Click to upload or drag and drop Image File (PDF) (max, 1MB)"}
                                           </Typography>
                                         </Box>
+                                        {formData?.[idx]?.file && (
+                                          <Grid
+                                            xs={12}
+                                            alignItems="center"
+                                            style={{ margin: "5px" }}
+                                          >
+                                            <Chip
+                                              label={
+                                                formData?.[idx]?.file?.name
+                                              }
+                                              onDelete={() =>
+                                                handleFileDelete(idx)
+                                              }
+                                            />
+                                          </Grid>
+                                        )}
+                                        {formData?.[idx]?.sampleFileUrl && (
+                                          <a
+                                            href={
+                                              formData?.[idx]?.sampleFileUrl
+                                            }
+                                            target="_blank"
+                                          >
+                                            <button
+                                              type="button"
+                                              style={{
+                                                width: "200px",
+                                                marginBottom: "20px",
+                                                margin: "10px",
+                                                float: "left",
+                                              }}
+                                              className="btn btn-primary"
+                                              //onClick={(e) => e.preventDefault()}
+                                            >
+                                              <i className="fas fa-download" />
+                                              &nbsp;Download Image
+                                            </button>
+                                          </a>
+                                        )}
                                       </Grid>
                                       <Grid item xs={12} sm={6}>
                                         <label
@@ -640,6 +743,9 @@ const AsbestonSample = ({
                                               name="removedFromSite"
                                               onChange={(e) =>
                                                 handleCheckChange(e, idx)
+                                              }
+                                              checked={
+                                                formData[idx]?.removedFromSite
                                               }
                                             />
                                           }
@@ -1455,12 +1561,10 @@ const AsbestonSample = ({
                                               onChange={(e) =>
                                                 handleInputChange(e, idx)
                                               }
-                                              value={
-                                                String(
+                                              value={String(
                                                 formData[idx]
-                                                    ?.nextInspectionDate
-                                                )?.substring(0, 10)}
-                                              
+                                                  ?.nextInspectionDate
+                                              )?.substring(0, 10)}
                                               name="nextInspectionDate"
                                               className="form-control"
                                               style={{
