@@ -98,22 +98,26 @@ const CreateAsset = ({
   const goTo = (link) => {
     navigate(link);
   };
-  const submitSiteAsset = (data) => {
+  const submitSiteAsset = async (data) => {
     setLoader(true);
     console.log("data", data);
     let form_data = new FormData();
     if (data?.assetImage) {
-      form_data.append(
-        "assetImage",
-        data?.assetImage?.[0],
-        formData?.assetName
-      );
+      form_data.append("assetImage", data?.assetImage?.[0], data?.assetName);
     } else {
       form_data.append("assetImage", "", "");
     }
-    const { assetImage, ...formData } = data;
-    form_data.append("assetRequestString", JSON.stringify(formData));
-    addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+    try {
+      const { assetImage, ...formData } = data;
+      form_data.append("assetRequestString", JSON.stringify(formData));
+      await addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+      setLoader(false);
+    } catch (e) {
+      setLoader(false);
+      toast.error(
+        "Something went wrong while adding asset. Please try again!!"
+      );
+    }
   };
   return (
     <Fragment>
@@ -198,9 +202,13 @@ const CreateAsset = ({
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
-                              onChange={(event, newValue) =>
-                                setValue("relatedAssetId", newValue?.key)
-                              }
+                              multiple
+                              onChange={(event, newValue) => {
+                                const keys = newValue
+                                  ?.map((itm) => itm?.key)
+                                  ?.join(", ");
+                                setValue("relatedAssetId", keys);
+                              }}
                               options={siteAssets.map((option) => {
                                 return {
                                   key: option.assetId,
@@ -209,14 +217,11 @@ const CreateAsset = ({
                               })}
                               getOptionLabel={(option) => option.label || ""}
                               renderInput={(params) => (
-                                <div ref={params.InputProps.ref}>
-                                  <input
-                                    type="text"
-                                    {...params.inputProps}
-                                    className="form-control form-select"
-                                    placeholder="Select Manager"
-                                  />
-                                </div>
+                                <TextField
+                                  {...params}
+                                  label="Tag Asset"
+                                  placeholder="Tag Asset"
+                                />
                               )}
                             />
                           </div>
@@ -398,7 +403,7 @@ const CreateAsset = ({
                           setValue("subCategory2", val);
                           const subCategoryData = subCategory3?.filter(
                             (itm) => itm?.attribite1 === val
-                          );  
+                          );
                           setSubCategory3List(subCategoryData);
                         }}
                       >
@@ -415,20 +420,22 @@ const CreateAsset = ({
                       )}
                     </div>
                     <div>
-                    <div className="col-md-4">
-                      <label for="subCategory3">Sub Category 3</label>
-                      <select
-                        name="subCategory3"
-                        className="form-control form-select"
-                        id="subCategory3"
-                        {...register("subCategory3")}
-                      >
-                        <option value="">Select Sub Category 3</option>
-                        {subCategory3List?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
-                        ))}
-                      </select>
-                    </div>
+                      <div className="col-md-4">
+                        <label for="subCategory3">Sub Category 3</label>
+                        <select
+                          name="subCategory3"
+                          className="form-control form-select"
+                          id="subCategory3"
+                          {...register("subCategory3")}
+                        >
+                          <option value="">Select Sub Category 3</option>
+                          {subCategory3List?.map((itm) => (
+                            <option value={itm?.lovValue}>
+                              {itm?.lovValue}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div className="col-md-4 mt-2">
                       <input
