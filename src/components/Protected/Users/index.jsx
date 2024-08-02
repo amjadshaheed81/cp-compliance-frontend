@@ -108,6 +108,14 @@ const Users = ({
           toast.error(
             `User can not be deleted due to an existing site projects.`
           );
+        } else if (res?.includes("site_projects_contracts")) {
+          toast.error(
+            `User can not be deleted due to an existing site projects contracts.`
+          );
+        } else if (res?.includes("fk_valuation_user")) {
+          toast.error(
+            `User can not be deleted due to an existing tagged assets`
+          );
         } else {
           toast.error(
             `Something went wrong while deleting user. Please try again.`
