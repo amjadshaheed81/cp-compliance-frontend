@@ -497,7 +497,7 @@ const AsbestonSample = ({
                                           type="text"
                                           value={
                                             "AS00" +
-                                              formData?.[idx]?.sampleId ?? "0"
+                                              (formData?.[idx]?.sampleId??"1")
                                           }
                                           disabled
                                           onChange={(e) =>
