@@ -1563,12 +1563,9 @@ const AsbestonSample = ({
                                             className="btn btn-secondary"
                                             onClick={(e) => {
                                               e.preventDefault();
-                                              setFormData([
-                                                {
-                                                  sampleNo: "AS001",
-                                                  expanded: false,
-                                                },
-                                              ]);
+                                              const udata = [...formData];
+                                              udata[idx].expanded = !udata[idx].expanded;
+                                              setFormData(udata);
                                             }}
                                             type="button"
                                           >

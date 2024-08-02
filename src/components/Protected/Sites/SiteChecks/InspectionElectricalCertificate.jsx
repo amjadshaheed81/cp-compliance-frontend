@@ -234,7 +234,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             <a href={formData?.certificateUrl + "?" + sasToken} target="_blank">
               <button
               style={{ width: "250px", marginBottom: '20px', margin: '10px', float: 'right' }}
-              className="btn btn-primary btn-dark"
+                  className="btn btn-primary btn-dark"
+                  type="button"
             >
               <i className="fas fa-download" />&nbsp;Download Certificate
             </button>

@@ -97,7 +97,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
         risksN[1] = risksN[1] + 1;
       } else if (r.totalRiskScore > 5) {
         risksN[2] = risksN[2] + 1;
-      } else if (r.totalRiskScore > 1) {
+      } else {
         risksN[3] = risksN[3] + 1;
       }
 
