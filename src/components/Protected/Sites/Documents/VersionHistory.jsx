@@ -25,7 +25,6 @@ const VersionHistory = ({
   setVersionHistory,
   fileId,
   siteSelectedForGlobal,
-  uploadNewVersion,
   loggedInUserData,
   refresh,
   isVersionModeEdit,
@@ -64,9 +63,9 @@ const VersionHistory = ({
     console.log("expiryDate", data);
     const body = {
       siteId: siteSelectedForGlobal?.siteId,
-      startDate: moment(data.expiryDate),
-      endDate: moment(data.expiryDate),
-      shortText: "Document Expiring : " + data.name,
+      startDate: moment(data?.expiryDate),
+      endDate: moment(data?.expiryDate),
+      shortText: "Document Expiring : " + data?.name,
       eventType: "Document Expring",
       userId: loggedInUserData?.id,
     };
@@ -88,8 +87,8 @@ const VersionHistory = ({
           },
         ],
       };
-      await submitFile(data, formData.fileUpload[0]);
-      await checkAndAddExpiryCalenderEvent(data.files[0]);
+      submitFile(data, formData.fileUpload[0]);
+      checkAndAddExpiryCalenderEvent(data?.files[0]);
     } catch (e) {
       toast.error(
         "Something went wrong while adding new file. Please try again!!"
@@ -130,11 +129,18 @@ const VersionHistory = ({
       "documentRequestString",
       JSON.stringify(reqData.documentRequestString)
     );
-    const res = await uploadNewVersion(url, formData);
-    setIsLoading(false);
-    toast.success("New Version uploaded successfully");
-    refresh();
-    handleClose();
+    try{
+      await uploadNewVersion(url, formData);
+      setIsLoading(false);
+      toast.success("New Version uploaded successfully");
+      refresh();
+      handleClose();
+    }catch(e){
+      console.log(e);
+      toast.error("Version is not uploaded!!");
+      setIsLoading(false);
+    }
+    
   };
   return (
     <>
@@ -181,7 +187,6 @@ const VersionHistory = ({
                 <div className="col-md-4">
                   <label htmlFor="name">File Name</label>
                   <input
-                    disabled
                     {...register("name", {
                       required: {
                         value: true,
@@ -322,4 +327,4 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
 });
 
-export default connect(mapStateToProps, { uploadNewVersion })(VersionHistory);
+export default connect(mapStateToProps, { })(VersionHistory);

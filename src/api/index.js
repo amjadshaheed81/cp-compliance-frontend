@@ -113,7 +113,7 @@ export function uploadPhoto(url, formData) {
   });
 }
 
-export function uploadNewVersion(url, formData) {
+export async function uploadNewVersion(url, formData) {
   configAxios();
   return axiosInstance({
     method: "PUT",

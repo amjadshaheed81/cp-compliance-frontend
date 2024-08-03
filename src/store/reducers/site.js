@@ -634,6 +634,7 @@ const reducer = (state = initialState, action) => {
     case USER_LOGOUT:
       return {
         ...initialState,
+        siteSelectedForGlobal: {},
       };
     case GET_SITES_ASSET:
       return {
