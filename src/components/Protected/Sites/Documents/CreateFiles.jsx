@@ -47,6 +47,7 @@ const CreateFiles = ({
   } = useForm({});
   useEffect(() => {
     console.log("folderData", folderData);
+    setValue("name", folderData?.folderName ? folderData?.name : "");
   }, []);
   const submitFile = async (data, fileUpload) => {
     const reqData = {
@@ -139,7 +140,7 @@ const CreateFiles = ({
                 files: [
                   {
                     ...formData,
-                    name: formData?.fileUpload?.[0]?.name,
+                    name: formData?.name,
                     fileVersion: folderData?.fileVersion
                       ? Number(folderData?.fileVersion) + 1
                       : 1,
@@ -149,7 +150,7 @@ const CreateFiles = ({
                   },
                 ],
               };
-              data.files[0].name = formData.fileUpload[0].name;
+              data.files[0].name = formData?.name;
               await submitFile(data, formData.fileUpload[0]);
               checkAndAddExpiryCalenderEvent(data.files[0]);
               setIsLoading(false);
@@ -192,8 +193,6 @@ const CreateFiles = ({
                     <label htmlFor="fileName">File Name</label>
                     <input
                       type="text"
-                      value={folderData?.folderName ? folderData?.name : ""}
-                      disabled
                       className="form-control"
                       {...register("name")}
                     />
