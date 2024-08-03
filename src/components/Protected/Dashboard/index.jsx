@@ -22,8 +22,8 @@ const Dashboard = ({
     if (loggedInUserData) {
       if (!siteSelectedForGlobal?.siteId) {
         selectGlobalSite({
-          siteName: loggedInUserData?.defaultSiteName,
-          siteId: loggedInUserData?.defaultSiteId,
+          siteName: loggedInUserData?.taggedSites?.[0]?.name || '',
+          siteId: loggedInUserData?.taggedSites?.[0]?.id || '',
         });
       }
     }
