@@ -244,6 +244,12 @@ const AsbestonSample = ({
       form.reportValidity();
     }
 
+    const udata = [...formData];
+    udata.forEach(d => {
+      d.expanded = false;
+    })
+    setFormData(udata);
+
     for (const data of formData) {
       if (data.update) {
         if (data?.file?.name) {
