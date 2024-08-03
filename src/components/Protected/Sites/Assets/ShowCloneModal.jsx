@@ -140,6 +140,7 @@ const ShowCloneModal = ({
                               value: true,
                               message: `Please select number of clones to create`,
                             },
+                            validate: (value) => value > 0 || "Number of clones cannot be negative",
                           })}
                         />
                         {errors?.numberOfClones && (

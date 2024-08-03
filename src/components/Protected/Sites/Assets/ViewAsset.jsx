@@ -407,13 +407,19 @@ const UpdateAsset = ({
     setSubCategoryList(subCategoryData);
   };
   const getSelectedValue = () => {
-    const selectedValue =
-      siteAssets.find((itm) => itm.assetId == getValues("relatedAssetId")) ||
-      null;
-    if (selectedValue) {
-      return { key: selectedValue?.assetId, label: selectedValue?.assetName };
+    const selectedAssets = getValues("relatedAssetId")?.split(", ");
+    const arr = [];
+    if(selectedAssets) {
+      for (const iterator of selectedAssets) {
+        const selectedValue =
+        siteAssets.find((itm) => itm.assetId == iterator) ||
+        null;
+        if (selectedValue) {
+          arr.push({ key: selectedValue?.assetId, label: selectedValue?.assetName });
+        }
+      }
     }
-    return null;
+    return arr;
   };
   return (
     <Fragment>
@@ -498,6 +504,7 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label for="relatedAssetId">Related Asset</label>
                           <Autocomplete
+                            multiple
                             value={getSelectedValue()}
                             disabled
                             onChange={(event, newValue) => {
@@ -511,15 +518,12 @@ const UpdateAsset = ({
                             })}
                             getOptionLabel={(option) => option.label || ""}
                             renderInput={(params) => (
-                              <div ref={params.InputProps.ref}>
-                                <input
-                                  type="text"
-                                  disabled
-                                  {...params.inputProps}
-                                  className="form-control form-select"
-                                  placeholder="Select Manager"
-                                />
-                              </div>
+                              <TextField
+                                disabled
+                                {...params}
+                                label="Tag Asset"
+                                placeholder="Tag Asset"
+                              />
                             )}
                           />
                         </div>
@@ -558,7 +562,7 @@ const UpdateAsset = ({
 
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="modal">Modal</label>
+                          <label for="model">Model</label>
                           <input
                             type="text"
                             disabled
@@ -614,7 +618,7 @@ const UpdateAsset = ({
                       {selectedAsset?.image && (
                         <img
                           src={selectedAsset?.image}
-                          style={{ width: "100px", height: "100px" }}
+                          style={{ width: "100%"}}
                           className="img img-responsive border p-2 m-2"
                         />
                       )}
