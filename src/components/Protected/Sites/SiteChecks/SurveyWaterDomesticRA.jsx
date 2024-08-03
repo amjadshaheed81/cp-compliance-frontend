@@ -112,7 +112,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
         risksN[1] = risksN[1] + 1;
       } else if (r.weightedScore > 5) {
         risksN[2] = risksN[2] + 1;
-      } else if (r.weightedScore > 1) {
+      } else {
         risksN[3] = risksN[3] + 1;
       }
 
@@ -144,7 +144,12 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
     setRiskFactor(uquest);
   };
 
-  const saveRiskFactor = async (index) => {
+  const saveRiskFactor = async (event, index) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
     const dataToSave = riskFactor[index].response;
     if (dataToSave.responseDate) {
       dataToSave.responseDate = new Date(dataToSave.responseDate);
@@ -244,13 +249,18 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                   /> */}
                 
               </AccordionSummary>
+              <form onSubmit={(e) => {
+                setOpenIndex(idx + 1);
+                saveRiskFactor(e, idx);
+              }}>
               <AccordionDetails>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <label htmlFor="responseDate" name="responseDate">
                       Date
                     </label>
-                    <input
+                      <input
+                        required
                       type="date"
                       name="responseDate"
                       disabled={riskFactor[idx]?.completed}
@@ -264,7 +274,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     <label htmlFor="score" name="score">
                       Score
                     </label>
-                    <select
+                      <select
+                        required
                       disabled={riskFactor[idx]?.completed}
                       className="form-control form-select"
                       name="score"
@@ -283,7 +294,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     <label htmlFor="observation" name="observation">
                       Observation
                     </label>
-                    <textarea
+                      <textarea
+                        required
                       disabled={riskFactor[idx]?.completed}
                       name="observation"
                       className="form-control"
@@ -358,9 +370,11 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                       getOptionLabel={(option) => option.label}
 
+                      
                       renderInput={(params) => (
                         <TextField
                           {...params}
+                          //required
                           variant="outlined"
                           label="Search Asset"
                         //placeholder="Assets"
@@ -440,7 +454,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     <label htmlFor="action" name="action">
                       Suggested Action
                     </label>
-                    <textarea
+                      <textarea
+                        required
                       disabled={riskFactor[idx]?.completed}
                       name="action"
                       className="form-control"
@@ -458,25 +473,24 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                         className="btn btn-primary text-white pr-2"
-                        onClick={() => {
-                          setOpenIndex(idx + 1);
-                          saveRiskFactor(idx);
-                          //temp()
-                        }}
+                        type="submit"
                       >
                         Save & Continue
                       </button>
                       <button
                         style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
-                        className="btn btn-primary btn-light"
-                      >
+                          className="btn btn-primary btn-light"
+                          type="button"
+                        >
+                          
                         Cancel
                       </button>
 
 
                     </Grid>}
                 </Grid>
-              </AccordionDetails>
+                </AccordionDetails>
+              </form>
             </Accordion>)
           }
           )}
