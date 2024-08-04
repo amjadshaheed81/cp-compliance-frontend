@@ -3,6 +3,7 @@ import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../../../api";
+import moment from "moment";
 import {
   Button,
   Chip,
@@ -208,6 +209,10 @@ const SurveyWaterOutletTemperature = ({
     setAction(true);
   }
 
+  }
+
+  const dateFormat = (date) => {
+    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
   return (
@@ -566,7 +571,7 @@ const SurveyWaterOutletTemperature = ({
                         a.floor === formData[showHistory]?.floor &&
                         a.room === formData[showHistory]?.room)?.map(i =>
                         <tr>
-                          <td>{i?.r1Date?.split("T")?.[0]}</td>
+                          <td>{dateFormat(i?.r1Date?.split("T")?.[0])}</td>
                           <td>{i?.reading1}</td>
                           <td>{i?.reading2}</td>
                           <td>{i?.reading3}</td>
