@@ -8,6 +8,7 @@ import {
   MenuItem,
   Checkbox,
   ListItemText,
+  TextField,
 } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
@@ -330,35 +331,29 @@ const AddUser = ({
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
                       <label for="tagSite">Tag Site</label>
-                      <Select
-                        labelId="tagSite"
-                        id="tagSite"
+                      <Autocomplete
                         multiple
-                        style={{
-                          height: "2.5rem",
-                          width: "100%",
-                          listStyleType: "none",
+                        onChange={(event, newValue) => {
+                          const keys = newValue
+                            ?.map((itm) => itm?.key);
+                            console.log("keys", keys);
+                            setTagSite(keys)
                         }}
-                        value={tagSite}
-                        onChange={handleChange}
-                        input={<OutlinedInput label="Tag" />}
-                        renderValue={(selected) =>
-                          `${selected?.length} site tagged`
-                        }
-                        MenuProps={MenuProps}
-                      >
-                        {sites?.length === 0 && (
-                          <div key={"no-result"}>No Site Result Found</div>
+                        options={sites.map((option) => {
+                          return {
+                            key: option.siteId,
+                            label: option.siteName,
+                          };
+                        })}
+                        getOptionLabel={(option) => option.label || ""}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Tag Site"
+                            placeholder="Tag Site"
+                          />
                         )}
-                        {sites?.map((site) => (
-                          <MenuItem key={site?.siteId} value={site?.siteId}>
-                            <Checkbox
-                              checked={tagSite?.indexOf(site?.siteId) > -1}
-                            />
-                            <ListItemText primary={site?.siteName} />
-                          </MenuItem>
-                        ))}
-                      </Select>
+                      />
                     </div>
                   </div>
 
