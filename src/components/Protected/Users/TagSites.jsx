@@ -24,7 +24,7 @@ const TagSites = ({ showSiteTagModal, setShowSiteTagModal, taggedSites }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;
-  const currentSites = taggedSites.slice(indexOfFirstSite, indexOfLastSite);
+  const currentSites = taggedSites?.slice(indexOfFirstSite, indexOfLastSite) || [];
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };

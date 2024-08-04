@@ -28,11 +28,12 @@ const PdfViewer = ({ showPdfModal, setShowPdfModal, selectedPdf }) => {
         <DialogContent>
           <div className="row">
             <div className="col-md-12 text-center">
-              <img
-                src={selectedPdf}
-                className="img img-responsive"
-                alt="Description"
-              ></img>
+            <object
+              data={selectedPdf}
+              type="image/png"
+              style={{ width: '100%', height: 'auto' }}
+              aria-label="Description"
+            ></object>
             </div>
           </div>
         </DialogContent>
