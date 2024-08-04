@@ -125,7 +125,8 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
             <AddPreActions
               showAddModal={showAddModal}
               setShowAddModal={setShowAddModal}
-              refresh={() => {}}
+
+              refresh={() => {getPreActions()}}
             />
           )}
           <BreadCrumHeader header={"Pre-Action"} page={"Pre-Action"} />
