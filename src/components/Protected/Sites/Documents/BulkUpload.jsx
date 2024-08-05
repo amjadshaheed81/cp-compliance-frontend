@@ -35,42 +35,40 @@ const BulkUpload = ({
   const submitBulkUpload = async (formData) => {
     setIsLoading(true);
     const filesToUpload = [];
+    let version = 1;
     for (const iterator of formData?.bulkUpload) {
-      filesToUpload.push({
-        ...iterator,
-        fileVersion: 1,
-        siteId: siteSelectedForGlobal?.siteId,
-        uploaderUserId: loggedInUserData?.id,
-        issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
-        expiryDate: `${moment(new Date())
-          .add(1, "years")
-          .format("YYYY-MM-DD")} 10:00:00`,
-      });
+      const data = {
+        files: iterator,
+        documentRequestString: {
+          folderId: folder?.id,
+          files: [
+            {
+              ...iterator,
+              name: iterator?.name,
+              fileVersion: version,
+              siteId: siteSelectedForGlobal?.siteId,
+              issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
+              expiryDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
+            },
+          ],
+        },
+      };
+      const url = `/api/document/files/upload`;
+      const formDataPayload = new FormData();
+      formDataPayload.append("files", data.files);
+      formDataPayload.append(
+        "documentRequestString",
+        JSON.stringify(data.documentRequestString)
+      );
+        uploadPhoto(url, formDataPayload);
+        setIsLoading(false);
+        handleClose();
+        version++;
     }
-    const {bulkUpload, ...filesData } = formData?.bulkUpload;
-    const data = {
-      files: filesData,
-      documentRequestString: {
-        folderId: folder?.id,
-        files: filesToUpload,
-      },
-    };
-    const url = `/api/document/files/upload`;
-    const formDataPayload = new FormData();
-    formDataPayload.append("files", data.files);
-    formDataPayload.append(
-      "documentRequestString",
-      JSON.stringify(data.documentRequestString)
-    );
-    try {
-      const res = await uploadPhoto(url, formDataPayload);
-      setIsLoading(false);
-      toast.success("Files uploaded successfully");
-      handleClose();
-    } catch (e) {
-      setIsLoading(false);
-      toast.error("Something went wrong while uploading files.");
-    }
+    toast.success("Files uploaded successfully");
+    handleClose();
+    console.log("formData", formData);
+    // const {bulkUpload, ...filesData } = formData?.bulkUpload;
   };
   return (
     <>

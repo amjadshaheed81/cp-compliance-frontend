@@ -213,6 +213,9 @@ const SubFolder = ({
             bulkUploadModal={bulkUploadModal}
             folder={folderData}
             setBulkUploadModal={setBulkUploadModal}
+            refresh={() => {
+              getSubFilesAndFolder(folderId);
+            }}
           />
         )}
         <BreadCrumHeader header={"Document Management"} page={"Documents"} />

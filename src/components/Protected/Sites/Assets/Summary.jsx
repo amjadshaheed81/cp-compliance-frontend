@@ -33,7 +33,9 @@ const Summary = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentSiteAssets = filteredSiteAssets.slice(
+  const currentSiteAssets = filteredSiteAssets?.filter(
+    (itm) => itm?.doorItem !== true && itm?.patItem !== true
+  ).slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -319,9 +321,6 @@ const Summary = ({
                 </tr>
               )}
               {currentSiteAssets
-                ?.filter(
-                  (itm) => itm?.doorItem !== true && itm?.patItem !== true
-                )
                 ?.map((asset) => (
                   <tr key={asset?.assetId}>
                     <th>
@@ -397,7 +396,9 @@ const Summary = ({
       </div>
       <div className="row">
         <Pagination
-          totalPages={Math.ceil(filteredSiteAssets.length / preActionsPerPage)}
+          totalPages={Math.ceil(filteredSiteAssets.filter(
+            (itm) => itm?.doorItem !== true && itm?.patItem !== true
+          ).length / preActionsPerPage)}
           currentPage={currentPage}
           onPageChange={handlePageChange}
         />

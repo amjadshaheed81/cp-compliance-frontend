@@ -916,7 +916,7 @@ const UpdateAsset = ({
                       value="5"
                     />
                   )}
-                  {selectedAsset?.patItem && (
+                  {selectedAsset?.doorItem && (
                     <Tab
                       icon={
                         selectedAsset?.assetDoorSpecifications ? (
