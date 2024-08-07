@@ -273,7 +273,7 @@ const ViewEditPreAction = ({
 
                     <div className="col-md-12">
                       <div className="form-group mt-2 w-50">
-                        <label for="taggedAsset">Tagger Asset</label>
+                        <label for="taggedAsset">Tagged Asset</label>
                         <input
                           type="text"
                           className="form-control"
@@ -281,7 +281,19 @@ const ViewEditPreAction = ({
                           name="taggedAsset"
                           placeholder=""
                           disabled={viewMode === "viewOnly" || "markApproved"}
+                          {...register("taggedAsset", {
+                            required: {
+                              value: true,
+                              message: `Please select asset`,
+                            },
+                          })}
                         />
+                        {errors?.taggedAsset && (
+                          <InputError
+                            message={errors?.taggedAsset?.message}
+                            key={errors?.taggedAsset?.message}
+                          />
+                        )}
                       </div>
                     </div>
                     {viewMode !== "markApproved" && (

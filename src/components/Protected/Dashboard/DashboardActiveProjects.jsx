@@ -1,7 +1,35 @@
 // components/Login/LoginForm.js
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-const DashboardActiveProjects = () => {
+import moment from "moment";
+import {
+  getSiteContracts,
+  getSiteContractDetails,
+  updateContractDetail,
+  setLoader,
+} from "../../../store/thunk/contracts";
+import { get } from "../../../api";
+const DashboardActiveProjects = (siteSelectedForGlobal) => {
+
+  const [contractList, setContractList] = useState([]);
+
+  useEffect(()=>{
+    getProjectList();
+  },[])
+
+  const getProjectList = async () => {
+    if(siteSelectedForGlobal?.siteSelectedForGlobal?.siteId) {
+      const projects = await get(
+        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteSelectedForGlobal?.siteId}`
+      );
+      setContractList(projects?.projectContracts || []);
+    }
+  };
+
+  const dateFormat = (date) => {
+    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  }
+
   return (
     <Fragment>
       <div className="card">
@@ -22,6 +50,7 @@ const DashboardActiveProjects = () => {
           <div className="table-responsive">
             <table className="table table-bordered f-11">
               <thead className="table-dark">
+               
                 <tr>
                   <th scope="col">Project</th>
                   <th scope="col">Start Date</th>
@@ -30,54 +59,17 @@ const DashboardActiveProjects = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Project A</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 2000</td>
+              
+                {contractList.slice(0, 5).map(i=>(
+                  <tr>
+                  <td>{i.summary}</td>
+                  <td>{dateFormat(i?.startDate?.split("T")?.[0])}</td>
+                  <td>{dateFormat(i?.endDate?.split("T")?.[0])}</td>
+                  <td>&#8364; {i.cost}</td>
                 </tr>
-                <tr>
-                  <td>Project B</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 2000</td>
-                </tr>
-                <tr>
-                  <td>Project C</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 4000</td>
-                </tr>
-                <tr>
-                  <td>Project D</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 3000</td>
-                </tr>
-                <tr>
-                  <td>Project D</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 3000</td>
-                </tr>
-                <tr>
-                  <td>Project D</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 3000</td>
-                </tr>
-                <tr>
-                  <td>Project D</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 3000</td>
-                </tr>
-                <tr>
-                  <td>Project D</td>
-                  <td>01 Jan 24</td>
-                  <td>31 May 24</td>
-                  <td>&#8364; 3000</td>
-                </tr>
+                ))}
+                  
+               
               </tbody>
             </table>
           </div>
@@ -87,4 +79,14 @@ const DashboardActiveProjects = () => {
   );
 };
 
-export default connect(null, {})(DashboardActiveProjects);
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+  
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, {
+  getSiteContracts,
+  getSiteContractDetails,
+  updateContractDetail,
+  setLoader,
+})(DashboardActiveProjects);

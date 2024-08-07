@@ -74,6 +74,7 @@ const AddPreActions = ({
           ...formData,
           actionId: null,
           raisedByUserId: loggedInUserData?.id,
+          taggedAsset: value.map(v=> v.id).join(',')
         })
       );
       setIsLoading(true);

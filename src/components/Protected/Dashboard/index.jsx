@@ -19,6 +19,7 @@ const Dashboard = ({
   siteSelectedForGlobal,
 }) => {
   useEffect(() => {
+    console.log('loggedInUserData',loggedInUserData)
     if (loggedInUserData) {
       if (!siteSelectedForGlobal?.siteId) {
         selectGlobalSite({
@@ -37,7 +38,7 @@ const Dashboard = ({
           <BreadCrumHeader header={"Welcome"} page={"Home"} />
           <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
-              <p className="display-8">Samantha Joe</p>
+              <b><p className="display-8">{loggedInUserData?.name??"User"}</p></b>
             </div>
             <div className="ms-auto bd-highlight">
               <div className="form-check form-switch">
