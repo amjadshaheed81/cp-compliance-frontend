@@ -16,9 +16,10 @@ import Reading from "./Reading";
 import * as XLSX from 'xlsx';
 
 import { DialogContent, DialogTitle, Link, Dialog, CircularProgress, Box, Grid, Divider, Autocomplete, TextField, Typography } from "@mui/material";
-import {  getSites } from "../../../../store/thunk/site";
+import { getSites } from "../../../../store/thunk/site";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
-const EnergyCost = ({  loggedInUserData}) => {
+const EnergyCost = ({ loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [openCost, setOpenCost] = useState(false)
   const [openBulk, setopenBulk] = useState(false)
@@ -39,9 +40,9 @@ const EnergyCost = ({  loggedInUserData}) => {
     gettypeoptions();
   }, []);
 
- 
 
-  const customColumnNamesCost = ['reference','fromDate', 'toDate', 'cost'];
+
+  const customColumnNamesCost = ['reference', 'fromDate', 'toDate', 'cost'];
   const customColumnNamesReading = ['reference', 'readingDate', 'readingValue'];
 
   const [itemsPerPage] = useState(5);
@@ -55,13 +56,13 @@ const EnergyCost = ({  loggedInUserData}) => {
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
-  
+
   const gettypeoptions = async () => {
     const lovtypes = await get("/api/lov/ENERGY_COST_BUDGET_CATEGORY");
     settypeoptions(lovtypes.map(l => l.lovValue));
   }
-  
-  useEffect(() => {}, []);
+
+  useEffect(() => { }, []);
   const [formData, setFormData] = useState({
     searchField: "",
   });
@@ -72,7 +73,7 @@ const EnergyCost = ({  loggedInUserData}) => {
     category: "",
     status: "",
   });
-  const  isDateOlderThanToday = (dateString) => {
+  const isDateOlderThanToday = (dateString) => {
     const dateToCheck = moment(dateString, 'YYYY-MM-DD');
     const today = moment().startOf('day');
     return dateToCheck.isBefore(today);
@@ -107,23 +108,23 @@ const EnergyCost = ({  loggedInUserData}) => {
     getEnergyCost();
   }
 
-  
+
 
   const searchEnergyCost = () => {
     let filteredEnergyCost2 = energyCost;
     if (formData2?.budgetCategory?.length > 0) {
       filteredEnergyCost2 = filteredEnergyCost2.filter(sc => sc.budgetCategory === formData2.budgetCategory)
     }
-    
+
     if (formData2?.searchField?.length > 0 && filteredEnergyCost2?.length > 0) {
       filteredEnergyCost2 = filteredEnergyCost2.filter(sc =>
-        sc?.reference?.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) || 
+        sc?.reference?.toLowerCase().includes(String(formData2?.searchField).toLowerCase()) ||
         sc?.budgetCategory?.toLowerCase().includes(String(formData2?.searchField).toLowerCase())
       )
     }
     setFilteredEnergyCost(filteredEnergyCost2);
   };
-  
+
 
   const deleteEnergyCostCall = (action) => {
     Swal.fire({
@@ -144,57 +145,57 @@ const EnergyCost = ({  loggedInUserData}) => {
 
   useEffect(() => { getEnergyCost() }, [])
 
-  
+
 
   const handleFileUploadReading = (event) => {
     setbulkUploadReading([]);
-      const file = event.target.files[0];
-      const reader = new FileReader();
+    const file = event.target.files[0];
+    const reader = new FileReader();
 
-      reader.onload = (e) => {
-        const binaryStr = e.target.result;
-        const workbook = XLSX.read(binaryStr, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-        const mappedData = json.map(row => {
-          let rowData = {
-            submittedBy: loggedInUserData?.id,
-            readingUnit:"kWh"
-          };
-          const rowValues = Object.values(row);
-          customColumnNamesReading.forEach((col, index) => {
+    reader.onload = (e) => {
+      const binaryStr = e.target.result;
+      const workbook = XLSX.read(binaryStr, { type: 'binary' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      const mappedData = json.map(row => {
+        let rowData = {
+          submittedBy: loggedInUserData?.id,
+          readingUnit: "kWh"
+        };
+        const rowValues = Object.values(row);
+        customColumnNamesReading.forEach((col, index) => {
 
-            if (index === 0) {
-              const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
-              if (dupIdx < 0) {
-                toast.error("Invalid Reference")
-                return;
-              } else {
-                rowData.energyId = energyCost[dupIdx]?.energyId
-                rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory
-              }
-            } else if (index === 1) {
-
-             
-                rowValues[index] = new Date(rowValues[index]);
-              
+          if (index === 0) {
+            const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
+            if (dupIdx < 0) {
+              toast.error("Invalid Reference")
+              return;
             } else {
-              if (isNaN(rowValues[index])) {
-                toast("Invalid data present in attached file at row no " + index)
-                return;
-              }
+              rowData.energyId = energyCost[dupIdx]?.energyId
+              rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory
             }
-            rowData[col] = rowValues[index] || null;
-          });
-          return rowData;
-        });
-        setbulkUploadReading(mappedData);
-      };
+          } else if (index === 1) {
 
-      reader.readAsBinaryString(file);
+
+            rowValues[index] = new Date(rowValues[index]);
+
+          } else {
+            if (isNaN(rowValues[index])) {
+              toast("Invalid data present in attached file at row no " + index)
+              return;
+            }
+          }
+          rowData[col] = rowValues[index] || null;
+        });
+        return rowData;
+      });
+      setbulkUploadReading(mappedData);
     };
-  
+
+    reader.readAsBinaryString(file);
+  };
+
   const handleFileUploadCost = (event) => {
     setbulkUploadCost([]);
     const file = event.target.files[0];
@@ -212,7 +213,7 @@ const EnergyCost = ({  loggedInUserData}) => {
         };
         const rowValues = Object.values(row);
         customColumnNamesCost.forEach((col, index) => {
-          
+
           if (index === 0) {
             const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
             if (dupIdx < 0) {
@@ -229,9 +230,9 @@ const EnergyCost = ({  loggedInUserData}) => {
               return;
             } else {
               rowValues[index] = new Date(rowValues[index]);
-              
+
             }
-          } else{
+          } else {
             if (isNaN(rowValues[index])) {
               toast("Invalid data present in attached file at row no " + index)
               return;
@@ -301,7 +302,7 @@ const EnergyCost = ({  loggedInUserData}) => {
       energy.minDate = minDate;
       energy.maxDate = maxDate;
     });
-   
+
     setFilteredEnergyCost(energyCost)
     setEnergyCost(energyCost);
     setIsLoading(false);
@@ -311,7 +312,7 @@ const EnergyCost = ({  loggedInUserData}) => {
     data.submittedBy = loggedInUserData?.id;
     await post("/api/energy/cost", data);
     getEnergyCost();
-    
+
   }
 
   const saveReading = async (data) => {
@@ -337,7 +338,7 @@ const EnergyCost = ({  loggedInUserData}) => {
               onChange={handleFileUploadCost}
             />
             <button
-              style={{ marginTop: '10px'}}
+              style={{ marginTop: '10px' }}
               className="btn btn-primary text-white pr-2"
               onClick={(e) => callbulkUploadCost()}
             >
@@ -368,7 +369,7 @@ const EnergyCost = ({  loggedInUserData}) => {
 
             <br />
             <br />
-           
+
 
           </Fragment>
 
@@ -390,136 +391,135 @@ const EnergyCost = ({  loggedInUserData}) => {
         saveData={saveReading}
         deleteEnergyReading={deleteEnergyReading}
       />
-      
+
       <SidebarNew />
-      
+
       <div className="content">
         <Header />
         <div className="container-fluid">
           <BreadCrumHeader header={"Site Energy Readings & Cost"} page={"Energy"} />
-          
+
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
-              
+
               <div className="row" style={{ height: "auto" }}>
-                  <div className="col">
-                    <div style={{ position: "relative" }}>
-                      <i
-                        style={{
-                          position: "absolute",
-                          padding: "10px",
-                          color: "lightgrey",
-                          paddingLeft: "1.5rem",
-                        }}
-                        className="fas fa-search"
-                      ></i>
-                      <input
-                        type="text"
-                        placeholder="Search"
-                        name="searchField"
-                        style={{ textAlign: "center", width: '250px' }}
-                        className="form-control"
-                        onChange={handleInputChange2}
-                      />
-                    </div>
-                  
+                <div className="col">
+                  <div style={{ position: "relative" }}>
+                    <i
+                      style={{
+                        position: "absolute",
+                        padding: "10px",
+                        color: "lightgrey",
+                        paddingLeft: "1.5rem",
+                      }}
+                      className="fas fa-search"
+                    ></i>
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      name="searchField"
+                      style={{ textAlign: "center", width: '250px' }}
+                      className="form-control"
+                      onChange={handleInputChange2}
+                    />
+                  </div>
+
                 </div>
                 <div className="col">
                   <select
                     name="budgetCategory"
                     className="form-control form-select"
                     id="budgetCategory"
-                      onChange={handleInputChange2}
+                    onChange={handleInputChange2}
                   >
                     <option value="">Budget Category</option>
-                      {typeoptions.map(t => <option value={t}>{t}</option>)}
-                   
-                  </select>
-                </div>
-                
-                
-                </div>
-            </div>
-            <div className="ms-auto p-2 bd-highlight" style={{ backgroundColor: '#384BD3', borderRadius: '15px'}}>
-              <form onSubmit={addEnergyCost}>
-              <div className="row" style={{ height: "auto" }}>
-                <div className="col">
-                  
-                </div>
-                <div className="col" >
-                  <Typography color="white" style={{marginBottom: '8px'}}> CREATE NEW </Typography> 
-                </div>
-                <div className="col">
-                  
-                </div>
-                
-              </div>
-              <div className="row" style={{ height: "auto" }}>
-                <div className="col">
-                <input
-                      type="reference"
-                      value={formData?.reference}
-                  name="reference"
-                      className="form-control"
-                      required
-                      onChange={handleInputChange}
-                    placeholder="Energy Survey Reference"
-                    
-                  />
-                </div><div className="col">
-                <select
-                  name="budgetCategory"
-                  className="form-control form-select"
-                      id="budgetCategory"
-                      value={formData?.budgetCategory}
-                      onChange={handleInputChange}
-                      required
-                >
-                  <option value="">Budget Category</option>
-                  {typeoptions.map(t => <option value={t}>{t}</option>)}
+                    {typeoptions.map(t => <option value={t}>{t}</option>)}
 
                   </select>
-                </div><div className="col">
-                <button
-                  style={{ width: "150px" }}
-                  className="btn btn-primary btn-light"
-                  type="submit"
-                >
-                 Create
-                  </button>
                 </div>
-                </div>
-              </form>
-            </div>
-            <div className="ms-auto p-2 bd-highlight">
-              <div className="row" style={{ height: "auto" }}>
-                
-                <div className="col">
-                  <button
-                    style={{ width: "150px" }}
-                    className="btn btn-primary btn-light"
-                    onClick={() => { setopenBulk(true)}}
-                  >
-                    
-                      <i className="fas fa-upload"/> &nbsp; Bulk Upload
-                  </button>
-                </div>
+
+
               </div>
             </div>
+            {isManagerAdminLogin(loggedInUserData) && (
+              <><div className="ms-auto p-2 bd-highlight" style={{ backgroundColor: '#384BD3', borderRadius: '15px' }}>
+                <form onSubmit={addEnergyCost}>
+                  <div className="row" style={{ height: "auto" }}>
+                    <div className="col">
+
+                    </div>
+                    <div className="col">
+                      <Typography color="white" style={{ marginBottom: '8px' }}> CREATE NEW </Typography>
+                    </div>
+                    <div className="col">
+
+                    </div>
+
+                  </div>
+                  <div className="row" style={{ height: "auto" }}>
+                    <div className="col">
+                      <input
+                        type="reference"
+                        value={formData?.reference}
+                        name="reference"
+                        className="form-control"
+                        required
+                        onChange={handleInputChange}
+                        placeholder="Energy Survey Reference" />
+                    </div><div className="col">
+                      <select
+                        name="budgetCategory"
+                        className="form-control form-select"
+                        id="budgetCategory"
+                        value={formData?.budgetCategory}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Budget Category</option>
+                        {typeoptions.map(t => <option value={t}>{t}</option>)}
+
+                      </select>
+                    </div><div className="col">
+                      <button
+                        style={{ width: "150px" }}
+                        className="btn btn-primary btn-light"
+                        type="submit"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div><div className="ms-auto p-2 bd-highlight">
+                  <div className="row" style={{ height: "auto" }}>
+
+                    <div className="col">
+                      <button
+                        style={{ width: "150px" }}
+                        className="btn btn-primary btn-light"
+                        onClick={() => { setopenBulk(true); }}
+                      >
+
+                        <i className="fas fa-upload" /> &nbsp; Bulk Upload
+                      </button>
+                    </div>
+                  </div>
+                </div></>
+            )}
           </div>
-          
+
           <div className="row p-2"></div>
           <div className="col-md-12 table-responsive">
             <table className="table">
               <thead className="table-dark">
                 <tr>
-                    <th scope="col">Survey Reference</th>
+                  <th scope="col">Survey Reference</th>
                   {/* <th scope="col">Submitted By</th> */}
                   <th scope="col">Budget Category</th>
-                    <th scope="col">From Date</th>
-                    <th scope="col">To Date</th>
-                    <th scope="col">Reading</th>
-                    <th scope="col">Cost</th>
+                  <th scope="col">From Date</th>
+                  <th scope="col">To Date</th>
+                  <th scope="col">Reading</th>
+                  <th scope="col">Cost</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -528,55 +528,57 @@ const EnergyCost = ({  loggedInUserData}) => {
                   <tr>
                     <td>No result found!!</td>
                   </tr>
-                  )}
-                  {isLoading && (
-                    <tr>
-                      <td colSpan={8} align="center">
-                        <CircularProgress />
-                      
-                      </td>
-                    </tr>
-                  )}
-                  
-                {!isLoading && filteredEnergyCost?.map((action) =>
-                  {
-                   
-                    return (
+                )}
+                {isLoading && (
+                  <tr>
+                    <td colSpan={8} align="center">
+                      <CircularProgress />
+
+                    </td>
+                  </tr>
+                )}
+
+                {!isLoading && filteredEnergyCost?.map((action) => {
+
+                  return (
                     <tr key={action?.id}>
-                        <th scope="col">{action?.reference}</th>
-                        <th scope="col">{action?.budgetCategory}</th>
-                        <th scope="col" style={{ width: '150px' }}>
-                          {action?.minDate ? moment(action?.minDate).format("DD-MM-YYYY") : "-"}
-                        </th>
-                        <th scope="col" style={{ width: '150px' }}>
-                          {action?.maxDate ? moment(action?.maxDate).format("DD-MM-YYYY") : "-"}
-                        </th>
-                        <th scope="col">{action?.readingList?.map(c => c.readingValue).reduce((a, b) => { return a + b }, 0)}</th>
-                        <th scope="col">{action?.costList?.map(c => c.cost).reduce((a, b) => { return a + b }, 0)}</th>
-                       
-                        <th scope="col" style={{ width: '250px' }}>
+                      <th scope="col">{action?.reference}</th>
+                      <th scope="col">{action?.budgetCategory}</th>
+                      <th scope="col" style={{ width: '150px' }}>
+                        {action?.minDate ? moment(action?.minDate).format("DD-MM-YYYY") : "-"}
+                      </th>
+                      <th scope="col" style={{ width: '150px' }}>
+                        {action?.maxDate ? moment(action?.maxDate).format("DD-MM-YYYY") : "-"}
+                      </th>
+                      <th scope="col">{action?.readingList?.map(c => c.readingValue).reduce((a, b) => { return a + b }, 0)}</th>
+                      <th scope="col">{action?.costList?.map(c => c.cost).reduce((a, b) => { return a + b }, 0)}</th>
+
+                      <th scope="col" style={{ width: '250px' }}>
                         <Tooltip title={`View/Edit Energy Cost`} arrow>
                           <button
                             className="btn btn-sm btn-light"
-                              onClick={() => { setActionSurvey(action); setOpenCost(true) }}
-                            >
+                            onClick={() => { setActionSurvey(action); setOpenCost(true) }}
+                            disabled={!isManagerAdminLogin(loggedInUserData)}
+                          >
                             <i className="fas fa-dollar-sign"></i>
                           </button>{" "}
                         </Tooltip>
-                          <Tooltip title={`View /Edit Energy Reading`} arrow>
+                        <Tooltip title={`View /Edit Energy Reading`} arrow>
                           <button
                             className="btn btn-sm btn-light"
-                              onClick={() => { setActionSurvey(action); setOpenReading(true); }}
-                            >
-                              <i class="fas fa-solid fa-chart-line"></i>{" "}
+                            onClick={() => { setActionSurvey(action); setOpenReading(true); }}
+                            disabled={!isManagerAdminLogin(loggedInUserData)}
+                          >
+                            <i class="fas fa-solid fa-chart-line"></i>{" "}
                           </button>{" "}
                         </Tooltip>
-                        
-                          
+
+
                         <Tooltip title={`Delete`} arrow>
                           <button
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => deleteEnergyCostCall(action)}
+                            disabled={!isManagerAdminLogin(loggedInUserData)}
                           >
                             <i className="fas fa-trash"></i>
                           </button>{" "}
@@ -584,17 +586,17 @@ const EnergyCost = ({  loggedInUserData}) => {
                       </th>
                     </tr>
                   )
-                  })}
+                })}
               </tbody>
-              </table>
-             
-                <Pagination
-                  totalPages={Math.ceil(filteredEnergyCost.length / itemsPerPage)}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                />
-              
-            </div>
+            </table>
+
+            <Pagination
+              totalPages={Math.ceil(filteredEnergyCost.length / itemsPerPage)}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+            />
+
+          </div>
         </div>
       </div>
     </Fragment>
@@ -604,7 +606,7 @@ const EnergyCost = ({  loggedInUserData}) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData
-  
+
 });
 export default connect(mapStateToProps, { getSites })(
   EnergyCost
