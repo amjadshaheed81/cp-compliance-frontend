@@ -30,12 +30,10 @@ const DashboardEventCalendar = () => {
         getDate: moment(d.expiryDate).format("YYYY-MM-DD"),
       }
     })
-    console.log("datatatatat", event)
     setData(event);
   }
   
   const renderEventContent = (eventInfo) => {
-    console.log("event", eventInfo);
     const title = JSON.parse(eventInfo.event.title);
     return (
       <>

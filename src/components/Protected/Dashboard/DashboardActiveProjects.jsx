@@ -1,4 +1,3 @@
-// components/Login/LoginForm.js
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import moment from "moment";

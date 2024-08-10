@@ -34,7 +34,7 @@ const Dashboard = ({
       <SidebarNew />
       <div className="content">
         <Header />
-        <div className="container-fluid">
+        <div className="container-fluid" style={{backgroundColor:'#F1F5F9'}}>
           <BreadCrumHeader header={"Welcome"} page={"Home"} />
           <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
