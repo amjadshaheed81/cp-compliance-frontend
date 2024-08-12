@@ -387,7 +387,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
-                  {loggedInUserData?.role === ROLE.MANAGER && <button
+                {(loggedInUserData?.role === ROLE.MANAGER || loggedInUserData?.role === ROLE.ADMIN) && <button
+                 
                     style={{ width: "150px" }}
                     className="btn btn-primary text-white pr-2"
                       onClick={() => {
