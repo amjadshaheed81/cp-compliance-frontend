@@ -165,13 +165,10 @@ const EnergyCost = ({ loggedInUserData }) => {
         };
         const rowValues = Object.values(row);
         customColumnNamesReading.forEach((col, index) => {
-
+         
           if (index === 0) {
             const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
-            if (dupIdx < 0) {
-              toast.error("Invalid Reference")
-              return;
-            } else {
+            if (dupIdx >= 0) {
               rowData.energyId = energyCost[dupIdx]?.energyId
               rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory
             }
@@ -216,13 +213,11 @@ const EnergyCost = ({ loggedInUserData }) => {
 
           if (index === 0) {
             const dupIdx = energyCost.findIndex(e => e.reference === rowValues[index]);
-            if (dupIdx < 0) {
-              toast.error("Invalid Reference")
-              return;
-            } else {
+            if (dupIdx >= 0) {
               rowData.energyId = energyCost[dupIdx]?.energyId
               rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory
             }
+            
           } else if (index === 1 || index === 2) {
 
             if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
@@ -251,7 +246,7 @@ const EnergyCost = ({ loggedInUserData }) => {
   const callbulkUploadCost = async () => {
     setopenBulk(false);
     for (const data of bulkUploadCost) {
-      saveCost(data);
+      await saveCost(data);
     }
     setbulkUploadCost([]);
     getEnergyCost();
@@ -261,7 +256,7 @@ const EnergyCost = ({ loggedInUserData }) => {
   const callbulkUploadReading = async () => {
     setopenBulk(false);
     for (const data of bulkUploadReading) {
-      saveReading(data);
+      await saveReading(data);
     }
     setbulkUploadReading([]);
     getEnergyCost();
@@ -310,6 +305,7 @@ const EnergyCost = ({ loggedInUserData }) => {
 
   const saveCost = async (data) => {
     data.submittedBy = loggedInUserData?.id;
+    data.siteId = site.siteId;
     await post("/api/energy/cost", data);
     getEnergyCost();
 
@@ -317,6 +313,7 @@ const EnergyCost = ({ loggedInUserData }) => {
 
   const saveReading = async (data) => {
     data.submittedBy = loggedInUserData?.id;
+    data.siteId = site.siteId;
     await post("/api/energy/reading", data);
     getEnergyCost();
   }
