@@ -2,6 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import moment from "moment";
+import { ROLE } from "../../../../Constant/Role";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Pagination from "../../../common/Pagination/Pagination";
@@ -15,7 +16,7 @@ import { get, post, del, put } from "../../../../api";
 import { Button, Modal, Chip, CircularProgress, Box, Grid, Divider, Autocomplete, TextField } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 
-const SiteChecks = ({ siteSelectedForGlobal }) => {
+const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [create, setCreate] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
@@ -27,6 +28,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
   const [siteChecks, setSiteChecks] = useState([]);
   const [managerList, setManagerList] = useState([]);
   const navigate = useNavigate();
+  console.log('{loggedInUserData?.role',loggedInUserData?.role)
   const goTo = (link) => {
     navigate(link);
   };
@@ -385,7 +387,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
-                  <button
+                  {loggedInUserData?.role === ROLE.MANAGER && <button
                     style={{ width: "150px" }}
                     className="btn btn-primary text-white pr-2"
                       onClick={() => {
@@ -401,6 +403,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   >
                     Start New
                   </button>
+                }
                 </div>
                 <div className="col">
                   <CSVLink
@@ -757,7 +760,8 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {getSites })(
   SiteChecks
