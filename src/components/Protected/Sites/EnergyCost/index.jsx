@@ -175,7 +175,7 @@ const EnergyCost = ({ loggedInUserData }) => {
           } else if (index === 1) {
 
 
-            rowValues[index] = new Date(rowValues[index]);
+            rowValues[index] = convertToDate(rowValues[index]);
 
           } else {
             if (isNaN(rowValues[index])) {
@@ -192,6 +192,11 @@ const EnergyCost = ({ loggedInUserData }) => {
 
     reader.readAsBinaryString(file);
   };
+
+  function convertToDate(dateString) {
+    const [day, month, year] = dateString.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
 
   const handleFileUploadCost = (event) => {
     setbulkUploadCost([]);
@@ -224,7 +229,7 @@ const EnergyCost = ({ loggedInUserData }) => {
               toast("Invalid data present in attached file at row no " + index);
               return;
             } else {
-              rowValues[index] = new Date(rowValues[index]);
+              rowValues[index] = convertToDate(rowValues[index]);
 
             }
           } else {
@@ -273,7 +278,7 @@ const EnergyCost = ({ loggedInUserData }) => {
     body.siteId = site.siteId
     const dupIdx = energyCost.findIndex(e => e.reference === body.reference);
     if (dupIdx >= 0) {
-      toast.error("Reference already exist")
+      toast.error("Meter Reference already exist")
       return;
     }
 
@@ -462,7 +467,7 @@ const EnergyCost = ({ loggedInUserData }) => {
                         className="form-control"
                         required
                         onChange={handleInputChange}
-                        placeholder="Energy Survey Reference" />
+                        placeholder="Energy Survey Meter Reference" />
                     </div><div className="col">
                       <select
                         name="budgetCategory"
@@ -510,7 +515,7 @@ const EnergyCost = ({ loggedInUserData }) => {
             <table className="table">
               <thead className="table-dark">
                 <tr>
-                  <th scope="col">Survey Reference</th>
+                  <th scope="col">Survey Meter Reference</th>
                   {/* <th scope="col">Submitted By</th> */}
                   <th scope="col">Budget Category</th>
                   <th scope="col">From Date</th>
