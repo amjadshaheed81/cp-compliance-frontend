@@ -627,6 +627,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 <Grid sm={4}>
                     <div style={{ margin: "10px" }}>
                       <DatePicker
+                      label="Due Date"
                         value={formData?.dueDate}
                         onChange={(date) => {
                           setFormData({

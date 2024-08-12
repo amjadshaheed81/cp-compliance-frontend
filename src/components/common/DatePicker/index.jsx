@@ -4,15 +4,15 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const TdkDatePicker = ({ value, onChange,required,width="380px" }) => {
+const TdkDatePicker = ({ value, onChange,required,label,width="380px" }) => {
 
     const datePickerRef = useRef(null);
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
-      <label htmlFor="datePicker" >
-        Due Date
-      </label>
+      {label && <label htmlFor="datePicker" >
+        {label}
+      </label>}
       <input
        required={required}
         type="text"
@@ -30,7 +30,7 @@ const TdkDatePicker = ({ value, onChange,required,width="380px" }) => {
         style={{
           position: "absolute",
           right: "10px",
-          top: "50%",
+          top: label ? "50%" : "30%",
           transform: "translateY(-50%)",
           pointerEvents: "none",
           color: "#aaa",

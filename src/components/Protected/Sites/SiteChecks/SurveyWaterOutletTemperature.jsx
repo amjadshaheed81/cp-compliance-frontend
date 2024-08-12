@@ -3,6 +3,7 @@ import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../../../api";
+import DatePicker from "../../../common/DatePicker";
 import moment from "moment";
 import {
   Button,
@@ -295,13 +296,27 @@ const SurveyWaterOutletTemperature = ({
                               Reading 1 <b style={{ color: "red" }}> 30 seconds </b>
                             </td>
                             <td rowSpan={3} style={{ verticalAlign: "middle" }}>
-                              <input
-                                type="date"
-                                className="form-control"
-                                  name="r1Date"
-                                  required
-                                onChange={(e) => handleInputChange(e, readingPop)}
-                              />
+                            <DatePicker
+                            
+                        value={formData?.r1Date}
+                        onChange={(date) => {
+                          const uformData = [...formData];
+                          const udata = {
+                            ...formData[readingPop],
+                            r1Date: date,
+                            update: true
+                          };
+                          uformData[readingPop] = udata;
+                          setFormData(uformData);
+                        }} 
+                        />
+                              {/* // <input
+                              //   type="date"
+                              //   className="form-control"
+                              //     name="r1Date"
+                              //     required
+                              //   onChange={(e) => handleInputChange(e, readingPop)}
+                              // /> */}
                             </td>
                             <td>
                               <input
