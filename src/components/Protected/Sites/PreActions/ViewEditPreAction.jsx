@@ -80,11 +80,16 @@ const ViewEditPreAction = ({
     }
   };
   const approveCreateAction = async () => {
-    setIsLoading(true);
+    
     const data = {
       status: "Pending Action",
       approverNotes: getValues("approverNotes"),
     };
+    if(data.approverNotes === '' || data.approverNotes === undefined || data.approverNotes === null) {
+      toast.error("Please enter approver notes");
+      return;
+    }
+    setIsLoading(true);
     try {
       const res = await put(`api/action/${actionId}/approve`, data);
 
