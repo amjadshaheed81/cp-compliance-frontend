@@ -221,7 +221,7 @@ const Contracts = ({
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight">
               <div className="row">
-                <div className="col">
+                <div className="col-md-4 col-sm-4 mt-2">
                   <input
                     type="text"
                     className="form-control"
@@ -230,7 +230,7 @@ const Contracts = ({
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="col">
+                <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     className="form-control form-select"
                     id="startMonth"
@@ -244,7 +244,7 @@ const Contracts = ({
                   </select>
                 </div>
                 {subCategoryList?.length > 0 && (
-                  <div className="col">
+                  <div className="col-md-4 col-sm-4 mt-2">
                     <select
                       name="subCategory"
                       className="form-control form-select"
@@ -258,7 +258,7 @@ const Contracts = ({
                     </select>
                   </div>
                 )}
-                <div className="col">
+                <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -272,7 +272,7 @@ const Contracts = ({
                   </select>
                 </div>
                 {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                  <div className="col p-0 m-0">
+                  <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
                     <label>All</label>
                     <Switch
                       checked={checked}
@@ -288,8 +288,7 @@ const Contracts = ({
               <div className="row" style={{ height: "auto" }}>
                 {isManagerAdminLogin(loggedInUserData) && (
                   <>
-                    <div className="col">
-                      <div className="col">
+                    <div className="col-md-6 col-sm-4 mt-2 pr-2">
                         <Tooltip title={`Create New`} arrow>
                           <button
                             className="btn btn-primary text-white pr-2"
@@ -300,10 +299,8 @@ const Contracts = ({
                             <i className="fas fa-plus"></i>
                           </button>
                         </Tooltip>
-                      </div>
                     </div>
-                    <div className="col">
-                      <div className="col">
+                    <div className="col-md-6 col-sm-4 mt-2">
                         <CSVLink
                           filename={"contracts-lists"}
                           className="btn btn-light bg-white text-primary"
@@ -314,7 +311,6 @@ const Contracts = ({
                             <i className="fas fa-download"></i>
                           </Tooltip>
                         </CSVLink>
-                      </div>
                     </div>
                   </>
                 )}

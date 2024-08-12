@@ -192,7 +192,7 @@ const PassiveFireProtection = ({
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight ">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
                 name="assetName"
@@ -201,7 +201,7 @@ const PassiveFireProtection = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
                 name="manufacturer"
@@ -210,7 +210,7 @@ const PassiveFireProtection = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="category"
                 className="form-control form-select"
@@ -223,7 +223,7 @@ const PassiveFireProtection = ({
                 ))}
               </select>
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="location"
                 className="form-control form-select"
@@ -240,7 +240,7 @@ const PassiveFireProtection = ({
         </div>
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-6 col-sm-4 mt-2">
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
@@ -252,7 +252,7 @@ const PassiveFireProtection = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="col">
+            <div className="col-md-6 col-sm-4 mt-2">
               <CSVLink
                 filename={"site-pfp-item-list"}
                 className="btn btn-light bg-white text-primary"

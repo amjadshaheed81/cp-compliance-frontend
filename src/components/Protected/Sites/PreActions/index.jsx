@@ -135,7 +135,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
+                <div className="col-md-4 col-sm-4 mt-2">
                   <input
                     type="text"
                     className="form-control"
@@ -144,7 +144,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="col">
+                <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     name="location"
                     className="form-control form-select"
@@ -154,7 +154,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     <option value="">Location</option>
                   </select>
                 </div>
-                <div className="col">
+                <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -173,7 +173,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
               <div className="row" style={{ height: "auto" }}>
                 {loggedInUserData?.role !== ROLE.SITE_USERS && (
                   <Fragment>
-                    <div className="col">
+                    <div className="col-md-6 col-sm-4 mt-2">
                       <Tooltip title={`Create New`} arrow>
                         <button
                           className="btn btn-primary text-white pr-2"
@@ -185,7 +185,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                         </button>
                       </Tooltip>
                     </div>
-                    <div className="col">
+                    <div className="col-md-6 col-sm-4 mt-2">
                       <CSVLink
                         filename={"pre-action-list"}
                         className="btn btn-light bg-white text-primary"

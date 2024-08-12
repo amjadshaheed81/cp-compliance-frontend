@@ -176,7 +176,7 @@ const Users = ({
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <input
                     type="text"
                     className="form-control"
@@ -185,7 +185,7 @@ const Users = ({
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="col">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="role"
                     className="form-control form-select"
@@ -206,7 +206,7 @@ const Users = ({
                     <option value={ROLE.TESTER}>Tester</option>
                   </select>
                 </div>
-                <div className="col">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="site"
                     className="form-control form-select"
@@ -221,7 +221,7 @@ const Users = ({
                     ))}
                   </select>
                 </div>
-                <div className="col">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -237,7 +237,7 @@ const Users = ({
             </div>
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
+                <div className="col-md-6 col-sm-4 mt-2">
                   <button
                     className="btn btn-primary text-white pr-2"
                     onClick={() => {
@@ -248,7 +248,7 @@ const Users = ({
                   </button>
                   &nbsp;
                 </div>
-                <div className="col">
+                <div className="col-md-6 col-sm-4 mt-2">
                   <CSVLink
                     filename={"user-lists"}
                     className="btn btn-light bg-white text-primary"

@@ -198,7 +198,7 @@ const Door = ({
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
                 name="assetName"
@@ -207,7 +207,7 @@ const Door = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
                 name="manufacturer"
@@ -216,7 +216,7 @@ const Door = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="category"
                 className="form-control form-select"
@@ -229,7 +229,7 @@ const Door = ({
                 ))}
               </select>
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="location"
                 className="form-control form-select"
@@ -246,7 +246,7 @@ const Door = ({
         </div>
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-6 col-sm-4 mt-2">
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
@@ -258,7 +258,7 @@ const Door = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="col">
+            <div className="col-md-6 col-sm-4 mt-2">
               <CSVLink
                 filename={"site-door-assets"}
                 className="btn btn-light bg-white text-primary"

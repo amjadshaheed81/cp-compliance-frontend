@@ -204,7 +204,7 @@ const Summary = ({
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight ">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
                 name="assetName"
@@ -213,7 +213,7 @@ const Summary = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
                 name="manufacturer"
@@ -222,7 +222,7 @@ const Summary = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-4 col-sm-4 mt-2">
               <select
                 name="category"
                 className="form-control form-select"
@@ -235,7 +235,7 @@ const Summary = ({
                 ))}
               </select>
             </div>
-            <div className="col">
+            <div className="col-md-4 col-sm-4 mt-2">
               <select
                 name="location"
                 className="form-control form-select"
@@ -253,39 +253,43 @@ const Summary = ({
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
             {isManagerAdminLogin(loggedInUserData) && (
-              <div className="col">
-                <Tooltip title={`Add New Asset`} arrow>
-                  <button
-                    className="btn btn-primary text-white pr-2"
-                    onClick={() => {
-                      goTo("/create-asset");
-                    }}
-                  >
-                    <i className="fas fa-plus"></i>
-                  </button>
-                </Tooltip>
-                &nbsp;
-                <Tooltip title={`Clone`} arrow>
-                  <button
-                    className="btn btn-light text-primary pr-2"
-                    onClick={() => {
-                      cloneSelectedAsset();
-                    }}
-                  >
-                    Clone
-                  </button>
-                </Tooltip>
-                &nbsp;
-                <CSVLink
-                  filename={"site-assets-lists"}
-                  className="btn btn-light bg-white text-primary"
-                  data={siteAssetsList}
-                >
-                  <Tooltip title={`Export`} arrow>
-                    <i className="fas fa-download"></i>
+              <>
+                <div className="col-md-4 col-sm-4 mt-2">
+                  <Tooltip title={`Add New Asset`} arrow>
+                    <button
+                      className="btn btn-primary text-white pr-2"
+                      onClick={() => {
+                        goTo("/create-asset");
+                      }}
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
                   </Tooltip>
-                </CSVLink>
-              </div>
+                  <div className="col-md-4 col-sm-4 mt-2">
+                    <Tooltip title={`Clone`} arrow>
+                      <button
+                        className="btn btn-light text-primary pr-2"
+                        onClick={() => {
+                          cloneSelectedAsset();
+                        }}
+                      >
+                        Clone
+                      </button>
+                    </Tooltip>
+                  </div>
+                  <div className="col-md-4 col-sm-4 mt-2">
+                    <CSVLink
+                      filename={"site-assets-lists"}
+                      className="btn btn-light bg-white text-primary"
+                      data={siteAssetsList}
+                    >
+                      <Tooltip title={`Export`} arrow>
+                        <i className="fas fa-download"></i>
+                      </Tooltip>
+                    </CSVLink>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -320,85 +324,86 @@ const Summary = ({
                   <td>No Result Found !!</td>
                 </tr>
               )}
-              {currentSiteAssets
-                ?.map((asset) => (
-                  <tr key={asset?.assetId}>
-                    <th>
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        onChange={(e) => handleCheckboxChange(e, asset)}
-                        checked={selectedItems.some(
-                          (item) => item.assetId === asset.assetId
-                        )}
-                      />
-                    </th>
-                    <th scope="col">{asset?.assetName}</th>
-                    <th scope="col">{asset?.manufacturer}</th>
-                    <th scope="col">{asset?.category}</th>
-                    <th scope="col">{asset?.location}</th>
-                    <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
-                    <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
-                    <th scope="col">
-                      <Tooltip title={`View ${asset.assetName}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            goTo(`/view-asset?assetId=${asset?.assetId}`);
-                          }}
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      {isManagerAdminLogin(loggedInUserData) && (
-                        <>
-                          <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                            <button
-                              className="btn btn-sm btn-light"
-                              onClick={() => {
-                                goTo(`/update-asset?assetId=${asset?.assetId}`);
-                              }}
-                            >
-                              <i className="fas fa-pen"></i>
-                            </button>{" "}
-                          </Tooltip>
-                          <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                            <QRCodeSVG
-                              onClick={() => {
-                                setShowAddModal(true);
-                                setSelectedAsset(asset);
-                              }}
-                              value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
-                              style={{
-                                height: "30px",
-                                width: "30px",
-                                margin: "0px 6px",
-                                cursor: "pointer",
-                              }}
-                            />
-                          </Tooltip>
-                          <Tooltip title={`Delete ${asset.assetName}`} arrow>
-                            <button
-                              className="btn btn-sm btn-light text-danger"
-                              onClick={() => deleteAsset(asset)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>{" "}
-                          </Tooltip>
-                        </>
+              {currentSiteAssets?.map((asset) => (
+                <tr key={asset?.assetId}>
+                  <th>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      onChange={(e) => handleCheckboxChange(e, asset)}
+                      checked={selectedItems.some(
+                        (item) => item.assetId === asset.assetId
                       )}
-                    </th>
-                  </tr>
-                ))}
+                    />
+                  </th>
+                  <th scope="col">{asset?.assetName}</th>
+                  <th scope="col">{asset?.manufacturer}</th>
+                  <th scope="col">{asset?.category}</th>
+                  <th scope="col">{asset?.location}</th>
+                  <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
+                  <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
+                  <th scope="col">
+                    <Tooltip title={`View ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/view-asset?assetId=${asset?.assetId}`);
+                        }}
+                      >
+                        <i className="fas fa-eye"></i>
+                      </button>{" "}
+                    </Tooltip>
+                    {isManagerAdminLogin(loggedInUserData) && (
+                      <>
+                        <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => {
+                              goTo(`/update-asset?assetId=${asset?.assetId}`);
+                            }}
+                          >
+                            <i className="fas fa-pen"></i>
+                          </button>{" "}
+                        </Tooltip>
+                        <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                          <QRCodeSVG
+                            onClick={() => {
+                              setShowAddModal(true);
+                              setSelectedAsset(asset);
+                            }}
+                            value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
+                            style={{
+                              height: "30px",
+                              width: "30px",
+                              margin: "0px 6px",
+                              cursor: "pointer",
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title={`Delete ${asset.assetName}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light text-danger"
+                            onClick={() => deleteAsset(asset)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>{" "}
+                        </Tooltip>
+                      </>
+                    )}
+                  </th>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
       <div className="row">
         <Pagination
-          totalPages={Math.ceil(filteredSiteAssets.filter(
-            (itm) => itm?.doorItem !== true && itm?.patItem !== true
-          ).length / preActionsPerPage)}
+          totalPages={Math.ceil(
+            filteredSiteAssets.filter(
+              (itm) => itm?.doorItem !== true && itm?.patItem !== true
+            ).length / preActionsPerPage
+          )}
           currentPage={currentPage}
           onPageChange={handlePageChange}
         />

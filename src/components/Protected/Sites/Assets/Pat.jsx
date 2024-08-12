@@ -190,7 +190,7 @@ const Pat = ({
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight ">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
                 name="assetName"
@@ -199,7 +199,7 @@ const Pat = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
                 name="manufacturer"
@@ -208,7 +208,7 @@ const Pat = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="category"
                 className="form-control form-select"
@@ -221,7 +221,7 @@ const Pat = ({
                 ))}
               </select>
             </div>
-            <div className="col">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="location"
                 className="form-control form-select"
@@ -238,7 +238,7 @@ const Pat = ({
         </div>
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col">
+            <div className="col-md-6 col-sm-6 mt-2">
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
@@ -250,7 +250,7 @@ const Pat = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="col">
+            <div className="col-md-6 col-sm-6 mt-2">
               <CSVLink
                 filename={"site-pat-item-list"}
                 className="btn btn-light bg-white text-primary"
