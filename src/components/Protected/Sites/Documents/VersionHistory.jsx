@@ -82,7 +82,7 @@ const VersionHistory = ({
             ...formData?.fileUpload[0],
             id: fileId,
             name: formData?.fileUpload?.[0]?.name,
-            originalFileName: formData?.name,
+            // originalFileName: formData?.name,
             fileVersion: fileVerions?.length + 1,
             siteId: siteSelectedForGlobal?.siteId,
           },

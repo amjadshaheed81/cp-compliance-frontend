@@ -49,16 +49,18 @@ const CreateFiles = ({
     console.log("folderData", folderData);
     setValue("name", folderData?.folderName ? folderData?.name : "");
   }, []);
-  const submitFile = async (data, fileUpload) => {
+  const submitFile = async (data, fileUpload, formData) => {
     const reqData = {
       files: fileUpload,
       documentRequestString: {
         ...data,
       },
     };
+
     delete reqData.documentRequestString.files[0].fileUpload;
-    reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate
-    reqData.documentRequestString.files[0].expiryDate = data?.files[0].expiryDate
+    reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate;
+    // reqData.documentRequestString.files[0].originalFileName = formData?.name;
+    reqData.documentRequestString.files[0].expiryDate = data?.files[0].expiryDate;
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
     reqData.documentRequestString.files[0].reviewerUserId =
@@ -66,13 +68,13 @@ const CreateFiles = ({
     reqData.documentRequestString.files[0].referenceNumber =
       data.files[0].note || "";
     const url = `/api/document/files/upload`;
-    const formData = new FormData();
-    formData.append("files", reqData.files);
-    formData.append(
+    const form_Data = new FormData();
+    form_Data.append("files", reqData.files);
+    form_Data.append(
       "documentRequestString",
       JSON.stringify(reqData.documentRequestString)
     );
-    const res = await uploadPhoto(url, formData);
+    const res = await uploadPhoto(url, form_Data);
     setIsLoading(false);
     toast.success("File uploaded successfully");
     handleClose();
@@ -150,8 +152,8 @@ const CreateFiles = ({
                   },
                 ],
               };
-              data.files[0].name = formData?.name;
-              await submitFile(data, formData.fileUpload[0]);
+              data.files[0].name = formData.fileUpload[0].name;
+              await submitFile(data, formData.fileUpload[0], formData);
               checkAndAddExpiryCalenderEvent(data.files[0]);
               setIsLoading(false);
             } catch (e) {
