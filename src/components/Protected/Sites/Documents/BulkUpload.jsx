@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   Dialog,
+  Chip,
 } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useForm } from "react-hook-form";
@@ -22,16 +23,20 @@ const BulkUpload = ({
   siteSelectedForGlobal,
   loggedInUserData,
   uploadPhoto,
+  refresh,
 }) => {
   const handleOpen = () => setBulkUploadModal(true);
   const handleClose = () => setBulkUploadModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState([]);
+  const [selectedFiles, setSelectedFile] = useState([]);
   useEffect(() => {
     console.log("folder", folder);
     setFiles(folder?.files || []);
   }, [folder]);
-  const { register, handleSubmit } = useForm({});
+  const { register, handleSubmit, watch } = useForm({});
+  const values = watch() || {};
+  console.log("values", values);
   const submitBulkUpload = async (formData) => {
     setIsLoading(true);
     const filesToUpload = [];
@@ -60,15 +65,27 @@ const BulkUpload = ({
         "documentRequestString",
         JSON.stringify(data.documentRequestString)
       );
-        uploadPhoto(url, formDataPayload);
+      try {
+        await uploadPhoto(url, formDataPayload);
+        refresh();
         setIsLoading(false);
         handleClose();
         version++;
+      } catch (e) {
+        refresh();
+        console.error(e);
+      }
     }
     toast.success("Files uploaded successfully");
     handleClose();
     console.log("formData", formData);
     // const {bulkUpload, ...filesData } = formData?.bulkUpload;
+  };
+  const getSelectedFiles = () => {
+    const data = values?.bulkUpload || [];
+    const names = [];
+    data?.forEach((itm) => names.push(itm?.name));
+    return names?.map((itm) => <Chip label={itm} />);
   };
   return (
     <>
@@ -102,6 +119,9 @@ const BulkUpload = ({
                   className="form-control"
                   value={folder?.name}
                 />
+                <div className="mt-2">
+                  {getSelectedFiles()}
+                </div>
               </div>
               <div className="col-md-6 h-50">
                 <div style={{ backgroundColor: "#f1f5f9" }}>
