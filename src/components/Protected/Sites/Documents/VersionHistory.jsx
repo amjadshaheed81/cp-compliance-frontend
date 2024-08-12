@@ -82,6 +82,7 @@ const VersionHistory = ({
             ...formData?.fileUpload[0],
             id: fileId,
             name: formData?.fileUpload?.[0]?.name,
+            originalFileName: formData?.name,
             fileVersion: fileVerions?.length + 1,
             siteId: siteSelectedForGlobal?.siteId,
           },
@@ -121,6 +122,7 @@ const VersionHistory = ({
       loggedInUserData?.id || "";
     reqData.documentRequestString.files[0].referenceNumber =
       data.files[0].note || "";
+      console.log("reqData", reqData);
     delete reqData.documentRequestString.files[0].folder;
     const url = `/api/document/file/newVersion/upload`;
     const formData = new FormData();
@@ -140,7 +142,6 @@ const VersionHistory = ({
       toast.error("Version is not uploaded!!");
       setIsLoading(false);
     }
-    
   };
   return (
     <>
