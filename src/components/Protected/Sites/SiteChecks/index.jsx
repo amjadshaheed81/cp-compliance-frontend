@@ -1,6 +1,7 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import moment from "moment";
 import { ROLE } from "../../../../Constant/Role";
 import Header from "../../../common/Header/Header";
@@ -12,11 +13,13 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
+import DatePicker from "../../../common/DatePicker";
 
-import { Button, Modal, Chip, CircularProgress, Box, Grid, Divider, Autocomplete, TextField } from "@mui/material";
+import { Button, Modal, Chip, CircularProgress, Box, Grid, InputAdornment, Autocomplete, TextField } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 
 const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
+  const datePickerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false)
   const [create, setCreate] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
@@ -622,11 +625,19 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   </div>
                 </Grid>
                 <Grid sm={4}>
-                  <div style={{ margin: "10px" }}>
-                    <label htmlFor="folder" name="folder">
-                      Due Date
-                    </label>
-                      <input
+                    <div style={{ margin: "10px" }}>
+                      <DatePicker
+                        value={formData?.dueDate}
+                        onChange={(date) => {
+                          setFormData({
+                            ...formData,
+                            dueDate: new Date(date),
+                          });
+                        }}
+                    />
+                   
+                 
+                      {/* <input
                         required
                       value={String(formData?.dueDate)?.substring(0, 10)}
                       min={new Date().toISOString().split('T')[0]}
@@ -634,7 +645,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       name="dueDate"
                       className="form-control"
                       onChange={handleInputChange}
-                    />
+                    /> */}
                   </div>
                 </Grid>
                 <Grid sm={4}>
