@@ -14,6 +14,7 @@ import { get } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import CircularProgress from "@mui/material/CircularProgress";
+import FileViewer from "./FileViewer";
 
 const PdfViewer = ({ showPdfModal, setShowPdfModal, selectedPdf }) => {
   const [open, setOpen] = useState(showPdfModal);
@@ -28,12 +29,7 @@ const PdfViewer = ({ showPdfModal, setShowPdfModal, selectedPdf }) => {
         <DialogContent>
           <div className="row">
             <div className="col-md-12 text-center">
-            <object
-              data={selectedPdf}
-              type="image/png"
-              style={{ width: '100%', height: 'auto' }}
-              aria-label="Description"
-            ></object>
+              <FileViewer fileUrl={selectedPdf}/>
             </div>
           </div>
         </DialogContent>
