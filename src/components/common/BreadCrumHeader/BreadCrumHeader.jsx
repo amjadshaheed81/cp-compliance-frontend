@@ -17,16 +17,7 @@ const BreadCrumHeader = ({ header, page, style, chipColor, chipLabel }) => {
           />}
         </div>
         <div className="ms-auto p-2 bd-highlight dont-print">
-          <nav aria-label="breadcrumb pt-1">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item pt-0">
-                <a href="/#/dashboard">Dashboard</a>
-              </li>
-              <li className="breadcrumb-item active pt-0" aria-current="page">
-                {page}
-              </li>
-            </ol>
-          </nav>
+          <span><a href="/#/dashboard">Dashboard</a> / {page}</span>
         </div>
       </div>
     </Fragment>
