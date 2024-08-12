@@ -71,3 +71,11 @@ h2{
 #root {
   overflow: scroll;
 }
+.pad-side{
+  padding-left: 5rem;
+}
+@media only screen and (max-width: 600px) {
+  .pad-side{
+    padding-left: 1rem;
+  }
+}

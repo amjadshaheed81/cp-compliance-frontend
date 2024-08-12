@@ -166,7 +166,7 @@ const SubFolder = ({
     <>
       <Header />
       <SidebarNew />
-      <div className="container-fluid" style={{ paddingLeft: "5rem" }}>
+      <div className="container-fluid pad-side">
         {versionHistory && (
           <VersionHistory
             versionHistory={versionHistory}

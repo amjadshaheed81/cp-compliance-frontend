@@ -35,15 +35,7 @@ export default function SiteTabs({ tabs, isCreateSite }) {
   return (
     <>
       <Header />
-      <Box
-        sx={{
-          width: "90%",
-          marginTop: "10rem",
-          marginLeft: "5rem",
-          zIndex: "-1",
-          position: "static",
-        }}
-      >
+      <div className="container-fluid pad-side" style={{paddingTop: "10rem"}}>
         <div style={{ marginTop: "-10rem" }}>
           {isCreateSite ? (
             <BreadCrumHeader
@@ -59,12 +51,14 @@ export default function SiteTabs({ tabs, isCreateSite }) {
         </div>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
+          className="row"
             value={value}
             onChange={handleChange}
             aria-label="basic tabs example"
           >
             {tabs?.map(({ label }, i) => (
               <Tab
+                className="col"
                 label={label}
                 key={i}
                 disabled={isCreateSite && (i === 1 || i === 2)}
@@ -77,7 +71,7 @@ export default function SiteTabs({ tabs, isCreateSite }) {
             {Component}
           </TabPanel>
         ))}
-      </Box>
+      </div>
     </>
   );
 }
