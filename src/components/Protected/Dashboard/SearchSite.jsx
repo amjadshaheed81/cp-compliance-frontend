@@ -10,9 +10,10 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import StarIcon from "@mui/icons-material/Star";
+import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
 import { useNavigate } from "react-router-dom";
 import { AccountCircle } from "@mui/icons-material";
-import { get } from "../../../api";
+import { get,put } from "../../../api";
 import {
   getSites,
   selectGlobalSite,
@@ -30,7 +31,9 @@ function SearchSite({
   loggedInUserData,
 }) {
   const [allSites, setSites] = useState([]);
+  const [allSites2, setSites2] = useState([]);
   const [error, setError] = useState("");
+  const [favorites, setfavorites] = useState([]);
   const [state, setState] = React.useState({
     top: false,
     left: false,
@@ -44,7 +47,42 @@ function SearchSite({
 
   useEffect(() => {
     getSites(loggedInUserData);
+    
   }, []);
+
+  const setfavorite = async(id) => {
+    console.log('favorite',id?.siteId)
+    const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
+    let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
+    favorite.push(id?.siteId);
+    favorite = removeDuplicates(favorite);
+    setfavorites(favorite)
+    userData.userId = loggedInUserData?.id;
+    userData.firstName = userData?.name?.split(" ")?.[0];
+    userData.lastName = userData?.name?.split(" ")?.[1];
+    userData.favorite = favorite.join(",");
+    await put(`/api/user/manage`, userData);
+    setSites([]);
+  }
+
+  function removeDuplicates(arr) {
+    return arr.filter((item,
+        index) => arr.indexOf(item) === index);
+}
+
+  useEffect(() => {
+    setSites2(sites);
+    getFav();
+  }, [sites]);
+
+
+  const getFav = async() => {
+    const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
+    let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
+    favorite = removeDuplicates(favorite);
+    setfavorites(favorite);
+  }
+
   let initialSite = sites?.slice(0, 2);
   const searchSite = async (e) => {
 
@@ -117,23 +155,46 @@ function SearchSite({
       </div>
       {/* {error && <p>{error}</p>} */}
       <List>
-        {initialSite?.map((site) => (
+        {allSites2?.filter(s=>favorites.includes(String(s?.siteId)))?.map((site) => (
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
               onClick={() => {
                 selectGlobalSite(site);
                 localStorage.setItem("site", JSON.stringify(site));
+                setState({ ...state, [anchor]: false });
               }}
             >
               <ListItemIcon>
-                <StarIcon color="primary" />
+                <StarIcon color="primary" /> 
+              
               </ListItemIcon>
-              <ListItemText primary={site?.siteName} />
+              <ListItemText primary={site?.siteName}  
+             
+              />
+            </ListItemButton>
+          </ListItem>
+        ))}
+        {allSites?.filter(s=>!favorites.includes(String(s?.siteId)))?.map((site) => (
+          <ListItem key={site?.id} disablePadding>
+            <ListItemButton
+              onClick={() => {
+                selectGlobalSite(site);
+                localStorage.setItem("site", JSON.stringify(site));
+                setState({ ...state, [anchor]: false });
+              }}
+            >
+              <ListItemIcon>
+                
+               <StarBorderRoundedIcon  color="primary" onClick={()=>setfavorite(site)}/>
+              </ListItemIcon>
+              <ListItemText primary={site?.siteName}  
+             
+              />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
-      <List>
+      {/* <List>
         {allSites?.map((site) => (
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
@@ -145,7 +206,7 @@ function SearchSite({
             </ListItemButton>
           </ListItem>
         ))}
-      </List>
+      </List> */}
       <Divider />
     </Box>
   );
