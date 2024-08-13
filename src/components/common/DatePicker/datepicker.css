@@ -1,0 +1,7 @@
+.custom-datepicker-popper {
+  z-index: 9999 !important;;
+}
+
+.react-datepicker-popper {
+  z-index: 9999 !important; /* Also target default popper class just in case */
+}

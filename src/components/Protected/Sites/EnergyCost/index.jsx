@@ -225,18 +225,18 @@ const EnergyCost = ({ loggedInUserData }) => {
             
           } else if (index === 1 || index === 2) {
 
-            if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
-              toast("Invalid data present in attached file at row no " + index);
-              return;
-            } else {
+            // if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
+            //   toast("Invalid data present in attached file at row no " + index);
+            //   return;
+            // } else {
               rowValues[index] = convertToDate(rowValues[index]);
 
-            }
-          } else {
-            if (isNaN(rowValues[index])) {
-              toast("Invalid data present in attached file at row no " + index)
-              return;
-            }
+            //}
+          //} else {
+           // if (isNaN(rowValues[index])) {
+              //toast("Invalid data present in attached file at row no " + index)
+              //return;
+            //}
           }
           rowData[col] = rowValues[index] || null;
         });
@@ -251,6 +251,7 @@ const EnergyCost = ({ loggedInUserData }) => {
   const callbulkUploadCost = async () => {
     setopenBulk(false);
     for (const data of bulkUploadCost) {
+     //console.log('data',data)
       await saveCost(data);
     }
     setbulkUploadCost([]);

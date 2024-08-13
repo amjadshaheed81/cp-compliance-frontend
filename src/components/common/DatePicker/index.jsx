@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import "./datepicker.css";
 import { connect } from "react-redux";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DatePicker from "react-datepicker";
@@ -9,7 +10,7 @@ const TdkDatePicker = ({ value, onChange,required,label,width="380px" }) => {
     const datePickerRef = useRef(null);
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div style={{  display: "inline-block"}}>
       {label && <label htmlFor="datePicker" >
         {label}
       </label>}
@@ -17,7 +18,7 @@ const TdkDatePicker = ({ value, onChange,required,label,width="380px" }) => {
        required={required}
         type="text"
         id="datePicker"
-        value={value ? value?.toLocaleDateString("en-GB") : "dd/mm/yyyy"}
+        value={value ? new Date(value)?.toLocaleDateString("en-GB") : "dd/mm/yyyy"}
         placeholder="dd/mm/yyyy"
         className="form-control"
         style={{
@@ -26,9 +27,10 @@ const TdkDatePicker = ({ value, onChange,required,label,width="380px" }) => {
         onClick={() => datePickerRef.current.setOpen(true)} 
         readOnly
       />
-      <CalendarTodayIcon
+      {/* <CalendarTodayIcon
         style={{
-          position: "absolute",
+          //position: "absolute",
+          float: 'left',
           right: "10px",
           top: label ? "50%" : "30%",
           transform: "translateY(-50%)",
@@ -36,13 +38,15 @@ const TdkDatePicker = ({ value, onChange,required,label,width="380px" }) => {
           color: "#aaa",
         }}
         onClick={() => datePickerRef.current.setOpen(true)} 
-      />
+      /> */}
       <DatePicker
+      style={{zIndex: 999}}
       required={required}
         onChange={(date) => onChange(date)}
         ref={datePickerRef}
         dateFormat="dd/MM/yyyy"
-        customInput={<div />} 
+        customInput={<div />}
+        popperClassName="custom-datepicker-popper" // Apply custom class
         popperPlacement="bottom-end"
       />
     </div>

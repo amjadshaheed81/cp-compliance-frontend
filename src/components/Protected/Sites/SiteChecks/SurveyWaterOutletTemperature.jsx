@@ -215,7 +215,6 @@ const SurveyWaterOutletTemperature = ({
   const dateFormat = (date) => {
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
-
   return (
     <>
       
@@ -297,13 +296,13 @@ const SurveyWaterOutletTemperature = ({
                             </td>
                             <td rowSpan={3} style={{ verticalAlign: "middle" }}>
                             <DatePicker
-                            
-                        value={formData?.r1Date}
+
+                        value={formData?.[readingPop]?.r1Date}
                         onChange={(date) => {
                           const uformData = [...formData];
                           const udata = {
                             ...formData[readingPop],
-                            r1Date: date,
+                            r1Date: new Date(date),
                             update: true
                           };
                           uformData[readingPop] = udata;
