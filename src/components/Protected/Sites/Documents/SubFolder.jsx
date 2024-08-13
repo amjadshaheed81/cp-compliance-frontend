@@ -257,9 +257,9 @@ const SubFolder = ({
             );
           })}
         </Breadcrumbs>
+        <div className="row mt-4 mb-4">
         <div
-          className="float-end w-25"
-          style={{ position: "relative", paddingBottom: "10px" }}
+          className="col-md-6 col-sm-12"
         >
           <i
             style={{
@@ -271,7 +271,7 @@ const SubFolder = ({
           ></i>
           <input
             type="text"
-            style={{ textAlign: "center" }}
+            style={{ textAlign: "justify", paddingLeft: '2rem' }}
             className="form-control m-2"
             id="search"
             name="search"
@@ -303,6 +303,7 @@ const SubFolder = ({
             </ul>
           )}
           {error && <p>{error}</p>}
+        </div>
         </div>
         <div className="table-responsive w-100">
           <table className="table f-11">
