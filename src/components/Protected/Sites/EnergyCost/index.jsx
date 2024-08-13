@@ -195,7 +195,8 @@ const EnergyCost = ({ loggedInUserData }) => {
 
   function convertToDate(dateString) {
     const [day, month, year] = dateString.split("/").map(Number);
-    return new Date(year, month - 1, day);
+    const date =  new Date(year, month - 1, day);
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString();                     
   }
 
   const handleFileUploadCost = (event) => {

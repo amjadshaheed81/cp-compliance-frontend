@@ -632,7 +632,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         onChange={(date) => {
                           setFormData({
                             ...formData,
-                            dueDate: new Date(date),
+                            //dueDate: new Date(date),
+                            dueDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
+                            
                           });
                         }}
                     />

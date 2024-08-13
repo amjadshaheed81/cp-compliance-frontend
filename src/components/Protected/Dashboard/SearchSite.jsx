@@ -51,7 +51,6 @@ function SearchSite({
   }, []);
 
   const setfavorite = async(id) => {
-    console.log('favorite',id?.siteId)
     const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
     favorite.push(id?.siteId);

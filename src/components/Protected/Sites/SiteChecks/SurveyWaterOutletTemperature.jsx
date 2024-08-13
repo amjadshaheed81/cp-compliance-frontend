@@ -162,7 +162,7 @@ const SurveyWaterOutletTemperature = ({
           data.id = undefined
         }
         if (data.r1Date) {
-          data.r1Date = new Date(data.r1Date);
+          //data.r1Date = new Date(data.r1Date.toISOString().slice(0, 10));
           data.r2Date = data.r1Date;
           data.r3Date = data.r1Date;
         }
@@ -297,12 +297,12 @@ const SurveyWaterOutletTemperature = ({
                             <td rowSpan={3} style={{ verticalAlign: "middle" }}>
                             <DatePicker
 
-                        value={formData?.[readingPop]?.r1Date}
+                        value={formData?.[readingPop]?.update ? formData?.[readingPop]?.r1Date : null}
                         onChange={(date) => {
                           const uformData = [...formData];
                           const udata = {
                             ...formData[readingPop],
-                            r1Date: new Date(date),
+                            r1Date: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
                             update: true
                           };
                           uformData[readingPop] = udata;
