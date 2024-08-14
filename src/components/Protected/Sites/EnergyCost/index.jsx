@@ -469,7 +469,7 @@ const EnergyCost = ({ loggedInUserData }) => {
                         className="form-control"
                         required
                         onChange={handleInputChange}
-                        placeholder="Energy Survey Meter Reference" />
+                        placeholder="Energy Meter Reference" />
                     </div><div className="col">
                       <select
                         name="budgetCategory"
@@ -517,7 +517,7 @@ const EnergyCost = ({ loggedInUserData }) => {
             <table className="table">
               <thead className="table-dark">
                 <tr>
-                  <th scope="col">Survey Meter Reference</th>
+                  <th scope="col">Meter Reference</th>
                   {/* <th scope="col">Submitted By</th> */}
                   <th scope="col">Budget Category</th>
                   <th scope="col">From Date</th>
