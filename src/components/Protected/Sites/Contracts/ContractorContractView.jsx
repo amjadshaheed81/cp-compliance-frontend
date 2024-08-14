@@ -135,7 +135,8 @@ const ContractorContractView = ({
       setIsLoading(false);
       toast.success("File uploaded successfully");
     } catch(e) {
-
+      setIsLoading(false);
+      toast.error("File is now uploaded. Please try again");
     }
   };
   const submitUpdateContract = async (data) => {};
