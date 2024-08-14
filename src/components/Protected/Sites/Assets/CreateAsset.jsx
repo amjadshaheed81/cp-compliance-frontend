@@ -149,7 +149,7 @@ const CreateAsset = ({
                   <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-8">
                       <div className="row">
-                        <div className="col-md-6">
+                        <div className="col-md-6 mt-2">
                           <div className="form-group mt-2">
                             <label for="assetName">Asset Name</label>
                             <input
@@ -173,7 +173,7 @@ const CreateAsset = ({
                             )}
                           </div>
                         </div>
-                        <div className="col-md-6">
+                        <div className="col-md-6 mt-2">
                           <div className="form-group mt-2">
                             <label for="manufacturer">Manufacturer</label>
                             <input
@@ -198,7 +198,7 @@ const CreateAsset = ({
                           </div>
                         </div>
 
-                        <div className="col-md-6">
+                        <div className="col-md-6 mt-2">
                           <div className="form-group mt-2">
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
@@ -227,7 +227,7 @@ const CreateAsset = ({
                           </div>
                         </div>
 
-                        <div className="col-md-6">
+                        <div className="col-md-6 mt-2">
                           <label for="folder">Folder</label>
                           <select
                             name="folderId"
@@ -255,7 +255,7 @@ const CreateAsset = ({
                           )}
                         </div>
 
-                        <div className="col-md-6">
+                        <div className="col-md-6 mt-2">
                           <div className="form-group mt-2">
                             <label for="model">Model</label>
                             <input
@@ -280,7 +280,7 @@ const CreateAsset = ({
                           </div>
                         </div>
 
-                        <div className="col-md-6">
+                        <div className="col-md-6 mt-2">
                           <div className="form-group mt-2">
                             <label for="serialNumber">Serial Number</label>
                             <input
@@ -306,7 +306,7 @@ const CreateAsset = ({
                         </div>
                       </div>
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-4 mt-2">
                       <div className="form-group">
                         <input
                           type="file"
@@ -328,7 +328,7 @@ const CreateAsset = ({
                     </div>
                   </div>
                   <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-4">
+                    <div className="col-md-4 mt-2">
                       <label for="category">Category</label>
                       <select
                         name="category"
@@ -363,7 +363,7 @@ const CreateAsset = ({
                         />
                       )}
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-4 mt-2">
                       <label for="subCategory">Sub Category 1</label>
                       <select
                         name="subCategory"
@@ -391,7 +391,7 @@ const CreateAsset = ({
                         />
                       )}
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-4 mt-2">
                       <label for="subCategory2">Sub Category 2</label>
                       <select
                         name="subCategory2"
@@ -420,7 +420,7 @@ const CreateAsset = ({
                       )}
                     </div>
                     <div>
-                      <div className="col-md-4">
+                      <div className="col-md-4 mt-2">
                         <label for="subCategory3">Sub Category 3</label>
                         <select
                           name="subCategory3"

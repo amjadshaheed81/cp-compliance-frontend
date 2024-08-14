@@ -75,14 +75,15 @@ const VersionHistory = ({
     console.log("formData", formData);
     try {
       setIsLoading(true);
+      const fileExtension = formData?.fileUpload?.[0]?.name?.split(".")?.[1];
       const data = {
         folderId: fileVerions?.[0]?.folderId,
         files: [
           {
             ...formData?.fileUpload[0],
             id: fileId,
-            name: formData?.fileUpload?.[0]?.name,
-            // originalFileName: formData?.name,
+            name: `${formData?.name}.${fileExtension}`,
+            originalFileName: formData?.fileUpload?.[0]?.name,
             fileVersion: fileVerions?.length + 1,
             siteId: siteSelectedForGlobal?.siteId,
           },
@@ -108,7 +109,6 @@ const VersionHistory = ({
 
     reqData.documentRequestString.folderId = fileVerions?.[0]?.folderId;
     reqData.documentRequestString.files[0].issueDate = data?.issueDate;
-    reqData.documentRequestString.files[0].name = fileUpload?.name;
     reqData.documentRequestString.files[0].id = fileId;
     reqData.documentRequestString.files[0].issueDate = `${moment(
       new Date()

@@ -59,7 +59,7 @@ const CreateFiles = ({
 
     delete reqData.documentRequestString.files[0].fileUpload;
     reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate;
-    // reqData.documentRequestString.files[0].originalFileName = formData?.name;
+    reqData.documentRequestString.files[0].originalFileName = formData.fileUpload[0].name;
     reqData.documentRequestString.files[0].expiryDate = data?.files[0].expiryDate;
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
@@ -152,7 +152,8 @@ const CreateFiles = ({
                   },
                 ],
               };
-              data.files[0].name = formData.fileUpload[0].name;
+              const fileExtension = formData.fileUpload[0].name?.split(".")?.[1];
+              data.files[0].name = `${formData?.name}.${fileExtension}`;
               await submitFile(data, formData.fileUpload[0], formData);
               checkAndAddExpiryCalenderEvent(data.files[0]);
               setIsLoading(false);
