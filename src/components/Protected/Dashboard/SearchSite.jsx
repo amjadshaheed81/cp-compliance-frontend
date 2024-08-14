@@ -62,6 +62,26 @@ function SearchSite({
     userData.favorite = favorite.join(",");
     await put(`/api/user/manage`, userData);
     setSites([]);
+    getSites(loggedInUserData);
+  }
+
+  const removefavorite = async(id) => {
+    const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
+    let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
+
+    const index = favorite.indexOf(String(id?.siteId));
+    if (index > -1) { 
+      favorite.splice(index, 1); 
+    }
+    favorite = removeDuplicates(favorite);
+    setfavorites(favorite)
+    userData.userId = loggedInUserData?.id;
+    userData.firstName = userData?.name?.split(" ")?.[0];
+    userData.lastName = userData?.name?.split(" ")?.[1];
+    userData.favorite = favorite.join(",");
+    await put(`/api/user/manage`, userData);
+    setSites([]);
+    getSites(loggedInUserData);
   }
 
   function removeDuplicates(arr) {
@@ -157,18 +177,18 @@ function SearchSite({
         {allSites2?.filter(s=>favorites.includes(String(s?.siteId)))?.map((site) => (
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
-              onClick={() => {
-                selectGlobalSite(site);
-                localStorage.setItem("site", JSON.stringify(site));
-                setState({ ...state, [anchor]: false });
-              }}
+              
             >
               <ListItemIcon>
-                <StarIcon color="primary" /> 
-              
+                <StarIcon color="primary" onClick={()=>removefavorite(site)}/>
+                
               </ListItemIcon>
               <ListItemText primary={site?.siteName}  
-             
+             onClick={() => {
+              selectGlobalSite(site);
+              localStorage.setItem("site", JSON.stringify(site));
+              setState({ ...state, [anchor]: false });
+            }}
               />
             </ListItemButton>
           </ListItem>
@@ -176,18 +196,18 @@ function SearchSite({
         {allSites?.filter(s=>!favorites.includes(String(s?.siteId)))?.map((site) => (
           <ListItem key={site?.id} disablePadding>
             <ListItemButton
-              onClick={() => {
-                selectGlobalSite(site);
-                localStorage.setItem("site", JSON.stringify(site));
-                setState({ ...state, [anchor]: false });
-              }}
+              
             >
               <ListItemIcon>
                 
                <StarBorderRoundedIcon  color="primary" onClick={()=>setfavorite(site)}/>
               </ListItemIcon>
               <ListItemText primary={site?.siteName}  
-             
+             onClick={() => {
+              selectGlobalSite(site);
+              localStorage.setItem("site", JSON.stringify(site));
+              setState({ ...state, [anchor]: false });
+            }}
               />
             </ListItemButton>
           </ListItem>
