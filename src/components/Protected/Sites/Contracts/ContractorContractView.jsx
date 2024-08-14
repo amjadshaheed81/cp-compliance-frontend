@@ -102,6 +102,7 @@ const ContractorContractView = ({
       ],
     };
     data.files[0].name = e?.target?.files[0]?.name;
+    data.files[0].originalFileName = e?.target?.files[0]?.name;
     submitFile(data, e?.target?.files[0]);
   };
   const submitFile = async (data, fileUpload) => {
