@@ -12,6 +12,7 @@ import {
   setLoader,
 } from "./../../../../store/thunk/site";
 import { toast } from "react-toastify";
+import { InputError } from "../../../common/InputError";
 
 const InteriorExteriorStyledNode = styled.div`
   padding: 5px;
@@ -78,9 +79,11 @@ const SiteChart = ({
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm({});
   const [parentNodeOptions, setParntNodeOptions] = useState([]);
   const [floorOptions, setFloorOptions] = useState([]);
+  const formValues = watch();
   const submitNode = (values) => {
     if (values?.nodeType === "floor") {
       const nodes = siteLayout?.filter((itm) => itm?.nodeType === "position");
@@ -196,17 +199,17 @@ const SiteChart = ({
             <div className="col-md-3">
               <select
                 name="nodeType"
-                className="form-control w-75"
+                className="form-control form-select w-75"
                 id="nodeType"
                 {...register("nodeType", {
                   required: {
                     value: true,
-                    // message: `${Validation.REQUIRED} Status`,
+                    message: `Please select node type.`,
                   },
                 })}
                 onChange={(e) => {
                   setValue("nodeType", e.target.value);
-                  setFloorOptions([]);
+                  // setFloorOptions([]);
                   if (e.target.value === "position") {
                     const parentNodeId = siteLayout?.filter(
                       (itm) => itm?.nodeType === "MasterNode"
@@ -240,40 +243,66 @@ const SiteChart = ({
                 <option value="floor">Floor</option>
                 <option value="room">Room</option>
               </select>
+              {errors?.nodeType && (
+                <InputError
+                  message={errors?.nodeType?.message}
+                  key={errors?.nodeType?.message}
+                />
+              )}
             </div>
             <div className="col-md-3">
-              <select
-                name="typeOfNode"
-                className="form-control w-75"
-                id="typeOfNode"
-                {...register("typeOfNode", {
-                  required: {
-                    value: true,
-                    // message: `${Validation.REQUIRED} Status`,
-                  },
-                })}
-                onChange={(e) => {
-                  setValue("typeOfNode", e.target.value);
-                  if (e.target.value === "Garden") {
-                    const parentNodeId = siteLayout?.filter(
-                      (itm) => itm?.nodeName === "Exterior"
-                    );
-                    setValue("parentNode", parentNodeId?.[0]?.id);
-                  } else {
-                    const parentNodeId = siteLayout?.filter(
-                      (itm) => itm?.nodeName === "Interior"
-                    );
-                    setValue("parentNode", parentNodeId?.[0]?.id);
-                  }
-                }}
-              >
-                <option value="" disabled selected>
-                  Node name
-                </option>
-                {parentNodeOptions?.map((itm) => (
-                  <option value={itm}>{itm}</option>
-                ))}
-              </select>
+              {formValues?.nodeType === "position" ? (
+                <select
+                  name="typeOfNode"
+                  className="form-control form-select w-75"
+                  id="typeOfNode"
+                  {...register("typeOfNode", {
+                    required: {
+                      value: true,
+                      message: `Please select `,
+                    },
+                  })}
+                  onChange={(e) => {
+                    setValue("typeOfNode", e.target.value);
+                    if (e.target.value === "Garden") {
+                      const parentNodeId = siteLayout?.filter(
+                        (itm) => itm?.nodeName === "Exterior"
+                      );
+                      setValue("parentNode", parentNodeId?.[0]?.id);
+                    } else {
+                      const parentNodeId = siteLayout?.filter(
+                        (itm) => itm?.nodeName === "Interior"
+                      );
+                      setValue("parentNode", parentNodeId?.[0]?.id);
+                    }
+                  }}
+                >
+                  <option value="" disabled selected>
+                    Node name
+                  </option>
+                  {parentNodeOptions?.map((itm) => (
+                    <option value={itm}>{itm}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="form-control"
+                  placeholder="Enter Node Name"
+                  {...register("typeOfNode", {
+                    required: {
+                      value: true,
+                      message: `Please enter node name`,
+                    },
+                  })}
+                />
+              )}
+
+              {errors?.typeOfNode && (
+                <InputError
+                  message={errors?.typeOfNode?.message}
+                  key={errors?.typeOfNode?.message}
+                />
+              )}
             </div>
             {floorOptions?.length > 0 && (
               <div className="col-md-3">

@@ -10,8 +10,12 @@ import { get } from "../../../../api";
 import "./Documents.css";
 import Swal from "sweetalert2";
 
-
-const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal }) => {
+const Document = ({
+  rootFolder,
+  getDocumentsRootFolder,
+  siteSelectedForGlobal,
+  loggedInUserData,
+}) => {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] =
     React.useState(false);
   const [fileList, setFileList] = useState([]);
@@ -20,8 +24,8 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
   const navigate = useNavigate();
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
-      getDocumentsRootFolder(siteSelectedForGlobal?.siteId );
-    } else{
+      getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+    } else {
       Swal.fire({
         icon: "error",
         title: "Oops...",
@@ -36,8 +40,6 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
   const searchDocument = async (e) => {
     const value = e?.target?.value;
     if (value && value.length > 0) {
-
-    
       const url = `/api/document/file/search?q=${value}`;
       try {
         const response = await get(url);
@@ -49,7 +51,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
       } catch (e) {
         setError("No Sites found. Please check the input");
       }
-    } else { 
+    } else {
       setFileList([]);
     }
   };
@@ -58,52 +60,59 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
       <Header />
       <SidebarNew />
       {isCreateFolderModalOpen && (
-        <CreateFiles setIsCreateFolderModalOpen={setIsCreateFolderModalOpen} />
+        <CreateFiles
+          setIsCreateFolderModalOpen={setIsCreateFolderModalOpen}
+          uploaderUserId={loggedInUserData?.id}
+          reviewerUserId={loggedInUserData?.id}
+        />
       )}
       <div className="container-fluid pad-side">
         <BreadCrumHeader header={"Document Management"} page={"Documents"} />
         <div className="row mt-4 mb-4">
-        <div className="col-md-6 col-sm-12">
-          <i
-            style={{
-              position: "absolute",
-              color: "lightgrey",
-              paddingLeft: "1.5rem",
-            }}
-            className="fas fa-search p-3"
-          ></i>
-          <input
-            type="text"
-            style={{ textAlign: "justify", paddingLeft: '2rem' }}
-            className="form-control m-2"
-            id="search"
-            name="search"
-            placeholder="Search for Document"
-            onChange={searchDocument}
-          />
-          {fileList && (
-            <ul
-              className="fileSearchResult fileSearchResultSite w-100"
+          <div className="col-md-6 col-sm-12">
+            <i
               style={{
-                display: fileList ? "block" : "none",
+                position: "absolute",
+                color: "lightgrey",
+                paddingLeft: "1.5rem",
               }}
-            >
-              {/* <p>{fileList}</p> */}
-              {fileList?.files?.map((itm) => {
-                <p>{itm}</p>;
-                return (
-                  <a href={itm.fileBlobUrl} download key={itm?.id}>
-                    <span><i
-                      style={{ color: "#384BD3" }}
-                      className="fas fa-folder fa-1x"
-                    ></i> {itm?.folderName}/<b>{itm?.name}</b></span>
-                  </a>
-                );
-              })}
-            </ul>
-          )}
-          {error && <p>{error}</p>}
-        </div>
+              className="fas fa-search p-3"
+            ></i>
+            <input
+              type="text"
+              style={{ textAlign: "justify", paddingLeft: "2rem" }}
+              className="form-control m-2"
+              id="search"
+              name="search"
+              placeholder="Search for Document"
+              onChange={searchDocument}
+            />
+            {fileList && (
+              <ul
+                className="fileSearchResult fileSearchResultSite w-100"
+                style={{
+                  display: fileList ? "block" : "none",
+                }}
+              >
+                {/* <p>{fileList}</p> */}
+                {fileList?.files?.map((itm) => {
+                  <p>{itm}</p>;
+                  return (
+                    <a href={itm.fileBlobUrl} download key={itm?.id}>
+                      <span>
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-folder fa-1x"
+                        ></i>{" "}
+                        {itm?.folderName}/<b>{itm?.name}</b>
+                      </span>
+                    </a>
+                  );
+                })}
+              </ul>
+            )}
+            {error && <p>{error}</p>}
+          </div>
         </div>
         <div className="table-responsive w-100">
           <table className="table f-11">
@@ -165,6 +174,7 @@ const Document = ({ rootFolder, getDocumentsRootFolder, siteSelectedForGlobal })
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   getDocumentsRootFolder,
