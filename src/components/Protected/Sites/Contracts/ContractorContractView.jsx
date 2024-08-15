@@ -37,7 +37,6 @@ const ContractorContractView = ({
   subCategory,
   selectedContract,
   updateScheduleVisit,
-  uploadPhoto,
 }) => {
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,6 +102,7 @@ const ContractorContractView = ({
       ],
     };
     data.files[0].name = e?.target?.files[0]?.name;
+    data.files[0].originalFileName = e?.target?.files[0]?.name;
     submitFile(data, e?.target?.files[0]);
   };
   const submitFile = async (data, fileUpload) => {
@@ -130,15 +130,15 @@ const ContractorContractView = ({
       "documentRequestString",
       JSON.stringify(reqData?.documentRequestString)
     );
-    try {
-      const res = await uploadPhoto(url, formData);
-      //uploadDocumentFile(data, folderId);
-      setTimeout(() => {
-        getContractDetail();
-      }, 1000);
-    } catch (e) {}
-    setIsLoading(false);
-    toast.success("File uploaded successfully");
+    try{
+      await uploadPhoto(url, formData);
+      getContractDetail();
+      setIsLoading(false);
+      toast.success("File uploaded successfully");
+    } catch(e) {
+      setIsLoading(false);
+      toast.error("File is now uploaded. Please try again");
+    }
   };
   const submitUpdateContract = async (data) => {};
   const requestReschedule = async (itm, newDate) => {
@@ -490,7 +490,7 @@ const ContractorContractView = ({
                                       className="btn btn-sm btn-light"
                                       download
                                       href={file?.url}
-                                    >{`version-${index + 1}`}</a>
+                                    >{`${file?.name}`}</a>
                                     &nbsp;
                                   </>
                                 ))}
@@ -662,5 +662,4 @@ export default connect(mapStateToProps, {
   getManagerList,
   getSiteAssets,
   updateScheduleVisit,
-  uploadPhoto,
 })(ContractorContractView);
