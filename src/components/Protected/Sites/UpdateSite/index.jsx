@@ -92,14 +92,28 @@ const UpdateSite = ({
   const handleDeleteSiteImage = async (event) => {
     setLoader(true);
     let siteId = updateSite?.siteId;
-    const res = await deleteSiteImage(siteId);
-    if (res === "Success") {
-      toast.success("Site image has been deleted successfully.");
-      getSiteById(siteId);
-    } else {
-      toast.error(
-        "Something went wrong while deleting site image. Please try again."
-      );
+    try {
+      const res = await deleteSiteImage(siteId);
+      if (res === "Success") {
+        toast.success("Site image has been deleted successfully.");
+        getSiteById(siteId);
+      } else {
+        setLoader(false);
+        toast.error(
+          "Something went wrong while deleting site image. Please try again."
+        );
+      }
+    } catch (e) {
+      const res = await deleteSiteImage(siteId);
+      if (res === "Success") {
+        toast.success("Site image has been deleted successfully.");
+        getSiteById(siteId);
+      } else {
+        setLoader(false);
+        toast.error(
+          "Something went wrong while deleting site image. Please try again."
+        );
+      }
     }
   };
   const handleOnSearch = async (event) => {
@@ -413,12 +427,15 @@ const UpdateSite = ({
                 />
                 <div
                   style={{
-                    display: isViewMode ? "none" : "block",
+                    display: updateSiteImageSuccess
+                      ? "block"
+                      : "block"
+                      ? updateSite?.siteImageUrl
+                      : "none",
                   }}
                 >
                   <button
                     className="btn btn-sm btn-primary mt-2 mb-2 "
-                    disabled={!updateSiteImageSuccess?.data?.url}
                     onClick={handleDeleteSiteImage}
                   >
                     Delete
