@@ -110,7 +110,11 @@ const SiteChart = ({
   }, [siteLayout]);
   const formValues = watch();
   const submitNode = (values) => {
-    console.log("values", values);
+    const isFloorAlreadyAdded = siteLayout?.filter((itm) => itm?.parentNode == values?.parentNode && itm?.nodeName == values?.typeOfNode);
+    if(isFloorAlreadyAdded?.length > 0) {
+      toast.warn(`${values?.typeOfNode} is already added in parent node.`);
+      return;
+    }
     const data = {
       siteId: updateSite?.siteId,
       nodeName: values?.typeOfNode,
