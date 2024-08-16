@@ -81,26 +81,33 @@ const SiteChart = ({
     setValue,
     watch,
   } = useForm({});
-  const [parentNodeOptions, setParntNodeOptions] = useState([]);
   const [floorOptions, setFloorOptions] = useState([]);
   const [positionOption, setPositionOption] = useState([]);
-  const [nodeTypes, setNodeTypes] = useState([{
-    name: 'Floor', value: 'floor'
-  }]);
+  const [nodeTypes, setNodeTypes] = useState([
+    {
+      name: "Floor",
+      value: "floor",
+    },
+  ]);
   const [parentNodeTypes, setParentNodeTypes] = useState([]);
   useEffect(() => {
     const floorNodes = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    if(floorNodes?.length > 0) {
-      setNodeTypes([{
-        name: 'Floor', value: 'floor'
-      },{
-        name: 'Room', value: 'room'
-      }])
+    if (floorNodes?.length > 0) {
+      setNodeTypes([
+        {
+          name: "Floor",
+          value: "floor",
+        },
+        {
+          name: "Room",
+          value: "room",
+        },
+      ]);
     }
     const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
     setPositionOption(positions || []);
     setFloorOptions(floorNodes || []);
-  }, [siteLayout])
+  }, [siteLayout]);
   const formValues = watch();
   const submitNode = (values) => {
     console.log("values", values);
@@ -192,7 +199,7 @@ const SiteChart = ({
           lineColor={"grey"}
           lineBorderRadius={"10px"}
           label={getMainBuilding()}
-        > 
+        >
           {getTreeNodePositionInterior()}
           {getTreeNodePosition()}
         </Tree>
@@ -202,17 +209,17 @@ const SiteChart = ({
           }}
         >
           <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
-          <div className="col-md-3 p-2">
-            <input
-                  className="form-control"
-                  placeholder="Enter Node Name"
-                  {...register("typeOfNode", {
-                    required: {
-                      value: true,
-                      message: `Please enter node name`,
-                    },
-                  })}
-                />
+            <div className="col-md-3 p-2">
+              <input
+                className="form-control"
+                placeholder="Enter Node Name"
+                {...register("typeOfNode", {
+                  required: {
+                    value: true,
+                    message: `Please enter node name`,
+                  },
+                })}
+              />
 
               {errors?.typeOfNode && (
                 <InputError
@@ -233,23 +240,23 @@ const SiteChart = ({
                   },
                 })}
                 onChange={(e) => {
-                  setValue("nodeType", e.target.value, {shouldValidate: true});
-                  if(String(e.target.value).toLowerCase() === 'floor') {
-                    console.log("positionOption", positionOption);
+                  setValue("nodeType", e.target.value, {
+                    shouldValidate: true,
+                  });
+                  if (String(e.target.value).toLowerCase() === "floor") {
                     setParentNodeTypes(positionOption);
-                    setValue("parentNode", "", {shouldValidate: true});
+                    setValue("parentNode", "", { shouldValidate: true });
                   }
-                  if(String(e.target.value).toLowerCase() === 'room') {
-                    console.log("floorOptions", floorOptions);
+                  if (String(e.target.value).toLowerCase() === "room") {
                     setParentNodeTypes(floorOptions);
-                    setValue("parentNode", "", {shouldValidate: true});
+                    setValue("parentNode", "", { shouldValidate: true });
                   }
                 }}
               >
                 <option value="" disabled selected>
                   Select Node Type
                 </option>
-                {nodeTypes?.map(itm => (
+                {nodeTypes?.map((itm) => (
                   <option value={itm?.value}>{itm?.name}</option>
                 ))}
               </select>
@@ -272,13 +279,15 @@ const SiteChart = ({
                   },
                 })}
                 onChange={(e) => {
-                  setValue("parentNode", e.target.value, {shouldValidate: true});
+                  setValue("parentNode", e.target.value, {
+                    shouldValidate: true,
+                  });
                 }}
               >
                 <option value="" disabled selected>
                   Select Parent Node
                 </option>
-                {parentNodeTypes?.map(itm => (
+                {parentNodeTypes?.map((itm) => (
                   <option value={itm?.id}>{itm?.nodeName}</option>
                 ))}
               </select>
