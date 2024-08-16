@@ -100,7 +100,22 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                 />
                 </Grid>
                 <Grid sm={4}>
-                  <label for="readingUnit">Unit</label>
+                <label for="readingUnit">Unit</label>
+                <select
+                  name="readingUnit"
+                  className="form-control form-select"
+                  id="readingUnit"
+                    value={survey?.readingUnit}
+                  onChange={handleInputChange}
+                    required
+                    
+                >
+                  <option value="Kwh">Kwh</option>
+                  <option value="M3">M³</option>
+                  <option value="ltrs">ltrs</option>
+                 
+                </select>
+                  {/* <label for="readingUnit"></label>
                   <input
                     type="text"
                     value="kWh"
@@ -110,7 +125,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                     onChange={handleInputChange}
                     disabled
 
-                  />
+                  /> */}
                 </Grid>
               <Grid sm={8}>
 

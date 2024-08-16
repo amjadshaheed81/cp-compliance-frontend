@@ -523,7 +523,7 @@ const EnergyCost = ({ loggedInUserData }) => {
                   <th scope="col">From Date</th>
                   <th scope="col">To Date</th>
                   <th scope="col">Reading</th>
-                  <th scope="col">Cost</th>
+                  <th scope="col">Cost (GBP)</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -554,8 +554,8 @@ const EnergyCost = ({ loggedInUserData }) => {
                       <th scope="col" style={{ width: '150px' }}>
                         {action?.maxDate ? moment(action?.maxDate).format("DD-MM-YYYY") : "-"}
                       </th>
-                      <th scope="col">{action?.readingList?.map(c => c.readingValue).reduce((a, b) => { return a + b }, 0)}</th>
-                      <th scope="col">{action?.costList?.map(c => c.cost).reduce((a, b) => { return a + b }, 0)}</th>
+                      <th scope="col">{action?.readingList?.[action?.readingList?.length - 1]?.readingValue??'-'} {action?.readingList?.[action?.readingList?.length - 1]?.readingUnit}</th>
+                      <th scope="col">£{action?.costList?.map(c => c.cost).reduce((a, b) => { return a + b }, 0)}</th>
 
                       <th scope="col" style={{ width: '250px' }}>
                         <Tooltip title={`View/Edit Energy Cost`} arrow>
