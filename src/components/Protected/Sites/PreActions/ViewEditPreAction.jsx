@@ -135,7 +135,9 @@ const ViewEditPreAction = ({
     };
     try {
       setIsLoading(true);
-      form_data.append("actionImage", actionImage?.[0], "actionImage");
+      if(actionImage.length > 0) {
+        form_data.append("actionImage", actionImage?.[0], "actionImage");
+      }
       form_data.append("closeActionRequestString", JSON.stringify({ ...data }));
       const res = await putMultiPartFormData(
         `api/action/${actionId}/close`,
@@ -149,6 +151,7 @@ const ViewEditPreAction = ({
       }
       setIsLoading(false);
     } catch (e) {
+      console.log(e);
       toast.error("Something went wrong while updating pre action.");
       setIsLoading(false);
     }
