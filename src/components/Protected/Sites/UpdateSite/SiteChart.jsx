@@ -86,7 +86,7 @@ const SiteChart = ({
   } = useForm({});
   const [floorOptions, setFloorOptions] = useState([]);
   const [positionOption, setPositionOption] = useState([]);
-  const [showModal, setShowModal] = useState([]);
+  const [showModal, setShowModal] = useState(false);
   const [selectedNode, setSelectedNode] = useState();
   const [nodeTypes, setNodeTypes] = useState([
     {
