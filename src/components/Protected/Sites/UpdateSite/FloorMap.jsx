@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useEffect } from "react";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
@@ -7,12 +7,22 @@ import TabPanel from "../../../common/TabPanel/TabPanel";
 
 const FloorMap = ({ siteLayout }) => {
   const [tabValue, setTabValue] = useState(null);
+  const [positionOption, setPositionOption] = useState([]);
+  useEffect(() => {
+    const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
+    setPositionOption(positions || []);
+  }, [siteLayout]);
+  const getParentNodeName = (id) => {
+    return positionOption?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
+  };
   const handleChange = (event, newValue) => {
     setTabValue(newValue);
   };
   const getTabLabel = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    return list?.map((itm) => <Tab label={itm?.nodeName} />);
+    return list?.map((itm) => (
+      <Tab label={`${getParentNodeName(itm?.parentNode)}: ${itm?.nodeName}`} />
+    ));
   };
 
   const getTabPanel = () => {
@@ -20,7 +30,7 @@ const FloorMap = ({ siteLayout }) => {
     return list?.map((itm, newValue) => (
       <TabPanel value={tabValue} index={newValue}>
         {itm?.floorPlanUrl ? (
-          <embed  src={itm?.floorPlanUrl} width="500px" height="auto"></embed >
+          <embed src={itm?.floorPlanUrl} width="500px" height="auto"></embed>
         ) : (
           "Floor plan file is not available."
         )}
@@ -35,7 +45,7 @@ const FloorMap = ({ siteLayout }) => {
           flexGrow: 1,
           bgcolor: "background.paper",
           display: "flex",
-          height: 224,
+          height: 400,
         }}
       >
         <Tabs

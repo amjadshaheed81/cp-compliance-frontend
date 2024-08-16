@@ -12,6 +12,8 @@ import {
   setLoader,
 } from "./../../../../store/thunk/site";
 import { toast } from "react-toastify";
+import { InputError } from "../../../common/InputError";
+import UpdateSiteLayout from "./UpdateSiteLayout";
 
 const InteriorExteriorStyledNode = styled.div`
   padding: 5px;
@@ -43,6 +45,7 @@ const FloorStyledNode = styled.div`
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
+  cursor: pointer;
   border-left: 4px solid #f34040;
   background: repeating-linear-gradient(
     +45deg,
@@ -57,6 +60,7 @@ const OtherStyledNode = styled.div`
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #3b80f2;
+  cursor: pointer;
   background: repeating-linear-gradient(
     +45deg,
     #f0f8ff 2px,
@@ -78,32 +82,57 @@ const SiteChart = ({
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm({});
-  const [parentNodeOptions, setParntNodeOptions] = useState([]);
   const [floorOptions, setFloorOptions] = useState([]);
-  const submitNode = (values) => {
-    if (values?.nodeType === "floor") {
-      const nodes = siteLayout?.filter((itm) => itm?.nodeType === "position");
-      if (nodes?.length === 0) {
-        toast.error("Please add node position first to add floor type node.");
-        return;
-      }
+  const [positionOption, setPositionOption] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedNode, setSelectedNode] = useState();
+  const [nodeTypes, setNodeTypes] = useState([
+    {
+      name: "Floor",
+      value: "floor",
+    },
+  ]);
+  const [parentNodeTypes, setParentNodeTypes] = useState([]);
+  useEffect(() => {
+    const floorNodes = siteLayout?.filter((itm) => itm?.nodeType === "floor");
+    if (floorNodes?.length > 0) {
+      setNodeTypes([
+        {
+          name: "Floor",
+          value: "floor",
+        },
+        {
+          name: "Room",
+          value: "room",
+        },
+      ]);
     }
-    if (values?.nodeType === "room") {
-      const nodes = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-      if (nodes?.length === 0) {
-        toast.error("Please add floor first to add floor node type.");
-        return;
-      }
+    const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
+    setPositionOption(positions || []);
+    setFloorOptions(floorNodes || []);
+  }, [siteLayout]);
+  const formValues = watch();
+  const submitNode = (values) => {
+    const isFloorAlreadyAdded = siteLayout?.filter(
+      (itm) =>
+        itm?.parentNode == values?.parentNode &&
+        itm?.nodeName == values?.typeOfNode
+    );
+    if (isFloorAlreadyAdded?.length > 0) {
+      toast.warn(`${values?.typeOfNode} is already added in parent node.`);
+      return;
     }
     const data = {
       siteId: updateSite?.siteId,
       nodeName: values?.typeOfNode,
       nodeType: values?.nodeType,
-      parentNode: values?.parentNode,
+      parentNode: Number(values?.parentNode),
     };
     setLoader(true);
     addSiteLayoutNode(data);
+    reset({});
   };
   useEffect(() => {
     getSiteLayout(updateSite?.siteId);
@@ -134,7 +163,18 @@ const SiteChart = ({
       >
         {childs?.map((itm) => (
           <TreeNode
-            label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}
+            label={
+              <FloorStyledNode>
+                <span
+                  onClick={() => {
+                    setSelectedNode(itm);
+                    setShowModal(true);
+                  }}
+                >
+                  {itm?.nodeName}
+                </span>
+              </FloorStyledNode>
+            }
           />
         ))}
       </TreeNode>
@@ -146,7 +186,10 @@ const SiteChart = ({
     );
     return positionNode?.map((itm) => (
       <TreeNode
-        label={<OtherStyledNode>{itm?.nodeName}</OtherStyledNode>}
+        label={<OtherStyledNode><span onClick={() => {
+          setSelectedNode(itm);
+          setShowModal(true);
+        }}>{itm?.nodeName}</span></OtherStyledNode>}
       ></TreeNode>
     ));
   };
@@ -166,7 +209,12 @@ const SiteChart = ({
         }
       >
         {childs?.map((itm) => (
-          <TreeNode label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}>
+          <TreeNode label={<FloorStyledNode><span
+            onClick={() => {
+              setSelectedNode(itm);
+              setShowModal(true);
+            }}
+          >{itm?.nodeName}</span></FloorStyledNode>}>
             {getOtherStyleNode(itm)}
           </TreeNode>
         ))}
@@ -176,6 +224,14 @@ const SiteChart = ({
   return (
     <>
       <SidebarNew />
+      {showModal && (
+        <UpdateSiteLayout
+          selectedNode={selectedNode}
+          showModal={showModal}
+          setShowModal={setShowModal}
+          refresh={() => getSiteLayout(updateSite?.siteId)}
+        />
+      )}
       <div style={{ textAlign: "center" }}>
         <h5 className="text-start">Creating Building Layout</h5>
         <Tree
@@ -184,8 +240,8 @@ const SiteChart = ({
           lineBorderRadius={"10px"}
           label={getMainBuilding()}
         >
-          {getTreeNodePosition()}
           {getTreeNodePositionInterior()}
+          {getTreeNodePosition()}
         </Tree>
         <div
           style={{
@@ -193,110 +249,96 @@ const SiteChart = ({
           }}
         >
           <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
-            <div className="col-md-3">
+            <div className="col-md-3 p-2">
+              <input
+                className="form-control"
+                placeholder="Enter Node Name"
+                {...register("typeOfNode", {
+                  required: {
+                    value: true,
+                    message: `Please enter node name`,
+                  },
+                })}
+              />
+
+              {errors?.typeOfNode && (
+                <InputError
+                  message={errors?.typeOfNode?.message}
+                  key={errors?.typeOfNode?.message}
+                />
+              )}
+            </div>
+            <div className="col-md-3 p-2">
               <select
                 name="nodeType"
-                className="form-control w-75"
+                className="form-control form-select"
                 id="nodeType"
                 {...register("nodeType", {
                   required: {
                     value: true,
-                    // message: `${Validation.REQUIRED} Status`,
+                    message: `Please select node type.`,
                   },
                 })}
                 onChange={(e) => {
-                  setValue("nodeType", e.target.value);
-                  setFloorOptions([]);
-                  if (e.target.value === "position") {
-                    const parentNodeId = siteLayout?.filter(
-                      (itm) => itm?.nodeType === "MasterNode"
-                    );
-                    setValue("parentNode", parentNodeId?.[0]?.id);
-                    setParntNodeOptions(["Exterior", "Interior"]);
-                  } else if (e.target.value === "floor") {
-                    setParntNodeOptions([
-                      "Garden",
-                      "Ground Floor",
-                      "First Floor",
-                      "Second Floor",
-                    ]);
-                  } else if (e.target.value === "room") {
-                    setParntNodeOptions([
-                      "Reception",
-                      "Concierge",
-                      "Lift Lobby",
-                    ]);
-                    const floors = siteLayout?.filter(
-                      (itm) => itm?.nodeType === "floor"
-                    );
-                    setFloorOptions(floors);
+                  setValue("nodeType", e.target.value, {
+                    shouldValidate: true,
+                  });
+                  if (String(e.target.value).toLowerCase() === "floor") {
+                    setParentNodeTypes(positionOption);
+                    setValue("parentNode", "", { shouldValidate: true });
+                  }
+                  if (String(e.target.value).toLowerCase() === "room") {
+                    setParentNodeTypes(floorOptions);
+                    setValue("parentNode", "", { shouldValidate: true });
                   }
                 }}
               >
                 <option value="" disabled selected>
-                  Node Type
+                  Select Node Type
                 </option>
-                <option value="position">Position</option>
-                <option value="floor">Floor</option>
-                <option value="room">Room</option>
-              </select>
-            </div>
-            <div className="col-md-3">
-              <select
-                name="typeOfNode"
-                className="form-control w-75"
-                id="typeOfNode"
-                {...register("typeOfNode", {
-                  required: {
-                    value: true,
-                    // message: `${Validation.REQUIRED} Status`,
-                  },
-                })}
-                onChange={(e) => {
-                  setValue("typeOfNode", e.target.value);
-                  if (e.target.value === "Garden") {
-                    const parentNodeId = siteLayout?.filter(
-                      (itm) => itm?.nodeName === "Exterior"
-                    );
-                    setValue("parentNode", parentNodeId?.[0]?.id);
-                  } else {
-                    const parentNodeId = siteLayout?.filter(
-                      (itm) => itm?.nodeName === "Interior"
-                    );
-                    setValue("parentNode", parentNodeId?.[0]?.id);
-                  }
-                }}
-              >
-                <option value="" disabled selected>
-                  Node name
-                </option>
-                {parentNodeOptions?.map((itm) => (
-                  <option value={itm}>{itm}</option>
+                {nodeTypes?.map((itm) => (
+                  <option value={itm?.value}>{itm?.name}</option>
                 ))}
               </select>
+              {errors?.nodeType && (
+                <InputError
+                  message={errors?.nodeType?.message}
+                  key={errors?.nodeType?.message}
+                />
+              )}
             </div>
-            {floorOptions?.length > 0 && (
-              <div className="col-md-3">
-                <select
-                  name="floorNode"
-                  className="form-control w-75"
-                  id="floorNode"
-                  {...register("floorNode")}
-                  onChange={(e) => {
-                    setValue("floorNode", e.target.value);
-                    setValue("parentNode", e.target.value);
-                  }}
-                >
-                  <option value="" disabled selected>
-                    Select Floor Node
-                  </option>
-                  {floorOptions?.map((itm) => (
-                    <option value={itm?.id}>{itm?.nodeName}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className="col-md-3">
+            <div className="col-md-3 p-2">
+              <select
+                name="parentNode"
+                className="form-control form-select w-75"
+                id="parentNode"
+                {...register("parentNode", {
+                  required: {
+                    value: true,
+                    message: `Please select parent node.`,
+                  },
+                })}
+                onChange={(e) => {
+                  setValue("parentNode", e.target.value, {
+                    shouldValidate: true,
+                  });
+                }}
+              >
+                <option value="" disabled selected>
+                  Select Parent Node
+                </option>
+                {parentNodeTypes?.map((itm) => (
+                  <option value={itm?.id}>{itm?.nodeName}</option>
+                ))}
+              </select>
+              {errors?.parentNode && (
+                <InputError
+                  message={errors?.parentNode?.message}
+                  key={errors?.parentNode?.message}
+                />
+              )}
+            </div>
+            <div className="col-md-3 p-2">
               <button className="btn btn-primary" type="submit">
                 Add Node
               </button>

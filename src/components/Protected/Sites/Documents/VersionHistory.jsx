@@ -51,7 +51,7 @@ const VersionHistory = ({
       const versions = await get(`/api/document/file/${fileId}/history`);
       setFileVerions(versions?.files || []);
       setValue("folder", versions?.files?.[0]?.folderName);
-      setValue("name", versions?.files?.[0]?.name);
+      setValue("name", versions?.files?.[0]?.name?.split(".")?.[0]);
       setIsLoading(false);
     } catch (e) {
       setIsLoading(false);

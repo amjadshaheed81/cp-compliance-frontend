@@ -897,6 +897,22 @@ export const addSiteLayoutNode = (formData) => {
   };
 };
 
+export const updateSiteLayoutNode = (formData) => {
+  return async () => {
+    try {
+      const url = "/api/site/createNode";
+      const siteareainfo = await post(url, formData);
+      if (siteareainfo?.status === 200) {
+        return "Success";
+      } else {
+        return "Error";
+      }
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
+
 export const uploadFloorPlan = (formData, siteId) => {
   return async (dispatch) => {
     try {
@@ -972,6 +988,17 @@ export const deleteFile = (id) => {
   return async () => {
     try {
       const url = `/api/document/file/${id}/delete`;
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
+
+export const deleteSiteNode = (url) => {
+  return async () => {
+    try {
       await del(url);
       return "Success";
     } catch (error) {
