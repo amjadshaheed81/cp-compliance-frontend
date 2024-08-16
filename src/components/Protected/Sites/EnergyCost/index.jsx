@@ -45,7 +45,7 @@ const EnergyCost = ({ loggedInUserData }) => {
   const customColumnNamesCost = ['reference', 'fromDate', 'toDate', 'cost'];
   const customColumnNamesReading = ['reference', 'readingDate', 'readingValue'];
 
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;

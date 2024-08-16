@@ -28,7 +28,7 @@ const Summary = ({
   const [selectedAsset, setSelectedAsset] = useState({});
   const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
   const [showCloneModal, setShowCloneModal] = useState(false);
-  const [preActionsPerPage] = useState(10);
+  const [preActionsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;

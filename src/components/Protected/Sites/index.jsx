@@ -31,7 +31,7 @@ const Sites = ({
   loggedInUserData,
 }) => {
   const [selectedItem, setSelectedItem] = useState("status");
-  const [sitesPerPage] = useState(10);
+  const [sitesPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
 
   const indexOfLastSite = currentPage * sitesPerPage;

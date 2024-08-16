@@ -48,7 +48,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setManagerList(data?.users || []);
   };
 
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
