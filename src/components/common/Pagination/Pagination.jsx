@@ -1,13 +1,13 @@
-import React from 'react';
-import { Pagination as MuiPagination } from '@mui/material';
-import { styled } from '@mui/system';
-import { Box } from '@mui/system';
+import React from "react";
+import { Pagination as MuiPagination } from "@mui/material";
+import { styled } from "@mui/system";
+import { Box } from "@mui/system";
 
 const SquarePagination = styled(MuiPagination)({
-  '& .MuiPaginationItem-root': {
+  "& .MuiPaginationItem-root": {
     borderRadius: 0, // Removes the default rounded corners
-    minWidth: '40px', // Sets a square shape
-    height: '40px',
+    minWidth: "40px", // Sets a square shape
+    height: "40px",
   },
 });
 
@@ -18,6 +18,9 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
 
   return (
     <Box display="flex" justifyContent="center" mt={2}>
+      <div style={{ position: "absolute", left: "4rem", marginTop: "6px" }}>
+        {currentPage} - {totalPages} of {totalPages}
+      </div>
       <SquarePagination
         count={totalPages}
         page={currentPage}
