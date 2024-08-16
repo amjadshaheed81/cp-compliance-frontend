@@ -897,6 +897,22 @@ export const addSiteLayoutNode = (formData) => {
   };
 };
 
+export const updateSiteLayoutNode = (formData) => {
+  return async () => {
+    try {
+      const url = "/api/site/createNode";
+      const siteareainfo = await post(url, formData);
+      if (siteareainfo?.status === 200) {
+        return "Success";
+      } else {
+        return "Error";
+      }
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
+
 export const uploadFloorPlan = (formData, siteId) => {
   return async (dispatch) => {
     try {

@@ -4,6 +4,7 @@ import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { useForm } from "react-hook-form";
 import {
   deleteSiteNode,
+  updateSiteLayoutNode,
   uploadDocumentFile,
 } from "../../../../store/thunk/site";
 import { connect } from "react-redux";
@@ -27,6 +28,7 @@ const UpdateSiteLayout = ({
   refresh,
   selectedNode,
   deleteSiteNode,
+  updateSiteLayoutNode,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const handleOpen = () => setShowModal(true);
@@ -56,14 +58,34 @@ const UpdateSiteLayout = ({
       }
     });
   };
-
+  const submitUpdateNodeName = async (data) => {
+    const payload = {
+      ...selectedNode,
+      nodeName: data?.nodeNameValue,
+    };
+    setIsLoading(true);
+    const res = await updateSiteLayoutNode(payload);
+    if (res === "Success") {
+      toast.success("Node successfully updated.");
+      handleClose();
+      refresh();
+    } else {
+      toast.success("Something went wrong while updating node.");
+    }
+  };
+  useEffect(() => {
+    console.log("selectedNode", selectedNode);
+    setValue("nodeNameValue", selectedNode?.nodeName);
+  }, []);
   const {
     register,
     handleSubmit,
     getValues,
     setValue,
     formState: { errors },
-  } = useForm({});
+  } = useForm({
+    nodeNameValue: "",
+  });
 
   return (
     <React.Fragment>
@@ -74,30 +96,58 @@ const UpdateSiteLayout = ({
         fullWidth
         id="Modal-container"
       >
-        <DialogTitle>Update {selectedNode?.nodeName} Node</DialogTitle>
-        <DialogContent dividers></DialogContent>
-        <DialogActions>
-          {isLoading && (
-            <Box sx={{ display: "flex" }}>
-              <CircularProgress />
-            </Box>
-          )}
-          {!isLoading && (
-            <>
-              <Button onClick={handleClose}>Cancel</Button>
-              <Button
-                className="bg-danger text-light"
-                type="button"
-                onClick={() => deleteNode()}
-              >
-                Delete
-              </Button>
-              <Button type="submit" className="bg-primary text-light">
-                Update
-              </Button>
-            </>
-          )}
-        </DialogActions>
+        <form onSubmit={handleSubmit(submitUpdateNodeName)}>
+          <DialogTitle>Update {selectedNode?.nodeName} Node</DialogTitle>
+          <DialogContent dividers>
+            <div className="row">
+              <div className="col-md-3 mt-2">
+                <div className="form-group">
+                  <label for="summary">Node Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="nodeNameValue"
+                    name="nodeNameValue"
+                    {...register("nodeNameValue", {
+                      required: {
+                        value: true,
+                        message: `Please enter node name.`,
+                      },
+                    })}
+                  />
+                  {errors?.nodeNameValue && (
+                    <InputError
+                      message={errors?.nodeNameValue?.message}
+                      key={errors?.nodeNameValue?.message}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+          <DialogActions>
+            {isLoading && (
+              <Box sx={{ display: "flex" }}>
+                <CircularProgress />
+              </Box>
+            )}
+            {!isLoading && (
+              <>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button
+                  className="bg-danger text-light"
+                  type="button"
+                  onClick={() => deleteNode()}
+                >
+                  Delete
+                </Button>
+                <Button type="submit" className="bg-primary text-light">
+                  Update
+                </Button>
+              </>
+            )}
+          </DialogActions>
+        </form>
       </Dialog>
     </React.Fragment>
   );
@@ -105,4 +155,7 @@ const UpdateSiteLayout = ({
 
 const mapStateToProps = (state) => ({});
 
-export default connect(mapStateToProps, { deleteSiteNode })(UpdateSiteLayout);
+export default connect(mapStateToProps, {
+  deleteSiteNode,
+  updateSiteLayoutNode,
+})(UpdateSiteLayout);
