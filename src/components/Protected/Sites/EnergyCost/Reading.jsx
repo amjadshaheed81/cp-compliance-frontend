@@ -46,15 +46,29 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
           <Fragment>
             <form onSubmit={save}>
             <Grid container spacing={1} rowGap={2}>
-              <Grid sm={8}>
+              <Grid sm={4}>
                 <label for="reference">Meter Reference</label>
                 <input
-                  style={{ maxWidth: '600px' }}
+                 style={{ maxWidth: '300px' }}
+                  //style={{ maxWidth: '600px' }}
                   type="reference"
                   className="form-control"
                   id="reference"
                   disabled
                   value={survey?.reference}
+
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label for="reference">Usage</label>
+                <input
+                 style={{ maxWidth: '300px' }}
+                  //style={{ maxWidth: '600px' }}
+                  type="reference"
+                  className="form-control"
+                  id="reference"
+                  disabled
+                  value={formData?.readingValue - survey?.readingList?.[survey?.readingList?.length -1 ]?.readingValue}
 
                 />
               </Grid>
@@ -145,7 +159,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                       <tr>
                         <th>Reading Date</th>
                         <th>Reading</th>
-                        <th>Unit</th>
+                        <th>Usage</th>
                         <th>Action</th>
                       </tr>
                     </thead>
@@ -160,10 +174,12 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                             {String(d?.readingDate)?.substring(0, 10)}
                             </td>
                           <td>
-                            {d.readingValue}
+                            {d.readingValue} {d.readingUnit}
                             </td>
                           <td>
-                            {d.readingUnit}
+                          {idx === 0 ? d?.readingValue : (d?.readingValue - survey?.readingList?.[idx - 1 ]?.readingValue)}{d.readingUnit}
+
+                           
                             </td>
                           
                           <td>
