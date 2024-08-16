@@ -17,7 +17,9 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
   };
 
   return (
-    <Box display="flex" justifyContent="center" mt={2}>
+    <Box display={
+      totalPages === 0 ? "none" : "flex"
+    } justifyContent="center" mt={2}>
       <div style={{ position: "absolute", left: "4rem", marginTop: "6px" }}>
         {currentPage} - {totalPages} of {totalPages}
       </div>
