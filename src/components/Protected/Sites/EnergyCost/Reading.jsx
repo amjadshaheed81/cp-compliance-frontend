@@ -47,7 +47,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
             <form onSubmit={save}>
             <Grid container spacing={1} rowGap={2}>
               <Grid sm={8}>
-                <label for="reference">Survey Reference</label>
+                <label for="reference">Meter Reference</label>
                 <input
                   style={{ maxWidth: '600px' }}
                   type="reference"
