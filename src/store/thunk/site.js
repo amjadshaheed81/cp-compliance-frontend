@@ -980,6 +980,17 @@ export const deleteFile = (id) => {
   };
 };
 
+export const deleteSiteNode = (url) => {
+  return async () => {
+    try {
+      await del(url);
+      return "Success";
+    } catch (error) {
+      return "Error";
+    }
+  };
+};
+
 export const uploadDocumentFile = (data, folderId) => {
   return async (dispatch) => {
     const formData = {

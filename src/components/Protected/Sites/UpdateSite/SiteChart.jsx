@@ -13,6 +13,7 @@ import {
 } from "./../../../../store/thunk/site";
 import { toast } from "react-toastify";
 import { InputError } from "../../../common/InputError";
+import UpdateSiteLayout from "./UpdateSiteLayout";
 
 const InteriorExteriorStyledNode = styled.div`
   padding: 5px;
@@ -44,6 +45,7 @@ const FloorStyledNode = styled.div`
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
+  cursor: pointer;
   border-left: 4px solid #f34040;
   background: repeating-linear-gradient(
     +45deg,
@@ -58,6 +60,7 @@ const OtherStyledNode = styled.div`
   border-radius: 8px;
   display: inline-block;
   border-left: 4px solid #3b80f2;
+  cursor: pointer;
   background: repeating-linear-gradient(
     +45deg,
     #f0f8ff 2px,
@@ -83,6 +86,8 @@ const SiteChart = ({
   } = useForm({});
   const [floorOptions, setFloorOptions] = useState([]);
   const [positionOption, setPositionOption] = useState([]);
+  const [showModal, setShowModal] = useState([]);
+  const [selectedNode, setSelectedNode] = useState();
   const [nodeTypes, setNodeTypes] = useState([
     {
       name: "Floor",
@@ -110,8 +115,12 @@ const SiteChart = ({
   }, [siteLayout]);
   const formValues = watch();
   const submitNode = (values) => {
-    const isFloorAlreadyAdded = siteLayout?.filter((itm) => itm?.parentNode == values?.parentNode && itm?.nodeName == values?.typeOfNode);
-    if(isFloorAlreadyAdded?.length > 0) {
+    const isFloorAlreadyAdded = siteLayout?.filter(
+      (itm) =>
+        itm?.parentNode == values?.parentNode &&
+        itm?.nodeName == values?.typeOfNode
+    );
+    if (isFloorAlreadyAdded?.length > 0) {
       toast.warn(`${values?.typeOfNode} is already added in parent node.`);
       return;
     }
@@ -154,7 +163,18 @@ const SiteChart = ({
       >
         {childs?.map((itm) => (
           <TreeNode
-            label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}
+            label={
+              <FloorStyledNode>
+                <span
+                  onClick={() => {
+                    setSelectedNode(itm);
+                    setShowModal(true);
+                  }}
+                >
+                  {itm?.nodeName}
+                </span>
+              </FloorStyledNode>
+            }
           />
         ))}
       </TreeNode>
@@ -166,7 +186,10 @@ const SiteChart = ({
     );
     return positionNode?.map((itm) => (
       <TreeNode
-        label={<OtherStyledNode>{itm?.nodeName}</OtherStyledNode>}
+        label={<OtherStyledNode><span onClick={() => {
+          setSelectedNode(itm);
+          setShowModal(true);
+        }}>{itm?.nodeName}</span></OtherStyledNode>}
       ></TreeNode>
     ));
   };
@@ -186,7 +209,12 @@ const SiteChart = ({
         }
       >
         {childs?.map((itm) => (
-          <TreeNode label={<FloorStyledNode>{itm?.nodeName}</FloorStyledNode>}>
+          <TreeNode label={<FloorStyledNode><span
+            onClick={() => {
+              setSelectedNode(itm);
+              setShowModal(true);
+            }}
+          >{itm?.nodeName}</span></FloorStyledNode>}>
             {getOtherStyleNode(itm)}
           </TreeNode>
         ))}
@@ -196,6 +224,14 @@ const SiteChart = ({
   return (
     <>
       <SidebarNew />
+      {showModal && (
+        <UpdateSiteLayout
+          selectedNode={selectedNode}
+          showModal={showModal}
+          setShowModal={setShowModal}
+          refresh={() => getSiteLayout(updateSite?.siteId)}
+        />
+      )}
       <div style={{ textAlign: "center" }}>
         <h5 className="text-start">Creating Building Layout</h5>
         <Tree
