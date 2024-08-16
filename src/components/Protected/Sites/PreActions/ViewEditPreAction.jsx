@@ -16,11 +16,13 @@ import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { Box, Button, CircularProgress } from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData } from "../../../../api";
+import { getSiteAssets, setLoader } from "../../../../store/thunk/site";
 
 const ViewEditPreAction = ({
   createUpdatePreActions,
   loggedInUserData,
   siteSelectedForGlobal,
+  siteAssets,
 }) => {
   const {
     register,
@@ -38,13 +40,29 @@ const ViewEditPreAction = ({
   const goTo = (link) => {
     navigate(link);
   };
+
+  const [assetOptions, setAssetOptions] = useState([]);
+  const [assets, setassets] = useState([]);
+
   useEffect(() => {
     getActionIdDetails();
+    getSiteAssets(siteSelectedForGlobal?.siteId)
   }, []);
+
+
+  useEffect(()=>{
+    if(siteAssets?.length > 0) {
+      setAssetOptions(siteAssets?.map(itm => {
+        return { title: itm?.assetName, id: itm?.assetId}
+      }))
+    }
+  }, [siteAssets]);
+
+
   const getActionIdDetails = async () => {
     const actionDetail = await get(`/api/action/${actionId}/details`);
     reset(actionDetail);
-    console.log("actionDetail", actionDetail);
+    setassets(actionDetail?.taggedAsset ? actionDetail?.taggedAsset?.split(",") : []);
   };
   const [isLoading, setIsLoading] = useState(false);
   const submitPreActions = async (data) => {
@@ -79,6 +97,8 @@ const ViewEditPreAction = ({
       toast.error("Please login with valid user details to proceed.");
     }
   };
+
+  
   const approveCreateAction = async () => {
     
     const data = {
@@ -285,20 +305,24 @@ const ViewEditPreAction = ({
                           id="taggedAsset"
                           name="taggedAsset"
                           placeholder=""
-                          disabled={viewMode === "viewOnly" || "markApproved"}
-                          {...register("taggedAsset", {
-                            required: {
-                              value: true,
-                              message: `Please select asset`,
-                            },
-                          })}
+                          disabled
+                          value={
+                            assetOptions.filter(a=> assets.includes(String(a.id))).map(a=> a.title).join(",")
+                          }
+                          //disabled={viewMode === "viewOnly" || "markApproved"}
+                          // {...register("taggedAsset", {
+                          //   required: {
+                          //     value: true,
+                          //     message: `Please select asset`,
+                          //   },
+                          // })}
                         />
-                        {errors?.taggedAsset && (
+                        {/* {errors?.taggedAsset && (
                           <InputError
                             message={errors?.taggedAsset?.message}
                             key={errors?.taggedAsset?.message}
                           />
-                        )}
+                        )} */}
                       </div>
                     </div>
                     {viewMode !== "markApproved" && (
@@ -488,6 +512,7 @@ const ViewEditPreAction = ({
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
   createUpdatePreActions,
