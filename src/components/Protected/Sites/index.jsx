@@ -19,6 +19,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
+import { get } from "../../../api";
 
 const Sites = ({
   filterSite,
@@ -33,6 +34,7 @@ const Sites = ({
   const [selectedItem, setSelectedItem] = useState("status");
   const [sitesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [risks, setrisks] = useState({});
 
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;
@@ -49,7 +51,13 @@ const Sites = ({
 
   useEffect(() => {
     getSites(loggedInUserData);
+    getRisks();
   }, []);
+
+  const getRisks = async () => {
+    const risksdata = await get('/api/site-check/risks');
+    setrisks(risksdata);
+  }
   const deleteSiteById = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.siteName}`,
@@ -253,14 +261,16 @@ const Sites = ({
                     </th>
                     <th scope="col">
                       <span className="badge bg-danger p-2 m-1 risk-span">
-                        1
+                        {risks?.[itm?.siteId]?.riskScoreRed??0}
                       </span>
                       <span className="badge bg-warning p-2 m-1 risk-span">
-                        1
+                      {risks?.[itm?.siteId]?.riskScoreAmber??0}
                       </span>
-                      <span className="badge bg-info p-2 m-1 risk-span">1</span>
+                      <span className="badge bg-info p-2 m-1 risk-span">
+                      {risks?.[itm?.siteId]?.riskScoreYellow??0}
+                      </span>
                       <span className="badge bg-success p-2 m-1 risk-span">
-                        1
+                      {risks?.[itm?.siteId]?.riskScoreGreen??0}
                       </span>
                     </th>
                     <th scope="col">
