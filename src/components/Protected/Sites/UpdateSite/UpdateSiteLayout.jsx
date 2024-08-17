@@ -29,6 +29,7 @@ const UpdateSiteLayout = ({
   selectedNode,
   deleteSiteNode,
   updateSiteLayoutNode,
+  siteLayout,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const handleOpen = () => setShowModal(true);
@@ -59,6 +60,15 @@ const UpdateSiteLayout = ({
     });
   };
   const submitUpdateNodeName = async (data) => {
+    const isFloorAlreadyAdded = siteLayout?.filter(
+      (itm) =>
+        itm?.parentNode == selectedNode?.parentNode &&
+        itm?.nodeName == data?.nodeNameValue
+    );
+    if (isFloorAlreadyAdded?.length > 0) {
+      toast.warn(`${data?.nodeNameValue} is already added in parent node.`);
+      return;
+    }
     const payload = {
       ...selectedNode,
       nodeName: data?.nodeNameValue,
@@ -153,7 +163,9 @@ const UpdateSiteLayout = ({
   );
 };
 
-const mapStateToProps = (state) => ({});
+const mapStateToProps = (state) => ({
+  siteLayout: state.site.siteLayout,
+});
 
 export default connect(mapStateToProps, {
   deleteSiteNode,
