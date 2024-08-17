@@ -242,6 +242,7 @@ const Sites = ({
                         className="text-primary cursor"
                         onClick={() => {
                           selectGlobalSite(itm);
+                          localStorage.setItem("site", JSON.stringify(itm));
                         }}
                       >
                         {itm?.siteName}
