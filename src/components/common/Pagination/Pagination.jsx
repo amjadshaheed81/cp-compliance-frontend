@@ -2,6 +2,7 @@ import React from "react";
 import { Pagination as MuiPagination } from "@mui/material";
 import { styled } from "@mui/system";
 import { Box } from "@mui/system";
+import "./Pagination.css";
 
 const SquarePagination = styled(MuiPagination)({
   "& .MuiPaginationItem-root": {
@@ -20,7 +21,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
     <Box display={
       totalPages === 0 ? "none" : "flex"
     } justifyContent="center" mt={2}>
-      <div style={{ position: "absolute", left: "4rem", marginTop: "6px" }}>
+      <div className="pagination-container">
         {currentPage} - {totalPages} of {totalPages}
       </div>
       <SquarePagination

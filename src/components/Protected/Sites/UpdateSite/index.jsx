@@ -97,6 +97,7 @@ const UpdateSite = ({
       if (res === "Success") {
         toast.success("Site image has been deleted successfully.");
         getSiteById(siteId);
+        window.location.reload();
       } else {
         setLoader(false);
         toast.error(

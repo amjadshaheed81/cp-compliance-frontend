@@ -19,7 +19,7 @@ import { DialogContent, DialogTitle, Link, Dialog, CircularProgress, Box, Grid, 
 import { getSites } from "../../../../store/thunk/site";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
-const EnergyCost = ({ loggedInUserData }) => {
+const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [openCost, setOpenCost] = useState(false)
   const [openBulk, setopenBulk] = useState(false)
@@ -45,7 +45,7 @@ const EnergyCost = ({ loggedInUserData }) => {
   const customColumnNamesCost = ['reference', 'fromDate', 'toDate', 'cost'];
   const customColumnNamesReading = ['reference', 'readingDate', 'readingValue'];
 
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
@@ -143,7 +143,7 @@ const EnergyCost = ({ loggedInUserData }) => {
     });
   };
 
-  useEffect(() => { getEnergyCost() }, [])
+  useEffect(() => { getEnergyCost() }, [siteSelectedForGlobal])
 
 
 
@@ -609,8 +609,8 @@ const EnergyCost = ({ loggedInUserData }) => {
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  loggedInUserData: state.site.loggedInUserData
-
+  loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, { getSites })(
   EnergyCost

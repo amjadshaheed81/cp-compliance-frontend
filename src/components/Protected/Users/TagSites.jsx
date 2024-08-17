@@ -20,7 +20,7 @@ export const MenuProps = {
 const TagSites = ({ showSiteTagModal, setShowSiteTagModal, taggedSites }) => {
   const handleOpen = () => setShowSiteTagModal(true);
   const handleClose = () => setShowSiteTagModal(false);
-  const [sitesPerPage] = useState(5);
+  const [sitesPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;

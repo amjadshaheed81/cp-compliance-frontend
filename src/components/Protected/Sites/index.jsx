@@ -32,7 +32,7 @@ const Sites = ({
   loggedInUserData,
 }) => {
   const [selectedItem, setSelectedItem] = useState("status");
-  const [sitesPerPage] = useState(10);
+  const [sitesPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const [risks, setrisks] = useState({});
 
@@ -250,6 +250,7 @@ const Sites = ({
                         className="text-primary cursor"
                         onClick={() => {
                           selectGlobalSite(itm);
+                          localStorage.setItem("site", JSON.stringify(itm));
                         }}
                       >
                         {itm?.siteName}

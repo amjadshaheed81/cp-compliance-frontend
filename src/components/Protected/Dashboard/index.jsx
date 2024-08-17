@@ -26,6 +26,10 @@ const Dashboard = ({
           siteName: loggedInUserData?.taggedSites?.[0]?.name || '',
           siteId: loggedInUserData?.taggedSites?.[0]?.id || '',
         });
+        localStorage.setItem("site", JSON.stringify({
+          siteName: loggedInUserData?.taggedSites?.[0]?.name || '',
+          siteId: loggedInUserData?.taggedSites?.[0]?.id || '',
+        }));
       }
     }
   }, [loggedInUserData]);

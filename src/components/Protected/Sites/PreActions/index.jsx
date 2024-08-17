@@ -19,7 +19,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
   const [filteredPreActions, setFilteredPreActions] = useState([]);
   const [preActions, setPreActions] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [preActionsPerPage] = useState(5);
+  const [preActionsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
@@ -57,7 +57,6 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
   };
   const [formData, setFormData] = useState({
     searchField: "",
-    location: "",
     status: "",
   });
   const handleInputChange = (e) => {
@@ -72,9 +71,8 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
   }, [formData.role, formData.searchField, formData.site, formData.status]);
   const searchPreActions = () => {
     const searchField = formData?.searchField;
-    const location = formData?.location;
     const status = formData?.status;
-    if (searchField || location || status) {
+    if (searchField || status) {
       const list = preActions?.filter(
         (x) =>
           String(x?.actionId)
@@ -143,16 +141,6 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     name="searchField"
                     onChange={handleInputChange}
                   />
-                </div>
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    name="location"
-                    className="form-control form-select"
-                    id="location"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Location</option>
-                  </select>
                 </div>
                 <div className="col-md-4 col-sm-4 mt-2">
                   <select

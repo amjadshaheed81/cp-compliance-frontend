@@ -44,7 +44,7 @@ const Contracts = ({
   const [subCategory, setSubCategory] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [checked, setChecked] = useState(false);
-  const [contractsPerPage] = useState(10);
+  const [contractsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
