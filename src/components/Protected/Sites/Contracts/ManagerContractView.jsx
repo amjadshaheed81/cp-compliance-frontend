@@ -26,6 +26,7 @@ import {
   updateScheduleVisit,
 } from "../../../../store/thunk/projects";
 import Swal from "sweetalert2";
+import PdfViewer from "../Documents/PdfViewer";
 
 const ManagerContractView = ({
   showAddModal,
@@ -58,6 +59,8 @@ const ManagerContractView = ({
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [subCategoryListData, setSubCategoryListData] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
   const [assetData, setAssetData] = useState([
     {
       assets: [],
@@ -322,6 +325,13 @@ const ManagerContractView = ({
   }
   return (
     <React.Fragment>
+      {showPdfModal && (
+        <PdfViewer
+          showPdfModal={showPdfModal}
+          setShowPdfModal={setShowPdfModal}
+          selectedPdf={selectedPdf}
+        />
+      )}
       <Dialog
         open={showAddModal}
         onClose={handleClose}
@@ -621,11 +631,21 @@ const ManagerContractView = ({
                               ? "No files are uploaded yet."
                               : itm?.files?.map((file, index) => (
                                   <>
-                                    <a
-                                      className="btn btn-sm btn-light"
-                                      download
-                                      href={file?.url}
-                                    >{`version-${index + 1}`}</a>
+                                    <button
+                                      style={{
+                                        border: "none",
+                                        cursor: "pointer",
+                                        color: "blue",
+                                        marginTop: '2px'
+                                      }}
+                                      onClick={(e) => {
+                                        e?.preventDefault();
+                                        setShowPdfModal(true);
+                                        setSelectedPdf(file?.url);
+                                      }}
+                                    >
+                                      {file.name}
+                                    </button>
                                     &nbsp;
                                   </>
                                 ))}
