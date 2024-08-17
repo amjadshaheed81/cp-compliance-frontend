@@ -284,7 +284,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     });
   };
 
-  useEffect(() => { getSiteChecks() },[])
+  useEffect(() => { getSiteChecks() },[siteSelectedForGlobal]);
 
   const addSiteCheck = async (event) => {
     event.preventDefault();
