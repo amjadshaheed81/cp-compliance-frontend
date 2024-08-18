@@ -122,8 +122,7 @@ const ShowCloneModal = ({
                     <Alert severity="warning">
                       You are about to create copies of the above mentioned
                       asset. Once created, you will have to manually edit the
-                      details of the asset. The created clone names will begin
-                      with prefix “Clone-”.
+                      details of the asset.
                     </Alert>
                   </div>
                   <div className="col-md-12">
