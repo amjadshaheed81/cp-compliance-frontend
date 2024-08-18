@@ -53,6 +53,7 @@ const BulkUpload = ({
               originalFileName: iterator?.name,
               fileVersion: version,
               siteId: siteSelectedForGlobal?.siteId,
+              uploaderUserId: loggedInUserData?.id,
               reviewerUserId: loggedInUserData?.id,
               uploadDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
               issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
