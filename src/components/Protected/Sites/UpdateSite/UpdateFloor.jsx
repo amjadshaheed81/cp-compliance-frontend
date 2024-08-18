@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
 import { setLoader, uploadFloorPlan } from "./../../../../store/thunk/site";
 import { toast } from "react-toastify";
+import PdfViewer from "../Documents/PdfViewer";
 
 const UpdateFloor = ({
   siteLayout,
@@ -11,6 +12,8 @@ const UpdateFloor = ({
   setLoader,
 }) => {
   const { register, getValues } = useForm({});
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
   const [positionOption, setPositionOption] = useState([]);
   useEffect(() => {
     const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
@@ -34,7 +37,7 @@ const UpdateFloor = ({
         });
       }
     });
-    if(files?.length > 0) {
+    if (files?.length > 0) {
       files.map((file) => {
         form_data.append("files", file, file?.name);
       });
@@ -42,7 +45,7 @@ const UpdateFloor = ({
       setLoader(true);
       uploadFloorPlan(form_data, updateSite?.siteId);
     } else {
-      toast.warn("Please select atleast one floor plan file to proceed.")
+      toast.warn("Please select atleast one floor plan file to proceed.");
     }
   };
   const getFloorPlanInputs = () => {
@@ -64,11 +67,22 @@ const UpdateFloor = ({
         </td>
         <td>
           {itm?.floorPlanUrl ? (
-            <a
-              className="btn btn-sm btn-light"
-              download
-              href={itm?.floorPlanUrl}
-            >{itm?.fileName ?  itm?.fileName : `${itm?.nodeName}.png`}</a>
+            <button
+              style={{
+                border: "none",
+                cursor: "pointer",
+                color: "blue",
+                marginTop: "2px",
+              }}
+              onClick={(e) => {
+                console.log("itm", itm);
+                e?.preventDefault();
+                setShowPdfModal(true);
+                setSelectedPdf(itm?.floorPlanUrl);
+              }}
+            >
+             {itm?.fileName ?  itm?.fileName : `${itm?.nodeName}.png`}
+            </button>
           ) : null}
         </td>
       </tr>
@@ -80,6 +94,13 @@ const UpdateFloor = ({
         display: updateSite?.isViewMode ? "none" : "block",
       }}
     >
+      {showPdfModal && (
+        <PdfViewer
+          showPdfModal={showPdfModal}
+          setShowPdfModal={setShowPdfModal}
+          selectedPdf={selectedPdf}
+        />
+      )}
       <h5 className="pt-5 text-start">Update Floor Plan</h5>
       <div className="table-responsive">
         <table

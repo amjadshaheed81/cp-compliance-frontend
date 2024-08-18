@@ -9,7 +9,7 @@ const FileViewer = ({ fileUrl }) => {
         <iframe src={fileUrl} height="500px" width="500px"></iframe>
       </div>
     );
-  } else if (fileExtension.includes("jpg") || fileExtension.includes("png")) {
+  } else if (fileExtension.includes("jpg") || fileExtension.includes("jpeg") || fileExtension.includes("png")) {
     return (
       <img
         src={fileUrl}

@@ -135,12 +135,13 @@ const ShowCloneModal = ({
                         <input
                           type="number"
                           className="form-control"
+                          min="0"
                           {...register("numberOfClones", {
                             required: {
                               value: true,
                               message: `Please select number of clones to create`,
                             },
-                            validate: (value) => value > 0 || "Number of clones cannot be negative",
+                            validate: (value) => value > 0 || "Number of clones cannot be zero or negative number",
                           })}
                         />
                         {errors?.numberOfClones && (
