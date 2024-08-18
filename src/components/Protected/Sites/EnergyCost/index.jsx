@@ -101,10 +101,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const deleteEnergyCost = async (id) => {
     await del("/api/energy/cost/" + id);
     getEnergyCost();
+    setOpenCost();
   }
 
   const deleteEnergyReading = async (id) => {
     await del("/api/energy/reading/" + id);
+    setOpenReading();
     getEnergyCost();
   }
 

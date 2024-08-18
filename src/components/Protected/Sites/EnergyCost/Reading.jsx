@@ -10,6 +10,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
   const [formData, setFormData] = useState({});
 
 
+
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
     const udata = {
@@ -30,13 +31,14 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
      
     data.readingDate = new Date(data.readingDate);
     data.energyId = survey.energyId;
-    data.readingUnit = "kWh";
     saveData(data)
     setOpen(false);
   }
 
+  useEffect(()=>{
+    setFormData({})
+  },[survey])
   
-
 
   return (
     <>
@@ -68,7 +70,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                   className="form-control"
                   id="reference"
                   disabled
-                  value={formData?.readingValue - survey?.readingList?.[survey?.readingList?.length -1 ]?.readingValue}
+                  value={(formData?.readingValue ? formData?.readingValue : 0) - (survey?.readingList?.length > 0 ? survey?.readingList?.[survey?.readingList?.length -1 ]?.readingValue : 0)}
 
                 />
               </Grid>
@@ -184,6 +186,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                           
                           <td>
                             <button
+                            type="button"
                               className="btn btn-sm btn-light text-dark"
                               onClick={() => deleteEnergyReading(d?.readingId)}
                             >
