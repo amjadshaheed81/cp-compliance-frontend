@@ -281,7 +281,6 @@ const Door = ({
                 <th>
                   <input
                     type="checkbox"
-                    disabled
                     onChange={handleSelectAllChange}
                     className="form-check-input"
                     checked={

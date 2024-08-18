@@ -304,7 +304,6 @@ const Summary = ({
                   <input
                     type="checkbox"
                     className="form-check-input"
-                    disabled
                     onChange={handleSelectAllChange}
                     checked={selectedItems.length === filteredSiteAssets.length}
                   />

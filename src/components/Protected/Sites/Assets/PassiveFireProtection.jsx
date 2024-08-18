@@ -275,7 +275,6 @@ const PassiveFireProtection = ({
                 <th>
                   <input
                     type="checkbox"
-                    disabled
                     onChange={handleSelectAllChange}
                     className="form-check-input"
                     checked={

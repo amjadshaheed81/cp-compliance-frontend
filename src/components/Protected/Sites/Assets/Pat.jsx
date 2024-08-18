@@ -273,7 +273,6 @@ const Pat = ({
                 <th>
                   <input
                     type="checkbox"
-                    disabled
                     onChange={handleSelectAllChange}
                     className="form-check-input"
                     checked={
