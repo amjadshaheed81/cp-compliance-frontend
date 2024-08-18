@@ -68,7 +68,7 @@ const UpdateFloor = ({
               className="btn btn-sm btn-light"
               download
               href={itm?.floorPlanUrl}
-            >{`${itm?.nodeName}.png`}</a>
+            >{itm?.fileName ?  itm?.fileName : `${itm?.nodeName}.png`}</a>
           ) : null}
         </td>
       </tr>
