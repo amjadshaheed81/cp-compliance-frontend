@@ -70,18 +70,16 @@ const BulkUpload = ({
       );
       try {
         await uploadPhoto(url, formDataPayload);
-        refresh();
         setIsLoading(false);
         handleClose();
         version++;
       } catch (e) {
-        refresh();
         console.error(e);
       }
     }
     toast.success("Files uploaded successfully");
     handleClose();
-    refresh();
+    setTimeout(() => refresh(), 1000);
     console.log("formData", formData);
     // const {bulkUpload, ...filesData } = formData?.bulkUpload;
   };
