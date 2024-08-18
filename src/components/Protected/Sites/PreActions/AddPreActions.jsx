@@ -72,6 +72,7 @@ const AddPreActions = ({
         "actionRequestString",
         JSON.stringify({
           ...formData,
+          status: "Pending",
           actionId: null,
           raisedByUserId: loggedInUserData?.id,
           taggedAsset: value.map(v=> v.id).join(',')
@@ -189,7 +190,7 @@ const AddPreActions = ({
                         </div>
                       </div>
 
-                      <div className="col-md-6">
+                      {/* <div className="col-md-6">
                         <div className="form-group mt-2">
                           <label for="status">Status</label>
                           <select
@@ -215,7 +216,7 @@ const AddPreActions = ({
                             />
                           )}
                         </div>
-                      </div>
+                      </div> */}
 
                       <div className="col-md-12">
                         <div className="form-group mt-2 w-50">

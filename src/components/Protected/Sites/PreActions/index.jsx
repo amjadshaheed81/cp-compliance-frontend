@@ -14,6 +14,7 @@ import AddPreActions from "./AddPreActions";
 import { get } from "../../../../api";
 import { deletePreAction } from "../../../../store/thunk/preActions";
 import { ROLE } from "../../../../Constant/Role";
+import { Chip } from "@mui/material";
 
 const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) => {
   const [filteredPreActions, setFilteredPreActions] = useState([]);
@@ -150,8 +151,8 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     onChange={handleInputChange}
                   >
                     <option value="">Status</option>
-                    <option value="New">New</option>
-                    <option value="Pending Action">Pending Action</option>
+                    <option value="Pending">Pending</option>
+                    {/* <option value="Pending Action">Pending Action</option> */}
                     <option value="Closed">Closed</option>
                   </select>
                 </div>
@@ -210,7 +211,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     <td>No search result found!!</td>
                   </tr>
                 )}
-                {currentPreActions?.map((action) => (
+                {currentPreActions?.filter(a=>a.status !== "Pending Action")?.map((action) => (
                   <tr key={action?.id}>
                     <th scope="col">{action?.actionId}</th>
                     <th scope="col">{action?.raisedByUserName}</th>
@@ -223,9 +224,10 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                       {moment(action?.raisedDate).format("DD-MM-YYYY")}
                     </th>
                     <th scope="col">
-                      <span className="badge rounded-pill bg-primary text-capitalize">
-                        {action?.status}
-                      </span>
+                      {/* <span className="badge rounded-pill bg-primary text-capitalize"> */}
+
+<Chip label={action?.status} color={action?.status === "Closed" ? "warning" : "success"}/>                       
+                      {/* </span> */}
                     </th>
                     <th scope="col">
                       <Tooltip title={`View ${action?.actionId}`} arrow>
