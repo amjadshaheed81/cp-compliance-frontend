@@ -10,7 +10,9 @@ import ViewUser from "./ViewUser";
 import EditUser from "./EditUser";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { Chip } from "@mui/material";
 import AddUser from "./AddUser";
+import ChipComponent from "../../common/Chips/Chips";
 import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
@@ -322,7 +324,18 @@ const Users = ({
                     </th>
                     <th scope="col">{user?.userType}</th>
                     <th scope="col">{user?.companyName}</th>
-                    <th scope="col">{user?.status}</th>
+                    
+                    <th scope="col"> 
+                    {/* <Chip
+               label={ user?.status}
+            color={
+            user?.status === "Active" 
+              ? "success"
+              : "danger"
+          }
+        /> */}
+         <ChipComponent status={user?.status} />
+                  </th>  
                     <th scope="col">
                       <Tooltip title={`View ${user?.name}`} arrow>
                         <button
