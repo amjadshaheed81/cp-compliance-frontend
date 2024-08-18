@@ -255,6 +255,7 @@ const Sites = ({
                       >
                         {itm?.siteName}
                       </span>
+                      <p><small>{itm?.postCode}</small></p>
                     </th>
                     <th scope="col">{itm?.address1}</th>
                     <th scope="col">
