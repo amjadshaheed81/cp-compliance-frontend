@@ -77,8 +77,8 @@ const AddSite = ({
       const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
       const response = await get(url);
       setValue("postCode", response?.postcode, { shouldValidate: true });
-      setValue("address1", response?.line_2);
-      setValue("address2", response?.line_1, { shouldValidate: true });
+      setValue("address2", response?.line_2);
+      setValue("address1", response?.line_1, { shouldValidate: true });
       setValue("city", response?.town_or_city, { shouldValidate: true });
       setValue("area", response?.county);
       setValue("latitude", response?.latitude);
