@@ -70,7 +70,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                   className="form-control"
                   id="reference"
                   disabled
-                  value={(formData?.readingValue ? formData?.readingValue : 0) - (survey?.readingList?.length > 0 ? survey?.readingList?.[survey?.readingList?.length -1 ]?.readingValue : 0)}
+                  value={formData?.readingValue ? ((formData?.readingValue) - (survey?.readingList?.length > 0 ? survey?.readingList?.[survey?.readingList?.length -1 ]?.readingValue : 0)) : 0}
 
                 />
               </Grid>
