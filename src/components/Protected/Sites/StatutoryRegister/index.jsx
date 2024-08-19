@@ -159,7 +159,7 @@ const StatutoryRegister = ({
                 </div>
                 <div className="col text-center">
                   <CSVLink
-                    filename={"statutory-documents"}
+                    filename={"statutory-documents.csv"}
                     className="btn btn-light bg-white text-primary"
                     data=""
                   >

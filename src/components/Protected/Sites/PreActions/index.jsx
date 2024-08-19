@@ -176,7 +176,7 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     </div>
                     <div className="col-md-6 col-sm-4 mt-2">
                       <CSVLink
-                        filename={"pre-action-list"}
+                        filename={"pre-action-list.csv"}
                         className="btn btn-light bg-white text-primary"
                         data={filteredPreActions}
                       >

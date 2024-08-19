@@ -254,7 +254,7 @@ const PassiveFireProtection = ({
             </div>
             <div className="col-md-6 col-sm-4 mt-2">
               <CSVLink
-                filename={"site-pfp-item-list"}
+                filename={"site-pfp-item-list.csv"}
                 className="btn btn-light bg-white text-primary"
                 data={sitePFPItems}
               >

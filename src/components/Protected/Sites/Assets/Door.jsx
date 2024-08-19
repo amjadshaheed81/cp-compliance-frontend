@@ -260,7 +260,7 @@ const Door = ({
             </div>
             <div className="col-md-6 col-sm-4 mt-2">
               <CSVLink
-                filename={"site-door-assets"}
+                filename={"site-door-assets.csv"}
                 className="btn btn-light bg-white text-primary"
                 data={siteDoorItems}
               >

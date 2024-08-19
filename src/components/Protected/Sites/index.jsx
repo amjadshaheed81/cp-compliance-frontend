@@ -203,7 +203,7 @@ const Sites = ({
                 {loggedInUserData?.role === ROLE.ADMIN && (
                   <div className="col-md-4 col-sm-4 mt-2">
                     <CSVLink
-                      filename={"site-lists"}
+                      filename={"site-lists.csv"}
                       className="btn btn-light bg-white text-primary"
                       data={sites}
                     >
