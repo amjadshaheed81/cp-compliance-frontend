@@ -252,7 +252,7 @@ const Users = ({
                 </div>
                 <div className="col-md-6 col-sm-4 mt-2">
                   <CSVLink
-                    filename={"user-lists"}
+                    filename={"user-lists.csv"}
                     className="btn btn-light bg-white text-primary"
                     data={
                       users?.map((itm) => {

@@ -542,7 +542,7 @@ const ContractorContractView = ({
                       {currentContract?.projectContractAssets?.map((itm) => (
                         <tr key={itm?.assetId}>
                           <td>{itm?.assetName}</td>
-                          <td>{itm?.model}</td>
+                          <td>{itm?.assetId}</td>
                           <td>
                             {itm.position ? `${itm.position}` : ""}
                             {itm.floor ? ` > ${itm.floor}` : ""}

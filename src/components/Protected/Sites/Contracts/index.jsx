@@ -302,7 +302,7 @@ const Contracts = ({
                     </div>
                     <div className="col-md-6 col-sm-4 mt-2">
                         <CSVLink
-                          filename={"contracts-lists"}
+                          filename={"contracts-lists.csv"}
                           className="btn btn-light bg-white text-primary"
                           data={filteredContractList}
                         >

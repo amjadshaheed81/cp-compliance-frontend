@@ -411,7 +411,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 </div>
                 <div className="col">
                   <CSVLink
-                      filename={"site-checks-list_" + moment(new Date()).format("DD-MM-YYYY")}
+                      filename={"site-checks-list_" + moment(new Date()).format("DD-MM-YYYY")+".csv"}
                     className="btn btn-light bg-white text-primary"
                       data={filteredSiteChecks}
                   >

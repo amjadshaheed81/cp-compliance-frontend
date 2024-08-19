@@ -252,7 +252,7 @@ const Pat = ({
             </div>
             <div className="col-md-6 col-sm-6 mt-2">
               <CSVLink
-                filename={"site-pat-item-list"}
+                filename={"site-pat-item-list.csv"}
                 className="btn btn-light bg-white text-primary"
                 data={sitePATItems}
               >
@@ -273,7 +273,6 @@ const Pat = ({
                 <th>
                   <input
                     type="checkbox"
-                    disabled
                     onChange={handleSelectAllChange}
                     className="form-check-input"
                     checked={

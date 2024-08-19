@@ -81,7 +81,7 @@ const AddAssets = ({
             )}
           />
         </TableCell>
-        <TableCell>{itm.assetName || ""}</TableCell>
+        <TableCell>{itm.assetId || ""}</TableCell>
         <TableCell>
           {itm.position ? `${itm.position}` : ""}
           {itm.floor ? ` > ${itm.floor}` : ""}

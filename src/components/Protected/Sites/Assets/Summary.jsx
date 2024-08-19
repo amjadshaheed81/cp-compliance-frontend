@@ -279,7 +279,7 @@ const Summary = ({
                   </div>
                   <div className="col-md-4 col-sm-4 mt-2">
                     <CSVLink
-                      filename={"site-assets-lists"}
+                      filename={"site-assets-lists.csv"}
                       className="btn btn-light bg-white text-primary"
                       data={siteAssetsList}
                     >
@@ -304,7 +304,6 @@ const Summary = ({
                   <input
                     type="checkbox"
                     className="form-check-input"
-                    disabled
                     onChange={handleSelectAllChange}
                     checked={selectedItems.length === filteredSiteAssets.length}
                   />

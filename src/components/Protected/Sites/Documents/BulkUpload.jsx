@@ -53,6 +53,7 @@ const BulkUpload = ({
               originalFileName: iterator?.name,
               fileVersion: version,
               siteId: siteSelectedForGlobal?.siteId,
+              uploaderUserId: loggedInUserData?.id,
               reviewerUserId: loggedInUserData?.id,
               uploadDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
               issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
@@ -70,18 +71,16 @@ const BulkUpload = ({
       );
       try {
         await uploadPhoto(url, formDataPayload);
-        refresh();
         setIsLoading(false);
         handleClose();
         version++;
       } catch (e) {
-        refresh();
         console.error(e);
       }
     }
     toast.success("Files uploaded successfully");
     handleClose();
-    refresh();
+    setTimeout(() => refresh(), 1000);
     console.log("formData", formData);
     // const {bulkUpload, ...filesData } = formData?.bulkUpload;
   };

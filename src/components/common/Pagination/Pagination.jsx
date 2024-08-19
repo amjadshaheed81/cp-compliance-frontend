@@ -22,7 +22,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
       totalPages === 0 ? "none" : "flex"
     } justifyContent="center" mt={2}>
       <div className="pagination-container">
-        {currentPage} - {totalPages} of {totalPages}
+        Page {currentPage} of {totalPages}
       </div>
       <SquarePagination
         count={totalPages}
