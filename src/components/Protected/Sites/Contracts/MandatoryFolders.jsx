@@ -71,6 +71,7 @@ const MandatoryFolders = ({
           <Button
             className="btn btn-sm btn-light text-primary w-100"
             onClick={handleFolderOpen}
+            style={{fontSize: '12px'}}
           >
             <i className="fas fa-plus"></i>&nbsp; Select Folder
           </Button>
