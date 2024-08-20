@@ -74,7 +74,7 @@ const SurveyWaterOutletTemperature = ({
   const removeduplciate = (array) => {
     const seen = new Map();
 
-    return array.filter(item => {
+    return array.filter((item) => {
       const key = `${item.assetId}-${item.outletType}-${item.temperature}-${item.normalRunTime}-${item.floor}-${item.room}`;
       if (!seen.has(key)) {
         seen.set(key, true);
@@ -82,7 +82,7 @@ const SurveyWaterOutletTemperature = ({
       }
       return false;
     });
-  }
+  };
 
   const isDuplicate = (newItem) => {
     const completedItems = formData.filter((item) => item.completed);
@@ -132,7 +132,7 @@ const SurveyWaterOutletTemperature = ({
     const udata = {
       ...formData[idx],
       [name]: value,
-      update: true
+      update: true,
     };
     uformData[idx] = udata;
     setFormData(uformData);
@@ -150,7 +150,7 @@ const SurveyWaterOutletTemperature = ({
       form.reportValidity();
     }
     for (const data of formData) {
-      console.log('data', data)
+      console.log("data", data);
       if (!data.completed || data.update) {
         if (isDuplicate(data) && !data.update) {
           toast.error("Duplicate data!!!");
@@ -159,7 +159,7 @@ const SurveyWaterOutletTemperature = ({
         data.checkId = checkId;
         data.status = "Open";
         if (data.update) {
-          data.id = undefined
+          data.id = undefined;
         }
         if (data.r1Date) {
           //data.r1Date = new Date(data.r1Date.toISOString().slice(0, 10));
@@ -167,57 +167,62 @@ const SurveyWaterOutletTemperature = ({
           data.r3Date = data.r1Date;
         }
         await post("/api/site-check/water-outlet-temp", data);
-        toast.success("Fault data saved");
+        toast.success("Water outlet temperature data saved.");
       }
     }
-    getSurvey()
+    getSurvey();
   };
 
   const addReadingSave = (event) => {
     event.preventDefault();
-    
+
     const form = event.target;
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    const isReading1ok = (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading1) < 50) ||
-      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading1) > 20)
-    const isReading2ok = (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading2) < 50) ||
-      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading2) > 20)
-    const isReading3ok = (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop].reading3) < 50) ||
-      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop].reading3) > 20)
+    const isReading1ok =
+      (formData?.[readingPop]?.temperature === "Hot" &&
+        Number(formData[readingPop].reading1) < 50) ||
+      (formData?.[readingPop]?.temperature === "Cold" &&
+        Number(formData[readingPop].reading1) > 20);
+    const isReading2ok =
+      (formData?.[readingPop]?.temperature === "Hot" &&
+        Number(formData[readingPop].reading2) < 50) ||
+      (formData?.[readingPop]?.temperature === "Cold" &&
+        Number(formData[readingPop].reading2) > 20);
+    const isReading3ok =
+      (formData?.[readingPop]?.temperature === "Hot" &&
+        Number(formData[readingPop].reading3) < 50) ||
+      (formData?.[readingPop]?.temperature === "Cold" &&
+        Number(formData[readingPop].reading3) > 20);
     if (!isReading1ok && !isReading2ok && !isReading3ok) {
-      setReadingPop(null)
+      setReadingPop(null);
       setAction(false);
       setAction2(false);
-      addSiteCheckSurvey(event)
+      addSiteCheckSurvey(event);
       return;
     }
-  if (action2) {
-    setReadingPop(null)
-    setAction(false);
-    setAction2(false);
-    addSiteCheckSurvey(event)
-
-  } else if (action && !action2) {
-    setReadingPop(null);
-    setAction2(false);
-    setAction(false);
-    addSiteCheckSurvey(event)
-
-  } else {
-    setAction2(false);
-    setAction(true);
-  }
-
-  }
+    if (action2) {
+      setReadingPop(null);
+      setAction(false);
+      setAction2(false);
+      addSiteCheckSurvey(event);
+    } else if (action && !action2) {
+      setReadingPop(null);
+      setAction2(false);
+      setAction(false);
+      addSiteCheckSurvey(event);
+    } else {
+      setAction2(false);
+      setAction(true);
+    }
+  };
 
   const dateFormat = (date) => {
-    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
-  }
+    return moment(date, "YYYY-MM-DD").format("DD/MM/YYYY");
+  };
   return (
     <>
-      
       <Dialog
         open={readingPop !== null}
         onClose={() => {
@@ -227,328 +232,357 @@ const SurveyWaterOutletTemperature = ({
         fullWidth
       >
         <form onSubmit={addReadingSave}>
-        <DialogTitle>
-          Add Reading{" "}
-          {formData[readingPop]?.assetId
-            ? "(" +
-            siteAssets
-              .filter((a) => a.assetId == formData[readingPop].assetId)
-              .map((option) => option.assetName + " - " + option.category)[0] +
-            ")"
-            : ""}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Fragment>
-           
-            <Grid container>
-              {!action2 && !action && (
-                <>
-                  <Grid sm={4}>
-                    <label htmlFor="outletType">Outlet Type</label>
-                    <input
-                      style={{ maxWidth: "300px" }}
-                      type="text"
-                      className="form-control"
-                      id="outletType"
-                      disabled
-                      value={formData?.[readingPop]?.outletType}
-                    />
-                  </Grid>
-                  <Grid sm={4}>
-                    <label htmlFor="outletType">Temperature</label>
-                    <input
-                      style={{ maxWidth: "300px" }}
-                      type="text"
-                      className="form-control"
-                      id="outletType"
-                      disabled
-                      value={formData?.[readingPop]?.temperature}
-                    />
-                  </Grid>
-                  <Grid sm={4}>
-                    <label htmlFor="outletType">Location</label>
-                    <input
-                      style={{ maxWidth: "300px" }}
-                      type="text"
-                      className="form-control"
-                      id="outletType"
-                      disabled
-                      value={getName(readingPop)}
-                    />
-                  </Grid>
-                  <Grid sm={12}>
-                    <div
-                      className="table-responsive"
-                      style={{ marginTop: "30px" }}
-                    >
-                      <table className="table table-bordered f-11">
-                        <thead className="table-dark">
-                          <tr>
-                            <th></th>
-                            <th>Test Date</th>
-                            <th>Reading</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>
-                              Reading 1 <b style={{ color: "red" }}> 30 seconds </b>
-                            </td>
-                            <td rowSpan={3} style={{ verticalAlign: "middle" }}>
-                            <DatePicker
-
-                        value={formData?.[readingPop]?.update ? formData?.[readingPop]?.r1Date : null}
-                        onChange={(date) => {
-                          const uformData = [...formData];
-                          const udata = {
-                            ...formData[readingPop],
-                            r1Date: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
-                            update: true
-                          };
-                          uformData[readingPop] = udata;
-                          setFormData(uformData);
-                        }} 
-                        />
-                              {/* // <input
+          <DialogTitle>
+            Add Reading{" "}
+            {formData[readingPop]?.assetId
+              ? "(" +
+                siteAssets
+                  .filter((a) => a.assetId == formData[readingPop].assetId)
+                  .map(
+                    (option) => option.assetName + " - " + option.category
+                  )[0] +
+                ")"
+              : ""}
+          </DialogTitle>
+          <DialogContent dividers>
+            <Fragment>
+              <Grid container>
+                {!action2 && !action && (
+                  <>
+                    <Grid sm={4}>
+                      <label htmlFor="outletType">Outlet Type</label>
+                      <input
+                        style={{ maxWidth: "300px" }}
+                        type="text"
+                        className="form-control"
+                        id="outletType"
+                        disabled
+                        value={formData?.[readingPop]?.outletType}
+                      />
+                    </Grid>
+                    <Grid sm={4}>
+                      <label htmlFor="outletType">Temperature</label>
+                      <input
+                        style={{ maxWidth: "300px" }}
+                        type="text"
+                        className="form-control"
+                        id="outletType"
+                        disabled
+                        value={formData?.[readingPop]?.temperature}
+                      />
+                    </Grid>
+                    <Grid sm={4}>
+                      <label htmlFor="outletType">Location</label>
+                      <input
+                        style={{ maxWidth: "300px" }}
+                        type="text"
+                        className="form-control"
+                        id="outletType"
+                        disabled
+                        value={getName(readingPop)}
+                      />
+                    </Grid>
+                    <Grid sm={12}>
+                      <div
+                        className="table-responsive"
+                        style={{ marginTop: "30px" }}
+                      >
+                        <table className="table table-bordered f-11">
+                          <thead className="table-dark">
+                            <tr>
+                              <th></th>
+                              <th>Test Date</th>
+                              <th>Reading</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>
+                                Reading 1{" "}
+                                <b style={{ color: "red" }}> 30 seconds </b>
+                              </td>
+                              <td
+                                rowSpan={3}
+                                style={{ verticalAlign: "middle" }}
+                              >
+                                <DatePicker
+                                  value={
+                                    formData?.[readingPop]?.update
+                                      ? formData?.[readingPop]?.r1Date
+                                      : null
+                                  }
+                                  onChange={(date) => {
+                                    const uformData = [...formData];
+                                    const udata = {
+                                      ...formData[readingPop],
+                                      r1Date: new Date(
+                                        date.getTime() -
+                                          date.getTimezoneOffset() * 60000
+                                      ).toISOString(),
+                                      update: true,
+                                    };
+                                    uformData[readingPop] = udata;
+                                    setFormData(uformData);
+                                  }}
+                                />
+                                {/* // <input
                               //   type="date"
                               //   className="form-control"
                               //     name="r1Date"
                               //     required
                               //   onChange={(e) => handleInputChange(e, readingPop)}
                               // /> */}
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                className="form-control"
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className="form-control"
                                   name="reading1"
                                   required
-                                style={{
-                                  color:
-                                    (formData?.[readingPop]?.temperature ===
-                                      "Hot" &&
-                                      Number(formData[readingPop].reading1) <
-                                      50) ||
+                                  style={{
+                                    color:
+                                      (formData?.[readingPop]?.temperature ===
+                                        "Hot" &&
+                                        Number(formData[readingPop].reading1) <
+                                          50) ||
                                       (formData?.[readingPop]?.temperature ===
                                         "Cold" &&
                                         Number(formData[readingPop].reading1) >
-                                        20)
-                                      ? "red"
-                                      : "green",
-                                  fontWeight: "600",
-                                }}
-                                onChange={(e) => handleInputChange(e, readingPop)}
-                              />
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              {" "}
-                              <b style={{ color: "red" }}> 60 seconds </b>
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                className="form-control"
+                                          20)
+                                        ? "red"
+                                        : "green",
+                                    fontWeight: "600",
+                                  }}
+                                  onChange={(e) =>
+                                    handleInputChange(e, readingPop)
+                                  }
+                                />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                {" "}
+                                <b style={{ color: "red" }}> 60 seconds </b>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className="form-control"
                                   name="reading2"
                                   required
-                                style={{
-                                  color:
-                                    (formData?.[readingPop]?.temperature ===
-                                      "Hot" &&
-                                      Number(formData[readingPop].reading2) <
-                                      50) ||
+                                  style={{
+                                    color:
+                                      (formData?.[readingPop]?.temperature ===
+                                        "Hot" &&
+                                        Number(formData[readingPop].reading2) <
+                                          50) ||
                                       (formData?.[readingPop]?.temperature ===
                                         "Cold" &&
                                         Number(formData[readingPop].reading2) >
-                                        20)
-                                      ? "red"
-                                      : "green",
-                                  fontWeight: "600",
-                                }}
-                                onChange={(e) => handleInputChange(e, readingPop)}
-                              />
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              Reading 3 <b style={{ color: "red" }}> 120 seconds </b>
-                            </td>
-                            <td>
-                              <input
+                                          20)
+                                        ? "red"
+                                        : "green",
+                                    fontWeight: "600",
+                                  }}
+                                  onChange={(e) =>
+                                    handleInputChange(e, readingPop)
+                                  }
+                                />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                Reading 3{" "}
+                                <b style={{ color: "red" }}> 120 seconds </b>
+                              </td>
+                              <td>
+                                <input
                                   type="number"
                                   required
-                                className="form-control"
-                                name="reading3"
-                                style={{
-                                  color:
-                                    (formData?.[readingPop]?.temperature ===
-                                      "Hot" &&
-                                      Number(formData[readingPop].reading3) <
-                                      50) ||
+                                  className="form-control"
+                                  name="reading3"
+                                  style={{
+                                    color:
+                                      (formData?.[readingPop]?.temperature ===
+                                        "Hot" &&
+                                        Number(formData[readingPop].reading3) <
+                                          50) ||
                                       (formData?.[readingPop]?.temperature ===
                                         "Cold" &&
                                         Number(formData[readingPop].reading3) >
-                                        20)
-                                      ? "red"
-                                      : "green",
-                                  fontWeight: "600",
-                                }}
-                                onChange={(e) => handleInputChange(e, readingPop)}
-                              />
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </Grid>
-                </>
-              )}
-              {action && (
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Action
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
+                                          20)
+                                        ? "red"
+                                        : "green",
+                                    fontWeight: "600",
+                                  }}
+                                  onChange={(e) =>
+                                    handleInputChange(e, readingPop)
+                                  }
+                                />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </Grid>
+                  </>
+                )}
+                {action && (
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>
+                      Action
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
                         <button
                           type="button"
-                        className="btn btn-sm btn-danger text-light"
-                        onClick={() => {
-                          setAction2(true);
-                          setAction(false);
-                        }}
-                      >
-                        <i className="fas fa-circle-exclamation" /> Add Action
-                      </button>
+                          className="btn btn-sm btn-danger text-light"
+                          onClick={() => {
+                            setAction2(true);
+                            setAction(false);
+                          }}
+                        >
+                          <i className="fas fa-circle-exclamation" /> Add Action
+                        </button>
+                      </Grid>
                     </Grid>
                   </Grid>
-                </Grid>
-              )}
-              {action2 && (
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Action
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                      <Grid item xs={12} sm={12}>
-                        <label htmlFor="consequence" name="consequence">
-                          Consequence
-                        </label>
-                        <select
-                          required
-                          className="form-control form-select"
-                          name="consequence"
-                          onChange={(e) => handleInputChange(e, readingPop)}
-                        >
-                          <option value="">Select </option>
-                          {[1, 2, 3, 4, 5].map((num) => (
-                            <option value={num}>{num} </option>
-                          ))}
-                        </select>
+                )}
+                {action2 && (
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>
+                      Action
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
+                        <Grid item xs={12} sm={12}>
+                          <label htmlFor="consequence" name="consequence">
+                            Consequence
+                          </label>
+                          <select
+                            required
+                            className="form-control form-select"
+                            name="consequence"
+                            onChange={(e) => handleInputChange(e, readingPop)}
+                          >
+                            <option value="">Select </option>
+                            {[1, 2, 3, 4, 5].map((num) => (
+                              <option value={num}>{num} </option>
+                            ))}
+                          </select>
+                        </Grid>
+                        <Grid item xs={12} sm={12}>
+                          <label htmlFor="likelihood" name="likelihood">
+                            Likelihood
+                          </label>
+                          <select
+                            required
+                            className="form-control form-select"
+                            name="likelihood"
+                            onChange={(e) => handleInputChange(e, readingPop)}
+                          >
+                            <option value="">Select </option>
+                            {[1, 2, 3, 4, 5].map((num) => (
+                              <option value={num}>{num} </option>
+                            ))}
+                          </select>
+                        </Grid>
                       </Grid>
-                      <Grid item xs={12} sm={12}>
-                        <label htmlFor="likelihood" name="likelihood">
-                          Likelihood
-                        </label>
-                        <select
-                          required
-                          className="form-control form-select"
-                          name="likelihood"
-                          onChange={(e) => handleInputChange(e, readingPop)}
+                      <Grid item xs={12} sm={8}>
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          p={2}
+                          mb={2}
+                          style={{
+                            height: "290px",
+                            marginTop: "-20px",
+                          }}
                         >
-                          <option value="">Select </option>
-                          {[1, 2, 3, 4, 5].map((num) => (
-                            <option value={num}>{num} </option>
-                          ))}
-                        </select>
+                          <img
+                            src="/RiskScore.png"
+                            alt="Risk Score Matrix"
+                            style={{ width: "100%", height: "100%" }}
+                          />
+                        </Box>
                       </Grid>
-                    </Grid>
-                    <Grid item xs={12} sm={8}>
-                      <Box
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        p={2}
-                        mb={2}
-                        style={{
-                          height: "290px",
-                          marginTop: "-20px",
-                        }}
-                      >
-                        <img
-                          src="/RiskScore.png"
-                          alt="Risk Score Matrix"
-                          style={{ width: "100%", height: "100%" }}
+                      <Grid item xs={12} sm={6}>
+                        <label htmlFor="position" name="position">
+                          Observation
+                        </label>
+                        <textarea
+                          //disabled={quest[idx]?.completed}
+                          name="position"
+                          className="form-control"
+                          id="position"
+                          rows="2"
+                          required
+                          //placeholder="Enter notes..."
+                          //value={quest[idx]?.response?.position}
+                          //onChange={(e) => handleInputChange(e, idx)}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            margin: "8px 0",
+                            borderRadius: "4px",
+                            border: "1px solid #ccc",
+                          }}
                         />
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <label htmlFor="position" name="position">
-                        Observation
-                      </label>
-                      <textarea
-                        //disabled={quest[idx]?.completed}
-                        name="position"
-                        className="form-control"
-                        id="position"
-                        rows="2"
-                        required
-                        //placeholder="Enter notes..."
-                        //value={quest[idx]?.response?.position}
-                        //onChange={(e) => handleInputChange(e, idx)}
-                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <label htmlFor="position" name="position">
-                        Required Action
-                      </label>
-                      <textarea
-                        //disabled={quest[idx]?.completed}
-                        name="position"
-                        className="form-control"
-                        id="position"
-                        rows="2"
-                        required
-                        //placeholder="Enter notes..."
-                        //value={quest[idx]?.response?.position}
-                        //onChange={(e) => handleInputChange(e, idx)}
-                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
-                      />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <label htmlFor="position" name="position">
+                          Required Action
+                        </label>
+                        <textarea
+                          //disabled={quest[idx]?.completed}
+                          name="position"
+                          className="form-control"
+                          id="position"
+                          rows="2"
+                          required
+                          //placeholder="Enter notes..."
+                          //value={quest[idx]?.response?.position}
+                          //onChange={(e) => handleInputChange(e, idx)}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            margin: "8px 0",
+                            borderRadius: "4px",
+                            border: "1px solid #ccc",
+                          }}
+                        />
+                      </Grid>
                     </Grid>
                   </Grid>
-                </Grid>
-              )}
-            </Grid>
-          </Fragment>
-        </DialogContent>
-        <DialogActions>
+                )}
+              </Grid>
+            </Fragment>
+          </DialogContent>
+          <DialogActions>
             <Button
               type="cancel"
-            onClick={() => setReadingPop(null)}
-            className="bg-light text-primary"
-          >
-            Cancel
-          </Button>
+              onClick={() => setReadingPop(null)}
+              className="bg-light text-primary"
+            >
+              Cancel
+            </Button>
             <button
               type="submit"
               //onClick={addReadingSave}
-            style={{
+              style={{
                 width: "150px",
                 marginBottom: "20px",
                 margin: "10px",
                 float: "right",
               }}
               className="btn btn-primary text-white pr-2"
-          >
-            Save
+            >
+              Save
             </button>
           </DialogActions>
-        </form >
+        </form>
       </Dialog>
-    
 
       <Dialog
         open={showHistory !== null}
@@ -563,10 +597,7 @@ const SurveyWaterOutletTemperature = ({
           <Fragment>
             <Grid container>
               <Grid sm={12}>
-                <div
-                  className="table-responsive"
-                  style={{ marginTop: "30px" }}
-                >
+                <div className="table-responsive" style={{ marginTop: "30px" }}>
                   <table className="table table-bordered f-11">
                     <thead className="table-dark">
                       <tr>
@@ -577,23 +608,68 @@ const SurveyWaterOutletTemperature = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {alldata?.filter(a => a.assetId === formData[showHistory]?.assetId &&
-                        a.temperature === formData[showHistory]?.temperature &&
-                        a.normalRunTime === formData[showHistory]?.normalRunTime &&
-                        a.outletType === formData[showHistory]?.outletType &&
-                        a.usageFrequency === formData[showHistory]?.usageFrequency &&
-                        a.floor === formData[showHistory]?.floor &&
-                        a.room === formData[showHistory]?.room)?.map(i =>
-                        <tr>
-                          <td>{dateFormat(i?.r1Date?.split("T")?.[0])}</td>
-                          <td>{i?.reading1}</td>
-                          <td>{i?.reading2}</td>
-                          <td>{i?.reading3}</td>
-                         
-                        </tr>
-                      )}
-                      
-                     
+                      {alldata
+                        ?.filter(
+                          (a) =>
+                            a.assetId === formData[showHistory]?.assetId &&
+                            a.temperature ===
+                              formData[showHistory]?.temperature &&
+                            a.normalRunTime ===
+                              formData[showHistory]?.normalRunTime &&
+                            a.outletType ===
+                              formData[showHistory]?.outletType &&
+                            a.usageFrequency ===
+                              formData[showHistory]?.usageFrequency &&
+                            a.floor === formData[showHistory]?.floor &&
+                            a.room === formData[showHistory]?.room
+                        )
+                        ?.map((i) => (
+                          <tr>
+                            <td>{dateFormat(i?.r1Date?.split("T")?.[0])}</td>
+                            <td
+                              style={{
+                                color:
+                                  (i?.temperature === "Hot" &&
+                                    Number(i?.reading1) < 50) ||
+                                  (i?.temperature === "Cold" &&
+                                    Number(i?.reading1) > 20)
+                                    ? "red"
+                                    : "green",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {i?.reading1}
+                            </td>
+                            <td
+                              style={{
+                                color:
+                                  (i?.temperature === "Hot" &&
+                                    Number(i?.reading1) < 50) ||
+                                  (i?.temperature === "Cold" &&
+                                    Number(i?.reading1) > 20)
+                                    ? "red"
+                                    : "green",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {i?.reading2}
+                            </td>
+                            <td
+                              style={{
+                                color:
+                                  (i?.temperature === "Hot" &&
+                                    Number(i?.reading1) < 50) ||
+                                  (i?.temperature === "Cold" &&
+                                    Number(i?.reading1) > 20)
+                                    ? "red"
+                                    : "green",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {i?.reading3}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -664,9 +740,14 @@ const SurveyWaterOutletTemperature = ({
                 </thead>
                 <tbody>
                   {formData.map((d, idx) => {
-                    const isAllFilled = formData[idx].assetId && formData?.[idx]?.outletType
-                      && formData?.[idx]?.temperature && formData?.[idx]?.normalRunTime && formData?.[idx]?.usageFrequency
-                      && formData?.[idx]?.floor && formData?.[idx]?.room;
+                    const isAllFilled =
+                      formData[idx].assetId &&
+                      formData?.[idx]?.outletType &&
+                      formData?.[idx]?.temperature &&
+                      formData?.[idx]?.normalRunTime &&
+                      formData?.[idx]?.usageFrequency &&
+                      formData?.[idx]?.floor &&
+                      formData?.[idx]?.room;
                     const assetName = siteAssets
                       .filter((a) => a.assetId == formData[idx].assetId)
                       .map(
@@ -827,48 +908,61 @@ const SurveyWaterOutletTemperature = ({
                             1st : {formData?.[idx]?.reading1 ?? ""}{" "}
                             {formData?.[idx]?.r1Date
                               ? "(" +
-                              String(formData?.[idx]?.r1Date)?.substring(0, 10) +
-                              ")"
+                                String(formData?.[idx]?.r1Date)?.substring(
+                                  0,
+                                  10
+                                ) +
+                                ")"
                               : "N/A"}
                           </p>
                           <p style={{ lineHeight: "3px" }}>
                             2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
                             {formData?.[idx]?.r2Date
                               ? "(" +
-                              String(formData?.[idx]?.r2Date)?.substring(0, 10) +
-                              ")"
+                                String(formData?.[idx]?.r2Date)?.substring(
+                                  0,
+                                  10
+                                ) +
+                                ")"
                               : "N/A"}
                           </p>
                           <p style={{ lineHeight: "3px" }}>
                             3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
                             {formData?.[idx]?.r3Date
                               ? "(" +
-                              String(formData?.[idx]?.r3Date)?.substring(0, 10) +
-                              ")"
+                                String(formData?.[idx]?.r3Date)?.substring(
+                                  0,
+                                  10
+                                ) +
+                                ")"
                               : "N/A"}
                           </p>
                         </td>
 
                         <td style={{ width: "120px" }}>
-                          {isAllFilled && <button
-                            type="button"
-                            className="btn btn-sm btn-light text-dark"
-                            onClick={() => {
-                              setReadingPop(idx);
-                            }}
-                          >
-                            <i className="fas fa-chart-line"></i>
-                          </button>}
+                          {isAllFilled && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light text-dark"
+                              onClick={() => {
+                                setReadingPop(idx);
+                              }}
+                            >
+                              <i className="fas fa-chart-line"></i>
+                            </button>
+                          )}
                           &nbsp;
-                          {isAllFilled && <button
-                            type="button"
-                            className="btn btn-sm btn-light text-dark"
-                            onClick={() => {
-                              setShowHistory(idx);
-                            }}
-                          >
-                            <i className="fas fa-clock"></i>
-                          </button>}
+                          {isAllFilled && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light text-dark"
+                              onClick={() => {
+                                setShowHistory(idx);
+                              }}
+                            >
+                              <i className="fas fa-clock"></i>
+                            </button>
+                          )}
                           &nbsp;
                           <button
                             disabled={formData?.[idx]?.completed}
