@@ -15,7 +15,7 @@ import {
   getSiteAssets,
 } from "../../../../store/thunk/site";
 import { getManagerList } from "../../../../store/thunk/user";
-import { get, uploadPhoto } from "../../../../api";
+import { get, put, uploadPhoto } from "../../../../api";
 import ChipComponent from "../../../common/Chips/Chips";
 import BusinessIcon from "@mui/icons-material/Business";
 import moment from "moment";
@@ -47,6 +47,14 @@ const ContractorContractView = ({
   const [companies, setCompanies] = useState([]);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
+  const [assetData, setAssetData] = useState([
+    {
+      assets: [],
+      assetRef: " ",
+      location: " ",
+      category: "New",
+    },
+  ]);
   const {
     register,
     reset,
@@ -59,6 +67,7 @@ const ContractorContractView = ({
       getCompanies();
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getContractDetail();
     } else {
       toast.error("Please select site from site search.");
     }
@@ -78,6 +87,7 @@ const ContractorContractView = ({
       endDate: data?.endDate?.split("T")?.[0],
     });
     setCurrentContract(data);
+    setAssetData(data?.projectContractAssets);
   };
   const getCompanies = async () => {
     const companiesData = await get(`/api/companies/all`);
@@ -143,7 +153,75 @@ const ContractorContractView = ({
       toast.error("File is now uploaded. Please try again");
     }
   };
-  const submitUpdateContract = async (data) => {};
+  const submitUpdateContract = async (data) => {
+    console.log("submitUpdateContract", data);
+    console.log("loggedInUserData", loggedInUserData);
+    const quotation = {
+      quoteId: null,
+      contractor: loggedInUserData?.name,
+      company: loggedInUserData?.companyName,
+      quote: Number(data?.quote || 0),
+      // quoteDate: moment(new Date()).format("YYYY-MM-DD") + " 10:00:00",
+      status: 'Recieved',
+      projectContractId: selectedContract?.projectContractId,
+    }
+    // let form_data = new FormData();
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed.");
+      return;
+    }
+    if (loggedInUserData?.id) {
+      console.log("data", data);
+      const formData = {
+        projectContractId: currentContract?.projectContractId,
+        summary: data?.summary,
+        siteId: siteSelectedForGlobal?.siteId,
+        category: data?.category || "",
+        subCategory: data?.subCategory || "",
+        contractorCompanyId: data?.company || "",
+        status: currentContract?.status,
+        budget: data?.cost,
+        cost: data?.cost,
+        startDate: `${data?.startDate} 10:00:00`,
+        endDate: `${data?.endDate} 10:00:00`,
+        projectManagerUserId: data?.manager ? Number(data?.manager) : null,
+        description: data?.description,
+        contractorQuotes: [{...quotation}],
+      };
+      const url = "api/project/manage";
+      const res = await put(url, formData);
+      if (res?.status === 200) {
+        if (data?.category !== "Building Project") {
+          let assets = assetData?.map((itm) => {
+            if (!itm?.isSaved) {
+              return itm.assetId;
+            }
+          }).filter(function (el) {
+            return el != null;
+          });
+          if (assets.length > 0) {
+            const assetData = {
+              addAssets: assets,
+              removeAssets: [],
+            };
+            const assetUpdateAPI = await put(
+              `api/project/${res?.data?.projectContractId}/assets`,
+              assetData
+            );
+          }
+        }
+        toast.success("Successully updated quatation.");
+        handleClose();
+      } else {
+        toast.error(
+          "Something went wrong while adding contract. Please try again!!"
+        );
+      }
+      setIsLoading(false);
+    } else {
+      toast.error("Please login with valid user details to proceed.");
+    }
+  };
   const requestReschedule = async (itm, newDate) => {
     const data = {
       ...itm,
@@ -501,7 +579,7 @@ const ContractorContractView = ({
                                         border: "none",
                                         cursor: "pointer",
                                         color: "blue",
-                                        marginTop: '2px'
+                                        marginTop: "2px",
                                       }}
                                       onClick={(e) => {
                                         e?.preventDefault();
@@ -652,7 +730,51 @@ const ContractorContractView = ({
                     </div>
                   </div>
                 </div>
-                {/** END schedule visit */}
+                {/** END mandatory folder */}
+
+                {/* Add Contractor */}
+                <div className="row">
+                  <div className="col-md-12">
+                    <div className="table-responsive mt-2">
+                      <div>Add Contractor Quote</div>
+                      <div className="row w-100">
+                        <div className="col-md-3">
+                          <div className="form-group mt-2 mb-2">
+                            <label for="quote">Quote</label>
+                            <input
+                              type="number"
+                              className="form-control"
+                              min="0"
+                              id="quote"
+                              {...register("quote", {
+                                required: {
+                                  value: true,
+                                  message: `Please enter quote`,
+                                },
+                                validate: (value) => value > 0 || "Quote cannot be zero or negative number",
+                              })}
+                            />
+                            {errors?.quote && (
+                              <InputError
+                                message={errors?.quote?.message}
+                                key={errors?.quote?.message}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Button
+                            type="submit"
+                            className="bg-primary text-white"
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/** END contractor quote  */}
               </Fragment>
             )}
           </DialogContent>

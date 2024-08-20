@@ -10,6 +10,10 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { InputError } from "../../../common/InputError";
 import { toast } from "react-toastify";
 import { Validation } from "../../../../Constant/Validation";
+import ThumbDown from "@mui/icons-material/ThumbDown";
+import ThumbUp from "@mui/icons-material/ThumbUp";
+import Delete from "@mui/icons-material/Delete";
+
 import {
   getDocumentsRootFolder,
   getSiteAssets,
@@ -27,6 +31,7 @@ import {
 } from "../../../../store/thunk/projects";
 import Swal from "sweetalert2";
 import PdfViewer from "../Documents/PdfViewer";
+import ListStatusBadge from "../../../common/Alert/Status/ListStatusBadge";
 
 const ManagerContractView = ({
   showAddModal,
@@ -101,7 +106,9 @@ const ManagerContractView = ({
     reset({
       ...data,
       manager: data?.projectManagerUserId,
-      company: data?.contractorCompanyId ? Number(data?.contractorCompanyId) : '',
+      company: data?.contractorCompanyId
+        ? Number(data?.contractorCompanyId)
+        : "",
       startDate: data?.startDate?.split("T")?.[0],
       endDate: data?.endDate?.split("T")?.[0],
     });
@@ -151,18 +158,21 @@ const ManagerContractView = ({
         endDate: `${data?.endDate} 10:00:00`,
         projectManagerUserId: data?.manager ? Number(data?.manager) : null,
         description: data?.description,
+        contractorQuotes: data?.contractorQuotes,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
       if (res?.status === 200) {
         if (data?.category !== "Building Project") {
-          let assets = assetData?.map((itm) => {
-            if (!itm?.isSaved) {
-              return itm.assetId;
-            }
-          }).filter(function (el) {
-            return el != null;
-          });
+          let assets = assetData
+            ?.map((itm) => {
+              if (!itm?.isSaved) {
+                return itm.assetId;
+              }
+            })
+            .filter(function (el) {
+              return el != null;
+            });
           if (assets.length > 0) {
             const assetData = {
               addAssets: assets,
@@ -228,7 +238,7 @@ const ManagerContractView = ({
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Delete",
-      confirmButtonColor: '#da292e',
+      confirmButtonColor: "#da292e",
     }).then(async (result) => {
       if (result.isConfirmed) {
         const res = await deleteScheduleVisit(itm?.scheduleId);
@@ -288,7 +298,7 @@ const ManagerContractView = ({
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Terminate",
-      confirmButtonColor: '#da292e',
+      confirmButtonColor: "#da292e",
     }).then(async (result) => {
       if (result.isConfirmed) {
         setIsLoading(true);
@@ -313,16 +323,174 @@ const ManagerContractView = ({
     });
   };
   const getSelectedValue = () => {
-    const selectedValue = companies.find(
-      (itm) =>
-        itm.companyId ===
-        getValues("company")
-    ) || null;
+    const selectedValue =
+      companies.find((itm) => itm.companyId === getValues("company")) || null;
     if (selectedValue) {
-      return { key: selectedValue?.companyId, label: selectedValue?.companyName};
+      return {
+        key: selectedValue?.companyId,
+        label: selectedValue?.companyName,
+      };
     }
     return null;
-  }
+  };
+  const markStatusQuotation = async (row, status) => {
+    // let form_data = new FormData();
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed.");
+      return;
+    }
+    if (loggedInUserData?.id) {
+      const contractorQuotesList = [];
+      for (let itm of currentContract?.contractorQuotes) {
+        if (itm?.quoteId === row?.quoteId) {
+          contractorQuotesList.push({ ...itm, status: status });
+        } else {
+          contractorQuotesList.push(itm);
+        }
+      }
+      const formData = {
+        projectContractId: currentContract?.projectContractId,
+        summary: currentContract?.summary,
+        siteId: currentContract?.siteId,
+        category: currentContract?.category || "",
+        subCategory: currentContract?.subCategory || "",
+        contractorCompanyId: currentContract?.contractorCompanyId
+          ? Number(currentContract?.contractorCompanyId)
+          : "",
+        status: currentContract?.status,
+        budget: currentContract?.cost,
+        cost: currentContract?.cost,
+        startDate: `${
+          currentContract?.startDate
+            ? currentContract?.startDate?.split("T")?.[0]
+            : moment(new Date()).format("YYYY-MM-DD")
+        } 00:00:00`,
+        endDate: `${
+          currentContract?.endDate
+            ? currentContract?.endDate?.split("T")?.[0]
+            : moment(new Date()).format("YYYY-MM-DD")
+        } 00:00:00`,
+        projectManagerUserId: currentContract?.projectManagerUserId
+          ? Number(currentContract?.projectManagerUserId)
+          : null,
+        description: currentContract?.description,
+        contractorQuotes: contractorQuotesList,
+      };
+      const url = "api/project/manage";
+      const res = await put(url, formData);
+      if (res?.status === 200) {
+        if (currentContract?.category !== "Building Project") {
+          let assets = assetData
+            ?.map((itm) => {
+              if (!itm?.isSaved) {
+                return itm.assetId;
+              }
+            })
+            .filter(function (el) {
+              return el != null;
+            });
+          if (assets.length > 0) {
+            const assetData = {
+              addAssets: assets,
+              removeAssets: [],
+            };
+            const assetUpdateAPI = await put(
+              `api/project/${res?.data?.projectContractId}/assets`,
+              assetData
+            );
+          }
+        }
+        toast.success("Successully updated contract.");
+        getContractDetail();
+      } else {
+        toast.error(
+          "Something went wrong while adding contract. Please try again!!"
+        );
+      }
+      setIsLoading(false);
+    } else {
+      toast.error("Please login with valid user details to proceed.");
+    }
+  };
+  const deleteQuation = async (row) => {
+    // let form_data = new FormData();
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed.");
+      return;
+    }
+    if (loggedInUserData?.id) {
+      const contractorQuotesList = [];
+      for (let itm of currentContract?.contractorQuotes) {
+        if (itm?.quoteId === row?.quoteId) {
+          // skip to update the delete row
+        } else {
+          contractorQuotesList.push(itm);
+        }
+      }
+      const formData = {
+        projectContractId: currentContract?.projectContractId,
+        summary: currentContract?.summary,
+        siteId: currentContract?.siteId,
+        category: currentContract?.category || "",
+        subCategory: currentContract?.subCategory || "",
+        contractorCompanyId: currentContract?.contractorCompanyId
+          ? Number(currentContract?.contractorCompanyId)
+          : "",
+        status: currentContract?.status,
+        budget: currentContract?.cost,
+        cost: currentContract?.cost,
+        startDate: `${
+          currentContract?.startDate
+            ? currentContract?.startDate?.split("T")?.[0]
+            : moment(new Date()).format("YYYY-MM-DD")
+        } 00:00:00`,
+        endDate: `${
+          currentContract?.endDate
+            ? currentContract?.endDate?.split("T")?.[0]
+            : moment(new Date()).format("YYYY-MM-DD")
+        } 00:00:00`,
+        projectManagerUserId: currentContract?.projectManagerUserId
+          ? Number(currentContract?.projectManagerUserId)
+          : null,
+        description: currentContract?.description,
+        contractorQuotes: contractorQuotesList,
+      };
+      const url = "api/project/manage";
+      const res = await put(url, formData);
+      if (res?.status === 200) {
+        if (currentContract?.category !== "Building Project") {
+          let assets = assetData
+            ?.map((itm) => {
+              if (!itm?.isSaved) {
+                return itm.assetId;
+              }
+            })
+            .filter(function (el) {
+              return el != null;
+            });
+          if (assets.length > 0) {
+            const assetData = {
+              addAssets: assets,
+              removeAssets: [],
+            };
+            const assetUpdateAPI = await put(
+              `api/project/${res?.data?.projectContractId}/assets`,
+              assetData
+            );
+          }
+        }
+        toast.success("Successully updated contract.");
+        getContractDetail();
+      } else {
+        toast.error(
+          "Something went wrong while adding contract. Please try again!!"
+        );
+      }
+      setIsLoading(false);
+    } else {
+      toast.error("Please login with valid user details to proceed.");
+    }
+  };
   return (
     <React.Fragment>
       {showPdfModal && (
@@ -636,7 +804,7 @@ const ManagerContractView = ({
                                         border: "none",
                                         cursor: "pointer",
                                         color: "blue",
-                                        marginTop: '2px'
+                                        marginTop: "2px",
                                       }}
                                       onClick={(e) => {
                                         e?.preventDefault();
@@ -819,6 +987,81 @@ const ManagerContractView = ({
                       </div>
                     </div>
                   )}
+                <div className="row">
+                  <div className="col-md-12">
+                    <div className="table-responsive mt-2">
+                      <table className="table">
+                        <thead className="table-dark">
+                          <tr>
+                            <td>Contractor</td>
+                            <td>Company</td>
+                            <td>Quote</td>
+                            <td>Quote Date</td>
+                            <td>Status</td>
+                            <td>Action</td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentContract?.contractorQuotes?.length === 0 && (
+                            <tr>
+                              <td colSpan={6}>No Contractor Quotation are available</td>
+                            </tr>
+                          )}
+                          {currentContract?.contractorQuotes?.map((itm) => (
+                            <tr key={itm?.quote}>
+                              <td>
+                                {itm?.contractor ? itm?.contractor : "--"}
+                              </td>
+                              <td>{itm?.company ? itm?.company : "--"}</td>
+                              <td>{itm?.quote ? itm?.quote : "--"}</td>
+                              <td>{itm?.quoteDate ? itm?.quoteDate : "--"}</td>
+                              <td>
+                                <ListStatusBadge status={itm?.status} />
+                              </td>
+                              <td>
+                                <span
+                                  className={
+                                    itm?.status === "Awarded"
+                                      ? "text-success cursor"
+                                      : "cursor"
+                                  }
+                                  onClick={() => {
+                                    markStatusQuotation(itm, "Awarded");
+                                  }}
+                                >
+                                  <ThumbUp />
+                                </span>
+                                &nbsp;
+                                <span
+                                  className={
+                                    itm?.status === "Rejected"
+                                      ? "text-danger cursor"
+                                      : "cursor"
+                                  }
+                                  onClick={() => {
+                                    markStatusQuotation(itm, "Rejected");
+                                  }}
+                                >
+                                  <ThumbDown />
+                                </span>
+                                &nbsp;
+                                <span
+                                  className="cursor text-danger"
+                                  onClick={() => {
+                                    deleteQuation(itm);
+                                  }}
+                                >
+                                  <Delete />
+                                </span>
+                                &nbsp;
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
                 {/** END schedule visit */}
               </Fragment>
             )}

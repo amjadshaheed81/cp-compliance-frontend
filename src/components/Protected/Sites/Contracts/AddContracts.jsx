@@ -131,6 +131,7 @@ const AddContracts = ({
           endDate: `${data?.endDate} 10:00:00`,
           projectManagerUserId: data?.manager ? Number(data?.manager) : null,
           description: data?.description,
+          contractorQuotes: [],
         };
         checkAndAddExpiryCalenderEvent(data)
         const url = "api/project/manage";
