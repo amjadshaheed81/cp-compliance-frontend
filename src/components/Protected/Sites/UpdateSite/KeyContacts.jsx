@@ -10,6 +10,7 @@ import {
 import Error from "../../../common/Alert/Error";
 import { toast } from "react-toastify";
 import { useSearchParams } from "react-router-dom";
+import { InputError } from "../../../common/InputError";
 
 const KeyContacts = ({
   updateSite,
@@ -25,6 +26,7 @@ const KeyContacts = ({
     handleSubmit,
     formState: { errors },
     getValues,
+    trigger,
     reset,
   } = useForm({});
   const [selectedItem, setSelectedItem] = useState("");
@@ -52,24 +54,28 @@ const KeyContacts = ({
       toast.error("Something went wrong while deleting key contact.");
     }
   };
-  const addKeyContactClick = () => {
-    setLoader(true);
-    const data = {
-      id: "-1",
-      siteId: updateSite?.siteId,
-      contactName: getValues("contactName"),
-      phone: getValues("phone"),
-      email: getValues("email"),
-      actionManager: getValues("actionManager"),
-    };
-    const formData = [...keyContacts, { ...data }];
-    addKeyContact(formData, updateSite?.siteId);
-    reset({
-      contactName: "",
-      phone: "",
-      email: "",
-      actionManager: "",
-    });
+  const addKeyContactClick = async () => {
+    const isValidForm = await trigger();
+    if(isValidForm) {
+      setLoader(true);
+      const data = {
+        id: "-1",
+        siteId: updateSite?.siteId,
+        contactName: getValues("contactName"),
+        phone: getValues("phone"),
+        email: getValues("email"),
+        actionManager: getValues("actionManager"),
+      };
+      const formData = [...keyContacts, { ...data }];
+      addKeyContact(formData, updateSite?.siteId);
+      reset({
+        contactName: "",
+        phone: "",
+        email: "",
+        actionManager: "",
+      });
+    }
+    
   };
   return (
     <>
@@ -121,8 +127,19 @@ const KeyContacts = ({
                     className="contact-input form-control"
                     type="text"
                     disabled={isViewMode}
-                    {...register("contactName")}
+                    {...register("contactName", {
+                      required: {
+                        value: true,
+                        message: `Please enter contact name.`,
+                      },
+                    })}
                   />
+                  {errors?.contactName && (
+                    <InputError
+                      message={errors?.contactName?.message}
+                      key={errors?.contactName?.message}
+                    />
+                  )}
                 </td>
                 <td>
                   <input
@@ -131,16 +148,38 @@ const KeyContacts = ({
                     maxLength={11}
                     pattern="[0-9]*"
                     disabled={isViewMode}
-                    {...register("phone")}
+                    {...register("phone", {
+                      required: {
+                        value: true,
+                        message: `Please enter phone.`,
+                      },
+                    })}
                   />
+                  {errors?.phone && (
+                    <InputError
+                      message={errors?.phone?.message}
+                      key={errors?.phone?.message}
+                    />
+                  )}
                 </td>
                 <td>
                   <input
                     className="contact-input form-control"
                     type="email"
                     disabled={isViewMode}
-                    {...register("email")}
+                    {...register("email", {
+                      required: {
+                        value: true,
+                        message: `Please enter email.`,
+                      },
+                    })}
                   />
+                  {errors?.email && (
+                    <InputError
+                      message={errors?.email?.message}
+                      key={errors?.email?.message}
+                    />
+                  )}
                 </td>
                 <td>
                   <select
@@ -148,7 +187,12 @@ const KeyContacts = ({
                     className="contact-input form-control form-select"
                     id="actionManager"
                     disabled={isViewMode}
-                    {...register("actionManager")}
+                    {...register("actionManager", {
+                      required: {
+                        value: true,
+                        message: `Please select role.`,
+                      },
+                    })}
                     value={selectedItem}
                     onChange={(e) => setSelectedItem(e.target.value)}
                   >
@@ -178,6 +222,12 @@ const KeyContacts = ({
                     <option value="firealarm">Fire Alarm</option>
                     <option value="asbestossurveyor">Asbestos Surveyor</option>
                   </select>
+                  {errors?.actionManager && (
+                    <InputError
+                      message={errors?.actionManager?.message}
+                      key={errors?.actionManager?.message}
+                    />
+                  )}
                 </td>
                 <td>&nbsp;</td>
               </tr>
