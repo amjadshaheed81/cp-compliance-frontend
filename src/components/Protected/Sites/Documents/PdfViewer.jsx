@@ -23,7 +23,6 @@ const PdfViewer = ({ showPdfModal, setShowPdfModal, selectedPdf }) => {
 
   return (
     <>
-      <Button onClick={handleOpen}>Version History</Button>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
         <DialogTitle>File View</DialogTitle>
         <DialogContent>

@@ -110,12 +110,12 @@ const VersionHistory = ({
     reqData.documentRequestString.folderId = fileVerions?.[0]?.folderId;
     reqData.documentRequestString.files[0].issueDate = data?.issueDate;
     reqData.documentRequestString.files[0].id = fileId;
-    reqData.documentRequestString.files[0].issueDate = `${moment(
-      new Date()
-    ).format("YYYY-MM-DD")} 10:00:00`;
-    reqData.documentRequestString.files[0].expiryDate = `${moment(new Date())
-      .add(1, "years")
-      .format("YYYY-MM-DD")} 10:00:00`;
+    // reqData.documentRequestString.files[0].issueDate = `${moment(
+    //   new Date()
+    // ).format("YYYY-MM-DD")} 10:00:00`;
+    // reqData.documentRequestString.files[0].expiryDate = `${moment(new Date())
+    //   .add(1, "years")
+    //   .format("YYYY-MM-DD")} 10:00:00`;
     reqData.documentRequestString.files[0].uploaderUserId =
       loggedInUserData?.id || "";
     reqData.documentRequestString.files[0].reviewerUserId =
