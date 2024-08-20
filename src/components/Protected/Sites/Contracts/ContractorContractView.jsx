@@ -187,6 +187,7 @@ const ContractorContractView = ({
         projectManagerUserId: data?.manager ? Number(data?.manager) : null,
         description: data?.description,
         contractorQuotes: [...data?.contractorQuotes, {...quotation}],
+        // frequency: data?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);

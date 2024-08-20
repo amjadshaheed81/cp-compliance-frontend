@@ -132,6 +132,7 @@ const AddContracts = ({
           projectManagerUserId: data?.manager ? Number(data?.manager) : null,
           description: data?.description,
           contractorQuotes: [],
+          // frequency: data?.frequency, // TODO: will pass this when frequency will be supported in API
         };
         checkAndAddExpiryCalenderEvent(data)
         const url = "api/project/manage";
@@ -480,7 +481,21 @@ const AddContracts = ({
                           )}
                         />
                       </div>
-                      <div className="col-md-3">
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Frequency</label>
+                        <select
+                          className="form-control form-select"
+                          name="frequency"
+                          {...register("frequency")}
+                        >
+                          <option value={null}>Select Frequency</option>
+                          <option value={"Daily"}>Daily</option>
+                          <option value={"Weekly"}>Weekly</option>
+                          <option value={"Quarterly"}>Quarterly</option>
+                          <option value={"Yearly"}>Yearly</option>
+                        </select>
+                      </div>
+                      <div className="col-md-12">
                         <MandatoryFolders
                           setSelectedMandatoryFolder={
                             setSelectedMandatoryFolder

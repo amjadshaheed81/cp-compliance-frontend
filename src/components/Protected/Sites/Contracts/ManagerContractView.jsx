@@ -159,6 +159,7 @@ const ManagerContractView = ({
         projectManagerUserId: data?.manager ? Number(data?.manager) : null,
         description: data?.description,
         contractorQuotes: data?.contractorQuotes,
+        // frequency: data?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
@@ -375,6 +376,7 @@ const ManagerContractView = ({
           : null,
         description: currentContract?.description,
         contractorQuotes: contractorQuotesList,
+        // frequency: currentContract?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
@@ -454,6 +456,7 @@ const ManagerContractView = ({
           : null,
         description: currentContract?.description,
         contractorQuotes: contractorQuotesList,
+        frequency: currentContract?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);

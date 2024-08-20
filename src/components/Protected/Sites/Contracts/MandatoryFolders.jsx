@@ -67,7 +67,7 @@ const MandatoryFolders = ({
   return (
     <>
       <div className="row mb-2" style={{ height: "auto" }}>
-        <div className="col-md-8 mt-4">
+        <div className="col-md-3 mt-4">
           <Button
             className="btn btn-sm btn-light text-primary w-100"
             onClick={handleFolderOpen}
@@ -144,7 +144,7 @@ const MandatoryFolders = ({
             </div>
             <div>
               {selectedMandatoryFolder?.map((folder) => (
-                <Fragment>
+                <span>
                   <Chip
                     key={folder.id}
                     label={folder?.name}
@@ -152,7 +152,7 @@ const MandatoryFolders = ({
                     onDelete={() => handleRemoveFolder(folder.id)}
                   ></Chip>
                   &nbsp;
-                </Fragment>
+                </span>
               ))}
             </div>
           </form>
