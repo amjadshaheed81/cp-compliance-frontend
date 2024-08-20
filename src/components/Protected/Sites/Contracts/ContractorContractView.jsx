@@ -186,7 +186,7 @@ const ContractorContractView = ({
         endDate: `${data?.endDate} 10:00:00`,
         projectManagerUserId: data?.manager ? Number(data?.manager) : null,
         description: data?.description,
-        contractorQuotes: [{...quotation}],
+        contractorQuotes: [...data?.contractorQuotes, {...quotation}],
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
