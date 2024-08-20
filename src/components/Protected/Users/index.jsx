@@ -69,27 +69,44 @@ const Users = ({
     searchUser();
   }, [formData.role, formData.searchField, formData.site, formData.status]);
   const searchUser = () => {
-    const searchField = formData?.searchField;
-    const role = formData?.role;
-    const site = formData?.site;
-    const status = formData?.status;
+    const searchField = formData?.searchField || '';
+    const role = formData?.role || '';
+    const site = formData?.site || '';
+    const status = formData?.status || '';
+
+    // console.log("Search Params:", { searchField, role, site, status });
+
     if (searchField || role || site || status) {
-      const list = users?.filter(
-        (x) =>
-          String(x?.name)
-            .toLowerCase()
-            .includes(String(searchField).toLowerCase()) &&
-          String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
-          String(x?.defaultSiteId)
-            .toLowerCase()
-            .includes(String(site).toLowerCase()) &&
-          String(x?.status).toLowerCase().includes(String(status).toLowerCase())
-      );
-      setFilteredUser(list);
+        const list = users?.filter((user) => {
+            const matchesName = String(user?.name)
+                .toLowerCase()
+                .includes(String(searchField).toLowerCase());
+            const matchesRole = String(user?.role)
+                .toLowerCase()
+                .includes(String(role).toLowerCase());
+            const matchesSite = user?.taggedSites?.some(taggedSite => 
+                taggedSite?.id == site
+            );
+            const matchesStatus = String(user?.status)
+                .toLowerCase()
+                .includes(String(status).toLowerCase());
+
+            // console.log("User:", user.name, {
+            //     matchesName,
+            //     matchesRole,
+            //     matchesSite,
+            //     matchesStatus
+            // });
+
+            return matchesName && matchesRole && matchesSite && matchesStatus;
+        });
+
+        console.log("Filtered List:", list);
+        setFilteredUser(list);
     } else {
-      setFilteredUser(users);
+        setFilteredUser(users);
     }
-  };
+};
   const deleteUserCall = (user) => {
     Swal.fire({
       title: `Do you want to delete ${user?.name}`,
