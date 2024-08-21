@@ -179,7 +179,9 @@ const Summary = ({
   const handleSelectAllChange = (e) => {
     const { checked } = e.target;
     if (checked) {
-      setSelectedItems(filteredSiteAssets);
+      setSelectedItems(filteredSiteAssets?.filter(
+        (itm) => itm?.doorItem !== true && itm?.patItem !== true
+      ));
     } else {
       setSelectedItems([]);
     }
@@ -318,7 +320,9 @@ const Summary = ({
                     type="checkbox"
                     className="form-check-input"
                     onChange={handleSelectAllChange}
-                    checked={selectedItems.length === filteredSiteAssets.length}
+                    checked={selectedItems.length === filteredSiteAssets?.filter(
+                      (itm) => itm?.doorItem !== true && itm?.patItem !== true
+                    ).length}
                   />
                 </th>
                 <th scope="col">Asset Name</th>
