@@ -206,7 +206,7 @@ const CreateAsset = ({
                               onChange={(event, newValue) => {
                                 const keys = newValue
                                   ?.map((itm) => itm?.key)
-                                  ?.join(", ");
+                                  ?.join(",");
                                 setValue("relatedAssetId", keys);
                               }}
                               options={siteAssets.map((option) => {

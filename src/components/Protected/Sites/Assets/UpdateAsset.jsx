@@ -64,6 +64,7 @@ const UpdateAsset = ({
   const [subCategory3, setSubCategory3] = useState([]);
   const [subCategory3List, setSubCategory3List] = useState([]);
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
+  const [relatedAssetOption, setRelatedAssetOption] = useState([]);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
@@ -165,7 +166,24 @@ const UpdateAsset = ({
     passiveFireProtectionForm.reset(response?.assetPFPItem);
     doorSpecificationForm.reset(response?.assetDoorSpecifications);
     reset(response);
+    initRelatedAssetOptions(response);
   };
+
+  const initRelatedAssetOptions = (response) => {
+    const selectedAssets = response?.relatedAssetId?.split(",");
+    const arr = [];
+    if(selectedAssets?.length > 0) {
+      for (const iterator of selectedAssets) {
+        const selectedValue =
+        siteAssets.find((itm) => itm.assetId == iterator) ||
+        null;
+        if (selectedValue) {
+          arr.push({ key: selectedValue?.assetId, label: selectedValue?.assetName });
+        }
+      }
+    }
+    setRelatedAssetOption(arr);
+  }
 
   const addPatRecord = () => {
     const d = [...patRecord];
@@ -260,7 +278,7 @@ const UpdateAsset = ({
       subCategory3: formData?.subCategory3,
       model: formData?.model,
       serialNumber: formData?.serialNumber,
-      relatedAssetId: formData?.relatedAssetId,
+      relatedAssetId: relatedAssetOption?.map(item => item.key).join(","),
       folderId: formData?.folderId,
       patItem: formData?.patItem,
       pfpItem: formData?.pfpItem,
@@ -316,7 +334,6 @@ const UpdateAsset = ({
 
   const locationForm = useForm({});
   const submitLocationForm = async (data) => {
-    console.log("data", data);
     let form_data = new FormData();
     const submitData = {
       ...data,
@@ -408,12 +425,11 @@ const UpdateAsset = ({
     setSubCategoryList(subCategoryData);
   };
   const getSelectedValue = () => {
-    const selectedAssets = getValues("relatedAssetId")?.split(", ");
     const arr = [];
-    if(selectedAssets) {
-      for (const iterator of selectedAssets) {
+    if(relatedAssetOption?.length > 0) {
+      for (const iterator of relatedAssetOption) {
         const selectedValue =
-        siteAssets.find((itm) => itm.assetId == iterator) ||
+        siteAssets.find((itm) => itm.assetId == iterator?.key) ||
         null;
         if (selectedValue) {
           arr.push({ key: selectedValue?.assetId, label: selectedValue?.assetName });
@@ -509,20 +525,17 @@ const UpdateAsset = ({
                             <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
                               multiple
-                              value={getSelectedValue()}
                               onChange={(event, newValue) => {
-                                const keys = newValue
-                                  ?.map((itm) => itm?.key)
-                                  ?.join(", ");
-                                setValue("relatedAssetId", keys);
+                                setRelatedAssetOption(newValue)
                               }}
+                              value={getSelectedValue()}
                               options={siteAssets.map((option) => {
                                 return {
                                   key: option.assetId,
                                   label: option.assetName,
                                 };
                               })}
-                              getOptionLabel={(option) => option.label || ""}
+                              getOptionLabel={(option) => <Fragment key={option.key}>{option.label || ""}</Fragment>}
                               renderInput={(params) => (
                                 <TextField
                                   disabled
