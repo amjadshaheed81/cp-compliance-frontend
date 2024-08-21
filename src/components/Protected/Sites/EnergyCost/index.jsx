@@ -43,7 +43,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
 
   const customColumnNamesCost = ['reference', 'fromDate', 'toDate', 'cost'];
-  const customColumnNamesReading = ['reference', 'readingDate', 'readingValue'];
+  const customColumnNamesReading = ['reference', 'readingDate', 'readingValue', 'readingUnit'];
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -162,10 +162,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const json = XLSX.utils.sheet_to_json(worksheet);
       const mappedData = json.map(row => {
         let rowData = {
-          submittedBy: loggedInUserData?.id,
+          submittedUserId: loggedInUserData?.id,
           readingUnit: "kWh"
         };
-        const rowValues = Object.values(row);
+        const rowValues = Object.values(row).slice(0, 4);
+       
+        if(rowValues.length > 3){
         customColumnNamesReading.forEach((col, index) => {
          
           if (index === 0) {
@@ -176,18 +178,23 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             }
           } else if (index === 1) {
 
+           
 
             rowValues[index] = convertToDate(rowValues[index]);
 
-          } else {
+          } else if (index === 2) {
             if (isNaN(rowValues[index])) {
-              toast("Invalid data present in attached file at row no " + index)
+              toast("Invalid reading present in attached file at row no " + index)
               return;
             }
+          } else {
+            
           }
           rowData[col] = rowValues[index] || null;
         });
+      
         return rowData;
+      }
       });
       setbulkUploadReading(mappedData);
     };
@@ -214,7 +221,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const json = XLSX.utils.sheet_to_json(worksheet);
       const mappedData = json.map(row => {
         let rowData = {
-          submittedBy: loggedInUserData?.id,
+          submittedUserId: loggedInUserData?.id,
         };
         const rowValues = Object.values(row);
         customColumnNamesCost.forEach((col, index) => {
@@ -254,7 +261,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const callbulkUploadCost = async () => {
     setopenBulk(false);
     for (const data of bulkUploadCost) {
-     //console.log('data',data)
       await saveCost(data);
     }
     setbulkUploadCost([]);
@@ -313,7 +319,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   }
 
   const saveCost = async (data) => {
-    data.submittedBy = loggedInUserData?.id;
+    data.submittedUserId = loggedInUserData?.id;
     data.siteId = site.siteId;
     await post("/api/energy/cost", data);
     getEnergyCost();
@@ -321,10 +327,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   }
 
   const saveReading = async (data) => {
-    data.submittedBy = loggedInUserData?.id;
-    data.siteId = site.siteId;
-    await post("/api/energy/reading", data);
-    getEnergyCost();
+    if(data) {
+      data.submittedUserId = loggedInUserData?.id;
+      data.siteId = site.siteId;
+      await post("/api/energy/reading", data);
+      getEnergyCost();
+    }
   }
 
 
