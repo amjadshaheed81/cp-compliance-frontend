@@ -159,7 +159,7 @@ const ManagerContractView = ({
         projectManagerUserId: data?.manager ? Number(data?.manager) : null,
         description: data?.description,
         contractorQuotes: data?.contractorQuotes,
-        // frequency: data?.frequency,
+        frequency: data?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
@@ -376,7 +376,7 @@ const ManagerContractView = ({
           : null,
         description: currentContract?.description,
         contractorQuotes: contractorQuotesList,
-        // frequency: currentContract?.frequency,
+        frequency: currentContract?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
@@ -456,7 +456,7 @@ const ManagerContractView = ({
           : null,
         description: currentContract?.description,
         contractorQuotes: contractorQuotesList,
-        // frequency: currentContract?.frequency,
+        frequency: currentContract?.frequency,
       };
       const url = "api/project/manage";
       const res = await put(url, formData);
@@ -774,6 +774,21 @@ const ManagerContractView = ({
                           {ManagerList?.map((itm) => (
                             <option value={itm?.id}>{itm?.name}</option>
                           ))}
+                        </select>
+                      </div>
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Frequency</label>
+                        <select
+                          className="form-control form-select"
+                          name="frequency"
+                          {...register("frequency")}
+                          disabled={true}
+                        >
+                          <option value={null}>Select Frequency</option>
+                          <option value={"Daily"}>Daily</option>
+                          <option value={"Weekly"}>Weekly</option>
+                          <option value={"Quarterly"}>Quarterly</option>
+                          <option value={"Yearly"}>Yearly</option>
                         </select>
                       </div>
                     </div>

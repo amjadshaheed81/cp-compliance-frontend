@@ -132,7 +132,7 @@ const AddContracts = ({
           projectManagerUserId: data?.manager ? Number(data?.manager) : null,
           description: data?.description,
           contractorQuotes: [],
-          // frequency: data?.frequency, // TODO: will pass this when frequency will be supported in API
+          frequency: data?.frequency,
         };
         checkAndAddExpiryCalenderEvent(data)
         const url = "api/project/manage";
