@@ -1,5 +1,6 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   getSiteContracts,
   getSiteContractDetails,
@@ -8,6 +9,12 @@ import {
 } from "../../../store/thunk/contracts";
 import { get } from "../../../api";
 const DashboardActions = (siteSelectedForGlobal) => {
+
+  
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
 
   const [actionList, setActionList] = useState([]);
 
@@ -40,6 +47,9 @@ const DashboardActions = (siteSelectedForGlobal) => {
               <button
                 type="button"
                 className="btn btn-sm btn-light text-primary"
+                onClick={()=>{ goTo(
+                  `/actions`
+                );}}
               >
                 View All
               </button>

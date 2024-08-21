@@ -227,7 +227,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     <th scope="col">{action?.requiredAction}</th>
                     
                     <th scope="col"> <span className={`badge bg-${action?.riskScore >= 20 ? "danger" : (
-                      action?.riskScore >= 15 ? "warning" : (action?.riskScore >= 8 ? "info" : "green")
+                      action?.riskScore >= 15 ? "warning" : (action?.riskScore >= 8 ? "info" : "success")
                     ) } p-2 m-1 risk-span`}>
                             {action?.riskScore??0}
                         </span>

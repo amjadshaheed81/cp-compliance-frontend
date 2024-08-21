@@ -2,7 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../../../api";
+import { get, post, put } from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
 import moment from "moment";
 import {
@@ -27,6 +27,7 @@ const SurveyWaterOutletTemperature = ({
   getSiteAssets,
   siteSelectedForGlobal,
   getSiteLayout,
+  loggedInUserData
 }) => {
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
@@ -37,6 +38,7 @@ const SurveyWaterOutletTemperature = ({
   const [readingPop, setReadingPop] = useState(null);
   const [showHistory, setShowHistory] = useState(null);
   const [formData, setFormData] = useState([{}]);
+  const [formData2, setFormData2] = useState({});
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
 
@@ -138,6 +140,15 @@ const SurveyWaterOutletTemperature = ({
     setFormData(uformData);
   };
 
+  const handleInputChange2 = (e) => {
+    const { name, value } = e.target;
+    const udata = {
+      ...formData2,
+      [name]: value
+    };
+    setFormData2(udata);
+  };
+
   useEffect(() => {
     setAction(false);
     setAction2(false);
@@ -207,6 +218,18 @@ const SurveyWaterOutletTemperature = ({
       setAction(false);
       setAction2(false);
       addSiteCheckSurvey(event);
+      const body = {
+        type: "Survey",
+        status: "Reported",
+        observation: formData2.observation,
+        desc: `Surevy Water - Outlet Temprature - ${moment(new Date()).format("DD/MM/YYYY")}`,
+        requiredAction: formData2.requiredAction,
+        riskScore: Number(formData2.likelihood) * Number(formData2.consequence),
+        dueDate: new Date(),
+        siteId: siteSelectedForGlobal?.siteId,
+        userId: loggedInUserData?.id,
+      }
+    put("/api/site/actions", body);
     } else if (action && !action2) {
       setReadingPop(null);
       setAction2(false);
@@ -463,7 +486,7 @@ const SurveyWaterOutletTemperature = ({
                             required
                             className="form-control form-select"
                             name="consequence"
-                            onChange={(e) => handleInputChange(e, readingPop)}
+                            onChange={(e) => handleInputChange2(e)}
                           >
                             <option value="">Select </option>
                             {[1, 2, 3, 4, 5].map((num) => (
@@ -479,7 +502,7 @@ const SurveyWaterOutletTemperature = ({
                             required
                             className="form-control form-select"
                             name="likelihood"
-                            onChange={(e) => handleInputChange(e, readingPop)}
+                            onChange={(e) => handleInputChange2(e)}
                           >
                             <option value="">Select </option>
                             {[1, 2, 3, 4, 5].map((num) => (
@@ -508,19 +531,17 @@ const SurveyWaterOutletTemperature = ({
                         </Box>
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <label htmlFor="position" name="position">
+                        <label htmlFor="observation" name="observation">
                           Observation
                         </label>
                         <textarea
                           //disabled={quest[idx]?.completed}
-                          name="position"
+                          name="observation"
                           className="form-control"
-                          id="position"
+                          id="observation"
                           rows="2"
                           required
-                          //placeholder="Enter notes..."
-                          //value={quest[idx]?.response?.position}
-                          //onChange={(e) => handleInputChange(e, idx)}
+                          onChange={(e) => handleInputChange2(e)}
                           style={{
                             width: "100%",
                             padding: "10px",
@@ -531,19 +552,16 @@ const SurveyWaterOutletTemperature = ({
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <label htmlFor="position" name="position">
+                        <label htmlFor="requiredAction" name="requiredAction">
                           Required Action
                         </label>
                         <textarea
-                          //disabled={quest[idx]?.completed}
-                          name="position"
+                          name="requiredAction"
                           className="form-control"
-                          id="position"
+                          id="requiredAction"
                           rows="2"
                           required
-                          //placeholder="Enter notes..."
-                          //value={quest[idx]?.response?.position}
-                          //onChange={(e) => handleInputChange(e, idx)}
+                          onChange={(e) => handleInputChange2(e)}
                           style={{
                             width: "100%",
                             padding: "10px",
@@ -1007,6 +1025,7 @@ const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
+  loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, { getSiteAssets, getSiteLayout })(
