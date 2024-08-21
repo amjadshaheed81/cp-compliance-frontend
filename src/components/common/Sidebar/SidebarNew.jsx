@@ -166,7 +166,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         navigate("/sites");
         break;
       case "Actions":
-        navigate("/sites");
+        navigate("/actions");
         break;
       case "Create Site":
         navigate("/add-site");

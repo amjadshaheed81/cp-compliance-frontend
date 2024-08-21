@@ -13,7 +13,13 @@ import siteDummy from "../../../../images/site-dummy.png";
 import { useForm } from "react-hook-form";
 import { InputError } from "../../../common/InputError";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { Box, Button, CircularProgress } from "@mui/material";
+import { Box, Button, CircularProgress,
+  DialogContent,
+  DialogTitle,
+  DialogActions,
+  Dialog,
+  Typography,
+  Grid, } from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData } from "../../../../api";
 import { getSiteAssets, setLoader } from "../../../../store/thunk/site";
@@ -43,6 +49,8 @@ const ViewEditPreAction = ({
 
   const [assetOptions, setAssetOptions] = useState([]);
   const [assets, setassets] = useState([]);
+  const [actionsPopup,setActionsPopup] = useState(false);
+  const [formData, setFormData] = useState({});
 
   useEffect(() => {
     getActionIdDetails();
@@ -57,7 +65,6 @@ const ViewEditPreAction = ({
       }))
     }
   }, [siteAssets]);
-
 
   const getActionIdDetails = async () => {
     const actionDetail = await get(`/api/action/${actionId}/details`);
@@ -98,6 +105,16 @@ const ViewEditPreAction = ({
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    const udata = {
+      ...formData,
+      [name]: value
+    };
+    setFormData(udata);
+  };
+
+
   
   const approveCreateAction = async () => {
     
@@ -109,21 +126,22 @@ const ViewEditPreAction = ({
       toast.error("Please enter approver notes");
       return;
     }
-    setIsLoading(true);
-    try {
-      const res = await put(`api/action/${actionId}/approve`, data);
+    setActionsPopup(true);
+    //setIsLoading(true);
+    // try {
+    //   const res = await put(`api/action/${actionId}/approve`, data);
 
-      if (res?.status === 200) {
-        toast.success("Successfully approved the pre action.");
-        goTo("/pre-actions");
-      } else {
-        toast.error("Something went wrong while updating pre action.");
-      }
-      setIsLoading(false);
-    } catch (e) {
-      setIsLoading(false);
-      toast.error("Something went wrong while updating pre action.");
-    }
+    //   if (res?.status === 200) {
+    //     toast.success("Successfully approved the pre action.");
+    //     goTo("/pre-actions");
+    //   } else {
+    //     toast.error("Something went wrong while updating pre action.");
+    //   }
+    //   setIsLoading(false);
+    // } catch (e) {
+    //   setIsLoading(false);
+    //   toast.error("Something went wrong while updating pre action.");
+    // }
   };
   const markAsClosed = async () => {
     let form_data = new FormData();
@@ -156,7 +174,186 @@ const ViewEditPreAction = ({
       setIsLoading(false);
     }
   };
+
+  const dateFormat = (date) => {
+    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  }
+
+  const saveAction = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
+    setIsLoading(true);
+    const body = {
+      type: "ClientAction",
+      status: "Reported",
+      observation: formData.observation,
+      desc: `Client Action - ${moment(new Date()).format("DD/MM/YYYY")}`,
+      requiredAction: formData.requiredAction,
+      riskScore: Number(formData.likelihood) * Number(formData.consequence),
+      dueDate: new Date(),
+      siteId: siteSelectedForGlobal?.siteId,
+      userId: loggedInUserData?.id,
+    }
+    await put("/api/site/actions", body);
+    
+    try {
+      const data = {
+        status: "Pending Action",
+        approverNotes: getValues("approverNotes"),
+      };
+      const res = await put(`api/action/${actionId}/approve`, data);
+
+      if (res?.status === 200) {
+        toast.success("Successfully approved the pre action.");
+        goTo("/pre-actions");
+      } else {
+        toast.error("Something went wrong while updating pre action.");
+      }
+      setIsLoading(false);
+    } catch (e) {
+      setIsLoading(false);
+      toast.error("Something went wrong while updating pre action.");
+    }
+    setActionsPopup(false)
+  }
   return (
+    <>
+     <Dialog
+        open={actionsPopup}
+        onClose={() => {
+          setActionsPopup(false);
+        }}
+        maxWidth="lg"
+        fullWidth
+      >
+        <form onSubmit={saveAction}>
+        <DialogTitle>
+          Actions
+        </DialogTitle>
+        <DialogContent dividers>
+          <Fragment>
+            <Grid container>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    Action
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <Grid item xs={12} sm={12}>
+                        <label htmlFor="consequence" name="consequence">
+                          Consequence
+                        </label>
+                        <select
+                          required
+                          className="form-control form-select"
+                          name="consequence"
+                          onChange={(e) => handleInputChange(e)}
+                        >
+                          <option value="">Select </option>
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <option value={num}>{num} </option>
+                          ))}
+                        </select>
+                      </Grid>
+                      <Grid item xs={12} sm={12}>
+                        <label htmlFor="likelihood" name="likelihood">
+                          Likelihood
+                        </label>
+                        <select
+                          required
+                          className="form-control form-select"
+                          name="likelihood"
+                          onChange={(e) => handleInputChange(e)}
+                        >
+                          <option value="">Select </option>
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <option value={num}>{num} </option>
+                          ))}
+                        </select>
+                      </Grid>
+                    </Grid>
+                    <Grid item xs={12} sm={8}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        p={2}
+                        mb={2}
+                        style={{
+                          height: "290px",
+                          marginTop: "-20px",
+                        }}
+                      >
+                        <img
+                          src="/RiskScore.png"
+                          alt="Risk Score Matrix"
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <label htmlFor="observation" name="observation">
+                        Observation
+                      </label>
+                      <textarea
+                        name="observation"
+                        className="form-control"
+                        id="observation"
+                        rows="2"
+                        required
+                        //placeholder="Enter notes..."
+                        onChange={(e) => handleInputChange(e)}
+                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <label htmlFor="requiredAction" name="requiredAction">
+                        Required Action
+                      </label>
+                      <textarea
+                        name="requiredAction"
+                        className="form-control"
+                        id="requiredAction"
+                        rows="2"
+                        required
+                        //placeholder="Enter notes..."
+                        onChange={(e) => handleInputChange(e)}
+                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Grid>
+            </Grid>
+          </Fragment>
+        </DialogContent>
+        <DialogActions>
+            <Button
+              type="button"
+            onClick={() => setActionsPopup(false)}
+            className="bg-light text-primary"
+          >
+            Cancel
+          </Button>
+            <button
+              type="submit"
+              //onClick={addReadingSave}
+            style={{
+                width: "150px",
+                marginBottom: "20px",
+                margin: "10px",
+                float: "right",
+              }}
+              className="btn btn-primary text-white pr-2"
+          >
+            Save
+            </button>
+          </DialogActions>
+        </form >
+      </Dialog>
+    
     <Fragment>
       <SidebarNew />
       <div className="content">
@@ -281,7 +478,7 @@ const ViewEditPreAction = ({
                           {...register("status", {
                             required: {
                               value: true,
-                              message: `Please select room`,
+                              message: `Please select status`,
                             },
                           })}
                         >
@@ -289,6 +486,8 @@ const ViewEditPreAction = ({
                             Select Status
                           </option>
                           <option value="New">New</option>
+                          <option value="Pending">Pending</option>
+                          <option value="Closed">Closed</option>
                         </select>
                         {errors?.status && (
                           <InputError
@@ -510,6 +709,8 @@ const ViewEditPreAction = ({
         </div>
       </div>
     </Fragment>
+    </>
+    
   );
 };
 const mapStateToProps = (state) => ({

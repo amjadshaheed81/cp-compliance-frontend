@@ -18,9 +18,9 @@ const DashboardActions = (siteSelectedForGlobal) => {
   const getActionList = async () => {
     if(siteSelectedForGlobal?.siteSelectedForGlobal?.siteId) {
       const actions = await get(
-        `/api/action/${siteSelectedForGlobal?.siteSelectedForGlobal?.siteId}/summary`
+        `api/site/actions/${siteSelectedForGlobal?.siteSelectedForGlobal?.siteId}`
       );
-      setActionList(actions?.preActions?.filter(a=>a.status === "Pending Action" || a.status === "Closed") || []);
+      setActionList(actions || []);
     }
   };
 
@@ -36,21 +36,21 @@ const DashboardActions = (siteSelectedForGlobal) => {
             <div className="bd-highlight">
               <h5 className="card-title">Actions</h5>
             </div>
-            {/* <div className="ms-auto bd-highlight">
+            <div className="ms-auto bd-highlight">
               <button
                 type="button"
                 className="btn btn-sm btn-light text-primary"
               >
                 View All
               </button>
-            </div> */}
+            </div>
           </div>
           <div className="table-responsive">
             <table className="table table-bordered f-11">
               <thead className="table-dark">
                 <tr>
+                  <th scope="col">Type</th>
                   <th scope="col">Action</th>
-                  <th scope="col">Owner</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
@@ -63,12 +63,12 @@ const DashboardActions = (siteSelectedForGlobal) => {
                 }
                 {actionList?.map(i=> (
                   <tr>
-                     <td>{i.description}</td>
-                  <td>{i.raisedByUserName}</td>
+                     <td>{i.type}</td>
+                  <td>{i.desc}</td>
                  
                   <td>
                     <div
-                      className={`bg-${i.status === "Closed" ? 'warning' : 'success'} text-light rounded-1 p-1`}
+                      className={`bg-${i.status === "Completed" ? 'success' : 'warning'} text-light rounded-1 p-1`}
                       role="alert"
                     >
                       {i.status}

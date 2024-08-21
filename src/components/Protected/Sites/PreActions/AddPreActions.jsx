@@ -10,7 +10,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { InputError } from "../../../common/InputError";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
-import { getSiteAssets, setLoader } from "../../../../store/thunk/site";
+import { getSiteAssets, setLoader,getSiteLayout } from "../../../../store/thunk/site";
 import { toast } from "react-toastify";
 import Chip from "@mui/material/Chip";
 import TextField from "@mui/material/TextField";
@@ -26,6 +26,8 @@ const AddPreActions = ({
   siteSelectedForGlobal,
   getSiteAssets,
   siteAssets,
+  getSiteLayout,
+  siteLayout,
 }) => {
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
@@ -40,9 +42,11 @@ const AddPreActions = ({
     handleSubmit,
   } = useForm({});
   const values = watch();
+
   useEffect(() => {
     // reset(selectedUser);
     getSiteAssets(siteSelectedForGlobal?.siteId)
+    getSiteLayout(siteSelectedForGlobal?.siteId);
   }, []);
   useEffect(()=>{
     if(siteAssets?.length > 0) {
@@ -146,10 +150,13 @@ const AddPreActions = ({
                             <option value="" selected disabled>
                               Select Floor
                             </option>
-                            <option value={"Ground"}>Ground</option>
-                            <option value={"First"}>First</option>
-                            <option value={"Second"}>Second</option>
-                            <option value={"Third"}>Third</option>`
+                            {siteLayout
+                          .filter((site) => site.nodeType === "floor")
+                          .map((site) => (
+                            <option value={site.nodeName}>
+                              {site.nodeName}{" "}
+                            </option>
+                          ))}
                           </select>
                           {errors?.floor && (
                             <InputError
@@ -177,9 +184,13 @@ const AddPreActions = ({
                             <option value="" selected disabled>
                               Select Room
                             </option>
-                            <option value="R101">R101</option>
-                            <option value="R102">R102</option>
-                            <option value="R103">R103</option>
+                           {siteLayout
+                          .filter((site) => site.nodeType === "room")
+                          .map((site) => (
+                            <option value={site.nodeName}>
+                              {site.nodeName}
+                            </option>
+                          ))}
                           </select>
                           {errors?.room && (
                             <InputError
@@ -339,7 +350,8 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteAssets: state.site.siteAssets,
+  siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { createUpdatePreActions, setLoader, getSiteAssets })(
+export default connect(mapStateToProps, { createUpdatePreActions, setLoader, getSiteAssets , getSiteLayout})(
   AddPreActions
 );

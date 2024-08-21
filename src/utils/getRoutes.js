@@ -22,6 +22,7 @@ import CompanyManagement from "../components/Protected/Admin/CompanyManagement";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
+import Actions from "../components/Protected/Sites/Actions"
 import SiteCalendar from "../components/Protected/Sites/SiteCalendar";
 import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewCreatePreActions";
 import SiteChecks from "../components/Protected/Sites/SiteChecks";
@@ -137,6 +138,17 @@ export const getRoutes = () => {
     {
       path: "/pre-actions",
       element: <PreActions />,
+      allowedRoles: [
+        ROLE.ADMIN,
+        ROLE.MANAGER,
+        ROLE.SITE_ACTION_MANAGER,
+        ROLE.SITE_USERS,
+        ROLE.CARE_TAKER,
+      ],
+    },
+    {
+      path: "/actions",
+      element: <Actions />,
       allowedRoles: [
         ROLE.ADMIN,
         ROLE.MANAGER,
