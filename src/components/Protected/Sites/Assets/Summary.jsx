@@ -12,6 +12,7 @@ import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 
 const Summary = ({
   siteAssets,
@@ -33,12 +34,9 @@ const Summary = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentSiteAssets = filteredSiteAssets?.filter(
-    (itm) => itm?.doorItem !== true && itm?.patItem !== true
-  ).slice(
-    indexOfFirstPreAction,
-    indexOfLastPreAction
-  );
+  const currentSiteAssets = filteredSiteAssets
+    ?.filter((itm) => itm?.doorItem !== true && itm?.patItem !== true)
+    .slice(indexOfFirstPreAction, indexOfLastPreAction);
   const locationFilter = siteAssetsList
     .map((itm) => {
       return { location: itm.location };
@@ -64,7 +62,9 @@ const Summary = ({
         siteAssets?.map((itm) => {
           return {
             ...itm,
-            location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
+            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+              itm?.room || "NA"
+            }`,
           };
         })
       );
@@ -72,7 +72,9 @@ const Summary = ({
         siteAssets?.map((itm) => {
           return {
             ...itm,
-            location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
+            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+              itm?.room || "NA"
+            }`,
           };
         })
       );
@@ -250,49 +252,60 @@ const Summary = ({
             </div>
           </div>
         </div>
-        <div className="ms-auto p-2 bd-highlight">
-          <div className="row" style={{ height: "auto" }}>
-            {isManagerAdminLogin(loggedInUserData) && (
-              <>
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <Tooltip title={`Add New Asset`} arrow>
-                    <button
-                      className="btn btn-primary text-white pr-2"
-                      onClick={() => {
-                        goTo("/create-asset");
-                      }}
-                    >
-                      <i className="fas fa-plus"></i>
-                    </button>
+
+        {isManagerAdminLogin(loggedInUserData) && (
+          <div className="ms-auto p-2 bd-highlight">
+            <div className="row" style={{ height: "auto" }}>
+              <div className="col-md-3 col-sm-4 mt-2">
+                <Tooltip title={`Add New Asset`} arrow>
+                  <button
+                    className="btn btn-primary text-white pr-2"
+                    onClick={() => {
+                      goTo("/create-asset");
+                    }}
+                  >
+                    <i className="fas fa-plus"></i>
+                  </button>
+                </Tooltip>
+              </div>
+              <div className="col-md-4 col-sm-4 mt-2">
+                <Tooltip title={`Clone`} arrow>
+                  <button
+                    className="btn btn-light text-primary pr-2"
+                    onClick={() => {
+                      cloneSelectedAsset();
+                    }}
+                  >
+                    Clone
+                  </button>
+                </Tooltip>
+              </div>
+              <div className="col-md-2 col-sm-4 mt-2">
+                <CSVLink
+                  filename={"site-assets-lists.csv"}
+                  className="btn btn-light bg-white text-primary"
+                  data={siteAssetsList}
+                >
+                  <Tooltip title={`Export`} arrow>
+                    <i className="fas fa-download"></i>
                   </Tooltip>
-                  <div className="col-md-4 col-sm-4 mt-2">
-                    <Tooltip title={`Clone`} arrow>
-                      <button
-                        className="btn btn-light text-primary pr-2"
-                        onClick={() => {
-                          cloneSelectedAsset();
-                        }}
-                      >
-                        Clone
-                      </button>
-                    </Tooltip>
-                  </div>
-                  <div className="col-md-4 col-sm-4 mt-2">
-                    <CSVLink
-                      filename={"site-assets-lists.csv"}
-                      className="btn btn-light bg-white text-primary"
-                      data={siteAssetsList}
-                    >
-                      <Tooltip title={`Export`} arrow>
-                        <i className="fas fa-download"></i>
-                      </Tooltip>
-                    </CSVLink>
-                  </div>
-                </div>
-              </>
-            )}
+                </CSVLink>
+              </div>
+              <div className="col-md-3 col-sm-4 mt-2">
+                <Tooltip title={`Print`} arrow>
+                  <button
+                    className="btn btn-light text-primary"
+                    onClick={() => {
+                      printMultipleSelectedAsset(selectedItems);
+                    }}
+                  >
+                    <i className="fas fa-print"></i>
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {/* row start*/}
       <div className="row p-2">

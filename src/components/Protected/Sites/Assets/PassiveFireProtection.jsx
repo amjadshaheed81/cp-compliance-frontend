@@ -14,6 +14,7 @@ import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
+import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 
 const PassiveFireProtection = ({
   sitePFPItems,
@@ -38,22 +39,39 @@ const PassiveFireProtection = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  const locationFilter = siteAssetsList.map((itm) => {
-    return { location: itm.location };
-  }).filter((obj1, i, arr) => 
-    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
-  );
+  const locationFilter = siteAssetsList
+    .map((itm) => {
+      return { location: itm.location };
+    })
+    .filter(
+      (obj1, i, arr) =>
+        arr.findIndex((obj2) => obj2.location === obj1.location) === i
+    );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
   useEffect(() => {
     if (sitePFPItems) {
-      setfilteredSitePFPItems(sitePFPItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
-      }));
-      setSiteAssetsList(sitePFPItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
-      }));
+      setfilteredSitePFPItems(
+        sitePFPItems?.map((itm) => {
+          return {
+            ...itm,
+            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+              itm?.room || "NA"
+            }`,
+          };
+        })
+      );
+      setSiteAssetsList(
+        sitePFPItems?.map((itm) => {
+          return {
+            ...itm,
+            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+              itm?.room || "NA"
+            }`,
+          };
+        })
+      );
       setfilteredSitePFPItems(sitePFPItems);
     }
   }, [sitePFPItems]);
@@ -252,7 +270,7 @@ const PassiveFireProtection = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="col-md-6 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2">
               <CSVLink
                 filename={"site-pfp-item-list.csv"}
                 className="btn btn-light bg-white text-primary"
@@ -262,6 +280,18 @@ const PassiveFireProtection = ({
                   <i className="fas fa-download"></i>
                 </Tooltip>
               </CSVLink>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <Tooltip title={`Print`} arrow>
+                <button
+                  className="btn btn-light text-primary"
+                  onClick={() => {
+                    printMultipleSelectedAsset(selectedItems);
+                  }}
+                >
+                  <i className="fas fa-print"></i>
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>

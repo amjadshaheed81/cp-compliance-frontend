@@ -14,6 +14,7 @@ import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
+import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 
 const Door = ({
   siteDoorItems,
@@ -38,11 +39,14 @@ const Door = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  const locationFilter = siteAssetsList.map((itm) => {
-    return { location: itm.location };
-  }).filter((obj1, i, arr) => 
-    arr.findIndex(obj2 => (obj2.location === obj1.location)) === i
-  );
+  const locationFilter = siteAssetsList
+    .map((itm) => {
+      return { location: itm.location };
+    })
+    .filter(
+      (obj1, i, arr) =>
+        arr.findIndex((obj2) => obj2.location === obj1.location) === i
+    );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -52,12 +56,26 @@ const Door = ({
 
   useEffect(() => {
     if (siteDoorItems) {
-      setFilteredSiteDoorItems(siteDoorItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
-      }));
-      setSiteAssetsList(siteDoorItems?.map((itm) => {
-        return { ...itm, location: `${itm?.position || 'NA'} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}` };
-      }));
+      setFilteredSiteDoorItems(
+        siteDoorItems?.map((itm) => {
+          return {
+            ...itm,
+            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+              itm?.room || "NA"
+            }`,
+          };
+        })
+      );
+      setSiteAssetsList(
+        siteDoorItems?.map((itm) => {
+          return {
+            ...itm,
+            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+              itm?.room || "NA"
+            }`,
+          };
+        })
+      );
     }
   }, [siteDoorItems]);
 
@@ -246,10 +264,10 @@ const Door = ({
         </div>
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col-md-6 col-sm-4 mt-2">
+            <div className="col-md-6 col-sm-4 mt-2 mr-2">
               <Tooltip title={`Clone`} arrow>
                 <button
-                  className="btn btn-light text-primary pr-2"
+                  className="btn btn-light text-primary"
                   onClick={() => {
                     cloneSelectedAsset();
                   }}
@@ -258,7 +276,7 @@ const Door = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="col-md-6 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2 mr-2">
               <CSVLink
                 filename={"site-door-assets.csv"}
                 className="btn btn-light bg-white text-primary"
@@ -268,6 +286,18 @@ const Door = ({
                   <i className="fas fa-download"></i>
                 </Tooltip>
               </CSVLink>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <Tooltip title={`Print`} arrow>
+                <button
+                  className="btn btn-light text-primary"
+                  onClick={() => {
+                    printMultipleSelectedAsset(selectedItems);
+                  }}
+                >
+                  <i className="fas fa-print"></i>
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -324,9 +354,7 @@ const Door = ({
                   <th scope="col">
                     {asset?.assetDoorSpecifications?.fireRating}
                   </th>
-                  <th scope="col">
-                    {asset?.location}
-                  </th>
+                  <th scope="col">{asset?.location}</th>
                   <th scope="col">
                     {asset?.assetDoorSpecifications?.frameFinish}
                   </th>
