@@ -145,7 +145,6 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             Issue Date
           </label>
             <input
-              required
             disabled={completed}
             type="date"
             name="issueDate"
@@ -160,7 +159,6 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             Expiry Date
           </label>
             <input
-              required
             disabled={completed}
             type="date"
             name="expiryDate"
@@ -172,7 +170,6 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
         </Grid>
         <Grid item xs={12}>
             <textarea
-              required
             disabled={completed}
             name="note"
             className="form-control"
