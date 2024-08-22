@@ -289,7 +289,9 @@ const Summary = ({
                 <CSVLink
                   filename={"site-assets-lists.csv"}
                   className="btn btn-light bg-white text-primary"
-                  data={siteAssetsList}
+                  data={filteredSiteAssets?.filter(
+                    (itm) => itm?.doorItem !== true && itm?.patItem !== true
+                  )}
                 >
                   <Tooltip title={`Export`} arrow>
                     <i className="fas fa-download"></i>
