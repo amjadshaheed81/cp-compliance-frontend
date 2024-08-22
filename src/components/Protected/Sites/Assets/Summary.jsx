@@ -330,8 +330,8 @@ const Summary = ({
                 <th scope="col">Manufacturer</th>
                 <th scope="col">Category</th>
                 <th scope="col">Location</th>
-                <th scope="col">Passive Fire Sch</th>
-                <th scope="col">PAT Item</th>
+                {/* <th scope="col">Passive Fire Sch</th>
+                <th scope="col">PAT Item</th> */}
                 <th scope="col">Actions</th>
               </tr>
             </thead>
@@ -357,8 +357,8 @@ const Summary = ({
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{getCategoryLabelValue(asset)}</th>
                   <th scope="col">{asset?.location}</th>
-                  <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
-                  <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
+                  {/* <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
+                  <th scope="col">{asset?.patItem ? "YES" : "NO"}</th> */}
                   <th scope="col">
                     <Tooltip title={`View ${asset.assetName}`} arrow>
                       <button
