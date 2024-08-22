@@ -115,7 +115,7 @@ const Pat = ({
           String(x?.category)
             .toLowerCase()
             .includes(String(category).toLowerCase()) &&
-          String(x?.location)
+          String(x?.position)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
           String(x?.manufacturer)
@@ -249,9 +249,11 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
-                {locationFilter.map((site) => (
+                <option value="External">External</option>
+                <option value="Internal">Internal</option>
+                {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
-                ))}
+                ))} */}
               </select>
             </div>
           </div>
