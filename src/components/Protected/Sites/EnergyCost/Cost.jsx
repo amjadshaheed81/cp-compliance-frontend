@@ -2,6 +2,9 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post } from "../../../../api";
+import moment from "moment";
+
+import DatePicker from "../../../common/DatePicker";
 
 import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
 
@@ -76,8 +79,22 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
                 </select>
               </Grid>
               <Grid sm={4}>
-                <label for="fromDate">From Date</label>
-                <input
+                {/* <label for="fromDate">From Date</label> */}
+                <div>
+                      <DatePicker
+                      label="From Date"
+                        value={formData?.fromDate}
+                        onChange={(date) => {
+                          setFormData({
+                            ...formData,
+                            //dueDate: new Date(date),
+                            fromDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
+                            
+                          });
+                        }}
+                    />
+                    </div>
+                {/* <input
                   style={{ maxWidth: '300px' }}
                   type="date"
                   className="form-control"
@@ -85,11 +102,25 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
                     onChange={handleInputChange}
                     required
 
-                />
+                /> */}
               </Grid>
               <Grid sm={4}>
-                <label for="toDate">To Date</label>
-                <input
+                {/* <label for="toDate"></label> */}
+                <div style={{  }}>
+                      <DatePicker
+                      label="To Date"
+                        value={formData?.toDate}
+                        onChange={(date) => {
+                          setFormData({
+                            ...formData,
+                            //dueDate: new Date(date),
+                            toDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
+                            
+                          });
+                        }}
+                    />
+                    </div>
+                {/* <input
                     type="date"
                   style={{ maxWidth: '300px' }}
                   className="form-control"
@@ -97,7 +128,7 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
                     onChange={handleInputChange}
                     required
 
-                />
+                /> */}
               </Grid>
               <Grid sm={4}>
                 <label for="cost">Cost (GBP)</label>
@@ -145,10 +176,12 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
                             {d.budgetCategory}
                             </td>
                           <td>
-                            {String(d?.fromDate)?.substring(0, 10)}
+                            {d?.fromDate ? moment(d?.fromDate).format("DD/MM/YYYY") : "-"}
+                           
                             </td>
                           <td>
-                            {String(d?.toDate)?.substring(0, 10)}
+                          {d?.toDate ? moment(d?.toDate).format("DD/MM/YYYY") : "-"}
+                            {/* {String(d?.toDate)?.substring(0, 10)} */}
                             </td>
                           <td>
                             {d.cost}

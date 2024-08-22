@@ -47,6 +47,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
+  const [bulkCategory, setBulkCategory] = useState();
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
   const currentEnergyCost = filteredEnergyCost.slice(
@@ -234,19 +235,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             }
             
           } else if (index === 1 || index === 2) {
-
-            // if (moment(rowValues[index], 'DD/MM/YYYY', true).isValid()) {
-            //   toast("Invalid data present in attached file at row no " + index);
-            //   return;
-            // } else {
               rowValues[index] = convertToDate(rowValues[index]);
-
-            //}
-          //} else {
-           // if (isNaN(rowValues[index])) {
-              //toast("Invalid data present in attached file at row no " + index)
-              //return;
-            //}
           }
           rowData[col] = rowValues[index] || null;
         });
@@ -261,7 +250,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const callbulkUploadCost = async () => {
     setopenBulk(false);
     for (const data of bulkUploadCost) {
-      await saveCost(data);
+      if(data) {
+        data.budgetCategory = bulkCategory;
+        await saveCost(data);
+      }
+      
+     
     }
     setbulkUploadCost([]);
     getEnergyCost();
@@ -271,7 +265,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const callbulkUploadReading = async () => {
     setopenBulk(false);
     for (const data of bulkUploadReading) {
-      await saveReading(data);
+      if(data) {
+        data.budgetCategory = bulkCategory;
+        await saveReading(data);
+      }
     }
     setbulkUploadReading([]);
     getEnergyCost();
@@ -342,7 +339,20 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
         <DialogTitle>Bulk Upload</DialogTitle>
         <DialogContent dividers>
           <Fragment>
+          {!bulkCategory && <div className="col">
+            <label for="budgetCategory">Select Budget Category</label>
+                  <select
+                    name="budgetCategory"
+                    className="form-control form-select"
+                    id="budgetCategory"
+                    onChange={(e)=>setBulkCategory(e.target.value)}
+                  >
+                    <option value="">Budget Category</option>
+                    {typeoptions.map(t => <option value={t}>{t}</option>)}
 
+                  </select>
+                </div>}
+                {bulkCategory &&  <>
             <h5>Bulk Upload Energy Cost</h5>
             <p style={{ color: 'red' }}>Download the template <Link href="cost-template.xlsx" download="cost-template.xlsx">here</Link> and populate the values before you upload using the file selection below</p>
             <input
@@ -384,7 +394,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             <br />
             <br />
 
-
+            </>}
           </Fragment>
 
         </DialogContent>
@@ -511,7 +521,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                       <button
                         style={{ width: "150px" }}
                         className="btn btn-primary btn-light"
-                        onClick={() => { setopenBulk(true); }}
+                        onClick={() => { setBulkCategory();setopenBulk(true); }}
                       >
 
                         <i className="fas fa-upload" /> &nbsp; Bulk Upload
@@ -559,10 +569,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                       <th scope="col">{action?.reference}</th>
                       <th scope="col">{action?.budgetCategory}</th>
                       <th scope="col" style={{ width: '150px' }}>
-                        {action?.minDate ? moment(action?.minDate).format("DD-MM-YYYY") : "-"}
+                        {action?.minDate ? moment(action?.minDate).format("DD/MM/YYYY") : "-"}
                       </th>
                       <th scope="col" style={{ width: '150px' }}>
-                        {action?.maxDate ? moment(action?.maxDate).format("DD-MM-YYYY") : "-"}
+                        {action?.maxDate ? moment(action?.maxDate).format("DD/MM/YYYY") : "-"}
                       </th>
                       <th scope="col">{action?.readingList?.[action?.readingList?.length - 1]?.readingValue??'-'} {action?.readingList?.[action?.readingList?.length - 1]?.readingUnit}</th>
                       <th scope="col">£{action?.costList?.map(c => c.cost).reduce((a, b) => { return a + b }, 0)}</th>

@@ -2,6 +2,8 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post } from "../../../../api";
+import moment from "moment";
+import DatePicker from "../../../common/DatePicker";
 
 import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
 
@@ -91,7 +93,19 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                 </select>
               </Grid>
               <Grid sm={4}>
-                  <label for="readingDate">Reading Date</label>
+              <div>
+                      <DatePicker
+                      label="Reading Date"
+                        value={formData?.readingDate}
+                        onChange={(date) => {
+                          setFormData({
+                            ...formData,
+                            readingDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
+                          });
+                        }}
+                    />
+                    </div>
+                  {/* <label for="readingDate">Reading Date</label>
                 <input
                   style={{ maxWidth: '300px' }}
                   type="date"
@@ -100,7 +114,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                     onChange={handleInputChange}
                     required
 
-                />
+                /> */}
               </Grid>
               
               <Grid sm={4}>
@@ -173,7 +187,8 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                         )}
                         {survey?.readingList.map((d, idx) => (<tr>
                           <td>
-                            {String(d?.readingDate)?.substring(0, 10)}
+                          {d?.readingDate ? moment(d?.readingDate).format("DD/MM/YYYY") : "-"}
+                            {/* {String(d?.readingDate)?.substring(0, 10)} */}
                             </td>
                           <td>
                             {d.readingValue} {d.readingUnit}
