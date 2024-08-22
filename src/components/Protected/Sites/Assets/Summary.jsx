@@ -13,6 +13,7 @@ import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
+import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 
 const Summary = ({
   siteAssets,
@@ -354,7 +355,7 @@ const Summary = ({
                   </th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
-                  <th scope="col">{asset?.category}</th>
+                  <th scope="col">{getCategoryLabelValue(asset)}</th>
                   <th scope="col">{asset?.location}</th>
                   <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
                   <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
