@@ -24,6 +24,7 @@ import Swal from "sweetalert2";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import PdfViewer from "../Documents/PdfViewer";
+import ListStatusBadge from "../../../common/Alert/Status/ListStatusBadge";
 
 const ContractorContractView = ({
   showAddModal,
@@ -42,6 +43,7 @@ const ContractorContractView = ({
   const handleClose = () => setShowAddModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentContract, setCurrentContract] = useState([]);
+  const [contratorContracts, setContratorContracts] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -87,6 +89,7 @@ const ContractorContractView = ({
       endDate: data?.endDate?.split("T")?.[0],
     });
     setCurrentContract(data);
+    setContratorContracts(data?.contractorQuotes?.filter(itm => itm?.contractor === loggedInUserData?.name));
     setAssetData(data?.projectContractAssets);
   };
   const getCompanies = async () => {
@@ -734,6 +737,43 @@ const ContractorContractView = ({
                 {/** END mandatory folder */}
 
                 {/* Add Contractor */}
+                <div className="row">
+                  <div className="col-md-12">
+                    <div className="table-responsive mt-2">
+                      <table className="table">
+                        <thead className="table-dark">
+                          <tr>
+                            <td>Contractor</td>
+                            <td>Company</td>
+                            <td>Quote</td>
+                            <td>Quote Date</td>
+                            <td>Status</td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {contratorContracts?.length === 0 && (
+                            <tr>
+                              <td colSpan={6}>No Contractor Quotation are available</td>
+                            </tr>
+                          )}
+                          {contratorContracts?.map((itm) => (
+                            <tr key={itm?.quote}>
+                              <td>
+                                {itm?.contractor ? itm?.contractor : "--"}
+                              </td>
+                              <td>{itm?.company ? itm?.company : "--"}</td>
+                              <td>{itm?.quote ? itm?.quote : "--"}</td>
+                              <td>{itm?.quoteDate ? itm?.quoteDate : "--"}</td>
+                              <td>
+                                <ListStatusBadge status={itm?.status} />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
                 <div className="row">
                   <div className="col-md-12">
                     <div className="table-responsive mt-2">
