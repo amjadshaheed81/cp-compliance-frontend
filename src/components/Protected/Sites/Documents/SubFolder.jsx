@@ -37,8 +37,6 @@ import Swal from "sweetalert2";
 import { Chip, Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import PdfViewer from "./PdfViewer";
-import TagsInput from 'react-tagsinput'
-import 'react-tagsinput/react-tagsinput.css'
 
 const SubFolder = ({
   deleteFile,
