@@ -56,6 +56,37 @@ const CreateAsset = ({
     setSubCategory3(subCategory3);
   };
 
+  const changePatItem = (e) => {
+    const value = e.target.checked;
+    setValue("patItem", value);
+    const ispfpItem = getValues("pfpItem");
+    const isdoorItem = getValues("doorItem");
+    if (ispfpItem || isdoorItem) {
+      setValue("pfpItem", false);
+      setValue("doorItem", false);
+    }
+  };
+  const changePfpItem = (e) => {
+    const value = e.target.checked;
+    setValue("pfpItem", value);
+    const ispatItem = getValues("patItem");
+    const isdoorItem = getValues("doorItem");
+    if (ispatItem || isdoorItem) {
+      setValue("patItem", false);
+      setValue("doorItem", false);
+    }
+  };
+  const changeDoorItem = (e) => {
+    const value = e.target.checked;
+    setValue("doorItem", value);
+    const ispatItem = getValues("patItem");
+    const ispfpItem = getValues("pfpItem");
+    if (ispatItem || ispfpItem) {
+      setValue("patItem", false);
+      setValue("pfpItem", false);
+    }
+  };
+
   const addPatRecord = () => {
     setPatRecord([
       ...patRecord,
@@ -442,6 +473,7 @@ const CreateAsset = ({
                         type="checkbox"
                         id="patItem"
                         name="patItem"
+                        onClick={changePatItem}
                         className="form-check-input"
                         {...register("patItem")}
                       />
@@ -455,6 +487,7 @@ const CreateAsset = ({
                         type="checkbox"
                         id="pfpItem"
                         name="pfpItem"
+                        onClick={changePfpItem}
                         className="form-check-input"
                         {...register("pfpItem")}
                       />
@@ -469,6 +502,7 @@ const CreateAsset = ({
                         type="checkbox"
                         id="doorItem"
                         name="doorItem"
+                        onClick={changeDoorItem}
                         className="form-check-input"
                         {...register("doorItem")}
                       />

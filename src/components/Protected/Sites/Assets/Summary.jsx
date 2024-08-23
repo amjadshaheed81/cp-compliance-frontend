@@ -13,6 +13,7 @@ import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
+import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 
 const Summary = ({
   siteAssets,
@@ -119,7 +120,7 @@ const Summary = ({
           String(x?.category)
             .toLowerCase()
             .includes(String(category).toLowerCase()) &&
-          String(x?.location)
+          String(x?.position)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
           String(x?.manufacturer)
@@ -247,9 +248,11 @@ const Summary = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
-                {locationFilter.map((site) => (
+                <option value="External">External</option>
+                <option value="Internal">Internal</option>
+                {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
-                ))}
+                ))} */}
               </select>
             </div>
           </div>
@@ -286,7 +289,9 @@ const Summary = ({
                 <CSVLink
                   filename={"site-assets-lists.csv"}
                   className="btn btn-light bg-white text-primary"
-                  data={siteAssetsList}
+                  data={filteredSiteAssets?.filter(
+                    (itm) => itm?.doorItem !== true && itm?.patItem !== true
+                  )}
                 >
                   <Tooltip title={`Export`} arrow>
                     <i className="fas fa-download"></i>
@@ -329,8 +334,8 @@ const Summary = ({
                 <th scope="col">Manufacturer</th>
                 <th scope="col">Category</th>
                 <th scope="col">Location</th>
-                <th scope="col">Passive Fire Sch</th>
-                <th scope="col">PAT Item</th>
+                {/* <th scope="col">Passive Fire Sch</th>
+                <th scope="col">PAT Item</th> */}
                 <th scope="col">Actions</th>
               </tr>
             </thead>
@@ -354,10 +359,10 @@ const Summary = ({
                   </th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
-                  <th scope="col">{asset?.category}</th>
+                  <th scope="col">{getCategoryLabelValue(asset)}</th>
                   <th scope="col">{asset?.location}</th>
-                  <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
-                  <th scope="col">{asset?.patItem ? "YES" : "NO"}</th>
+                  {/* <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
+                  <th scope="col">{asset?.patItem ? "YES" : "NO"}</th> */}
                   <th scope="col">
                     <Tooltip title={`View ${asset.assetName}`} arrow>
                       <button

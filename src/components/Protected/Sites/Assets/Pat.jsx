@@ -15,6 +15,8 @@ import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
+import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
+import { getPatTestedEndDate, getPatTestedStartDate } from "../../../../utils/getPatTestedDate";
 
 const Pat = ({
   sitePATItems,
@@ -113,7 +115,7 @@ const Pat = ({
           String(x?.category)
             .toLowerCase()
             .includes(String(category).toLowerCase()) &&
-          String(x?.location)
+          String(x?.position)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
           String(x?.manufacturer)
@@ -247,9 +249,11 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
-                {locationFilter.map((site) => (
+                <option value="External">External</option>
+                <option value="Internal">Internal</option>
+                {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
-                ))}
+                ))} */}
               </select>
             </div>
           </div>
@@ -340,10 +344,10 @@ const Pat = ({
                   </th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
-                  <th scope="col">{asset?.category}</th>
+                  <th scope="col">{getCategoryLabelValue(asset)}</th>
                   <th scope="col">{asset?.location}</th>
-                  <th scope="col">{asset?.dateTested}</th>
-                  <th scope="col">{asset?.nextTest}</th>
+                  <th scope="col">{getPatTestedStartDate(asset)}</th>
+                  <th scope="col">{getPatTestedEndDate(asset)}</th>
                   <th scope="col">{asset?.status}</th>
                   <th scope="col">
                     <Tooltip title={`View ${asset.assetName}`} arrow>

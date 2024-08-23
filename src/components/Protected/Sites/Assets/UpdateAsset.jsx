@@ -172,18 +172,20 @@ const UpdateAsset = ({
   const initRelatedAssetOptions = (response) => {
     const selectedAssets = response?.relatedAssetId?.split(",");
     const arr = [];
-    if(selectedAssets?.length > 0) {
+    if (selectedAssets?.length > 0) {
       for (const iterator of selectedAssets) {
         const selectedValue =
-        siteAssets.find((itm) => itm.assetId == iterator) ||
-        null;
+          siteAssets.find((itm) => itm.assetId == iterator) || null;
         if (selectedValue) {
-          arr.push({ key: selectedValue?.assetId, label: selectedValue?.assetName });
+          arr.push({
+            key: selectedValue?.assetId,
+            label: selectedValue?.assetName,
+          });
         }
       }
     }
     setRelatedAssetOption(arr);
-  }
+  };
 
   const addPatRecord = () => {
     const d = [...patRecord];
@@ -278,7 +280,7 @@ const UpdateAsset = ({
       subCategory3: formData?.subCategory3,
       model: formData?.model,
       serialNumber: formData?.serialNumber,
-      relatedAssetId: relatedAssetOption?.map(item => item.key).join(","),
+      relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: formData?.folderId,
       patItem: formData?.patItem,
       pfpItem: formData?.pfpItem,
@@ -426,17 +428,49 @@ const UpdateAsset = ({
   };
   const getSelectedValue = () => {
     const arr = [];
-    if(relatedAssetOption?.length > 0) {
+    if (relatedAssetOption?.length > 0) {
       for (const iterator of relatedAssetOption) {
         const selectedValue =
-        siteAssets.find((itm) => itm.assetId == iterator?.key) ||
-        null;
+          siteAssets.find((itm) => itm.assetId == iterator?.key) || null;
         if (selectedValue) {
-          arr.push({ key: selectedValue?.assetId, label: selectedValue?.assetName });
+          arr.push({
+            key: selectedValue?.assetId,
+            label: selectedValue?.assetName,
+          });
         }
       }
     }
     return arr;
+  };
+  const changePatItem = (e) => {
+    const value = e.target.checked;
+    setValue("patItem", value);
+    const ispfpItem = getValues("pfpItem");
+    const isdoorItem = getValues("doorItem");
+    if (ispfpItem || isdoorItem) {
+      setValue("pfpItem", false);
+      setValue("doorItem", false);
+    }
+  };
+  const changePfpItem = (e) => {
+    const value = e.target.checked;
+    setValue("pfpItem", value);
+    const ispatItem = getValues("patItem");
+    const isdoorItem = getValues("doorItem");
+    if (ispatItem || isdoorItem) {
+      setValue("patItem", false);
+      setValue("doorItem", false);
+    }
+  };
+  const changeDoorItem = (e) => {
+    const value = e.target.checked;
+    setValue("doorItem", value);
+    const ispatItem = getValues("patItem");
+    const ispfpItem = getValues("pfpItem");
+    if (ispatItem || ispfpItem) {
+      setValue("patItem", false);
+      setValue("pfpItem", false);
+    }
   };
   return (
     <Fragment>
@@ -526,7 +560,7 @@ const UpdateAsset = ({
                             <Autocomplete
                               multiple
                               onChange={(event, newValue) => {
-                                setRelatedAssetOption(newValue)
+                                setRelatedAssetOption(newValue);
                               }}
                               value={getSelectedValue()}
                               options={siteAssets.map((option) => {
@@ -535,7 +569,11 @@ const UpdateAsset = ({
                                   label: option.assetName,
                                 };
                               })}
-                              getOptionLabel={(option) => <Fragment key={option.key}>{option.label || ""}</Fragment>}
+                              getOptionLabel={(option) => (
+                                <Fragment key={option.key}>
+                                  {option.label || ""}
+                                </Fragment>
+                              )}
                               renderInput={(params) => (
                                 <TextField
                                   disabled
@@ -746,6 +784,7 @@ const UpdateAsset = ({
                             type="checkbox"
                             id="patItem"
                             name="patItem"
+                            onClick={changePatItem}
                             className="form-check-input"
                             {...register("patItem")}
                           />
@@ -759,6 +798,7 @@ const UpdateAsset = ({
                             type="checkbox"
                             id="pfpItem"
                             name="pfpItem"
+                            onClick={changePfpItem}
                             className="form-check-input"
                             {...register("pfpItem")}
                           />
@@ -773,6 +813,7 @@ const UpdateAsset = ({
                             type="checkbox"
                             id="doorItem"
                             name="doorItem"
+                            onClick={changeDoorItem}
                             className="form-check-input"
                             {...register("doorItem")}
                           />
@@ -821,11 +862,13 @@ const UpdateAsset = ({
           {/*  */}
           <Box sx={{ width: "100%", typography: "body1" }}>
             <TabContext value={value}>
-              <Box sx={{
-    '& .MuiTabs-flexContainer': {
-      flexWrap: 'wrap',
-    },
-  }}>
+              <Box
+                sx={{
+                  "& .MuiTabs-flexContainer": {
+                    flexWrap: "wrap",
+                  },
+                }}
+              >
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
                   <Tab
                     className={
