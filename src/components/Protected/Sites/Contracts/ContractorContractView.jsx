@@ -204,7 +204,7 @@ const ContractorContractView = ({
           }).filter(function (el) {
             return el != null;
           });
-          if (assets.length > 0) {
+          if (assets?.length > 0) {
             const assetData = {
               addAssets: assets,
               removeAssets: [],
