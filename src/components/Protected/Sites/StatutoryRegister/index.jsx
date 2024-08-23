@@ -18,6 +18,7 @@ import PdfViewer from "../Documents/PdfViewer";
 import DutiesIdentifiedLogo from "../../../../images/sreg-1.png";
 import DutiesMetLogo from "../../../../images/sreg-2.png";
 import DutiesNotMetLogo from "../../../../images/sreg-3.png";
+import StatuaryStatus from "../../../common/Alert/Status/StatuaryStatus";
 
 const StatutoryRegister = ({
   loggedInUserData,
@@ -409,10 +410,11 @@ const StatutoryRegister = ({
                         </table>
                       </th>
                       <th scope="col">
-                        <ChipComponent
-                          status={getChipStatus(item)}
-                          isStatutory={true}
-                        />
+                        {item?.status ? (
+                          <StatuaryStatus status={item?.status} />
+                        ) : (
+                          "--"
+                        )}
                       </th>
                     </tr>
                   );

@@ -1,0 +1,12 @@
+span.badge.rounded-pill.text-danger.text-capitalize {
+  background: rgb(218 41 46 / 8%) !important;
+  font-size: 12px;
+}
+span.badge.rounded-pill.bg-light.text-success.text-capitalize {
+  background: rgb(47 179 128 / 8%) !important;
+  font-size: 12px;
+}
+span.badge.rounded-pill.bg-light.text-warning.text-capitalize {
+  background: rgb(244 189 97 / 8%) !important;
+  font-size: 12px;
+}
