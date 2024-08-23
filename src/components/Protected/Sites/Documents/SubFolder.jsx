@@ -5,6 +5,7 @@ import FolderCopyIcon from "@mui/icons-material/FolderCopy";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import Bookmark from '@mui/icons-material/Bookmark';
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import moment from "moment";
 import ReplyIcon from "@mui/icons-material/Reply";
@@ -33,9 +34,11 @@ import VersionHistory from "./VersionHistory";
 import CreateFolder from "./CreateFolder";
 import { get } from "../../../../api";
 import Swal from "sweetalert2";
-import { Tooltip } from "@mui/material";
+import { Chip, Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import PdfViewer from "./PdfViewer";
+import TagsInput from 'react-tagsinput'
+import 'react-tagsinput/react-tagsinput.css'
 
 const SubFolder = ({
   deleteFile,
@@ -63,6 +66,8 @@ const SubFolder = ({
   const [folderData, setfolder] = useState();
   const [fileId, setFileId] = useState();
   const [previousFolderId, setPreviousFolderId] = useState([]);
+  const [tags,settags] = useState({});
+  const [tagindex,settagindex] = useState(null);
   const searchDocument = async (e) => {
     const value = e?.target?.value;
     if (value && value.length > 0) {
@@ -380,21 +385,57 @@ const SubFolder = ({
                 </td>
               </tr>
 
-              {subfolderFiles?.document?.childFolders?.map((folder) => {
+              {subfolderFiles?.document?.childFolders?.map((folder, i) => {
                 return (
                   <>
                     <tr style={{ backgroundColor: "red" }}>
                       <td>
+                        
                         <div
+                          
+                        >
+                          &nbsp; &nbsp;
+                          <FolderOpenIcon style={{ color: "#384BD3" }} 
                           onClick={() => {
                             navigateToSubFolder(folder?.id);
                             addStack(folder?.id, folder?.name);
-                          }}
-                        >
-                          &nbsp; &nbsp;
-                          <FolderOpenIcon style={{ color: "#384BD3" }} />
-                          <span className="p-3 cursor">{folder?.name}</span>
+                          }}/>
+                          <span className="p-3 cursor" onClick={() => {
+                            navigateToSubFolder(folder?.id);
+                            addStack(folder?.id, folder?.name);
+                          }}>{folder?.name}</span>
+                          &nbsp; &nbsp;{tags[i] && <Chip 
+                            label={tags[i]}
+                            color="primary"
+                            //variant="outlined"
+                            onDelete={()=> {
+                              const tag = {...tags};
+                              delete tag[i];
+                              settags(tag);
+                            }}
+                          />}
+                          {!tags[i] &&
+                          <Tooltip title={`Add tag`} arrow>
+                          <Bookmark
+                            onClick={() => {
+                              settagindex(i);
+                            }}
+                            style={{ color: "384bd3", cursor: "pointer" }}
+                          />
+                        </Tooltip>
+                          }
+                          {tagindex === i && !tags[i] && <input type="text" 
+                          placeholder="Add tag"
+                          onKeyDown={(e)=>{
+                            if (e.key === 'Enter') {
+                            const tag = {...tags};
+                            tag[i]= e.target.value;
+                            settags(tag);
+                            settagindex(null);
+                            }
+                          }}/>}
                         </div>
+                        
                       </td>
                       <td>--</td>
                       <td>--</td>
