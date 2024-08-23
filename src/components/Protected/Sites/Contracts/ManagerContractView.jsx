@@ -17,6 +17,7 @@ import Delete from "@mui/icons-material/Delete";
 import {
   getDocumentsRootFolder,
   getSiteAssets,
+  setLoader,
 } from "../../../../store/thunk/site";
 import { getManagerList } from "../../../../store/thunk/user";
 import AddAssets from "./AddAssets";
@@ -336,6 +337,7 @@ const ManagerContractView = ({
   };
   const markStatusQuotation = async (row, status) => {
     // let form_data = new FormData();
+    setIsLoading(true)
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed.");
       return;
@@ -413,6 +415,7 @@ const ManagerContractView = ({
     } else {
       toast.error("Please login with valid user details to proceed.");
     }
+    setIsLoading(false)
   };
   const deleteQuation = async (row) => {
     // let form_data = new FormData();

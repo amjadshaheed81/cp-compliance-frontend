@@ -159,6 +159,7 @@ const ContractorContractView = ({
   const submitUpdateContract = async (data) => {
     console.log("submitUpdateContract", data);
     console.log("loggedInUserData", loggedInUserData);
+    setIsLoading(true);
     const quotation = {
       quoteId: null,
       contractor: loggedInUserData?.name,
@@ -215,7 +216,7 @@ const ContractorContractView = ({
           }
         }
         toast.success("Successully updated quatation.");
-        handleClose();
+        getContractDetail();
       } else {
         toast.error(
           "Something went wrong while adding contract. Please try again!!"
@@ -225,6 +226,7 @@ const ContractorContractView = ({
     } else {
       toast.error("Please login with valid user details to proceed.");
     }
+    setIsLoading(false);
   };
   const requestReschedule = async (itm, newDate) => {
     const data = {
