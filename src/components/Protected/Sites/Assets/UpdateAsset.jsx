@@ -34,6 +34,17 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import "./AssetStyle.css";
 import Swal from "sweetalert2";
 
+async function fetchBlob(selectedPdf) {
+  try {
+    const response = await fetch(selectedPdf);
+    const blob = await response.blob();
+    return blob;
+  } catch (error) {
+    console.error("Error fetching the PDF:", error);
+    throw error; // Re-throw the error so it can be handled by the caller
+  }
+}
+
 const UpdateAsset = ({
   setLoader,
   siteSelectedForGlobal,
@@ -261,14 +272,15 @@ const UpdateAsset = ({
     setLoader(true);
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
-    if (data?.assetImage) {
+    if (data?.assetImage?.length > 0) {
       form_data.append(
         "assetImage",
         data?.assetImage?.[0],
         formData?.assetName
       );
     } else {
-      form_data.append("assetImage", "", "");
+      const blob = await fetchBlob(selectedAsset?.image);
+      form_data.append("assetImage", blob, formData?.assetName);
     }
     const formDetails = {
       assetId: formData?.assetId,
@@ -835,12 +847,7 @@ const UpdateAsset = ({
                         <input
                           type="file"
                           className="form-control"
-                          {...register("assetImage", {
-                            required: {
-                              value: true,
-                              message: `Please select asset image.`,
-                            },
-                          })}
+                          {...register("assetImage")}
                         />
                         {errors?.assetImage && (
                           <InputError
