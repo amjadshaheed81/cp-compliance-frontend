@@ -12,6 +12,7 @@ import ReplyIcon from "@mui/icons-material/Reply";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
 import RestorePageIcon from "@mui/icons-material/RestorePage";
+import CopyAll from "@mui/icons-material/CopyAll";
 
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Typography from "@mui/material/Typography";
@@ -37,6 +38,7 @@ import Swal from "sweetalert2";
 import { Chip, Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import PdfViewer from "./PdfViewer";
+import CopyModal from "./CopyModal";
 
 const SubFolder = ({
   deleteFile,
@@ -53,6 +55,7 @@ const SubFolder = ({
   const navigate = useNavigate();
   const [bulkUploadModal, setBulkUploadModal] = useState(false);
   const [versionHistory, setVersionHistory] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const [isVersionModeEdit, setIsVersionModeEdit] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
@@ -66,6 +69,7 @@ const SubFolder = ({
   const [previousFolderId, setPreviousFolderId] = useState([]);
   const [tags,settags] = useState({});
   const [tagindex,settagindex] = useState(null);
+  const [selectedFileForCopy, setSelectedFileForCopy] = useState();
   const searchDocument = async (e) => {
     const value = e?.target?.value;
     if (value && value.length > 0) {
@@ -187,6 +191,13 @@ const SubFolder = ({
             showPdfModal={showPdfModal}
             setShowPdfModal={setShowPdfModal}
             selectedPdf={selectedPdf}
+          />
+        )}
+        {showCopyModal && (
+          <CopyModal
+            showCopyModal={showCopyModal}
+            setShowCopyModal={setShowCopyModal}
+            selectedFileForCopy={selectedFileForCopy}
           />
         )}
         {showFolderModal && (
@@ -535,6 +546,15 @@ const SubFolder = ({
                             <Tooltip title={`Delete File`} arrow>
                               <DeleteIcon
                                 onClick={() => deleteFile2(file?.id)}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Copy`} arrow>
+                              <CopyAll
+                                onClick={() => {
+                                  setShowCopyModal(true);
+                                  setSelectedFileForCopy(file);
+                                }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
                               />
                             </Tooltip>
