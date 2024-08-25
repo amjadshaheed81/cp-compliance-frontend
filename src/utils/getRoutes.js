@@ -33,6 +33,7 @@ import { ROLE } from "../Constant/Role";
 import StatutoryRegister from "../components/Protected/Sites/StatutoryRegister";
 import EnergyCost from "../components/Protected/Sites/EnergyCost";
 import ViewAsset from "../components/Protected/Sites/Assets/ViewAsset";
+import EditProfile from "../components/Protected/Users/EditProfile";
 
 export const getRoutes = () => {
   const tabs = [
@@ -213,6 +214,10 @@ export const getRoutes = () => {
     {
       path: "/site-calendar",
       element: <SiteCalendar />,
+    },
+    {
+      path: "/edit-profile",
+      element: <EditProfile />,
     },
   ];
 };

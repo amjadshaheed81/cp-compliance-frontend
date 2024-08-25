@@ -150,9 +150,6 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
       case "Dashboard":
         navigate("/dashboard");
         break;
-      case "Edit Profile":
-        navigate("/dashboard");
-        break;
       case "Portfolio":
         navigate("/sites");
         break;
@@ -206,6 +203,9 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         break;
       case "Company":
         navigate("/admin/company");
+        break;
+      case "Edit Profile":
+        navigate("/edit-profile");
         break;
       default:
         navigate("/dashboard");

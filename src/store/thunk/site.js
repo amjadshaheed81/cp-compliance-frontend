@@ -1222,6 +1222,16 @@ export const setLoader = (value) => {
   };
 };
 
+export const setLoggedInUser = (userData) => {
+  return async (dispatch) => {
+    dispatch({
+      type: USER_LOGIN,
+      payload: userData,
+    });
+  };
+};
+
+
 export const setSideBarView = (value) => {
   return async (dispatch) => {
     dispatch({
