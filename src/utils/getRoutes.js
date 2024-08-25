@@ -34,6 +34,7 @@ import StatutoryRegister from "../components/Protected/Sites/StatutoryRegister";
 import EnergyCost from "../components/Protected/Sites/EnergyCost";
 import ViewAsset from "../components/Protected/Sites/Assets/ViewAsset";
 import EditProfile from "../components/Protected/Users/EditProfile";
+import Notifications from "../components/Protected/Notifications";
 
 export const getRoutes = () => {
   const tabs = [
@@ -218,6 +219,10 @@ export const getRoutes = () => {
     {
       path: "/edit-profile",
       element: <EditProfile />,
+    },
+    {
+      path: "/notifications",
+      element: <Notifications />,
     },
   ];
 };

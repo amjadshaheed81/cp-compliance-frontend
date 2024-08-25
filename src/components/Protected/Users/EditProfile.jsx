@@ -1,36 +1,24 @@
 import React, { Fragment, useEffect, useState } from "react";
-import {
-  Button,
-  Box,
-  Autocomplete,
-  Select,
-  OutlinedInput,
-  MenuItem,
-  Checkbox,
-  ListItemText,
-  TextField,
-} from "@mui/material";
+import { Box, Autocomplete, TextField } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
 import CircularProgress from "@mui/material/CircularProgress";
-import DialogTitle from "@mui/material/DialogTitle";
-import { addUser, addUserTagSite, getSites, setLoggedInUser } from "../../../store/thunk/site";
+import {
+  addUser,
+  addUserTagSite,
+  getSites,
+  setLoggedInUser,
+} from "../../../store/thunk/site";
 import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
-import { MenuProps } from "./AddUser";
-import Tooltip from "@mui/material/Tooltip";
-import TagSites from "./TagSites";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 
-const ViewUsers = ({
+const EditProfile = ({
   sites,
   getSites,
   addUser,
@@ -522,6 +510,9 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
 });
-export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(
-  ViewUsers, setLoggedInUser
-);
+export default connect(mapStateToProps, {
+  getSites,
+  addUser,
+  addUserTagSite,
+  setLoggedInUser,
+})(EditProfile);

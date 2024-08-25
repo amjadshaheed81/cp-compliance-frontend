@@ -160,7 +160,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         navigate("/user-management");
         break;
       case "Notifications":
-        navigate("/sites");
+        navigate("/notifications");
         break;
       case "Actions":
         navigate("/actions");
