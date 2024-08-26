@@ -5,7 +5,7 @@ export const getPatTestedStartDate = (asset) => {
   if (asset?.assetPATItems?.length > 0) {
     str = moment(
       asset?.assetPATItems[asset?.assetPATItems?.length - 1]?.patDate
-    ).format("YYYY-MM-DD");
+    ).format("DD-MM-YYYY");
   }
   return str;
 };
@@ -14,7 +14,7 @@ export const getPatTestedEndDate = (asset) => {
   if (asset?.assetPATItems?.length > 0) {
     str = moment(
       asset?.assetPATItems[asset?.assetPATItems?.length - 1]?.patNextDate
-    ).format("YYYY-MM-DD");
+    ).format("DD-MM-YYYY");
   }
   return str;
 };
