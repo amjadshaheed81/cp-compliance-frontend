@@ -6,6 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   deleteSiteAsset,
   getSiteDoorAssets,
+  getSiteLayout,
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
@@ -21,6 +22,8 @@ const Door = ({
   siteSelectedForGlobal,
   getSiteDoorAssets,
   deleteSiteAsset,
+  getSiteLayout,
+  siteLayout,
 }) => {
   const [filteredSiteDoorItems, setFilteredSiteDoorItems] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
@@ -35,6 +38,8 @@ const Door = ({
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
+  const [floorNode, setFloorNode] = useState([]);
+  const [roomNode, setRoomNode] = useState([]);
   const currentSiteAssets = filteredSiteDoorItems.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
@@ -84,6 +89,8 @@ const Door = ({
     manufacturer: "",
     category: "",
     location: "",
+    floor: "",
+    room: "",
   });
 
   const handleInputChange = (e) => {
@@ -101,6 +108,8 @@ const Door = ({
     formData.category,
     formData.location,
     formData.manufacturer,
+    formData.floor,
+    formData.room,
   ]);
 
   const searchAssets = () => {
@@ -108,7 +117,9 @@ const Door = ({
     const category = formData?.category;
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
-    if (assetName || category || location || manufacturer) {
+    const floor = formData?.floor;
+    const room = formData?.room;
+    if (assetName || category || location || manufacturer || floor || room) {
       const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
@@ -122,7 +133,13 @@ const Door = ({
             .includes(String(location).toLowerCase()) &&
           String(x?.manufacturer)
             .toLowerCase()
-            .includes(String(manufacturer).toLowerCase())
+            .includes(String(manufacturer).toLowerCase()) &&
+          String(x?.floor)
+            .toLowerCase()
+            .includes(String(floor).toLowerCase()) &&
+          String(x?.room)
+            .toLowerCase()
+            .includes(String(room).toLowerCase())
       );
       setFilteredSiteDoorItems(list);
     } else {
@@ -133,7 +150,16 @@ const Door = ({
   useEffect(() => {
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
     getCategory();
+    getSiteLayout(siteSelectedForGlobal?.siteId)
   }, [siteSelectedForGlobal]);
+  useEffect(() => {
+    const floorNodes =
+      siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+    const roomNodes =
+      siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+    setFloorNode(floorNodes);
+    setRoomNode(roomNodes);
+  }, [siteLayout]);
 
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
@@ -260,6 +286,28 @@ const Door = ({
                 {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
                 ))} */}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                name="floor"
+                className="form-control form-select"
+                id="floor"
+                onChange={handleInputChange}
+              >
+                <option value="">Floor</option>
+                {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                name="room"
+                className="form-control form-select"
+                id="room"
+                onChange={handleInputChange}
+              >
+                <option value="">Room</option>
+                {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
               </select>
             </div>
           </div>
@@ -437,7 +485,8 @@ const Door = ({
 const mapStateToProps = (state) => ({
   siteDoorItems: state.site.siteDoorItems,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { getSiteDoorAssets, deleteSiteAsset })(
+export default connect(mapStateToProps, { getSiteDoorAssets, deleteSiteAsset, getSiteLayout })(
   Door
 );

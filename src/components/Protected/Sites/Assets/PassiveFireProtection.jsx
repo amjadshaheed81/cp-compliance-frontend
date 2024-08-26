@@ -5,6 +5,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
 import {
   deleteSiteAsset,
+  getSiteLayout,
   getSitePFPAssets,
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
@@ -21,6 +22,8 @@ const PassiveFireProtection = ({
   siteSelectedForGlobal,
   deleteSiteAsset,
   getSitePFPAssets,
+  getSiteLayout,
+  siteLayout,
 }) => {
   const [filteredSitePFPItems, setfilteredSitePFPItems] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
@@ -32,6 +35,8 @@ const PassiveFireProtection = ({
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [preActionsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
+  const [floorNode, setFloorNode] = useState([]);
+  const [roomNode, setRoomNode] = useState([]);
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
@@ -80,6 +85,8 @@ const PassiveFireProtection = ({
     manufacturer: "",
     category: "",
     location: "",
+    floor: "",
+    room: "", 
   });
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -95,13 +102,17 @@ const PassiveFireProtection = ({
     formData.category,
     formData.location,
     formData.manufacturer,
+    formData.floor,
+    formData.room,
   ]);
   const searchAssets = () => {
     const assetName = formData?.assetName;
     const category = formData?.category;
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
-    if (assetName || category || location || manufacturer) {
+    const floor = formData?.floor;
+    const room = formData?.room;
+    if (assetName || category || location || manufacturer || floor || room) {
       const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
@@ -115,7 +126,13 @@ const PassiveFireProtection = ({
             .includes(String(location).toLowerCase()) &&
           String(x?.manufacturer)
             .toLowerCase()
-            .includes(String(manufacturer).toLowerCase())
+            .includes(String(manufacturer).toLowerCase()) &&
+          String(x?.floor)
+            .toLowerCase()
+            .includes(String(floor).toLowerCase()) &&
+          String(x?.room)
+            .toLowerCase()
+            .includes(String(room).toLowerCase())
       );
       setfilteredSitePFPItems(list);
     } else {
@@ -129,7 +146,16 @@ const PassiveFireProtection = ({
   useEffect(() => {
     getSitePFPAssets(siteSelectedForGlobal?.siteId);
     getCategory();
+    getSiteLayout(siteSelectedForGlobal?.siteId)
   }, [siteSelectedForGlobal]);
+  useEffect(() => {
+    const floorNodes =
+      siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+    const roomNodes =
+      siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+    setFloorNode(floorNodes);
+    setRoomNode(roomNodes);
+  }, [siteLayout]);
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
@@ -254,6 +280,28 @@ const PassiveFireProtection = ({
                 {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
                 ))} */}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                name="floor"
+                className="form-control form-select"
+                id="floor"
+                onChange={handleInputChange}
+              >
+                <option value="">Floor</option>
+                {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                name="room"
+                className="form-control form-select"
+                id="room"
+                onChange={handleInputChange}
+              >
+                <option value="">Room</option>
+                {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
               </select>
             </div>
           </div>
@@ -422,7 +470,8 @@ const PassiveFireProtection = ({
 const mapStateToProps = (state) => ({
   sitePFPItems: state.site.sitePFPItems,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { deleteSiteAsset, getSitePFPAssets })(
+export default connect(mapStateToProps, { deleteSiteAsset, getSitePFPAssets, getSiteLayout })(
   PassiveFireProtection
 );
