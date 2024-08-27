@@ -1035,7 +1035,9 @@ const ManagerContractView = ({
                               </td>
                               <td>{itm?.company ? itm?.company : "--"}</td>
                               <td>{itm?.quote ? itm?.quote : "--"}</td>
-                              <td>{itm?.quoteDate ? itm?.quoteDate : "--"}</td>
+                              <td>{itm?.quoteDate ? moment(itm?.quoteDate).format(
+                                              "DD-MM-YYYY"
+                                            ) : "--"}</td>
                               <td>
                                 <ListStatusBadge status={itm?.status} />
                               </td>

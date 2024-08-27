@@ -278,7 +278,7 @@ const VersionHistory = ({
                         </td>
                         <td>
                           {file?.expiryDate
-                            ? moment(file?.expiryDate).format("YYYY-MM-DD")
+                            ? moment(file?.expiryDate).format("DD/MM/YYYY")
                             : "--"}
                         </td>
                         <td>
