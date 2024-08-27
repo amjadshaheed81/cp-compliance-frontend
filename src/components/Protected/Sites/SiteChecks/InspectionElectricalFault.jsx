@@ -61,6 +61,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
       if (data.add) {
         if (data?.file?.name) {
           data.siteId = siteSelectedForGlobal?.siteId;
+          data.folderName = "WC Panic Alarm Testing";
           data.imageUrl = await uploadSiteCheckDoc(data);
           delete data.file;
         }

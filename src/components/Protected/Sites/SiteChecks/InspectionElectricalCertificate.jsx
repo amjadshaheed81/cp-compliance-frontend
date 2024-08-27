@@ -59,6 +59,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     const data = { ...formData }
     if (data?.file?.name) {
       data.siteId = siteSelectedForGlobal?.siteId;
+      data.folderName = "WC Panic Alarm Testing";
       data.certificateUrl = await uploadSiteCheckDoc(data);
       delete data.file;
     }
