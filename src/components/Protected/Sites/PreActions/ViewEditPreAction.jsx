@@ -13,13 +13,17 @@ import siteDummy from "../../../../images/site-dummy.png";
 import { useForm } from "react-hook-form";
 import { InputError } from "../../../common/InputError";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
-import { Box, Button, CircularProgress,
+import {
+  Box,
+  Button,
+  CircularProgress,
   DialogContent,
   DialogTitle,
   DialogActions,
   Dialog,
   Typography,
-  Grid, } from "@mui/material";
+  Grid,
+} from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData } from "../../../../api";
 import { getSiteAssets, setLoader } from "../../../../store/thunk/site";
@@ -49,27 +53,30 @@ const ViewEditPreAction = ({
 
   const [assetOptions, setAssetOptions] = useState([]);
   const [assets, setassets] = useState([]);
-  const [actionsPopup,setActionsPopup] = useState(false);
+  const [actionsPopup, setActionsPopup] = useState(false);
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
     getActionIdDetails();
-    getSiteAssets(siteSelectedForGlobal?.siteId)
+    getSiteAssets(siteSelectedForGlobal?.siteId);
   }, []);
 
-
-  useEffect(()=>{
-    if(siteAssets?.length > 0) {
-      setAssetOptions(siteAssets?.map(itm => {
-        return { title: itm?.assetName, id: itm?.assetId}
-      }))
+  useEffect(() => {
+    if (siteAssets?.length > 0) {
+      setAssetOptions(
+        siteAssets?.map((itm) => {
+          return { title: itm?.assetName, id: itm?.assetId };
+        })
+      );
     }
   }, [siteAssets]);
 
   const getActionIdDetails = async () => {
     const actionDetail = await get(`/api/action/${actionId}/details`);
     reset(actionDetail);
-    setassets(actionDetail?.taggedAsset ? actionDetail?.taggedAsset?.split(",") : []);
+    setassets(
+      actionDetail?.taggedAsset ? actionDetail?.taggedAsset?.split(",") : []
+    );
   };
   const [isLoading, setIsLoading] = useState(false);
   const submitPreActions = async (data) => {
@@ -109,20 +116,21 @@ const ViewEditPreAction = ({
     const { name, value } = e.target;
     const udata = {
       ...formData,
-      [name]: value
+      [name]: value,
     };
     setFormData(udata);
   };
 
-
-  
   const approveCreateAction = async () => {
-    
     const data = {
       status: "Pending Action",
       approverNotes: getValues("approverNotes"),
     };
-    if(data.approverNotes === '' || data.approverNotes === undefined || data.approverNotes === null) {
+    if (
+      data.approverNotes === "" ||
+      data.approverNotes === undefined ||
+      data.approverNotes === null
+    ) {
       toast.error("Please enter approver notes");
       return;
     }
@@ -153,7 +161,7 @@ const ViewEditPreAction = ({
     };
     try {
       setIsLoading(true);
-      if(actionImage.length > 0) {
+      if (actionImage.length > 0) {
         form_data.append("actionImage", actionImage?.[0], "actionImage");
       }
       form_data.append("closeActionRequestString", JSON.stringify({ ...data }));
@@ -176,8 +184,8 @@ const ViewEditPreAction = ({
   };
 
   const dateFormat = (date) => {
-    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
-  }
+    return moment(date, "YYYY-MM-DD").format("DD/MM/YYYY");
+  };
 
   const saveAction = async (event) => {
     event.preventDefault();
@@ -196,9 +204,9 @@ const ViewEditPreAction = ({
       dueDate: new Date(),
       siteId: siteSelectedForGlobal?.siteId,
       userId: loggedInUserData?.id,
-    }
+    };
     await put("/api/site/actions", body);
-    
+
     try {
       const data = {
         status: "Pending Action",
@@ -217,11 +225,11 @@ const ViewEditPreAction = ({
       setIsLoading(false);
       toast.error("Something went wrong while updating pre action.");
     }
-    setActionsPopup(false)
-  }
+    setActionsPopup(false);
+  };
   return (
     <>
-     <Dialog
+      <Dialog
         open={actionsPopup}
         onClose={() => {
           setActionsPopup(false);
@@ -230,12 +238,10 @@ const ViewEditPreAction = ({
         fullWidth
       >
         <form onSubmit={saveAction}>
-        <DialogTitle>
-          Actions
-        </DialogTitle>
-        <DialogContent dividers>
-          <Fragment>
-            <Grid container>
+          <DialogTitle>Actions</DialogTitle>
+          <DialogContent dividers>
+            <Fragment>
+              <Grid container>
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom>
                     Action
@@ -306,7 +312,13 @@ const ViewEditPreAction = ({
                         required
                         //placeholder="Enter notes..."
                         onChange={(e) => handleInputChange(e)}
-                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          margin: "8px 0",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -321,396 +333,437 @@ const ViewEditPreAction = ({
                         required
                         //placeholder="Enter notes..."
                         onChange={(e) => handleInputChange(e)}
-                        style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          margin: "8px 0",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                        }}
                       />
                     </Grid>
                   </Grid>
                 </Grid>
-            </Grid>
-          </Fragment>
-        </DialogContent>
-        <DialogActions>
+              </Grid>
+            </Fragment>
+          </DialogContent>
+          <DialogActions>
             <Button
               type="button"
-            onClick={() => setActionsPopup(false)}
-            className="bg-light text-primary"
-          >
-            Cancel
-          </Button>
+              onClick={() => setActionsPopup(false)}
+              className="bg-light text-primary"
+            >
+              Cancel
+            </Button>
             <button
               type="submit"
               //onClick={addReadingSave}
-            style={{
+              style={{
                 width: "150px",
                 marginBottom: "20px",
                 margin: "10px",
                 float: "right",
               }}
               className="btn btn-primary text-white pr-2"
-          >
-            Save
+            >
+              Save
             </button>
           </DialogActions>
-        </form >
+        </form>
       </Dialog>
-    
-    <Fragment>
-      <SidebarNew />
-      <div className="content">
-        <Header />
-        <div className="container-fluid">
-          <BreadCrumHeader
-            header={
-              viewMode === "markApproved"
-                ? "Approve Pre Action"
-                : viewMode === "markClosed"
-                ? "Pre-Action Closure"
-                : "Update/View Pre Actions"
-            }
-            page={"Pre-Action / View"}
-          />
-          {/*  */}
-          {/*  */}
-          {/* row start*/}
-          <Fragment>
-            <form onSubmit={handleSubmit(submitPreActions)}>
-              <div className="row">
-                <div className="col-md-8">
-                  <div className="row">
-                    <div className="col-md-6">
-                      <label for="category">Internal/External</label>
-                      <select
-                        name="category"
-                        className="form-control form-select"
-                        id="category"
-                        disabled={viewMode === "viewOnly" || "markApproved"}
-                        {...register("category", {
-                          required: {
-                            value: true,
-                            message: `Please select category`,
-                          },
-                        })}
-                      >
-                        <option value="" selected disabled>
-                          Select Internal/External
-                        </option>
-                        <option value="Internal">Internal</option>
-                        <option value="External">External</option>
-                      </select>
-                      {errors?.category && (
-                        <InputError
-                          message={errors?.category?.message}
-                          key={errors?.category?.message}
-                        />
-                      )}
-                    </div>
-                    <div className="col-md-6">
-                      <div className="form-group mt-2">
-                        <label for="floor">Floor</label>
+
+      <Fragment>
+        <SidebarNew />
+        <div className="content">
+          <Header />
+          <div className="container-fluid">
+            <BreadCrumHeader
+              header={
+                viewMode === "markApproved"
+                  ? "Approve Pre Action"
+                  : viewMode === "markClosed"
+                  ? "Pre-Action Closure"
+                  : "Update/View Pre Actions"
+              }
+              page={"Pre-Action / View"}
+            />
+            {/*  */}
+            {/*  */}
+            {/* row start*/}
+            <Fragment>
+              <form onSubmit={handleSubmit(submitPreActions)}>
+                <div className="row">
+                  <div className="col-md-8">
+                    <div className="row">
+                      <div className="col-md-6">
+                        <label for="category">Internal/External</label>
                         <select
-                          name="floor"
-                          disabled={viewMode === "viewOnly" || "markApproved"}
+                          name="category"
                           className="form-control form-select"
-                          id="floor"
-                          {...register("floor", {
+                          id="category"
+                          disabled={viewMode === "viewOnly" || "markApproved"}
+                          {...register("category", {
                             required: {
                               value: true,
-                              message: `Please select floor`,
+                              message: `Please select category`,
                             },
                           })}
                         >
                           <option value="" selected disabled>
-                            Select Floor
+                            Select Internal/External
                           </option>
-                          <option value={"Ground"}>Ground</option>
-                          <option value={"First"}>First</option>
-                          <option value={"Second"}>Second</option>
-                          <option value={"Third"}>Third</option>`
+                          <option value="Internal">Internal</option>
+                          <option value="External">External</option>
                         </select>
-                        {errors?.floor && (
+                        {errors?.category && (
                           <InputError
-                            message={errors?.floor?.message}
-                            key={errors?.floor?.message}
+                            message={errors?.category?.message}
+                            key={errors?.category?.message}
                           />
                         )}
                       </div>
-                    </div>
+                      <div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label for="floor">Floor</label>
+                          <select
+                            name="floor"
+                            disabled={viewMode === "viewOnly" || "markApproved"}
+                            className="form-control form-select"
+                            id="floor"
+                            {...register("floor", {
+                              required: {
+                                value: true,
+                                message: `Please select floor`,
+                              },
+                            })}
+                          >
+                            <option value="" selected disabled>
+                              Select Floor
+                            </option>
+                            <option value={"Ground"}>Ground</option>
+                            <option value={"First"}>First</option>
+                            <option value={"Second"}>Second</option>
+                            <option value={"Third"}>Third</option>`
+                          </select>
+                          {errors?.floor && (
+                            <InputError
+                              message={errors?.floor?.message}
+                              key={errors?.floor?.message}
+                            />
+                          )}
+                        </div>
+                      </div>
 
-                    <div className="col-md-6">
-                      <div className="form-group mt-2">
-                        <label for="room">Room</label>
-                        <select
-                          name="room"
-                          className="form-control form-select"
-                          id="room"
-                          disabled={viewMode === "viewOnly" || "markApproved"}
-                          {...register("room", {
-                            required: {
-                              value: true,
-                              message: `Please select room`,
-                            },
-                          })}
+                      <div className="col-md-6">
+                        <div
+                          className="form-group mt-2"
+                          style={{
+                            display: viewMode === "viewOnly" ? "" : "none",
+                          }}
                         >
-                          <option value="" selected disabled>
-                            Select Room
-                          </option>
-                          <option value="R101">R101</option>
-                          <option value="R102">R102</option>
-                          <option value="R103">R103</option>
-                        </select>
-                        {errors?.room && (
-                          <InputError
-                            message={errors?.room?.message}
-                            key={errors?.room?.message}
+                          <label for="room">Room</label>
+                          <input
+                            className="form-control form-select"
+                            type="text"
+                            disabled
+                            {...register("room")}
                           />
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="col-md-6">
-                      <div className="form-group mt-2">
-                        <label for="status">Status</label>
-                        <select
-                          name="status"
-                          className="form-control form-select"
-                          id="status"
-                          disabled={viewMode === "viewOnly" || "markApproved"}
-                          {...register("status", {
-                            required: {
-                              value: true,
-                              message: `Please select status`,
-                            },
-                          })}
+                        </div>
+                        <div
+                          className="form-group mt-2"
+                          style={{
+                            display: viewMode === "viewOnly" ? "none" : "",
+                          }}
                         >
-                          <option value="" selected disabled>
-                            Select Status
-                          </option>
-                          <option value="New">New</option>
-                          <option value="Pending">Pending</option>
-                          <option value="Closed">Closed</option>
-                        </select>
-                        {errors?.status && (
-                          <InputError
-                            message={errors?.status?.message}
-                            key={errors?.status?.message}
-                          />
-                        )}
+                          <label for="room">Room</label>
+                          <select
+                            name="room"
+                            className="form-control form-select"
+                            id="room"
+                            disabled={viewMode === "viewOnly" || "markApproved"}
+                            {...register("room", {
+                              required: {
+                                value: true,
+                                message: `Please select room`,
+                              },
+                            })}
+                          >
+                            <option value="" selected disabled>
+                              Select Room
+                            </option>
+                            <option value="R101">R101</option>
+                            <option value="R102">R102</option>
+                            <option value="R103">R103</option>
+                          </select>
+                          {errors?.room && (
+                            <InputError
+                              message={errors?.room?.message}
+                              key={errors?.room?.message}
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="col-md-12">
-                      <div className="form-group mt-2 w-50">
-                        <label for="taggedAsset">Tagged Asset</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="taggedAsset"
-                          name="taggedAsset"
-                          placeholder=""
-                          disabled
-                          value={
-                            assetOptions.filter(a=> assets.includes(String(a.id))).map(a=> a.title).join(",")
-                          }
-                          //disabled={viewMode === "viewOnly" || "markApproved"}
-                          // {...register("taggedAsset", {
-                          //   required: {
-                          //     value: true,
-                          //     message: `Please select asset`,
-                          //   },
-                          // })}
-                        />
-                        {/* {errors?.taggedAsset && (
+                      <div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label for="status">Status</label>
+                          <select
+                            name="status"
+                            className="form-control form-select"
+                            id="status"
+                            disabled={viewMode === "viewOnly" || "markApproved"}
+                            {...register("status", {
+                              required: {
+                                value: true,
+                                message: `Please select status`,
+                              },
+                            })}
+                          >
+                            <option value="" selected disabled>
+                              Select Status
+                            </option>
+                            <option value="New">New</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Closed">Closed</option>
+                          </select>
+                          {errors?.status && (
+                            <InputError
+                              message={errors?.status?.message}
+                              key={errors?.status?.message}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="col-md-12">
+                        <div className="form-group mt-2 w-50">
+                          <label for="taggedAsset">Tagged Asset</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="taggedAsset"
+                            name="taggedAsset"
+                            placeholder=""
+                            disabled
+                            value={assetOptions
+                              .filter((a) => assets.includes(String(a.id)))
+                              .map((a) => a.title)
+                              .join(",")}
+                            //disabled={viewMode === "viewOnly" || "markApproved"}
+                            // {...register("taggedAsset", {
+                            //   required: {
+                            //     value: true,
+                            //     message: `Please select asset`,
+                            //   },
+                            // })}
+                          />
+                          {/* {errors?.taggedAsset && (
                           <InputError
                             message={errors?.taggedAsset?.message}
                             key={errors?.taggedAsset?.message}
                           />
                         )} */}
-                      </div>
-                    </div>
-                    {viewMode !== "markApproved" && (
-                      <div className="col-md-12">
-                        <div className="form-group mt-2">
-                          <textarea
-                            {...register("description")}
-                            className="form-control form-text"
-                            placeholder="Enter Notes..."
-                            disabled={viewMode === "viewOnly" || "markApproved"}
-                          ></textarea>
                         </div>
                       </div>
-                    )}
-                    {viewMode === "markApproved" && (
-                      <div className="col-md-12">
-                        <div className="form-group mt-2">
-                          <textarea
-                            {...register("approverNotes")}
-                            className="form-control form-text"
-                            placeholder="Enter Notes..."
-                          ></textarea>
-                        </div>
-                      </div>
-                    )}
-                    {viewMode === "markClosed" && (
-                      <>
+                      {viewMode !== "markApproved" && (
                         <div className="col-md-12">
                           <div className="form-group mt-2">
                             <textarea
-                              {...register("actionTaken")}
+                              {...register("description")}
+                              className="form-control form-text"
+                              placeholder="Enter Notes..."
+                              disabled={
+                                viewMode === "viewOnly" || "markApproved"
+                              }
+                            ></textarea>
+                          </div>
+                        </div>
+                      )}
+                      {viewMode === "markApproved" && (
+                        <div className="col-md-12">
+                          <div className="form-group mt-2">
+                            <textarea
+                              {...register("approverNotes")}
                               className="form-control form-text"
                               placeholder="Enter Notes..."
                             ></textarea>
                           </div>
                         </div>
-                        <div className="col-md-12">
-                          <div className="form-group mt-2">
-                            <label
-                              htmlFor="closeActionImage"
-                              className="text-primary cursor mt-4"
-                            >
-                              Attach Evidence
-                            </label>
-                            <input
-                              className="form-control"
-                              type="file"
-                              name="closeActionImage"
-                              accept="image/*, application/pdf"
-                              id="closeActionImage"
-                              {...register("closeActionImage")}
-                            />
+                      )}
+                      {viewMode === "markClosed" && (
+                        <>
+                          <div className="col-md-12">
+                            <div className="form-group mt-2">
+                              <textarea
+                                {...register("actionTaken")}
+                                className="form-control form-text"
+                                placeholder="Enter Notes..."
+                              ></textarea>
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  {values?.image &&
-                    (viewMode === "viewOnly" || "markApproved") && (
-                      <img
-                        src={values?.image}
-                        className="img img-responsive w-100"
-                      />
-                    )}
-                  <div
-                    className="uploading-outer"
-                    style={{
-                      backgroundColor: "#f1f5f9",
-                      display:
-                        viewMode === "viewOnly" || "markApproved"
-                          ? "none"
-                          : "block",
-                    }}
-                  >
-                    <div className="uploadPhotoButton text-center">
-                      <FileUploadOutlinedIcon
-                        style={{
-                          color: "blue",
-                          position: "relative",
-                          left: "50%",
-                          transform: "translate(-50%, 0)",
-                        }}
-                      />
-                      <input
-                        className="uploadButton-input mt-4"
-                        type="file"
-                        name="actionImage"
-                        accept="image/*, application/pdf"
-                        id="actionImage"
-                        {...register("actionImage", {
-                          required: {
-                            value: true,
-                            message: `Please select action image`,
-                          },
-                        })}
-                      />
-                      <label
-                        htmlFor="actionImage"
-                        className="text-primary cursor mt-4"
-                      >
-                        Click to upload
-                      </label>
-                      &nbsp;
-                      <span>or drag and drop</span>
-                      <p>
-                        SVG, PNG, JPG or GIF
-                        <br />
-                        (max 800 * 800 px)
-                      </p>
-                      {errors?.actionImage && (
-                        <InputError
-                          message={errors?.actionImage?.message}
-                          key={errors?.actionImage?.message}
-                        />
+                          <div className="col-md-12">
+                            <div className="form-group mt-2">
+                              <label
+                                htmlFor="closeActionImage"
+                                className="text-primary cursor mt-4"
+                              >
+                                Attach Evidence
+                              </label>
+                              <input
+                                className="form-control"
+                                type="file"
+                                name="closeActionImage"
+                                accept="image/*, application/pdf"
+                                id="closeActionImage"
+                                {...register("closeActionImage")}
+                              />
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
-                </div>
-                <div
-                  className="col-md-12"
-                  style={{
-                    display: viewMode === "viewOnly" ? "none" : "",
-                  }}
-                >
-                  {isLoading && (
-                    <Box sx={{ display: "flex" }}>
-                      <CircularProgress />
-                    </Box>
-                  )}
-                  {!isLoading && (
-                    <div className="float-end">
-                      <Button
-                        onClick={() => window.history.back()}
-                        className="bg-light text-primary"
-                      >
-                        Cancel
-                      </Button>
-                      &nbsp;&nbsp;
-                      <Button
-                        style={{
-                          display: viewMode !== "editOnly" ? "none" : "",
-                        }}
-                        type="submit"
-                        className="bg-primary text-white"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        style={{
-                          display: viewMode !== "markApproved" ? "none" : "",
-                        }}
-                        onClick={() => {
-                          approveCreateAction();
-                        }}
-                        className="bg-primary text-white"
-                      >
-                        Approve &amp; Create Action
-                      </Button>
-                      <Button
-                        type="button"
-                        style={{
-                          display: viewMode !== "markClosed" ? "none" : "",
-                        }}
-                        onClick={() => {
-                          markAsClosed();
-                        }}
-                        className="bg-primary text-white"
-                      >
-                        Mark as closed
-                      </Button>
+                  <div className="col-md-4">
+                    {values?.image &&
+                      (viewMode === "viewOnly" || "markApproved") && (
+                        <img
+                          src={values?.image}
+                          className="img img-responsive w-100"
+                        />
+                      )}
+                    <div
+                      className="uploading-outer"
+                      style={{
+                        backgroundColor: "#f1f5f9",
+                        display:
+                          viewMode === "viewOnly" || "markApproved"
+                            ? "none"
+                            : "block",
+                      }}
+                    >
+                      <div className="uploadPhotoButton text-center">
+                        <FileUploadOutlinedIcon
+                          style={{
+                            color: "blue",
+                            position: "relative",
+                            left: "50%",
+                            transform: "translate(-50%, 0)",
+                          }}
+                        />
+                        <input
+                          className="uploadButton-input mt-4"
+                          type="file"
+                          name="actionImage"
+                          accept="image/*, application/pdf"
+                          id="actionImage"
+                          {...register("actionImage", {
+                            required: {
+                              value: true,
+                              message: `Please select action image`,
+                            },
+                          })}
+                        />
+                        <label
+                          htmlFor="actionImage"
+                          className="text-primary cursor mt-4"
+                        >
+                          Click to upload
+                        </label>
+                        &nbsp;
+                        <span>or drag and drop</span>
+                        <p>
+                          SVG, PNG, JPG or GIF
+                          <br />
+                          (max 800 * 800 px)
+                        </p>
+                        {errors?.actionImage && (
+                          <InputError
+                            message={errors?.actionImage?.message}
+                            key={errors?.actionImage?.message}
+                          />
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </form>
-          </Fragment>
+                  </div>
+                  <div
+                    className="col-md-12 mt-4"
+                    style={{
+                      display: viewMode === "viewOnly" ? "" : "none",
+                    }}
+                  >
+                    <Button
+                      onClick={() => window.history.back()}
+                      className="bg-light text-primary"
+                    >
+                      Back
+                    </Button>
+                  </div>
 
-          {/* row end*/}
+                  <div
+                    className="col-md-12"
+                    style={{
+                      display: viewMode === "viewOnly" ? "none" : "",
+                    }}
+                  >
+                    {isLoading && (
+                      <Box sx={{ display: "flex" }}>
+                        <CircularProgress />
+                      </Box>
+                    )}
+                    {!isLoading && (
+                      <div className="float-end">
+                        <Button
+                          onClick={() => window.history.back()}
+                          className="bg-light text-primary"
+                        >
+                          Cancel
+                        </Button>
+                        &nbsp;&nbsp;
+                        <Button
+                          style={{
+                            display: viewMode !== "editOnly" ? "none" : "",
+                          }}
+                          type="submit"
+                          className="bg-primary text-white"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          type="button"
+                          style={{
+                            display: viewMode !== "markApproved" ? "none" : "",
+                          }}
+                          onClick={() => {
+                            approveCreateAction();
+                          }}
+                          className="bg-primary text-white"
+                        >
+                          Approve &amp; Create Action
+                        </Button>
+                        <Button
+                          type="button"
+                          style={{
+                            display: viewMode !== "markClosed" ? "none" : "",
+                          }}
+                          onClick={() => {
+                            markAsClosed();
+                          }}
+                          className="bg-primary text-white"
+                        >
+                          Mark as closed
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </Fragment>
+
+            {/* row end*/}
+          </div>
         </div>
-      </div>
-    </Fragment>
+      </Fragment>
     </>
-    
   );
 };
 const mapStateToProps = (state) => ({
