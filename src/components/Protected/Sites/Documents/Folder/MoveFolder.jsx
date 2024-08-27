@@ -12,7 +12,8 @@ import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, put } from "../../../../../api";
 import { getDocumentsRootFolder } from "../../../../../store/thunk/site";
-import CopyAll from "@mui/icons-material/CopyAll";
+import MoveDown from "@mui/icons-material/MoveDown";
+
 import Swal from "sweetalert2";
 
 const CopyFolder = ({
@@ -48,17 +49,17 @@ const CopyFolder = ({
     console.log("selectedFileForCopy", selectedFileForCopy);
     Swal.fire({
         target: document.getElementById("Modal-container"),
-        title: `Do you want to copy ${selectedFileForCopy?.name} to ${folder?.name}`,
+        title: `Do you want to move ${selectedFileForCopy?.name} to ${folder?.name}`,
         showDenyButton: false,
         showCancelButton: true,
         confirmButtonText: "Copy",
       }).then(async (result) => {
         if (result.isConfirmed) {
-          const url = `/api/document/file/${selectedFileForCopy?.id}/copy/${folder?.id}`;
+          const url = `/api/document/file/${selectedFileForCopy?.id}/move/${folder?.id}`;
           const res = await put(url);
           console.log("res", res);
           if (res.status === 200) {
-            toast.success(`${selectedFileForCopy?.name} is successfully copied to  ${folder?.name}`);
+            toast.success(`${selectedFileForCopy?.name} is successfully moved to  ${folder?.name}`);
             handleClose();
             // getSites(loggedInUserData);
           } else {
@@ -132,7 +133,7 @@ const CopyFolder = ({
                         className="text-primary cursor"
                         onClick={() => handleAddFolder(folder)}
                       >
-                        <CopyAll />
+                        <MoveDown />
                       </span>
                     </td>
                   </tr>

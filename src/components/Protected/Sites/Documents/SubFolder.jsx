@@ -13,6 +13,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
 import RestorePageIcon from "@mui/icons-material/RestorePage";
 import CopyAll from "@mui/icons-material/CopyAll";
+import MoveDown from "@mui/icons-material/MoveDown";
 
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Typography from "@mui/material/Typography";
@@ -39,6 +40,7 @@ import { Chip, Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import PdfViewer from "./PdfViewer";
 import CopyModal from "./CopyModal";
+import MoveModal from "./MoveModal";
 
 const SubFolder = ({
   deleteFile,
@@ -56,6 +58,7 @@ const SubFolder = ({
   const [bulkUploadModal, setBulkUploadModal] = useState(false);
   const [versionHistory, setVersionHistory] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
   const [isVersionModeEdit, setIsVersionModeEdit] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
@@ -197,6 +200,13 @@ const SubFolder = ({
           <CopyModal
             showCopyModal={showCopyModal}
             setShowCopyModal={setShowCopyModal}
+            selectedFileForCopy={selectedFileForCopy}
+          />
+        )}
+        {showMoveModal && (
+          <MoveModal
+            showMoveModal={showMoveModal}
+            setShowMoveModal={setShowMoveModal}
             selectedFileForCopy={selectedFileForCopy}
           />
         )}
@@ -553,6 +563,15 @@ const SubFolder = ({
                               <CopyAll
                                 onClick={() => {
                                   setShowCopyModal(true);
+                                  setSelectedFileForCopy(file);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Move`} arrow>
+                              <MoveDown
+                                onClick={() => {
+                                  setShowMoveModal(true);
                                   setSelectedFileForCopy(file);
                                 }}
                                 style={{ color: "384bd3", cursor: "pointer" }}

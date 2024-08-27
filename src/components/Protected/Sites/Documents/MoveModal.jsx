@@ -8,25 +8,25 @@ import {
   DialogActions,
 } from "@mui/material";
 import CopyFolder from "./Folder/CopyFolder";
+import MoveFolder from "./Folder/MoveFolder";
 
-const CopyModal = ({
-  showCopyModal,
-  setShowCopyModal,
+const MoveModal = ({
+  showMoveModal,
+  setShowMoveModal,
   selectedFileForCopy,
 }) => {
-  const [open, setOpen] = useState(showCopyModal);
+  const [open, setOpen] = useState(showMoveModal);
   const [extension, setExtension] = useState("");
-  const handleOpen = () => setShowCopyModal(true);
-  const handleClose = () => setShowCopyModal(false);
-  console.log("selectedFileForCopy", selectedFileForCopy);
+  const handleOpen = () => setShowMoveModal(true);
+  const handleClose = () => setShowMoveModal(false);
   return (
     <>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
-        <DialogTitle>Select folder where you want to copy file</DialogTitle>
+        <DialogTitle>Select folder where you want to move file</DialogTitle>
         <DialogContent>
           <div className="row">
             <div className="col-md-12">
-              <CopyFolder selectedFileForCopy={selectedFileForCopy} handleClose={handleClose}/>
+              <MoveFolder selectedFileForCopy={selectedFileForCopy} handleClose={handleClose}/>
             </div>
           </div>
         </DialogContent>
@@ -40,4 +40,4 @@ const CopyModal = ({
   );
 };
 
-export default CopyModal;
+export default MoveModal;
