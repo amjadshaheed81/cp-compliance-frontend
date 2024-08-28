@@ -33,6 +33,7 @@ const StatutoryRegister = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
   const [statutory, setStatutory] = useState([]);
+  const [statutoryDocuments, setStatutoryDocuments] = useState([]);
   const [folder, setFolder] = useState({});
   const navigate = useNavigate();
   let dutiesIdentified = 0;
@@ -94,6 +95,7 @@ const StatutoryRegister = ({
   };
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
+      getStatutoryDocumments();
       getStatutory(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
     } else {
@@ -105,6 +107,11 @@ const StatutoryRegister = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteSelectedForGlobal?.siteId]);
+  const getStatutoryDocumments = async () => {
+    const documents = await get("/api/lov/STATUARY_CATEGORY");
+    console.log("documents", documents);
+    setStatutoryDocuments(documents)
+  }
   return (
     <>
       <SidebarNew />
@@ -177,6 +184,7 @@ const StatutoryRegister = ({
                   <th scope="col">Id</th>
                   <th scope="col">Requirement</th>
                   <th scope="col">Required</th>
+                  <th scope="col">Residence</th>
                   <th scope="col">Document</th>
                   <th scope="col">Status</th>
                 </tr>
@@ -196,7 +204,7 @@ const StatutoryRegister = ({
                     </td>
                   </tr>
                 )}
-                {statutory?.map((item, index) => {
+                {statutoryDocuments?.map((item, index) => {
                   return (
                     <tr>
                       <th scope="col">
@@ -208,8 +216,8 @@ const StatutoryRegister = ({
                         </span>
                       </th>
                       <th scope="col">
-                        {item.name}
-                        <div>
+                        {item.lovValue}
+                        <div style={{display: item.attribite1 === 'Link' ? 'none': ''}}>
                           <a
                             href="/#/site-checks"
                             className="btn btn-primary mt-3 text-bg-primary"
@@ -225,6 +233,19 @@ const StatutoryRegister = ({
                           checked={item.required}
                           onChange={(e) => {
                             handleCheckboxField(e, item, index);
+                          }}
+                        />
+                      </th>
+                      <th scope="col">
+                        <input
+                          type="text"
+                          id="chkbox"
+                          style={{width: '140px'}}
+                          className="form-control"
+                          placeholder="Residence..."
+                          onChange={(e) => {
+                            console.log("e", e);
+                            // handleCheckboxField(e, item, index);
                           }}
                         />
                       </th>
