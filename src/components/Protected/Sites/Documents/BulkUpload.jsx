@@ -22,7 +22,6 @@ const BulkUpload = ({
   folder,
   siteSelectedForGlobal,
   loggedInUserData,
-  uploadPhoto,
   refresh,
 }) => {
   const handleOpen = () => setBulkUploadModal(true);
@@ -69,21 +68,22 @@ const BulkUpload = ({
         "documentRequestString",
         JSON.stringify(data.documentRequestString)
       );
-      try {
-        await uploadPhoto(url, formDataPayload);
-        setIsLoading(false);
-        handleClose();
+       await upload(url, formDataPayload);
         version++;
-      } catch (e) {
-        console.error(e);
-      }
     }
+    setIsLoading(false);
+        
     toast.success("Files uploaded successfully");
     handleClose();
-    setTimeout(() => refresh(), 1000);
-    console.log("formData", formData);
-    // const {bulkUpload, ...filesData } = formData?.bulkUpload;
+    refresh();
+  
   };
+
+  const upload = async(url, formDataPayload) => {
+
+    await uploadPhoto(url, formDataPayload);
+   
+  }
   const getSelectedFiles = () => {
     const data = values?.bulkUpload || [];
     const names = [];
@@ -214,4 +214,4 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
 });
 
-export default connect(mapStateToProps, { uploadPhoto })(BulkUpload);
+export default connect(mapStateToProps, {  })(BulkUpload);

@@ -11,6 +11,7 @@ import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample"
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
+import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
 import { useNavigate, useParams } from "react-router-dom";
 import { get, getSasToken, getPdf } from "../../../../api";
@@ -79,7 +80,9 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("survey-water-domestic-ra")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Asbestos") {
       setStep("survey-asbestos")
-    }
+  } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Tank") {
+    setStep("survey-water-tank")
+  }
     setSiteCheck(siteCheck);
   }
 
@@ -316,7 +319,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestonSample checkId={checkId} sasToken={sasToken} /></Item>}
-            
+            {step === "survey-water-tank" && <Item><TankSurvey checkId={checkId} sasToken={sasToken} /></Item>}
           </Stack>
         </div>
       </div>
