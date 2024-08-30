@@ -16,6 +16,7 @@ import { post, put, uploadPhoto } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import { InputError } from "../../../common/InputError";
+import MandatoryFolders from "../Projects/MandatoryFolders";
 
 const CreateFiles = ({
   showModal,
@@ -37,6 +38,8 @@ const CreateFiles = ({
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
+  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
+  const [selectedContractors, setSelectedContractors] = useState([]);
 
   const {
     register,
@@ -61,6 +64,9 @@ const CreateFiles = ({
     reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate;
     reqData.documentRequestString.files[0].originalFileName = formData.fileUpload[0].name;
     reqData.documentRequestString.files[0].expiryDate = data?.files[0].expiryDate;
+    if (isStatutory) {
+      reqData.documentRequestString.files[0].statutoryCategoryId = folderData?.id;
+    }       
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
     reqData.documentRequestString.files[0].reviewerUserId =
@@ -137,8 +143,19 @@ const CreateFiles = ({
             console.log("formData", formData);
             try {
               setIsLoading(true);
+              let folderIdForUpload = folderData?.id;
+              console.log("folderData?.id", folderData?.id);
+              if (isStatutory) {
+                if(selectedMandatoryFolder?.length > 0) {
+                  folderIdForUpload = selectedMandatoryFolder[0].id;
+                } else {
+                  setIsLoading(false);
+                  toast.warn("Please select folder to Upload file in Statuary")
+                  return;
+                }
+              }
               const data = {
-                folderId: folderData?.id,
+                folderId: folderIdForUpload,
                 files: [
                   {
                     ...formData,
@@ -152,10 +169,13 @@ const CreateFiles = ({
                   },
                 ],
               };
-              const fileExtension = formData.fileUpload[0].name?.split(".")?.[1];
+              const fileExtension =
+                formData.fileUpload[0].name?.split(".")?.[1];
               data.files[0].name = `${formData?.name}.${fileExtension}`;
               await submitFile(data, formData.fileUpload[0], formData);
-              checkAndAddExpiryCalenderEvent(data.files[0]);
+              if (!isStatutory) {
+                checkAndAddExpiryCalenderEvent(data.files[0]);
+              }
               setIsLoading(false);
             } catch (e) {
               toast.error(
@@ -247,7 +267,7 @@ const CreateFiles = ({
                     />
                   </div>
                 </Grid>
-                <Grid sm={12}>
+                <Grid sm={isStatutory ? 8 : 12}>
                   <div style={{ margin: "10px" }}>
                     <input
                       type={isStatutory ? "input" : "textarea"}
@@ -260,6 +280,15 @@ const CreateFiles = ({
                     />
                   </div>
                 </Grid>
+                {isStatutory && (
+                  <Grid sm={4}>
+                    <MandatoryFolders
+                      isStatutory={isStatutory}
+                      setSelectedMandatoryFolder={setSelectedMandatoryFolder}
+                      selectedMandatoryFolder={selectedMandatoryFolder}
+                    />
+                  </Grid>
+                )}
               </Grid>
             </Grid>
             <Grid sm={4}>

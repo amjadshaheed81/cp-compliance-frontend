@@ -374,7 +374,7 @@ const AddContracts = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3 mt-2">
+                      {/* <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
@@ -395,6 +395,31 @@ const AddContracts = ({
                             />
                           )}
                         </div>
+                      </div> */}
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Manager</label>
+                        <Autocomplete
+                          id="managerId"
+                          onChange={(event, item) => {
+                            setValue("manager", item?.key, {
+                              shouldValidate: true,
+                            });
+                          }}
+                          options={managerList.map((option) => {
+                            return { key: option.id, label: option.name };
+                          })}
+                          getOptionLabel={(option) => option.label}
+                          renderInput={(params) => (
+                            <div ref={params.InputProps.ref}>
+                              <input
+                                type="text"
+                                {...params.inputProps}
+                                className="form-control form-select"
+                                placeholder="Select Manager"
+                              />
+                            </div>
+                          )}
+                        />
                       </div>
                       <div className="col-md-3 mt-2">
                         <div className="form-group">
@@ -455,31 +480,6 @@ const AddContracts = ({
                             placeholder="Enter Notes..."
                           ></textarea>
                         </div>
-                      </div>
-                      <div className="col-md-3 mt-2">
-                        <label for="manager">Manager</label>
-                        <Autocomplete
-                          id="managerId"
-                          onChange={(event, item) => {
-                            setValue("manager", item?.key, {
-                              shouldValidate: true,
-                            });
-                          }}
-                          options={managerList.map((option) => {
-                            return { key: option.id, label: option.name };
-                          })}
-                          getOptionLabel={(option) => option.label}
-                          renderInput={(params) => (
-                            <div ref={params.InputProps.ref}>
-                              <input
-                                type="text"
-                                {...params.inputProps}
-                                className="form-control form-select"
-                                placeholder="Select Manager"
-                              />
-                            </div>
-                          )}
-                        />
                       </div>
                       <div className="col-md-3 mt-2">
                         <label for="manager">Frequency</label>

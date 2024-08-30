@@ -165,6 +165,7 @@ const ContractorContractView = ({
       contractor: loggedInUserData?.name,
       company: loggedInUserData?.companyName,
       quote: Number(data?.quote || 0),
+      notes: data?.quoteNote,
       // quoteDate: moment(new Date()).format("YYYY-MM-DD") + " 10:00:00",
       status: 'Recieved',
       projectContractId: selectedContract?.projectContractId,
@@ -217,6 +218,10 @@ const ContractorContractView = ({
         }
         toast.success("Successully updated quatation.");
         getContractDetail();
+        reset({
+          quote: '',
+          quoteNote: '',
+        })
       } else {
         toast.error(
           "Something went wrong while adding contract. Please try again!!"
@@ -446,7 +451,7 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3 mt-2">
+                      {/* <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
@@ -468,6 +473,23 @@ const ContractorContractView = ({
                             />
                           )}
                         </div>
+                      </div> */}
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Manager</label>
+                        <select
+                          name="manager"
+                          className="form-control form-select"
+                          id="manager"
+                          disabled={true}
+                          {...register("manager")}
+                        >
+                          <option value="" selected disabled>
+                            Select manager
+                          </option>
+                          {ManagerList?.map((itm) => (
+                            <option value={itm?.id}>{itm?.name}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-3 mt-2">
                         <div className="form-group">
@@ -524,23 +546,6 @@ const ContractorContractView = ({
                             placeholder="Enter Notes..."
                           ></textarea>
                         </div>
-                      </div>
-                      <div className="col-md-3 mt-2">
-                        <label for="manager">Manager</label>
-                        <select
-                          name="manager"
-                          className="form-control form-select"
-                          id="manager"
-                          disabled={true}
-                          {...register("manager")}
-                        >
-                          <option value="" selected disabled>
-                            Select manager
-                          </option>
-                          {ManagerList?.map((itm) => (
-                            <option value={itm?.id}>{itm?.name}</option>
-                          ))}
-                        </select>
                       </div>
                     </div>
                   </div>
@@ -749,13 +754,17 @@ const ContractorContractView = ({
                             <td>Company</td>
                             <td>Quote</td>
                             <td>Quote Date</td>
+                            <td>Note</td>
+                            <td>Manager Note</td>
                             <td>Status</td>
                           </tr>
                         </thead>
                         <tbody>
                           {contratorContracts?.length === 0 && (
                             <tr>
-                              <td colSpan={6}>No Contractor Quotation are available</td>
+                              <td colSpan={6}>
+                                No Contractor Quotation are available
+                              </td>
                             </tr>
                           )}
                           {contratorContracts?.map((itm) => (
@@ -765,9 +774,13 @@ const ContractorContractView = ({
                               </td>
                               <td>{itm?.company ? itm?.company : "--"}</td>
                               <td>{itm?.quote ? itm?.quote : "--"}</td>
-                              <td>{itm?.quoteDate ? moment(itm?.quoteDate).format(
-                                              "DD-MM-YYYY"
-                                            ) : "--"}</td>
+                              <td>
+                                {itm?.quoteDate
+                                  ? moment(itm?.quoteDate).format("DD-MM-YYYY")
+                                  : "--"}
+                              </td>
+                              <td>{itm?.notes ? itm?.notes : "--"}</td>
+                              <td>{itm?.managerNotes ? itm?.managerNotes : "--"}</td>
                               <td>
                                 <ListStatusBadge status={itm?.status} />
                               </td>
@@ -796,13 +809,38 @@ const ContractorContractView = ({
                                   value: true,
                                   message: `Please enter quote`,
                                 },
-                                validate: (value) => value > 0 || "Quote cannot be zero or negative number",
+                                validate: (value) =>
+                                  value > 0 ||
+                                  "Quote cannot be zero or negative number",
                               })}
                             />
                             {errors?.quote && (
                               <InputError
                                 message={errors?.quote?.message}
                                 key={errors?.quote?.message}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="form-group mt-2 mb-2">
+                            <label for="quote">Note</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              min="0"
+                              id="quoteNote"
+                              {...register("quoteNote", {
+                                required: {
+                                  value: true,
+                                  message: `Please enter quote note`,
+                                },
+                              })}
+                            />
+                            {errors?.quoteNote && (
+                              <InputError
+                                message={errors?.quoteNote?.message}
+                                key={errors?.quoteNote?.message}
                               />
                             )}
                           </div>

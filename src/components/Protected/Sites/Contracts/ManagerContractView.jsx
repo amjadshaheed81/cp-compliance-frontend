@@ -683,8 +683,8 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3 mt-2">
-                        <div className="form-group">
+                      {/* <div className="col-md-3 mt-2"> */}
+                      {/* <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
                             type="number"
@@ -704,7 +704,24 @@ const ManagerContractView = ({
                               key={errors?.cost?.message}
                             />
                           )}
-                        </div>
+                        </div> */}
+                      {/* </div> */}
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Manager</label>
+                        <select
+                          name="manager"
+                          className="form-control form-select"
+                          id="manager"
+                          disabled={true}
+                          {...register("manager")}
+                        >
+                          <option value="" selected disabled>
+                            Select manager
+                          </option>
+                          {ManagerList?.map((itm) => (
+                            <option value={itm?.id}>{itm?.name}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-3 mt-2">
                         <div className="form-group">
@@ -761,23 +778,6 @@ const ManagerContractView = ({
                             placeholder="Enter Notes..."
                           ></textarea>
                         </div>
-                      </div>
-                      <div className="col-md-3">
-                        <label for="manager">Manager</label>
-                        <select
-                          name="manager"
-                          className="form-control form-select"
-                          id="manager"
-                          disabled={true}
-                          {...register("manager")}
-                        >
-                          <option value="" selected disabled>
-                            Select manager
-                          </option>
-                          {ManagerList?.map((itm) => (
-                            <option value={itm?.id}>{itm?.name}</option>
-                          ))}
-                        </select>
                       </div>
                       <div className="col-md-3 mt-2">
                         <label for="manager">Frequency</label>
@@ -1018,6 +1018,8 @@ const ManagerContractView = ({
                             <td>Company</td>
                             <td>Quote</td>
                             <td>Quote Date</td>
+                            <td>Contractor Note</td>
+                            <td>Manager Note</td>
                             <td>Status</td>
                             <td>Action</td>
                           </tr>
@@ -1025,7 +1027,9 @@ const ManagerContractView = ({
                         <tbody>
                           {currentContract?.contractorQuotes?.length === 0 && (
                             <tr>
-                              <td colSpan={6}>No Contractor Quotation are available</td>
+                              <td colSpan={6}>
+                                No Contractor Quotation are available
+                              </td>
                             </tr>
                           )}
                           {currentContract?.contractorQuotes?.map((itm) => (
@@ -1035,9 +1039,20 @@ const ManagerContractView = ({
                               </td>
                               <td>{itm?.company ? itm?.company : "--"}</td>
                               <td>{itm?.quote ? itm?.quote : "--"}</td>
-                              <td>{itm?.quoteDate ? moment(itm?.quoteDate).format(
-                                              "DD-MM-YYYY"
-                                            ) : "--"}</td>
+                              <td>
+                                {itm?.quoteDate
+                                  ? moment(itm?.quoteDate).format("DD-MM-YYYY")
+                                  : "--"}
+                              </td>
+                              <td>{itm?.notes ? itm?.notes : "--"}</td>
+                              <td>
+                                <input
+                                  style={{ width: "120px" }}
+                                  type="text"
+                                  className="form-control"
+                                  placeholder="Enter Note"
+                                />
+                              </td>
                               <td>
                                 <ListStatusBadge status={itm?.status} />
                               </td>
