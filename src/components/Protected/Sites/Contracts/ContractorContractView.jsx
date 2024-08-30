@@ -446,7 +446,7 @@ const ContractorContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3 mt-2">
+                      {/* <div className="col-md-3 mt-2">
                         <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
@@ -468,6 +468,23 @@ const ContractorContractView = ({
                             />
                           )}
                         </div>
+                      </div> */}
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Manager</label>
+                        <select
+                          name="manager"
+                          className="form-control form-select"
+                          id="manager"
+                          disabled={true}
+                          {...register("manager")}
+                        >
+                          <option value="" selected disabled>
+                            Select manager
+                          </option>
+                          {ManagerList?.map((itm) => (
+                            <option value={itm?.id}>{itm?.name}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-3 mt-2">
                         <div className="form-group">
@@ -524,23 +541,6 @@ const ContractorContractView = ({
                             placeholder="Enter Notes..."
                           ></textarea>
                         </div>
-                      </div>
-                      <div className="col-md-3 mt-2">
-                        <label for="manager">Manager</label>
-                        <select
-                          name="manager"
-                          className="form-control form-select"
-                          id="manager"
-                          disabled={true}
-                          {...register("manager")}
-                        >
-                          <option value="" selected disabled>
-                            Select manager
-                          </option>
-                          {ManagerList?.map((itm) => (
-                            <option value={itm?.id}>{itm?.name}</option>
-                          ))}
-                        </select>
                       </div>
                     </div>
                   </div>

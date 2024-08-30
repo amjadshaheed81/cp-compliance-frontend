@@ -683,8 +683,8 @@ const ManagerContractView = ({
                           )}
                         </div>
                       </div>
-                      <div className="col-md-3 mt-2">
-                        <div className="form-group">
+                      {/* <div className="col-md-3 mt-2"> */}
+                        {/* <div className="form-group">
                           <label for="cost">Cost</label>
                           <input
                             type="number"
@@ -704,7 +704,24 @@ const ManagerContractView = ({
                               key={errors?.cost?.message}
                             />
                           )}
-                        </div>
+                        </div> */}
+                      {/* </div> */}
+                      <div className="col-md-3 mt-2">
+                        <label for="manager">Manager</label>
+                        <select
+                          name="manager"
+                          className="form-control form-select"
+                          id="manager"
+                          disabled={true}
+                          {...register("manager")}
+                        >
+                          <option value="" selected disabled>
+                            Select manager
+                          </option>
+                          {ManagerList?.map((itm) => (
+                            <option value={itm?.id}>{itm?.name}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-3 mt-2">
                         <div className="form-group">
@@ -761,23 +778,6 @@ const ManagerContractView = ({
                             placeholder="Enter Notes..."
                           ></textarea>
                         </div>
-                      </div>
-                      <div className="col-md-3">
-                        <label for="manager">Manager</label>
-                        <select
-                          name="manager"
-                          className="form-control form-select"
-                          id="manager"
-                          disabled={true}
-                          {...register("manager")}
-                        >
-                          <option value="" selected disabled>
-                            Select manager
-                          </option>
-                          {ManagerList?.map((itm) => (
-                            <option value={itm?.id}>{itm?.name}</option>
-                          ))}
-                        </select>
                       </div>
                       <div className="col-md-3 mt-2">
                         <label for="manager">Frequency</label>

@@ -33,7 +33,6 @@ const StatutoryRegister = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
   const [statutory, setStatutory] = useState([]);
-  const [statutoryDocuments, setStatutoryDocuments] = useState([]);
   const [folder, setFolder] = useState({});
   const navigate = useNavigate();
   let dutiesIdentified = 0;
@@ -95,7 +94,6 @@ const StatutoryRegister = ({
   };
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
-      getStatutoryDocumments();
       getStatutory(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
     } else {
@@ -107,11 +105,6 @@ const StatutoryRegister = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteSelectedForGlobal?.siteId]);
-  const getStatutoryDocumments = async () => {
-    const documents = await get("/api/lov/STATUARY_CATEGORY");
-    console.log("documents", documents);
-    setStatutoryDocuments(documents)
-  }
   return (
     <>
       <SidebarNew />
@@ -204,7 +197,7 @@ const StatutoryRegister = ({
                     </td>
                   </tr>
                 )}
-                {statutoryDocuments?.map((item, index) => {
+                {statutory?.map((item, index) => {
                   return (
                     <tr>
                       <th scope="col">
@@ -216,8 +209,8 @@ const StatutoryRegister = ({
                         </span>
                       </th>
                       <th scope="col">
-                        {item.lovValue}
-                        <div style={{display: item.attribite1 === 'Link' ? 'none': ''}}>
+                        {item.requirement}
+                        <div>
                           <a
                             href="/#/site-checks"
                             className="btn btn-primary mt-3 text-bg-primary"
@@ -240,9 +233,9 @@ const StatutoryRegister = ({
                         <input
                           type="text"
                           id="chkbox"
-                          style={{width: '140px'}}
+                          style={{width: '100px'}}
                           className="form-control"
-                          placeholder="Residence..."
+                          placeholder="Residence"
                           onChange={(e) => {
                             console.log("e", e);
                             // handleCheckboxField(e, item, index);

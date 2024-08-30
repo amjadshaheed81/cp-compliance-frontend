@@ -2,13 +2,15 @@ import React, { Fragment, useEffect, useState } from "react";
 import { Box, Modal, Typography } from "@mui/material";
 import { connect } from "react-redux";
 import { getDocumentsRootFolder } from "../../../../store/thunk/site";
+import { toast } from "react-toastify";
 
 const MandatoryFolders = ({
   getDocumentsRootFolder,
   rootFolder,
   selectedMandatoryFolder,
   setSelectedMandatoryFolder,
-  siteSelectedForGlobal
+  siteSelectedForGlobal,
+  isStatutory
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
   const handleFolderOpen = (e) => {
@@ -37,8 +39,8 @@ const MandatoryFolders = ({
   return (
     <Fragment>
       <div className="row mb-2" style={{ height: "auto" }}>
-        <div className="col-md-3">
-          <p>
+        <div className={isStatutory ? "col-md-12" : "col-md-3"}>
+          <p style={{ display: isStatutory ? "none" : "" }}>
             <strong>Add Mandatory Folders</strong>
           </p>
           <div>
@@ -116,10 +118,22 @@ const MandatoryFolders = ({
                         <span
                           className="text-primary cursor"
                           onClick={() => {
-                            setSelectedMandatoryFolder([
-                              ...selectedMandatoryFolder,
-                              folder,
-                            ]);
+                            if(isStatutory) {
+                              if(selectedMandatoryFolder?.length > 0) {
+                                toast.warn("You can select only one folder to upload file for statutory.")
+                              } else {
+                                setSelectedMandatoryFolder([
+                                  ...selectedMandatoryFolder,
+                                  folder,
+                                ]);
+                              }
+                            } else {
+                              setSelectedMandatoryFolder([
+                                ...selectedMandatoryFolder,
+                                folder,
+                              ]);
+                            }
+                            
                           }}
                         >
                           <i className="fas fa-plus" size="sm"></i>
