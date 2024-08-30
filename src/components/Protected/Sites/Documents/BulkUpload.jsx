@@ -14,7 +14,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import moment from "moment";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { uploadPhoto } from "../../../../api";
+import { uploadPhoto, uploadNewVersion } from "../../../../api";
 
 const BulkUpload = ({
   bulkUploadModal,
@@ -23,6 +23,7 @@ const BulkUpload = ({
   siteSelectedForGlobal,
   loggedInUserData,
   refresh,
+  folderfiles
 }) => {
   const handleOpen = () => setBulkUploadModal(true);
   const handleClose = () => setBulkUploadModal(false);
@@ -41,6 +42,7 @@ const BulkUpload = ({
     const filesToUpload = [];
     let version = 1;
     for (const iterator of formData?.bulkUpload) {
+      const existingFile = folderfiles.filter(f=> f.name === iterator?.name);
       const data = {
         files: iterator,
         documentRequestString: {
@@ -49,8 +51,9 @@ const BulkUpload = ({
             {
               ...iterator,
               name: iterator?.name,
+              id: existingFile?.length > 0 ? existingFile?.[0]?.id : undefined,
               originalFileName: iterator?.name,
-              fileVersion: version,
+              fileVersion: existingFile?.length > 0 ? existingFile?.[0]?.fileVersion + 1 : version,
               siteId: siteSelectedForGlobal?.siteId,
               uploaderUserId: loggedInUserData?.id,
               reviewerUserId: loggedInUserData?.id,
@@ -61,15 +64,19 @@ const BulkUpload = ({
           ],
         },
       };
-      const url = `/api/document/files/upload`;
+      
+      const url = existingFile?.length > 0 ? `/api/document/file/newVersion/upload` : `/api/document/files/upload`;
       const formDataPayload = new FormData();
-      formDataPayload.append("files", data.files);
+      formDataPayload.append(existingFile?.length > 0 ? "file" : "files", data.files);
       formDataPayload.append(
         "documentRequestString",
         JSON.stringify(data.documentRequestString)
       );
-       await upload(url, formDataPayload);
-        version++;
+      if(existingFile?.length > 0) {
+        await uploadNewVersion(url, formDataPayload)
+      } else {
+        await upload(url, formDataPayload);
+      }
     }
     setIsLoading(false);
         

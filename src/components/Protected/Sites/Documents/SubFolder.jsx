@@ -236,6 +236,7 @@ const SubFolder = ({
         )}
         {bulkUploadModal && (
           <BulkUpload
+          folderfiles={subfolderFiles?.document?.files}
             bulkUploadModal={bulkUploadModal}
             folder={folderData}
             setBulkUploadModal={setBulkUploadModal}
