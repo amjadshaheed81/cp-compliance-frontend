@@ -210,7 +210,7 @@ const StatutoryRegister = ({
                       </th>
                       <th scope="col">
                         {item.requirement}
-                        <div>
+                        <div style={{ display: item?.type === "Link" ? "" : "none"}}>
                           <a
                             href="/#/site-checks"
                             className="btn btn-primary mt-3 text-bg-primary"
