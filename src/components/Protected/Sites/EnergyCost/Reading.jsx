@@ -140,6 +140,7 @@ const Reading = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyRea
                     required
                     
                 >
+                  <option value="">Reading Unit</option>
                   <option value="Kwh">Kwh</option>
                   <option value="M3">M³</option>
                   <option value="ltrs">ltrs</option>
