@@ -85,6 +85,7 @@ const ManagerContractView = ({
     getValues,
   } = useForm({});
   const scheduleDateForm = useForm({});
+  const quoteForm = useForm({});
   const values = watch();
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -115,6 +116,12 @@ const ManagerContractView = ({
     });
     setAssetData(data?.projectContractAssets);
     setCurrentContract(data);
+    console.log("data", data)
+    if (data?.contractorQuotes) {
+      data?.contractorQuotes?.forEach((item) => {
+        quoteForm.setValue(`managerNote-${item.quoteId}`, item.managerNotes || ""); // Prepopulate with existing residence value if available
+      });
+    }
   };
   const getCompanies = async () => {
     const companiesData = await get(`/api/companies/all`);
@@ -346,11 +353,14 @@ const ManagerContractView = ({
       const contractorQuotesList = [];
       for (let itm of currentContract?.contractorQuotes) {
         if (itm?.quoteId === row?.quoteId) {
-          contractorQuotesList.push({ ...itm, status: status });
+          const managerNote =  quoteForm.getValues(`managerNote-${itm.quoteId}`);
+          console.log("managerNote", managerNote);
+          contractorQuotesList.push({ ...itm, status: status, managerNotes: managerNote });
         } else {
           contractorQuotesList.push(itm);
         }
       }
+
       const formData = {
         projectContractId: currentContract?.projectContractId,
         summary: currentContract?.summary,
@@ -1047,10 +1057,11 @@ const ManagerContractView = ({
                               <td>{itm?.notes ? itm?.notes : "--"}</td>
                               <td>
                                 <input
-                                  style={{ width: "120px" }}
+                                  style={{ width: "130px" }}
                                   type="text"
                                   className="form-control"
-                                  placeholder="Enter Note"
+                                  placeholder="Enter Note..."
+                                  {...quoteForm.register(`managerNote-${itm.quoteId}`)}
                                 />
                               </td>
                               <td>
