@@ -74,30 +74,25 @@ const Users = ({
     const site = formData?.site || '';
     const status = formData?.status || '';
 
-    // console.log("Search Params:", { searchField, role, site, status });
-
     if (searchField || role || site || status) {
         const list = users?.filter((user) => {
-            const matchesName = String(user?.name)
+            const matchesName = !searchField || String(user?.name)
                 .toLowerCase()
                 .includes(String(searchField).toLowerCase());
-            const matchesRole = String(user?.role)
+
+            const matchesRole = !role || String(user?.role)
                 .toLowerCase()
                 .includes(String(role).toLowerCase());
-            const matchesSite = user?.taggedSites?.some(taggedSite => 
-                taggedSite?.id == site
+
+            const matchesSite = !site || user?.taggedSites?.some(taggedSite =>
+                String(taggedSite?.id) === String(site)
             );
-            const matchesStatus = String(user?.status)
+
+            const matchesStatus = !status || String(user?.status)
                 .toLowerCase()
                 .includes(String(status).toLowerCase());
 
-            // console.log("User:", user.name, {
-            //     matchesName,
-            //     matchesRole,
-            //     matchesSite,
-            //     matchesStatus
-            // });
-
+            // Returns true if all provided conditions match
             return matchesName && matchesRole && matchesSite && matchesStatus;
         });
 
@@ -107,6 +102,7 @@ const Users = ({
         setFilteredUser(users);
     }
 };
+
   const deleteUserCall = (user) => {
     Swal.fire({
       title: `Do you want to delete ${user?.name}`,
