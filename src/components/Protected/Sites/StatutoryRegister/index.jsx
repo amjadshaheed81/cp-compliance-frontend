@@ -19,6 +19,7 @@ import DutiesIdentifiedLogo from "../../../../images/sreg-1.png";
 import DutiesMetLogo from "../../../../images/sreg-2.png";
 import DutiesNotMetLogo from "../../../../images/sreg-3.png";
 import StatuaryStatus from "../../../common/Alert/Status/StatuaryStatus";
+import { useForm } from "react-hook-form";
 
 const StatutoryRegister = ({
   loggedInUserData,
@@ -34,6 +35,23 @@ const StatutoryRegister = ({
   const [selectedPdf, setSelectedPdf] = useState("");
   const [statutory, setStatutory] = useState([]);
   const [folder, setFolder] = useState({});
+  const {
+    register,
+    formState: { errors },
+    getValues,
+    setValue,
+  } = useForm({});
+  const [searchTerm, setSearchTerm] = useState({})
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      updateResidence();
+    }, 2000)
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchTerm])
+  const updateResidence = async () => {
+    const res = await put("/api/document/statutoryRegister/manage", searchTerm);
+    console.log("res", res);
+  }
   const navigate = useNavigate();
   let dutiesIdentified = 0;
   let dutiesMet = 0;
@@ -64,6 +82,10 @@ const StatutoryRegister = ({
       return a.id - b.id;
     });
     setStatutory(getStatutoryDocuments);
+    // Set initial values for residence fields using setValue
+    getStatutoryDocuments.forEach((item) => {
+      setValue(`residence-${item.id}`, item.residence || ""); // Prepopulate with existing residence value if available
+    });
 
     chipColor = statutory.filter((item) => {
       return item.status === "Passed";
@@ -233,12 +255,17 @@ const StatutoryRegister = ({
                         <input
                           type="text"
                           id="chkbox"
-                          style={{width: '100px'}}
+                          style={{width: '120px'}}
                           className="form-control"
-                          placeholder="Residence"
+                          placeholder="Residence..."
+                          {...register(`residence-${item.id}`)}
                           onChange={(e) => {
-                            console.log("e", e);
-                            // handleCheckboxField(e, item, index);
+                            console.log(e)
+                            setValue(`residence-${item.id}`, e.target.value)
+                            setSearchTerm({
+                              ...item,
+                              residence: e.target.value
+                            })
                           }}
                         />
                       </th>
