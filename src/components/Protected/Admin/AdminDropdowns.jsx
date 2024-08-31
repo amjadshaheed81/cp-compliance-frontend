@@ -160,6 +160,18 @@ const AdminDropdowns = ({ }) => {
 
                 />
               </Grid>
+
+              <Grid sm={4}>
+                <label for="attribite2">Additional Attribute</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="attribite2"
+                  className="form-control"
+                  name="attribite2"
+                  onChange={handleInputChange2}
+
+                />
+              </Grid>
              
             </Grid>
 
@@ -236,6 +248,7 @@ const AdminDropdowns = ({ }) => {
                   <th scope="col" style={{ border: "2px groove"}}>Value</th>
                   <th scope="col" style={{ border: "2px groove" }}>Description</th>
                   <th scope="col" style={{ border: "2px groove" }}>Depends On</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Additional Attribute</th>
                   <th scope="col" style={{ border: "2px groove" }}>Actions</th>
                 </tr>
               </thead>
@@ -291,6 +304,19 @@ const AdminDropdowns = ({ }) => {
                         name="attribite1"
                         className="form-control"
                         id="attribite1"
+                        onChange={(e)=>handleInputChange(e,rowIndex)}
+                      />
+                    </td>}
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
+                      {d.attribite2}
+                    </td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
+                      <input
+                        type="text"
+                        value={d.attribite2}
+                        name="attribite2"
+                        className="form-control"
+                        id="attribite2"
                         onChange={(e)=>handleInputChange(e,rowIndex)}
                       />
                     </td>}
