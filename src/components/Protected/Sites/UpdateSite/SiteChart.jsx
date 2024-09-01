@@ -162,20 +162,14 @@ const SiteChart = ({
         }
       >
         {childs?.map((itm) => (
-          <TreeNode
-            label={
-              <FloorStyledNode>
-                <span
-                  onClick={() => {
-                    setSelectedNode(itm);
-                    setShowModal(true);
-                  }}
-                >
-                  {itm?.nodeName}
-                </span>
-              </FloorStyledNode>
-            }
-          />
+          <TreeNode label={<FloorStyledNode><span
+            onClick={() => {
+              setSelectedNode(itm);
+              setShowModal(true);
+            }}
+          >{itm?.nodeName}</span></FloorStyledNode>}>
+            {getOtherStyleNode(itm)}
+          </TreeNode>
         ))}
       </TreeNode>
     ) : null;
