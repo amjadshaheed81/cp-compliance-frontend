@@ -316,7 +316,7 @@ const SubFolder = ({
               {fileList?.files?.map((itm) => {
                 <p>{itm}</p>;
                 return (
-                  <a href={itm.fileBlobUrl} download key={itm?.id}>
+                  <a href={itm.fileBlobUrl} target="_blank" download key={itm?.id} onClick={() => setFileList([])}>
                     <span>
                       <i
                         style={{ color: "#384BD3" }}

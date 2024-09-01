@@ -44,10 +44,6 @@ const Document = ({
       try {
         const response = await get(url);
         setFileList(response);
-        // if (!response.includes(null)) {
-        //     setFileList(response);
-        // }
-        // else setError("No Sites found. Please check the input");
       } catch (e) {
         setError("No Sites found. Please check the input");
       }
@@ -98,7 +94,7 @@ const Document = ({
                 {fileList?.files?.map((itm) => {
                   <p>{itm}</p>;
                   return (
-                    <a href={itm.fileBlobUrl} download key={itm?.id}>
+                    <a href={itm.fileBlobUrl} target="_blank" download key={itm?.id} onClick={() => setFileList([])}>
                       <span>
                         <i
                           style={{ color: "#384BD3" }}
