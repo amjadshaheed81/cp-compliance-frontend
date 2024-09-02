@@ -103,14 +103,36 @@ const StatutoryRegister = ({
   };
   const handleCheckboxField = async (e, item, idx) => {
     setIsChecked(e.target.checked);
+    const isRequired = e.target.checked;
     const folderId = item.id;
+    const status = "Open";
     const formData = {
       required: e.target.checked,
       status:
         e.target.checked === true && item.files !== null ? "Passed" : "Open",
     };
-    const url = `/api/document/folder/${folderId}/manage`;
-    const res = await put(url, formData);
+    const expiryDate = item?.files[item?.files?.length - 1]?.expiryDate;
+    let isExpiryDateInFuture
+    if(expiryDate) {
+      isExpiryDateInFuture = moment(expiryDate).isAfter(new Date());
+    }
+    console.log("isExpiryDateInFuture",isExpiryDateInFuture);
+    if(isRequired && item?.subType === "PDF" && isExpiryDateInFuture) {
+      status = "Passed";
+    }
+    if(item?.subType === "Link") {
+      // a) Asbestos - if there is any record, pass it otherwise fail it. 
+      // b) PAT - if there is any record and all records have date of expiry in future, pass it otherwise fail it.
+      // c) Emergency light and Fire Alarm - if audit exists in site check and expiry date is in future pass it
+      // d) Water Risk Assessment/Water Temperature - If site check exists and expiry date is in future, pass it
+      // status = "Passed";
+    }
+    const payload = {
+      ...item,
+      status: status,
+      required: e.target.checked,
+    }
+    const res = await put("/api/document/statutoryRegister/manage", payload);
     if (res?.status === 200) {
       getStatutory(siteSelectedForGlobal?.siteId);
     }
