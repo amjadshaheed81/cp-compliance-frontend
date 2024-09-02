@@ -117,10 +117,13 @@ const StatutoryRegister = ({
       isExpiryDateInFuture = moment(expiryDate).isAfter(new Date());
     }
     console.log("isExpiryDateInFuture",isExpiryDateInFuture);
-    if(isRequired && item?.subType === "PDF" && isExpiryDateInFuture) {
+    if(isRequired && item?.type === "PDF" && isExpiryDateInFuture) {
       status = "Passed";
     }
-    if(item?.subType === "Link") {
+    if(item?.type === "Link") {
+      // if(item?.subType === "Asbestos") {
+
+      // }
       // a) Asbestos - if there is any record, pass it otherwise fail it. 
       // b) PAT - if there is any record and all records have date of expiry in future, pass it otherwise fail it.
       // c) Emergency light and Fire Alarm - if audit exists in site check and expiry date is in future pass it
