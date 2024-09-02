@@ -29,10 +29,11 @@ const PreActions = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentPreActions = filteredPreActions.slice(
+  const currentPreActions = filteredPreActions?.filter((a) => a.status !== "Pending Action").slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  console.log("currentPreActions", currentPreActions);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -316,7 +317,7 @@ const PreActions = ({
           <div className="row">
             <Pagination
               totalPages={Math.ceil(
-                filteredPreActions.length / preActionsPerPage
+                filteredPreActions?.filter((a) => a.status !== "Pending Action").length / preActionsPerPage
               )}
               currentPage={currentPage}
               onPageChange={handlePageChange}
