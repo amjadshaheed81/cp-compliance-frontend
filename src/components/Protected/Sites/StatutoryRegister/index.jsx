@@ -42,17 +42,17 @@ const StatutoryRegister = ({
     getValues,
     setValue,
   } = useForm({});
-  const [searchTerm, setSearchTerm] = useState({})
+  const [searchTerm, setSearchTerm] = useState({});
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       updateResidence();
-    }, 2000)
-    return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm])
+    }, 2000);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
   const updateResidence = async () => {
     const res = await put("/api/document/statutoryRegister/manage", searchTerm);
     console.log("res", res);
-  }
+  };
   const navigate = useNavigate();
   let dutiesIdentified = 0;
   let dutiesMet = 0;
@@ -104,37 +104,88 @@ const StatutoryRegister = ({
   const handleCheckboxField = async (e, item, idx) => {
     setIsChecked(e.target.checked);
     const isRequired = e.target.checked;
-    const folderId = item.id;
     const status = "Open";
-    const formData = {
-      required: e.target.checked,
-      status:
-        e.target.checked === true && item.files !== null ? "Passed" : "Open",
-    };
     const expiryDate = item?.files[item?.files?.length - 1]?.expiryDate;
-    let isExpiryDateInFuture
-    if(expiryDate) {
+    let isExpiryDateInFuture;
+    if (expiryDate) {
       isExpiryDateInFuture = moment(expiryDate).isAfter(new Date());
     }
-    console.log("isExpiryDateInFuture",isExpiryDateInFuture);
-    if(isRequired && item?.type === "PDF" && isExpiryDateInFuture) {
+    if (isRequired && item?.type === "PDF" && isExpiryDateInFuture) {
       status = "Passed";
+    } else if (item?.type === "Link") {
+      const siteChecks = await get(
+        "/api/site-check/site/" + siteSelectedForGlobal?.siteId
+      );
+      // a) Asbestos - if there is any record, pass it otherwise fail it.
+      if (item?.subType === "Asbestos") {
+        const isAsbsetosRecordAvailable = siteChecks?.filter(
+          (itm) => itm?.subType === "Asbestos"
+        );
+        if (isAsbsetosRecordAvailable?.length > 0) {
+          status = "Passed";
+        }
+      } else if (item?.subType === "PAT") {
+        if (item?.files?.length > 0) {
+          const isExpiryDateForAllPAT = [];
+          for (const element of item?.files) {
+            if (moment(element?.expiryDate).isAfter(new Date())) {
+              isExpiryDateForAllPAT.push(true);
+            } else {
+              isExpiryDateForAllPAT.push(false);
+            }
+          }
+          if (isExpiryDateForAllPAT?.includes(false)) {
+            status = "Open";
+          } else {
+            status = "Passed";
+          }
+        }
+      } else if (item?.subType === "Emergency light and Fire Alarm") {
+        const isEmergencyAvailable = siteChecks?.filter(
+          (itm) => itm?.type === "Audit"
+        );
+        if (isEmergencyAvailable?.length > 0) {
+          const isExpiryDateForAllEmergency = [];
+          for (const element of isEmergencyAvailable) {
+            if (moment(element?.dueDate).isAfter(new Date())) {
+              isExpiryDateForAllEmergency.push(true);
+            } else {
+              isExpiryDateForAllEmergency.push(false);
+            }
+          }
+          if (isExpiryDateForAllEmergency?.includes(false)) {
+            status = "Open";
+          } else {
+            status = "Passed";
+          }
+        }
+      } else if (item?.subType === "Water Risk Assessment/Water Temperature") {
+        const isWaterAvailable = siteChecks?.filter(
+          (itm) => itm?.subType === "Water"
+        );
+        if (isWaterAvailable?.length > 0) {
+          const isExpiryDateForAllWater = [];
+          for (const element of isWaterAvailable) {
+            if (moment(element?.dueDate).isAfter(new Date())) {
+              isExpiryDateForAllWater.push(true);
+            } else {
+              isExpiryDateForAllWater.push(false);
+            }
+          }
+          if (isExpiryDateForAllWater?.includes(false)) {
+            status = "Open";
+          } else {
+            status = "Passed";
+          }
+        }
+      }
     }
-    if(item?.type === "Link") {
-      // if(item?.subType === "Asbestos") {
-
-      // }
-      // a) Asbestos - if there is any record, pass it otherwise fail it. 
-      // b) PAT - if there is any record and all records have date of expiry in future, pass it otherwise fail it.
-      // c) Emergency light and Fire Alarm - if audit exists in site check and expiry date is in future pass it
-      // d) Water Risk Assessment/Water Temperature - If site check exists and expiry date is in future, pass it
-      // status = "Passed";
-    }
+    console.log("e.target.checked", e.target.checked);
     const payload = {
       ...item,
       status: status,
       required: e.target.checked,
-    }
+    };
     const res = await put("/api/document/statutoryRegister/manage", payload);
     if (res?.status === 200) {
       getStatutory(siteSelectedForGlobal?.siteId);
@@ -168,15 +219,15 @@ const StatutoryRegister = ({
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col border-end">
-                <div className="row">
+                  <div className="row">
                     <div className="col-md-4 border-right">
-                    <img src={DutiesIdentifiedLogo} height={"40px"} />
+                      <img src={DutiesIdentifiedLogo} height={"40px"} />
                     </div>
                     <div className="col-md-8">
-                    <span>Duties Identified</span>
-                  <p class="fw-bold fs-3" >
-                    {getDutiesIdentified(statutory)}
-                  </p>
+                      <span>Duties Identified</span>
+                      <p class="fw-bold fs-3">
+                        {getDutiesIdentified(statutory)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -187,9 +238,7 @@ const StatutoryRegister = ({
                     </div>
                     <div className="col-md-8">
                       <span>Duties Met</span>
-                      <p class="fw-bold fs-3">
-                        {getDutiesMet(statutory)}
-                      </p>
+                      <p class="fw-bold fs-3">{getDutiesMet(statutory)}</p>
                     </div>
                   </div>
                 </div>
@@ -200,9 +249,7 @@ const StatutoryRegister = ({
                     </div>
                     <div className="col-md-8">
                       <span>Duties Not Met</span>
-                      <p class="fw-bold fs-3">
-                        {dutiesIdentified - dutiesMet}
-                      </p>
+                      <p class="fw-bold fs-3">{dutiesIdentified - dutiesMet}</p>
                     </div>
                   </div>
                 </div>
@@ -257,9 +304,13 @@ const StatutoryRegister = ({
                         </span>
                       </th>
                       <th scope="col">
-                        {item.subType ? `(${item.subType}) ` : ''}
+                        {item.subType ? `(${item.subType}) ` : ""}
                         {item.requirement}
-                        <div style={{ display: item?.type === "Link" ? "" : "none"}}>
+                        <div
+                          style={{
+                            display: item?.type === "Link" ? "" : "none",
+                          }}
+                        >
                           <a
                             href="/#/site-checks"
                             className="btn btn-primary mt-3 text-bg-primary"
@@ -283,18 +334,18 @@ const StatutoryRegister = ({
                         <input
                           type="text"
                           id="chkbox"
-                          style={{width: '120px'}}
+                          style={{ width: "120px" }}
                           className="form-control"
                           placeholder="Residence..."
                           disabled={!isManagerAdminLogin(loggedInUserData)}
                           {...register(`residence-${item.id}`)}
                           onChange={(e) => {
-                            console.log(e)
-                            setValue(`residence-${item.id}`, e.target.value)
+                            console.log(e);
+                            setValue(`residence-${item.id}`, e.target.value);
                             setSearchTerm({
                               ...item,
-                              residence: e.target.value
-                            })
+                              residence: e.target.value,
+                            });
                           }}
                         />
                       </th>
@@ -477,9 +528,16 @@ const StatutoryRegister = ({
                                 }}
                                 align="center"
                               >
-                                <div className="upload-file" style={{
-                                  display: isManagerAdminLogin(loggedInUserData) ? '' : "none"
-                                }}>
+                                <div
+                                  className="upload-file"
+                                  style={{
+                                    display: isManagerAdminLogin(
+                                      loggedInUserData
+                                    )
+                                      ? ""
+                                      : "none",
+                                  }}
+                                >
                                   <label
                                     id="upload-file"
                                     class="text-decoration-underline"
