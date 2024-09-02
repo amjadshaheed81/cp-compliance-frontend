@@ -159,7 +159,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     <option value="">Status</option>
                     <option value="Reported">Reported</option>
                     <option value="Reassessed">Reassessed</option>
-                   
+
                     <option value="Completed">Completed</option>
                   </select>
                 </div>
@@ -206,11 +206,18 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                   <th scope="col">Action Type</th>
                   <th scope="col">Description</th>
                   <th scope="col">Observation</th>
-                  
+
                   <th scope="col">Required Action</th>
                   <th scope="col">Risk Score</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Actions</th>
+                  {(loggedInUserData?.role === ROLE.ADMIN ||
+                    loggedInUserData?.role === ROLE.MANAGER ||
+                    loggedInUserData?.role === ROLE.SITE_ACTION_MANAGER ||
+                    loggedInUserData?.role === ROLE.CARE_TAKER ||
+                    loggedInUserData?.role === ROLE.CONTRACTOR ||
+                    loggedInUserData?.role === ROLE.TRADESMAN) && (
+                    <th scope="col">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -225,16 +232,30 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     <th scope="col">{action?.desc}</th>
                     <th scope="col">{action?.observation}</th>
                     <th scope="col">{action?.requiredAction}</th>
-                    
-                    <th scope="col"> <span className={`badge bg-${action?.riskScore > 15 ? "danger" : (
-                      action?.riskScore > 9 ? "warning" : (action?.riskScore > 4 ? "info" : "success")
-                    ) } p-2 m-1 risk-span`}>
-                            {action?.riskScore??0}
-                        </span>
-                       </th>
+
                     <th scope="col">
-                    
-                    <Chip label={action?.status} color={action?.status === "Completed" ? "success" : "warning"}/>                       
+                      {" "}
+                      <span
+                        className={`badge bg-${
+                          action?.riskScore > 15
+                            ? "danger"
+                            : action?.riskScore > 9
+                            ? "warning"
+                            : action?.riskScore > 4
+                            ? "info"
+                            : "success"
+                        } p-2 m-1 risk-span`}
+                      >
+                        {action?.riskScore ?? 0}
+                      </span>
+                    </th>
+                    <th scope="col">
+                      <Chip
+                        label={action?.status}
+                        color={
+                          action?.status === "Completed" ? "success" : "warning"
+                        }
+                      />
                     </th>
                     <th scope="col">
                       {/* <Tooltip title={`View ${action?.actionId}`} arrow>
@@ -249,12 +270,14 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                           <i className="fas fa-eye"></i>
                         </button>{" "}
                       </Tooltip> */}
-                      {loggedInUserData?.role !== ROLE.SITE_USERS && (
+                      {(loggedInUserData?.role === ROLE.ADMIN ||
+                        loggedInUserData?.role === ROLE.MANAGER ||
+                        loggedInUserData?.role === ROLE.SITE_ACTION_MANAGER ||
+                        loggedInUserData?.role === ROLE.CARE_TAKER ||
+                        loggedInUserData?.role === ROLE.CONTRACTOR ||
+                        loggedInUserData?.role === ROLE.TRADESMAN) && (
                         <Fragment>
-                          <Tooltip
-                            title={`Mark as completed`}
-                            arrow
-                          >
+                          <Tooltip title={`Mark as completed`} arrow>
                             <button
                               className="btn btn-sm btn-light"
                               onClick={() => {
@@ -264,10 +287,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                               <i className="fas fa-check"></i>
                             </button>{" "}
                           </Tooltip>
-                          <Tooltip
-                            title={`Mark as Reassessed`}
-                            arrow
-                          >
+                          <Tooltip title={`Mark as Reassessed`} arrow>
                             <button
                               className="btn btn-sm btn-light"
                               onClick={() => {
@@ -277,7 +297,6 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                               <i className="fas fa-window-close"></i>
                             </button>{" "}
                           </Tooltip>
-                          
                         </Fragment>
                       )}
                     </th>
@@ -289,9 +308,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
           {/* row end*/}
           <div className="row">
             <Pagination
-              totalPages={Math.ceil(
-                filteredActions.length / preActionsPerPage
-              )}
+              totalPages={Math.ceil(filteredActions.length / preActionsPerPage)}
               currentPage={currentPage}
               onPageChange={handlePageChange}
             />

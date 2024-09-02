@@ -16,7 +16,11 @@ import { deletePreAction } from "../../../../store/thunk/preActions";
 import { ROLE } from "../../../../Constant/Role";
 import { Chip } from "@mui/material";
 
-const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) => {
+const PreActions = ({
+  siteSelectedForGlobal,
+  deletePreAction,
+  loggedInUserData,
+}) => {
   const [filteredPreActions, setFilteredPreActions] = useState([]);
   const [preActions, setPreActions] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -124,8 +128,9 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
             <AddPreActions
               showAddModal={showAddModal}
               setShowAddModal={setShowAddModal}
-
-              refresh={() => {getPreActions()}}
+              refresh={() => {
+                getPreActions();
+              }}
             />
           )}
           <BreadCrumHeader header={"Pre-Action"} page={"Pre-Action"} />
@@ -160,7 +165,12 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
             </div>
             <div className="ms-auto p-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
-                {loggedInUserData?.role !== ROLE.SITE_USERS && (
+                {(loggedInUserData?.role === ROLE.ADMIN ||
+                  loggedInUserData?.role === ROLE.MANAGER ||
+                  loggedInUserData?.role === ROLE.SITE_ACTION_MANAGER ||
+                  loggedInUserData?.role === ROLE.CARE_TAKER ||
+                  loggedInUserData?.role === ROLE.CONTRACTOR ||
+                  loggedInUserData?.role === ROLE.TRADESMAN) && (
                   <Fragment>
                     <div className="col-md-6 col-sm-4 mt-2">
                       <Tooltip title={`Create New`} arrow>
@@ -211,82 +221,94 @@ const PreActions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }
                     <td>No search result found!!</td>
                   </tr>
                 )}
-                {currentPreActions?.filter(a=>a.status !== "Pending Action")?.map((action) => (
-                  <tr key={action?.id}>
-                    <th scope="col">{action?.actionId}</th>
-                    <th scope="col">{action?.raisedByUserName}</th>
-                    <th scope="col">{action?.description}</th>
-                    <th scope="col">
-                      {action?.category} &gt; {action?.floor} &gt;{" "}
-                      {action?.room}
-                    </th>
-                    <th scope="col">
-                      {moment(action?.raisedDate).format("DD-MM-YYYY")}
-                    </th>
-                    <th scope="col">
-                      {/* <span className="badge rounded-pill bg-primary text-capitalize"> */}
+                {currentPreActions
+                  ?.filter((a) => a.status !== "Pending Action")
+                  ?.map((action) => (
+                    <tr key={action?.id}>
+                      <th scope="col">{action?.actionId}</th>
+                      <th scope="col">{action?.raisedByUserName}</th>
+                      <th scope="col">{action?.description}</th>
+                      <th scope="col">
+                        {action?.category} &gt; {action?.floor} &gt;{" "}
+                        {action?.room}
+                      </th>
+                      <th scope="col">
+                        {moment(action?.raisedDate).format("DD-MM-YYYY")}
+                      </th>
+                      <th scope="col">
+                        {/* <span className="badge rounded-pill bg-primary text-capitalize"> */}
 
-<Chip label={action?.status} color={action?.status === "Closed" ? "warning" : "success"}/>                       
-                      {/* </span> */}
-                    </th>
-                    <th scope="col">
-                      <Tooltip title={`View ${action?.actionId}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            goTo(
-                              `/pre-action-detail?id=${action?.actionId}&viewMode=viewOnly`
-                            );
-                          }}
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      {loggedInUserData?.role !== ROLE.SITE_USERS && (
-                        <Fragment>
-                          <Tooltip
-                            title={`${action?.actionId} mark as approve`}
-                            arrow
+                        <Chip
+                          label={action?.status}
+                          color={
+                            action?.status === "Closed" ? "warning" : "success"
+                          }
+                        />
+                        {/* </span> */}
+                      </th>
+                      <th scope="col">
+                        <Tooltip title={`View ${action?.actionId}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => {
+                              goTo(
+                                `/pre-action-detail?id=${action?.actionId}&viewMode=viewOnly`
+                              );
+                            }}
                           >
-                            <button
-                              className="btn btn-sm btn-light"
-                              onClick={() => {
-                                goTo(
-                                  `/pre-action-detail?id=${action?.actionId}&viewMode=markApproved`
-                                );
-                              }}
+                            <i className="fas fa-eye"></i>
+                          </button>{" "}
+                        </Tooltip>
+                        {(loggedInUserData?.role === ROLE.ADMIN ||
+                          loggedInUserData?.role === ROLE.MANAGER ||
+                          loggedInUserData?.role === ROLE.SITE_ACTION_MANAGER ||
+                          loggedInUserData?.role === ROLE.CARE_TAKER ||
+                          loggedInUserData?.role === ROLE.CONTRACTOR ||
+                          loggedInUserData?.role === ROLE.TRADESMAN) && (
+                          <Fragment>
+                            <Tooltip
+                              title={`${action?.actionId} mark as approve`}
+                              arrow
                             >
-                              <i className="fas fa-check"></i>
-                            </button>{" "}
-                          </Tooltip>
-                          <Tooltip
-                            title={`${action?.actionId} mark as closed`}
-                            arrow
-                          >
-                            <button
-                              className="btn btn-sm btn-light"
-                              onClick={() => {
-                                goTo(
-                                  `/pre-action-detail?id=${action?.actionId}&viewMode=markClosed`
-                                );
-                              }}
+                              <button
+                                className="btn btn-sm btn-light"
+                                onClick={() => {
+                                  goTo(
+                                    `/pre-action-detail?id=${action?.actionId}&viewMode=markApproved`
+                                  );
+                                }}
+                              >
+                                <i className="fas fa-check"></i>
+                              </button>{" "}
+                            </Tooltip>
+                            <Tooltip
+                              title={`${action?.actionId} mark as closed`}
+                              arrow
                             >
-                              <i className="fas fa-window-close"></i>
-                            </button>{" "}
-                          </Tooltip>
-                          <Tooltip title={`Delete ${action?.actionId}`} arrow>
-                            <button
-                              className="btn btn-sm btn-light text-dark"
-                              onClick={() => deleteActionCall(action)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>{" "}
-                          </Tooltip>
-                        </Fragment>
-                      )}
-                    </th>
-                  </tr>
-                ))}
+                              <button
+                                className="btn btn-sm btn-light"
+                                onClick={() => {
+                                  goTo(
+                                    `/pre-action-detail?id=${action?.actionId}&viewMode=markClosed`
+                                  );
+                                }}
+                              >
+                                <i className="fas fa-window-close"></i>
+                              </button>{" "}
+                            </Tooltip>
+                            <Tooltip title={`Delete ${action?.actionId}`} arrow>
+                              <button
+                                className="btn btn-sm btn-light text-dark"
+                                onClick={() => deleteActionCall(action)}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>{" "}
+                            </Tooltip>
+                          </Fragment>
+                        )}
+                      </th>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

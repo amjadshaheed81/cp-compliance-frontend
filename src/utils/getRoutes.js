@@ -140,24 +140,10 @@ export const getRoutes = () => {
     {
       path: "/pre-actions",
       element: <PreActions />,
-      allowedRoles: [
-        ROLE.ADMIN,
-        ROLE.MANAGER,
-        ROLE.SITE_ACTION_MANAGER,
-        ROLE.SITE_USERS,
-        ROLE.CARE_TAKER,
-      ],
     },
     {
       path: "/actions",
       element: <Actions />,
-      allowedRoles: [
-        ROLE.ADMIN,
-        ROLE.MANAGER,
-        ROLE.SITE_ACTION_MANAGER,
-        ROLE.SITE_USERS,
-        ROLE.CARE_TAKER,
-      ],
     },
     {
       path: "/view-update-pre-actions",
