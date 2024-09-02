@@ -232,6 +232,7 @@ const StatutoryRegister = ({
                         </span>
                       </th>
                       <th scope="col">
+                        {item.subType ? `(${item.subType}) ` : ''}
                         {item.requirement}
                         <div style={{ display: item?.type === "Link" ? "" : "none"}}>
                           <a
@@ -287,6 +288,15 @@ const StatutoryRegister = ({
                                 }}
                               >
                                 File
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Folder
                               </th>
                               <th
                                 scope="col"
@@ -369,6 +379,16 @@ const StatutoryRegister = ({
                                       border: "1px solid #5A6371",
                                     }}
                                   >
+                                    {itm.folderName}
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
                                     {itm.fileVersion}
                                   </th>
                                   <th
@@ -381,7 +401,7 @@ const StatutoryRegister = ({
                                   >
                                     {itm.issueDate
                                       ? moment(itm.issueDate).format(
-                                          "YYYY-MM-DD"
+                                          "DD-MM-YYYY"
                                         )
                                       : "-"}
                                   </th>
@@ -395,7 +415,7 @@ const StatutoryRegister = ({
                                   >
                                     {itm.expiryDate
                                       ? moment(itm.expiryDate).format(
-                                          "YYYY-MM-DD"
+                                          "DD-MM-YYYY"
                                         )
                                       : "-"}
                                   </th>
