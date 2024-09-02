@@ -20,6 +20,7 @@ import DutiesMetLogo from "../../../../images/sreg-2.png";
 import DutiesNotMetLogo from "../../../../images/sreg-3.png";
 import StatuaryStatus from "../../../common/Alert/Status/StatuaryStatus";
 import { useForm } from "react-hook-form";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const StatutoryRegister = ({
   loggedInUserData,
@@ -246,6 +247,7 @@ const StatutoryRegister = ({
                           type="checkbox"
                           id="chkbox"
                           checked={item.required}
+                          disabled={!isManagerAdminLogin(loggedInUserData)}
                           onChange={(e) => {
                             handleCheckboxField(e, item, index);
                           }}
@@ -258,6 +260,7 @@ const StatutoryRegister = ({
                           style={{width: '120px'}}
                           className="form-control"
                           placeholder="Residence..."
+                          disabled={!isManagerAdminLogin(loggedInUserData)}
                           {...register(`residence-${item.id}`)}
                           onChange={(e) => {
                             console.log(e)
@@ -429,7 +432,9 @@ const StatutoryRegister = ({
                                 }}
                                 align="center"
                               >
-                                <div className="upload-file">
+                                <div className="upload-file" style={{
+                                  display: isManagerAdminLogin(loggedInUserData) ? '' : "none"
+                                }}>
                                   <label
                                     id="upload-file"
                                     class="text-decoration-underline"
