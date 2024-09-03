@@ -224,7 +224,7 @@ const SubFolder = ({
         )}
         {showModal && (
           <CreateFiles
-          folderfiles={subfolderFiles?.document?.files ?? []}
+          folderfiles={subfolderFiles?.document?.files ? subfolderFiles?.document?.files : []}
           
             showModal={showModal}
             setShowModal={setShowModal}
@@ -238,7 +238,7 @@ const SubFolder = ({
         )}
         {bulkUploadModal && (
           <BulkUpload
-          folderfiles={subfolderFiles?.document?.files ?? []}
+          folderfiles={subfolderFiles?.document?.files ? subfolderFiles?.document?.files : []}
             bulkUploadModal={bulkUploadModal}
             folder={folderData}
             setBulkUploadModal={setBulkUploadModal}
