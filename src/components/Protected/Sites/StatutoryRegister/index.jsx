@@ -272,7 +272,7 @@ const StatutoryRegister = ({
                   <th scope="col">Id</th>
                   <th scope="col">Requirement</th>
                   <th scope="col">Required</th>
-                  <th scope="col">Residence</th>
+                  <th scope="col">Responsible</th>
                   <th scope="col">Document</th>
                   <th scope="col">Status</th>
                 </tr>
@@ -336,7 +336,7 @@ const StatutoryRegister = ({
                           id="chkbox"
                           style={{ width: "120px" }}
                           className="form-control"
-                          placeholder="Residence..."
+                          placeholder=""
                           disabled={!isManagerAdminLogin(loggedInUserData)}
                           {...register(`residence-${item.id}`)}
                           onChange={(e) => {
@@ -521,7 +521,7 @@ const StatutoryRegister = ({
 
                             <tr>
                               <td
-                                colspan="6"
+                                colspan="7"
                                 style={{
                                   backgroundColor: "#5A6371",
                                   color: "#FFFFFF",
