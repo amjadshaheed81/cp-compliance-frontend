@@ -128,6 +128,7 @@ export async function uploadSiteCheckDoc(reqData) {
   formData.append("siteId", reqData.siteId);
   formData.append("file", reqData.file);
   formData.append("fileName", reqData.file?.name);
+  formData.append("folderName", reqData.folderName ? reqData.folderName : "others");
   configAxios();
   const { data } = await axiosInstance({
     method: "POST",
