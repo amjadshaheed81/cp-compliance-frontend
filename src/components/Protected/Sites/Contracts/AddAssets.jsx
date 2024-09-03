@@ -113,7 +113,7 @@ const AddAssets = ({
             <TableHead className="table-dark">
               <TableRow>
                 <TableCell>Asset Name</TableCell>
-                <TableCell>Asset Reference</TableCell>
+                <TableCell>Asset ID</TableCell>
                 <TableCell>Location</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell>Actions</TableCell>

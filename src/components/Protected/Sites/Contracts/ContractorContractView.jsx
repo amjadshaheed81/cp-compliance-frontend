@@ -616,7 +616,7 @@ const ContractorContractView = ({
                     <thead className="table-dark">
                       <tr>
                         <td>Asset Name</td>
-                        <td>Asset Reference</td>
+                        <td>Asset ID</td>
                         <td>Location</td>
                         <td>Category</td>
                         <td>Action</td>

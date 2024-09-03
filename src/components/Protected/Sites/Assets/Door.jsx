@@ -368,6 +368,7 @@ const Door = ({
                     }
                   />
                 </th>
+                <th scope="col">Asset ID</th>
                 <th scope="col">Asset Name</th>
                 <th scope="col">Door Size</th>
                 <th scope="col">Fire Rating</th>
@@ -396,6 +397,7 @@ const Door = ({
                       )}
                     />
                   </th>
+                  <th scope="col">{asset?.assetId}</th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">
                     {asset?.assetDoorSpecifications?.width} *{" "}

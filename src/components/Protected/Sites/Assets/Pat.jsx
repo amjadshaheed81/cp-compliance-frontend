@@ -362,6 +362,7 @@ const Pat = ({
                     }
                   />
                 </th>
+                <th scope="col">Asset ID</th>
                 <th scope="col">Asset Name</th>
                 <th scope="col">Manufactrurer</th>
                 <th scope="col">Category</th>
@@ -390,6 +391,7 @@ const Pat = ({
                       )}
                     />
                   </th>
+                  <th scope="col">{asset?.assetId}</th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{getCategoryLabelValue(asset)}</th>

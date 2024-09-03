@@ -362,6 +362,7 @@ const PassiveFireProtection = ({
                     }
                   />
                 </th>
+                <th scope="col">Asset Id</th>
                 <th scope="col">Asset Name</th>
                 <th scope="col">Material</th>
                 <th scope="col">Product</th>
@@ -391,6 +392,7 @@ const PassiveFireProtection = ({
                       )}
                     />
                   </th>
+                  <th scope="col">{asset?.assetId}</th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.assetPFPItem?.material}</th>
                   <th scope="col">{asset?.assetPFPItem?.product}</th>

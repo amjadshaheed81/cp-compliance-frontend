@@ -376,6 +376,7 @@ const Summary = ({
                     ).length}
                   />
                 </th>
+                <th scope="col">Asset ID</th>
                 <th scope="col">Asset Name</th>
                 <th scope="col">Manufacturer</th>
                 <th scope="col">Category</th>
@@ -403,6 +404,7 @@ const Summary = ({
                       )}
                     />
                   </th>
+                  <th scope="col">{asset?.assetId}</th>
                   <th scope="col">{asset?.assetName}</th>
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{getCategoryLabelValue(asset)}</th>
