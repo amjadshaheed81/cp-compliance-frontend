@@ -56,6 +56,7 @@ const CreateFiles = ({
   }, []);
   const submitFile = async (data, fileUpload, formData) => {
 
+    console.log('folderfiles', folderfiles)
     const existingFile = folderfiles?.filter(f=> f.name === formData.fileUpload[0].name);
 
       
