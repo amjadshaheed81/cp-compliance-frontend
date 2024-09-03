@@ -12,7 +12,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import { post, put, uploadPhoto } from "../../../../api";
+import { post, put, uploadPhoto, uploadNewVersion } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import { InputError } from "../../../common/InputError";
@@ -29,6 +29,8 @@ const CreateFiles = ({
   uploaderUserId,
   reviewerUserId,
   loggedInUserData,
+  folderfiles
+  
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -53,12 +55,20 @@ const CreateFiles = ({
     setValue("name", folderData?.folderName ? folderData?.name : "");
   }, []);
   const submitFile = async (data, fileUpload, formData) => {
+
+    const existingFile = folderfiles?.filter(f=> f.name === formData.fileUpload[0].name);
+
+      
     const reqData = {
       files: fileUpload,
       documentRequestString: {
         ...data,
       },
     };
+
+    reqData.documentRequestString.files[0].id = existingFile?.length > 0 ? existingFile?.[0]?.id : undefined;
+    reqData.documentRequestString.files[0].fileVersion =existingFile?.length > 0 ? existingFile?.[0]?.fileVersion + 1 : reqData.documentRequestString.files[0].fileVersion;
+    
 
     delete reqData.documentRequestString.files[0].fileUpload;
     reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate;
@@ -73,14 +83,20 @@ const CreateFiles = ({
       uploaderUserId || "";
     reqData.documentRequestString.files[0].referenceNumber =
       data.files[0].note || "";
-    const url = `/api/document/files/upload`;
+
+      const url = existingFile?.length > 0 ? `/api/document/file/newVersion/upload` : `/api/document/files/upload`;
+  
     const form_Data = new FormData();
-    form_Data.append("files", reqData.files);
+    form_Data.append(existingFile?.length > 0 ? "file" : "files", reqData.files);
     form_Data.append(
       "documentRequestString",
       JSON.stringify(reqData.documentRequestString)
     );
-    const res = await uploadPhoto(url, form_Data);
+    if(existingFile?.length > 0) {
+      await uploadNewVersion(url, form_Data)
+    } else {
+      await uploadPhoto(url, form_Data);
+    }
     setIsLoading(false);
     toast.success("File uploaded successfully");
     handleClose();
@@ -171,13 +187,14 @@ const CreateFiles = ({
               };
               const fileExtension =
                 formData.fileUpload[0].name?.split(".")?.[1];
-              data.files[0].name = `${formData?.name}.${fileExtension}`;
+              data.files[0].name = formData?.name?.length > 0 ? `${formData?.name}.${fileExtension}` : formData.fileUpload[0].name;
               await submitFile(data, formData.fileUpload[0], formData);
               if (!isStatutory) {
                 checkAndAddExpiryCalenderEvent(data.files[0]);
               }
               setIsLoading(false);
             } catch (e) {
+              console.log(e);
               toast.error(
                 "Something went wrong while adding new file. Please try again!!"
               );

@@ -224,6 +224,8 @@ const SubFolder = ({
         )}
         {showModal && (
           <CreateFiles
+          folderfiles={subfolderFiles?.document?.files ?? []}
+          
             showModal={showModal}
             setShowModal={setShowModal}
             folderData={folderData}
