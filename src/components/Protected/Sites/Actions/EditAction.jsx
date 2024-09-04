@@ -27,7 +27,7 @@ import {
   TextField
 } from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
-import { get, put, putMultiPartFormData } from "../../../../api";
+import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken } from "../../../../api";
 import { getSiteAssets, setLoader, getSiteLayout } from "../../../../store/thunk/site";
 
 const EditAction = ({
@@ -59,18 +59,27 @@ const EditAction = ({
   const [assets, setassets] = useState([]);
   const [actionsPopup, setActionsPopup] = useState(false);
   const [formData, setFormData] = useState({});
+  const [sasToken, setSasToken] = useState();
+ 
 
   useEffect(() => {
+    getToken();
     getActionIdDetails();
     getManagerList();
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getSiteLayout(siteSelectedForGlobal?.siteId);
   }, []);
 
+  const getToken = async () => {
+    const token = await getSasToken();
+    setSasToken(token);
+  }
+
   const getManagerList = async () => {
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
     );
+    console.log('data?.users', data?.users);
     setManagerList(data?.users || []);
   };
 
@@ -93,6 +102,8 @@ const EditAction = ({
       actionDetail?.taggedAsset ? actionDetail?.taggedAsset?.split(",") : []
     );
   };
+
+  
   const [isLoading, setIsLoading] = useState(false);
   const submitPreActions = async (data) => {
     let form_data = new FormData();
@@ -132,6 +143,16 @@ const EditAction = ({
     const udata = {
       ...formData,
       [name]: value,
+    };
+    console.log(udata)
+    setFormData(udata);
+  };
+
+  const handleFileChange = (e) => {
+   
+    const udata = {
+      ...formData,
+      file: e.target.files[0],
     };
     setFormData(udata);
   };
@@ -188,46 +209,26 @@ const EditAction = ({
     return moment(date, "YYYY-MM-DD").format("DD/MM/YYYY");
   };
 
+
   const saveAction = async (event) => {
     event.preventDefault();
     const form = event.target;
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    setIsLoading(true);
-    const body = {
-      type: "ClientAction",
-      status: "Reported",
-      observation: formData.observation,
-      desc: `Client Action - ${moment(new Date()).format("DD/MM/YYYY")}`,
-      requiredAction: formData.requiredAction,
-      riskScore: Number(formData.likelihood) * Number(formData.consequence),
-      dueDate: new Date(),
-      siteId: siteSelectedForGlobal?.siteId,
-      userId: loggedInUserData?.id,
-    };
-    await put("/api/site/actions", body);
-
-    try {
-      const data = {
-        status: "Pending Action",
-        approverNotes: getValues("approverNotes"),
-      };
-      const res = await put(`api/action/${actionId}/approve`, data);
-
-      if (res?.status === 200) {
-        toast.success("Successfully approved the pre action.");
-        goTo("/pre-actions");
-      } else {
-        toast.error("Something went wrong while updating pre action.");
-      }
-      setIsLoading(false);
-    } catch (e) {
-      setIsLoading(false);
-      toast.error("Something went wrong while updating pre action.");
+    const data = { ...formData }
+    if (data?.file?.name) {
+      data.siteId = siteSelectedForGlobal?.siteId;
+      data.actionImage = await uploadSiteCheckDoc(data);
+      delete data.file;
     }
-    setActionsPopup(false);
+    toast.success("Action data saved")
+    await put("/api/site/actions", data);
+    goTo("/actions");
+    //getActionIdDetails();
+
   };
+
   return (
     <>
 
@@ -303,8 +304,16 @@ const EditAction = ({
                           <label htmlFor="assignedTo">Assign To</label>
                           <Autocomplete
                             id="assignedTo"
-                            value={managerList.filter(o => String(o.id) === String(formData?.assistantUserID)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
-
+                            value={
+                              managerList
+                                .map((option) => ({
+                                  key: option.id,
+                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                }))
+                                .find((option) => String(option.key) === String(formData?.assignedTo)) || null
+                            }
+                          //  value={managerList.filter(o => String(o.id) === String(formData?.assignedTo))
+                          //   .map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.assignedTo = item?.key;
@@ -442,15 +451,23 @@ const EditAction = ({
                         <div className="form-group mt-4">
                           <Autocomplete
                             multiple
-                            // onChange={(event, item) => {
-                            //   const uquest = [...quest]
-                            //   uquest[idx].response = {
-                            //     ...uquest[idx].response,
-                            //     assets: item.map(i => i.key).join(",")
-                            //   }
-                            //   setquest(uquest);
-                            // }}
-                            value={siteAssets.filter(s => formData?.taggedAssets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                            onChange={(event, item) => {
+                              const uformData = { ...formData }
+                              uformData.taggedAsset = item.map(i => i.key).join(",");
+                              setFormData(uformData);
+                            }}
+                            value={
+                              siteAssets
+                                .map((option) => ({
+                                  key: option.assetId, 
+                                  label: option.assetName + " - " + option.category
+                                }))
+                                .filter((option) => {
+                                  const taggedAsset = formData?.taggedAsset?.split(",");
+                                  return taggedAsset?.includes(String(option.key))
+                                }) || null
+                            }
+                            //value={siteAssets.filter(s => formData?.taggedAssets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
                             options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                             getOptionLabel={(option) => option.label}
@@ -473,8 +490,15 @@ const EditAction = ({
                           <label htmlFor="serviceProvider">Service Provider</label>
                           <Autocomplete
                             id="serviceProvider"
-                            value={managerList.filter(o => String(o.id) === String(formData?.serviceProvider)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
-
+                            //value={managerList.filter(o => String(o.id) === String(formData?.serviceProvider)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
+                            value={
+                              managerList
+                                .map((option) => ({
+                                  key: option.id,
+                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                }))
+                                .find((option) => String(option.key) === String(formData?.serviceProvider)) || null
+                            }
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.serviceProvider = item?.key;
@@ -502,8 +526,15 @@ const EditAction = ({
                           <label htmlFor="competentPersons">Competent Persons</label>
                           <Autocomplete
                             id="competentPersons"
-                            value={managerList.filter(o => String(o.id) === String(formData?.competentPersons)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
-
+                            //value={managerList.filter(o => String(o.id) === String(formData?.competentPersons)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
+                            value={
+                              managerList
+                                .map((option) => ({
+                                  key: option.id,
+                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                }))
+                                .find((option) => String(option.key) === String(formData?.competentPersons)) || null
+                            }
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.competentPersons = item?.key;
@@ -531,8 +562,15 @@ const EditAction = ({
                           <label htmlFor="stakeholder">Stakeholder</label>
                           <Autocomplete
                             id="stakeholder"
-                            value={managerList.filter(o => String(o.id) === String(formData?.stakeholder)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
-
+                            //value={managerList.filter(o => String(o.id) === String(formData?.stakeholder)).map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
+                            value={
+                              managerList
+                                .map((option) => ({
+                                  key: option.id,
+                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                }))
+                                .find((option) => String(option.key) === String(formData?.stakeholder)) || null
+                            }
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.stakeholder = item?.key;
@@ -574,9 +612,9 @@ const EditAction = ({
                     </div>
                   </div>
                   <div className="col-md-4">
-                    {values?.image && (
+                    {formData?.actionImage && (
                       <img
-                        src={values?.image}
+                        src={formData?.actionImage+ "?" + sasToken}
                         className="img img-responsive w-100"
                       />
                     )}
@@ -584,9 +622,12 @@ const EditAction = ({
                       className="uploading-outer"
                       style={{
                         backgroundColor: "#f1f5f9",
-
+                        display: formData?.actionImage
+                          ? "none"
+                          : "block",
                       }}
                     >
+                      
                       <div className="uploadPhotoButton text-center">
                         <FileUploadOutlinedIcon
                           style={{
@@ -602,12 +643,8 @@ const EditAction = ({
                           name="actionImage"
                           accept="image/*, application/pdf"
                           id="actionImage"
-                          {...register("actionImage", {
-                            required: {
-                              value: true,
-                              message: `Please select action image`,
-                            },
-                          })}
+                          onChange={(e) => handleFileChange(e)}
+                          
                         />
                         <label
                           htmlFor="actionImage"
@@ -622,12 +659,7 @@ const EditAction = ({
                           <br />
                           (max 800 * 800 px)
                         </p>
-                        {errors?.actionImage && (
-                          <InputError
-                            message={errors?.actionImage?.message}
-                            key={errors?.actionImage?.message}
-                          />
-                        )}
+                        
                       </div>
                     </div>
                   </div>
@@ -652,7 +684,7 @@ const EditAction = ({
                         </Button>
                         &nbsp;&nbsp;
                         <Button
-                          onClick={() => window.history.back()}
+                          onClick={(e) => saveAction(e)}
                           type="button"
                           className="bg-primary text-white"
                         >
