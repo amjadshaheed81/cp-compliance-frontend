@@ -104,14 +104,26 @@ const StatutoryRegister = ({
   const handleCheckboxField = async (e, item, idx) => {
     setIsChecked(e.target.checked);
     const isRequired = e.target.checked;
-    const status = "Open";
-    const expiryDate = item?.files[item?.files?.length - 1]?.expiryDate;
-    let isExpiryDateInFuture;
-    if (expiryDate) {
-      isExpiryDateInFuture = moment(expiryDate).isAfter(new Date());
-    }
-    if (isRequired && item?.type === "PDF" && isExpiryDateInFuture) {
-      status = "Passed";
+    let status = "Fail";
+    if (isRequired && item?.type === "PDF") {
+      if (item?.files?.length > 0) {
+        const isExpiryDateForAllRequired = [];
+        for (const element of item?.files) {
+          console.log("element?.expiryDate", element?.expiryDate);
+          if (moment(element?.expiryDate).isAfter(new Date())) {
+            isExpiryDateForAllRequired.push(true);
+          } else {
+            isExpiryDateForAllRequired.push(false);
+          }
+        }
+        if (isExpiryDateForAllRequired?.includes(false)) {
+          status = "Fail";
+        } else {
+          status = "Passed";
+        }
+      } else {
+        status = "Fail";
+      }
     } else if (item?.type === "Link") {
       const siteChecks = await get(
         "/api/site-check/site/" + siteSelectedForGlobal?.siteId
@@ -125,7 +137,9 @@ const StatutoryRegister = ({
           status = "Passed";
         }
       } else if (item?.subType === "PAT") {
-        if (item?.files?.length > 0) {
+        let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
+        const { assets } = await get(url);
+        if (item?.files?.length > 0 && assets?.length > 0) {
           const isExpiryDateForAllPAT = [];
           for (const element of item?.files) {
             if (moment(element?.expiryDate).isAfter(new Date())) {
@@ -135,10 +149,12 @@ const StatutoryRegister = ({
             }
           }
           if (isExpiryDateForAllPAT?.includes(false)) {
-            status = "Open";
+            status = "Fail";
           } else {
             status = "Passed";
           }
+        } else {
+          status = "Fail";
         }
       } else if (item?.subType === "Emergency light and Fire Alarm") {
         const isEmergencyAvailable = siteChecks?.filter(
@@ -154,7 +170,7 @@ const StatutoryRegister = ({
             }
           }
           if (isExpiryDateForAllEmergency?.includes(false)) {
-            status = "Open";
+            status = "Fail";
           } else {
             status = "Passed";
           }
@@ -173,7 +189,7 @@ const StatutoryRegister = ({
             }
           }
           if (isExpiryDateForAllWater?.includes(false)) {
-            status = "Open";
+            status = "Fail";
           } else {
             status = "Passed";
           }
