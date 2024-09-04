@@ -52,7 +52,7 @@ const CopyFolder = ({
         title: `Do you want to move ${selectedFileForCopy?.name} to ${folder?.name}`,
         showDenyButton: false,
         showCancelButton: true,
-        confirmButtonText: "Copy",
+        confirmButtonText: "Move",
       }).then(async (result) => {
         if (result.isConfirmed) {
           const url = `/api/document/file/${selectedFileForCopy?.id}/move/${folder?.id}`;
