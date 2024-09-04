@@ -160,8 +160,7 @@ const ManagerContractView = ({
         subCategory: data?.subCategory || "",
         contractorCompanyId: data?.company || "",
         status: currentContract?.status,
-        budget: data?.cost,
-        cost: data?.cost,
+        budget: data?.budget,
         startDate: `${data?.startDate} 10:00:00`,
         endDate: `${data?.endDate} 10:00:00`,
         projectManagerUserId: data?.manager ? Number(data?.manager) : null,
@@ -371,8 +370,7 @@ const ManagerContractView = ({
           ? Number(currentContract?.contractorCompanyId)
           : "",
         status: currentContract?.status,
-        budget: currentContract?.cost,
-        cost: currentContract?.cost,
+        budget: currentContract?.budget,
         startDate: `${
           currentContract?.startDate
             ? currentContract?.startDate?.split("T")?.[0]
@@ -452,8 +450,7 @@ const ManagerContractView = ({
           ? Number(currentContract?.contractorCompanyId)
           : "",
         status: currentContract?.status,
-        budget: currentContract?.cost,
-        cost: currentContract?.cost,
+        budget: currentContract?.budget,
         startDate: `${
           currentContract?.startDate
             ? currentContract?.startDate?.split("T")?.[0]
