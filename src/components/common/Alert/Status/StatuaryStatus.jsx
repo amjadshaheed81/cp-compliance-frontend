@@ -9,7 +9,7 @@ const StatuaryStatus = ({ status }) => {
           {status}
         </span>
       )}
-      {status?.toLowerCase() === "failed" && (
+      {(status?.toLowerCase() === "failed" || status?.toLowerCase() === "fail") && (
         <span className="badge rounded-pill text-danger text-capitalize">
           {status}
         </span>

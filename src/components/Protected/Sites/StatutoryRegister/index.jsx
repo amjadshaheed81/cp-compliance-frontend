@@ -105,11 +105,6 @@ const StatutoryRegister = ({
     setIsChecked(e.target.checked);
     const isRequired = e.target.checked;
     let status = "Fail";
-    const expiryDate = item?.files[item?.files?.length - 1]?.expiryDate;
-    let isExpiryDateInFuture;
-    if (expiryDate) {
-      isExpiryDateInFuture = moment(expiryDate).isAfter(new Date());
-    }
     if (isRequired && item?.type === "PDF") {
       if (item?.files?.length > 0) {
         const isExpiryDateForAllRequired = [];
@@ -126,8 +121,9 @@ const StatutoryRegister = ({
         } else {
           status = "Passed";
         }
+      } else {
+        status = "Fail";
       }
-      status = "Passed";
     } else if (item?.type === "Link") {
       const siteChecks = await get(
         "/api/site-check/site/" + siteSelectedForGlobal?.siteId
