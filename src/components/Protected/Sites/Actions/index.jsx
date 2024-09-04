@@ -258,18 +258,18 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                       />
                     </th>
                     <th scope="col">
-                      {/* <Tooltip title={`View ${action?.actionId}`} arrow>
+                      <Tooltip title={`Edit ${action?.actionId}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
                             goTo(
-                              `/pre-action-detail?id=${action?.actionId}&viewMode=viewOnly`
+                              `/action-detail?id=${action?.actionId}`
                             );
                           }}
                         >
                           <i className="fas fa-eye"></i>
                         </button>{" "}
-                      </Tooltip> */}
+                      </Tooltip>
                       {(loggedInUserData?.role === ROLE.ADMIN ||
                         loggedInUserData?.role === ROLE.MANAGER ||
                         loggedInUserData?.role === ROLE.SITE_ACTION_MANAGER ||

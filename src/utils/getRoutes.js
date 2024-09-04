@@ -29,6 +29,7 @@ import SiteChecks from "../components/Protected/Sites/SiteChecks";
 import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
+import EditAction from "../components/Protected/Sites/Actions/EditAction"
 import { ROLE } from "../Constant/Role";
 import StatutoryRegister from "../components/Protected/Sites/StatutoryRegister";
 import EnergyCost from "../components/Protected/Sites/EnergyCost";
@@ -198,6 +199,12 @@ export const getRoutes = () => {
       path: "/pre-action-detail",
       element: <ViewEditPreAction />,
     },
+
+    {
+      path: "/action-detail",
+      element: <EditAction />,
+    },
+    
     {
       path: "/site-calendar",
       element: <SiteCalendar />,

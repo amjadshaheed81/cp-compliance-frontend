@@ -35,21 +35,14 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
   }, []);
 
   const getTank = async () => {
-    // const questionsFromDB = await get("/api/site-check/assessment/questions/assessment-fire-risk")
-    // const questionsResponse = await get("/api/site-check/assessment/response/" + checkId)
-    // questionsFromDB.forEach(q => {
-    //   const resIdx = questionsResponse.findIndex(r => r.qid === q.qid);
-    //   if (resIdx >= 0) {
-    //     q.status = "Closed";
-    //     q.response = questionsResponse[resIdx]
-    //     q.completed = true
-    //   } else {
-    //     q.status = "Open";
-    //     q.response = {}
-    //     q.completed = false
-    //   }
-    // })
-    // setquest(questionsFromDB);
+    const tankres = await get("/api/site-check/tank/" + checkId)
+    const uquest = [...quest]
+    const t = tankres[0]
+    uquest.forEach((q,idx) => {
+      q.response = t["q"+idx+1];
+    })
+    setquest(uquest);
+    settank(t);
   }
 
 
@@ -110,7 +103,8 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
     quest.forEach((q,index) => {
       dataToSave["q"+(index+1)] = q.response;
     })
-    
+    dataToSave.checkId = checkId;
+    dataToSave.status = "Open";
     console.log('dataToSave', dataToSave, quest);
    
     // dataToSave.responseDate = new Date();
@@ -118,8 +112,8 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
     // dataToSave.qid = quest[index].qid;
     // dataToSave.status = "Closed";
     // dataToSave.totalRiskScore = Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0)
-    // await post("/api/site-check/assessment/response", dataToSave);
-    //await getTank();
+    await post("/api/site-check/tank", dataToSave);
+    await getTank();
     toast.success("Tank survey saved")
   }
 

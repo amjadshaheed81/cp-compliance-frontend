@@ -201,33 +201,7 @@ const AddPreActions = ({
                         </div>
                       </div>
 
-                      {/* <div className="col-md-6">
-                        <div className="form-group mt-2">
-                          <label for="status">Status</label>
-                          <select
-                            name="status"
-                            className="form-control form-select"
-                            id="status"
-                            {...register("status", {
-                              required: {
-                                value: true,
-                                message: `Please select room`,
-                              },
-                            })}
-                          >
-                            <option value="" selected disabled>
-                              Select Status
-                            </option>
-                            <option value="New">New</option>
-                          </select>
-                          {errors?.status && (
-                            <InputError
-                              message={errors?.status?.message}
-                              key={errors?.status?.message}
-                            />
-                          )}
-                        </div>
-                      </div> */}
+                     
 
                       <div className="col-md-12">
                         <div className="form-group mt-2 w-50">
@@ -236,7 +210,6 @@ const AddPreActions = ({
                             id="fixed-tags-demo"
                             value={value}
                             onChange={(event, newValue) => {
-                              console.log("newValue", newValue);
                               setValue([
                                 ...newValue
                               ]);
