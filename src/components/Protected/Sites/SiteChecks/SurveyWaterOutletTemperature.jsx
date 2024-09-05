@@ -643,7 +643,7 @@ const SurveyWaterOutletTemperature = ({
                         )
                         ?.map((i) => (
                           <tr>
-                            <td>{dateFormat(i?.r1Date?.split("T")?.[0])}</td>
+                            <td>{i?.r1Date ? dateFormat(i?.r1Date?.split("T")?.[0]) : ''}</td>
                             <td
                               style={{
                                 color:
