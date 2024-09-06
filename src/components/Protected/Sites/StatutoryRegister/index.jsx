@@ -102,106 +102,71 @@ const StatutoryRegister = ({
       : "";
   };
   const handleCheckboxField = async (e, item, idx) => {
-    setIsChecked(e.target.checked);
-    const isRequired = e.target.checked;
-    let status = "Fail";
-    if (isRequired && item?.type === "PDF") {
+    const isChecked = e.target.checked; // Directly using checked value
+    setIsChecked(isChecked); // Update local state, if used for other purposes
+    let status = "Fail"; // Default status
+
+    // Checking conditions based on item type and subType
+    if (isChecked && item?.type === "PDF") {
       if (item?.files?.length > 0) {
-        const isExpiryDateForAllRequired = [];
-        for (const element of item?.files) {
-          console.log("element?.expiryDate", element?.expiryDate);
-          if (moment(element?.expiryDate).isAfter(new Date())) {
-            isExpiryDateForAllRequired.push(true);
-          } else {
-            isExpiryDateForAllRequired.push(false);
-          }
-        }
-        if (isExpiryDateForAllRequired?.includes(false)) {
-          status = "Fail";
-        } else {
-          status = "Passed";
-        }
-      } else {
-        status = "Fail";
+        const isExpiryDateValid = item.files.every((file) =>
+          moment(file.expiryDate).isAfter(new Date())
+        );
+        status = isExpiryDateValid ? "Passed" : "Fail";
       }
     } else if (item?.type === "Link") {
-      const siteChecks = await get(
-        "/api/site-check/site/" + siteSelectedForGlobal?.siteId
-      );
-      // a) Asbestos - if there is any record, pass it otherwise fail it.
-      if (item?.subType === "Asbestos") {
-        const isAsbsetosRecordAvailable = siteChecks?.filter(
-          (itm) => itm?.subType === "Asbestos"
+      try {
+        const siteChecks = await get(
+          `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
         );
-        if (isAsbsetosRecordAvailable?.length > 0) {
-          status = "Passed";
+        
+        // Asbestos Check
+        if (item?.subType === "Asbestos") {
+          const isAsbestosRecordAvailable = siteChecks.some(
+            (itm) => itm?.subType === "Asbestos"
+          );
+          status = isAsbestosRecordAvailable ? "Passed" : "Fail";
         }
-      } else if (item?.subType === "PAT") {
-        let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
-        const { assets } = await get(url);
-        if (item?.files?.length > 0 && assets?.length > 0) {
-          const isExpiryDateForAllPAT = [];
-          for (const element of item?.files) {
-            if (moment(element?.expiryDate).isAfter(new Date())) {
-              isExpiryDateForAllPAT.push(true);
-            } else {
-              isExpiryDateForAllPAT.push(false);
-            }
-          }
-          if (isExpiryDateForAllPAT?.includes(false)) {
-            status = "Fail";
-          } else {
-            status = "Passed";
-          }
-        } else {
-          status = "Fail";
+        
+        // PAT Check
+        else if (item?.subType === "PAT") {
+          const { assets } = await get(
+            `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`
+          );
+          const isExpiryDateValid = item?.files?.every((file) =>
+            moment(file.expiryDate).isAfter(new Date())
+          );
+          status = item?.files?.length > 0 && assets?.length > 0 && isExpiryDateValid ? "Passed" : "Fail";
         }
-      } else if (item?.subType === "Emergency light and Fire Alarm") {
-        const isEmergencyAvailable = siteChecks?.filter(
-          (itm) => itm?.type === "Audit"
-        );
-        if (isEmergencyAvailable?.length > 0) {
-          const isExpiryDateForAllEmergency = [];
-          for (const element of isEmergencyAvailable) {
-            if (moment(element?.dueDate).isAfter(new Date())) {
-              isExpiryDateForAllEmergency.push(true);
-            } else {
-              isExpiryDateForAllEmergency.push(false);
-            }
-          }
-          if (isExpiryDateForAllEmergency?.includes(false)) {
-            status = "Fail";
-          } else {
-            status = "Passed";
-          }
+        
+        // Emergency Check
+        else if (item?.subType === "Emergency light and Fire Alarm") {
+          const isEmergencyAvailable = siteChecks.some(
+            (itm) => itm?.type === "Audit" && moment(itm?.dueDate).isAfter(new Date())
+          );
+          status = isEmergencyAvailable ? "Passed" : "Fail";
         }
-      } else if (item?.subType === "Water Risk Assessment/Water Temperature") {
-        const isWaterAvailable = siteChecks?.filter(
-          (itm) => itm?.subType === "Water"
-        );
-        if (isWaterAvailable?.length > 0) {
-          const isExpiryDateForAllWater = [];
-          for (const element of isWaterAvailable) {
-            if (moment(element?.dueDate).isAfter(new Date())) {
-              isExpiryDateForAllWater.push(true);
-            } else {
-              isExpiryDateForAllWater.push(false);
-            }
-          }
-          if (isExpiryDateForAllWater?.includes(false)) {
-            status = "Fail";
-          } else {
-            status = "Passed";
-          }
+        
+        // Water Risk Assessment Check
+        else if (item?.subType === "Water Risk Assessment/Water Temperature") {
+          const isWaterAvailable = siteChecks.some(
+            (itm) => itm?.subType === "Water" && moment(itm?.dueDate).isAfter(new Date())
+          );
+          status = isWaterAvailable ? "Passed" : "Fail";
         }
+
+      } catch (error) {
+        console.error("Error fetching site data:", error);
       }
     }
-    console.log("e.target.checked", e.target.checked);
+
+    // Update payload and possibly update state/props
     const payload = {
       ...item,
       status: status,
-      required: e.target.checked,
+      required: isChecked,
     };
+  console.log("Checkbox checked state:", isChecked);
     const res = await put("/api/document/statutoryRegister/manage", payload);
     if (res?.status === 200) {
       getStatutory(siteSelectedForGlobal?.siteId);
