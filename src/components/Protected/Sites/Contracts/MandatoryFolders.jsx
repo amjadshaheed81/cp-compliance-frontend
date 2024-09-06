@@ -19,6 +19,7 @@ const MandatoryFolders = ({
   selectedMandatoryFolder,
   setSelectedMandatoryFolder,
   siteSelectedForGlobal,
+  isStatutory,
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
   const [filteredFolders, setFilteredFolders] = useState([]);
@@ -46,11 +47,22 @@ const MandatoryFolders = ({
   };
 
   const handleAddFolder = (folder) => {
-    const isFolderAlreadySelected = selectedMandatoryFolder?.filter(itm => itm?.id === folder?.id);
-    if(isFolderAlreadySelected?.length > 0) {
-      toast.warn(`${folder?.name} is already selected`);
-    } else{
-      setSelectedMandatoryFolder((prev) => [...prev, folder]);
+    if(isStatutory) {
+      if(selectedMandatoryFolder?.length > 0) {
+        toast.warn("You can select only one folder to upload file for statutory.")
+      } else {
+        setSelectedMandatoryFolder([
+          ...selectedMandatoryFolder,
+          folder,
+        ]);
+      }
+    } else {
+      const isFolderAlreadySelected = selectedMandatoryFolder?.filter(itm => itm?.id === folder?.id);
+      if(isFolderAlreadySelected?.length > 0) {
+        toast.warn(`${folder?.name} is already selected`);
+      } else{
+        setSelectedMandatoryFolder((prev) => [...prev, folder]);
+      }
     }
   };
   const checkSubFolder = async (folderId) => {
@@ -67,7 +79,7 @@ const MandatoryFolders = ({
   return (
     <>
       <div className="row mb-2" style={{ height: "auto" }}>
-        <div className="col-md-3 mt-4">
+        <div className={isStatutory ? "col-md-12 mt-4" : "col-md-3 mt-4"}>
           <Button
             className="btn btn-sm btn-light text-primary w-100"
             onClick={handleFolderOpen}

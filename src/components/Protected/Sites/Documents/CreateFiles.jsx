@@ -16,7 +16,7 @@ import { post, put, uploadPhoto, uploadNewVersion } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import { InputError } from "../../../common/InputError";
-import MandatoryFolders from "../Projects/MandatoryFolders";
+import MandatoryFolders from "../Contracts/MandatoryFolders";
 
 const CreateFiles = ({
   showModal,
