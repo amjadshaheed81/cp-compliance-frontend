@@ -20,6 +20,7 @@ import { toast } from "react-toastify";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
+import { calculateLastPageIndex } from "../../../utils/calculateSearchedPageNumber";
 
 const Sites = ({
   filterSite,
@@ -96,6 +97,7 @@ const Sites = ({
             .toLowerCase()
             .includes(String(value).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
       setFilterSite(list);
     } else {
       setFilterSite(sites);
