@@ -16,6 +16,7 @@ import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
+import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const PassiveFireProtection = ({
   sitePFPItems,
@@ -134,6 +135,7 @@ const PassiveFireProtection = ({
             .toLowerCase()
             .includes(String(room).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
       setfilteredSitePFPItems(list);
     } else {
       setfilteredSitePFPItems(siteAssetsList);

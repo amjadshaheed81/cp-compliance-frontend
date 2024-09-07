@@ -14,6 +14,7 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
+import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Summary = ({
   siteAssets,
@@ -151,6 +152,7 @@ const Summary = ({
             .toLowerCase()
             .includes(String(room).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
       setFilteredSiteAssets(list);
     } else {
       setFilteredSiteAssets(siteAssetsList);

@@ -16,6 +16,7 @@ import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
+import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Door = ({
   siteDoorItems,
@@ -141,6 +142,7 @@ const Door = ({
             .toLowerCase()
             .includes(String(room).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
       setFilteredSiteDoorItems(list);
     } else {
       setFilteredSiteDoorItems(siteAssetsList);
