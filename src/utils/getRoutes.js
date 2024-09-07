@@ -36,6 +36,7 @@ import EnergyCost from "../components/Protected/Sites/EnergyCost";
 import ViewAsset from "../components/Protected/Sites/Assets/ViewAsset";
 import EditProfile from "../components/Protected/Users/EditProfile";
 import Notifications from "../components/Protected/Notifications";
+import Reports from "../components/Protected/Reports";
 
 export const getRoutes = () => {
   const tabs = [
@@ -216,6 +217,10 @@ export const getRoutes = () => {
     {
       path: "/notifications",
       element: <Notifications />,
+    },
+    {
+      path: "/reports",
+      element: <Reports />,
     },
   ];
 };
