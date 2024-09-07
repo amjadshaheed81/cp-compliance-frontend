@@ -72,10 +72,20 @@ const VersionHistory = ({
     await put("/api/user/calendar", body);
   };
   const handleVersionSubmit = async (formData) => {
-    console.log("formData", formData);
+
+       
+    
     try {
+      const oldfileExtension = fileVerions?.[0]?.name?.split(".")?.pop();
+      
+      const fileExtension = formData?.fileUpload?.[0]?.name?.split(".")?.pop();
+      if(oldfileExtension  !== fileExtension) {
+        toast.error(
+          "Please select a file with same file extension : "+ oldfileExtension
+        );
+        return;
+      }
       setIsLoading(true);
-      const fileExtension = formData?.fileUpload?.[0]?.name?.split(".")?.[1];
       const data = {
         folderId: fileVerions?.[0]?.folderId,
         files: [
