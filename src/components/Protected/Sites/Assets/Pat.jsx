@@ -18,6 +18,7 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 import { getPatTestedEndDate, getPatTestedStartDate } from "../../../../utils/getPatTestedDate";
+import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Pat = ({
   sitePATItems,
@@ -139,6 +140,7 @@ const Pat = ({
               .toLowerCase()
               .includes(String(room).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
       setFilteredSitePATItems(list);
     } else {
       setFilteredSitePATItems(siteAssetsList);

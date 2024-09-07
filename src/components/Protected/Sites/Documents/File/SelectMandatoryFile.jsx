@@ -9,20 +9,21 @@ import {
   DialogTitle,
 } from "@mui/material";
 import { connect } from "react-redux";
-import { getDocumentsRootFolder } from "../../../../store/thunk/site";
+import { getDocumentsRootFolder } from "../../../../../store/thunk/site";
 import { toast } from "react-toastify";
-import { get } from "../../../../api";
+import { get } from "../../../../../api";
 
-const MandatoryFolders = ({
+const MandatoryFile = ({
   getDocumentsRootFolder,
   rootFolder,
-  selectedMandatoryFolder,
-  setSelectedMandatoryFolder,
+  selectedMandatoryFile,
+  setSelectedMandatoryFile,
   siteSelectedForGlobal,
   isStatutory,
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
   const [filteredFolders, setFilteredFolders] = useState([]);
+  const [files, setFiles] = useState([]);
   useEffect(() => {
     setFilteredFolders(rootFolder?.parentFolders || []);
   }, [rootFolder]);
@@ -41,32 +42,35 @@ const MandatoryFolders = ({
   };
 
   const handleRemoveFolder = (id) => {
-    setSelectedMandatoryFolder((prev) =>
+    setSelectedMandatoryFile((prev) =>
       prev.filter((folder) => folder.id !== id)
     );
   };
 
   const handleAddFolder = (folder) => {
     if(isStatutory) {
-      if(selectedMandatoryFolder?.length > 0) {
-        toast.warn("You can select only one folder to upload file for statutory.")
+      if(selectedMandatoryFile?.length > 0) {
+        toast.warn("You can select only one file to upload file for statutory.")
       } else {
-        setSelectedMandatoryFolder([
-          ...selectedMandatoryFolder,
+        setSelectedMandatoryFile([
+          ...selectedMandatoryFile,
           folder,
         ]);
       }
     } else {
-      const isFolderAlreadySelected = selectedMandatoryFolder?.filter(itm => itm?.id === folder?.id);
+      const isFolderAlreadySelected = selectedMandatoryFile?.filter(itm => itm?.id === folder?.id);
       if(isFolderAlreadySelected?.length > 0) {
         toast.warn(`${folder?.name} is already selected`);
       } else{
-        setSelectedMandatoryFolder((prev) => [...prev, folder]);
+        setSelectedMandatoryFile((prev) => [...prev, folder]);
       }
     }
   };
   const checkSubFolder = async (folderId) => {
     const res = await get(`/api/document/parent/${folderId}/folders`);
+    if (res?.document?.files?.length > 0){
+        setFiles(res?.document?.files);
+    }
     if(res?.document?.childFolders?.length > 0) {
       setFilteredFolders(res?.document?.childFolders || []);
     } else {
@@ -75,6 +79,7 @@ const MandatoryFolders = ({
   };
   const goToRootFolder = () => {
     setFilteredFolders(rootFolder?.parentFolders || []);
+    setFiles([]);
   }
   return (
     <>
@@ -85,11 +90,11 @@ const MandatoryFolders = ({
             onClick={handleFolderOpen}
             style={{fontSize: '12px'}}
           >
-            <i className="fas fa-plus"></i>&nbsp; Select Folder
+            <i className="fas fa-plus"></i>&nbsp; Select File
           </Button>
         </div>
         <div className="mt-2">
-          {selectedMandatoryFolder?.map((folder) => (
+          {selectedMandatoryFile?.map((folder) => (
             <Fragment>
               <Chip
                 key={folder.id}
@@ -108,7 +113,7 @@ const MandatoryFolders = ({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Select Mandatory Folders</DialogTitle>
+        <DialogTitle>Select Mandatory File</DialogTitle>
         <DialogContent>
           <form className="row border-top">
             <div className="col-md-12 p-2 border-top">
@@ -142,9 +147,22 @@ const MandatoryFolders = ({
                         <span className="p-3 text-primary cursor" onClick={() => checkSubFolder(folder.id)}>{folder.name}</span>
                       </td>
                       <td>
+                      </td>
+                    </tr>
+                  ))}
+                  {files?.map((file) => (
+                    <tr key={file.id}>
+                      <td>
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-file fa-2x"
+                        ></i>&nbsp;
+                        {file.name}
+                      </td>
+                      <td>
                         <span
                           className="text-primary cursor"
-                          onClick={() => handleAddFolder(folder)}
+                          onClick={() => handleAddFolder(file)}
                         >
                           <i className="fas fa-plus" size="sm"></i>
                         </span>
@@ -155,7 +173,7 @@ const MandatoryFolders = ({
               </table>
             </div>
             <div>
-              {selectedMandatoryFolder?.map((folder) => (
+              {selectedMandatoryFile?.map((folder) => (
                 <span>
                   <Chip
                     key={folder.id}
@@ -185,5 +203,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default connect(mapStateToProps, { getDocumentsRootFolder })(
-  MandatoryFolders
+  MandatoryFile
 );

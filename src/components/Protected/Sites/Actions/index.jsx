@@ -15,6 +15,8 @@ import { get, put } from "../../../../api";
 import { deletePreAction } from "../../../../store/thunk/preActions";
 import { ROLE } from "../../../../Constant/Role";
 import { Chip } from "@mui/material";
+import { sortCompletedLast } from "../../../../utils/sortCompletedLast ";
+import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) => {
   const [filteredActions, setFilteredActions] = useState([]);
@@ -52,8 +54,8 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
     const res = await get(
       `api/site/actions/${siteSelectedForGlobal?.siteId}`
     );
-    setFilteredActions(res || []);
-    setActions(res || []);
+    setFilteredActions(sortCompletedLast(res) || []);
+    setActions(sortCompletedLast(res) || []);
   };
   const [formData, setFormData] = useState({
     searchField: "",
@@ -90,7 +92,8 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
             .includes(String(searchField).toLowerCase())) &&
           String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
-      setFilteredActions(list);
+      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
+      setFilteredActions(sortCompletedLast(list));
     } else {
       setFilteredActions(preActions);
     }

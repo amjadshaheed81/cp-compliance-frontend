@@ -23,6 +23,7 @@ import ContractorContractView from "./ContractorContractView";
 import Swal from "sweetalert2";
 import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Contracts = ({
   loggedInUserData,
@@ -149,6 +150,7 @@ const Contracts = ({
             .includes(String(subCategory).toLowerCase()) &&
           String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, contractsPerPage));
       setFilteredContractList(list);
     } else {
       setFilteredContractList(contractList);
