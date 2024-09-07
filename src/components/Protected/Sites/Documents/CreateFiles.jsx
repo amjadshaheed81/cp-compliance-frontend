@@ -245,7 +245,7 @@ const CreateFiles = ({
                 })
               }
               const fileExtension =
-                formData.fileUpload[0].name?.split(".")?.[1];
+                formData.fileUpload[0].name?.split(".")?.pop();
               data.files[0].name =
                 formData?.name?.length > 0
                   ? `${formData?.name}.${fileExtension}`
