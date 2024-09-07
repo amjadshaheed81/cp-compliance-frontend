@@ -425,7 +425,7 @@ const StatutoryRegister = ({
                                         setSelectedPdf(itm?.fileBlobUrl);
                                       }}
                                     >
-                                      {itm.name}
+                                      {itm.name === "undefined" ? "--" : itm.name}
                                     </button>
                                   </th>
                                   {/* <th scope="col">{itm.name}</th> */}
