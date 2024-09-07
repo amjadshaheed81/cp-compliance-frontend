@@ -133,10 +133,10 @@ const CreateAsset = ({
     setLoader(true);
     console.log("data", data);
     let form_data = new FormData();
-    if (data?.assetImage) {
+    if (data?.assetImage?.length > 0) {
       form_data.append("assetImage", data?.assetImage?.[0], data?.assetName);
     } else {
-      form_data.append("assetImage", "", "");
+      // form_data.append("assetImage", "", "");
     }
     try {
       const { assetImage, ...formData } = data;
@@ -342,19 +342,8 @@ const CreateAsset = ({
                         <input
                           type="file"
                           className="form-control"
-                          {...register("assetImage", {
-                            required: {
-                              value: true,
-                              message: `Please select asset image.`,
-                            },
-                          })}
+                          {...register("assetImage")}
                         />
-                        {errors?.assetImage && (
-                          <InputError
-                            message={errors?.assetImage?.message}
-                            key={errors?.assetImage?.message}
-                          />
-                        )}
                       </div>
                     </div>
                   </div>
