@@ -290,7 +290,7 @@ const StatutoryRegister = ({
                         {item.requirement}
                         <div
                           style={{
-                            display: item?.type === "Link" ? "" : "none",
+                            display: String(item?.type).toLowerCase() === "link" ? "" : "none",
                           }}
                         >
                           <a
