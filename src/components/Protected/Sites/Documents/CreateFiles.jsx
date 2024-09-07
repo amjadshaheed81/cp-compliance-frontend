@@ -165,12 +165,14 @@ const CreateFiles = ({
               let folderIdForUpload = folderData?.id;
               console.log("folderData?.id", folderData?.id);
               if (isStatutory) {
-                if (selectedMandatoryFolder?.length > 0) {
-                  folderIdForUpload = selectedMandatoryFolder[0].id;
-                } else {
+                if (selectedMandatoryFolder?.length === 0 && selectedMandatoryFile?.length === 0) {
                   setIsLoading(false);
                   toast.warn("Please select folder to Upload file in Statuary");
                   return;
+                } else {
+                  if (selectedMandatoryFolder?.length > 0) {
+                    folderIdForUpload = selectedMandatoryFolder[0].id;
+                  }
                 }
               }
               const data = {
@@ -378,7 +380,7 @@ const CreateFiles = ({
               </Grid>
             </Grid>
             <Grid sm={4}>
-              <div style={{ backgroundColor: "#f1f5f9", margin: "10px" }}>
+              <div style={{ backgroundColor: "#f1f5f9", margin: "10px", display: selectedMandatoryFile?.length > 0 ? 'none' : '' }}>
                 <div className="uploadPhotoButton">
                   <FileUploadOutlinedIcon
                     style={{

@@ -112,6 +112,7 @@ const StatutoryRegister = ({
         const isExpiryDateValid = item.files.every((file) =>
           moment(file.expiryDate).isAfter(new Date())
         );
+        console.log("isExpiryDateValid",isExpiryDateValid);
         status = isExpiryDateValid ? "Passed" : "Fail";
       }
     } else if (item?.type === "Link") {
