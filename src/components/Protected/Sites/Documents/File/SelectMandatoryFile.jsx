@@ -71,11 +71,7 @@ const MandatoryFile = ({
     if (res?.document?.files?.length > 0){
         setFiles(res?.document?.files);
     }
-    if(res?.document?.childFolders?.length > 0) {
-      setFilteredFolders(res?.document?.childFolders || []);
-    } else {
-      toast.warn("There is no sub folders available for selected parent folder.")
-    }
+    setFilteredFolders(res?.document?.childFolders || []);
   };
   const goToRootFolder = () => {
     setFilteredFolders(rootFolder?.parentFolders || []);
@@ -134,7 +130,7 @@ const MandatoryFile = ({
                 <tbody>
                   {
                     filteredFolders?.length === 0 && <tr>
-                      <td colSpan={2}>No Result Found</td>
+                      <td colSpan={2}>No Sub Folder's Found</td>
                     </tr>
                   }
                   {filteredFolders?.map((folder) => (
@@ -144,7 +140,10 @@ const MandatoryFile = ({
                           style={{ color: "#384BD3" }}
                           className="fas fa-folder fa-2x"
                         ></i>
-                        <span className="p-3 text-primary cursor" onClick={() => checkSubFolder(folder.id)}>{folder.name}</span>
+                        <span className="p-3 text-primary cursor" onClick={() => {
+                          setFiles([]);
+                          checkSubFolder(folder.id)
+                          }}>{folder.name}</span>
                       </td>
                       <td>
                       </td>
