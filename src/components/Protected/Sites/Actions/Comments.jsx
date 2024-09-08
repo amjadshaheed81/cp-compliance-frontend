@@ -10,7 +10,7 @@ import {
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken } from "../../../../api";
 
-const EditAction = ({
+const Comments = ({
   actionId,
   loggedInUserData,
   siteSelectedForGlobal,
@@ -154,4 +154,4 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 
-export default connect(mapStateToProps, {})(EditAction);
+export default connect(mapStateToProps, {})(Comments);
