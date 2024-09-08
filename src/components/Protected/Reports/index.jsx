@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { connect } from "react-redux";
 import {
   addUser,
@@ -17,6 +17,8 @@ import Box from "@mui/material/Box";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import MessageSharp from "@mui/icons-material/MessageSharp";
+import Sites from "./Portfolio/Sites";
+import SiteCharts from "./Portfolio/SiteCharts";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -52,7 +54,13 @@ function a11yProps(index) {
 }
 
 const Reports = ({}) => {
-  const [value, setValue] = React.useState(0);
+  const [value, setValue] = useState(0);
+  const [siteChart, setSiteChart] = useState({
+    totalSites: 0,
+    openSites: 0,
+    soldSites: 0,
+    closedSites: 0,
+  });
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -99,9 +107,8 @@ const Reports = ({}) => {
               />
             </Tabs>
             <TabPanel value={value} index={0}>
-              <div className="row">
-                <div className="col-md-12">Portfolio</div>
-              </div>
+              <SiteCharts siteChart={siteChart}/>
+              <Sites setSiteChart={setSiteChart}/>
             </TabPanel>
             <TabPanel value={value} index={1}>
             <div className="row">
