@@ -68,7 +68,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
 
   const getSiteChecks = async () => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
-    if (siteCheck.type === "Inspection" && siteCheck.subType === "Electrical") {
+    if (siteCheck.type === "Inspection") {
       setStep("inspection-electrical")
     } else if (siteCheck.type === "Assessment" && siteCheck.subType === "Fire Risk") {
       setStep("assessment-fire-risk")

@@ -229,6 +229,34 @@ const EditAction = ({
 
   };
 
+  const getTimeRemaining = (creationDate, riskScore) => {
+
+    const data = riskScore > 15
+    ? {badgeColor : "danger", days : 5}
+    : riskScore > 9
+      ? {badgeColor : "warning", days : 30}
+      : riskScore > 4
+        ? {badgeColor : "info", days : 90}
+        : {badgeColor : "success", days : 365}
+    const dueDate = new Date(creationDate);
+    dueDate.setDate(dueDate.getDate() + data.days);
+    const today = new Date();
+    const timeRemaining = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+    const status = timeRemaining < 0 ? `${timeRemaining * -1} Days Overdue` : `${timeRemaining} days remaining`;
+  
+   
+  
+    // Return the UI component
+    return (
+      <span
+        style={{ width: '150px' }}
+        className={`badge bg-${data.badgeColor} p-2 m-1 risk-span`}
+      >
+        {status}
+      </span>
+    );
+  };
+
   return (
     <>
 
@@ -249,7 +277,7 @@ const EditAction = ({
                   <div className="col-md-8">
                     <div className="row">
 
-                      <div className="col-md-4">
+                      <div className="col-md-2">
                         <label for="actionId">Action Id</label>
                         <input
                           disabled
@@ -260,11 +288,22 @@ const EditAction = ({
                         />
                       </div>
 
+                      <div className="col-md-3">
+                        <label for="actionId">Date Created</label>
+                        <input
+                          disabled
+                          name="actionId"
+                          className="form-control"
+                          id="actionId"
+                          value={dateFormat(formData?.createdAt ? formData?.createdAt : formData?.dueDate)}
+                        />
+                      </div>
+
                       <div className="col-md-2">
                         <label for="actionId">Risk Score</label>
                         <br />
                         <span
-                          style={{ width: '100px' }}
+                          style={{ width: '60px' }}
                           className={`badge bg-${formData?.riskScore > 15
                             ? "danger"
                             : formData?.riskScore > 9
@@ -281,71 +320,77 @@ const EditAction = ({
                       <div className="col-md-2">
                         <label for="actionId">Status</label>
                         <br />
-                        <Chip
-                          label={formData?.status}
-                          color={
-                            formData?.status === "Completed" ? "success" : "warning"
-                          }
-                        />
+                        <span
+                          style={{ width: '100px' }}
+                          className={`badge bg-${formData?.status === "Completed" ? "success" : "warning"
+                            } p-2 m-1 risk-span`}
+                        >
+                          {formData?.status}
+                        </span>
+                       
                       </div>
-                      <div className="col-md-4">
-                        <label for="actionId">Date</label>
+                      {/* <div className="col-md-3">
+                        <label for="actionId">Date Created</label>
                         <input
                           disabled
                           name="actionId"
                           className="form-control"
                           id="actionId"
-                          value={formData?.dueDate}
+                          value={dateFormat(formData?.createdAt ? formData?.createdAt : formData?.dueDate)}
                         />
+                      </div> */}
+
+                      <div className="col-md-3">
+                        <label for="actionId">Time Remaning</label>
+                        {getTimeRemaining(formData?.createdAt ? formData?.createdAt : formData?.dueDate, formData?.riskScore)}
                       </div>
 
-                      <div className="col-md-6">
-                        <div className="form-group mt-2">
-                          <label htmlFor="assignedTo">Assign To</label>
-                          <Autocomplete
-                            id="assignedTo"
-                            value={
-                              managerList
-                                .map((option) => ({
-                                  key: option.id,
-                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
-                                }))
-                                .find((option) => String(option.key) === String(formData?.assignedTo)) || null
-                            }
-                          //  value={managerList.filter(o => String(o.id) === String(formData?.assignedTo))
-                          //   .map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
-                            onChange={(event, item) => {
-                              const uformData = { ...formData }
-                              uformData.assignedTo = item?.key;
-                              setFormData(uformData);
-                            }}
-                            options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
-                            getOptionLabel={(option) => option.label}
-                            renderInput={(params) => (
-                              <div ref={params.InputProps.ref} >
-                                <input type="text"
-                                  {...params.inputProps}
-                                  required
-                                  className="form-control"
-                                  placeholder="Select User"
-                                />
-                              </div>
-                            )}
-                          />
+                      
 
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
+                      <div className="col-md-12">
                         <div className="form-group mt-2">
                           <label for="desc">Inspection Name</label>
                           <input
+                          disabled
                             name="desc"
                             className="form-control"
                             id="desc"
                             value={formData?.desc}
                             onChange={handleInputChange}
                           />
+                        </div>
+                      </div>
+
+                      <div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label for="observation">Observation</label>
+                          <textarea
+                          disabled
+                            name="observation"
+                            id="observation"
+                            value={formData?.observation}
+                            onChange={handleInputChange}
+
+                            className="form-control form-text"
+                          //placeholder="Enter Notes..."
+
+                          ></textarea>
+                        </div>
+                      </div>
+
+                      <div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label for="requiredAction">Required Actions</label>
+                          <textarea
+                          disabled
+                            name="requiredAction"
+                            id="requiredAction"
+                            value={formData?.requiredAction}
+                            onChange={handleInputChange}
+
+                            className="form-control form-text"
+
+                          ></textarea>
                         </div>
                       </div>
 
@@ -412,36 +457,7 @@ const EditAction = ({
                         </div>
                       </div>
 
-                      <div className="col-md-6">
-                        <div className="form-group mt-2">
-                          <label for="observation">Observation</label>
-                          <textarea
-                            name="observation"
-                            id="observation"
-                            value={formData?.observation}
-                            onChange={handleInputChange}
-
-                            className="form-control form-text"
-                          //placeholder="Enter Notes..."
-
-                          ></textarea>
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
-                        <div className="form-group mt-2">
-                          <label for="requiredAction">Required Actions</label>
-                          <textarea
-                            name="requiredAction"
-                            id="requiredAction"
-                            value={formData?.requiredAction}
-                            onChange={handleInputChange}
-
-                            className="form-control form-text"
-
-                          ></textarea>
-                        </div>
-                      </div>
+                     
 
 
 
@@ -485,7 +501,7 @@ const EditAction = ({
                         </div>
                       </div>
 
-                      <div className="col-md-6">
+                      {/* <div className="col-md-6">
                         <div className="form-group mt-2">
                           <label htmlFor="serviceProvider">Service Provider</label>
                           <Autocomplete
@@ -538,6 +554,43 @@ const EditAction = ({
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.competentPersons = item?.key;
+                              setFormData(uformData);
+                            }}
+                            options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref} >
+                                <input type="text"
+                                  {...params.inputProps}
+                                  required
+                                  className="form-control"
+                                  placeholder="Select User"
+                                />
+                              </div>
+                            )}
+                          />
+
+                        </div>
+                      </div> */}
+
+<div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label htmlFor="assignedTo">Assign To</label>
+                          <Autocomplete
+                            id="assignedTo"
+                            value={
+                              managerList
+                                .map((option) => ({
+                                  key: option.id,
+                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                }))
+                                .find((option) => String(option.key) === String(formData?.assignedTo)) || null
+                            }
+                          //  value={managerList.filter(o => String(o.id) === String(formData?.assignedTo))
+                          //   .map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })[0]}
+                            onChange={(event, item) => {
+                              const uformData = { ...formData }
+                              uformData.assignedTo = item?.key;
                               setFormData(uformData);
                             }}
                             options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}

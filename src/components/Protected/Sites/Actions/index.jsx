@@ -261,7 +261,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                       />
                     </th>
                     <th scope="col">
-                      <Tooltip title={`Edit ${action?.actionId}`} arrow>
+                      <Tooltip title={`View/Edit`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
