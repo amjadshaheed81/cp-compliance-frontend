@@ -13,6 +13,7 @@ import siteDummy from "../../../../images/site-dummy.png";
 import { useForm } from "react-hook-form";
 import { InputError } from "../../../common/InputError";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import Comments from "./Comments";
 import {
   Box,
   Button,
@@ -646,16 +647,19 @@ const EditAction = ({
                         </div>
                       </div>
 
-                      <div className="col-md-6">
+                      <div className="col-md-12">
                         <div className="form-group mt-2">
-                          <label for="comments">Comments</label>
+                          <br />
+                          <h5>Comments </h5>
+                          <Comments actionId={actionId}/>
+                          {/* <label for="comments">Comments</label>
                           <textarea
                             name="comments"
                             id="comments"
                             value={formData?.comments}
                             onChange={handleInputChange}
                             className="form-control form-text"
-                          ></textarea>
+                          ></textarea> */}
                         </div>
                       </div>
 
