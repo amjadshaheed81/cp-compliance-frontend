@@ -11,20 +11,20 @@ export const printMultipleSelectedAsset = async (selectedItems) => {
   // Create a new jsPDF document with A4 size
   const doc = new jsPDF("p", "mm", "a4");
 
-  // Adjusted Avery label specifications
-  const labelWidth = 41.7;        // Width of each label in mm
-  const labelHeight = 21.2;       // Height of each label in mm
-  const qrCodeSize = 18;          // Size of the QR code in mm
-  const horizontalSpacing = 1;    // Horizontal spacing between labels in mm
-  const verticalSpacing = 1;      // Vertical spacing between labels in mm
-  const labelsPerRow = 4;         // Number of labels per row
-  const labelsPerColumn = 12;     // Number of labels per column
+  // Updated margins
+  const marginLeft = 10;       // Left and right margins in mm (1 cm)
+  const marginTop = 22;        // Top and bottom margins in mm
 
-  // Calculate equal margins for left and right
-  const totalLabelWidth = (labelsPerRow * labelWidth) + ((labelsPerRow - 1) * horizontalSpacing); // Total width used by labels and spacing
-  const marginLeft = (210 - totalLabelWidth) / 2;  // Center the labels by setting equal margins
-  const marginTop = 5;                            // Top margin of the page in mm
+  // Adjusted label specifications
+  const labelWidth = 46.75;    // Updated width of each label in mm to fit left and right margins perfectly
+  const labelHeight = 21.2;    // Height of each label in mm remains the same
+  const qrCodeSize = 18;       // Size of the QR code in mm
+  const horizontalSpacing = 1; // Horizontal spacing between labels in mm
+  const verticalSpacing = 1;   // Vertical spacing between labels in mm
+  const labelsPerRow = 4;      // Number of labels per row
+  const labelsPerColumn = 12;  // Number of labels per column (4 rows x 12 columns = 48 labels)
 
+  // Set initial positions based on margins
   let currentX = marginLeft;
   let currentY = marginTop;
 

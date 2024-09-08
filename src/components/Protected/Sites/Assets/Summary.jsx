@@ -6,7 +6,11 @@ import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
-import { deleteSiteAsset, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
+import {
+  deleteSiteAsset,
+  getSiteAssets,
+  getSiteLayout,
+} from "../../../../store/thunk/site";
 import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
@@ -56,7 +60,7 @@ const Summary = ({
   useEffect(() => {
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getCategory();
-    getSiteLayout(siteSelectedForGlobal?.siteId)
+    getSiteLayout(siteSelectedForGlobal?.siteId);
   }, [siteSelectedForGlobal]);
   useEffect(() => {
     const floorNodes =
@@ -148,9 +152,7 @@ const Summary = ({
           String(x?.floor)
             .toLowerCase()
             .includes(String(floor).toLowerCase()) &&
-          String(x?.room)
-            .toLowerCase()
-            .includes(String(room).toLowerCase())
+          String(x?.room).toLowerCase().includes(String(room).toLowerCase())
       );
       setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
       setFilteredSiteAssets(list);
@@ -206,9 +208,11 @@ const Summary = ({
   const handleSelectAllChange = (e) => {
     const { checked } = e.target;
     if (checked) {
-      setSelectedItems(filteredSiteAssets?.filter(
-        (itm) => itm?.doorItem !== true && itm?.patItem !== true
-      ));
+      setSelectedItems(
+        filteredSiteAssets?.filter(
+          (itm) => itm?.doorItem !== true && itm?.patItem !== true
+        )
+      );
     } else {
       setSelectedItems([]);
     }
@@ -289,7 +293,9 @@ const Summary = ({
                 onChange={handleInputChange}
               >
                 <option value="">Floor</option>
-                {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+                {floorNode?.map((itm) => (
+                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                ))}
               </select>
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
@@ -300,7 +306,9 @@ const Summary = ({
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>
-                {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+                {roomNode?.map((itm) => (
+                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -333,14 +341,38 @@ const Summary = ({
                   </button>
                 </Tooltip>
               </div>
-              <div className="col-md-2 col-sm-4 mt-2">
-                <CSVLink
-                  filename={"site-assets-lists.csv"}
-                  className="btn btn-light bg-white text-primary"
-                  data={filteredSiteAssets?.filter(
-                    (itm) => itm?.doorItem !== true && itm?.patItem !== true
-                  )}
-                >
+              <div className="col-md-2 col-sm-4 mt-2"><CSVLink
+  filename={"site-assets-lists.csv"}
+  className="btn btn-light bg-white text-primary"
+  data={filteredSiteAssets
+    ?.filter(
+      (itm) => itm?.doorItem !== true && itm?.patItem !== true
+    )
+    .map((itm) => {
+      return {
+        ...itm,
+        assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
+          ? itm.assetDoorSpecifications.map(
+              (asset) =>
+                `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
+            ).join("; ")
+          : '', // Provide empty string if not an array
+        assetPFPItem: Array.isArray(itm?.assetPFPItem)
+          ? itm.assetPFPItem.map(
+              (asset) =>
+                `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
+            ).join("; ")
+          : '', // Provide empty string if not an array
+        assetPATItems: Array.isArray(itm?.assetPATItems)
+          ? itm.assetPATItems.map(
+              (asset) =>
+                `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
+            ).join("; ")
+          : '', // Provide empty string if not an array
+      };
+    })}
+>
+
                   <Tooltip title={`Export`} arrow>
                     <i className="fas fa-download"></i>
                   </Tooltip>
@@ -373,9 +405,12 @@ const Summary = ({
                     type="checkbox"
                     className="form-check-input"
                     onChange={handleSelectAllChange}
-                    checked={selectedItems.length === filteredSiteAssets?.filter(
-                      (itm) => itm?.doorItem !== true && itm?.patItem !== true
-                    ).length}
+                    checked={
+                      selectedItems.length ===
+                      filteredSiteAssets?.filter(
+                        (itm) => itm?.doorItem !== true && itm?.patItem !== true
+                      ).length
+                    }
                   />
                 </th>
                 <th scope="col">Asset ID</th>
@@ -490,6 +525,8 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { deleteSiteAsset, getSiteAssets, getSiteLayout })(
-  Summary
-);
+export default connect(mapStateToProps, {
+  deleteSiteAsset,
+  getSiteAssets,
+  getSiteLayout,
+})(Summary);

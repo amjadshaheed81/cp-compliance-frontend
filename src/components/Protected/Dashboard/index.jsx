@@ -25,10 +25,12 @@ const Dashboard = ({
         selectGlobalSite({
           siteName: loggedInUserData?.taggedSites?.[0]?.name || '',
           siteId: loggedInUserData?.taggedSites?.[0]?.id || '',
+          siteImageUrl : loggedInUserData?.taggedSites?.[0]?.siteImageUrl  || '',
         });
         localStorage.setItem("site", JSON.stringify({
           siteName: loggedInUserData?.taggedSites?.[0]?.name || '',
           siteId: loggedInUserData?.taggedSites?.[0]?.id || '',
+          siteImageUrl : loggedInUserData?.taggedSites?.[0]?.siteImageUrl  || '',
         }));
       }
     }

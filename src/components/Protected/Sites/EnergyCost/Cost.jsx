@@ -6,22 +6,41 @@ import moment from "moment";
 
 import DatePicker from "../../../common/DatePicker";
 
-import { Button, Chip, DialogContent, DialogTitle, DialogActions, Dialog, Typography, Grid, Autocomplete } from "@mui/material";
+import {
+  Button,
+  Chip,
+  DialogContent,
+  DialogTitle,
+  DialogActions,
+  Dialog,
+  Typography,
+  Grid,
+  Autocomplete,
+} from "@mui/material";
 
-const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }) => {
-
+const Cost = ({
+  open,
+  setOpen,
+  survey,
+  typeoptions,
+  saveData,
+  deleteEnergyCost,
+  isViewMode,
+}) => {
   const [formData, setFormData] = useState({});
-
+  const [isView, setIsView] = useState(false);
+  useEffect(() => {
+    setIsView(isViewMode);
+  }, [isViewMode]);
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
     const udata = {
       ...formData,
       [name]: value,
-    }
+    };
     setFormData(udata);
   };
-
 
   const save = async (event) => {
     event.preventDefault();
@@ -29,72 +48,78 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    const data = { ...formData }; 
-     
+    const data = { ...formData };
+
     data.fromDate = new Date(data.fromDate);
     data.toDate = new Date(data.toDate);
     data.energyId = survey.energyId;
-    data.budgetCategory = survey?.budgetCategory
-    saveData(data)
+    data.budgetCategory = survey?.budgetCategory;
+    saveData(data);
     setOpen(false);
-  }
-
-  
-
+  };
 
   return (
     <>
-      <Dialog open={open} onClose={() => { setOpen(false) }} maxWidth="lg" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        maxWidth="lg"
+        fullWidth
+      >
         <DialogTitle>Add Energy Cost</DialogTitle>
         <DialogContent dividers>
           <Fragment>
             <form onSubmit={save}>
-            <Grid container spacing={1} rowGap={2}>
-              <Grid sm={8}>
-                <label for="reference">Meter Reference</label>
-                <input
-                  style={{ maxWidth: '600px' }}
-                  type="reference"
-                  className="form-control"
-                  id="reference"
-                  disabled
-                  value={survey?.reference}
-
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label for="budgetCategory">Budget Category</label>
-                <select
-                  name="budgetCategory"
-                  className="form-control form-select"
-                  id="budgetCategory"
+              <Grid container spacing={1} rowGap={2}>
+                <Grid sm={8}>
+                  <label for="reference">Meter Reference</label>
+                  <input
+                    style={{ maxWidth: "600px" }}
+                    type="reference"
+                    className="form-control"
+                    id="reference"
+                    disabled
+                    value={survey?.reference}
+                  />
+                </Grid>
+                <Grid sm={4}>
+                  <label for="budgetCategory">Budget Category</label>
+                  <select
+                    name="budgetCategory"
+                    className="form-control form-select"
+                    id="budgetCategory"
                     value={survey?.budgetCategory}
-                  onChange={handleInputChange}
+                    onChange={handleInputChange}
                     required
                     disabled
-                >
-                  <option value="">Budget Category</option>
-                  {typeoptions.map(t => <option value={t}>{t}</option>)}
-
-                </select>
-              </Grid>
-              <Grid sm={4}>
-                {/* <label for="fromDate">From Date</label> */}
-                <div>
-                      <DatePicker
+                  >
+                    <option value="">Budget Category</option>
+                    {typeoptions.map((t) => (
+                      <option value={t}>{t}</option>
+                    ))}
+                  </select>
+                </Grid>
+                <Grid sm={4}>
+                  {/* <label for="fromDate">From Date</label> */}
+                  <div>
+                    <DatePicker
                       label="From Date"
-                        value={formData?.fromDate}
-                        onChange={(date) => {
-                          setFormData({
-                            ...formData,
-                            //dueDate: new Date(date),
-                            fromDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
-                            
-                          });
-                        }}
+                      value={formData?.fromDate}
+                      enabled={!isView}
+                      onChange={(date) => {
+                        setFormData({
+                          ...formData,
+                          //dueDate: new Date(date),
+                          fromDate: new Date(
+                            date.getTime() - date.getTimezoneOffset() * 60000
+                          ).toISOString(),
+                        });
+                      }}
                     />
-                    </div>
-                {/* <input
+                  </div>
+                  {/* <input
                   style={{ maxWidth: '300px' }}
                   type="date"
                   className="form-control"
@@ -103,24 +128,26 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
                     required
 
                 /> */}
-              </Grid>
-              <Grid sm={4}>
-                {/* <label for="toDate"></label> */}
-                <div style={{  }}>
-                      <DatePicker
+                </Grid>
+                <Grid sm={4}>
+                  {/* <label for="toDate"></label> */}
+                  <div style={{}}>
+                    <DatePicker
                       label="To Date"
-                        value={formData?.toDate}
-                        onChange={(date) => {
-                          setFormData({
-                            ...formData,
-                            //dueDate: new Date(date),
-                            toDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
-                            
-                          });
-                        }}
+                      value={formData?.toDate}
+                      disabled={isView}
+                      onChange={(date) => {
+                        setFormData({
+                          ...formData,
+                          //dueDate: new Date(date),
+                          toDate: new Date(
+                            date.getTime() - date.getTimezoneOffset() * 60000
+                          ).toISOString(),
+                        });
+                      }}
                     />
-                    </div>
-                {/* <input
+                  </div>
+                  {/* <input
                     type="date"
                   style={{ maxWidth: '300px' }}
                   className="form-control"
@@ -129,82 +156,90 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
                     required
 
                 /> */}
-              </Grid>
-              <Grid sm={4}>
-                <label for="cost">Cost (GBP)</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="number"
-                  className="form-control"
-                  name="cost"
+                </Grid>
+                <Grid sm={4}>
+                  <label for="cost">Cost (GBP)</label>
+                  <input
+                    style={{ maxWidth: "300px" }}
+                    type="number"
+                    className="form-control"
+                    disabled={isView}
+                    name="cost"
                     onChange={handleInputChange}
                     required
-
-                />
-              </Grid>
-              <Grid sm={8}>
-
-              </Grid>
-              <Grid sm={4}>
-                  <Button onClick={(e) => setOpen(false)} className="bg-light text-primary">
-                  Cancel
+                  />
+                </Grid>
+                <Grid sm={8}></Grid>
+                <Grid sm={4}>
+                  <Button
+                    onClick={(e) => setOpen(false)}
+                    className="bg-light text-primary"
+                  >
+                    Cancel
                   </Button>
-                  <Button className="bg-primary text-white" type="submit">
-                  Save
-                  </Button>
-              </Grid>
-              <Grid sm={12}>
-                <div className="table-responsive" style={{ marginTop: '30px' }} >
-                  <table className="table table-bordered f-11">
-                    <thead className="table-dark">
-                      <tr>
-                        <th>Budget Category </th>
-                        <th>From Date</th>
-                        <th>To Date</th>
-                        <th>Cost (GBP)</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
+                  {!isView && (
+                    <Button className="bg-primary text-white" type="submit">
+                      Save
+                    </Button>
+                  )}
+                </Grid>
+                <Grid sm={12}>
+                  <div
+                    className="table-responsive"
+                    style={{ marginTop: "30px" }}
+                  >
+                    <table className="table table-bordered f-11">
+                      <thead className="table-dark">
+                        <tr>
+                          <th>Budget Category </th>
+                          <th>From Date</th>
+                          <th>To Date</th>
+                          <th>Cost (GBP)</th>
+                          {!isView && <th>Action</th>}
+                        </tr>
+                      </thead>
                       <tbody>
                         {survey?.costList?.length === 0 && (
                           <tr>
-                            <td colSpan={5} align="center">No record</td>
+                            <td colSpan={5} align="center">
+                              No record
+                            </td>
                           </tr>
                         )}
-                        {survey?.costList.map((d, idx) => (<tr>
-                          <td>
-                            {d.budgetCategory}
+                        {survey?.costList.map((d, idx) => (
+                          <tr>
+                            <td>{d.budgetCategory}</td>
+                            <td>
+                              {d?.fromDate
+                                ? moment(d?.fromDate).format("DD/MM/YYYY")
+                                : "-"}
                             </td>
-                          <td>
-                            {d?.fromDate ? moment(d?.fromDate).format("DD/MM/YYYY") : "-"}
-                           
+                            <td>
+                              {d?.toDate
+                                ? moment(d?.toDate).format("DD/MM/YYYY")
+                                : "-"}
+                              {/* {String(d?.toDate)?.substring(0, 10)} */}
                             </td>
-                          <td>
-                          {d?.toDate ? moment(d?.toDate).format("DD/MM/YYYY") : "-"}
-                            {/* {String(d?.toDate)?.substring(0, 10)} */}
-                            </td>
-                          <td>
-                            {d.cost}
-                            </td>
-                          <td>
-                            <button
-                              className="btn btn-sm btn-light text-dark"
-                              onClick={() => deleteEnergyCost(d?.costId)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                            </td>
-                          
-                          </tr>)
-                        )}
-                    </tbody>
-                  </table>
-                </div>
+                            <td>{d.cost}</td>
+                            {!isView && (
+                              <td>
+                                <button
+                                  className="btn btn-sm btn-light text-dark"
+                                  onClick={() => deleteEnergyCost(d?.costId)}
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Grid>
               </Grid>
-            </Grid>
             </form>
           </Fragment>
-
         </DialogContent>
       </Dialog>
     </>
@@ -212,7 +247,4 @@ const Cost = ({ open, setOpen, survey, typeoptions, saveData, deleteEnergyCost }
 };
 
 const mapStateToProps = (state) => ({});
-export default connect(mapStateToProps, { })(
-  Cost
-);
-
+export default connect(mapStateToProps, {})(Cost);

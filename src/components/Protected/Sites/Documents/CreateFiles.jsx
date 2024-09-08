@@ -182,6 +182,7 @@ const CreateFiles = ({
               if (isStatutory) {
                 if (selectedMandatoryFile?.length > 0) {
                  // Fetch the file from the provided URL
+                  data.folderId = selectedMandatoryFile[0].folderId
                   const response = await fetch(selectedMandatoryFile[0].fileBlobUrl);
 
                   // Convert the response to a Blob
@@ -207,7 +208,7 @@ const CreateFiles = ({
                   formData.fileUpload = dataTransfer.files;
                  data.files.push({
                   ...formData,
-                  name: formData?.name,
+                  name: formData?.name ? formData?.name : selectedMandatoryFile[0].fileName,
                   fileVersion: folderData?.fileVersion
                     ? Number(folderData?.fileVersion) + 1
                     : 1,

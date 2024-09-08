@@ -326,7 +326,29 @@ const PassiveFireProtection = ({
               <CSVLink
                 filename={"site-pfp-item-list.csv"}
                 className="btn btn-light bg-white text-primary"
-                data={sitePFPItems}
+                data={sitePFPItems.map((itm) => {
+                  return {
+                    ...itm,
+                    assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
+                      ? itm.assetDoorSpecifications.map(
+                          (asset) =>
+                            `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
+                        ).join("; ")
+                      : '', // Provide empty string if not an array
+                    assetPFPItem: Array.isArray(itm?.assetPFPItem)
+                      ? itm.assetPFPItem.map(
+                          (asset) =>
+                            `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
+                        ).join("; ")
+                      : '', // Provide empty string if not an array
+                    assetPATItems: Array.isArray(itm?.assetPATItems)
+                      ? itm.assetPATItems.map(
+                          (asset) =>
+                            `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
+                        ).join("; ")
+                      : '', // Provide empty string if not an array
+                  };
+                })}
               >
                 <Tooltip title={`Export`} arrow>
                   <i className="fas fa-download"></i>
