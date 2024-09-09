@@ -19,6 +19,8 @@ import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import MessageSharp from "@mui/icons-material/MessageSharp";
 import Sites from "./Portfolio/Sites";
 import SiteCharts from "./Portfolio/SiteCharts";
+import Assets from "./Assets/Assets";
+import AssetChart from "./Assets/AssetChart";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -61,6 +63,12 @@ const Reports = ({}) => {
     soldSites: 0,
     closedSites: 0,
   });
+  const [assetChart, setAssetChart] = useState({
+    totalAssets: 0,
+    patAssets: 0,
+    psfAssets: 0,
+    otherAssets: 0,
+  });
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -72,8 +80,7 @@ const Reports = ({}) => {
         <Header />
         <div className="container-fluid">
           <BreadCrumHeader header={"Reports"} page={"Reports"} />
-          <Box
-          >
+          <Box>
             <Tabs
               variant="scrollable"
               value={value}
@@ -81,42 +88,25 @@ const Reports = ({}) => {
               aria-label="Vertical tabs example"
               sx={{ borderRight: 1, borderColor: "divider" }}
             >
-              <Tab
-                label="Portfolio Report"
-                {...a11yProps(0)}
-              />
-              <Tab
-                label="Asset Report"
-                {...a11yProps(1)}
-              />
-              <Tab
-                label="Project Report"
-                {...a11yProps(2)}
-              />
-              <Tab
-                label="Worksheet"
-                {...a11yProps(3)}
-              />
-              <Tab
-                label="Energy Report"
-                {...a11yProps(4)}
-              />
-              <Tab
-                label="Site Checks"
-                {...a11yProps(5)}
-              />
+              <Tab label="Portfolio Report" {...a11yProps(0)} />
+              <Tab label="Asset Report" {...a11yProps(1)} />
+              <Tab label="Project Report" {...a11yProps(2)} />
+              <Tab label="Worksheet" {...a11yProps(3)} />
+              <Tab label="Energy Report" {...a11yProps(4)} />
+              <Tab label="Site Checks" {...a11yProps(5)} />
             </Tabs>
             <TabPanel value={value} index={0}>
-              <SiteCharts siteChart={siteChart}/>
-              <Sites setSiteChart={setSiteChart}/>
+              <SiteCharts siteChart={siteChart} />
+              <Sites setSiteChart={setSiteChart} />
             </TabPanel>
             <TabPanel value={value} index={1}>
-            <div className="row">
-                <div className="col-md-12">Asset</div>
+              <div className="row">
+                <AssetChart assetChart={assetChart}/>
+                <Assets />
               </div>
             </TabPanel>
             <TabPanel value={value} index={2}>
-            <div className="row">
+              <div className="row">
                 <div className="col-md-12">Project</div>
               </div>
             </TabPanel>
