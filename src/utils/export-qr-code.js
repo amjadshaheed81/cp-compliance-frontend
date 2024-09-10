@@ -12,15 +12,15 @@ export const printMultipleSelectedAsset = async (selectedItems) => {
   const doc = new jsPDF("p", "mm", "a4");
 
   // Updated margins
-  const marginLeft = 10;       // Left and right margins in mm (1 cm)
-  const marginTop = 22;        // Top and bottom margins in mm
+  const marginLeft = 10;       // Left margin in mm
+  const marginTop = 22;        // Top margin in mm (unchanged)
 
   // Adjusted label specifications
-  const labelWidth = 46.75;    // Updated width of each label in mm to fit left and right margins perfectly
-  const labelHeight = 21.2;    // Height of each label in mm remains the same
+  const labelWidth = 46;       // Updated width of each label in mm
+  const labelHeight = 21;      // Updated height of each label in mm
   const qrCodeSize = 18;       // Size of the QR code in mm
-  const horizontalSpacing = 1; // Horizontal spacing between labels in mm
-  const verticalSpacing = 1;   // Vertical spacing between labels in mm
+  const horizontalSpacing = 3; // Horizontal spacing between labels in mm
+  const verticalSpacing = 0;   // No vertical spacing between labels
   const labelsPerRow = 4;      // Number of labels per row
   const labelsPerColumn = 12;  // Number of labels per column (4 rows x 12 columns = 48 labels)
 
