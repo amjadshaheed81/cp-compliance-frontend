@@ -115,7 +115,7 @@ const StatutoryRegister = ({
         console.log("isExpiryDateValid",isExpiryDateValid);
         status = isExpiryDateValid ? "Passed" : "Fail";
       }
-    } else if (item?.type === "Link") {
+    } else if (item?.type === "Link" && isChecked) {
       try {
         const siteChecks = await get(
           `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
