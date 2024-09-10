@@ -18,6 +18,7 @@ import moment from "moment";
 import { InputError } from "../../../common/InputError";
 import MandatoryFolders from "../Contracts/MandatoryFolders";
 import SelectMandatoryFile from "./File/SelectMandatoryFile";
+import { getFileExtensionFromBlob } from "../../../../utils/getFileExtensionFromBlob";
 
 const CreateFiles = ({
   showModal,
@@ -30,8 +31,7 @@ const CreateFiles = ({
   uploaderUserId,
   reviewerUserId,
   loggedInUserData,
-  folderfiles
-  
+  folderfiles,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -57,11 +57,11 @@ const CreateFiles = ({
     setValue("name", folderData?.folderName ? folderData?.name : "");
   }, []);
   const submitFile = async (data, fileUpload, formData) => {
+    console.log("folderfiles", folderfiles);
+    const existingFile = folderfiles?.filter(
+      (f) => f.name === formData.fileUpload[0].name
+    );
 
-    console.log('folderfiles', folderfiles)
-    const existingFile = folderfiles?.filter(f=> f.name === formData.fileUpload[0].name);
-
-      
     const reqData = {
       files: fileUpload,
       documentRequestString: {
@@ -69,17 +69,23 @@ const CreateFiles = ({
       },
     };
 
-    reqData.documentRequestString.files[0].id = existingFile?.length > 0 ? existingFile?.[0]?.id : undefined;
-    reqData.documentRequestString.files[0].fileVersion =existingFile?.length > 0 ? existingFile?.[0]?.fileVersion + 1 : reqData.documentRequestString.files[0].fileVersion;
-    
+    reqData.documentRequestString.files[0].id =
+      existingFile?.length > 0 ? existingFile?.[0]?.id : undefined;
+    reqData.documentRequestString.files[0].fileVersion =
+      existingFile?.length > 0
+        ? existingFile?.[0]?.fileVersion + 1
+        : reqData.documentRequestString.files[0].fileVersion;
 
     delete reqData.documentRequestString.files[0].fileUpload;
     reqData.documentRequestString.files[0].issueDate = data?.files[0].issueDate;
-    reqData.documentRequestString.files[0].originalFileName = formData.fileUpload[0].name;
-    reqData.documentRequestString.files[0].expiryDate = data?.files[0].expiryDate;
+    reqData.documentRequestString.files[0].originalFileName =
+      formData.fileUpload[0].name;
+    reqData.documentRequestString.files[0].expiryDate =
+      data?.files[0].expiryDate;
     if (isStatutory) {
-      reqData.documentRequestString.files[0].statutoryCategoryId = folderData?.id;
-    }       
+      reqData.documentRequestString.files[0].statutoryCategoryId =
+        folderData?.id;
+    }
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
     reqData.documentRequestString.files[0].reviewerUserId =
@@ -87,16 +93,22 @@ const CreateFiles = ({
     reqData.documentRequestString.files[0].referenceNumber =
       data.files[0].note || "";
 
-      const url = existingFile?.length > 0 ? `/api/document/file/newVersion/upload` : `/api/document/files/upload`;
-  
+    const url =
+      existingFile?.length > 0
+        ? `/api/document/file/newVersion/upload`
+        : `/api/document/files/upload`;
+
     const form_Data = new FormData();
-    form_Data.append(existingFile?.length > 0 ? "file" : "files", reqData.files);
+    form_Data.append(
+      existingFile?.length > 0 ? "file" : "files",
+      reqData.files
+    );
     form_Data.append(
       "documentRequestString",
       JSON.stringify(reqData.documentRequestString)
     );
-    if(existingFile?.length > 0) {
-      await uploadNewVersion(url, form_Data)
+    if (existingFile?.length > 0) {
+      await uploadNewVersion(url, form_Data);
     } else {
       await uploadPhoto(url, form_Data);
     }
@@ -141,7 +153,7 @@ const CreateFiles = ({
       endDate: moment(data.expiryDate),
       shortText: "Document Expiring : " + data.name,
       eventType: "Document Expring",
-      userId: loggedInUserData?.id
+      userId: loggedInUserData?.id,
     };
     await put("/api/user/calendar", body);
   };
@@ -163,9 +175,13 @@ const CreateFiles = ({
             try {
               setIsLoading(true);
               let folderIdForUpload = folderData?.id;
+              let fileExtensionValue = "";
               console.log("folderData?.id", folderData?.id);
               if (isStatutory) {
-                if (selectedMandatoryFolder?.length === 0 && selectedMandatoryFile?.length === 0) {
+                if (
+                  selectedMandatoryFolder?.length === 0 &&
+                  selectedMandatoryFile?.length === 0
+                ) {
                   setIsLoading(false);
                   toast.warn("Please select folder to Upload file in Statuary");
                   return;
@@ -181,17 +197,23 @@ const CreateFiles = ({
               };
               if (isStatutory) {
                 if (selectedMandatoryFile?.length > 0) {
-                 // Fetch the file from the provided URL
-                  data.folderId = selectedMandatoryFile[0].folderId
-                  const response = await fetch(selectedMandatoryFile[0].fileBlobUrl);
+                  // Fetch the file from the provided URL
+                  data.folderId = selectedMandatoryFile[0].folderId;
+                  const response = await fetch(
+                    selectedMandatoryFile[0].fileBlobUrl
+                  );
 
                   // Convert the response to a Blob
                   const fileBlob = await response.blob();
-
+                  fileExtensionValue = selectedMandatoryFile[0]?.name?.split(".")?.[1];
                   // Create a File object from the Blob
-                  const file = new File([fileBlob], selectedMandatoryFile[0].fileName, {
-                    type: fileBlob.type,
-                  });
+                  const file = new File(
+                    [fileBlob],
+                    selectedMandatoryFile[0].fileName,
+                    {
+                      type: fileBlob.type,
+                    }
+                  );
 
                   // Create a DataTransfer object to manipulate the FileList
                   const dataTransfer = new DataTransfer();
@@ -206,17 +228,23 @@ const CreateFiles = ({
 
                   // Assign the new FileList back to formData.fileUpload
                   formData.fileUpload = dataTransfer.files;
-                 data.files.push({
-                  ...formData,
-                  name: formData?.name ? formData?.name : selectedMandatoryFile[0].fileName,
-                  fileVersion: folderData?.fileVersion
-                    ? Number(folderData?.fileVersion) + 1
-                    : 1,
-                  siteId: siteSelectedForGlobal?.siteId,
-                  issueDate: formData?.issueDate ? `${formData?.issueDate} 10:00:00` : '',
-                  expiryDate: formData?.expiryDate ? `${formData?.expiryDate} 10:00:00` : '',
-                })
-                } else if(formData?.fileUpload?.length > 0) {
+                  data.files.push({
+                    ...formData,
+                    name: formData?.name
+                      ? formData?.name
+                      : selectedMandatoryFile[0].fileName,
+                    fileVersion: folderData?.fileVersion
+                      ? Number(folderData?.fileVersion) + 1
+                      : 1,
+                    siteId: siteSelectedForGlobal?.siteId,
+                    issueDate: formData?.issueDate
+                      ? `${formData?.issueDate} 10:00:00`
+                      : "",
+                    expiryDate: formData?.expiryDate
+                      ? `${formData?.expiryDate} 10:00:00`
+                      : "",
+                  });
+                } else if (formData?.fileUpload?.length > 0) {
                   data.files.push({
                     ...formData,
                     name: formData?.name,
@@ -224,15 +252,21 @@ const CreateFiles = ({
                       ? Number(folderData?.fileVersion) + 1
                       : 1,
                     siteId: siteSelectedForGlobal?.siteId,
-                    issueDate: formData?.issueDate ? `${formData?.issueDate} 10:00:00` : '',
-                    expiryDate: formData?.expiryDate ? `${formData?.expiryDate} 10:00:00` : '',
-                    })
+                    issueDate: formData?.issueDate
+                      ? `${formData?.issueDate} 10:00:00`
+                      : "",
+                    expiryDate: formData?.expiryDate
+                      ? `${formData?.expiryDate} 10:00:00`
+                      : "",
+                  });
                 } else {
                   setIsLoading(false);
-                  toast.warn("Please select file from select file or upload new version to proceed.");
+                  toast.warn(
+                    "Please select file from select file or upload new version to proceed."
+                  );
                   return;
                 }
-                console.log("selectedMandatoryFile", selectedMandatoryFile)
+                console.log("selectedMandatoryFile", selectedMandatoryFile);
               } else {
                 data.files.push({
                   ...formData,
@@ -241,12 +275,17 @@ const CreateFiles = ({
                     ? Number(folderData?.fileVersion) + 1
                     : 1,
                   siteId: siteSelectedForGlobal?.siteId,
-                  issueDate: formData?.issueDate ? `${formData?.issueDate} 10:00:00` : '',
-                  expiryDate: formData?.expiryDate ? `${formData?.expiryDate} 10:00:00` : '',
-                })
+                  issueDate: formData?.issueDate
+                    ? `${formData?.issueDate} 10:00:00`
+                    : "",
+                  expiryDate: formData?.expiryDate
+                    ? `${formData?.expiryDate} 10:00:00`
+                    : "",
+                });
               }
-              const fileExtension =
-                formData.fileUpload[0].name?.split(".")?.pop();
+              const fileExtension = isStatutory
+                ? fileExtensionValue
+                : formData.fileUpload[0].name?.split(".")?.pop();
               data.files[0].name =
                 formData?.name?.length > 0
                   ? `${formData?.name}.${fileExtension}`
@@ -381,7 +420,13 @@ const CreateFiles = ({
               </Grid>
             </Grid>
             <Grid sm={4}>
-              <div style={{ backgroundColor: "#f1f5f9", margin: "10px", display: selectedMandatoryFile?.length > 0 ? 'none' : '' }}>
+              <div
+                style={{
+                  backgroundColor: "#f1f5f9",
+                  margin: "10px",
+                  display: selectedMandatoryFile?.length > 0 ? "none" : "",
+                }}
+              >
                 <div className="uploadPhotoButton">
                   <FileUploadOutlinedIcon
                     style={{
