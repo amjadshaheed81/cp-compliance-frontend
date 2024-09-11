@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { get, post, uploadSiteCheckDoc } from "../../../../api";
-
+import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
+import moment from 'moment';
 import { Typography, Grid, Autocomplete, Chip, Divider } from "@mui/material";
 import { getSiteAssets } from "../../../../store/thunk/site";
 
-const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal }) => {
+const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, siteCheck, loggedInUserData }) => {
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -69,6 +69,21 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
         data.checkId = checkId;
         data.status = "Open";
         await post("/api/site-check/inspection/fault", data)
+        const actionData = {
+          type: "Inspection",
+          status: "Reported",
+          observation: data.faultDescription,
+          desc: `${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category} - ${moment(new Date()).format("DD/MM/YYYY")}`,
+          requiredAction: data.action,
+          riskScore: Number(data.rating) * 5,
+          dueDate: new Date(),
+          createdAt: new Date(),
+          siteId: siteSelectedForGlobal?.siteId,
+          userId: loggedInUserData?.id,
+          actionImage: data.imageUrl,
+          taggedAsset: data.assetId
+        }
+        await put("/api/site/actions", actionData);
       } 
     }
     toast.success("Fault data saved")
@@ -300,6 +315,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
 const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { getSiteAssets })(
   InspectionElectricalFault
