@@ -27,7 +27,8 @@ const SurveyWaterOutletTemperature = ({
   getSiteAssets,
   siteSelectedForGlobal,
   getSiteLayout,
-  loggedInUserData
+  loggedInUserData,
+  repeatFrequency
 }) => {
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
@@ -244,6 +245,22 @@ const SurveyWaterOutletTemperature = ({
   const dateFormat = (date) => {
     return moment(date, "YYYY-MM-DD").format("DD/MM/YYYY");
   };
+
+  const dateFormatFromFrequency = (date) => {
+    let daysToAdd = 0;
+    if(repeatFrequency === "Daily") {
+      daysToAdd = 1
+    } else  if(repeatFrequency === "Weekly") {
+      daysToAdd = 7
+    } else if(repeatFrequency === "Monthly") {
+      daysToAdd = 30
+    } else if(repeatFrequency === "Yearly") {
+      daysToAdd = 365
+    }
+    return moment(date, "YYYY-MM-DD").add('days', daysToAdd).format("DD/MM/YYYY");
+  };
+
+
   return (
     <>
       <Dialog
@@ -623,6 +640,7 @@ const SurveyWaterOutletTemperature = ({
                         <th>Reading 1</th>
                         <th>Reading 2</th>
                         <th>Reading 3</th>
+                        <th>Expiry Date</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -686,6 +704,7 @@ const SurveyWaterOutletTemperature = ({
                             >
                               {i?.reading3}
                             </td>
+                            <td>{i?.r1Date ? dateFormatFromFrequency(i?.r1Date?.split("T")?.[0]) : ''}</td>
                           </tr>
                         ))}
                     </tbody>
