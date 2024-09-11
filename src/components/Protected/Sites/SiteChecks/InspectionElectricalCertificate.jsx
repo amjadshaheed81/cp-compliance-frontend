@@ -2,7 +2,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post, uploadSiteCheckDoc } from "../../../../api";
-import { Grid, Chip, Typography, Box, IconButton, Divider, Autocomplete } from '@mui/material';
+import { Grid, Chip, Typography, Box, IconButton, Divider, Autocomplete,CircularProgress } from '@mui/material';
 import { UploadFile } from '@mui/icons-material';
 
 import { getSites, getExternalUsers } from "../../../../store/thunk/site";
@@ -20,6 +20,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     file: null
   });
 
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,6 +58,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     if (!form.checkValidity()) {
       form.reportValidity();
     }
+    setIsLoading(true)
     const data = { ...formData }
     if (data?.file?.name) {
       data.siteId = siteSelectedForGlobal?.siteId;
@@ -68,9 +71,10 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
     data.checkId = checkId;
     data.status = "Open";
     await post("/api/site-check/inspection", data)
-    toast.success("Inspection data saved")
+    toast.success("Inspection data saved");
+    await getIpection();
     setCompleted(true);
-
+    setIsLoading(false)
   }
 
 
@@ -78,6 +82,12 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
 
   return (
     <form onSubmit={certify}>
+      {isLoading && (
+            <Box sx={{ display: "flex" }}>
+              <CircularProgress />
+            </Box>
+          )}
+          {!isLoading && (
     <Box p={3}>
       <Typography variant="h6" gutterBottom>
         Certificate  <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
@@ -241,7 +251,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
 
         </Grid>
       </Grid>
-    </Box>
+    </Box>)}
 </form>
   );
 };
