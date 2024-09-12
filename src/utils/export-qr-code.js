@@ -18,7 +18,7 @@ export const printMultipleSelectedAsset = async (selectedItems) => {
   // Adjusted label specifications
   const labelWidth = 46;       // Updated width of each label in mm
   const labelHeight = 21;      // Updated height of each label in mm
-  const qrCodeSize = 18;       // Size of the QR code in mm
+  const qrCodeSize = 20;       // Size of the QR code in mm
   const horizontalSpacing = 3; // Horizontal spacing between labels in mm
   const verticalSpacing = 0;   // No vertical spacing between labels
   const labelsPerRow = 4;      // Number of labels per row
