@@ -528,6 +528,7 @@ const StatutoryRegister = ({
                                       setShowModal(true);
                                     }}
                                     style={{
+                                      display: String(item?.type).toLowerCase() === "link" ? "none" : "",
                                       color: "384bd3",
                                       cursor: "pointer",
                                     }}
