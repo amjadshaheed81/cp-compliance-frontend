@@ -637,10 +637,10 @@ const SurveyWaterOutletTemperature = ({
                     <thead className="table-dark">
                       <tr>
                         <th>Test Date</th>
+                        <th>Expiry Date</th>
                         <th>Reading 1</th>
                         <th>Reading 2</th>
                         <th>Reading 3</th>
-                        <th>Expiry Date</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -661,7 +661,18 @@ const SurveyWaterOutletTemperature = ({
                         )
                         ?.map((i) => (
                           <tr>
-                            <td>{i?.r1Date ? dateFormat(i?.r1Date?.split("T")?.[0]) : ''}</td>
+                            <td>
+                              {i?.r1Date
+                                ? moment(i?.r1Date).format("DD/MM/YYYY")
+                                : ""}
+                            </td>
+                            <td>
+                              {i?.r1Date
+                                ? dateFormatFromFrequency(
+                                    i?.r1Date?.split("T")?.[0]
+                                  )
+                                : ""}
+                            </td>
                             <td
                               style={{
                                 color:
@@ -704,7 +715,6 @@ const SurveyWaterOutletTemperature = ({
                             >
                               {i?.reading3}
                             </td>
-                            <td>{i?.r1Date ? dateFormatFromFrequency(i?.r1Date?.split("T")?.[0]) : ''}</td>
                           </tr>
                         ))}
                     </tbody>
