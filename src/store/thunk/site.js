@@ -1330,12 +1330,17 @@ export const deleteUser = (id) => {
 export const loginUser = (formData, goTo, setLoading) => {
   return async (dispatch) => {
     try {
-      const url = `/api/user/login?email=${formData?.email}&password=${formData?.password}`;
-      const userData = await get(url);
-      if (userData?.id) {
+      const url = `/api/user/login`;
+      const body = {
+        email: formData?.email,
+        password: formData?.password
+      }
+      const userData = await post(url, body);
+      console.log('userData', userData)
+      if (userData?.data?.user?.id) {
         dispatch({
           type: USER_LOGIN,
-          payload: userData,
+          payload: userData?.data?.user,
         });
         toast.success("Successfully logged in.");
         goTo("/dashboard");
