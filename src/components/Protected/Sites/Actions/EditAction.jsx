@@ -647,6 +647,19 @@ const EditAction = ({
                         </div>
                       </div>
 
+                      <div className="col-md-4">
+                        <div className="form-group mt-2">
+                        <Button
+                          onClick={() => goTo("/site-contracts")}
+                          className="bg-light text-primary"
+                        >
+                          Add Quote
+                        </Button>
+
+                        </div>
+                      </div>
+
+
                       <div className="col-md-12">
                         <div className="form-group mt-2">
                           <br />
