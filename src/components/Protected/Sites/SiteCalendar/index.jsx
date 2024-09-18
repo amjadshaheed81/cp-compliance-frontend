@@ -6,32 +6,44 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import Tooltip from "@mui/material/Tooltip";
 import moment from "moment";
 import "./calendar.css";
 import { get } from "../../../../api";
 
-const SiteCalendar = ({ siteSelectedForGlobal }) => {
+const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   let momentX = new Date();
   let date2 = moment(new Date()).add(5, 'days').toDate();
   const [clickedDate, setClickedDate] = useState(undefined);
 
   const [calendarEvent, setCalendarEvent] = useState([]);
+  const [todayEvents, settodayEvents] = useState([]);
   //const [data, setData] = useState([]);
   useEffect(() => {
     getData();
   }, [])
+
+  const isToday = (date) => {
+    const today = new Date();
+    
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  }
   const getData = async () => {
     
-    const data = await get("/api/user/calendar/events");
+    const data = await get("/api/user/calendar/events?userId="+loggedInUserData?.id);
+    const todays = data.filter(e => isToday(new Date(e.endDate)));
+    settodayEvents(todays);
     const event = data.map(d => {
       return {
         title: JSON.stringify([
           {
             label: d.shortText,
-            type: d.shortText,
+            type: d.eventType,
           }]),
-        date: moment(d.expiryDate).format("YYYY-MM-DD"),
-        getDate: moment(d.expiryDate).format("YYYY-MM-DD"),
+        date: moment(d.endDate).format("YYYY-MM-DD"),
+        getDate: moment(d.endDate).format("YYYY-MM-DD"),
       }
     })
     console.log("datatatatat", event)
@@ -72,26 +84,29 @@ const SiteCalendar = ({ siteSelectedForGlobal }) => {
         <p onClick={() => msg(eventInfo.event)}>
           {title?.map((itm, index) => (
             <>
-              <p><span class="badge bg-primary">{itm?.label}</span></p>
-              {/* {itm?.type === "Audit" && (
-                <p><span class="badge bg-primary">{itm?.label}</span></p>
+             <Tooltip title={itm?.label} arrow>
+              {/* <p><span class="badge bg-primary">{itm?.label}</span></p> */}
+              {itm?.type?.includes("Audit") && (
+                <p><span class="badge bg-primary">{itm?.type}</span></p>
               )}
-              {itm?.type === "Assessment" && (
-                <p><span class="badge bg-dark">{itm?.label}</span></p>
+              {itm?.type?.includes("Assessment") && (
+                <p><span class="badge bg-dark">{itm?.type}</span></p>
               )}
-              {itm?.type === "Inspection" && (
-                <p><span class="badge bg-success">{itm?.label}</span></p>
+              {itm?.type?.includes("Inspection") && (
+                <p><span class="badge bg-success">{itm?.type}</span></p>
               )}
-              {itm?.type === "Water Survey" && (
-                <span class="badge bg-danger">{itm?.label}</span>
+              {itm?.type?.includes("Survey") && (
+                <span class="badge bg-danger">{itm?.type}</span>
               )}
-              {itm?.type === "Asbestos Survey" && (
-                <span class="badge bg-warning text-dark">{itm?.label}</span>
+              {itm?.type?.includes("Asbestos") && (
+                <span class="badge bg-warning text-dark">{itm?.type}</span>
               )}
-              {itm?.type === "PAT Testing" && (
-                <span class="badge bg-info text-dark">{itm?.label}</span>
-              )} */}
+              {itm?.type?.includes("Document") && (
+                <span class="badge bg-info">{itm?.type}</span>
+              )}
+              </Tooltip>
             </>
+
           ))}
         </p>
       </>
@@ -187,14 +202,17 @@ const SiteCalendar = ({ siteSelectedForGlobal }) => {
                       right: "2rem",
                     }}
                   >
-                    <span class="badge bg-primary">2</span>
+                    <span class="badge bg-primary">{todayEvents.length}</span>
                   </span>
                 </p>
                 <ul class="list-group">
-                  <li class="list-group-item active text-primary">
-                    6 monthly Unite Maintenance Audit
+                {todayEvents.map(e => (
+                  <li class="list-group-item text-primary">
+                    {e.shortText}
                   </li>
-                  <li class="list-group-item">Domestic Water RA Survey</li>
+                  ))
+                  }
+                  {/* <li class="list-group-item">Domestic Water RA Survey</li> */}
                 </ul>
               </div>
               <div className="mt-4">
@@ -231,5 +249,6 @@ const SiteCalendar = ({ siteSelectedForGlobal }) => {
 };
 const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {})(SiteCalendar);

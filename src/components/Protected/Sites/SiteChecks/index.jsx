@@ -296,9 +296,59 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     body.siteId = site.siteId
     body.dueDate = new Date(body.dueDate);
     await post("/api/site-check/", body );
+    setCalenderEvents(body)
+   
     await getSiteChecks();
     setCreate(false);
   }
+
+  const setCalenderEvents = (body) => {
+    const calenderBody = {
+      siteId: siteSelectedForGlobal?.siteId,
+      startDate: moment(body.dueDate),
+      endDate: moment(body.dueDate),
+      shortText: `${body.type} ${body.subType} - ${body.category}`,
+      eventType: `${body.type} ${body.subType}`,
+      userId: loggedInUserData?.id,
+      includeCompanyUsers: false
+    };
+    put("/api/user/calendar", calenderBody);
+    calenderBody.userId= body.assistantUserID;
+    put("/api/user/calendar", calenderBody);
+    calenderBody.userId= body.leadUserID;
+    put("/api/user/calendar", calenderBody);
+    if(body.repeatFrequency !== null && body.repeatFrequency !== undefined && body.repeatFrequency !== "" && body.repeatFrequency !== "None") {
+      const expiryDate = dateFormatFromFrequency(body.repeatFrequency, body.dueDate);
+      calenderBody.userId = loggedInUserData?.id;
+      calenderBody.startDate = expiryDate;
+      calenderBody.endDate = expiryDate;
+      calenderBody.eventType = "Expiring : "+ calenderBody.eventType;
+      calenderBody.shortText = "Expiring : "+ calenderBody.shortText;
+      put("/api/user/calendar", calenderBody);
+      calenderBody.userId= body.assistantUserID;
+      put("/api/user/calendar", calenderBody);
+      calenderBody.userId= body.leadUserID;
+      put("/api/user/calendar", calenderBody);
+    }
+
+
+    
+
+  }
+
+  const dateFormatFromFrequency = (repeatFrequency, date) => {
+    let daysToAdd = 0;
+    if(repeatFrequency === "Daily") {
+      daysToAdd = 1
+    } else  if(repeatFrequency === "Weekly") {
+      daysToAdd = 7
+    } else if(repeatFrequency === "Monthly") {
+      daysToAdd = 30
+    } else if(repeatFrequency === "Yearly") {
+      daysToAdd = 365
+    }
+    return moment(date, "YYYY-MM-DD").add('days', daysToAdd);
+  };
 
   const getSiteChecks = async () => {
     if (!site?.siteId) {

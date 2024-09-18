@@ -4,30 +4,27 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
 import React, { Fragment, useEffect, useState } from "react";
+import Tooltip from "@mui/material/Tooltip";
 import { connect } from "react-redux";
 import { get } from "../../../api";
-const DashboardEventCalendar = () => {
-  const events2 = [
-    {
-      title: 'Event 1',
-      date: '2024-07-25', // YYYY-MM-DD format
-    }
-  ];
+const DashboardEventCalendar = (loggedInUserData) => {
+
   const [data, setData] = useState([]);
   useEffect(() => {
     getData();
   }, [])
   const getData = async () => {
-    const data = await get("/api/user/calendar/events");
+    console.log('loggedInUserData', loggedInUserData)
+    const data = await get("/api/user/calendar/events?userId="+loggedInUserData?.loggedInUserData?.id??0);
     const event = data.map(d => {
       return {
         title: JSON.stringify([
           {
             label: d.shortText,
-          type: d.shortText,
+            type: d.eventType,
           }]),
-        date: moment(d.expiryDate).format("YYYY-MM-DD"),
-        getDate: moment(d.expiryDate).format("YYYY-MM-DD"),
+        date: moment(d.endDate).format("YYYY-MM-DD"),
+        getDate: moment(d.endDate).format("YYYY-MM-DD"),
       }
     })
     setData(event);
@@ -40,28 +37,31 @@ const DashboardEventCalendar = () => {
         <p
           //onClick={() => msg(eventInfo.event)}
         >
+           
           {title?.map((itm, index) => (
             <>
-              <p><span class="badge bg-primary">{itm?.label}</span></p>
-              {/* {itm?.type === "Audit" && (
-                <p><span class="badge bg-primary">{itm?.label}</span></p>
-              )}
-              {itm?.type === "Assessment" && (
-                <p><span class="badge bg-dark">{itm?.label}</span></p>
-              )}
-              {itm?.type === "Inspection" && (
-                <p><span class="badge bg-success">{itm?.label}</span></p>
-              )}
-              {itm?.type === "Water Survey" && (
-                <span class="badge bg-danger">{itm?.label}</span>
-              )}
-              {itm?.type === "Asbestos Survey" && (
-                <span class="badge bg-warning text-dark">{itm?.label}</span>
-              )}
-              {itm?.type === "PAT Testing" && (
-                <span class="badge bg-info text-dark">{itm?.label}</span>
-              )} */}
-            </>
+           <Tooltip title={itm?.label} arrow>
+           {/* <p><span class="badge bg-primary">{itm?.label}</span></p> */}
+           {itm?.type?.includes("Audit") && (
+             <p><span class="badge bg-primary">{itm?.type}</span></p>
+           )}
+           {itm?.type?.includes("Assessment") && (
+             <p><span class="badge bg-dark">{itm?.type}</span></p>
+           )}
+           {itm?.type?.includes("Inspection") && (
+             <p><span class="badge bg-success">{itm?.type}</span></p>
+           )}
+           {itm?.type?.includes("Survey") && (
+             <span class="badge bg-danger">{itm?.type}</span>
+           )}
+           {itm?.type?.includes("Asbestos") && (
+             <span class="badge bg-warning text-dark">{itm?.type}</span>
+           )}
+           {itm?.type?.includes("Document") && (
+             <span class="badge bg-info">{itm?.type}</span>
+           )}
+           </Tooltip>
+         </>
           ))}
         </p>
       </>
@@ -87,4 +87,7 @@ const DashboardEventCalendar = () => {
 };
 
 
-export default connect(null, {})(DashboardEventCalendar);
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+});
+export default connect(mapStateToProps, {})(DashboardEventCalendar);
