@@ -7,6 +7,7 @@ import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Tooltip from "@mui/material/Tooltip";
 import ViewUser from "./ViewUser";
+import ResetPassword from "./ResetPassword";
 import EditUser from "./EditUser";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -27,6 +28,7 @@ const Users = ({
   loggedInUserData,
 }) => {
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showPasswordResetModal, setshowPasswordResetModal] = useState(false);
   const [filteredUser, setFilteredUser] = useState([]);
   const [selectedUser, setSelectedUser] = useState({});
   const [showEditModal, setShowEditModal] = useState(false);
@@ -148,6 +150,16 @@ const Users = ({
       <div className="content">
         <Header />
         <div className="container-fluid">
+          {showPasswordResetModal && (
+            <ResetPassword
+              selectedUser={selectedUser}
+              showModal={showPasswordResetModal}
+              setShowModal={setshowPasswordResetModal}
+              refresh={() => {
+                getUsers();
+              }}
+            />
+          )}
           {showViewModal && (
             <ViewUser
               selectedUser={selectedUser}
@@ -349,7 +361,18 @@ const Users = ({
         /> */}
          <ChipComponent status={user?.status} />
                   </th>  
-                    <th scope="col">
+                    <th scope="col" width="200px">
+                    <Tooltip title={`Reset password`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setshowPasswordResetModal(true);
+                          }}
+                        >
+                          <i className="fas fa-unlock"></i>
+                        </button>{" "}
+                      </Tooltip>
                       <Tooltip title={`View ${user?.name}`} arrow>
                         <button
                           className="btn btn-sm btn-light"
