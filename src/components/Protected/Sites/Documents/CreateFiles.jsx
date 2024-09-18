@@ -452,7 +452,7 @@ const CreateFiles = ({
                   )}
                   <span>or drag and drop</span>
                   <p>SVG, PNG, JPG or GIF</p>
-                  <p>(max 1 MB)</p>
+                  <p>(max 100 MB)</p>
                 </div>
               </div>
             </Grid>

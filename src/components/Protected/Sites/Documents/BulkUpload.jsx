@@ -161,7 +161,7 @@ const BulkUpload = ({
                     </label>
                     <span>or drag and drop</span>
                     <p>SVG, PNG, JPG or GIF</p>
-                    <p>(max 1 MB each)</p>
+                    <p>(max 100 MB each)</p>
                   </div>
                 </div>
               </div>
