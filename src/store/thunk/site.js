@@ -1349,7 +1349,11 @@ export const loginUser = (formData, goTo, setLoading) => {
       }
       setLoading(false);
     } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+      if(error?.response?.data?.message === "Bad credentials") {
+        toast.error("Please enter valid email and password.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
       setLoading(false);
     }
   };
