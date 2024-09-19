@@ -8,13 +8,19 @@ import {
   setLoader,
 } from "../../../store/thunk/contracts";
 import { get } from "../../../api";
+import { useNavigate } from "react-router-dom";
 const DashboardActiveProjects = (siteSelectedForGlobal) => {
+
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
 
   const [contractList, setContractList] = useState([]);
 
   useEffect(()=>{
     getProjectList();
-  },[])
+  },[siteSelectedForGlobal?.siteSelectedForGlobal?.siteId])
 
   const getProjectList = async () => {
     if(siteSelectedForGlobal?.siteSelectedForGlobal?.siteId) {
@@ -41,6 +47,7 @@ const DashboardActiveProjects = (siteSelectedForGlobal) => {
               <button
                 type="button"
                 className="btn btn-sm btn-light text-primary"
+                onClick={()=>goTo("/site-contracts")}
               >
                 View All
               </button>

@@ -232,7 +232,7 @@ const EditAction = ({
 
   const getTimeRemaining = (creationDate, riskScore) => {
 
-    const data = riskScore > 15
+    const data = riskScore > 16
     ? {badgeColor : "danger", days : 5}
     : riskScore > 9
       ? {badgeColor : "warning", days : 30}
@@ -305,7 +305,7 @@ const EditAction = ({
                         <br />
                         <span
                           style={{ width: '60px' }}
-                          className={`badge bg-${formData?.riskScore > 15
+                          className={`badge bg-${formData?.riskScore > 16
                             ? "danger"
                             : formData?.riskScore > 9
                               ? "warning"

@@ -20,7 +20,7 @@ const DashboardActions = (siteSelectedForGlobal) => {
 
   useEffect(()=>{
     getActionList();
-  },[])
+  },[siteSelectedForGlobal?.siteSelectedForGlobal?.siteId])
 
   const getActionList = async () => {
     if(siteSelectedForGlobal?.siteSelectedForGlobal?.siteId) {

@@ -240,7 +240,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                       {" "}
                       <span
                         className={`badge bg-${
-                          action?.riskScore > 15
+                          action?.riskScore > 16
                             ? "danger"
                             : action?.riskScore > 9
                             ? "warning"

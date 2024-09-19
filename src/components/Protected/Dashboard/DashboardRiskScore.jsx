@@ -36,35 +36,70 @@ const DashboardRiskScore = (siteSelectedForGlobal) => {
     ],
   });
 
+  const options = {
+    plugins: {
+      legend: {
+        display: true,
+      },
+    },
+  };
+
+  const centerTextPlugin = {
+    id: 'centerText',
+    beforeDraw: function(chart) {
+      const { width, height } = chart;
+      const ctx = chart.ctx;
+      ctx.restore();
+      const total = chart.data.datasets[0].data.reduce((sum, value) => sum + value, 0);
+      ctx.font = 'bold 30px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const totalText = total.toString();
+      const x = width / 2;
+      const y = height / 2 - 10;
+      ctx.fillText(totalText, x, y);
+      ctx.font = 'bold 20px Arial';
+      ctx.textBaseline = 'top';
+      const labelText = 'Actions';
+      const labelY = height / 2 + 10;
+      ctx.fillText(labelText, x, labelY);
+  
+      ctx.save();
+    }
+  };
+
   useEffect(()=>{
     getSiteChecks();
-  },[])
+  },[siteSelectedForGlobal?.siteSelectedForGlobal?.siteId])
 
 const getSiteChecks = async () => {
   if(siteSelectedForGlobal?.siteSelectedForGlobal?.siteId) {
-    const siteChecks = await get("/api/site-check/site/" + siteSelectedForGlobal?.siteSelectedForGlobal?.siteId);
-  
+    let siteChecks = await get("/api/site/actions/" + siteSelectedForGlobal?.siteSelectedForGlobal?.siteId);
+    siteChecks = siteChecks.filter(s=> s.status !== "Completed");
     const body = [];
-    body.push(siteChecks.map(i => Number(i.riskScoreRed??0)).reduce((accumulator, currentValue) => accumulator + currentValue, 0));
-    body.push(siteChecks.map(i =>  Number(i.riskScoreAmber??0)).reduce((accumulator, currentValue) => accumulator + currentValue, 0));
-    body.push(siteChecks.map(i =>  Number(i.riskScoreYellow??0)).reduce((accumulator, currentValue) => accumulator + currentValue, 0));
-    body.push(siteChecks.map(i =>  Number(i.riskScoreGreen??0)).reduce((accumulator, currentValue) => accumulator + currentValue, 0));
+    body.push(siteChecks.filter(i => i.riskScore > 16).length);
+    body.push(siteChecks.filter(i => i.riskScore > 9 && i.riskScore < 17).length);
+    body.push(siteChecks.filter(i => i.riskScore > 4 && i.riskScore < 10).length);
+    body.push(siteChecks.filter(i => i.riskScore <= 4).length);
+    
     const data = {
-      labels: [],
+      labels: ["Very High", "High", "Medium","Low" ],
       datasets: [
         {
           data:body,
           backgroundColor: [
+            "#E03C3C",
             "#FFA70B",
             "#EFC531",
             "#0FCF7E",
-            "#E03C3C",
+           
           ],
           borderColor: [
+            "#E03C3C",
             "#FFA70B",
             "#EFC531",
             "#0FCF7E",
-            "#E03C3C",
+            
           ],
           borderWidth: 1,
         },
@@ -85,7 +120,7 @@ const getSiteChecks = async () => {
             </div>
             <div className="ms-auto bd-highlight"></div>
           </div>
-          <Doughnut data={siteChecks} />
+          <Doughnut data={siteChecks} options={options} plugins={[centerTextPlugin]}/>
         </div>
       </div>
     </Fragment>
