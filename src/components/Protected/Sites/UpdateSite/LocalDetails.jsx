@@ -10,6 +10,7 @@ import {
 } from "./../../../../store/thunk/site";
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
+import { useNavigate } from "react-router-dom";
 
 const LocalDetails = ({
   updateLocalDetails,
@@ -28,6 +29,7 @@ const LocalDetails = ({
     reset,
   } = useForm({});
   const timingForm = useForm();
+  const navigate = useNavigate();
   const [timingDisable, setTimingDisable] = useState({
     isMondayDisable: false,
     isTuesdayDisable: false,
@@ -228,7 +230,9 @@ const LocalDetails = ({
                 display: isViewMode ? "none" : "block",
               }}
             >
-              <button type="button" className="btn btn-light mb-3 mr-4">
+              <button type="button" className="btn btn-light mb-3 mr-4" onClick={() => {
+                navigate("/sites")
+              }}>
                 Cancel
               </button>
               &nbsp; &nbsp;

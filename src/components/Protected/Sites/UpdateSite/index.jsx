@@ -22,7 +22,7 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import BusinessIcon from "@mui/icons-material/Business";
 import { toast } from "react-toastify";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
@@ -37,6 +37,7 @@ const UpdateSite = ({
   setLoader,
 }) => {
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
+  const navigate = useNavigate();
   const defaultValues = {
     address1: "",
     address2: "",
@@ -395,6 +396,9 @@ const UpdateSite = ({
                         <button
                           type="button"
                           className="btn btn-light mb-3 mr-4"
+                          onClick={() => {
+                            navigate("/sites")
+                          }}
                         >
                           Cancel
                         </button>

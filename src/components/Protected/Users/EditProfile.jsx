@@ -39,6 +39,7 @@ const EditProfile = ({
     formState: { errors },
     handleSubmit,
     getValues,
+    setValue,
   } = useForm({});
   const values = watch();
   useEffect(() => {
@@ -157,7 +158,7 @@ const EditProfile = ({
             {!isLoading && (
               <Fragment>
                 <div className="row">
-                  <div className="col-md-4">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="firstName">First Name</label>
                       <input
@@ -179,7 +180,7 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="lastName">Last Name</label>
                       <input
@@ -190,7 +191,7 @@ const EditProfile = ({
                       />
                     </div>
                   </div>
-                  <div className="col-md-4">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="email">Email ID</label>
                       <input
@@ -212,7 +213,7 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="phone">Phone Number</label>
                       <input
@@ -239,7 +240,7 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="role">Role</label>
                       <select
@@ -274,7 +275,7 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="userType">Internal/External</label>
                       <select
@@ -299,7 +300,7 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="tagSite">Tag Site</label>
                       <Autocomplete
@@ -327,13 +328,13 @@ const EditProfile = ({
                       />
                     </div>
                   </div>
-                  <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-4">
                     <div className="form-check form-switch">
                       <label
                         className="form-check-label pt-4"
-                        for="flexSwitchCheckChecked"
+                        htmlFor="flexSwitchCheckChecked"
                       >
-                        Is Company ?
+                        Is Company?
                       </label>
                       <input
                         className="mt-4 form-check-input"
@@ -341,17 +342,30 @@ const EditProfile = ({
                         id="isCompany"
                         name="isCompany"
                         {...register("isCompany")}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+    
+                          // Update form state immediately
+                          setValue("isCompany", isChecked); 
+                          
+                          // Clear selected company if unchecked
+                          if (!isChecked) {
+                            setSelectedCompany(null);
+                          }
+                        }}
                       />
                     </div>
                   </div>
-                  {values?.isCompany && (
-                    <div className="col-md-4 mt-2">
+
+                  {/* Conditionally render the Autocomplete only if the checkbox is checked */}
+                  {watch("isCompany") && (
+                    <div className="col-md-4 mt-4">
                       <div className="form-group">
-                        <label for="company">Company Name</label>
+                        <label htmlFor="company">Company Name</label>
                         <Autocomplete
                           id="leadUserID"
                           onChange={(event, item) => {
-                            setSelectedCompany(item?.key);
+                            setSelectedCompany(item?.key); // Set selected company
                           }}
                           value={getSelectedValue()}
                           options={companies.map((option) => {
@@ -376,7 +390,7 @@ const EditProfile = ({
                     </div>
                   )}
                   {values?.userType === "External" && (
-                    <div className="col-md-4 mt-2">
+                    <div className="col-md-4 mt-4">
                       <div className="form-group">
                         <label for="trade">Trade (if external)</label>
                         <select
@@ -416,7 +430,7 @@ const EditProfile = ({
                     </div>
                   )}
                   {tagSite && (
-                    <div className="col-md-4 mt-2">
+                    <div className="col-md-4 mt-4">
                       <div className="form-group">
                         <div>
                           {tagSite?.length > 3 && (
@@ -456,7 +470,7 @@ const EditProfile = ({
                       </div>
                     </div>
                   )}
-                  <div className="col-md-4 mt-2">
+                  <div className="col-md-4 mt-4">
                     <div className="form-group">
                       <label for="status">Status</label>
                       <select
@@ -487,14 +501,14 @@ const EditProfile = ({
                 </div>
               </Fragment>
             )}
-            <div className="mt-2 mb-2">
+            <div className="mt-4 mb-2">
               {isLoading && (
                 <Box sx={{ display: "flex" }}>
                   <CircularProgress />
                 </Box>
               )}
               {!isLoading && (
-                <button type="submit" className="btn btn-sm btn-primary">
+                <button type="submit" className="btn btn-sm btn-primary mt-4">
                   Save
                 </button>
               )}
