@@ -14,6 +14,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import RestorePageIcon from "@mui/icons-material/RestorePage";
 import CopyAll from "@mui/icons-material/CopyAll";
 import MoveDown from "@mui/icons-material/MoveDown";
+import Edit from "@mui/icons-material/Edit";
 
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Typography from "@mui/material/Typography";
@@ -41,6 +42,7 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import PdfViewer from "./PdfViewer";
 import CopyModal from "./CopyModal";
 import MoveModal from "./MoveModal";
+import EditDocument from "./EditDocument";
 
 const SubFolder = ({
   deleteFile,
@@ -59,6 +61,7 @@ const SubFolder = ({
   const [versionHistory, setVersionHistory] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
+  const [showEditDocumentModal, setEditDocumentModal] = useState(false);
   const [isVersionModeEdit, setIsVersionModeEdit] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
@@ -208,6 +211,16 @@ const SubFolder = ({
             showMoveModal={showMoveModal}
             setShowMoveModal={setShowMoveModal}
             selectedFileForCopy={selectedFileForCopy}
+          />
+        )}
+        {showEditDocumentModal && (
+          <EditDocument
+            showEditDocumentModal={showEditDocumentModal}
+            setEditDocumentModal={setEditDocumentModal}
+            selectedFile={selectedFileForCopy}
+            refresh={() => {
+              getSubFilesAndFolder(folderId);
+            }}
           />
         )}
         {showFolderModal && (
@@ -575,6 +588,15 @@ const SubFolder = ({
                               <MoveDown
                                 onClick={() => {
                                   setShowMoveModal(true);
+                                  setSelectedFileForCopy(file);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Edit`} arrow>
+                              <Edit
+                                onClick={() => {
+                                  setEditDocumentModal(true);
                                   setSelectedFileForCopy(file);
                                 }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
