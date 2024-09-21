@@ -282,7 +282,8 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                         <Fragment>
                           <Tooltip title={`Mark as completed`} arrow>
                             <button
-                              className="btn btn-sm btn-light"
+                              disabled={action?.status === "Completed"}
+                              className={`btn btn-sm btn-light`}
                               onClick={() => {
                                 complete(action, "Completed");
                               }}
