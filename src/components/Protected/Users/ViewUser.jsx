@@ -7,6 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
 import { connect } from "react-redux";
 import moment from "moment";
+import TagSites from "./TagSites";
 
 const ViewUsers = ({
   showViewModal,
@@ -17,9 +18,17 @@ const ViewUsers = ({
   const handleOpen = () => setShowViewModal(true);
   const handleClose = () => setShowViewModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
 
   return (
     <React.Fragment>
+      {showSiteTagModal && (
+        <TagSites
+          taggedSites={selectedUser?.taggedSites}
+          showSiteTagModal={showSiteTagModal}
+          setShowSiteTagModal={setShowSiteTagModal}
+        />
+      )}
       <Dialog
         open={showViewModal}
         onClose={handleClose}
@@ -59,9 +68,23 @@ const ViewUsers = ({
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Site
-                  <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.defaultSiteName || "--"}
-                  </span>
+                    {selectedUser?.taggedSites?.length > 3 && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-light text-primary"
+                          onClick={() => {
+                            setShowSiteTagModal(true);
+                          }}
+                        >
+                          {selectedUser?.taggedSites?.length} Sites
+                        </button>
+                      </>
+                    )}
+                    {selectedUser?.taggedSites?.length < 4 &&
+                      selectedUser?.taggedSites?.map((itm) => (
+                        <span className="badge bg-primary">{itm?.name}</span>
+                      ))}
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Role
