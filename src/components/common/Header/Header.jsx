@@ -1,5 +1,5 @@
 import "./Header.css";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import GridViewIcon from "@mui/icons-material/GridView";
 import CloseIcon from "@mui/icons-material/Close";
 import { AppBar, Toolbar } from "@mui/material";
@@ -10,7 +10,8 @@ import BackDrop from "../Loader/BackDrop";
 import { logoutUser, setSideBarView } from "../../../store/thunk/site";
 import { useNavigate } from "react-router-dom";
 import SearchSite from "../../Protected/Dashboard/SearchSite";
-
+import { Popover, List, ListItem, ListItemText } from "@mui/material";
+import { get } from "../../../api";
 const Header = ({
   siteSelectedForGlobal,
   isLoading,
@@ -19,19 +20,39 @@ const Header = ({
   isSideBarOpen,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [notification, setNotification] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getNotifications();
+  }, [siteSelectedForGlobal]);
+
+  const getNotifications = async () => {
+    if (siteSelectedForGlobal?.siteId) {
+      const actions = await get(
+        `/api/action/${siteSelectedForGlobal?.siteId}/summary`
+      );
+      const data =
+        actions?.preActions?.filter(
+          (a) => a.status === "Pending Action" || a.status === "Closed"
+        ) || [];
+        console.log("data",data);
+      setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
+    }
+  };
+  const handlePopoverOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+  const open = Boolean(anchorEl);
   const goTo = (link) => {
     navigate(link);
   };
   const logout = () => {
     logoutUser(goTo);
-  };
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
   };
   return (
     <AppBar
@@ -66,9 +87,47 @@ const Header = ({
             </div>
           )}
 
-          <div className="icon dont-print">
+          <div
+            className="icon dont-print cursor"
+            onMouseEnter={handlePopoverOpen}
+            onMouseLeave={handlePopoverClose}
+            onClick={() => {
+              navigate("/notifications");
+            }}
+          >
             <NotificationsNoneIcon className="grid-icon" />
           </div>
+          <Popover
+            id="mouse-over-popover"
+            sx={{
+              pointerEvents: "none",
+            }}
+            open={open}
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            onClose={handlePopoverClose}
+            disableRestoreFocus
+          >
+            <List>
+              {notification?.length === 0 && (
+                <ListItem>
+                  <ListItemText primary="No Notification Found!!" />
+                </ListItem>
+              )}
+              {notification?.map((i) => (
+                <ListItem>
+                  <ListItemText primary={i.description} />
+                </ListItem>
+              ))}
+            </List>
+          </Popover>
           <div className="icon cursor dont-print" onClick={() => logout()}>
             <LogoutIcon className="grid-icon" />
           </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import {
   addUser,
@@ -17,10 +17,11 @@ import Box from "@mui/material/Box";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import MessageSharp from "@mui/icons-material/MessageSharp";
+import { List, ListItem, ListItemText } from "@mui/material";
+import { get } from "../../../api";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -51,8 +52,25 @@ function a11yProps(index) {
   };
 }
 
-const Notifications = ({}) => {
-  const [value, setValue] = React.useState(0);
+const Notifications = ({ siteSelectedForGlobal }) => {
+  const [value, setValue] = useState(0);
+  const [notification, setNotification] = useState([]);
+
+  useEffect(() => {
+    getNotifications();
+  }, [siteSelectedForGlobal]);
+  const getNotifications = async () => {
+    if (siteSelectedForGlobal?.siteId) {
+      const actions = await get(
+        `/api/action/${siteSelectedForGlobal?.siteId}/summary`
+      );
+      const data =
+        actions?.preActions?.filter(
+          (a) => a.status === "Pending Action" || a.status === "Closed"
+        ) || [];
+      setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
+    }
+  };
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -85,7 +103,7 @@ const Notifications = ({}) => {
                 label="All Notifications"
                 {...a11yProps(0)}
               />
-              <Tab
+              {/* <Tab
                 icon={<ElectricBoltIcon />}
                 label="For Actions"
                 {...a11yProps(1)}
@@ -94,12 +112,17 @@ const Notifications = ({}) => {
                 icon={<MessageSharp />}
                 label="For Information"
                 {...a11yProps(2)}
-              />
+              /> */}
             </Tabs>
             <TabPanel value={value} index={0}>
-              <div className="row">
-                <div className="col-md-12">All Notifications</div>
-              </div>
+              <h3>All Notifications</h3>
+              <List>
+                {notification.map((notification, index) => (
+                  <ListItem key={index}>
+                    <ListItemText primary={notification?.description} />
+                  </ListItem>
+                ))}
+              </List>
             </TabPanel>
             <TabPanel value={value} index={1}>
               For Actions
@@ -117,6 +140,7 @@ const Notifications = ({}) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getSites,
