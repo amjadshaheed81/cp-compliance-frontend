@@ -244,18 +244,18 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
               onClick={() => setSideBarView(false)}
             />
           </li>
-          <li className="m-0">
-            <img
+          <li className="m-0 mt-2">
+            {/* <img
               src={userImg}
               height={40}
               width={40}
               className="img img-responsive"
               alt="side logo"
-            />
-            <span className="text-white p-2 fs-5">
+            /> */}
+            <span className="text-white p-2 fs-6">
               {loggedInUserData?.name}
             </span>
-            <p className="text-white ps-5 fs-6">{loggedInUserData?.role}</p>
+            <p className="text-white p-2 fs-6">Role: {loggedInUserData?.role}</p>
           </li>
           <p style={{ color: "grey" }}>Genral</p>
           {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
