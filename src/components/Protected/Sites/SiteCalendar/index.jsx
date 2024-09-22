@@ -104,6 +104,9 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
               {itm?.type?.includes("Document") && (
                 <span class="badge bg-info">{itm?.type}</span>
               )}
+               {itm?.type?.includes("Contract") && (
+                <span class="badge bg-info">{itm?.type}</span>
+              )}
               </Tooltip>
             </>
 

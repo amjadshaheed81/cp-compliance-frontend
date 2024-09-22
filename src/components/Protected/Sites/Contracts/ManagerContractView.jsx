@@ -208,6 +208,24 @@ const ManagerContractView = ({
   const deleteAsset = (asset) => {
     console.log("asset", asset);
   };
+
+  const checkAndAddExpiryCalenderEvent = async (data) => {
+    alert('here')
+    const body = {
+      siteId: siteSelectedForGlobal?.siteId,
+      startDate: moment(data.visitDate),
+      endDate: moment(data.visitDate),
+      shortText: "Contract Inspection Scheduled for Contract #"+data.projectContractId,
+      eventType: "Contract",
+      userId: loggedInUserData?.id,
+      includeCompanyUsers: true
+    };
+    await put("/api/user/calendar", body);
+    body.userId = currentContract.projectManagerUserId;
+    await put("/api/user/calendar", body);
+  };
+
+
   const addVisit = async () => {
     const visitDate = scheduleDateForm.getValues("scheduleDate");
     if (visitDate) {
@@ -219,6 +237,7 @@ const ManagerContractView = ({
         visitDate: `${visitDate} 10:00:00`,
         rescheduleDate: "",
       };
+      checkAndAddExpiryCalenderEvent(visit)
       try {
         const res = await updateScheduleVisit(visit);
         if (res == "Success") {
@@ -231,6 +250,7 @@ const ManagerContractView = ({
       } catch (e) {
         toast.error("Something went wrong while visit schedule.");
       }
+      
     } else {
       toast.warning("Please select date to schedule visit.");
     }
