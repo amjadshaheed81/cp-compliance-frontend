@@ -35,7 +35,7 @@ const EditDocument = ({
   } = useForm({});
   useEffect(() => {
     reset({
-      name: selectedFile?.name ? selectedFile?.name?.split(".")?.[0] : "",
+      fileName: selectedFile?.name ? selectedFile?.name?.split(".")?.[0] : "",
       issueDate: selectedFile?.issueDate
         ? selectedFile?.issueDate?.split("T")?.[0]
         : "",
@@ -48,7 +48,7 @@ const EditDocument = ({
   const submitEditDocument = async (data) => {
     const payload = {
       ...data,
-      name: `${data?.name}.${selectedFile?.name?.split(".")?.[1]}`,
+      fileName: `${data?.fileName}.${selectedFile?.name?.split(".")?.[1]}`,
       issueDate: data?.issueDate ? `${data?.issueDate}T10:00:00` : "",
       expiryDate: data?.expiryDate ? `${data?.expiryDate}T10:00:00` : "",
     };
@@ -85,10 +85,10 @@ const EditDocument = ({
                   <input
                     type="text"
                     className="form-control"
-                    id="name"
-                    name="name"
+                    id="fileName"
+                    name="fileName"
                     placeholder=""
-                    {...register("name")}
+                    {...register("fileName")}
                   />
                 </div>
               </div>
