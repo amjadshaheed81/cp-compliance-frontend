@@ -57,6 +57,15 @@ const CreateFiles = ({
     setValue("name", folderData?.folderName ? folderData?.name : "");
   }, []);
   const submitFile = async (data, fileUpload, formData) => {
+
+    const fileSizeLimit = 100 * 1024 * 1024;
+
+    if (fileUpload?.size > fileSizeLimit) {
+      toast.error("File size cannot exceed 100MB");
+      return;
+    } 
+
+
     console.log("folderfiles", folderfiles);
     const existingFile = folderfiles?.filter(
       (f) => f.name === formData.fileUpload[0].name
@@ -266,7 +275,6 @@ const CreateFiles = ({
                   );
                   return;
                 }
-                console.log("selectedMandatoryFile", selectedMandatoryFile);
               } else {
                 data.files.push({
                   ...formData,
