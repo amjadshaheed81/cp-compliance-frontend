@@ -251,6 +251,7 @@ const Sites = ({
                       <span
                         className="text-primary cursor"
                         onClick={() => {
+                          toast.info(`${itm?.siteName} is selected.`);
                           selectGlobalSite(itm);
                           localStorage.setItem("site", JSON.stringify(itm));
                         }}
