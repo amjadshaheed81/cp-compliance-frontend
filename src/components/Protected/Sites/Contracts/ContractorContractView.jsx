@@ -166,7 +166,7 @@ const ContractorContractView = ({
       company: loggedInUserData?.companyName,
       quote: Number(data?.quote || 0),
       notes: data?.quoteNote,
-      // quoteDate: moment(new Date()).format("YYYY-MM-DD") + " 10:00:00",
+      quoteDate: moment(new Date()).format("YYYY-MM-DD") + "T10:00:00",
       status: 'Recieved',
       projectContractId: selectedContract?.projectContractId,
     }
