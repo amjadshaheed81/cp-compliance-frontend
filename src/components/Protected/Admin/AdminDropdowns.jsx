@@ -6,7 +6,6 @@ import SidebarNew from "../../common/Sidebar/SidebarNew";
 import { get, post, del, put } from "../../../api";
 import CircularProgress from '@mui/material/CircularProgress';
 import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
-
 import { toast } from "react-toastify";
 
 
@@ -16,6 +15,7 @@ const AdminDropdowns = ({ }) => {
   const [formData, setFormData] = useState({});
   const [lovTypes, setLovTypes] = useState([]);
   const [selectedLovType, setselectedLovType] = useState();
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [addNewDrp, setAddNewDrp] = useState(false);
 
@@ -24,22 +24,38 @@ const AdminDropdowns = ({ }) => {
   }, [])
   
   useEffect(() => {
-    getLovType(selectedLovType);
-  }, [selectedLovType])
+    if (selectedLovType) {
+      getLovType(selectedLovType);
+    }
+  }, [selectedLovType]);
 
   const getLovTypes = async () => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/lov-types");
-    setLovTypes(lovtypesData)
+    setLovTypes(lovtypesData);
     setIsLoading(false);
-  }
+  };
 
   const getLovType = async (type) => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/" + type);
-    setData(lovtypesData)
+    setData(lovtypesData);
     setIsLoading(false);
-  }
+  };
+
+  const validateFields = (data) => {
+    let errors = {};
+    if (!data.lovType) {
+      errors.lovType = "Type is required";
+    }
+    if (!data.lovValue) {
+      errors.lovValue = "Value is required";
+    }
+    if (!data.attribite1) {
+      errors.attribite1 = "Depends On is required";
+    }
+    return errors;
+  };
 
   const addNew = () => {
     const inProgress = data.findIndex(d => d.edit || d.add);
@@ -49,8 +65,7 @@ const AdminDropdowns = ({ }) => {
     }
     const udata = [{ add: true }, ...data];
     setData(udata);
-  }
-
+  };
 
   const editData = (idx) => {
     const inProgress = data.findIndex(d => d.edit || d.add);
@@ -61,7 +76,7 @@ const AdminDropdowns = ({ }) => {
     const udata = [...data];
     udata[idx].edit = true;
     setData(udata);
-  }
+  };
 
   const cancel = (idx) => {
     const udata = [...data];
@@ -70,44 +85,54 @@ const AdminDropdowns = ({ }) => {
     } else {
       udata[idx].edit = false;
     }
-    
     setData(udata);
-  }
+  };
 
   const deletData = async (idx) => {
     setIsLoading(true);
-    const dataTSave = { ...data[idx] }
+    const dataTSave = { ...data[idx] };
     await del("/api/lov/" + dataTSave.id, dataTSave);
-    getLovType(dataTSave.lovType)
-  }
+    getLovType(dataTSave.lovType);
+  };
 
   const save = async (idx) => {
+    const dataTSave = { lovType: selectedLovType, ...data[idx] };
+    const validationErrors = validateFields(dataTSave);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setIsLoading(true);
-    const dataTSave = { lovType:selectedLovType, ...data[idx] }
     if (dataTSave.add) {
       await post("/api/lov/", dataTSave);
     } else {
       await put("/api/lov/id/" + dataTSave.id, dataTSave);
     }
-    getLovType(selectedLovType)
-    
-  }
+    getLovType(selectedLovType);
+  };
 
   const saveNew = async () => {
+    const validationErrors = validateFields(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     setIsLoading(true);
     await post("/api/lov/", formData);
-    setselectedLovType(formData.lovType)
+    setselectedLovType(formData.lovType);
     setAddNewDrp(false);
-  }
-  
+  };
+
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
-    const uAllData = [...data]
+    const uAllData = [...data];
     const udata = {
       ...data[idx],
       [name]: value,
-    }
-    uAllData[idx] = udata
+    };
+    uAllData[idx] = udata;
     setData(uAllData);
   };
 
@@ -118,96 +143,87 @@ const AdminDropdowns = ({ }) => {
       [name]: value,
     });
   };
-  
+
   return (
     <Fragment>
       <SidebarNew />
-      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false) }} maxWidth="lg" fullWidth>
+      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false); }} maxWidth="lg" fullWidth>
         <DialogTitle>Add New Dropdown </DialogTitle>
         <DialogContent dividers>
           <Fragment>
-            
             <Grid container>
               <Grid sm={4}>
-                <label for="lovType">Type</label>
+                <label htmlFor="lovType">Type</label>
                 <input
                   style={{ maxWidth: '300px' }}
-                  type="lovType"
+                  type="text"
                   className="form-control"
                   name="lovType"
                   onChange={handleInputChange2}
-
                 />
+                {errors.lovType && <span className="text-danger">{errors.lovType}</span>}
               </Grid>
               <Grid sm={4}>
-                <label for="lovValue">Value</label>
+                <label htmlFor="lovValue">Value</label>
                 <input
                   style={{ maxWidth: '300px' }}
-                  type="lovValue"
+                  type="text"
                   className="form-control"
                   name="lovValue"
                   onChange={handleInputChange2}
                 />
+                {errors.lovValue && <span className="text-danger">{errors.lovValue}</span>}
               </Grid>
               <Grid sm={4}>
-                <label for="attribite1">Depends On</label>
+                <label htmlFor="attribite1">Depends On</label>
                 <input
                   style={{ maxWidth: '300px' }}
-                  type="attribite1"
+                  type="text"
                   className="form-control"
                   name="attribite1"
                   onChange={handleInputChange2}
-
                 />
+                {errors.attribite1 && <span className="text-danger">{errors.attribite1}</span>}
               </Grid>
-
               <Grid sm={4}>
-                <label for="attribite2">Additional Attribute</label>
+                <label htmlFor="attribite2">Additional Attribute</label>
                 <input
                   style={{ maxWidth: '300px' }}
-                  type="attribite2"
+                  type="text"
                   className="form-control"
                   name="attribite2"
                   onChange={handleInputChange2}
-
                 />
               </Grid>
-             
             </Grid>
-
           </Fragment>
-
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddNewDrp(false)} className="bg-light text-primary">
             Cancel
           </Button>
-          <Button className="bg-primary text-white" onClick={() => saveNew()}>
+          <Button className="bg-primary text-white" onClick={saveNew}>
             Save
           </Button>
         </DialogActions>
       </Dialog>
+
       <div className="content">
         <Header />
         <div className="container-fluid">
-          
           <BreadCrumHeader header={"Dropdown Management"} page={"Manage"} />
-
-          <Grid container >
+          <Grid container>
             <Grid sm={4}>
-              <label htmlFor="score" name="score">
-                Dropdown Type
-              </label>
+              <label htmlFor="score">Dropdown Type</label>
               <select
                 className="form-control form-select"
                 name="score"
                 onChange={(e) => setselectedLovType(e.target.value)}
                 value={selectedLovType}
-               
               >
                 <option value={null}>Select</option>
-                {lovTypes.map(o => (
-                  <option value={o}> {o} </option>
+                {lovTypes.map((o, index) => (
+                  <option key={index} value={o}> {o} </option>
                 ))}
               </select>
             </Grid>
@@ -215,37 +231,29 @@ const AdminDropdowns = ({ }) => {
               {data.length > 0 &&
                 <button
                   style={{ width: "250px", margin: '20px' }}
-                  className="btn btn-primary btn-light"
-                  onClick={() => {
-                    addNew()
-                  }}
+                  className="btn btn-primary"
+                  onClick={addNew}
                 >
-
-                  <i className="fas fa-arrow-left" /> Add new value
+                  <i className="fas fa-plus" /> Add new value
                 </button>
               }
             </Grid>
             <Grid sm={4}>
-                <button
-                  style={{ width: "250px", margin: '20px' }}
-                  className="btn btn-primary btn-primary"
-                  onClick={() => {
-                    setAddNewDrp(true)
-                  }}
-                >
-
-                  <i className="fas fa-plus" /> Add new dropdown
-                </button>
+              <button
+                style={{ width: "250px", margin: '20px' }}
+                className="btn btn-primary"
+                onClick={() => setAddNewDrp(true)}
+              >
+                <i className="fas fa-plus" /> Add new dropdown
+              </button>
             </Grid>
           </Grid>
-         
-         
-          <div className="row p-2"></div>
-          {selectedLovType  && <div className="col-md-12 table-responsive">
+
+          {selectedLovType && <div className="col-md-12 table-responsive">
             <table className="table" style={{ border: "1px solid" }}>
               <thead className="table-dark">
                 <tr>
-                  <th scope="col" style={{ border: "2px groove"}}>Value</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Value</th>
                   <th scope="col" style={{ border: "2px groove" }}>Description</th>
                   <th scope="col" style={{ border: "2px groove" }}>Depends On</th>
                   <th scope="col" style={{ border: "2px groove" }}>Additional Attribute</th>
@@ -253,107 +261,84 @@ const AdminDropdowns = ({ }) => {
                 </tr>
               </thead>
               <tbody>
-                {isLoading &&
+                {isLoading && 
                   <tr>
-                    <td colSpan={4} align="center"><CircularProgress /></td>
+                    <td colSpan={5} align="center"><CircularProgress /></td>
                   </tr>
                 }
-                  
-                 
+
                 {!isLoading && data?.length === 0 && (
                   <tr>
-                    <td colSpan={4} align="center">No result found!!</td>
+                    <td colSpan={5} align="center">No result found!!</td>
                   </tr>
                 )}
-                {!isLoading && data.map((d, rowIndex) => 
+
+                {!isLoading && data.map((d, rowIndex) => (
                   <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
-                      {d.lovValue}
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.lovValue}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
                         value={d.lovValue}
                         name="lovValue"
                         className="form-control"
-                        id="lovValue"
-                        onChange={(e)=>handleInputChange(e,rowIndex)}
+                        onChange={(e) => handleInputChange(e, rowIndex)}
                       />
+                      {errors.lovValue && <span className="text-danger">{errors.lovValue}</span>}
                     </td>}
-                    
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
-                      {d.lovDesc}
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.lovDesc}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
                         value={d.lovDesc}
                         name="lovDesc"
                         className="form-control"
-                        id="lovDesc"
-                        onChange={(e)=>handleInputChange(e,rowIndex)}
+                        onChange={(e) => handleInputChange(e, rowIndex)}
                       />
                     </td>}
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
-                      {d.attribite1}
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.attribite1}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
                         value={d.attribite1}
                         name="attribite1"
                         className="form-control"
-                        id="attribite1"
-                        onChange={(e)=>handleInputChange(e,rowIndex)}
+                        onChange={(e) => handleInputChange(e, rowIndex)}
                       />
+                      {errors.attribite1 && <span className="text-danger">{errors.attribite1}</span>}
                     </td>}
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
-                      {d.attribite2}
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.attribite2}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
                         value={d.attribite2}
                         name="attribite2"
                         className="form-control"
-                        id="attribite2"
-                        onChange={(e)=>handleInputChange(e,rowIndex)}
+                        onChange={(e) => handleInputChange(e, rowIndex)}
                       />
                     </td>}
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => { editData(rowIndex) }}
-                      >
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <button className="btn btn-sm btn-light" onClick={() => editData(rowIndex)}>
                         <i className="fas fa-edit"></i>
                       </button>{" "}
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => { deletData(rowIndex) }}
-                      >
+                      <button className="btn btn-sm btn-light" onClick={() => deletData(rowIndex)}>
                         <i className="fas fa-trash"></i>
                       </button>
-                      
                     </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }} >
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => { save(rowIndex)}}
-                      >
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <button className="btn btn-sm btn-success" onClick={() => save(rowIndex)}>
                         <i className="fas fa-save"></i>&nbsp; Save
                       </button>&nbsp;
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => { cancel(rowIndex) }}
-                      >
+                      <button className="btn btn-sm btn-danger" onClick={() => cancel(rowIndex)}>
                         <i className="fas fa-save"></i>&nbsp; Cancel
                       </button>
-
                     </td>}
                   </tr>
-                )
-                }
-                
+                ))}
               </tbody>
             </table>
           </div>}
@@ -362,9 +347,7 @@ const AdminDropdowns = ({ }) => {
     </Fragment>
   );
 };
-const mapStateToProps = (state) => ({
 
-});
-export default connect(mapStateToProps, {  })(
-  AdminDropdowns
-);
+const mapStateToProps = (state) => ({});
+
+export default connect(mapStateToProps, {})(AdminDropdowns);
