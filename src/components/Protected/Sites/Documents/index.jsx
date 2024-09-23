@@ -93,6 +93,7 @@ const Document = ({
                 className="fileSearchResult fileSearchResultSite w-100"
                 style={{
                   display: fileList ? "block" : "none",
+                  width: "50%"
                 }}
               >
                 {/* <p>{fileList}</p> */}
