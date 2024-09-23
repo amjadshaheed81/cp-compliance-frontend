@@ -473,7 +473,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             page={"Energy"}
           />
 
-          <div className="d-flex bd-highlight">
+          <div className="d-flex bd-highlight" style={{flexWrap: 'wrap'}}>
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
