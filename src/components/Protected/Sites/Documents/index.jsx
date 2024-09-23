@@ -82,6 +82,11 @@ const Document = ({
               name="search"
               placeholder="Search for Document"
               onChange={searchDocument}
+              onKeyDown={(event) => {
+                if (event.key === "Tab") {
+                  setFileList([])
+                }
+              }}
             />
             {fileList && (
               <ul
