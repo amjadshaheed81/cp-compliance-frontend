@@ -23,4 +23,5 @@
   }
   .fileSearchResultSite {
     max-height: 10rem;
+    width: 50% !important;
   }
