@@ -239,7 +239,10 @@ const StatutoryRegister = ({
                   <CSVLink
                     filename={"statutory-documents.csv"}
                     className="btn btn-light bg-white text-primary"
-                    data=""
+                    data={statutory.map(item => {
+                      delete item.files;
+                      return {...item};
+                  })}
                   >
                     <i className="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
