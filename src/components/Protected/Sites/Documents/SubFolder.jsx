@@ -444,7 +444,7 @@ const SubFolder = ({
                             navigateToSubFolder(folder?.id);
                             addStack(folder?.id, folder?.name);
                           }}>{folder?.name}</span>
-                          &nbsp; &nbsp;{tags[i] && <Chip 
+                          {/* &nbsp; &nbsp;{tags[i] && <Chip 
                             label={tags[i]}
                             color="primary"
                             //variant="outlined"
@@ -473,7 +473,7 @@ const SubFolder = ({
                             settags(tag);
                             settagindex(null);
                             }
-                          }}/>}
+                          }}/>} */}
                         </div>
                         
                       </td>
