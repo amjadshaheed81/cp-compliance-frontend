@@ -336,7 +336,6 @@ const Contracts = ({
                   )}
                   <th scope="col">Start Date</th>
                   <th scope="col">End date</th>
-                  <th scope="col">Cost</th>
                   <th scope="col">Status</th>
                   <th scope="col">Action</th>
                 </tr>
@@ -382,7 +381,6 @@ const Contracts = ({
                         ? moment(itm?.endDate).format("DD-MM-YYYY")
                         : "-"}
                     </td>
-                    <td>{itm?.cost}</td>
                     <td>
                       <ChipComponent status={itm?.status} />
                     </td>
