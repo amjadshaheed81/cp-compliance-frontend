@@ -204,6 +204,9 @@ const SubFolder = ({
             showCopyModal={showCopyModal}
             setShowCopyModal={setShowCopyModal}
             selectedFileForCopy={selectedFileForCopy}
+            refresh={() => {
+              getSubFilesAndFolder(folderId);
+            }}
           />
         )}
         {showMoveModal && (
@@ -211,6 +214,9 @@ const SubFolder = ({
             showMoveModal={showMoveModal}
             setShowMoveModal={setShowMoveModal}
             selectedFileForCopy={selectedFileForCopy}
+            refresh={() => {
+              getSubFilesAndFolder(folderId);
+            }}
           />
         )}
         {showEditDocumentModal && (

@@ -14,11 +14,15 @@ const MoveModal = ({
   showMoveModal,
   setShowMoveModal,
   selectedFileForCopy,
+  refresh,
 }) => {
   const [open, setOpen] = useState(showMoveModal);
   const [extension, setExtension] = useState("");
   const handleOpen = () => setShowMoveModal(true);
-  const handleClose = () => setShowMoveModal(false);
+  const handleClose = () => {
+    refresh();
+    setShowMoveModal(false);
+  };
   return (
     <>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
