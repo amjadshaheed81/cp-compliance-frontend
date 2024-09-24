@@ -31,12 +31,28 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
   const printRef = useRef();
 
   const params = useParams();
+  const [dueDate, setDueDate] = useState('');
   const [sasToken, setSasToken] = useState();
   const [step, setStep] = useState();
   const checkId = params.id;
   const [siteCheck, setSiteCheck] = useState();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (siteCheck?.startDate && siteCheck?.repeatFrequency) {
+      // Convert start date to Date object
+      const startDate = new Date(siteCheck.startDate);
+
+      // Add repeatFrequency (assumed in days) to start date
+      const expiryDate = new Date(startDate);
+      expiryDate.setDate(startDate.getDate() + siteCheck.repeatFrequency);
+
+      // Update dueDate state with the formatted date (YYYY-MM-DD)
+      setDueDate(expiryDate.toISOString().substring(0, 10));
+    } else {
+      setDueDate(String(siteCheck?.dueDate)?.substring(0, 10));
+    }
+  }, [siteCheck]);
 
   useEffect(() => {
     getExternalUsers();
@@ -226,7 +242,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     Due Date
                   </label>
                   <input
-                    value={String(siteCheck?.dueDate)?.substring(0, 10)}
+                    value={dueDate}
                     disabled
                     type="date"
                     name="dueDate"
