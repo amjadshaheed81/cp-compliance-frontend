@@ -69,6 +69,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
         data.checkId = checkId;
         data.status = "Open";
         await post("/api/site-check/inspection/fault", data)
+        getIpection();
         const actionData = {
           type: "Inspection",
           status: "Reported",
