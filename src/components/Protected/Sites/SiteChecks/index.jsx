@@ -85,6 +85,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     subType: "",
     category: "",
     status: "Open",
+    startDate: "",
   });
   const [formData2, setFormData2] = useState({
     searchField: "",
@@ -226,6 +227,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       subType: action.subType,
       category: action.category,
       dueDate: action.dueDate,
+      startDate: action.startDate,
       leadUserID: action.leadUserID,
       assistantUserID: action.assistantUserID,
       repeatFrequency: action.repeatFrequency
@@ -295,6 +297,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const body = formData;
     body.siteId = site.siteId
     body.dueDate = new Date(body.dueDate);
+    body.startDate = new Date(body.startDate);
     await post("/api/site-check/", body );
     setCalenderEvents(body)
    
@@ -305,7 +308,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const setCalenderEvents = (body) => {
     const calenderBody = {
       siteId: siteSelectedForGlobal?.siteId,
-      startDate: moment(body.dueDate),
+      startDate: moment(body.startDate),
       endDate: moment(body.dueDate),
       shortText: `${body.type} ${body.subType} - ${body.category}`,
       eventType: `${body.type} ${body.subType}`,
@@ -673,6 +676,22 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 <Grid sm={4}>
                     <div style={{ margin: "10px" }}>
                       <DatePicker
+                      label="Start Date"
+                        value={formData?.startDate}
+                        onChange={(date) => {
+                          setFormData({
+                            ...formData,
+                            //dueDate: new Date(date),
+                            startDate: new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(),
+                            
+                          });
+                        }}
+                    />
+                  </div>
+                </Grid>
+                <Grid sm={4}>
+                    <div style={{ margin: "10px" }}>
+                      <DatePicker
                       label="Due Date"
                         value={formData?.dueDate}
                         onChange={(date) => {
@@ -684,17 +703,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           });
                         }}
                     />
-                   
-                 
-                      {/* <input
-                        required
-                      value={String(formData?.dueDate)?.substring(0, 10)}
-                      min={new Date().toISOString().split('T')[0]}
-                      type="date"
-                      name="dueDate"
-                      className="form-control"
-                      onChange={handleInputChange}
-                    /> */}
                   </div>
                 </Grid>
                 <Grid sm={4}>
@@ -789,7 +797,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 <Grid sm={4}>
 
                 </Grid>
-                <Grid sm={4}>
+                <Grid sm={12}>
                   <button
                     style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                     className="btn btn-primary text-white pr-2"

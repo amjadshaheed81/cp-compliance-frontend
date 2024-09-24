@@ -206,6 +206,22 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
               </Grid>
               <Grid sm={4}>
                 <div style={{ margin: "10px" }}>
+                  <label htmlFor="startDate" name="startDate">
+                    Start Date
+                  </label>
+                  <input
+                    id="startDate"
+                    value={String(siteCheck?.startDate)?.substring(0, 10)}
+                    disabled
+                    type="date"
+                    name="startDate"
+                    className="form-control"
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </Grid>
+              <Grid sm={4}>
+                <div style={{ margin: "10px" }}>
                   <label htmlFor="folder" name="folder">
                     Due Date
                   </label>
@@ -290,7 +306,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
               <Grid sm={4}>
 
               </Grid>
-              <Grid sm={4}>
+              <Grid sm={12}>
                 <button
                   style={{ width: "200px", marginBottom: '20px', margin: '10px', float: 'right' }}
                   className="btn btn-primary btn-light"
