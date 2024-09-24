@@ -373,10 +373,10 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
           {!create && <>
           <BreadCrumHeader header={"Site Check"} page={"Site Inspection"} />
           
-          <div className="d-flex bd-highlight">
-            <div className="pt-2 bd-highlight ">
+          <div className="">
+            <div className="">
               <div className="row" style={{ height: "auto" }}>
-                  <div className="col">
+                  <div className="col-md-2 col-sm-4 mt-2">
                     <div style={{ position: "relative" }}>
                       <i
                         style={{
@@ -398,7 +398,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     </div>
                   
                 </div>
-                <div className="col">
+                <div className="col-md-2 col-sm-4 mt-2">
                   <select
                     name="type"
                     className="form-control form-select"
@@ -410,7 +410,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                    
                   </select>
                 </div>
-                <div className="col">
+                <div className="col-md-2 col-sm-4 mt-2">
                   <select
                     name="subType"
                     className="form-control form-select"
@@ -423,7 +423,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       {subtypeoptions.map(t => <option value={t}>{t}</option>)}
                   </select>
                 </div>
-                <div className="col">
+                <div className="col-md-2 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -435,11 +435,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     <option value="Done">Done</option>
                   </select>
                 </div>
-              </div>
-            </div>
-            <div className="ms-auto p-2 bd-highlight">
-              <div className="row" style={{ height: "auto" }}>
-                <div className="col">
+                <div className="col-md-2 col-sm-4 mt-2">
                 {(loggedInUserData?.role === ROLE.MANAGER || loggedInUserData?.role === ROLE.ADMIN) && <button
                  
                     style={{ width: "150px" }}
@@ -459,7 +455,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   </button>
                 }
                 </div>
-                <div className="col">
+                <div className="col-md-2 col-sm-4 mt-2">
                   <CSVLink
                       filename={"site-checks-list_" + moment(new Date()).format("DD-MM-YYYY")+".csv"}
                     className="btn btn-light bg-white text-primary"
