@@ -93,222 +93,259 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
 
   return (
     <form onSubmit={addSiteCheckFault}>
-    <Grid container >
-
-      <Grid sm={4}>
-        <br />
-        {/* <Typography variant="h6" gutterBottom>
+      <Grid container>
+        <Grid sm={4}>
+          <br />
+          {/* <Typography variant="h6" gutterBottom>
           Faults Identified <Chip color={completed ? 'success' : 'warning'} label={completed ? 'Closed' : 'Open'} />
         </Typography> */}
           <Typography variant="h6" gutterBottom>
-            Faults Identified <Chip color={'warning'} label={'Open'} />
+            Faults Identified <Chip color={"warning"} label={"Open"} />
           </Typography>
-        <br />
-
-      
-       
-      </Grid>
-      <Grid sm={4}>
-
-      </Grid>
-      <Grid sm={4}>
-       
+          <br />
+        </Grid>
+        <Grid sm={4}></Grid>
+        <Grid sm={4}>
           <button
-            style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
+            style={{
+              width: "150px",
+              marginBottom: "20px",
+              margin: "10px",
+              float: "right",
+            }}
             className="btn btn-primary btn-light"
             onClick={() => {
               const uformData = [...formData];
-              uformData.push({add: true});
-              setFormData(uformData)
+              uformData.push({ add: true });
+              setFormData(uformData);
             }}
           >
             Record New
           </button>
+        </Grid>
 
-      </Grid>
-
-      <Grid sm={12}>
-        <div className="table-responsive">
-          <table className="table table-bordered f-11">
-            <thead className="table-dark">
-              <tr>
-                <th scope="col">ASSET</th>
-                <th scope="col">FAULT</th>
-                <th scope="col">DATE RAISED</th>
-                <th scope="col">RATING</th>
-                <th scope="col">IMAGE</th>
-                <th scope="col">SUGGESTED ACTION</th>
-                <th scope="col"></th>
-              </tr>
-            </thead>
-            <tbody>
-                {formData.map((d, idx) => {
-                  const completed = formData?.[idx]?.faultId && !formData?.[idx]?.edit;
-                const assetName = siteAssets.filter(a => a.assetId == formData[idx].assetId).map(option => option.assetName + " - " + option.category)?.[0];
-                return (
+        <Grid sm={12}>
+          <div className="table-responsive">
+            <table className="table table-bordered f-11">
+              <thead className="table-dark">
+                <tr>
+                  <th scope="col">ASSET</th>
+                  <th scope="col">FAULT</th>
+                  <th scope="col">DATE RAISED</th>
+                  <th scope="col">RATING</th>
+                  <th scope="col">IMAGE</th>
+                  <th scope="col">SUGGESTED ACTION</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData?.length === 0 && (
                   <tr>
-                    <td>
-                      {completed && <input type="text"
-                        disabled={completed}
-                        className="form-control"
-                        value={assetName} />}
-                      {!completed && <Autocomplete
-                        id="assetId"
-                        disabled={completed}
-                        onChange={(event, item) => {
-                          const uformData = [...formData]
-                          uformData[idx].assetId = item?.key;
-                          setFormData(uformData);
-                        }}
-
-                        options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-                        getOptionLabel={(option) => option.label}
-                        renderInput={(params) => (
-                          <div ref={params.InputProps.ref} >
-                            <i
-                              style={{
-                                position: "absolute",
-                                padding: "13px",
-                                color: "lightgrey",
-                                paddingLeft: "10rem",
-                                float: 'right'
-                              }}
-                              className="fas fa-search"
-                            ></i>
-                            <input type="text" {...params.inputProps}
-                              required disabled={completed} className="form-control" />
-                          </div>
-
+                    <td colSpan={6}>No Result Available!!</td>
+                  </tr>
+                )}
+                {formData.map((d, idx) => {
+                  const completed =
+                    formData?.[idx]?.faultId && !formData?.[idx]?.edit;
+                  const assetName = siteAssets
+                    .filter((a) => a.assetId == formData[idx].assetId)
+                    .map(
+                      (option) => option.assetName + " - " + option.category
+                    )?.[0];
+                  return (
+                    <tr>
+                      <td>
+                        {completed && (
+                          <input
+                            type="text"
+                            disabled={completed}
+                            className="form-control"
+                            value={assetName}
+                          />
                         )}
-                      />
-                      }
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        disabled={completed}
-                        required
-                        name="faultDescription"
-                        className="form-control"
-                        id="faultDescription"
-                        value={formData?.[idx]?.faultDescription}
-                        onChange={(e) => handleInputChange(e, idx)}
-                      />
-                    </td>
-                    <td> <input
-                      disabled={completed}
-                      type="date"
-                      required
-                      name="dateRaised"
-                      value={String(formData?.[idx]?.dateRaised)?.substring(0, 10)}
-                      className="form-control"
-                      id="dateRaised"
-
-                      onChange={(e) => handleInputChange(e, idx)}
-                    /></td>
-                    <td>
-                      <select
-                        disabled={completed}
-                        name="rating"
-                        required
-                        className="form-control form-select"
-                        id="rating"
-                        value={formData?.[idx]?.rating}
-                        onChange={(e) => handleInputChange(e, idx)}
-                      >
-                        <option value="">Select Rating</option>
-                        <option value={1}>1</option>
-                        <option value={2}>2</option>
-                        <option value={3}>3</option>
-                        <option value={4}>4</option>
-                        <option value={5}>5</option>
-                      </select>
-                    </td>
-                    <td align="center">
-                      {completed && formData?.[idx]?.imageUrl &&
-                        <a href={formData?.[idx]?.imageUrl + "?" + sasToken} target="_blank">
+                        {!completed && (
+                          <Autocomplete
+                            id="assetId"
+                            disabled={completed}
+                            onChange={(event, item) => {
+                              const uformData = [...formData];
+                              uformData[idx].assetId = item?.key;
+                              setFormData(uformData);
+                            }}
+                            options={siteAssets.map((option) => {
+                              return {
+                                key: option.assetId,
+                                label:
+                                  option.assetName + " - " + option.category,
+                              };
+                            })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref}>
+                                <i
+                                  style={{
+                                    position: "absolute",
+                                    padding: "13px",
+                                    color: "lightgrey",
+                                    paddingLeft: "10rem",
+                                    float: "right",
+                                  }}
+                                  className="fas fa-search"
+                                ></i>
+                                <input
+                                  type="text"
+                                  {...params.inputProps}
+                                  required
+                                  disabled={completed}
+                                  className="form-control"
+                                />
+                              </div>
+                            )}
+                          />
+                        )}
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          disabled={completed}
+                          required
+                          name="faultDescription"
+                          className="form-control"
+                          id="faultDescription"
+                          value={formData?.[idx]?.faultDescription}
+                          onChange={(e) => handleInputChange(e, idx)}
+                        />
+                      </td>
+                      <td>
+                        {" "}
+                        <input
+                          disabled={completed}
+                          type="date"
+                          required
+                          name="dateRaised"
+                          value={String(formData?.[idx]?.dateRaised)?.substring(
+                            0,
+                            10
+                          )}
+                          className="form-control"
+                          id="dateRaised"
+                          onChange={(e) => handleInputChange(e, idx)}
+                        />
+                      </td>
+                      <td>
+                        <select
+                          disabled={completed}
+                          name="rating"
+                          required
+                          className="form-control form-select"
+                          id="rating"
+                          value={formData?.[idx]?.rating}
+                          onChange={(e) => handleInputChange(e, idx)}
+                        >
+                          <option value="">Select Rating</option>
+                          <option value={1}>1</option>
+                          <option value={2}>2</option>
+                          <option value={3}>3</option>
+                          <option value={4}>4</option>
+                          <option value={5}>5</option>
+                        </select>
+                      </td>
+                      <td align="center">
+                        {completed && formData?.[idx]?.imageUrl && (
+                          <a
+                            href={formData?.[idx]?.imageUrl + "?" + sasToken}
+                            target="_blank"
+                          >
+                            <button
+                              disabled={completed}
+                              className="btn btn-sm btn-light text-dark"
+                              onClick={() => {}}
+                            >
+                              <i className="fas fa-download"></i>
+                            </button>
+                          </a>
+                        )}
+                        {!completed && (
+                          <input
+                            disabled={completed}
+                            type="file"
+                            name="file"
+                            className="form-control"
+                            id="file"
+                            required
+                            onChange={(e) => handleFileChange(e, idx)}
+                          />
+                        )}
+                      </td>
+                      <td>
+                        <input
+                          disabled={completed}
+                          value={formData?.[idx]?.action}
+                          type="text"
+                          name="action"
+                          className="form-control"
+                          id="action"
+                          required
+                          onChange={(e) => handleInputChange(e, idx)}
+                        />
+                      </td>
+                      <td>
+                        {!completed && !formData?.[idx]?.edit && (
                           <button
                             disabled={completed}
+                            type="button"
                             className="btn btn-sm btn-light text-dark"
                             onClick={() => {
-
+                              const uformData = [...formData];
+                              if (uformData.length > 1) {
+                                uformData.splice(idx, 1); // Remove the item at the given index
+                              } else {
+                                // Reset the formData to an empty array when only one item is left
+                                uformData.length = 0;
+                              }
+                              setFormData(uformData); // Update the state in both cases
                             }}
                           >
-                            <i className="fas fa-download"></i>
+                            <i className="fas fa-trash"></i>
                           </button>
-                        </a>}
-                      {!completed && <input
-                        disabled={completed}
-                        type="file"
-                        name="file"
-                        className="form-control"
-                        id="file"
-                        required
-                        onChange={(e) => handleFileChange(e, idx)}
-                      />}
-                    </td>
-                    <td><input
-                      disabled={completed}
-                      value={formData?.[idx]?.action}
-                      type="text"
-                      name="action"
-                      className="form-control"
-                      id="action"
-                      required
-                      onChange={(e) => handleInputChange(e, idx)}
-                    /></td>
-                    <td>
-                      {!completed && !formData?.[idx]?.edit && 
-                        <button
-                          disabled={completed}
-                          className="btn btn-sm btn-light text-dark"
-                          onClick={() => {
-                            const uformData = [...formData];
-                            if (uformData.length > 1) {
-                              uformData.splice(idx, 1);
-                              setFormData(uformData)
-                            }
-                          }}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>}
-                      {completed &&
-                        <button
-                          className="btn btn-sm btn-light text-dark"
-                          onClick={() => {
-                            const uformData = [...formData];
-                            uformData[idx].edit = true;
-                            setFormData(uformData)
-                          }}
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>}
-                    </td>
-                  </tr>
-                )
-              }
-              )}
-            </tbody>
-          </table>
-        </div>
-
-      </Grid>
-       <Grid sm={12}>
-
-        <button
-          style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
-          className="btn btn-primary text-white pr-2"
+                        )}
+                        {completed && (
+                          <button
+                            className="btn btn-sm btn-light text-dark"
+                            onClick={() => {
+                              const uformData = [...formData];
+                              uformData[idx].edit = true;
+                              setFormData(uformData);
+                            }}
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Grid>
+        <Grid sm={12}>
+          <button
+            style={{
+              width: "150px",
+              marginBottom: "20px",
+              margin: "10px",
+              float: "right",
+            }}
+            className="btn btn-primary text-white pr-2"
             //onClick={() => { addSiteCheckFault() }}
             type="submit"
-        >
-          Save
-        </button>
-
-
+          >
+            Save
+          </button>
+        </Grid>
       </Grid>
-      </Grid>
-      </form>
-
+    </form>
   );
 };
 
