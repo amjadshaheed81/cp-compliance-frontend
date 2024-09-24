@@ -168,6 +168,9 @@ const StatutoryRegister = ({
       required: isChecked,
     };
   console.log("Checkbox checked state:", isChecked);
+    if (!isChecked) {
+      payload.status = "";
+    }
     const res = await put("/api/document/statutoryRegister/manage", payload);
     if (res?.status === 200) {
       getStatutory(siteSelectedForGlobal?.siteId);
