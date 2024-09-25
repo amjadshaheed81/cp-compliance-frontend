@@ -103,14 +103,16 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
   }
 
   const handlePrint = async () => {
-    if (siteCheck.type === "Inspection" && siteCheck.subType === "Electrical") {
-      const pdfBlob = await getPdf(checkId);
-      const url = URL.createObjectURL(pdfBlob);
-      window.open(url, '_blank');
-    } else {
-      toast.warn("Feature coming soon");
-    }
-
+    const pdfBlob = await getPdf(checkId);
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, '_blank');
+    // if (siteCheck.type === "Inspection" && siteCheck.subType === "Electrical") {
+    //   const pdfBlob = await getPdf(checkId);
+    //   const url = URL.createObjectURL(pdfBlob);
+    //   window.open(url, '_blank');
+    // } else {
+    //   toast.warn("Feature coming soon");
+    // }
   }
 
   const handlePrint2 = () => {
