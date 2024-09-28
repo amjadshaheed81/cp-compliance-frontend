@@ -20,6 +20,7 @@ import { deleteUser, getSites, getExternalUsers } from "../../../../store/thunk/
 import PrintIcon from '@mui/icons-material/Print';
 import html2pdf from 'html2pdf.js';
 import "./Print.css"
+import moment from "moment";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -37,15 +38,27 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
   const checkId = params.id;
   const [siteCheck, setSiteCheck] = useState();
   const navigate = useNavigate();
-
+  const getRepeatFrequency = (repeatFrequency) => {
+    if(repeatFrequency === "Daily") {
+      return 1;
+    }else if(repeatFrequency === "Weekly") {
+      return 7;
+    }else if(repeatFrequency === "Monthly") {
+      return 30;
+    }else if(repeatFrequency === "Quarterly") {
+      return 30*3;
+    }else if(repeatFrequency === "Yearly") {
+      return 365;
+    }
+  }
   useEffect(() => {
-    if (siteCheck?.startDate && siteCheck?.repeatFrequency) {
+    if (siteCheck?.startDate && siteCheck?.repeatFrequency && !siteCheck?.dueDate) {
       // Convert start date to Date object
       const startDate = new Date(siteCheck.startDate);
-
+      console.log("startDate", startDate);
       // Add repeatFrequency (assumed in days) to start date
-      const expiryDate = new Date(startDate);
-      expiryDate.setDate(startDate.getDate() + siteCheck.repeatFrequency);
+      const expiryDate =startDate;
+      expiryDate.setDate(startDate.getDate() + getRepeatFrequency(siteCheck.repeatFrequency));
 
       // Update dueDate state with the formatted date (YYYY-MM-DD)
       setDueDate(expiryDate.toISOString().substring(0, 10));
