@@ -257,6 +257,7 @@ const AdminDropdowns = ({ }) => {
                   <th scope="col" style={{ border: "2px groove" }}>Description</th>
                   <th scope="col" style={{ border: "2px groove" }}>Depends On</th>
                   <th scope="col" style={{ border: "2px groove" }}>Additional Attribute</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Additional Attribute 2</th>
                   <th scope="col" style={{ border: "2px groove" }}>Actions</th>
                 </tr>
               </thead>
@@ -316,6 +317,18 @@ const AdminDropdowns = ({ }) => {
                         type="text"
                         value={d.attribite2}
                         name="attribite2"
+                        className="form-control"
+                        onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                      {errors.attribite2 && <span className="text-danger">{errors.attribite2}</span>}
+                    </td>}
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.attribite3}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <input
+                        type="text"
+                        value={d.attribite3}
+                        name="attribite3"
                         className="form-control"
                         onChange={(e) => handleInputChange(e, rowIndex)}
                       />
