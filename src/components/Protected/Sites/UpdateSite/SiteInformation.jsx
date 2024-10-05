@@ -29,7 +29,7 @@ const SiteInformation = ({
   isLoading,
   setLoader,
 }) => {
-  const { register, handleSubmit, reset, setValue } = useForm({});
+  const { register, handleSubmit, reset, setValue, getValues } = useForm({});
   const siteAreaForm = useForm();
   const isViewMode =  updateSite?.isViewMode;
   useEffect(() => {
@@ -60,7 +60,8 @@ const SiteInformation = ({
               {...register("buildYear")}
               disabled={isViewMode}
             >
-              {yearOptions.map((year) => (
+              {isViewMode && <option value={getValues("buildYear")}>{getValues("buildYear")}</option>}
+              {!isViewMode && yearOptions.map((year) => (
                 <option value={year.value}>{year.label}</option>
               ))}
             </select>

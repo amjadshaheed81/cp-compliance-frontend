@@ -652,7 +652,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                             ?.map((c) => c.cost)
                             .reduce((a, b) => {
                               return a + b;
-                            }, 0)}
+                            }, 0)?.toFixed(2)}
                         </th>
 
                         <th scope="col" style={{ width: "250px" }}>
