@@ -27,10 +27,6 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentActions = filteredActions.slice(
-    indexOfFirstPreAction,
-    indexOfLastPreAction
-  );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -123,6 +119,32 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
     });
   };
 
+  const [sortConfig, setSortConfig] = useState({ key: "dueDate", direction: "asc" });
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedActions = [...filteredActions].sort((a, b) => {
+    const dateA = moment(a?.dueDate, "YYYY-MM-DD");
+    const dateB = moment(b?.dueDate, "YYYY-MM-DD");
+
+    if (dateA.isBefore(dateB)) {
+      return sortConfig.direction === "asc" ? -1 : 1;
+    }
+    if (dateA.isAfter(dateB)) {
+      return sortConfig.direction === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+  const currentActions = sortedActions.slice(
+    indexOfFirstPreAction,
+    indexOfLastPreAction
+  );
   return (
     <Fragment>
       <SidebarNew />
@@ -211,6 +233,12 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                   <th scope="col">Observation</th>
 
                   <th scope="col">Required Action</th>
+                  <th scope="col" onClick={() => requestSort("dueDate")} style={{ cursor: 'pointer' }}>
+                    Due Date{" "}
+                    {sortConfig.key === "dueDate" && (
+                      <i className={`fas fa-sort-${sortConfig.direction === "asc" ? "up" : "down"}`}></i>
+                    )}
+                  </th>
                   <th scope="col">Risk Score</th>
                   <th scope="col">Status</th>
                   {(loggedInUserData?.role === ROLE.ADMIN ||
@@ -235,7 +263,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     <th scope="col">{action?.desc}</th>
                     <th scope="col">{action?.observation}</th>
                     <th scope="col">{action?.requiredAction}</th>
-
+                    <th scope="col" style={{ width: "120px" }}>{action?.dueDate}</th>
                     <th scope="col">
                       {" "}
                       <span
