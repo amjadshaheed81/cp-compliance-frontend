@@ -10,12 +10,11 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-// import AddActions from "./AddActions";
 import { get, put } from "../../../../api";
 import { deletePreAction } from "../../../../store/thunk/preActions";
 import { ROLE } from "../../../../Constant/Role";
 import { Chip } from "@mui/material";
-import { sortCompletedLast } from "../../../../utils/sortCompletedLast ";
+import { sortCompletedLast } from "../../../../utils/sortCompletedLast";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) => {
@@ -38,6 +37,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
   useEffect(() => {
     getActions();
   }, [siteSelectedForGlobal]);
+  
   const getActions = async () => {
     if (!siteSelectedForGlobal?.siteId) {
       Swal.fire({
@@ -47,23 +47,22 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
       });
       return;
     }
-    const res = await get(
-      `api/site/actions/${siteSelectedForGlobal?.siteId}`
-    );
+    const res = await get(`api/site/actions/${siteSelectedForGlobal?.siteId}`);
     setFilteredActions(sortCompletedLast(res) || []);
     setActions(sortCompletedLast(res) || []);
   };
+  
   const [formData, setFormData] = useState({
     searchField: "",
     status: "",
   });
 
   const complete = async (action, status) => {
-    action.status = status
+    action.status = status;
     await put("/api/site/actions", action);
     getActions();
+  };
 
-  }
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -71,9 +70,11 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
       [name]: value,
     });
   };
+
   useEffect(() => {
     searchActions();
   }, [formData.role, formData.searchField, formData.site, formData.status]);
+
   const searchActions = () => {
     const searchField = formData?.searchField;
     const status = formData?.status;
@@ -83,9 +84,9 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
           (String(x?.type)
             .toLowerCase()
             .includes(String(searchField).toLowerCase()) ||
-          String(x?.desc)
-            .toLowerCase()
-            .includes(String(searchField).toLowerCase())) &&
+            String(x?.desc)
+              .toLowerCase()
+              .includes(String(searchField).toLowerCase())) &&
           String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
       setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
@@ -94,6 +95,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
       setFilteredActions(preActions);
     }
   };
+
   const deleteActionCall = (action) => {
     Swal.fire({
       title: `Do you want to delete pre action #${action?.actionId}?`,
@@ -105,7 +107,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
         const res = await deletePreAction(action?.actionId);
         if (res === "Success") {
           toast.success(
-            `#${action?.actionId} pre action has been deleted successully.`
+            `#${action?.actionId} pre action has been deleted successfully.`
           );
           getActions();
         } else {
@@ -114,7 +116,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
           );
         }
       } else if (result.isDenied) {
-        toast.info(`delete action has been denied.`);
+        toast.info(`Delete action has been denied.`);
       }
     });
   };
@@ -130,40 +132,31 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
   };
 
   const sortedActions = [...filteredActions].sort((a, b) => {
-    const dateA = moment(a?.dueDate, "YYYY-MM-DD");
-    const dateB = moment(b?.dueDate, "YYYY-MM-DD");
-
-    if (dateA.isBefore(dateB)) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-    if (dateA.isAfter(dateB)) {
-      return sortConfig.direction === "asc" ? 1 : -1;
+    if (sortConfig.key === "dueDate") {
+      const dateA = moment(a?.dueDate, "YYYY-MM-DD");
+      const dateB = moment(b?.dueDate, "YYYY-MM-DD");
+      if (dateA.isBefore(dateB)) return sortConfig.direction === "asc" ? -1 : 1;
+      if (dateA.isAfter(dateB)) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    } else if (sortConfig.key === "riskScore") {
+      const riskA = a?.riskScore || 0;
+      const riskB = b?.riskScore || 0;
+      return sortConfig.direction === "asc" ? riskA - riskB : riskB - riskA;
     }
     return 0;
   });
-  const currentActions = sortedActions.slice(
-    indexOfFirstPreAction,
-    indexOfLastPreAction
-  );
+
+  const currentActions = sortedActions.slice(indexOfFirstPreAction, indexOfLastPreAction);
+
   return (
     <Fragment>
       <SidebarNew />
       <div className="content">
         <Header />
         <div className="container-fluid">
-          {/* {showAddModal && (
-            <AddActions
-              showAddModal={showAddModal}
-              setShowAddModal={setShowAddModal}
-
-              refresh={() => {getActions()}}
-            />
-          )} */}
           <BreadCrumHeader header={"Actions"} page={"Actions"} />
-          {/*  */}
-          {/*  */}
           <div className="d-flex bd-highlight">
-            <div className="pt-2 bd-highlight ">
+            <div className="pt-2 bd-highlight">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col-md-4 col-sm-4 mt-2">
                   <input
@@ -184,7 +177,6 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     <option value="">Status</option>
                     <option value="Reported">Reported</option>
                     <option value="Reassessed">Reassessed</option>
-
                     <option value="Completed">Completed</option>
                   </select>
                 </div>
@@ -194,18 +186,6 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
               <div className="row" style={{ height: "auto" }}>
                 {loggedInUserData?.role !== ROLE.SITE_USERS && (
                   <Fragment>
-                    {/* <div className="col-md-6 col-sm-4 mt-2">
-                      <Tooltip title={`Create New`} arrow>
-                        <button
-                          className="btn btn-primary text-white pr-2"
-                          onClick={() => {
-                            setShowAddModal(true);
-                          }}
-                        >
-                          <i className="fas fa-plus"></i>
-                        </button>
-                      </Tooltip>
-                    </div> */}
                     <div className="col-md-6 col-sm-4 mt-2">
                       <CSVLink
                         filename={"actions-list.csv"}
@@ -222,8 +202,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
               </div>
             </div>
           </div>
-          {/* row start*/}
-          <div className="row p-2"></div>
+
           <div className="col-md-12 table-responsive">
             <table className="table">
               <thead className="table-dark">
@@ -231,7 +210,6 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                   <th scope="col">Action Type</th>
                   <th scope="col">Description</th>
                   <th scope="col">Observation</th>
-
                   <th scope="col">Required Action</th>
                   <th scope="col" onClick={() => requestSort("dueDate")} style={{ cursor: 'pointer' }}>
                     Due Date{" "}
@@ -239,7 +217,12 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                       <i className={`fas fa-sort-${sortConfig.direction === "asc" ? "up" : "down"}`}></i>
                     )}
                   </th>
-                  <th scope="col">Risk Score</th>
+                  <th scope="col" onClick={() => requestSort("riskScore")} style={{ cursor: 'pointer' }}>
+                    Risk Score{" "}
+                    {sortConfig.key === "riskScore" && (
+                      <i className={`fas fa-sort-${sortConfig.direction === "asc" ? "up" : "down"}`}></i>
+                    )}
+                  </th>
                   <th scope="col">Status</th>
                   {(loggedInUserData?.role === ROLE.ADMIN ||
                     loggedInUserData?.role === ROLE.MANAGER ||
@@ -293,9 +276,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
-                            goTo(
-                              `/action-detail?id=${action?.actionId}`
-                            );
+                            goTo(`/action-detail?id=${action?.actionId}`);
                           }}
                         >
                           <i className="fas fa-eye"></i>
@@ -337,7 +318,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
               </tbody>
             </table>
           </div>
-          {/* row end*/}
+
           <div className="row">
             <Pagination
               totalPages={Math.ceil(filteredActions.length / preActionsPerPage)}
@@ -350,8 +331,10 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
     </Fragment>
   );
 };
+
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, { deletePreAction })(Actions);
