@@ -46,7 +46,7 @@ const Dashboard = ({
             <div className="bd-highlight">
               <b><p className="display-8">{loggedInUserData?.name??"User"}</p></b>
             </div>
-            <div className="ms-auto bd-highlight">
+            {/* <div className="ms-auto bd-highlight">
               <div className="form-check form-switch">
                 <label
                   className="form-check-label"
@@ -61,7 +61,7 @@ const Dashboard = ({
                   checked
                 />
               </div>
-            </div>
+            </div> */}
           </div>
           <div className="row">
             <div className="col">
