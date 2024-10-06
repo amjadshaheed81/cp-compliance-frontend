@@ -257,7 +257,7 @@ const AdminDropdowns = ({ }) => {
                   <th scope="col" style={{ border: "2px groove" }}>Description</th>
                   <th scope="col" style={{ border: "2px groove" }}>Depends On</th>
                   <th scope="col" style={{ border: "2px groove" }}>Additional Attribute</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Additional Attribute 2</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Sort Order</th>
                   <th scope="col" style={{ border: "2px groove" }}>Actions</th>
                 </tr>
               </thead>
