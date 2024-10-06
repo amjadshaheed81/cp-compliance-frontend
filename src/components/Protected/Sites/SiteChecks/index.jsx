@@ -394,7 +394,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         type="text"
                         placeholder="Search"
                         name="searchField"
-                        style={{ textAlign: "center", width: '250px' }}
+                        style={{ paddingLeft: "20%" }}
                         className="form-control"
                         onChange={handleInputChange2}
                       />
