@@ -332,7 +332,7 @@ const AsbestonSample = ({
                     <>
                       <tr>
                         {/* aaquib */}
-                        <td>{d.sampleId ? "AS00" + d.sampleId : d.sampleNo}</td>
+                        <td>{d.sampleId && !isNaN(d.sampleId) ? `AS00${d.sampleId}` : d.sampleNo}</td>
                         <td>
                           {
                             location?.filter(
