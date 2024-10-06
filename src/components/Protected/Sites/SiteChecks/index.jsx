@@ -379,8 +379,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
           <div className="">
             <div className="">
               <div className="row" style={{ height: "auto" }}>
-                  <div className="col-md-2 col-sm-4 mt-2">
-                    <div style={{ position: "relative" }}>
+                  <div className="col-md-3 col-sm-4 mt-2">
+                    <div>
                       <i
                         style={{
                           position: "absolute",
@@ -458,7 +458,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   </button>
                 }
                 </div>
-                <div className="col-md-2 col-sm-4 mt-2">
+                <div className="col-md-1 col-sm-4 mt-2">
                   <CSVLink
                       filename={"site-checks-list_" + moment(new Date()).format("DD-MM-YYYY")+".csv"}
                     className="btn btn-light bg-white text-primary"
