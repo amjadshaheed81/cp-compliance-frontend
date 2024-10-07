@@ -9,7 +9,7 @@ const FloorMap = ({ siteLayout }) => {
   const [tabValue, setTabValue] = useState(null);
   const [positionOption, setPositionOption] = useState([]);
   useEffect(() => {
-    const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
+    const positions = siteLayout?.filter((itm) => itm?.nodeType === "position" || itm?.nodeType === "type");
     setPositionOption(positions || []);
   }, [siteLayout]);
   const getParentNodeName = (id) => {
