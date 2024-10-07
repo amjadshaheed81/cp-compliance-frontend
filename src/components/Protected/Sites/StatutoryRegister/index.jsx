@@ -107,7 +107,7 @@ const StatutoryRegister = ({
     let status = "Fail"; // Default status
 
     // Checking conditions based on item type and subType
-    if (isChecked && item?.type === "PDF") {
+    if (isChecked && String(item?.type).toLowerCase() === "pdf") {
       if (item?.files?.length > 0) {
         const isExpiryDateValid = item.files.every((file) =>
           moment(file.expiryDate).isAfter(new Date())
@@ -115,14 +115,13 @@ const StatutoryRegister = ({
         console.log("isExpiryDateValid",isExpiryDateValid);
         status = isExpiryDateValid ? "Passed" : "Fail";
       }
-    } else if (item?.type === "Link" && isChecked) {
+    } else if (String(item?.type).toLowerCase() === "link" && isChecked) {
       try {
         const siteChecks = await get(
           `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
         );
-        
         // Asbestos Check
-        if (item?.subType === "Asbestos") {
+        if (item?.subType === "Asbestos Management Plan") {
           const isAsbestosRecordAvailable = siteChecks.some(
             (itm) => itm?.subType === "Asbestos"
           );
@@ -130,14 +129,15 @@ const StatutoryRegister = ({
         }
         
         // PAT Check
-        else if (item?.subType === "PAT") {
-          const { assets } = await get(
-            `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`
+        else if (item?.subType === "PAT / Microwave Testing") {
+          const isPAtExpired = siteChecks.some(
+            (itm) =>
+              itm?.type === "Inspection" &&
+              itm?.subType === "Electrical" &&
+              itm?.category === "WC Alarm Testing" &&
+              moment(itm?.dueDate).isAfter(new Date())
           );
-          const isExpiryDateValid = item?.files?.every((file) =>
-            moment(file.expiryDate).isAfter(new Date())
-          );
-          status = item?.files?.length > 0 && assets?.length > 0 && isExpiryDateValid ? "Passed" : "Fail";
+          status = isPAtExpired ? "Passed" : "Fail";
         }
         
         // Emergency Check
