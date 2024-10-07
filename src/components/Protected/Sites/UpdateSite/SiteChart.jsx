@@ -140,7 +140,7 @@ const SiteChart = ({
 
   const getMainBuilding = () => {
     const mainNode = siteLayout?.filter(
-      (itm) => itm?.nodeType === "MasterNode"
+      (itm) => itm?.nodeType === "MasterNode" || itm?.nodeType === "building"
     );
     return mainNode?.length > 0 ? (
       <MainBuildingStyledNode>{mainNode?.[0]?.nodeName}</MainBuildingStyledNode>
@@ -189,7 +189,7 @@ const SiteChart = ({
   };
   const getTreeNodePositionInterior = () => {
     const positionNode = siteLayout?.filter(
-      (itm) => itm?.nodeType === "position" && itm?.nodeName === "Interior"
+      (itm) => (itm?.nodeType === "position" || itm?.nodeType === "type") && itm?.nodeName === "Interior"
     );
     const childs = siteLayout?.filter(
       (itm) => itm?.parentNode === positionNode?.[0]?.id
