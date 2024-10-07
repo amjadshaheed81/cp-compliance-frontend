@@ -180,6 +180,12 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                                   option.assetName + " - " + option.category,
                               };
                             })}
+                            openOnFocus 
+                            filterOptions={(options, state) => 
+                              options.filter((option) =>
+                                option.label.toLowerCase().includes(state.inputValue.toLowerCase())
+                              )
+                            } // Enables filtering based on user input
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref}>
