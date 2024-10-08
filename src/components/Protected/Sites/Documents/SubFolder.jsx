@@ -46,6 +46,7 @@ import EditDocument from "./EditDocument";
 
 const SubFolder = ({
   deleteFile,
+  siteSelectedForGlobal,
   getDocumentsRootFolder,
   getSubFilesAndFolder,
   subfolderFiles,
@@ -79,7 +80,7 @@ const SubFolder = ({
   const searchDocument = async (e) => {
     const value = e?.target?.value;
     if (value && value.length > 0) {
-      const url = `/api/document/file/search?q=${value}`;
+      const url = `/api/document/file/search?q=${value}&siteId=${siteSelectedForGlobal?.siteId}`;
       try {
         const response = await get(url);
         setFileList(response);
@@ -632,6 +633,7 @@ const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   subfolderFiles: state.site.subfolderFiles,
   loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   deleteFile,
