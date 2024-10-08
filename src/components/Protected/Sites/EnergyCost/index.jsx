@@ -639,7 +639,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                         <th scope="col">
                           {action?.readingList?.[
                             action?.readingList?.length - 1
-                          ]?.readingValue ?? "-"}{" "}
+                          ]?.readingValue?.toFixed(2) ?? "-"}{" "}
                           {
                             action?.readingList?.[
                               action?.readingList?.length - 1

@@ -1077,7 +1077,7 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Internal/External</option>
-                        {["Internal", "External"].map((num) => (
+                        {["Internal", "External", "Interior", "Exterior"].map((num) => (
                           <option value={num}>{num} </option>
                         ))}
                       </select>

@@ -206,7 +206,7 @@ const Cost = ({
                             </td>
                           </tr>
                         )}
-                        {survey?.costList.map((d, idx) => (
+                        {survey?.costList?.sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate))?.map((d, idx) => (
                           <tr>
                             <td>{d.budgetCategory}</td>
                             <td>

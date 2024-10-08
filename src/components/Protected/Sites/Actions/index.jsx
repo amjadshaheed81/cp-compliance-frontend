@@ -148,6 +148,34 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
 
   const currentActions = sortedActions.slice(indexOfFirstPreAction, indexOfLastPreAction);
 
+  const getTimeRemaining = (creationDate, riskScore) => {
+
+    const data = riskScore > 16
+    ? {badgeColor : "danger", days : 5}
+    : riskScore > 9
+      ? {badgeColor : "warning", days : 30}
+      : riskScore > 4
+        ? {badgeColor : "info", days : 90}
+        : {badgeColor : "success", days : 365}
+    const dueDate = new Date(creationDate);
+    dueDate.setDate(dueDate.getDate() + data.days);
+    const today = new Date();
+    const timeRemaining = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+    const status = timeRemaining < 0 ? `${timeRemaining * -1} Days Overdue` : `${timeRemaining} days remaining`;
+  
+   
+  
+    // Return the UI component
+    return (
+      <span
+        style={{ width: '150px' }}
+        className={`badge bg-${data.badgeColor} p-2 m-1 risk-span`}
+      >
+        {status}
+      </span>
+    );
+  };
+
   return (
     <Fragment>
       <SidebarNew />
@@ -246,7 +274,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     <th scope="col">{action?.desc}</th>
                     <th scope="col">{action?.observation}</th>
                     <th scope="col">{action?.requiredAction}</th>
-                    <th scope="col" style={{ width: "120px" }}>{action?.dueDate}</th>
+                    <th scope="col" style={{ width: "120px" }}>{ getTimeRemaining(action?.createdAt ? action?.createdAt : action?.dueDate, action?.riskScore) }</th>
                     <th scope="col">
                       {" "}
                       <span
