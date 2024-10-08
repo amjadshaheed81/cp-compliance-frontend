@@ -252,12 +252,18 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
               className="img img-responsive"
               alt="side logo"
             /> */}
-            <span className="text-white p-2 fs-6">
-              {loggedInUserData?.name}
-            </span>
-            <p className="text-white p-2 fs-6">Role: {loggedInUserData?.role}</p>
+            {isSideBarOpen && (
+              <>
+                <span className="text-white p-2 fs-6">
+                  {loggedInUserData?.name}
+                </span>
+                <p className="text-white p-2 fs-6">
+                  Role: {loggedInUserData?.role}
+                </p>
+              </>
+            )}
           </li>
-          <p style={{ color: "grey" }}>General</p>
+          <p style={{ color: "#f5f5f5", fontSize: 'smaller' }}>General</p>
           {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
@@ -287,8 +293,8 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
           ))}
         </List>
         {/* <Divider /> */}
-        <p style={{ color: "grey" }} className="bg-black m-0">
-          Site Actions
+        <p style={{ color: "#f5f5f5", fontSize: "smaller" }} className="bg-black m-0">
+          Site {isSideBarOpen ? "Actions": ""}
         </p>
         <List sx={{ backgroundColor: "black" }}>
           {filterSiteMenuItems(loggedInUserData?.role)?.map((text, index) => (
