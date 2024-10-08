@@ -51,9 +51,14 @@ const Sites = ({
   };
 
   useEffect(() => {
-    getSites(loggedInUserData);
-    getRisks();
-  }, []);
+    if (sites?.length > 0) {
+      setSelectedItem("open");
+      searchSitesWithStatus({ target: { value: "open" } });
+    } else {
+      getSites(loggedInUserData);
+      getRisks();
+    }
+  }, [sites]);
 
   const getRisks = async () => {
     const risksdata = await get('/api/site-check/risks');
