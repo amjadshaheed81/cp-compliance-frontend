@@ -79,9 +79,9 @@ const StatutoryRegister = ({
     let getStatutoryDocuments = await get(
       `/api/document/${siteId}/statutoryRegister`
     );
-    getStatutoryDocuments = getStatutoryDocuments.sort((a, b) => {
-      return a.id - b.id;
-    });
+    // getStatutoryDocuments = getStatutoryDocuments.sort((a, b) => {
+    //   return a.id - b.id;
+    // });
     setStatutory(getStatutoryDocuments);
     // Set initial values for residence fields using setValue
     getStatutoryDocuments.forEach((item) => {
