@@ -407,7 +407,7 @@ const UpdateAsset = ({
     setSubCategoryList(subCategoryData);
   };
   const getSelectedValue = () => {
-    const selectedAssets = getValues("relatedAssetId")?.split(", ");
+    const selectedAssets = getValues("relatedAssetId")?.split(",");
     const arr = [];
     if(selectedAssets) {
       for (const iterator of selectedAssets) {
@@ -506,7 +506,7 @@ const UpdateAsset = ({
                           <Autocomplete
                             multiple
                             value={getSelectedValue()}
-                            disabled
+                           // disabled
                             onChange={(event, newValue) => {
                               setValue("relatedAssetId", newValue?.key);
                             }}
@@ -519,10 +519,10 @@ const UpdateAsset = ({
                             getOptionLabel={(option) => option.label || ""}
                             renderInput={(params) => (
                               <TextField
-                                disabled
+                                //disabled
                                 {...params}
-                                label="Tag Asset"
-                                placeholder="Tag Asset"
+                                //label="Tag Asset"
+                                //placeholder="Tag Asset"
                               />
                             )}
                           />
