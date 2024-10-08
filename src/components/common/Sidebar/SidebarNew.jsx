@@ -257,7 +257,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
             </span>
             <p className="text-white p-2 fs-6">Role: {loggedInUserData?.role}</p>
           </li>
-          <p style={{ color: "grey" }}>Genral</p>
+          <p style={{ color: "grey" }}>General</p>
           {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
