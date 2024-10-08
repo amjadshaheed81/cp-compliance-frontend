@@ -243,9 +243,10 @@ const StatutoryRegister = ({
                     filename={"statutory-documents.csv"}
                     className="btn btn-light bg-white text-primary"
                     data={statutory.map(item => {
-                      delete item.files;
-                      return {...item};
-                  })}
+                      // Use destructuring to exclude the 'files' field while copying the rest
+                      const { files, ...rest } = item;
+                      return rest;
+                    })}
                   >
                     <i className="fas fa-download"></i>&nbsp;Export
                   </CSVLink>
@@ -410,7 +411,7 @@ const StatutoryRegister = ({
                             </tr>
                           </thead>
                           <tbody>
-                            {item.files?.map((itm, index) => {
+                            {item?.files?.map((itm, index) => {
                               return (
                                 <tr>
                                   <th
