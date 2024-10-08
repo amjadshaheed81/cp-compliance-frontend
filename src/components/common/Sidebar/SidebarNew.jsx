@@ -327,7 +327,7 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         </List>
         {loggedInUserData?.role === ROLE.ADMIN && (
           <>
-            <p style={{ color: "grey" }} className="bg-black m-0">
+            <p style={{ color: "white", fontSize: "smaller" }} className="bg-black m-0">
               Admin
             </p>
             <List sx={{ backgroundColor: "black" }}>

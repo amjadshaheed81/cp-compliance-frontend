@@ -1,7 +1,27 @@
 // components/Login/LoginForm.js
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-const DashboardTender = () => {
+import { useNavigate } from "react-router-dom";
+import { get } from "../../../api";
+import moment from "moment";
+import ChipComponent from "../../common/Chips/Chips";
+const DashboardTender = ({ siteSelectedForGlobal }) => {
+  const navigate = useNavigate();
+  const [contracts, setContracts] = useState([]);
+  useEffect(() => {
+    getContracts();
+  }, []);
+  const getContracts = async () => {
+    if (siteSelectedForGlobal?.siteId) {
+      const projects = await get(
+        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+      );
+      // Show only the first 5 contracts
+      const limitedContracts = (projects?.projectContracts || []).slice(0, 5);
+      
+      setContracts(limitedContracts);
+    }
+  };
   return (
     <Fragment>
       <div className="card">
@@ -14,6 +34,7 @@ const DashboardTender = () => {
               <button
                 type="button"
                 className="btn btn-sm btn-light text-primary"
+                onClick={() => navigate("/site-contracts")}
               >
                 View All
               </button>
@@ -24,51 +45,29 @@ const DashboardTender = () => {
               <thead className="table-dark">
                 <tr>
                   <th scope="col">Tender ID</th>
-                  <th scope="col"># of Quotes</th>
                   <th scope="col">End Date</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>T1001</td>
-                  <td>2</td>
-                  <td>31 May 24</td>
-                  <td>
-                    <div
-                      className="bg-warning text-light rounded-1 p-1"
-                      role="alert"
-                    >
-                      In Progress
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>T1001</td>
-                  <td>2</td>
-                  <td>31 May 24</td>
-                  <td>
-                    <div
-                      className="bg-warning text-light rounded-1 p-1"
-                      role="alert"
-                    >
-                      In Progress
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>T1001</td>
-                  <td>2</td>
-                  <td>31 May 24</td>
-                  <td>
-                    <div
-                      className="bg-warning text-light rounded-1 p-1"
-                      role="alert"
-                    >
-                      In Progress
-                    </div>
-                  </td>
-                </tr>
+                {contracts?.length === 0 && (
+                  <tr>
+                    <td colSpan={3}>No Result Found</td>
+                  </tr>
+                )}
+                {contracts?.map((contract) => (
+                  <tr>
+                    <td>{contract?.projectContractId}</td>
+                    <td>
+                      {contract?.endDate
+                        ? moment(contract?.endDate).format("DD-MM-YYYY")
+                        : "--"}
+                    </td>
+                    <td>
+                      <ChipComponent status={contract?.status} />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -78,4 +77,7 @@ const DashboardTender = () => {
   );
 };
 
-export default connect(null, {})(DashboardTender);
+const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+});
+export default connect(mapStateToProps, {})(DashboardTender);
