@@ -58,6 +58,14 @@ const Cost = ({
     setOpen(false);
   };
 
+  const formatToCurrency = (value) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 2
+    }).format(value);
+  }
+
   return (
     <>
       <Dialog
@@ -220,7 +228,7 @@ const Cost = ({
                                 : "-"}
                               {/* {String(d?.toDate)?.substring(0, 10)} */}
                             </td>
-                            <td>{d.cost}</td>
+                            <td>{formatToCurrency(d.cost?.toFixed(2))}</td>
                             {!isView && (
                               <td>
                                 <button

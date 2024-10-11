@@ -291,6 +291,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     getEnergyCost();
   };
 
+  const formatToCurrency = (value) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 2
+    }).format(value);
+  }
+
   const addEnergyCost = async (event) => {
     event.preventDefault();
     const form = event.target;
@@ -647,12 +655,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                           }
                         </th>
                         <th scope="col">
-                          £
-                          {action?.costList
+                          
+                          {formatToCurrency(action?.costList
                             ?.map((c) => c.cost)
                             .reduce((a, b) => {
                               return a + b;
-                            }, 0)?.toFixed(2)}
+                            }, 0)?.toFixed(2))}
                         </th>
 
                         <th scope="col" style={{ width: "250px" }}>

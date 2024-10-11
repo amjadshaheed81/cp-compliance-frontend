@@ -240,10 +240,10 @@ const Reading = ({
                               {d.readingValue} {d.readingUnit}
                             </td>
                             <td>
-                              {idx === 0
+                              {(idx === 0
                                 ? d?.readingValue
                                 : d?.readingValue -
-                                  survey?.readingList?.[idx - 1]?.readingValue}
+                                  survey?.readingList?.[idx - 1]?.readingValue)?.toFixed(2)}
                               {d.readingUnit}
                             </td>
                             {!isView && (
