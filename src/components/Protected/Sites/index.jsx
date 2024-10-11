@@ -40,9 +40,6 @@ const Sites = ({
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;
   const currentSites = filterSite.slice(indexOfFirstSite, indexOfLastSite);
-  const cityOptions = sites.filter(
-    (obj1, i, arr) => arr.findIndex((obj2) => obj2.city === obj1.city) === i
-  );
   const areaOption = sites.filter(
     (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
   );
@@ -135,18 +132,6 @@ const Sites = ({
       setFilterSite(list);
     }
   };
-  const searchSitesWithCity = (e) => {
-    const val = e.target.value;
-    setSelectedItem(val);
-    if (val === "city") {
-      setFilterSite(sites);
-    } else {
-      const list = sites?.filter((x) =>
-        String(x?.city).toLowerCase().includes(String(val).toLowerCase())
-      );
-      setFilterSite(list);
-    }
-  };
   return (
     <Fragment>
       <SidebarNew />
@@ -159,7 +144,7 @@ const Sites = ({
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col-md-4 col-sm-4 mt-2">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <input
                     type="text"
                     className="form-control"
@@ -167,20 +152,7 @@ const Sites = ({
                     onChange={searchSite}
                   />
                 </div>
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    name="city"
-                    className="form-control form-select"
-                    id="city"
-                    onChange={searchSitesWithCity}
-                  >
-                    <option value="city">City</option>
-                    {cityOptions?.map((site) => (
-                      <option value={site.city}>{site.city}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-4 col-sm-4 mt-2">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="area"
                     className="form-control form-select"
@@ -193,7 +165,7 @@ const Sites = ({
                     ))}
                   </select>
                 </div>
-                <div className="col-md-4 col-sm-4 mt-2">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -208,7 +180,7 @@ const Sites = ({
                   </select>
                 </div>
                 {loggedInUserData?.role === ROLE.ADMIN && (
-                  <div className="col-md-4 col-sm-4 mt-2">
+                  <div className="col-md-3 col-sm-4 mt-2">
                     <CSVLink
                       filename={"site-lists.csv"}
                       className="btn btn-light bg-white text-primary"
