@@ -456,32 +456,39 @@ const UpdateAsset = ({
   };
   const changePatItem = (e) => {
     const value = e.target.checked;
+    console.log("value", value);
     setValue("patItem", value);
+    setSelectedAsset(prevState => ({...prevState, patItem: value}));
     const ispfpItem = getValues("pfpItem");
     const isdoorItem = getValues("doorItem");
     if (ispfpItem || isdoorItem) {
       setValue("pfpItem", false);
       setValue("doorItem", false);
+      setSelectedAsset(prevState => ({...prevState, pfpItem: false, doorItem: false}));
     }
   };
   const changePfpItem = (e) => {
     const value = e.target.checked;
     setValue("pfpItem", value);
+    setSelectedAsset(prevState => ({...prevState, pfpItem: value}));
     const ispatItem = getValues("patItem");
     const isdoorItem = getValues("doorItem");
     if (ispatItem || isdoorItem) {
       setValue("patItem", false);
       setValue("doorItem", false);
+      setSelectedAsset(prevState => ({...prevState, patItem: false, doorItem: false}));
     }
   };
   const changeDoorItem = (e) => {
     const value = e.target.checked;
     setValue("doorItem", value);
+    setSelectedAsset(prevState => ({...prevState, doorItem: value}));
     const ispatItem = getValues("patItem");
     const ispfpItem = getValues("pfpItem");
     if (ispatItem || ispfpItem) {
       setValue("patItem", false);
       setValue("pfpItem", false);
+      setSelectedAsset(prevState => ({...prevState, pfpItem: false, patItem: false}));
     }
   };
   return (
