@@ -15,3 +15,20 @@ a.fc-event {
 .badge{
     white-space: initial;
 }
+.fc-daygrid-event {
+    white-space: nowrap;   /* Ensures the text doesn't wrap to the next line */
+    overflow: hidden;      /* Ensures that long content is hidden */
+    text-overflow: ellipsis; /* Adds '...' when text is too long */
+    max-width: 100%;       /* Keeps the width within the boundaries of the calendar cell */
+  }
+  
+  .fc .fc-daygrid-event .fc-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .fc-event-title {
+    font-size: 0.9rem; /* Adjust the font size to fit more text */
+  }
+  
