@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from "react";
-import DescriptionIcon from "@mui/icons-material/Description";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import { CSVLink } from "react-csv";
-import { Chip } from "@mui/material";
 import CreateFiles from "../Documents/CreateFiles";
-import { toast } from "react-toastify";
 import { get, put } from "../../../../api";
 import Swal from "sweetalert2";
 import { connect } from "react-redux";
-import ChipComponent from "../../../common/Chips/Chips";
 import { getSiteAssets } from "../../../../store/thunk/site";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
@@ -39,7 +35,6 @@ const StatutoryRegister = ({
   const {
     register,
     formState: { errors },
-    getValues,
     setValue,
   } = useForm({});
   const [searchTerm, setSearchTerm] = useState({});
@@ -79,9 +74,7 @@ const StatutoryRegister = ({
     let getStatutoryDocuments = await get(
       `/api/document/${siteId}/statutoryRegister`
     );
-    // getStatutoryDocuments = getStatutoryDocuments.sort((a, b) => {
-    //   return a.id - b.id;
-    // });
+    getStatutoryDocuments = getStatutoryDocuments.sort((a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder))
     setStatutory(getStatutoryDocuments);
     // Set initial values for residence fields using setValue
     getStatutoryDocuments.forEach((item) => {

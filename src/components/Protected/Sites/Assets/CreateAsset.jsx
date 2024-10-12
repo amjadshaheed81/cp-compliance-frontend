@@ -256,7 +256,7 @@ const CreateAsset = ({
                             {...register("folderId")}
                           >
                             <option value="" selected disabled>
-                              Select Folder
+                              New Document Location
                             </option>
                             {rootFolder?.parentFolders?.map((folder) => (
                               <option value={folder?.id}>{folder?.name}</option>
