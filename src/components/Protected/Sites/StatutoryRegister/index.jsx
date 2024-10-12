@@ -540,7 +540,7 @@ const StatutoryRegister = ({
                                       cursor: "pointer",
                                     }}
                                   >
-                                    Upload New File
+                                    Select or Upload New File
                                   </label>
                                 </div>
                               </td>

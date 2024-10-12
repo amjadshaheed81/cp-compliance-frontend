@@ -86,7 +86,7 @@ const MandatoryFile = ({
             onClick={handleFolderOpen}
             style={{fontSize: '12px'}}
           >
-            <i className="fas fa-plus"></i>&nbsp; Select File
+            <i className="fas fa-plus"></i>&nbsp; Tag Existing Document
           </Button>
         </div>
         <div className="mt-2">

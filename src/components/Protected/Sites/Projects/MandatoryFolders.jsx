@@ -48,7 +48,7 @@ const MandatoryFolders = ({
               className="btn btn-sm btn-light text-primary w-100"
               onClick={handleFolderOpen}
             >
-              <i className="fas fa-plus"></i>&nbsp; Select Folder
+              <i className="fas fa-plus"></i>&nbsp; New Document Location
             </button>
           </div>
         </div>

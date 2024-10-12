@@ -409,7 +409,7 @@ const SubFolder = ({
                           style={{ color: "384bd3", cursor: "pointer" }}
                         />
                       </Tooltip>
-                      <Tooltip title={`Upload New File`} arrow>
+                      <Tooltip title={`Select or Upload New File`} arrow>
                         <NoteAddIcon
                           onClick={() => {
                             setShowModal(true);
@@ -502,7 +502,7 @@ const SubFolder = ({
                               />
                             </Tooltip>
 
-                            <Tooltip title={`Upload New File`} arrow>
+                            <Tooltip title={`Select or Upload New File`} arrow>
                               <NoteAddIcon
                                 onClick={() => {
                                   setShowModal(true);

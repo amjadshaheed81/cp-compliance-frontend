@@ -85,7 +85,7 @@ const MandatoryFolders = ({
             onClick={handleFolderOpen}
             style={{fontSize: '12px'}}
           >
-            <i className="fas fa-plus"></i>&nbsp; Select Folder
+            <i className="fas fa-plus"></i>&nbsp; New Document Location
           </Button>
         </div>
         <div className="mt-2">
