@@ -126,14 +126,6 @@ const ViewEditPreAction = ({
       status: "Pending Action",
       approverNotes: getValues("approverNotes"),
     };
-    if (
-      data.approverNotes === "" ||
-      data.approverNotes === undefined ||
-      data.approverNotes === null
-    ) {
-      toast.error("Please enter approver notes");
-      return;
-    }
     setActionsPopup(true);
     //setIsLoading(true);
     // try {
