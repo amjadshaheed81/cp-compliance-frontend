@@ -12,10 +12,8 @@ import TagSites from "./TagSites";
 const ViewUsers = ({
   showViewModal,
   setShowViewModal,
-  refresh,
   selectedUser,
 }) => {
-  const handleOpen = () => setShowViewModal(true);
   const handleClose = () => setShowViewModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSiteTagModal, setShowSiteTagModal] = useState(false);
@@ -57,69 +55,71 @@ const ViewUsers = ({
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Full Name
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.name}
+                    {selectedUser?.name || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Email
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.email}
+                    {selectedUser?.email || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Site
-                    {selectedUser?.taggedSites?.length > 3 && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-light text-primary"
-                          onClick={() => {
-                            setShowSiteTagModal(true);
-                          }}
-                        >
-                          {selectedUser?.taggedSites?.length} Sites
-                        </button>
-                      </>
-                    )}
-                    {selectedUser?.taggedSites?.length < 4 &&
-                      selectedUser?.taggedSites?.map((itm) => (
-                        <span className="badge bg-primary">{itm?.name}</span>
-                      ))}
+                  {selectedUser?.taggedSites?.length > 3 && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-light text-primary"
+                        onClick={() => {
+                          setShowSiteTagModal(true);
+                        }}
+                      >
+                        {selectedUser?.taggedSites?.length} Sites
+                      </button>
+                    </>
+                  )}
+                  {selectedUser?.taggedSites?.length < 4 &&
+                    selectedUser?.taggedSites?.map((itm) => (
+                      <span className="badge bg-primary">{itm?.name}</span>
+                    ))}
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Role
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.role}
+                    {selectedUser?.role || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Creation Date
                   <span class="badge bg-primary rounded-pill">
-                    {moment(selectedUser?.creationDate).format("DD-MM-YYYY")}
+                    {selectedUser?.creationDate
+                      ? moment(selectedUser?.creationDate).format("DD-MM-YYYY")
+                      : "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Type
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.userType}
+                    {selectedUser?.userType || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Company
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.company}
+                    {selectedUser?.companyName || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Trade
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.trade}
+                    {selectedUser?.trade || "--"}
                   </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Status
                   <span class="badge bg-primary rounded-pill">
-                    {selectedUser?.status}
+                    {selectedUser?.status || "--"}
                   </span>
                 </li>
               </ul>
