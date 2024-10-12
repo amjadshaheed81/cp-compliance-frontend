@@ -218,10 +218,10 @@ export const deleteSite = (id) => {
   };
 };
 
-export const getSites = (loggedInUserData) => {
+export const getSites = (loggedInUserData, sort = 'asc') => {
   return async (dispatch) => {
     try {
-      const url = "/api/site/site/all";
+      const url = `/api/site/site/all?sort=${sort}`;
       const siteList = await get(url);
       let sites = [];
       const taggedSites = loggedInUserData?.taggedSites?.map((itm) => itm?.id);

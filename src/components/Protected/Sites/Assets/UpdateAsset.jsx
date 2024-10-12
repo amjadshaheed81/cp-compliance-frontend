@@ -557,19 +557,8 @@ const UpdateAsset = ({
                               id="manufacturer"
                               name="manufacturer"
                               placeholder=""
-                              {...register("manufacturer", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} manufacturer`,
-                                },
-                              })}
+                              {...register("manufacturer")}
                             />
-                            {errors?.manufacturer && (
-                              <InputError
-                                message={errors?.manufacturer?.message}
-                                key={errors?.manufacturer?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -611,12 +600,7 @@ const UpdateAsset = ({
                             name="folderId"
                             className="form-control form-select"
                             id="folderId"
-                            {...register("folderId", {
-                              required: {
-                                value: true,
-                                message: `Please select folder`,
-                              },
-                            })}
+                            {...register("folderId")}
                           >
                             <option value="" selected disabled>
                               Select Folder
@@ -627,12 +611,6 @@ const UpdateAsset = ({
                               </option>
                             ))}
                           </select>
-                          {errors?.folderId && (
-                            <InputError
-                              message={errors?.folderId?.message}
-                              key={errors?.folderId?.message}
-                            />
-                          )}
                         </div>
 
                         <div className="col-md-6">
@@ -644,19 +622,8 @@ const UpdateAsset = ({
                               id="model"
                               name="model"
                               placeholder=""
-                              {...register("model", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} model`,
-                                },
-                              })}
+                              {...register("model")}
                             />
-                            {errors?.model && (
-                              <InputError
-                                message={errors?.model?.message}
-                                key={errors?.model?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -669,19 +636,8 @@ const UpdateAsset = ({
                               id="serialNumber"
                               name="serialNumber"
                               placeholder=""
-                              {...register("serialNumber", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} serial number`,
-                                },
-                              })}
+                              {...register("serialNumber")}
                             />
-                            {errors?.serialNumber && (
-                              <InputError
-                                message={errors?.serialNumber?.message}
-                                key={errors?.serialNumber?.message}
-                              />
-                            )}
                           </div>
                         </div>
                         <div className="col-md-6 mt-2">
