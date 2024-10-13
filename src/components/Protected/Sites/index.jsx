@@ -37,7 +37,7 @@ const Sites = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [risks, setrisks] = useState({});
   const [sortConfig, setSortConfig] = useState({
-    key: 'site', // Default sort by 'site'
+    key: 'siteName', // Default sort by 'site'
     direction: 'asc', // Default direction
   });
 
@@ -47,7 +47,7 @@ const Sites = ({
       direction = 'desc';
     }
     setSortConfig({ key: column, direction });
-    getSites(loggedInUserData, direction); // Pass sorting params
+    getSites(loggedInUserData, direction, column); // Pass sorting params
   };
 
   const indexOfLastSite = currentPage * sitesPerPage;
@@ -222,10 +222,12 @@ const Sites = ({
             <table className="table">
               <thead className="table-dark">
                 <tr>
-                <th scope="col" className="cursor" onClick={() => handleSort('site')}>
-                  Site {sortConfig.key === 'site' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                <th scope="col" className="cursor" onClick={() => handleSort('siteName')}>
+                  Site {sortConfig.key === 'siteName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
-                  <th scope="col">Address</th>
+                <th scope="col" className="cursor" onClick={() => handleSort('address1')}>
+                  Address {sortConfig.key === 'address1' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
                   <th scope="col">Status</th>
                   <th scope="col">Outstanding Risk</th>
                   <th scope="col">Actions</th>
