@@ -242,6 +242,8 @@ const Sites = ({
                 <th scope="col" className="cursor" onClick={() => handleSort('siteName')}>
                   Site {sortConfig.key === 'siteName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
+                <th scope="col">Building Code</th>
+                
                 <th scope="col" className="cursor" onClick={() => handleSort('address1')}>
                   Address {sortConfig.key === 'address1' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -271,6 +273,7 @@ const Sites = ({
                       </span>
                       <p><small>{itm?.postCode}</small></p>
                     </th>
+                    <th scope="col">{itm?.buildingCode}</th>
                     <th scope="col">{itm?.address1}</th>
                     <th scope="col">
                       <ListStatusBadge status={itm?.status} />
