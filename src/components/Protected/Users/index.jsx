@@ -309,6 +309,7 @@ const Users = ({
                   <th scope="col">Creation Date</th>
                   <th scope="col">Type</th>
                   <th scope="col">Company</th>
+                  <th scope="col">Last Login</th>
                   <th scope="col">Status</th>
                   <th scope="col">Actions</th>
                 </tr>
@@ -349,7 +350,9 @@ const Users = ({
                     </th>
                     <th scope="col">{user?.userType}</th>
                     <th scope="col">{user?.companyName}</th>
-                    
+                    <th scope="col">
+                      {user?.lastLogin ? moment(user?.lastLogin).format("DD-MM-YYYY") : '-'}
+                    </th>
                     <th scope="col"> 
                     {/* <Chip
                label={ user?.status}
@@ -359,6 +362,7 @@ const Users = ({
               : "danger"
           }
         /> */}
+        
          <ChipComponent status={user?.status} />
                   </th>  
                     <th scope="col" width="200px">

@@ -365,7 +365,12 @@ const ViewUsers = ({
                             console.log("keys", keys);
                             setTagSite(keys)
                         }}
-                        options={sites.map((option) => {
+                        options={sites.filter(s=> {
+                          const taggedSits = getSelectedTagValue();
+                          const taggedSits2 = taggedSits.map(s => s.siteId);
+                          return !taggedSits2.includes(s.siteId)
+                        
+                        }).map((option) => {
                           return {
                             key: option.siteId,
                             label: option.siteName,
