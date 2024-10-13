@@ -1,15 +1,11 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { CSVLink } from "react-csv";
 import moment from "moment";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import siteDummy from "../../../../images/site-dummy.png";
 import { useForm } from "react-hook-form";
 import { InputError } from "../../../common/InputError";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -26,13 +22,15 @@ import {
 } from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData } from "../../../../api";
-import { getSiteAssets, setLoader } from "../../../../store/thunk/site";
+import { getSiteAssets, getSiteLayout, setLoader } from "../../../../store/thunk/site";
 
 const ViewEditPreAction = ({
   createUpdatePreActions,
   loggedInUserData,
   siteSelectedForGlobal,
   siteAssets,
+  siteLayout,
+  getSiteLayout,
 }) => {
   const {
     register,
@@ -57,8 +55,9 @@ const ViewEditPreAction = ({
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
-    getActionIdDetails();
     getSiteAssets(siteSelectedForGlobal?.siteId);
+    getActionIdDetails();
+    getSiteLayout(siteSelectedForGlobal?.siteId);
   }, []);
 
   useEffect(() => {
@@ -126,14 +125,6 @@ const ViewEditPreAction = ({
       status: "Pending Action",
       approverNotes: getValues("approverNotes"),
     };
-    if (
-      data.approverNotes === "" ||
-      data.approverNotes === undefined ||
-      data.approverNotes === null
-    ) {
-      toast.error("Please enter approver notes");
-      return;
-    }
     setActionsPopup(true);
     //setIsLoading(true);
     // try {
@@ -440,10 +431,13 @@ const ViewEditPreAction = ({
                             <option value="" selected disabled>
                               Select Floor
                             </option>
-                            <option value={"Ground"}>Ground</option>
-                            <option value={"First"}>First</option>
-                            <option value={"Second"}>Second</option>
-                            <option value={"Third"}>Third</option>`
+                            {siteLayout
+                          .filter((site) => site.nodeType === "floor")
+                          .map((site) => (
+                            <option value={site.nodeName}>
+                              {site.nodeName}{" "}
+                            </option>
+                          ))}
                           </select>
                           {errors?.floor && (
                             <InputError
@@ -491,9 +485,13 @@ const ViewEditPreAction = ({
                             <option value="" selected disabled>
                               Select Room
                             </option>
-                            <option value="R101">R101</option>
-                            <option value="R102">R102</option>
-                            <option value="R103">R103</option>
+                            {siteLayout
+                          .filter((site) => site.nodeType === "room")
+                          .map((site) => (
+                            <option value={site.nodeName}>
+                              {site.nodeName}
+                            </option>
+                          ))}
                           </select>
                           {errors?.room && (
                             <InputError
@@ -770,7 +768,9 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteAssets: state.site.siteAssets,
+  siteLayout: state.site.siteLayout,
 });
 export default connect(mapStateToProps, {
   createUpdatePreActions,
+  getSiteLayout,
 })(ViewEditPreAction);

@@ -213,19 +213,8 @@ const CreateAsset = ({
                               id="manufacturer"
                               name="manufacturer"
                               placeholder=""
-                              {...register("manufacturer", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} manufacturer`,
-                                },
-                              })}
+                              {...register("manufacturer")}
                             />
-                            {errors?.manufacturer && (
-                              <InputError
-                                message={errors?.manufacturer?.message}
-                                key={errors?.manufacturer?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -264,26 +253,15 @@ const CreateAsset = ({
                             name="folderId"
                             className="form-control form-select"
                             id="folderId"
-                            {...register("folderId", {
-                              required: {
-                                value: true,
-                                message: `Please select folder`,
-                              },
-                            })}
+                            {...register("folderId")}
                           >
                             <option value="" selected disabled>
-                              Select Folder
+                              New Document Location
                             </option>
                             {rootFolder?.parentFolders?.map((folder) => (
                               <option value={folder?.id}>{folder?.name}</option>
                             ))}
                           </select>
-                          {errors?.folderId && (
-                            <InputError
-                              message={errors?.folderId?.message}
-                              key={errors?.folderId?.message}
-                            />
-                          )}
                         </div>
 
                         <div className="col-md-6 mt-2">
@@ -295,19 +273,8 @@ const CreateAsset = ({
                               id="model"
                               name="model"
                               placeholder=""
-                              {...register("model", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} model`,
-                                },
-                              })}
+                              {...register("model")}
                             />
-                            {errors?.model && (
-                              <InputError
-                                message={errors?.model?.message}
-                                key={errors?.model?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -320,19 +287,8 @@ const CreateAsset = ({
                               id="serialNumber"
                               name="serialNumber"
                               placeholder=""
-                              {...register("serialNumber", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} serial number`,
-                                },
-                              })}
+                              {...register("serialNumber")}
                             />
-                            {errors?.serialNumber && (
-                              <InputError
-                                message={errors?.serialNumber?.message}
-                                key={errors?.serialNumber?.message}
-                              />
-                            )}
                           </div>
                         </div>
                       </div>

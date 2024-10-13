@@ -26,7 +26,7 @@ const CopyModal = ({
   return (
     <>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
-        <DialogTitle>Select folder where you want to copy file</DialogTitle>
+        <DialogTitle>New document location where you want to copy file</DialogTitle>
         <DialogContent>
           <div className="row">
             <div className="col-md-12">

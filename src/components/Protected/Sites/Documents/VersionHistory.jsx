@@ -216,7 +216,7 @@ const VersionHistory = ({
                 </div>
                 <div className="col-md-4">
                   <label htmlFor="fileUpload" name="fileUpload">
-                    Upload New Version
+                    Select New File
                   </label>
                   <input
                     type="file"

@@ -74,11 +74,45 @@ const UpdateSite = ({
     }
   }, []);
   useEffect(() => {
-    console.log("updateSite", updateSite);
     if (updateSite) {
       reset(updateSite);
+      if(!updateSite?.longitude && !updateSite?.latitude && updateSite?.postCode) {
+        fetchCoordinates();
+      }
     }
   }, [updateSite]);
+  const fetchCoordinates = async (postcode) => {
+    const apiKey = "pdSw7G1TEk6kghR1DNzddQ41182";  // Replace with your actual API key
+    const url = `https://api.getaddress.io/find/${updateSite?.postCode}?api-key=${apiKey}&expand=true`;
+  
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch data");
+      }
+  
+      const data = await response.json();
+      // Assuming 'latitude' and 'longitude' are in the response under the coordinates
+      const { latitude, longitude } = data || {};
+  
+      if (latitude && longitude) {
+        setValue("latitude", latitude);
+        setValue("longitude", longitude);
+        setValue(
+          "mapViewUrl",
+          `http://maps.google.com/maps?q=${latitude},${longitude}`
+        );
+        setValue(
+          "streetViewUrl",
+          `http://maps.google.com/maps?q=${latitude},${longitude}`
+        );
+      } else {
+        console.log("Coordinates not found for the provided postcode.");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
   const submitSite = (data) => {
     setLoader(true);
     updateSiteDetail(data);

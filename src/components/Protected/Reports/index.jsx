@@ -21,6 +21,9 @@ import Sites from "./Portfolio/Sites";
 import SiteCharts from "./Portfolio/SiteCharts";
 import Assets from "./Assets/Assets";
 import AssetChart from "./Assets/AssetChart";
+import Contracts from "./Contracts/Contracts";
+import SiteChecks from "./SiteChecks/SiteChecks";
+import EnergyCost from "./EnergyCost/EnergyCost";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -107,22 +110,22 @@ const Reports = ({}) => {
             </TabPanel>
             <TabPanel value={value} index={2}>
               <div className="row">
-                <div className="col-md-12">Project</div>
+                <Contracts />
               </div>
             </TabPanel>
             <TabPanel value={value} index={3}>
               <div className="row">
-                <div className="col-md-12">Worksheet</div>
+                Worksheet
               </div>
             </TabPanel>
             <TabPanel value={value} index={4}>
               <div className="row">
-                <div className="col-md-12">Energy Report</div>
+                <EnergyCost />
               </div>
             </TabPanel>
             <TabPanel value={value} index={5}>
               <div className="row">
-                <div className="col-md-12">Site Checks</div>
+                <SiteChecks />
               </div>
             </TabPanel>
           </Box>

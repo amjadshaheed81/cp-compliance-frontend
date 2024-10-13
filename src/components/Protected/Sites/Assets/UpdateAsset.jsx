@@ -456,32 +456,39 @@ const UpdateAsset = ({
   };
   const changePatItem = (e) => {
     const value = e.target.checked;
+    console.log("value", value);
     setValue("patItem", value);
+    setSelectedAsset(prevState => ({...prevState, patItem: value}));
     const ispfpItem = getValues("pfpItem");
     const isdoorItem = getValues("doorItem");
     if (ispfpItem || isdoorItem) {
       setValue("pfpItem", false);
       setValue("doorItem", false);
+      setSelectedAsset(prevState => ({...prevState, pfpItem: false, doorItem: false}));
     }
   };
   const changePfpItem = (e) => {
     const value = e.target.checked;
     setValue("pfpItem", value);
+    setSelectedAsset(prevState => ({...prevState, pfpItem: value}));
     const ispatItem = getValues("patItem");
     const isdoorItem = getValues("doorItem");
     if (ispatItem || isdoorItem) {
       setValue("patItem", false);
       setValue("doorItem", false);
+      setSelectedAsset(prevState => ({...prevState, patItem: false, doorItem: false}));
     }
   };
   const changeDoorItem = (e) => {
     const value = e.target.checked;
     setValue("doorItem", value);
+    setSelectedAsset(prevState => ({...prevState, doorItem: value}));
     const ispatItem = getValues("patItem");
     const ispfpItem = getValues("pfpItem");
     if (ispatItem || ispfpItem) {
       setValue("patItem", false);
       setValue("pfpItem", false);
+      setSelectedAsset(prevState => ({...prevState, pfpItem: false, patItem: false}));
     }
   };
   return (
@@ -550,19 +557,8 @@ const UpdateAsset = ({
                               id="manufacturer"
                               name="manufacturer"
                               placeholder=""
-                              {...register("manufacturer", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} manufacturer`,
-                                },
-                              })}
+                              {...register("manufacturer")}
                             />
-                            {errors?.manufacturer && (
-                              <InputError
-                                message={errors?.manufacturer?.message}
-                                key={errors?.manufacturer?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -604,15 +600,10 @@ const UpdateAsset = ({
                             name="folderId"
                             className="form-control form-select"
                             id="folderId"
-                            {...register("folderId", {
-                              required: {
-                                value: true,
-                                message: `Please select folder`,
-                              },
-                            })}
+                            {...register("folderId")}
                           >
                             <option value="" selected disabled>
-                              Select Folder
+                              New Document Location
                             </option>
                             {rootFolder?.parentFolders?.map((folder) => (
                               <option value={folder?.id} key={folder?.id}>
@@ -620,12 +611,6 @@ const UpdateAsset = ({
                               </option>
                             ))}
                           </select>
-                          {errors?.folderId && (
-                            <InputError
-                              message={errors?.folderId?.message}
-                              key={errors?.folderId?.message}
-                            />
-                          )}
                         </div>
 
                         <div className="col-md-6">
@@ -637,19 +622,8 @@ const UpdateAsset = ({
                               id="model"
                               name="model"
                               placeholder=""
-                              {...register("model", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} model`,
-                                },
-                              })}
+                              {...register("model")}
                             />
-                            {errors?.model && (
-                              <InputError
-                                message={errors?.model?.message}
-                                key={errors?.model?.message}
-                              />
-                            )}
                           </div>
                         </div>
 
@@ -662,19 +636,8 @@ const UpdateAsset = ({
                               id="serialNumber"
                               name="serialNumber"
                               placeholder=""
-                              {...register("serialNumber", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} serial number`,
-                                },
-                              })}
+                              {...register("serialNumber")}
                             />
-                            {errors?.serialNumber && (
-                              <InputError
-                                message={errors?.serialNumber?.message}
-                                key={errors?.serialNumber?.message}
-                              />
-                            )}
                           </div>
                         </div>
                         <div className="col-md-6 mt-2">

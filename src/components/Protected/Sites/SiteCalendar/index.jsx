@@ -76,45 +76,45 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const msg = async (date) => {
     setClickedDate(date?._def?.extendedProps?.getDate);
   };
+  function truncateString(str, num) {
+    return str.length > num ? str.slice(0, num) + "..." : str;
+  }
+  
   function renderEventContent(eventInfo) {
-    console.log("event", eventInfo);
     const title = JSON.parse(eventInfo.event.title);
     return (
       <>
-        <p onClick={() => msg(eventInfo.event)}>
+        <p onClick={() => msg(eventInfo.event)} style={{ overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
           {title?.map((itm, index) => (
-            <>
-             <Tooltip title={itm?.label} arrow>
-              {/* <p><span class="badge bg-primary">{itm?.label}</span></p> */}
+            <Tooltip title={itm?.label} arrow key={index}>
               {itm?.type?.includes("Audit") && (
-                <p><span class="badge bg-primary">{itm?.type}</span></p>
+                <p><span className="badge bg-primary">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Assessment") && (
-                <p><span class="badge bg-dark">{itm?.type}</span></p>
+                <p><span className="badge bg-dark">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Inspection") && (
-                <p><span class="badge bg-success">{itm?.type}</span></p>
+                <p><span className="badge bg-success">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Survey") && (
-                <span class="badge bg-danger">{itm?.type}</span>
+                <p><span className="badge bg-danger">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Asbestos") && (
-                <span class="badge bg-warning text-dark">{itm?.type}</span>
+                <p><span className="badge bg-warning text-dark">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Document") && (
-                <span class="badge bg-info">{itm?.type}</span>
+                <p><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
               )}
-               {itm?.type?.includes("Contract") && (
-                <span class="badge bg-info">{itm?.type}</span>
+              {itm?.type?.includes("Contract") && (
+                <p><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
               )}
-              </Tooltip>
-            </>
-
+            </Tooltip>
           ))}
         </p>
       </>
     );
   }
+  
   return (
     <Fragment>
       <SidebarNew />

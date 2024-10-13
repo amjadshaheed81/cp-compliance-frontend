@@ -170,7 +170,7 @@ const CreateFiles = ({
   return (
     <React.Fragment>
       <Button variant="outlined" onClick={handleOpen}>
-        Upload New Files
+        Select or Upload New Files
       </Button>
       <Dialog
         open={showModal}
@@ -313,7 +313,7 @@ const CreateFiles = ({
           }),
         }}
       >
-        <DialogTitle>Upload New Files</DialogTitle>
+        <DialogTitle>Select or Upload New Files</DialogTitle>
         <DialogContent dividers>
           <Grid container>
             <Grid sm={8}>
@@ -443,7 +443,7 @@ const CreateFiles = ({
                       marginLeft: "4rem",
                     }}
                   />
-                  <label htmlFor="fileUpload">Upload New Version</label>
+                  <label htmlFor="fileUpload">Select New File</label>
                   <input
                     type="file"
                     name="fileUpload"
