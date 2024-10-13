@@ -230,7 +230,7 @@ const AdminDropdowns = ({ }) => {
               >
                 <option value={null}>Select</option>
                 {lovTypes.map((o, index) => (
-                  <option key={index} value={o}> {o} </option>
+                  <option key={index} value={o}> {o?.replaceAll("_", " ")} </option>
                 ))}
               </select>
             </Grid>
