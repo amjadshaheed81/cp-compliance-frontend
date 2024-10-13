@@ -293,7 +293,7 @@ const UpdateAsset = ({
       model: formData?.model,
       serialNumber: formData?.serialNumber,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
-      folderId: formData?.folderId,
+      folderId: null,
       patItem: formData?.patItem,
       pfpItem: formData?.pfpItem,
       doorItem: formData?.doorItem,
@@ -594,7 +594,7 @@ const UpdateAsset = ({
                           </div>
                         </div>
 
-                        <div className="col-md-6">
+                        {/* <div className="col-md-6">
                           <label for="folder">Folder</label>
                           <select
                             name="folderId"
@@ -611,7 +611,7 @@ const UpdateAsset = ({
                               </option>
                             ))}
                           </select>
-                        </div>
+                        </div> */}
 
                         <div className="col-md-6">
                           <div className="form-group mt-2">
@@ -699,7 +699,6 @@ const UpdateAsset = ({
                             ))}
                           </select>
                         </div>
-                        <div className="row">
                           <div className="col-md-6 mt-2">
                             <label for="subCategory2">Sub Category 2</label>
                             <select
@@ -752,8 +751,7 @@ const UpdateAsset = ({
                               ))}
                             </select>
                           </div>
-                        </div>
-
+                        <div  className="row">
                         <div className="col-md-4 mt-2">
                           <input
                             type="checkbox"
@@ -796,6 +794,7 @@ const UpdateAsset = ({
                           <label for="doorItem">
                             Door Assets (fill Door assets details below below)
                           </label>
+                        </div>
                         </div>
                       </div>
                     </div>

@@ -518,7 +518,7 @@ const UpdateAsset = ({
                         </div>
                       </div>
 
-                      <div className="col-md-6">
+                      {/* <div className="col-md-6">
                         <label for="folder">Folder</label>
                         <select
                           name="folderId"
@@ -536,7 +536,7 @@ const UpdateAsset = ({
                             </option>
                           ))}
                         </select>
-                      </div>
+                      </div> */}
 
                       <div className="col-md-6">
                         <div className="form-group mt-2">

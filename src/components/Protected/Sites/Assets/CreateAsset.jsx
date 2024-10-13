@@ -247,7 +247,7 @@ const CreateAsset = ({
                           </div>
                         </div>
 
-                        <div className="col-md-6 mt-2">
+                        {/* <div className="col-md-6 mt-2">
                           <label for="folder">Folder</label>
                           <select
                             name="folderId"
@@ -262,7 +262,7 @@ const CreateAsset = ({
                               <option value={folder?.id}>{folder?.name}</option>
                             ))}
                           </select>
-                        </div>
+                        </div> */}
 
                         <div className="col-md-6 mt-2">
                           <div className="form-group mt-2">
