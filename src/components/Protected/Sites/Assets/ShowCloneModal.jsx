@@ -93,31 +93,6 @@ const ShowCloneModal = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4">
-                    <div className="form-group mt-2">
-                      <label for="manufacturer">Manufacturer</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="manufacturer"
-                        name="manufacturer"
-                        disabled
-                        placeholder=""
-                        {...register("manufacturer", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} manufacturer`,
-                          },
-                        })}
-                      />
-                      {errors?.manufacturer && (
-                        <InputError
-                          message={errors?.manufacturer?.message}
-                          key={errors?.manufacturer?.message}
-                        />
-                      )}
-                    </div>
-                  </div>
                   <div className="col-md-12">
                     <Alert severity="warning">
                       You are about to create copies of the above mentioned
