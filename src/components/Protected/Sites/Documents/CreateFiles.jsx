@@ -93,6 +93,12 @@ const CreateFiles = ({
     reqData.documentRequestString.files[0].expiryDate =
       data?.files[0].expiryDate;
     if (isStatutory) {
+      console.log("selectedMandatoryFile",selectedMandatoryFile);
+      if(selectedMandatoryFile?.length) {
+        reqData.documentRequestString.files[0].name = selectedMandatoryFile[0].name;
+        reqData.documentRequestString.files[0].issueDate = selectedMandatoryFile[0].issueDate?.replace("T", " ");
+        reqData.documentRequestString.files[0].issueDate = selectedMandatoryFile[0].expiryDate?.replace("T", " ");
+      }
       reqData.documentRequestString.files[0].statutoryCategoryId =
       selectedMandatoryFolder?.[0]?.id;
     }
