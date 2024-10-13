@@ -41,7 +41,7 @@ const DashboardActions = (siteSelectedForGlobal) => {
         <div className="card-body p-2">
           <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
-              <h5 className="card-title">Actions</h5>
+              <h5 className="card-title">Actions - {siteSelectedForGlobal?.siteSelectedForGlobal?.siteName}</h5>
             </div>
             <div className="ms-auto bd-highlight">
               <button
