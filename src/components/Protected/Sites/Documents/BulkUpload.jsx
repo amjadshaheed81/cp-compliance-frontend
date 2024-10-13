@@ -14,7 +14,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import moment from "moment";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { uploadPhoto, uploadNewVersion } from "../../../../api";
+import { uploadPhoto, uploadNewVersion, get } from "../../../../api";
+import MandatoryFolders from "../Contracts/MandatoryFolders";
 
 const BulkUpload = ({
   bulkUploadModal,
@@ -28,12 +29,24 @@ const BulkUpload = ({
   const handleOpen = () => setBulkUploadModal(true);
   const handleClose = () => setBulkUploadModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([folder] || []);
+
   const [files, setFiles] = useState([]);
   const [selectedFiles, setSelectedFile] = useState([]);
   useEffect(() => {
-    console.log("folder", folder);
     setFiles(folder?.files || []);
   }, [folder]);
+  useEffect(() => {
+    if(selectedMandatoryFolder?.length > 0) {
+      getFiles();
+    }
+  }, [selectedMandatoryFolder]);
+  const getFiles = async () => {
+    const url = `/api/document/parent/${selectedMandatoryFolder[0].id}/folders`;
+    const res = await get(url);
+    console.log("s", res)
+    setFiles(res?.document?.files || [])
+  }
   const { register, handleSubmit, watch } = useForm({});
   const values = watch() || {};
   console.log("values", values);
@@ -46,7 +59,7 @@ const BulkUpload = ({
       const data = {
         files: iterator,
         documentRequestString: {
-          folderId: folder?.id,
+          folderId: selectedMandatoryFolder?.[0]?.id,
           files: [
             {
               ...iterator,
@@ -127,7 +140,7 @@ const BulkUpload = ({
                   name="folder"
                   disabled
                   className="form-control"
-                  value={folder?.name}
+                  value={selectedMandatoryFolder?.[0]?.name}
                 />
                 <div className="mt-2">
                   {getSelectedFiles()}
@@ -164,6 +177,15 @@ const BulkUpload = ({
                     <p>(max 100 MB each)</p>
                   </div>
                 </div>
+              </div>
+              <div className="col-md-12 h-50">
+                <MandatoryFolders
+                    isStatutory={false}
+                    isSingleFolderSelect={true}
+                    setFiles={setFiles}
+                    setSelectedMandatoryFolder={setSelectedMandatoryFolder}
+                    selectedMandatoryFolder={selectedMandatoryFolder}
+                  />
               </div>
               <div className="table-responsive">
                 <table className="table f-11">

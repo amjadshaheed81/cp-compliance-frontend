@@ -32,6 +32,7 @@ const CreateFiles = ({
   reviewerUserId,
   loggedInUserData,
   folderfiles,
+  setFolder,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -41,7 +42,7 @@ const CreateFiles = ({
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
-  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
+  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState(folderData ? [folderData] : []);
   const [selectedMandatoryFile, setSelectedMandatoryFile] = useState([]);
   const [selectedContractors, setSelectedContractors] = useState([]);
 
@@ -53,8 +54,8 @@ const CreateFiles = ({
     formState: { errors },
   } = useForm({});
   useEffect(() => {
-    console.log("folderData", folderData);
-    setValue("name", folderData?.folderName ? folderData?.name : "");
+    console.log("folderData", selectedMandatoryFolder?.[0]);
+    setValue("name", selectedMandatoryFolder?.[0]?.folderName ? selectedMandatoryFolder?.[0]?.name : "");
   }, []);
   const submitFile = async (data, fileUpload, formData) => {
 
@@ -93,7 +94,7 @@ const CreateFiles = ({
       data?.files[0].expiryDate;
     if (isStatutory) {
       reqData.documentRequestString.files[0].statutoryCategoryId =
-        folderData?.id;
+      selectedMandatoryFolder?.[0]?.id;
     }
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
@@ -183,9 +184,9 @@ const CreateFiles = ({
             console.log("formData", formData);
             try {
               setIsLoading(true);
-              let folderIdForUpload = folderData?.id;
+              let folderIdForUpload = selectedMandatoryFolder?.[0]?.id;
               let fileExtensionValue = "";
-              console.log("folderData?.id", folderData?.id);
+              console.log("folderData?.id", selectedMandatoryFolder?.[0]?.id);
               if (isStatutory) {
                 if (
                   selectedMandatoryFolder?.length === 0 &&
@@ -214,7 +215,8 @@ const CreateFiles = ({
 
                   // Convert the response to a Blob
                   const fileBlob = await response.blob();
-                  fileExtensionValue = selectedMandatoryFile[0]?.name?.split(".")?.[1];
+                  fileExtensionValue =
+                    selectedMandatoryFile[0]?.name?.split(".")?.[1];
                   // Create a File object from the Blob
                   const file = new File(
                     [fileBlob],
@@ -242,8 +244,8 @@ const CreateFiles = ({
                     name: formData?.name
                       ? formData?.name
                       : selectedMandatoryFile[0].fileName,
-                    fileVersion: folderData?.fileVersion
-                      ? Number(folderData?.fileVersion) + 1
+                    fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
+                      ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                       : 1,
                     siteId: siteSelectedForGlobal?.siteId,
                     issueDate: formData?.issueDate
@@ -257,8 +259,8 @@ const CreateFiles = ({
                   data.files.push({
                     ...formData,
                     name: formData?.name,
-                    fileVersion: folderData?.fileVersion
-                      ? Number(folderData?.fileVersion) + 1
+                    fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
+                      ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                       : 1,
                     siteId: siteSelectedForGlobal?.siteId,
                     issueDate: formData?.issueDate
@@ -279,8 +281,8 @@ const CreateFiles = ({
                 data.files.push({
                   ...formData,
                   name: formData?.name,
-                  fileVersion: folderData?.fileVersion
-                    ? Number(folderData?.fileVersion) + 1
+                  fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
+                    ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                     : 1,
                   siteId: siteSelectedForGlobal?.siteId,
                   issueDate: formData?.issueDate
@@ -325,17 +327,32 @@ const CreateFiles = ({
                     ) : (
                       <label htmlFor="folder">Folder</label>
                     )}
-                    <input
+                    {isStatutory ? (
+                      <input
                       type="text"
                       disabled
                       value={
-                        folderData?.folderName
-                          ? folderData?.folderName
-                          : folderData?.name
+                        folderData?.requirement
+                          ? folderData?.requirement
+                          : folderData?.subType
                       }
                       className="form-control"
                       {...register("folderName")}
                     />
+                    ) : (
+                      <input
+                      type="text"
+                      disabled
+                      value={
+                        selectedMandatoryFolder?.[0]?.folderName
+                          ? selectedMandatoryFolder?.[0]?.folderName
+                          : selectedMandatoryFolder?.[0]?.name
+                      }
+                      className="form-control"
+                      {...register("folderName")}
+                    />
+                    )}
+                    
                   </div>
                 </Grid>
                 <Grid sm={6}>
@@ -355,8 +372,8 @@ const CreateFiles = ({
                       type="text"
                       disabled
                       value={
-                        folderData?.fileVersion
-                          ? Number(folderData?.fileVersion) + 1
+                        selectedMandatoryFolder?.[0]?.fileVersion
+                          ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                           : 1
                       }
                       className="form-control"
@@ -407,15 +424,16 @@ const CreateFiles = ({
                     />
                   </div>
                 </Grid>
+                <Grid sm={6}>
+                  <MandatoryFolders
+                    isStatutory={isStatutory}
+                    isSingleFolderSelect={isStatutory ? false : true}
+                    setSelectedMandatoryFolder={setSelectedMandatoryFolder}
+                    selectedMandatoryFolder={selectedMandatoryFolder}
+                  />
+                </Grid>
                 {isStatutory && (
                   <>
-                    <Grid sm={6}>
-                      <MandatoryFolders
-                        isStatutory={isStatutory}
-                        setSelectedMandatoryFolder={setSelectedMandatoryFolder}
-                        selectedMandatoryFolder={selectedMandatoryFolder}
-                      />
-                    </Grid>
                     <Grid sm={6}>
                       <SelectMandatoryFile
                         isStatutory={isStatutory}

@@ -560,6 +560,7 @@ const StatutoryRegister = ({
               setShowModal={setShowModal}
               isStatutory={true}
               folderData={folder}
+              setFolder={setFolder}
               uploaderUserId={loggedInUserData?.id}
               reviewerUserId={loggedInUserData?.id}
               refresh={() => {

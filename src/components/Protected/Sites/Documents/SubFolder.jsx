@@ -249,6 +249,7 @@ const SubFolder = ({
             showModal={showModal}
             setShowModal={setShowModal}
             folderData={folderData}
+            setFolder={setfolder}
             uploaderUserId={loggedInUserData?.id}
             reviewerUserId={loggedInUserData?.id}
             refresh={() => {

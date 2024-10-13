@@ -20,6 +20,8 @@ const MandatoryFolders = ({
   setSelectedMandatoryFolder,
   siteSelectedForGlobal,
   isStatutory,
+  isSingleFolderSelect,
+  setFiles,
 }) => {
   const [openFolder, setFolderOpen] = useState(false);
   const [filteredFolders, setFilteredFolders] = useState([]);
@@ -47,9 +49,9 @@ const MandatoryFolders = ({
   };
 
   const handleAddFolder = (folder) => {
-    if(isStatutory) {
+    if(isStatutory || isSingleFolderSelect) {
       if(selectedMandatoryFolder?.length > 0) {
-        toast.warn("You can select only one folder to upload file for statutory.")
+        toast.warn("You can select only one folder to upload file.")
       } else {
         setSelectedMandatoryFolder([
           ...selectedMandatoryFolder,
@@ -93,7 +95,7 @@ const MandatoryFolders = ({
             <Fragment>
               <Chip
                 key={folder.id}
-                label={folder?.name}
+                label={folder?.requirement ? folder?.requirement : folder?.name}
                 color="primary"
                 onDelete={() => handleRemoveFolder(folder.id)}
               ></Chip>
