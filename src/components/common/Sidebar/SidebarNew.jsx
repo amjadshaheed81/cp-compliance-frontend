@@ -34,7 +34,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import { connect } from "react-redux";
 import { ROLE } from "../../../Constant/Role";
 import { filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
-import { setSideBarView } from "../../../store/thunk/site";
+import { setSideBarView, updateSite } from "../../../store/thunk/site";
 import CloseIcon from "@mui/icons-material/Close";
 
 const drawerWidth = 240;
@@ -133,7 +133,7 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
+const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpen, siteSelectedForGlobal }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const goTo = (text) => {
@@ -157,8 +157,8 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
         navigate("/add-site");
         break;
       case "Site Details":
-        navigate("/sites");
-        break;
+        updateSite({ ...siteSelectedForGlobal })
+        navigate(`/update-site?siteId=${siteSelectedForGlobal?.siteId}&isViewMode=edit`);        break;
       case "Site Documents":
         navigate("/documents");
         break;
@@ -358,7 +358,8 @@ const SidebarNew = ({ loggedInUserData, setSideBarView, isSideBarOpen }) => {
 };
 
 const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
   isSideBarOpen: state.site.isSideBarOpen,
 });
-export default connect(mapStateToProps, { setSideBarView })(SidebarNew);
+export default connect(mapStateToProps, { updateSite, setSideBarView })(SidebarNew);
