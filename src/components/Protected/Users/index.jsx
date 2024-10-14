@@ -344,7 +344,7 @@ const Users = ({
                           <span className="badge bg-primary">{itm?.name}</span>
                         ))}
                     </th>
-                    <th scope="col">{user?.role}</th>
+                    <th scope="col">{user?.role === "Manager" ? "Property Manager": user?.role}</th>
                     <th scope="col">
                       {moment(user?.creationDate).format("DD-MM-YYYY")}
                     </th>

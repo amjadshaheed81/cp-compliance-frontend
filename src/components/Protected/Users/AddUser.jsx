@@ -94,7 +94,7 @@ const AddUser = ({
       lastName: formJson?.lastName || null,
       email: formJson?.email || null,
       password: formJson?.password || null,
-      phone: Number(formJson?.phone) || null,
+      phone: formJson?.phone || null,
       role: formJson?.role || null,
       userType: formJson?.userType || null,
       defaultSiteId:
@@ -251,10 +251,10 @@ const AddUser = ({
                             value: true,
                             message: `${Validation.REQUIRED} phone`,
                           },
-                          pattern: {
-                            value: /^[0-9]+$/,
-                            message: "Please enter a number",
-                          },
+                          // pattern: {
+                          //   value: /^[0-9]+$/,
+                          //   message: "Please enter a number",
+                          // },
                         })}
                       />
                       {errors?.phone && (

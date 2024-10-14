@@ -314,7 +314,7 @@ const ViewUsers = ({
                           Site Action Manager
                         </option>
                         <option value={ROLE.SITE_USERS}>Site Users</option>
-                        <option value={ROLE.CARE_TAKER}>Care Taker</option>
+                        <option value={ROLE.CARE_TAKER}>Caretaker</option>
                         <option value={ROLE.CONTRACTOR}>Contractor</option>
                         <option value={ROLE.SURVEYOR}>Surveyor</option>
                         <option value={ROLE.TRADESMAN}>Tradesman</option>

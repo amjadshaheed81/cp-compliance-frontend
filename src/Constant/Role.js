@@ -3,7 +3,7 @@ export const ROLE = {
   MANAGER: "Manager",
   SITE_ACTION_MANAGER: "Site Action Manager",
   SITE_USERS: "Site Users",
-  CARE_TAKER: "Care Taker",
+  CARE_TAKER: "Caretaker",
   CONTRACTOR: "Contractor",
   SURVEYOR: "Surveyor",
   TRADESMAN: "Tradesman",
