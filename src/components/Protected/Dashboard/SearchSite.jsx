@@ -107,7 +107,7 @@ function SearchSite({
 
     const value = e?.target?.value;
     const list = sites?.filter((x) =>
-      String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
+      (x?.status === "open") && String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
     );
     setSites(list);
     // const url = `/api/site/site/all?q=${value}`;

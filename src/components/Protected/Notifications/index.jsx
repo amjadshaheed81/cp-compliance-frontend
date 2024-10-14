@@ -17,6 +17,7 @@ import Box from "@mui/material/Box";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import MessageSharp from "@mui/icons-material/MessageSharp";
+import DashboardNotification from "../Dashboard/DashboardNotification";
 import { List, ListItem, ListItemText } from "@mui/material";
 import { get } from "../../../api";
 
@@ -103,7 +104,7 @@ const Notifications = ({ siteSelectedForGlobal }) => {
                 label="All Notifications"
                 {...a11yProps(0)}
               />
-              {/* <Tab
+              <Tab
                 icon={<ElectricBoltIcon />}
                 label="For Actions"
                 {...a11yProps(1)}
@@ -112,17 +113,17 @@ const Notifications = ({ siteSelectedForGlobal }) => {
                 icon={<MessageSharp />}
                 label="For Information"
                 {...a11yProps(2)}
-              /> */}
+              />
             </Tabs>
             <TabPanel value={value} index={0}>
-              <h3>All Notifications</h3>
-              <List>
+              {/* <h3>All Notifications</h3> */}
+              {/* <List>
                 {notification.map((notification, index) => (
                   <ListItem key={index}>
                     <ListItemText primary={notification?.description} />
                   </ListItem>
                 ))}
-              </List>
+              </List> */}
             </TabPanel>
             <TabPanel value={value} index={1}>
               For Actions

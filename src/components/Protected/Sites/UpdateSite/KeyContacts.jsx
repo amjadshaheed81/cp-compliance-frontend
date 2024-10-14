@@ -203,7 +203,7 @@ const KeyContacts = ({
                       Site Action Manager
                     </option>
                     <option value="siteusers">Site users</option>
-                    <option value="caretaker">Care Taker</option>
+                    <option value="caretaker">Caretaker</option>
                     <option value="contractor">Contractor</option>
                     <option value="surveyor">Surveyor</option>
                     <option value="tradesman">Tradesman</option>

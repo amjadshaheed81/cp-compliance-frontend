@@ -105,7 +105,7 @@ const Sites = ({
     if (value) {
       const list = sites?.filter(
         (x) =>
-          (x?.status === "open") && (String(x?.siteName)
+           (String(x?.siteName)
             .toLowerCase()
             .includes(String(value).toLowerCase()) ||
           String(x?.address1)
