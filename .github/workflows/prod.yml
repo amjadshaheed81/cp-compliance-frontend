@@ -1,15 +1,37 @@
-name: DEV VM Deployment 
+name: PROD VM Deployment 
 
 on:
   workflow_dispatch:
 
+permissions: 
+  id-token: write
+  contents: read
+
 env:
-  HOST: 20.162.113.147
+  HOST: cpc-prod-vm01.westeurope.cloudapp.azure.com
   USERNAME: github-user
   PORT: 22
-    
+
 jobs:
+  port-open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Authenticate to Azure'
+        uses: azure/login@v1
+        with:
+          client-id: 2733bc8f-501f-45ee-aa25-41e9b783c6a1
+          subscription-id: f6e396a3-59a3-453e-b82d-92ed847d2cc2
+          tenant-id: deepakkesharitdkglobalco.onmicrosoft.com
+
+      - name: add ip in nsg
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az network nsg rule create -g cpc-prod --nsg-name nsg-cpc-prod \
+            --priority 111 --source-address-prefixes '*' -n github \
+            --destination-port-ranges "22" || true
   build:
+    needs: port-open
     runs-on: ubuntu-latest
     name: Build
     env:
@@ -31,7 +53,7 @@ jobs:
       - name: Set outputs
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
+      
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
@@ -67,7 +89,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.PROD_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/
@@ -85,7 +107,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.PROD_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/static/
@@ -97,13 +119,32 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: src
-      
+
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.PROD_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/src/
+
+  port-close:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: Deployment
+    steps:
+      - name: 'Authenticate to Azure'
+        uses: azure/login@v1
+        with:
+          client-id: 2733bc8f-501f-45ee-aa25-41e9b783c6a1
+          subscription-id: f6e396a3-59a3-453e-b82d-92ed847d2cc2
+          tenant-id: deepakkesharitdkglobalco.onmicrosoft.com
+
+      - name: remove ip in nsg
+        if: always()
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az network nsg rule delete -g cpc-prod --nsg-name nsg-cpc-prod -n github || true
