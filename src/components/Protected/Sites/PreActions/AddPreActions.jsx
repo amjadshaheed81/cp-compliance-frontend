@@ -42,7 +42,7 @@ const AddPreActions = ({
     handleSubmit,
   } = useForm({});
   const values = watch();
-
+  console.log("values", values);
   useEffect(() => {
     // reset(selectedUser);
     getSiteAssets(siteSelectedForGlobal?.siteId)
@@ -123,8 +123,13 @@ const AddPreActions = ({
                           <option value="" selected disabled>
                             Select Internal/External
                           </option>
-                          <option value="Internal">Internal</option>
-                          <option value="External">External</option>
+                          {siteLayout
+                          .filter((site) => site.nodeType === "type")
+                          .map((site) => (
+                            <option value={site.id}>
+                              {site.nodeName}
+                            </option>
+                          ))}
                         </select>
                         {errors?.category && (
                           <InputError
@@ -151,9 +156,9 @@ const AddPreActions = ({
                               Select Floor
                             </option>
                             {siteLayout
-                          .filter((site) => site.nodeType === "floor")
+                          .filter((site) => site.nodeType === "floor" && values?.category == site.parentNode)
                           .map((site) => (
-                            <option value={site.nodeName}>
+                            <option value={site.id}>
                               {site.nodeName}{" "}
                             </option>
                           ))}
@@ -185,7 +190,7 @@ const AddPreActions = ({
                               Select Room
                             </option>
                            {siteLayout
-                          .filter((site) => site.nodeType === "room")
+                          .filter((site) => site.nodeType === "room" && values?.floor == site.parentNode)
                           .map((site) => (
                             <option value={site.nodeName}>
                               {site.nodeName}
