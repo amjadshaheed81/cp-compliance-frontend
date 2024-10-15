@@ -518,7 +518,7 @@ const UpdateSite = ({
                   <p>
                     SVG, PNG, JPG or GIF
                     <br />
-                    (max 800 * 800 px)
+                    (max 800 * 800 px) 50mb
                   </p>
                 </div>
               </div>
