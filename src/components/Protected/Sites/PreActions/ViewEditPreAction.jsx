@@ -31,6 +31,7 @@ const ViewEditPreAction = ({
   siteAssets,
   siteLayout,
   getSiteLayout,
+  getSiteAssets
 }) => {
   const {
     register,
@@ -403,6 +404,12 @@ const ViewEditPreAction = ({
                           <option value="" selected disabled>
                             Select Internal/External
                           </option>
+                          <option value="Internal">
+                          Internal
+                          </option>
+                          <option value="External" >
+                          External
+                          </option>
                           {siteLayout
                           .filter((site) => site.nodeType === "type")
                           .map((site) => (
@@ -419,13 +426,32 @@ const ViewEditPreAction = ({
                         )}
                       </div>
                       <div className="col-md-6">
-                        <div className="form-group mt-2">
-                          <label for="floor">Floor</label>
+                        <div
+                          className="form-group mt-2"
+                          style={{
+                            display: viewMode === "viewOnly" ? "" : "none",
+                          }}
+                        >
+                          <label for="room">Floor</label>
+                          <input
+                            className="form-control form-select"
+                            type="text"
+                            disabled
+                            {...register("floor")}
+                          />
+                        </div>
+                        <div
+                          className="form-group mt-2"
+                          style={{
+                            display: viewMode === "viewOnly" ? "none" : "",
+                          }}
+                        >
+                          <label for="room">Floor</label>
                           <select
                             name="floor"
-                            disabled={viewMode === "viewOnly" || "markApproved"}
                             className="form-control form-select"
                             id="floor"
+                            disabled={viewMode === "viewOnly" || "markApproved"}
                             {...register("floor", {
                               required: {
                                 value: true,
@@ -437,10 +463,10 @@ const ViewEditPreAction = ({
                               Select Floor
                             </option>
                             {siteLayout
-                          .filter((site) => site.nodeType === "floor" && values?.category == site.parentNode)
+                          .filter((site) => site.nodeType === "floor" )
                           .map((site) => (
-                            <option value={site.id}>
-                              {site.nodeName}{" "}
+                            <option value={site.nodeName}>
+                              {site.nodeName}
                             </option>
                           ))}
                           </select>
@@ -491,7 +517,7 @@ const ViewEditPreAction = ({
                               Select Room
                             </option>
                             {siteLayout
-                          .filter((site) => site.nodeType === "room" && values?.floor == site.parentNode)
+                          .filter((site) => site.nodeType === "room" )
                           .map((site) => (
                             <option value={site.nodeName}>
                               {site.nodeName}
@@ -527,6 +553,7 @@ const ViewEditPreAction = ({
                             </option>
                             <option value="New">New</option>
                             <option value="Pending">Pending</option>
+                            <option value="Pending Action">Pending Action</option>
                             <option value="Closed">Closed</option>
                           </select>
                           {errors?.status && (
@@ -777,5 +804,5 @@ const mapStateToProps = (state) => ({
 });
 export default connect(mapStateToProps, {
   createUpdatePreActions,
-  getSiteLayout,
+  getSiteLayout,getSiteAssets
 })(ViewEditPreAction);
