@@ -6,16 +6,36 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 
-const TdkDatePicker = ({ value, onChange, required, label, width = "380px" }) => {
+const TdkDatePicker = ({
+  value,
+  onChange,
+  required,
+  label,
+  width = "380px",
+}) => {
   const datePickerRef = useRef(null);
   const [manualInput, setManualInput] = useState(
     value ? moment(value).format("DD/MM/YYYY") : ""
   );
   const [isTyping, setIsTyping] = useState(false); // Track if user is typing
+  // Format input with slashes automatically
+  const formatDateWithSlashes = (input) => {
+    const digits = input.replace(/\D/g, ""); // Remove non-numeric characters
+    const day = digits.slice(0, 2);
+    const month = digits.slice(2, 4);
+    const year = digits.slice(4, 8);
 
+    let formattedDate = day;
+    if (month) formattedDate += `/${month}`;
+    if (year) formattedDate += `/${year}`;
+
+    return formattedDate;
+  };
   // Handle manual date input
   const handleInputChange = (e) => {
-    const inputValue = e.target.value;
+    let inputValue = e.target.value;
+    inputValue = formatDateWithSlashes(inputValue);
+
     setManualInput(inputValue);
     setIsTyping(true); // Set typing to true when user types manually
 
@@ -36,28 +56,30 @@ const TdkDatePicker = ({ value, onChange, required, label, width = "380px" }) =>
   return (
     <div style={{ display: "inline-block" }}>
       {label && <label htmlFor="datePicker">{label}</label>}
-      <input
-        required={required}
-        type="text"
-        id="datePicker"
-        value={manualInput}
-        placeholder="dd/mm/yyyy"
-        className="form-control"
-        style={{
-          width: width,
-        }}
-        onChange={handleInputChange} // Handle manual input
-        onClick={handleInputClick} // Open date picker on click (if not typing)
-        onBlur={() => setIsTyping(false)} // Reset typing state when input loses focus
-      />
-      <CalendarTodayIcon
-        style={{
-          cursor: "pointer",
-          marginLeft: "5px",
-          color: "#aaa",
-        }}
-        onClick={() => datePickerRef.current.setOpen(true)} // Open date picker on icon click
-      />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <input
+          required={required}
+          type="text"
+          id="datePicker"
+          value={manualInput}
+          placeholder="dd/mm/yyyy"
+          className="form-control"
+          style={{
+            width: width,
+          }}
+          onChange={handleInputChange} // Handle manual input
+          onClick={handleInputClick} // Open date picker on click (if not typing)
+          onBlur={() => setIsTyping(false)} // Reset typing state when input loses focus
+        />
+        <CalendarTodayIcon
+          style={{
+            cursor: "pointer",
+            marginLeft: "5px",
+            color: "#aaa",
+          }}
+          onClick={() => datePickerRef.current.setOpen(true)} // Open date picker on icon click
+        />
+      </div>
       <DatePicker
         ref={datePickerRef}
         selected={value ? new Date(value) : null}
