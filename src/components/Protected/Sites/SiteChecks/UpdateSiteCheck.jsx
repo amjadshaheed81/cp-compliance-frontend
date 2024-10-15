@@ -99,7 +99,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
     if (siteCheck.type === "Inspection") {
       setStep("inspection-electrical")
-    } else if (siteCheck.type === "Assessment" && siteCheck.subType === "Fire Risk") {
+    } else if (siteCheck.type === "Assessment" && siteCheck.subType === "Fire Risk Assessment") {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck.subType === "Unite Maintenance Periodic") {
       setStep("audit-unit-maintenance-periodic")
