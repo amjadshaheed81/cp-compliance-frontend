@@ -141,7 +141,6 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
               renderInput={(params) => (
                 <div ref={params.InputProps.ref} >
                   <input type="text"
-                    required
                     {...params.inputProps}
                     className="form-control"
                   />
