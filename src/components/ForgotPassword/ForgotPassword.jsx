@@ -1,15 +1,19 @@
 // components/Login/LoginForm.js
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { login } from "../../store/thunks";
 import logoImage from "../../images/login-left.png";
 import logo from "../../images/logo.png";
 import { useNavigate } from "react-router-dom";
 import "./ForgotPassword.css";
+import { post } from "../../api";
+import { toast } from "react-toastify";
 
 const ForgotPassword = ({ login }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState();
+  const [password, setPassword] = useState();
+  const [otpSend, setotpSend] = useState(false);
+  const [otp, setotp] = useState();
   const navigate = useNavigate();
 
   const handleEmailChange = (e) => {
@@ -20,10 +24,27 @@ const ForgotPassword = ({ login }) => {
     setPassword(e.target.value);
   };
 
+  const handleOtoChange = (e) => {
+    setotp(e.target.value);
+  };
+
+  useEffect(()=>{
+    setotpSend(false);
+  },[])
   const handleSubmit = (e) => {
     e.preventDefault();
-    navigate("/dashboard");
-    // login('email, password);
+    console.log(password);
+    return;
+    const body = {email,otp,email};
+    post("/api/user/reset-password", body).then(res => {
+      setotpSend(true);
+    }).catch(err =>{
+      toast.error(err?.response?.data?.message);
+    })
+    if(otp) {
+      navigate("/login");
+    }
+     
   };
 
   return (
@@ -46,25 +67,42 @@ const ForgotPassword = ({ login }) => {
               </div>
               <h2 className="mb-2">Reset Password</h2>
               <small>
-                Enter your email address to recieve a password reset link.
+                {otpSend ? "Verify otp" : "Enter your email address to recieve a password reset link."}
               </small>
               <div className="form-group mt-2">
                 <label for="email">Email</label>
-                <input
+                {!otpSend && <input
                   type="text"
                   className="form-control"
                   id="email"
                   value={email}
                   placeholder="Enter your email"
                   onChange={handleEmailChange}
-                />
+                />}
+
+{otpSend && <input
+                  type="password"
+                  className="form-control"
+                  id="email"
+                  value={password}
+                  placeholder="Enter new password"
+                  onChange={handlePasswordChange}
+                />}
+                {otpSend && <input
+                  type="text"
+                  className="form-control"
+                  id="otp"
+                  value={otp}
+                  placeholder="Enter otp"
+                  onChange={handleOtoChange}
+                />}
               </div>
               <div className="form-group mt-2">
                 <button
                   type="submit"
                   className="btn btn-primary rounded w-100 login-submit"
                 >
-                  Send Password Rest Link
+                  {otpSend ? "Submit" : "Send Password Rest Link"}
                 </button>
               </div>
             </form>

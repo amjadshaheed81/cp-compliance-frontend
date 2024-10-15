@@ -111,7 +111,7 @@ const LoginForm = ({ login, loginUser }) => {
                 </div>
               )}
 
-              {/* <div className="mt-2 text-center">
+              <div className="mt-2 text-center">
                 <p>
                   <small>
                     Forgot Password?{" "}
@@ -126,7 +126,7 @@ const LoginForm = ({ login, loginUser }) => {
                     </a>
                   </small>
                 </p>
-              </div> */}
+              </div>
             </form>
           </div>
         </div>
