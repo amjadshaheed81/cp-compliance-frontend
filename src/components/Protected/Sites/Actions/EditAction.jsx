@@ -230,6 +230,23 @@ const EditAction = ({
 
   };
 
+  const getTimeRemaining2 = (creationDate, riskScore) => {
+
+    const data = riskScore > 16
+    ? {badgeColor : "danger", days : 5}
+    : riskScore > 9
+      ? {badgeColor : "warning", days : 30}
+      : riskScore > 4
+        ? {badgeColor : "info", days : 90}
+        : {badgeColor : "success", days : 365}
+    const dueDate = new Date(creationDate);
+    dueDate.setDate(dueDate.getDate() + data.days);
+    return dueDate;
+  };
+
+  const getUserName = (id) => {
+    return managerList.filter(u => u.id === id).map(u => u.name);
+  }
   const getTimeRemaining = (creationDate, riskScore) => {
 
     const data = riskScore > 16
@@ -289,7 +306,7 @@ const EditAction = ({
                         />
                       </div>
 
-                      <div className="col-md-3">
+                      <div className="col-md-2">
                         <label for="actionId">Date Created</label>
                         <input
                           disabled
@@ -301,7 +318,18 @@ const EditAction = ({
                       </div>
 
                       <div className="col-md-2">
-                        <label for="actionId">Risk Score</label>
+                        <label for="actionId">Due Date</label>
+                        <input
+                          disabled
+                          name="actionId"
+                          className="form-control"
+                          id="actionId"
+                          value={dateFormat(getTimeRemaining2(formData?.createdAt ? formData?.createdAt : formData?.dueDate, formData?.riskScore))}
+                        />
+                      </div>
+
+                      <div className="col-md-1">
+                        <label for="actionId">Risk</label>
                         <br />
                         <span
                           style={{ width: '60px' }}
@@ -323,7 +351,7 @@ const EditAction = ({
                         <br />
                         <span
                           style={{ width: '100px' }}
-                          className={`badge bg-${formData?.status === "Completed" ? "success" : "warning"
+                          className={`badge bg-${formData?.status === "Completed" ||  formData?.status === "completed" ? "success" : "warning"
                             } p-2 m-1 risk-span`}
                         >
                           {formData?.status}
@@ -341,12 +369,40 @@ const EditAction = ({
                         />
                       </div> */}
 
-                      <div className="col-md-3">
+                      <div className="col-md-2">
                         <label for="actionId">Time Remaning</label>
                         {getTimeRemaining(formData?.createdAt ? formData?.createdAt : formData?.dueDate, formData?.riskScore)}
                       </div>
 
-                      
+                      {(formData?.status === "Completed" ||  formData?.status === "completed") && formData?.completedBy && <>
+                      <div className="col-md-6">
+                        <label for="actionId">Completed On</label>
+                        <input
+                          disabled
+                          name="actionId"
+                          className="form-control"
+                          id="actionId"
+                          value={dateFormat(formData?.completedAt)}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label for="desc">Completed By</label>
+                          <input
+                          disabled
+                            name="desc"
+                            className="form-control"
+                            id="desc"
+                            value={getUserName(formData?.completedBy)}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+
+
+                      </>}
+
+
 
                       <div className="col-md-12">
                         <div className="form-group mt-2">
@@ -574,7 +630,7 @@ const EditAction = ({
                         </div>
                       </div> */}
 
-<div className="col-md-6">
+                    <div className="col-md-6">
                         <div className="form-group mt-2">
                           <label htmlFor="assignedTo">Assign To</label>
                           <Autocomplete
