@@ -89,7 +89,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.PROD_VM_PASSWORD }}
+          key: ${{ secrets.PROD_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/
@@ -107,7 +107,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.PROD_VM_PASSWORD }}
+          key: ${{ secrets.PROD_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/static/
@@ -125,7 +125,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.PROD_VM_PASSWORD }}
+          key: ${{ secrets.PROD_VM_PASSWORD }}
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/src/
