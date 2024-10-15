@@ -45,6 +45,7 @@ const DashboardTender = ({ siteSelectedForGlobal }) => {
               <thead className="table-dark">
                 <tr>
                   <th scope="col">Tender ID</th>
+                  <th scope="col"># of Quotes</th>
                   <th scope="col">End Date</th>
                   <th scope="col">Status</th>
                 </tr>
@@ -58,6 +59,7 @@ const DashboardTender = ({ siteSelectedForGlobal }) => {
                 {contracts?.map((contract) => (
                   <tr>
                     <td>{contract?.projectContractId}</td>
+                    <td>{contract?.contractorQuotes?.length || 0}</td>
                     <td>
                       {contract?.endDate
                         ? moment(contract?.endDate).format("DD-MM-YYYY")
