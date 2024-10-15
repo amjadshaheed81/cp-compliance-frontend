@@ -76,7 +76,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
           observation: data.faultDescription,
           desc: `${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category} - ${moment(new Date()).format("DD/MM/YYYY")}`,
           requiredAction: data.action,
-          riskScore: Number(data.rating) * 5,
+          riskScore: Number(data.rating) * Number(data.rating),
           dueDate: new Date(),
           createdAt: new Date(),
           siteId: siteSelectedForGlobal?.siteId,
