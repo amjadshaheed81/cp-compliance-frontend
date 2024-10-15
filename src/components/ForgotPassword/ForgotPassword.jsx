@@ -37,12 +37,20 @@ const ForgotPassword = ({ login }) => {
     const body = {email,otp,password};
     post("/api/user/reset-password", body).then(res => {
       setotpSend(true);
+      if(otp) {
+        setotp();
+        setPassword();
+        setEmail();
+        setotpSend(false);
+        navigate("/login");
+        toast.success("Password changed successfully!");
+      }
     }).catch(err =>{
+      setotp();
       toast.error(err?.response?.data?.message);
+      return;
     })
-    if(otp) {
-      navigate("/login");
-    }
+   
      
   };
 
@@ -66,10 +74,10 @@ const ForgotPassword = ({ login }) => {
               </div>
               <h2 className="mb-2">Reset Password</h2>
               <small>
-                {otpSend ? "Verify otp" : "Enter your email address to recieve a password reset link."}
+                {otpSend ? "Verify security code" : "Enter your email address to recieve a password reset link."}
               </small>
               <div className="form-group mt-2">
-                <label for="email">Email</label>
+              {!otpSend &&<label for="email">Email</label>}
                 {!otpSend && <input
                   type="text"
                   className="form-control"

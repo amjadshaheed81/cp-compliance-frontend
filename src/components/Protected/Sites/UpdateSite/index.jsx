@@ -119,6 +119,11 @@ const UpdateSite = ({
     reset(data);
   };
   const handleFileSelect = async (event) => {
+    const fileSizeLimit = 10 * 1024 * 1024;
+    if (event?.target?.files[0]?.size > fileSizeLimit) {
+      toast.error("File size cannot exceed 10MB");
+      return;
+    } 
     setLoader(true);
     let siteId = updateSite?.siteId;
     const res = await updateSiteImage(event, siteId);
@@ -518,7 +523,7 @@ const UpdateSite = ({
                   <p>
                     SVG, PNG, JPG or GIF
                     <br />
-                    (max 800 * 800 px) 50mb
+                    (max 800 * 800 px) 10mb
                   </p>
                 </div>
               </div>
