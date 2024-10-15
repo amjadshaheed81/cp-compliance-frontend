@@ -17,7 +17,7 @@ import Box from "@mui/material/Box";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import MessageSharp from "@mui/icons-material/MessageSharp";
-import DashboardNotification from "../Dashboard/DashboardNotification";
+import Notification from "./Notification";
 import { List, ListItem, ListItemText } from "@mui/material";
 import { get } from "../../../api";
 
@@ -82,7 +82,7 @@ const Notifications = ({ siteSelectedForGlobal }) => {
       <div className="content">
         <Header />
         <div className="container-fluid">
-          <BreadCrumHeader header={"Notifications"} page={"Notifications"} />
+          <BreadCrumHeader header={"Notifications - " + siteSelectedForGlobal?.siteName} page={"Notifications"} />
           <Box
             sx={{
               flexGrow: 1,
@@ -91,6 +91,7 @@ const Notifications = ({ siteSelectedForGlobal }) => {
               height: 224,
             }}
           >
+             
             <Tabs
               orientation="vertical"
               variant="scrollable"
@@ -104,7 +105,7 @@ const Notifications = ({ siteSelectedForGlobal }) => {
                 label="All Notifications"
                 {...a11yProps(0)}
               />
-              <Tab
+              {/* <Tab
                 icon={<ElectricBoltIcon />}
                 label="For Actions"
                 {...a11yProps(1)}
@@ -113,9 +114,10 @@ const Notifications = ({ siteSelectedForGlobal }) => {
                 icon={<MessageSharp />}
                 label="For Information"
                 {...a11yProps(2)}
-              />
+              /> */}
             </Tabs>
             <TabPanel value={value} index={0}>
+             <Notification />
               {/* <h3>All Notifications</h3> */}
               {/* <List>
                 {notification.map((notification, index) => (
@@ -125,12 +127,12 @@ const Notifications = ({ siteSelectedForGlobal }) => {
                 ))}
               </List> */}
             </TabPanel>
-            <TabPanel value={value} index={1}>
+            {/* <TabPanel value={value} index={1}>
               For Actions
             </TabPanel>
             <TabPanel value={value} index={2}>
               For Information
-            </TabPanel>
+            </TabPanel> */}
           </Box>
         </div>
       </div>
