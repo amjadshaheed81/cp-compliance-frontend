@@ -1,57 +1,78 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./datepicker.css";
 import { connect } from "react-redux";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import moment from "moment";
 
-const TdkDatePicker = ({ value, onChange,required,label,width="380px" }) => {
+const TdkDatePicker = ({ value, onChange, required, label, width = "380px" }) => {
+  const datePickerRef = useRef(null);
+  const [manualInput, setManualInput] = useState(
+    value ? moment(value).format("DD/MM/YYYY") : ""
+  );
+  const [isTyping, setIsTyping] = useState(false); // Track if user is typing
 
-    const datePickerRef = useRef(null);
+  // Handle manual date input
+  const handleInputChange = (e) => {
+    const inputValue = e.target.value;
+    setManualInput(inputValue);
+    setIsTyping(true); // Set typing to true when user types manually
+
+    // Validate and parse the input as a valid date
+    const parsedDate = moment(inputValue, "DD/MM/YYYY", true); // strict parsing
+    if (parsedDate.isValid()) {
+      onChange(parsedDate.toDate());
+    }
+  };
+
+  // Open date picker only when not typing and the input is clicked
+  const handleInputClick = () => {
+    if (!isTyping) {
+      datePickerRef.current.setOpen(true); // Open only if user is not typing
+    }
+  };
 
   return (
-    <div style={{  display: "inline-block"}}>
-      {label && <label htmlFor="datePicker" >
-        {label}
-      </label>}
+    <div style={{ display: "inline-block" }}>
+      {label && <label htmlFor="datePicker">{label}</label>}
       <input
-       required={required}
+        required={required}
         type="text"
         id="datePicker"
-        value={value ? new Date(value)?.toLocaleDateString("en-GB") : "dd/mm/yyyy"}
+        value={manualInput}
         placeholder="dd/mm/yyyy"
         className="form-control"
         style={{
           width: width,
         }}
-        onClick={() => datePickerRef.current.setOpen(true)} 
-        readOnly
+        onChange={handleInputChange} // Handle manual input
+        onClick={handleInputClick} // Open date picker on click (if not typing)
+        onBlur={() => setIsTyping(false)} // Reset typing state when input loses focus
       />
-      {/* <CalendarTodayIcon
+      <CalendarTodayIcon
         style={{
-          //position: "absolute",
-          float: 'left',
-          right: "10px",
-          top: label ? "50%" : "30%",
-          transform: "translateY(-50%)",
-          pointerEvents: "none",
+          cursor: "pointer",
+          marginLeft: "5px",
           color: "#aaa",
         }}
-        onClick={() => datePickerRef.current.setOpen(true)} 
-      /> */}
+        onClick={() => datePickerRef.current.setOpen(true)} // Open date picker on icon click
+      />
       <DatePicker
-      style={{zIndex: 999}}
-      required={required}
-        onChange={(date) => onChange(date)}
         ref={datePickerRef}
+        selected={value ? new Date(value) : null}
+        onChange={(date) => {
+          onChange(date);
+          setManualInput(moment(date).format("DD/MM/YYYY")); // Update the input when date is selected
+        }}
         dateFormat="dd/MM/yyyy"
-        customInput={<div />}
-        popperClassName="custom-datepicker-popper" // Apply custom class
+        customInput={<div />} // Avoid rendering a second input field
+        popperClassName="custom-datepicker-popper"
         popperPlacement="bottom-end"
       />
     </div>
   );
 };
-const mapStateToProps = (state) => ({
-});
+
+const mapStateToProps = (state) => ({});
 export default connect(mapStateToProps, {})(TdkDatePicker);

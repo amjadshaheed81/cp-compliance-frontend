@@ -123,13 +123,37 @@ const UpdateAsset = ({
     setTester(data?.users);
   };
 
+  const toggleEditMode = (index) => {
+    const updatedRecords = [...patRecord];
+    updatedRecords[index].isEditing = !updatedRecords[index].isEditing;
+    setPatRecord(updatedRecords);
+  };
+
+  const updatePatStatus = (index, status) => {
+    const updatedRecords = [...patRecord];
+    updatedRecords[index].patStatus = status;
+    setPatRecord(updatedRecords);
+    savePatDetails();
+  };
+
+  const handleInputpATChange = (index, field, value) => {
+    const updatedRecords = [...patRecord];
+    updatedRecords[index][field] = value;
+    setPatRecord(updatedRecords);
+  };
+
   const savePatDetails = async () => {
     setLoader(true);
     const data = patRecord?.map((itm) => {
+      console.log("itm", itm);
       return {
         ...itm,
-        patDate: itm?.patDate?.replace(/T/g, " "),
-        patNextDate: itm?.patNextDate?.replace(/T/g, " "),
+        patDate: itm?.patDate?.includes("T")
+          ? itm?.patDate?.replace(/T/g, " ")
+          : `${itm?.patDate} 10:00:00`,
+        patNextDate: itm?.patNextDate?.includes("T")
+          ? itm?.patNextDate?.replace(/T/g, " ")
+          : `${itm?.patNextDate} 10:00:00`,
       };
     });
     try {
@@ -458,37 +482,49 @@ const UpdateAsset = ({
     const value = e.target.checked;
     console.log("value", value);
     setValue("patItem", value);
-    setSelectedAsset(prevState => ({...prevState, patItem: value}));
+    setSelectedAsset((prevState) => ({ ...prevState, patItem: value }));
     const ispfpItem = getValues("pfpItem");
     const isdoorItem = getValues("doorItem");
     if (ispfpItem || isdoorItem) {
       setValue("pfpItem", false);
       setValue("doorItem", false);
-      setSelectedAsset(prevState => ({...prevState, pfpItem: false, doorItem: false}));
+      setSelectedAsset((prevState) => ({
+        ...prevState,
+        pfpItem: false,
+        doorItem: false,
+      }));
     }
   };
   const changePfpItem = (e) => {
     const value = e.target.checked;
     setValue("pfpItem", value);
-    setSelectedAsset(prevState => ({...prevState, pfpItem: value}));
+    setSelectedAsset((prevState) => ({ ...prevState, pfpItem: value }));
     const ispatItem = getValues("patItem");
     const isdoorItem = getValues("doorItem");
     if (ispatItem || isdoorItem) {
       setValue("patItem", false);
       setValue("doorItem", false);
-      setSelectedAsset(prevState => ({...prevState, patItem: false, doorItem: false}));
+      setSelectedAsset((prevState) => ({
+        ...prevState,
+        patItem: false,
+        doorItem: false,
+      }));
     }
   };
   const changeDoorItem = (e) => {
     const value = e.target.checked;
     setValue("doorItem", value);
-    setSelectedAsset(prevState => ({...prevState, doorItem: value}));
+    setSelectedAsset((prevState) => ({ ...prevState, doorItem: value }));
     const ispatItem = getValues("patItem");
     const ispfpItem = getValues("pfpItem");
     if (ispatItem || ispfpItem) {
       setValue("patItem", false);
       setValue("pfpItem", false);
-      setSelectedAsset(prevState => ({...prevState, pfpItem: false, patItem: false}));
+      setSelectedAsset((prevState) => ({
+        ...prevState,
+        pfpItem: false,
+        patItem: false,
+      }));
     }
   };
   return (
@@ -699,102 +735,100 @@ const UpdateAsset = ({
                             ))}
                           </select>
                         </div>
-                          <div className="col-md-6 mt-2">
-                            <label for="subCategory2">Sub Category 2</label>
-                            <select
-                              name="subCategory2"
-                              className="form-control form-select"
-                              id="subCategory2"
-                              {...register("subCategory2")}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setValue("subCategory2", val);
-                                const subCategoryData = subCategory3?.filter(
-                                  (itm) => itm?.attribite1 === val
-                                );
-                                setSubCategory3List(subCategoryData);
-                              }}
-                            >
-                              <option value="">Select Sub Category 2</option>
-                              {subCategory2List?.map((itm) => (
-                                <option
-                                  selected={
-                                    selectedAsset?.subCategory2 ===
-                                    itm?.lovValue
-                                  }
-                                  value={itm?.lovValue}
-                                >
-                                  {itm?.lovValue}
-                                </option>
-                              ))}
-                            </select>
+                        <div className="col-md-6 mt-2">
+                          <label for="subCategory2">Sub Category 2</label>
+                          <select
+                            name="subCategory2"
+                            className="form-control form-select"
+                            id="subCategory2"
+                            {...register("subCategory2")}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setValue("subCategory2", val);
+                              const subCategoryData = subCategory3?.filter(
+                                (itm) => itm?.attribite1 === val
+                              );
+                              setSubCategory3List(subCategoryData);
+                            }}
+                          >
+                            <option value="">Select Sub Category 2</option>
+                            {subCategory2List?.map((itm) => (
+                              <option
+                                selected={
+                                  selectedAsset?.subCategory2 === itm?.lovValue
+                                }
+                                value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-6 mt-2">
+                          <label for="subCategory3">Sub Category 3</label>
+                          <select
+                            name="subCategory3"
+                            className="form-control form-select"
+                            id="subCategory3"
+                            {...register("subCategory3")}
+                          >
+                            <option value="">Select Sub Category 3</option>
+                            {subCategory3List?.map((itm) => (
+                              <option
+                                selected={
+                                  selectedAsset?.subCategory3 === itm?.lovValue
+                                }
+                                value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="row">
+                          <div className="col-md-4 mt-2">
+                            <input
+                              type="checkbox"
+                              id="patItem"
+                              name="patItem"
+                              onClick={changePatItem}
+                              className="form-check-input"
+                              {...register("patItem")}
+                            />
+                            &nbsp;&nbsp;
+                            <label for="patItem">
+                              PAT item (fill PAT details below)
+                            </label>
                           </div>
-                          <div className="col-md-6 mt-2">
-                            <label for="subCategory3">Sub Category 3</label>
-                            <select
-                              name="subCategory3"
-                              className="form-control form-select"
-                              id="subCategory3"
-                              {...register("subCategory3")}
-                            >
-                              <option value="">Select Sub Category 3</option>
-                              {subCategory3List?.map((itm) => (
-                                <option
-                                  selected={
-                                    selectedAsset?.subCategory3 ===
-                                    itm?.lovValue
-                                  }
-                                  value={itm?.lovValue}
-                                >
-                                  {itm?.lovValue}
-                                </option>
-                              ))}
-                            </select>
+                          <div className="col-md-4 mt-2">
+                            <input
+                              type="checkbox"
+                              id="pfpItem"
+                              name="pfpItem"
+                              onClick={changePfpItem}
+                              className="form-check-input"
+                              {...register("pfpItem")}
+                            />
+                            &nbsp;&nbsp;
+                            <label for="pfpItem">
+                              Passive fire schedule required (fill PFS details
+                              below below)
+                            </label>
                           </div>
-                        <div  className="row">
-                        <div className="col-md-4 mt-2">
-                          <input
-                            type="checkbox"
-                            id="patItem"
-                            name="patItem"
-                            onClick={changePatItem}
-                            className="form-check-input"
-                            {...register("patItem")}
-                          />
-                          &nbsp;&nbsp;
-                          <label for="patItem">
-                            PAT item (fill PAT details below)
-                          </label>
-                        </div>
-                        <div className="col-md-4 mt-2">
-                          <input
-                            type="checkbox"
-                            id="pfpItem"
-                            name="pfpItem"
-                            onClick={changePfpItem}
-                            className="form-check-input"
-                            {...register("pfpItem")}
-                          />
-                          &nbsp;&nbsp;
-                          <label for="pfpItem">
-                            Passive fire schedule required (fill PFS details
-                            below below)
-                          </label>
-                        </div>
-                        <div className="col-md-4 mt-2">
-                          <input
-                            type="checkbox"
-                            id="doorItem"
-                            name="doorItem"
-                            onClick={changeDoorItem}
-                            className="form-check-input"
-                            {...register("doorItem")}
-                          />
-                          &nbsp;&nbsp;
-                          <label for="doorItem">
-                            Door Assets (fill Door assets details below below)
-                          </label>
-                        </div>
+                          <div className="col-md-4 mt-2">
+                            <input
+                              type="checkbox"
+                              id="doorItem"
+                              name="doorItem"
+                              onClick={changeDoorItem}
+                              className="form-check-input"
+                              {...register("doorItem")}
+                            />
+                            &nbsp;&nbsp;
+                            <label for="doorItem">
+                              Door Assets (fill Door assets details below below)
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1152,9 +1186,11 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Internal/External</option>
-                        {["Internal", "External", "Interior", "Exterior"].map((num) => (
-                          <option value={num}>{num} </option>
-                        ))}
+                        {["Internal", "External", "Interior", "Exterior"].map(
+                          (num) => (
+                            <option value={num}>{num} </option>
+                          )
+                        )}
                       </select>
                       {locationForm.formState.errors?.position && (
                         <InputError
@@ -1448,91 +1484,126 @@ const UpdateAsset = ({
                             <th scope="col">Tester</th>
                             <th scope="col">Test Date</th>
                             <th scope="col">Next Test Date</th>
+                            <th scope="col">Status</th>
                             <th scope="col">Action</th>
                           </tr>
                         </thead>
                         <tbody>
                           {patRecord?.length === 0 && (
                             <tr>
-                              <td colSpan={4}>No PAT Record Found.</td>
+                              <td colSpan={5}>No PAT Record Found.</td>
                             </tr>
                           )}
                           {patRecord?.map((itm, index) => (
-                            <tr>
+                            <tr key={index}>
                               <td>
-                                {itm?.patId ? (
-                                  getTesterName(itm?.patUserId)
-                                ) : (
+                                {itm?.isEditing ? (
                                   <select
                                     name="patUserId"
                                     className="form-control form-select"
-                                    id="patUserId"
+                                    value={itm?.patUserId || ""}
                                     onChange={(e) =>
-                                      handleInputChange(
+                                      handleInputpATChange(
                                         index,
                                         "patUserId",
                                         e.target.value
                                       )
                                     }
                                   >
-                                    <option value="" selected disabled>
+                                    <option value="" disabled>
                                       Select Tester
                                     </option>
-                                    {tester?.map((itm) => (
-                                      <option value={itm?.id} key={itm?.id}>
-                                        {itm?.name}
+                                    {tester?.map((testerItem) => (
+                                      <option
+                                        value={testerItem?.id}
+                                        key={testerItem?.id}
+                                      >
+                                        {testerItem?.name}
                                       </option>
                                     ))}
                                   </select>
+                                ) : (
+                                  getTesterName(itm?.patUserId)
                                 )}
                               </td>
                               <td>
-                                {itm?.patId ? (
-                                  moment(itm?.patDate).format("DD-MM-YYYY")
-                                ) : (
+                                {itm?.isEditing ? (
                                   <input
                                     type="date"
                                     className="form-control"
-                                    id="patDate"
-                                    name="patDate"
-                                    placeholder="dd/mm/yyyy"
+                                    value={itm?.patDate || ""}
                                     onChange={(e) =>
-                                      handleInputChange(
+                                      handleInputpATChange(
                                         index,
                                         "patDate",
                                         e.target.value
                                       )
                                     }
                                   />
+                                ) : (
+                                  moment(itm?.patDate).format("DD-MM-YYYY")
                                 )}
                               </td>
                               <td>
-                                {itm?.patId ? (
-                                  moment(itm?.patNextDate).format("DD-MM-YYYY")
-                                ) : (
+                                {itm?.isEditing ? (
                                   <input
                                     type="date"
                                     className="form-control"
-                                    id="patNextDate"
-                                    name="patNextDate"
-                                    placeholder="dd/mm/yyyy"
+                                    value={itm?.patNextDate || ""}
                                     onChange={(e) =>
-                                      handleInputChange(
+                                      handleInputpATChange(
                                         index,
                                         "patNextDate",
                                         e.target.value
                                       )
                                     }
                                   />
+                                ) : (
+                                  moment(itm?.patNextDate).format("DD-MM-YYYY")
                                 )}
                               </td>
                               <td>
-                                {/* <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
-                                &nbsp;
-                                <i class="fas fa-regular fa-thumbs-down cursor"></i>{" "}
-                                &nbsp; */}
                                 <i
-                                  className="fas fa-trash cursor text-danger pt-2"
+                                  className={`fas fa-thumbs-up cursor ${
+                                    itm.patStatus === "approved"
+                                      ? "text-success"
+                                      : "text-dark"
+                                  }`}
+                                  onClick={() =>
+                                    updatePatStatus(index, "approved")
+                                  }
+                                ></i>
+                                &nbsp;
+                                <i
+                                  className={`fas fa-thumbs-down cursor ${
+                                    itm.patStatus === "rejected"
+                                      ? "text-danger"
+                                      : "text-dark"
+                                  }`}
+                                  onClick={() =>
+                                    updatePatStatus(index, "rejected")
+                                  }
+                                ></i>
+                              </td>
+                              <td>
+                                {itm?.isEditing ? (
+                                  <button
+                                    className="btn btn-success"
+                                    onClick={() => toggleEditMode(index)}
+                                  >
+                                    Save
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="btn btn-secondary"
+                                    onClick={() => toggleEditMode(index)}
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                                &nbsp;
+                                <i
+                                  className="fas fa-trash cursor text-danger"
                                   onClick={() => deletePatRecord(index, itm)}
                                 ></i>
                               </td>
