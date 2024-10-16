@@ -31,6 +31,7 @@ const StatutoryRegister = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
   const [statutory, setStatutory] = useState([]);
+  const [siteChecks, setSiteChecks] = useState([]);
   const [folder, setFolder] = useState({});
   const {
     register,
@@ -74,7 +75,9 @@ const StatutoryRegister = ({
     let getStatutoryDocuments = await get(
       `/api/document/${siteId}/statutoryRegister`
     );
-    getStatutoryDocuments = getStatutoryDocuments.sort((a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder))
+    getStatutoryDocuments = getStatutoryDocuments.sort(
+      (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
+    );
     setStatutory(getStatutoryDocuments);
     // Set initial values for residence fields using setValue
     getStatutoryDocuments.forEach((item) => {
@@ -105,25 +108,22 @@ const StatutoryRegister = ({
         const isExpiryDateValid = item.files.every((file) =>
           moment(file.expiryDate).isAfter(new Date())
         );
-        console.log("isExpiryDateValid",isExpiryDateValid);
+        console.log("isExpiryDateValid", isExpiryDateValid);
         status = isExpiryDateValid ? "Passed" : "Fail";
       }
     } else if (String(item?.type).toLowerCase() === "link" && isChecked) {
       try {
-        const siteChecks = await get(
-          `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
-        );
         // Asbestos Check
         if (item?.subType === "Asbestos Management Plan") {
-          const isAsbestosRecordAvailable = siteChecks.some(
+          const isAsbestosRecordAvailable = siteChecks?.some(
             (itm) => itm?.subType === "Asbestos"
           );
           status = isAsbestosRecordAvailable ? "Passed" : "Fail";
         }
-        
+
         // PAT Check
         else if (item?.subType === "PAT / Microwave Testing") {
-          const isPAtExpired = siteChecks.some(
+          const isPAtExpired = siteChecks?.some(
             (itm) =>
               itm?.type === "Inspection" &&
               itm?.subType === "Electrical" &&
@@ -132,23 +132,25 @@ const StatutoryRegister = ({
           );
           status = isPAtExpired ? "Passed" : "Fail";
         }
-        
+
         // Emergency Check
         else if (item?.subType === "Emergency light and Fire Alarm") {
-          const isEmergencyAvailable = siteChecks.some(
-            (itm) => itm?.type === "Audit" && moment(itm?.dueDate).isAfter(new Date())
+          const isEmergencyAvailable = siteChecks?.some(
+            (itm) =>
+              itm?.type === "Audit" && moment(itm?.dueDate).isAfter(new Date())
           );
           status = isEmergencyAvailable ? "Passed" : "Fail";
         }
-        
+
         // Water Risk Assessment Check
         else if (item?.subType === "Water Risk Assessment/Water Temperature") {
-          const isWaterAvailable = siteChecks.some(
-            (itm) => itm?.subType === "Water" && moment(itm?.dueDate).isAfter(new Date())
+          const isWaterAvailable = siteChecks?.some(
+            (itm) =>
+              itm?.subType === "Water" &&
+              moment(itm?.dueDate).isAfter(new Date())
           );
           status = isWaterAvailable ? "Passed" : "Fail";
         }
-
       } catch (error) {
         console.error("Error fetching site data:", error);
       }
@@ -160,7 +162,7 @@ const StatutoryRegister = ({
       status: status,
       required: isChecked,
     };
-  console.log("Checkbox checked state:", isChecked);
+    console.log("Checkbox checked state:", isChecked);
     if (!isChecked) {
       payload.status = "";
     }
@@ -173,6 +175,7 @@ const StatutoryRegister = ({
     if (siteSelectedForGlobal?.siteId) {
       getStatutory(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteChecks();
     } else {
       Swal.fire({
         icon: "error",
@@ -182,6 +185,113 @@ const StatutoryRegister = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteSelectedForGlobal?.siteId]);
+  const getSiteChecks = async () => {
+    const siteChecksData = await get(
+      `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
+    );
+    setSiteChecks(siteChecksData);
+  };
+  const getViewEvidenceExpiryDate = (row) => {
+    // Group siteChecks by types to avoid multiple filtering
+    const surveys = siteChecks?.filter((itm) => itm?.type === "Survey");
+    const inspections = siteChecks?.filter((itm) => itm?.type === "Inspection");
+    const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
+
+    // Pre-filter categories and subTypes for easier lookups
+    const filteredSiteChecks = {
+      asbestosManagementPlan: surveys?.find(
+        (itm) => itm?.category === "Asbestos Management Plan"
+      ),
+      patItems: inspections?.find(
+        (itm) =>
+          itm?.subType === "Electrical" &&
+          (itm?.category === "WC Alarm Testing" ||
+            itm?.category === "Microwave Oven Testing")
+      ),
+      fireAlarmsWeekly: inspections?.find(
+        (itm) =>
+          itm?.subType === "Fire Alarm to meet BS5839" &&
+          itm?.category ===
+            "Fire Alarm - Weekly Call Point testing to meet BS5839"
+      ),
+      emergencyLightWeekly: inspections?.find(
+        (itm) =>
+          itm?.subType === "Emergency Lighting to meet BS5266" &&
+          itm?.category === "Emergency Lighting - weekly testing to meet BS5266"
+      ),
+      waterSafetyRiskAssessment: inspections?.find(
+        (itm) =>
+          itm?.subType === "Water" &&
+          itm?.category === "Water Safety Annual Inspection"
+      ),
+      waterOutletTemperature: inspections?.find(
+        (itm) =>
+          itm?.subType === "Water" && itm?.category === "Outlet Temperature"
+      ),
+      waterStorage: inspections?.find(
+        (itm) =>
+          itm?.subType === "Water" &&
+          itm?.category === "Water - Storage System Chlorination"
+      ),
+      fireRiskAssessment: assessments?.find(
+        (itm) => itm?.subType === "Fire Risk Assessment"
+      ),
+    };
+
+    // Define a mapping of row subTypes to filteredSiteChecks
+    const checkMappings = {
+      "Asbestos Management Plan": filteredSiteChecks.asbestosManagementPlan,
+      "PAT / Microwave Testing": filteredSiteChecks.patItems,
+      "Fire Alarm Weekly In House Testing": filteredSiteChecks.fireAlarmsWeekly,
+      "Emergency Lighting Weekly In House Testing":
+        filteredSiteChecks.emergencyLightWeekly,
+      "Water Risk Assessment": filteredSiteChecks.waterSafetyRiskAssessment,
+      "Water Systems Service & Test Records":
+        filteredSiteChecks.waterOutletTemperature,
+      "Shower Head Cleaning": filteredSiteChecks.waterStorage,
+      "Fire Evacuation Drill": filteredSiteChecks.fireRiskAssessment,
+    };
+
+    const matchedCheck =
+      checkMappings[row?.subType] || checkMappings[row?.requirement];
+
+    // If a matching check exists, return the expiry date row
+    if (matchedCheck) {
+      return getStartAndExpiryDateRow(
+        matchedCheck.startDate,
+        matchedCheck.dueDate
+      );
+    }
+
+    return null;
+  };
+
+  // Helper function to create table row with start and expiry dates
+  const getStartAndExpiryDateRow = (startDate, dueDate) => {
+    return (
+      <tr>
+        {[...Array(3)].map((_, idx) => (
+          <th
+            key={`empty-${idx}`}
+            style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}
+          />
+        ))}
+        <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
+          {moment(startDate).format("DD-MM-YYYY")}
+        </th>
+        <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
+          {moment(dueDate).format("DD-MM-YYYY")}
+        </th>
+        {[...Array(2)].map((_, idx) => (
+          <th
+            key={`empty2-${idx}`}
+            style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}
+          />
+        ))}
+      </tr>
+    );
+  };
+
   return (
     <>
       <SidebarNew />
@@ -235,7 +345,7 @@ const StatutoryRegister = ({
                   <CSVLink
                     filename={"statutory-documents.csv"}
                     className="btn btn-light bg-white text-primary"
-                    data={statutory.map(item => {
+                    data={statutory.map((item) => {
                       // Use destructuring to exclude the 'files' field while copying the rest
                       const { files, ...rest } = item;
                       return rest;
@@ -290,7 +400,10 @@ const StatutoryRegister = ({
                         {item.requirement}
                         <div
                           style={{
-                            display: String(item?.type).toLowerCase() === "link" ? "" : "none",
+                            display:
+                              String(item?.type).toLowerCase() === "link"
+                                ? ""
+                                : "none",
                           }}
                         >
                           <a
@@ -404,6 +517,9 @@ const StatutoryRegister = ({
                             </tr>
                           </thead>
                           <tbody>
+                            {String(item?.type).toLowerCase() === "link"
+                              ? getViewEvidenceExpiryDate(item)
+                              : null}
                             {item?.files?.map((itm, index) => {
                               return (
                                 <tr>
@@ -425,7 +541,9 @@ const StatutoryRegister = ({
                                         setSelectedPdf(itm?.fileBlobUrl);
                                       }}
                                     >
-                                      {itm.name === "undefined" ? "--" : itm.name}
+                                      {itm.name === "undefined"
+                                        ? "--"
+                                        : itm.name}
                                     </button>
                                   </th>
                                   {/* <th scope="col">{itm.name}</th> */}
@@ -528,7 +646,11 @@ const StatutoryRegister = ({
                                       setShowModal(true);
                                     }}
                                     style={{
-                                      display: String(item?.type).toLowerCase() === "link" ? "none" : "",
+                                      display:
+                                        String(item?.type).toLowerCase() ===
+                                        "link"
+                                          ? "none"
+                                          : "",
                                       color: "384bd3",
                                       cursor: "pointer",
                                     }}
