@@ -99,7 +99,8 @@ const AddContracts = ({
       shortText: "Contract : "+data.summary,
       eventType: "Contract",
       userId: loggedInUserData?.id,
-      includeCompanyUsers: true
+      includeCompanyUsers: true,
+      section: `/site-contracts?projectContractId=${data.projectContractId}`
     };
     await put("/api/user/calendar", body);
   };
@@ -136,6 +137,8 @@ const AddContracts = ({
         checkAndAddExpiryCalenderEvent(data)
         const url = "api/project/manage";
         const res = await put(url, formData);
+        data.projectContractId = res.projectContractId;
+        checkAndAddExpiryCalenderEvent(data)
         if (res?.status === 200) {
           let mandatoryFolders = selectedMandatoryFolder?.map((itm) => {
             if (!itm?.isSaved) {

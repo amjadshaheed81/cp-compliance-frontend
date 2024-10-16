@@ -5,6 +5,7 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import { useNavigate } from "react-router-dom";
 import interactionPlugin from "@fullcalendar/interaction";
 import Tooltip from "@mui/material/Tooltip";
 import moment from "moment";
@@ -12,6 +13,10 @@ import "./calendar.css";
 import { get } from "../../../../api";
 
 const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
+  const navigate = useNavigate();
+  const navigateTo = (link) => {
+    navigate(link);
+  };
   let momentX = new Date();
   let date2 = moment(new Date()).add(5, 'days').toDate();
   const [clickedDate, setClickedDate] = useState(undefined);
@@ -31,8 +36,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
            date.getFullYear() === today.getFullYear();
   }
   const getData = async () => {
-    
-    const data = await get("/api/user/calendar/events?userId="+loggedInUserData?.id);
+    const data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
     const todays = data.filter(e => isToday(new Date(e.endDate)));
     settodayEvents(todays);
     const event = data.map(d => {
@@ -41,6 +45,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
           {
             label: d.shortText,
             type: d.eventType,
+            section: d.section
           }]),
         date: moment(d.endDate).format("YYYY-MM-DD"),
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
@@ -88,25 +93,25 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
           {title?.map((itm, index) => (
             <Tooltip title={itm?.label} arrow key={index}>
               {itm?.type?.includes("Audit") && (
-                <p><span className="badge bg-primary">{truncateString(itm?.type, 15)}</span></p>
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-primary"  >{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Assessment") && (
-                <p><span className="badge bg-dark">{truncateString(itm?.type, 15)}</span></p>
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-dark" >{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Inspection") && (
-                <p><span className="badge bg-success">{truncateString(itm?.type, 15)}</span></p>
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-success" >{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Survey") && (
-                <p><span className="badge bg-danger">{truncateString(itm?.type, 15)}</span></p>
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-danger" >{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Asbestos") && (
-                <p><span className="badge bg-warning text-dark">{truncateString(itm?.type, 15)}</span></p>
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-warning text-dark" >{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Document") && (
-                <p><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
+                <p  ><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Contract") && (
-                <p><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-info" >{truncateString(itm?.type, 15)}</span></p>
               )}
             </Tooltip>
           ))}

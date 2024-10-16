@@ -8,6 +8,7 @@ import DashboardNotification from "./DashboardNotification";
 import DashboardTender from "./DashboardTender";
 import DashboardActiveProjects from "./DashboardActiveProjects";
 import DashboardEventCalendar from "./DashboardEventCalendar";
+import DashboardEventCalendarSite from "./DashboardEventCalendarSite";
 import DashboardRiskScore from "./DashboardRiskScore";
 import SearchSite from "./SearchSite";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
@@ -70,6 +71,7 @@ const Dashboard = ({
             <div className="col">
               <DashboardEventCalendar />
             </div>
+           
             <div className="col">
               <DashboardActiveProjects />
             </div>
@@ -82,8 +84,11 @@ const Dashboard = ({
               <DashboardNotification />
             </div>
             <div className="col">
-              <DashboardTender />
+              <DashboardEventCalendarSite />
             </div>
+            {/* <div className="col">
+              <DashboardTender />
+            </div> */}
           </div>
         </div>
       </div>

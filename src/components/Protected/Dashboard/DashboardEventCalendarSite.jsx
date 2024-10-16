@@ -3,19 +3,23 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
-import { useNavigate } from "react-router-dom";
 import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
+import { useNavigate } from "react-router-dom";
 import { connect } from "react-redux";
 import { get } from "../../../api";
-const DashboardEventCalendar = (loggedInUserData) => {
+const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
   const navigate = useNavigate();
+  const navigateTo = (link) => {
+    navigate(link);
+  };
+
   const [data, setData] = useState([]);
   useEffect(() => {
     getData();
   }, [])
   const getData = async () => {
-    const data = await get("/api/user/calendar/events?userId="+loggedInUserData?.loggedInUserData?.id??0);
+    const data = await get("/api/user/calendar/events??siteId="+siteSelectedForGlobal?.siteId??0);
     const event = data.map(d => {
       return {
         title: JSON.stringify([
@@ -30,9 +34,6 @@ const DashboardEventCalendar = (loggedInUserData) => {
     })
     setData(event);
   }
-  const navigateTo = (link) => {
-    navigate(link);
-  };
   
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);
@@ -56,16 +57,16 @@ const DashboardEventCalendar = (loggedInUserData) => {
              <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-success" >{itm?.type}</span></p>
            )}
            {itm?.type?.includes("Survey") && (
-             <span class="badge bg-danger" >{itm?.type}</span>
+             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-danger" >{itm?.type}</span></p> 
            )}
            {itm?.type?.includes("Asbestos") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>
+            <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-warning text-dark" >{itm?.type}</span></p> 
            )}
            {itm?.type?.includes("Document") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-info" >{itm?.type}</span></p>
+            <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-info" >{itm?.type}</span></p> 
            )}
            {itm?.type?.includes("Contract") && (
-                <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-info" >{itm?.type}</span></p>
+              <p onClick={()=>{navigateTo(itm?.section)}}> <span class="badge bg-info" >{itm?.type}</span></p> 
               )}
            </Tooltip>
          </>
@@ -79,9 +80,9 @@ const DashboardEventCalendar = (loggedInUserData) => {
     <Fragment>
       <div className="card">
         <div className="card-body p-2">
-          <div className="d-flex bd-highlight p-0">
+        <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
-              <h5 className="card-title">Your ({loggedInUserData?.loggedInUserData?.name}) Calender</h5>
+              <h5 className="card-title">Site Calender - {siteSelectedForGlobal?.siteName}</h5>
             </div>
             </div>
           <FullCalendar
@@ -99,6 +100,7 @@ const DashboardEventCalendar = (loggedInUserData) => {
 
 
 const mapStateToProps = (state) => ({
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {})(DashboardEventCalendar);

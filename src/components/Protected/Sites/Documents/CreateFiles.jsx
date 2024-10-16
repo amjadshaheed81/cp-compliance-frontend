@@ -158,8 +158,7 @@ const CreateFiles = ({
     setFileName(e?.target?.files?.[0]?.name);
   };
 
-  const checkAndAddExpiryCalenderEvent = async (data) => {
-    console.log("expiryDate", data);
+  const checkAndAddExpiryCalenderEvent = async (data, folderId) => {
     const body = {
       siteId: siteSelectedForGlobal?.siteId,
       startDate: moment(data.expiryDate),
@@ -167,6 +166,7 @@ const CreateFiles = ({
       shortText: "Document Expiring : " + data.name,
       eventType: "Document Expring",
       userId: loggedInUserData?.id,
+      section: `/subfolder/?id=${folderId}`
     };
     await put("/api/user/calendar", body);
   };
@@ -305,7 +305,7 @@ const CreateFiles = ({
                   : formData.fileUpload[0].name;
               await submitFile(data, formData.fileUpload[0], formData);
               if (!isStatutory) {
-                checkAndAddExpiryCalenderEvent(data.files[0]);
+                checkAndAddExpiryCalenderEvent(data.files[0], data.folderId);
               }
               setIsLoading(false);
             } catch (e) {
