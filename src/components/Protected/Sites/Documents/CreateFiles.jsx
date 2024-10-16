@@ -166,7 +166,7 @@ const CreateFiles = ({
       shortText: "Document Expiring : " + data.name,
       eventType: "Document Expring",
       userId: loggedInUserData?.id,
-      section: `/#/subfolder/?id=${folderId}`
+      section: `/subfolder/?id=${folderId}`
     };
     await put("/api/user/calendar", body);
   };
