@@ -54,7 +54,7 @@ const TdkDatePicker = ({
   };
 
   return (
-    <div style={{ display: "inline-block" }}>
+    <div>
       {label && <label htmlFor="datePicker">{label}</label>}
       <div style={{ display: "flex", alignItems: "center" }}>
         <input
@@ -74,7 +74,6 @@ const TdkDatePicker = ({
         <CalendarTodayIcon
           style={{
             cursor: "pointer",
-            marginLeft: "5px",
             color: "#aaa",
           }}
           onClick={() => datePickerRef.current.setOpen(true)} // Open date picker on icon click
