@@ -210,12 +210,11 @@ const ManagerContractView = ({
   };
 
   const checkAndAddExpiryCalenderEvent = async (data) => {
-    alert('here')
     const body = {
       siteId: siteSelectedForGlobal?.siteId,
       startDate: moment(data.visitDate),
       endDate: moment(data.visitDate),
-      shortText: "Contract Inspection Scheduled for Contract #"+data.projectContractId,
+      shortText: "Contract Inspection Scheduled for Contract :"+data.summary,
       eventType: "Contract",
       userId: loggedInUserData?.id,
       includeCompanyUsers: true
@@ -236,6 +235,7 @@ const ManagerContractView = ({
         status: "Scheduled",
         visitDate: `${visitDate} 10:00:00`,
         rescheduleDate: "",
+        summary: selectedContract?.summary
       };
       checkAndAddExpiryCalenderEvent(visit)
       try {

@@ -64,10 +64,7 @@ const CreateFiles = ({
     if (fileUpload?.size > fileSizeLimit) {
       toast.error("File size cannot exceed 100MB");
       return;
-    } 
-
-
-    console.log("folderfiles", folderfiles);
+    }
     const existingFile = folderfiles?.filter(
       (f) => f.name === formData.fileUpload[0].name
     );
