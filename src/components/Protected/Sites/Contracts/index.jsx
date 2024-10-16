@@ -5,6 +5,8 @@ import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { Switch, CircularProgress } from "@mui/material";
+
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Tooltip from "@mui/material/Tooltip";
 import {
   getSiteContracts,
@@ -29,6 +31,9 @@ const Contracts = ({
   loggedInUserData,
   siteSelectedForGlobal,
 }) => {
+  const [searchParams] = useSearchParams();
+  const paramContractId = searchParams.get("projectContractId");
+
   const [filteredContractList, setFilteredContractList] = useState([]);
   const [contractList, setContractList] = useState([]);
   const [formData, setFormData] = useState({
@@ -156,6 +161,16 @@ const Contracts = ({
       setFilteredContractList(contractList);
     }
   };
+
+  useEffect(()=> {
+    if(paramContractId) {
+      const searchContracts = contractList.filter(c => String(c.projectContractId) === String(paramContractId));
+      if(searchContracts.length > 0) {
+        openContractDetail(searchContracts[0]);
+      }
+      
+    }
+  },[contractList])
   const categoryChange = (value) => {
     const val = value;
     const subCategoryData = subCategory?.filter(

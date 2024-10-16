@@ -228,7 +228,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     body.siteId = site.siteId;
     body.dueDate = new Date(body.dueDate);
     body.startDate = new Date(body.startDate);
-    await post("/api/site-check/", body);
+    const sitecheckres = await post("/api/site-check/", body);
+    body.checkId = sitecheckres.checkId;
     setCalenderEvents(body);
 
     await getSiteChecks();
@@ -245,6 +246,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       eventType: `${body.type} ${body.subType}`,
       userId: loggedInUserData?.id,
       includeCompanyUsers: false,
+      section: `/site-checks/${body.checkId}/update`
     };
     put("/api/user/calendar", calenderBody);
     calenderBody.userId = body.assistantUserID;

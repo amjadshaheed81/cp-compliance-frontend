@@ -53,7 +53,6 @@ const ManagerContractView = ({
   terminateContractCall,
   updateScheduleVisit,
 }) => {
-  console.log("selectedContract ===>", selectedContract);
   const handleOpen = () => setShowAddModal(true);
   const handleClose = () => setShowAddModal(false);
   const [showMandatoryModal, setShowMandatoryModal] = useState(false);
@@ -217,10 +216,11 @@ const ManagerContractView = ({
       shortText: "Contract Inspection Scheduled for Contract :"+data.summary,
       eventType: "Contract",
       userId: loggedInUserData?.id,
-      includeCompanyUsers: true
+      includeCompanyUsers: true,
+      section: `/site-contracts?projectContractId=${currentContract?.projectContractId}`
     };
     await put("/api/user/calendar", body);
-    body.userId = currentContract.projectManagerUserId;
+    body.userId = currentContract?.projectManagerUserId;
     await put("/api/user/calendar", body);
   };
 

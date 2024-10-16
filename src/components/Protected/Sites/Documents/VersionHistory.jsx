@@ -59,8 +59,7 @@ const VersionHistory = ({
       setFileVerions([]);
     }
   };
-  const checkAndAddExpiryCalenderEvent = async (data) => {
-    console.log("expiryDate", data);
+  const checkAndAddExpiryCalenderEvent = async (data, folderId) => {
     const body = {
       siteId: siteSelectedForGlobal?.siteId,
       startDate: moment(data?.expiryDate),
@@ -68,6 +67,7 @@ const VersionHistory = ({
       shortText: "Document Expiring : " + data?.name,
       eventType: "Document Expring",
       userId: loggedInUserData?.id,
+       section: `/#/subfolder/?id=${folderId}`
     };
     await put("/api/user/calendar", body);
   };
@@ -100,7 +100,7 @@ const VersionHistory = ({
         ],
       };
       submitFile(data, formData.fileUpload[0]);
-      checkAndAddExpiryCalenderEvent(data?.files[0]);
+      checkAndAddExpiryCalenderEvent(data?.files[0], data.folderId);
     } catch (e) {
       toast.error(
         "Something went wrong while adding new file. Please try again!!"
