@@ -33,6 +33,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import "./AssetStyle.css";
 import Swal from "sweetalert2";
+import TagAsset from "./TagAsset";
 
 async function fetchBlob(selectedPdf) {
   try {
@@ -76,6 +77,7 @@ const UpdateAsset = ({
   const [subCategory3List, setSubCategory3List] = useState([]);
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
   const [relatedAssetOption, setRelatedAssetOption] = useState([]);
+  const [showModal, setShowModal] = useState(false);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
@@ -529,6 +531,16 @@ const UpdateAsset = ({
   };
   return (
     <Fragment>
+      {showModal && (
+        <TagAsset
+          showModal={showModal}
+          setShowModal={setShowModal}
+          assetId={assetId}
+          refresh={() => {
+            getAssetDetails();
+          }}
+        />
+      )}
       <SidebarNew />
       <div className="content">
         <Header />
@@ -785,6 +797,12 @@ const UpdateAsset = ({
                             ))}
                           </select>
                         </div>
+                        <div className="col-md-6 mt-2">
+                          <button type="button" className="btn btn-sm btn-primary" onClick={() => setShowModal(true)}>
+                            Tag Asset Documents
+                          </button>
+                        </div>
+                        <div className="row"></div>
                         <div className="row">
                           <div className="col-md-4 mt-2">
                             <input
