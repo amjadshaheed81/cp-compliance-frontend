@@ -12,7 +12,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
-import { post, put, uploadPhoto, uploadNewVersion } from "../../../../api";
+import { post, put, uploadPhoto, uploadNewVersion, get } from "../../../../api";
 import { toast } from "react-toastify";
 import moment from "moment";
 import { InputError } from "../../../common/InputError";
@@ -42,7 +42,9 @@ const CreateFiles = ({
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
-  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState(folderData ? [folderData] : []);
+  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState(
+    folderData ? [folderData] : []
+  );
   const [selectedMandatoryFile, setSelectedMandatoryFile] = useState([]);
   const [selectedContractors, setSelectedContractors] = useState([]);
 
@@ -54,11 +56,14 @@ const CreateFiles = ({
     formState: { errors },
   } = useForm({});
   useEffect(() => {
-    console.log("folderData", selectedMandatoryFolder?.[0]);
-    setValue("name", selectedMandatoryFolder?.[0]?.folderName ? selectedMandatoryFolder?.[0]?.name : "");
+    setValue(
+      "name",
+      selectedMandatoryFolder?.[0]?.folderName
+        ? selectedMandatoryFolder?.[0]?.name
+        : ""
+    );
   }, []);
   const submitFile = async (data, fileUpload, formData) => {
-
     const fileSizeLimit = 100 * 1024 * 1024;
 
     if (fileUpload?.size > fileSizeLimit) {
@@ -90,14 +95,16 @@ const CreateFiles = ({
     reqData.documentRequestString.files[0].expiryDate =
       data?.files[0].expiryDate;
     if (isStatutory) {
-      console.log("selectedMandatoryFile",selectedMandatoryFile);
-      if(selectedMandatoryFile?.length) {
-        reqData.documentRequestString.files[0].name = selectedMandatoryFile[0].name;
-        reqData.documentRequestString.files[0].issueDate = selectedMandatoryFile[0].issueDate?.replace("T", " ");
-        reqData.documentRequestString.files[0].issueDate = selectedMandatoryFile[0].expiryDate?.replace("T", " ");
+      if (selectedMandatoryFile?.length) {
+        reqData.documentRequestString.files[0].name =
+          selectedMandatoryFile[0].name;
+        reqData.documentRequestString.files[0].issueDate =
+          selectedMandatoryFile[0].issueDate?.replace("T", " ");
+        reqData.documentRequestString.files[0].issueDate =
+          selectedMandatoryFile[0].expiryDate?.replace("T", " ");
       }
       reqData.documentRequestString.files[0].statutoryCategoryId =
-      selectedMandatoryFolder?.[0]?.id;
+        selectedMandatoryFolder?.[0]?.id;
     }
     reqData.documentRequestString.files[0].uploaderUserId =
       uploaderUserId || "";
@@ -166,7 +173,7 @@ const CreateFiles = ({
       shortText: "Document Expiring : " + data.name,
       eventType: "Document Expring",
       userId: loggedInUserData?.id,
-      section: `/subfolder/?id=${folderId}`
+      section: `/subfolder/?id=${folderId}`,
     };
     await put("/api/user/calendar", body);
   };
@@ -188,77 +195,157 @@ const CreateFiles = ({
             try {
               setIsLoading(true);
               let folderIdForUpload = selectedMandatoryFolder?.[0]?.id;
+              const isStautoryFolderSelected = !!(
+                !selectedMandatoryFolder?.[0]?.requirement &&
+                selectedMandatoryFolder?.[0]?.id &&
+                isStatutory
+              );
+              const isStautoryFileSelected = !!(
+                selectedMandatoryFile?.length > 0 && isStatutory
+              );
               let fileExtensionValue = "";
-              console.log("folderData?.id", selectedMandatoryFolder?.[0]?.id);
-              if (isStatutory) {
-                if (
-                  selectedMandatoryFolder?.length === 0 &&
-                  selectedMandatoryFile?.length === 0
-                ) {
-                  setIsLoading(false);
-                  toast.warn("Please select folder to Upload file in Statuary");
-                  return;
+              if (isStautoryFolderSelected && !isStautoryFileSelected) {
+                const res = await get(
+                  `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders`
+                );
+                const files = res?.document?.files;
+                if (files) {
+                  const fileIds = files?.map((item) => item.id);
+                  const url = `/api/document/tag-file`;
+                  const data = {
+                    fileIds: fileIds,
+                    statutoryCategoryId: folderData?.id,
+                  };
+                  const res = await put(url, data);
+                  if (res?.status === 200) {
+                    setIsLoading(false);
+                    toast.success("Files tags successfully.");
+                    handleClose();
+                    refresh();
+                  } else {
+                    setIsLoading(false);
+                    toast.error("Something went wrong while tagging files.");
+                    handleClose();
+                  }
                 } else {
-                  if (selectedMandatoryFolder?.length > 0) {
-                    folderIdForUpload = selectedMandatoryFolder[0].id;
+                  setIsLoading(false);
+                  toast.warning(
+                    "There is no files available in this document to tag."
+                  );
+                }
+                // const
+              } else if (isStautoryFileSelected && !isStautoryFolderSelected) {
+                const fileId = selectedMandatoryFile[0]?.id;
+                const url = `/api/document/tag-file`;
+                const data = {
+                  fileId: fileId,
+                  statutoryCategoryId: folderData?.id,
+                };
+                const res = await put(url, data);
+                if (res?.status === 200) {
+                  setIsLoading(false);
+                  toast.success("File tag successfully.");
+                  handleClose();
+                  refresh();
+                } else {
+                  setIsLoading(false);
+                  toast.error("Something went wrong while tagging files.");
+                  handleClose();
+                }
+              } else {
+                if (isStatutory) {
+                  if (
+                    selectedMandatoryFolder?.length === 0 &&
+                    selectedMandatoryFile?.length === 0
+                  ) {
+                    setIsLoading(false);
+                    toast.warn(
+                      "Please select folder to Upload file in Statuary"
+                    );
+                    return;
+                  } else {
+                    if (selectedMandatoryFolder?.length > 0) {
+                      folderIdForUpload = selectedMandatoryFolder[0].id;
+                    }
                   }
                 }
-              }
-              const data = {
-                folderId: folderIdForUpload,
-                files: [],
-              };
-              if (isStatutory) {
-                if (selectedMandatoryFile?.length > 0) {
-                  // Fetch the file from the provided URL
-                  data.folderId = selectedMandatoryFile[0].folderId;
-                  const response = await fetch(
-                    selectedMandatoryFile[0].fileBlobUrl
-                  );
+                const data = {
+                  folderId: folderIdForUpload,
+                  files: [],
+                };
+                if (isStatutory) {
+                  if (selectedMandatoryFile?.length > 0) {
+                    // Fetch the file from the provided URL
+                    data.folderId = selectedMandatoryFile[0].folderId;
+                    const response = await fetch(
+                      selectedMandatoryFile[0].fileBlobUrl
+                    );
 
-                  // Convert the response to a Blob
-                  const fileBlob = await response.blob();
-                  fileExtensionValue =
-                    selectedMandatoryFile[0]?.name?.split(".")?.[1];
-                  // Create a File object from the Blob
-                  const file = new File(
-                    [fileBlob],
-                    selectedMandatoryFile[0].fileName,
-                    {
-                      type: fileBlob.type,
+                    // Convert the response to a Blob
+                    const fileBlob = await response.blob();
+                    fileExtensionValue =
+                      selectedMandatoryFile[0]?.name?.split(".")?.[1];
+                    // Create a File object from the Blob
+                    const file = new File(
+                      [fileBlob],
+                      selectedMandatoryFile[0].fileName,
+                      {
+                        type: fileBlob.type,
+                      }
+                    );
+
+                    // Create a DataTransfer object to manipulate the FileList
+                    const dataTransfer = new DataTransfer();
+
+                    // Add existing files from the FileList to the DataTransfer object
+                    for (let i = 0; i < formData.fileUpload.length; i++) {
+                      dataTransfer.items.add(formData.fileUpload[i]);
                     }
-                  );
 
-                  // Create a DataTransfer object to manipulate the FileList
-                  const dataTransfer = new DataTransfer();
+                    // Add the new file
+                    dataTransfer.items.add(file);
 
-                  // Add existing files from the FileList to the DataTransfer object
-                  for (let i = 0; i < formData.fileUpload.length; i++) {
-                    dataTransfer.items.add(formData.fileUpload[i]);
+                    // Assign the new FileList back to formData.fileUpload
+                    formData.fileUpload = dataTransfer.files;
+                    data.files.push({
+                      ...formData,
+                      name: formData?.name
+                        ? formData?.name
+                        : selectedMandatoryFile[0].fileName,
+                      fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
+                        ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
+                        : 1,
+                      siteId: siteSelectedForGlobal?.siteId,
+                      issueDate: formData?.issueDate
+                        ? `${formData?.issueDate} 10:00:00`
+                        : "",
+                      expiryDate: formData?.expiryDate
+                        ? `${formData?.expiryDate} 10:00:00`
+                        : "",
+                    });
+                  } else if (formData?.fileUpload?.length > 0) {
+                    data.files.push({
+                      ...formData,
+                      name: formData?.name,
+                      fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
+                        ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
+                        : 1,
+                      siteId: siteSelectedForGlobal?.siteId,
+                      issueDate: formData?.issueDate
+                        ? `${formData?.issueDate} 10:00:00`
+                        : "",
+                      expiryDate: formData?.expiryDate
+                        ? `${formData?.expiryDate} 10:00:00`
+                        : "",
+                    });
+                  } else {
+                    setIsLoading(false);
+                    toast.warn(
+                      "Please select file from select file or upload new version to proceed."
+                    );
+                    return;
                   }
-
-                  // Add the new file
-                  dataTransfer.items.add(file);
-
-                  // Assign the new FileList back to formData.fileUpload
-                  formData.fileUpload = dataTransfer.files;
-                  data.files.push({
-                    ...formData,
-                    name: formData?.name
-                      ? formData?.name
-                      : selectedMandatoryFile[0].fileName,
-                    fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
-                      ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
-                      : 1,
-                    siteId: siteSelectedForGlobal?.siteId,
-                    issueDate: formData?.issueDate
-                      ? `${formData?.issueDate} 10:00:00`
-                      : "",
-                    expiryDate: formData?.expiryDate
-                      ? `${formData?.expiryDate} 10:00:00`
-                      : "",
-                  });
-                } else if (formData?.fileUpload?.length > 0) {
+                } else {
                   data.files.push({
                     ...formData,
                     name: formData?.name,
@@ -273,41 +360,20 @@ const CreateFiles = ({
                       ? `${formData?.expiryDate} 10:00:00`
                       : "",
                   });
-                } else {
-                  setIsLoading(false);
-                  toast.warn(
-                    "Please select file from select file or upload new version to proceed."
-                  );
-                  return;
                 }
-              } else {
-                data.files.push({
-                  ...formData,
-                  name: formData?.name,
-                  fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
-                    ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
-                    : 1,
-                  siteId: siteSelectedForGlobal?.siteId,
-                  issueDate: formData?.issueDate
-                    ? `${formData?.issueDate} 10:00:00`
-                    : "",
-                  expiryDate: formData?.expiryDate
-                    ? `${formData?.expiryDate} 10:00:00`
-                    : "",
-                });
+                const fileExtension = isStatutory
+                  ? fileExtensionValue
+                  : formData.fileUpload[0].name?.split(".")?.pop();
+                data.files[0].name =
+                  formData?.name?.length > 0
+                    ? `${formData?.name}.${fileExtension}`
+                    : formData.fileUpload[0].name;
+                await submitFile(data, formData.fileUpload[0], formData);
+                if (!isStatutory) {
+                  checkAndAddExpiryCalenderEvent(data.files[0], data.folderId);
+                }
+                setIsLoading(false);
               }
-              const fileExtension = isStatutory
-                ? fileExtensionValue
-                : formData.fileUpload[0].name?.split(".")?.pop();
-              data.files[0].name =
-                formData?.name?.length > 0
-                  ? `${formData?.name}.${fileExtension}`
-                  : formData.fileUpload[0].name;
-              await submitFile(data, formData.fileUpload[0], formData);
-              if (!isStatutory) {
-                checkAndAddExpiryCalenderEvent(data.files[0], data.folderId);
-              }
-              setIsLoading(false);
             } catch (e) {
               console.log(e);
               toast.error(
@@ -332,30 +398,29 @@ const CreateFiles = ({
                     )}
                     {isStatutory ? (
                       <input
-                      type="text"
-                      disabled
-                      value={
-                        folderData?.requirement
-                          ? folderData?.requirement
-                          : folderData?.subType
-                      }
-                      className="form-control"
-                      {...register("folderName")}
-                    />
+                        type="text"
+                        disabled
+                        value={
+                          folderData?.requirement
+                            ? folderData?.requirement
+                            : folderData?.subType
+                        }
+                        className="form-control"
+                        {...register("folderName")}
+                      />
                     ) : (
                       <input
-                      type="text"
-                      disabled
-                      value={
-                        selectedMandatoryFolder?.[0]?.folderName
-                          ? selectedMandatoryFolder?.[0]?.folderName
-                          : selectedMandatoryFolder?.[0]?.name
-                      }
-                      className="form-control"
-                      {...register("folderName")}
-                    />
+                        type="text"
+                        disabled
+                        value={
+                          selectedMandatoryFolder?.[0]?.folderName
+                            ? selectedMandatoryFolder?.[0]?.folderName
+                            : selectedMandatoryFolder?.[0]?.name
+                        }
+                        className="form-control"
+                        {...register("folderName")}
+                      />
                     )}
-                    
                   </div>
                 </Grid>
                 <Grid sm={6}>
@@ -376,7 +441,8 @@ const CreateFiles = ({
                       disabled
                       value={
                         selectedMandatoryFolder?.[0]?.fileVersion
-                          ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
+                          ? Number(selectedMandatoryFolder?.[0]?.fileVersion) +
+                            1
                           : 1
                       }
                       className="form-control"
