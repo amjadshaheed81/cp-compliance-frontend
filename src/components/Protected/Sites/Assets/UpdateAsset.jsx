@@ -534,6 +534,7 @@ const UpdateAsset = ({
       {showModal && (
         <TagAsset
           showModal={showModal}
+          selectedAsset={selectedAsset}
           setShowModal={setShowModal}
           assetId={assetId}
           refresh={() => {
