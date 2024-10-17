@@ -3,6 +3,7 @@ import axios from "axios";
 let axiosInstance = axios.create({
   baseURL: window?.location?.origin,
   //baseURL: "http://ccp-util-man.ukwest.cloudapp.azure.com",
+  //baseURL: "http://cpc-beta.ukwest.cloudapp.azure.com",
   timeout: 2000000,
 });
 
@@ -10,9 +11,45 @@ function configAxios() {
   axiosInstance = axios.create({
     baseURL: window?.location?.origin,
     //baseURL: "http://ccp-util-man.ukwest.cloudapp.azure.com",
+    //baseURL: "http://cpc-beta.ukwest.cloudapp.azure.com",
     timeout: 2000000,
   });
+  axiosInstance.interceptors.response.use(
+    (response) => {
+      return response;
+    },
+    (error) => {
+      if (error.response && error.response.status === 500) {
+        const errorMessage = error.response.data.message;
+        if (errorMessage.includes('JWT expired at')) {
+          localStorage.clear();
+          window.location.href = '/login';
+        }
+      }
+  
+      // Return a rejected promise with the error
+      return Promise.reject(error);
+    }
+  );
 }
+
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 500) {
+      const errorMessage = error.response.data.message;
+      if (errorMessage.includes('JWT expired at')) {
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+    }
+
+    // Return a rejected promise with the error
+    return Promise.reject(error);
+  }
+);
 
 function getSubscriptionKey() {
   let key = "";
