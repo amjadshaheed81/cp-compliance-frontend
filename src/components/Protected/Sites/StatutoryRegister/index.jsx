@@ -7,7 +7,7 @@ import CreateFiles from "../Documents/CreateFiles";
 import { get, put } from "../../../../api";
 import Swal from "sweetalert2";
 import { connect } from "react-redux";
-import { getSiteAssets } from "../../../../store/thunk/site";
+import { getSiteAssets, selectGlobalSite } from "../../../../store/thunk/site";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import PdfViewer from "../Documents/PdfViewer";
@@ -32,6 +32,7 @@ const StatutoryRegister = ({
   const [selectedPdf, setSelectedPdf] = useState("");
   const [statutory, setStatutory] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
+  const [patItems, setPatItems] = useState([]);
   const [folder, setFolder] = useState({});
   const {
     register,
@@ -47,12 +48,10 @@ const StatutoryRegister = ({
   }, [searchTerm]);
   const updateResidence = async () => {
     const res = await put("/api/document/statutoryRegister/manage", searchTerm);
-    console.log("res", res);
   };
   const navigate = useNavigate();
   let dutiesIdentified = 0;
   let dutiesMet = 0;
-  console.log("logged in", loggedInUserData);
   const getDutiesIdentified = (item) => {
     for (let i = 0; i < item.length; i++) {
       if (item[i].required === true) {
@@ -176,6 +175,7 @@ const StatutoryRegister = ({
       getStatutory(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteChecks();
+      getPatItems();
     } else {
       Swal.fire({
         icon: "error",
@@ -185,11 +185,38 @@ const StatutoryRegister = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteSelectedForGlobal?.siteId]);
+  const getPatItems = async () => {
+    let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
+    const { assets } = await get(url);
+    setPatItems(assets)
+  }
   const getSiteChecks = async () => {
     const siteChecksData = await get(
       `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
     );
     setSiteChecks(siteChecksData);
+  };
+  const findAssetWithNearestPatNextDate = (assets) => {
+    let nearestAsset = null;
+    let nearestPatItem = null;
+    let nearestDate = null;
+  
+    assets.forEach(asset => {
+      if (asset.assetPATItems) {
+        asset.assetPATItems.forEach(patItem => {
+          const patNextDate = new Date(patItem.patNextDate);
+          
+          // Check if it's the first date or closer than the previous nearestDate
+          if (!nearestDate || patNextDate < nearestDate) {
+            nearestDate = patNextDate;
+            nearestPatItem = patItem;
+            nearestAsset = asset;
+          }
+        });
+      }
+    });
+  
+    return nearestAsset && nearestPatItem ? { asset: nearestAsset, patItem: nearestPatItem } : null;
   };
   const getViewEvidenceExpiryDate = (row) => {
     // Group siteChecks by types to avoid multiple filtering
@@ -197,17 +224,13 @@ const StatutoryRegister = ({
     const inspections = siteChecks?.filter((itm) => itm?.type === "Inspection");
     const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
 
+    const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
     // Pre-filter categories and subTypes for easier lookups
     const filteredSiteChecks = {
       asbestosManagementPlan: surveys?.find(
         (itm) => itm?.category === "Asbestos Management Plan"
       ),
-      patItems: inspections?.find(
-        (itm) =>
-          itm?.subType === "Electrical" &&
-          (itm?.category === "WC Alarm Testing" ||
-            itm?.category === "Microwave Oven Testing")
-      ),
+      patItems: assetWithNearestPatNextDate?.patItem,
       fireAlarmsWeekly: inspections?.find(
         (itm) =>
           itm?.subType === "Fire Alarm to meet BS5839" &&
@@ -257,10 +280,18 @@ const StatutoryRegister = ({
 
     // If a matching check exists, return the expiry date row
     if (matchedCheck) {
-      return getStartAndExpiryDateRow(
-        matchedCheck.startDate,
-        matchedCheck.dueDate
-      );
+      if(row?.subType == "PAT / Microwave Testing") {
+        return getStartAndExpiryDateRow(
+          matchedCheck.patDate,
+          matchedCheck.patNextDate
+        );
+      } else {
+        return getStartAndExpiryDateRow(
+          matchedCheck.startDate,
+          matchedCheck.dueDate
+        );
+      }
+      
     }
 
     return null;
