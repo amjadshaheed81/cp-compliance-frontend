@@ -8,20 +8,28 @@ import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
 import { connect } from "react-redux";
 import { get } from "../../../api";
-const DashboardEventCalendar = (loggedInUserData) => {
+const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   useEffect(() => {
     getData();
   }, [])
+
+  const getSiteName = (siteId) => {
+    const filters = sites.filter(s=> s.siteId === siteId);
+    if(filters.length) {
+      return `  (${filters[0].siteName})`
+    }
+    return '';
+  }
   const getData = async () => {
-    const data = await get("/api/user/calendar/events?userId="+loggedInUserData?.loggedInUserData?.id??0);
+    const data = await get("/api/user/calendar/events?userId="+loggedInUserData?.id??0);
     const event = data.map(d => {
       return {
         title: JSON.stringify([
           {
-            label: d.shortText,
-            type: d.eventType,
+            label: d.shortText + getSiteName(d.siteId),
+            type: d.eventType + getSiteName(d.siteId),
             section: d.section
           }]),
         date: moment(d.endDate).format("YYYY-MM-DD"),
@@ -81,7 +89,7 @@ const DashboardEventCalendar = (loggedInUserData) => {
         <div className="card-body p-2">
           <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
-              <h5 className="card-title">Your ({loggedInUserData?.loggedInUserData?.name}) Calender</h5>
+              <h5 className="card-title">Your ({loggedInUserData?.name}) Calender</h5>
             </div>
             </div>
           <FullCalendar
@@ -100,5 +108,6 @@ const DashboardEventCalendar = (loggedInUserData) => {
 
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
+  sites: state.site.sites,
 });
 export default connect(mapStateToProps, {})(DashboardEventCalendar);
