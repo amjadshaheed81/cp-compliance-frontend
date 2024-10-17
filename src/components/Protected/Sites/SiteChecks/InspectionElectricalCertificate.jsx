@@ -5,11 +5,11 @@ import { get, post, uploadSiteCheckDoc } from "../../../../api";
 import { Grid, Chip, Typography, Box, IconButton, Divider, Autocomplete,CircularProgress } from '@mui/material';
 import { UploadFile } from '@mui/icons-material';
 
-import { getSites, getExternalUsers } from "../../../../store/thunk/site";
+import { getSites, getUsers } from "../../../../store/thunk/site";
 
-const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, getExternalUsers, siteSelectedForGlobal }) => {
+const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, siteSelectedForGlobal }) => {
   useEffect(() => {
-    getExternalUsers();
+    getUsers();
     getIpection();
   }, []);
   const [completed, setCompleted] = useState(false);
@@ -120,7 +120,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
             disabled
             value={formData?.reviewerUserId}
           >
-            {externalusers.map(u => {
+            {users.map(u => {
               return (
                 <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
               )
@@ -136,7 +136,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
                 uformData.reviewerUserId = item?.key;
                 setFormData(uformData);
               }}
-              options={externalusers.map((option) => { return { key: option.id, label: option.trade + ' - ' + option.name + ' (' + option.email + ') - ' + option.company } })}
+              options={users.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
               getOptionLabel={(option) => option.label}
               renderInput={(params) => (
                 <div ref={params.InputProps.ref} >
@@ -257,10 +257,10 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, externalusers, get
 
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
-  externalusers: state.site.externalusers,
+  users: state.site.users,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, { getSites, getExternalUsers })(
+export default connect(mapStateToProps, { getSites, getUsers })(
   InspectionElectricalCertificate
 );
 
