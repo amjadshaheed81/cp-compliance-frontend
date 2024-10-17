@@ -13,6 +13,7 @@ import { setLoader, uploadFloorPlan } from "../../../../store/thunk/site";
 import { toast } from "react-toastify";
 import { connect } from "react-redux";
 import { saveAs } from "file-saver"; // For image download
+import { scrollToElement } from "../../../../utils/scrollToElement";
 
 const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   const [tabValue, setTabValue] = useState(null);
@@ -38,8 +39,9 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     const selectedFloor = list?.[newValue];
     console.log("selectedFloor", selectedFloor);
+    scrollToElement(".floorMapTitle");
     setDroppedItems([]); // This clears all the dropped labels
-    setSelectedTab({id:selectedFloor?.id, name: selectedFloor?.nodeName});
+    setSelectedTab({ id: selectedFloor?.id, name: selectedFloor?.nodeName });
     setTabValue(newValue);
     setFloorPlanUrl(selectedFloor?.floorPlanUrl); // Store the current floor plan URL
   };
@@ -82,9 +84,21 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
           <>
             <div
               ref={imageRef}
-              style={{ position: "relative", width: "500px", height: "auto" }}
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%", // Full height for the right-side container
+                overflow: "hidden", // Prevent overflow
+              }}
             >
-              <embed src={floorPlanUrl} width="500px" height="auto" />
+              <embed
+                src={floorPlanUrl}
+                style={{
+                  width: "100%",
+                  height: "500px", // Adjust height as needed
+                  objectFit: "contain", // Ensures aspect ratio is maintained and fits within the container
+                }}
+              />
               {droppedItems.map((item, index) => (
                 <div
                   key={index}
@@ -114,7 +128,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
                 </div>
               ))}
             </div>
-            {/* Canvas for saving the image */}
+            {/* Hidden canvas for saving the image */}
             <canvas
               ref={canvasRef}
               style={{ display: "none", width: "500px", height: "auto" }} // Hidden canvas
@@ -168,12 +182,13 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
         ref={drag}
         style={{
           opacity: isDragging ? 0.5 : 1,
+          padding: '6px',
           cursor: "move",
-          width: "120px",
-          height: "40px",
-          fontSize: "10px",
+          width: "100%",
+          height: "28px",
+          fontSize: "8px",
           border: "1px solid grey",
-          marginBottom: "10px",
+          marginBottom: "4px",
         }}
       >
         {label}
@@ -245,7 +260,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
           // Prepare the form data for upload
           let form_data = new FormData();
           // Append the Blob as a file in FormData
-          form_data.append("files", blob, `${selectedTab?.name}.png`,);
+          form_data.append("files", blob, `${selectedTab?.name}.png`);
 
           // Add additional metadata about the floor plan
           const data = [
@@ -281,13 +296,13 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
 
   return (
     <div>
-      <h5 className="pt-5 text-start">Floor Map</h5>
+      <h5 className="pt-5 text-start floorMapTitle">Floor Map</h5>
       <Box
         sx={{
           flexGrow: 1,
           bgcolor: "background.paper",
           display: "flex",
-          height: 400,
+          height: 600,
         }}
       >
         <Tabs
