@@ -13,6 +13,18 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, s
     getIpection();
   }, []);
   const [completed, setCompleted] = useState(false);
+  const [siteUsers, setSiteUsers] = useState([]);
+  const filterSiteById = (user, siteId) => {
+    return users?.filter(user => 
+      user?.taggedSites?.some(site => site.id === siteId)
+    );
+  };
+  useEffect(() => {
+    if(users) {
+      const filteredSites = filterSiteById(users, siteSelectedForGlobal?.siteId);
+      setSiteUsers(filteredSites);
+    }
+  },[users])
   const [formData, setFormData] = useState({
     issueDate: '',
     expiryDate: '',
@@ -120,7 +132,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, s
             disabled
             value={formData?.reviewerUserId}
           >
-            {users.map(u => {
+            {siteUsers?.map(u => {
               return (
                 <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
               )
@@ -136,7 +148,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, s
                 uformData.reviewerUserId = item?.key;
                 setFormData(uformData);
               }}
-              options={users.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+              options={siteUsers?.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
               getOptionLabel={(option) => option.label}
               renderInput={(params) => (
                 <div ref={params.InputProps.ref} >
