@@ -1609,23 +1609,23 @@ const UpdateAsset = ({
                               <td>
                                 <i
                                   className={`fas fa-thumbs-up cursor ${
-                                    itm.patStatus === "approved"
+                                    itm.patStatus === "Pass"
                                       ? "text-success"
                                       : "text-dark"
                                   }`}
                                   onClick={() =>
-                                    updatePatStatus(index, "approved")
+                                    updatePatStatus(index, "Pass")
                                   }
                                 ></i>
                                 &nbsp;
                                 <i
                                   className={`fas fa-thumbs-down cursor ${
-                                    itm.patStatus === "rejected"
+                                    itm.patStatus === "Fail"
                                       ? "text-danger"
                                       : "text-dark"
                                   }`}
                                   onClick={() =>
-                                    updatePatStatus(index, "rejected")
+                                    updatePatStatus(index, "Fail")
                                   }
                                 ></i>
                               </td>

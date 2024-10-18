@@ -19,6 +19,7 @@ import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 import { getPatTestedEndDate, getPatTestedStartDate } from "../../../../utils/getPatTestedDate";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
+import AddPatDetails from "./AddPatDetails";
 
 const Pat = ({
   sitePATItems,
@@ -36,6 +37,7 @@ const Pat = ({
   const [selectedAsset, setSelectedAsset] = useState({});
   const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [showPatModal, setShowPatModal] = useState(false);
   const [preActionsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const [floorNode, setFloorNode] = useState([]);
@@ -225,6 +227,16 @@ const Pat = ({
           selectedAsset={selectedAsset}
         />
       )}
+      {showPatModal && (
+        <AddPatDetails
+          showPatModal={showPatModal}
+          setShowPatModal={setShowPatModal}
+          selectedAsset={selectedItems}
+          refresh={() => {
+            getSitePATAssets(siteSelectedForGlobal?.siteId);
+          }}
+        />
+      )}
       {showCloneModal && (
         <ShowCloneModal
           showCloneModal={showCloneModal}
@@ -292,7 +304,9 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Floor</option>
-                {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+                {floorNode?.map((itm) => (
+                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                ))}
               </select>
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
@@ -303,14 +317,16 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>
-                {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+                {roomNode?.map((itm) => (
+                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                ))}
               </select>
             </div>
           </div>
         </div>
         <div className="ms-auto p-2 bd-highlight">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col-md-6 col-sm-6 mt-2">
+            <div className="col-md-3 col-sm-6 mt-2">
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary pr-2"
@@ -322,6 +338,25 @@ const Pat = ({
                 </button>
               </Tooltip>
             </div>
+            <div className="col-md-2 col-sm-6 mt-2">
+              <Tooltip title={`Assign/Update Pat Register`} arrow>
+                <button className="btn btn-light bg-white text-primary" onClick={() => {
+                  if (selectedItems?.length === 0) {
+                    toast.warn(
+                      "Please select asset to assign/update pat record."
+                    );
+                  } else if (selectedItems?.length === 1) {
+                    toast.warn(
+                      "Please select more than 1 asset to update pat record else you can edit and update pat record for particular asset."
+                    );
+                  } else {
+                    setShowPatModal(true);
+                  }
+                  }}>
+                  <i className="fas fa-pen"></i>
+                </button>{" "}
+              </Tooltip>
+            </div>
             <div className="col-md-3 col-sm-6 mt-2">
               <CSVLink
                 filename={"site-pat-item-list.csv"}
@@ -329,24 +364,32 @@ const Pat = ({
                 data={sitePATItems.map((itm) => {
                   return {
                     ...itm,
-                    assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
-                      ? itm.assetDoorSpecifications.map(
-                          (asset) =>
-                            `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                        ).join("; ")
-                      : '', // Provide empty string if not an array
+                    assetDoorSpecifications: Array.isArray(
+                      itm?.assetDoorSpecifications
+                    )
+                      ? itm.assetDoorSpecifications
+                          .map(
+                            (asset) =>
+                              `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
+                          )
+                          .join("; ")
+                      : "", // Provide empty string if not an array
                     assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                      ? itm.assetPFPItem.map(
-                          (asset) =>
-                            `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                        ).join("; ")
-                      : '', // Provide empty string if not an array
+                      ? itm.assetPFPItem
+                          .map(
+                            (asset) =>
+                              `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
+                          )
+                          .join("; ")
+                      : "", // Provide empty string if not an array
                     assetPATItems: Array.isArray(itm?.assetPATItems)
-                      ? itm.assetPATItems.map(
-                          (asset) =>
-                            `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                        ).join("; ")
-                      : '', // Provide empty string if not an array
+                      ? itm.assetPATItems
+                          .map(
+                            (asset) =>
+                              `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
+                          )
+                          .join("; ")
+                      : "", // Provide empty string if not an array
                   };
                 })}
               >
