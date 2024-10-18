@@ -76,7 +76,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
           observation: data.faultDescription,
           desc: `${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category} - ${moment(new Date()).format("DD/MM/YYYY")}`,
           requiredAction: data.action,
-          riskScore: Number(data.rating) * Number(data.rating),
+          riskScore: Number(data.severity) * Number(data.likelihood),
           dueDate: new Date(),
           createdAt: new Date(),
           siteId: siteSelectedForGlobal?.siteId,
@@ -133,7 +133,8 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                   <th scope="col">ASSET</th>
                   <th scope="col">FAULT</th>
                   <th scope="col">DATE RAISED</th>
-                  <th scope="col">RATING</th>
+                  <th scope="col">Likelihood</th>
+                  <th scope="col">Severity</th>
                   <th scope="col">IMAGE</th>
                   <th scope="col">SUGGESTED ACTION</th>
                   <th scope="col"></th>
@@ -242,14 +243,32 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       <td>
                         <select
                           disabled={completed}
-                          name="rating"
+                          name="likelihood"
                           required
                           className="form-control form-select"
-                          id="rating"
-                          value={formData?.[idx]?.rating}
+                          id="likelihood"
+                          value={formData?.[idx]?.likelihood}
                           onChange={(e) => handleInputChange(e, idx)}
                         >
-                          <option value="">Select Rating</option>
+                          <option value="">Select Likelihood</option>
+                          <option value={1}>1</option>
+                          <option value={2}>2</option>
+                          <option value={3}>3</option>
+                          <option value={4}>4</option>
+                          <option value={5}>5</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          disabled={completed}
+                          name="severity"
+                          required
+                          className="form-control form-select"
+                          id="severity"
+                          value={formData?.[idx]?.severity}
+                          onChange={(e) => handleInputChange(e, idx)}
+                        >
+                          <option value="">Select Severity</option>
                           <option value={1}>1</option>
                           <option value={2}>2</option>
                           <option value={3}>3</option>

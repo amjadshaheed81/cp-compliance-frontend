@@ -256,11 +256,15 @@ const StatutoryRegister = ({
           itm?.subType === "Water" &&
           itm?.category === "Water - Storage System Chlorination"
       ),
+      showerHeadCleaning: inspections?.find(
+        (itm) =>
+          itm?.subType === "Water" &&
+          itm?.category === "Periodic Shower Head Cleaning"
+      ),
       fireRiskAssessment: assessments?.find(
         (itm) => itm?.subType === "Fire Risk Assessment"
       ),
     };
-
     // Define a mapping of row subTypes to filteredSiteChecks
     const checkMappings = {
       "Asbestos Management Plan": filteredSiteChecks.asbestosManagementPlan,
@@ -269,8 +273,10 @@ const StatutoryRegister = ({
       "Emergency Lighting Weekly In House Testing":
         filteredSiteChecks.emergencyLightWeekly,
       "Water Risk Assessment": filteredSiteChecks.waterSafetyRiskAssessment,
-      " Water Systems Service & Test Records":
+      "Water Systems Service & Test Records":
         filteredSiteChecks.waterOutletTemperature,
+      " Water Systems Service & Test Records":
+        filteredSiteChecks.showerHeadCleaning,
       "Shower Head Cleaning": filteredSiteChecks.waterStorage,
       "Fire Evacuation Drill": filteredSiteChecks.fireRiskAssessment,
     };
@@ -281,7 +287,12 @@ const StatutoryRegister = ({
     // If a matching check exists, return the expiry date row
     // console.log("row", row);
     if (matchedCheck) {
-      if(row?.subType == "PAT / Microwave Testing") {
+      if(row?.requirement == "Shower Head Cleaning") {
+        return getStartAndExpiryDateRow(
+          matchedCheck.startDate,
+          matchedCheck.dueDate
+        );
+      } else if(row?.subType == "PAT / Microwave Testing") {
         return getStartAndExpiryDateRow(
           matchedCheck.patDate,
           matchedCheck.patNextDate
