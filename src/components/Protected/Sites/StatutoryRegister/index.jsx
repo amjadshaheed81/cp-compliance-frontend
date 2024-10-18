@@ -245,9 +245,9 @@ const StatutoryRegister = ({
       waterSafetyRiskAssessment: inspections?.find(
         (itm) =>
           itm?.subType === "Water" &&
-          itm?.category === "Water Safety Annual Inspection"
+          (itm?.category ===  "Domestic RA" || "Water Safety Annual Inspection")
       ),
-      waterOutletTemperature: inspections?.find(
+      waterOutletTemperature: surveys?.find(
         (itm) =>
           itm?.subType === "Water" && itm?.category === "Outlet Temperature"
       ),
@@ -269,7 +269,7 @@ const StatutoryRegister = ({
       "Emergency Lighting Weekly In House Testing":
         filteredSiteChecks.emergencyLightWeekly,
       "Water Risk Assessment": filteredSiteChecks.waterSafetyRiskAssessment,
-      "Water Systems Service & Test Records":
+      " Water Systems Service & Test Records":
         filteredSiteChecks.waterOutletTemperature,
       "Shower Head Cleaning": filteredSiteChecks.waterStorage,
       "Fire Evacuation Drill": filteredSiteChecks.fireRiskAssessment,
@@ -279,6 +279,7 @@ const StatutoryRegister = ({
       checkMappings[row?.subType] || checkMappings[row?.requirement];
 
     // If a matching check exists, return the expiry date row
+    // console.log("row", row);
     if (matchedCheck) {
       if(row?.subType == "PAT / Microwave Testing") {
         return getStartAndExpiryDateRow(
