@@ -1563,7 +1563,7 @@ export const updatePatDetails = (formData, assetId, deleteSavedPatItems) => {
       });
       if (res?.status === 200) {
         toast.success(
-          "Passive fire protection details has been updated successfully."
+          "PAT details has been updated successfully."
         );
       } else {
         toast.error(
