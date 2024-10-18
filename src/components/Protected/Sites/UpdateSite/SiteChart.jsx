@@ -148,7 +148,7 @@ const SiteChart = ({
   };
   const getTreeNodePosition = () => {
     const positionNode = siteLayout?.filter(
-      (itm) => itm?.nodeType === "position" && itm?.nodeName === "Exterior"
+      (itm) => (itm?.nodeType === "position" || itm?.nodeType === "type") && itm?.nodeName === "Exterior"
     );
     const childs = siteLayout?.filter(
       (itm) => itm?.parentNode === positionNode?.[0]?.id

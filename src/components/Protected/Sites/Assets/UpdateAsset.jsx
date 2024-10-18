@@ -120,7 +120,7 @@ const UpdateAsset = ({
   };
 
   const getTester = async () => {
-    const url = `/api/user/all?userRole=${ROLE.TESTER}`;
+    const url = `/api/user/all`;
     const data = await get(url);
     setTester(data?.users);
   };
@@ -534,6 +534,7 @@ const UpdateAsset = ({
       {showModal && (
         <TagAsset
           showModal={showModal}
+          selectedAsset={selectedAsset}
           setShowModal={setShowModal}
           assetId={assetId}
           refresh={() => {
@@ -1516,30 +1517,28 @@ const UpdateAsset = ({
                             <tr key={index}>
                               <td>
                                 {itm?.isEditing ? (
-                                  <select
-                                    name="patUserId"
-                                    className="form-control form-select"
-                                    value={itm?.patUserId || ""}
-                                    onChange={(e) =>
-                                      handleInputpATChange(
-                                        index,
-                                        "patUserId",
-                                        e.target.value
-                                      )
-                                    }
-                                  >
-                                    <option value="" disabled>
-                                      Select Tester
-                                    </option>
-                                    {tester?.map((testerItem) => (
-                                      <option
-                                        value={testerItem?.id}
-                                        key={testerItem?.id}
-                                      >
-                                        {testerItem?.name}
-                                      </option>
-                                    ))}
-                                  </select>
+                                  <Autocomplete
+                                  id="stakeholder"
+                                  onChange={(event, item) => {
+                                   handleInputpATChange(
+                                      index,
+                                      "patUserId",
+                                      item?.key
+                                    )
+                                  }}
+                                  options={tester.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+                                  getOptionLabel={(option) => option.label}
+                                  renderInput={(params) => (
+                                    <div ref={params.InputProps.ref} >
+                                      <input type="text"
+                                        {...params.inputProps}
+                                        required
+                                        className="form-control"
+                                        placeholder="Select User"
+                                      />
+                                    </div>
+                                  )}
+                                />
                                 ) : (
                                   getTesterName(itm?.patUserId)
                                 )}

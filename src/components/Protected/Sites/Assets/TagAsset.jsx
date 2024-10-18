@@ -12,12 +12,23 @@ import MandatoryFolders from "../Contracts/MandatoryFolders";
 import SelectMandatoryFile from "../Documents/File/SelectMandatoryFile";
 import { toast } from "react-toastify";
 import { get, put } from "../../../../api";
+import PdfViewer from "../Documents/PdfViewer";
+import moment from "moment";
+import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 
-const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
+const TagAsset = ({
+  selectedAsset,
+  showModal,
+  setShowModal,
+  assetId,
+  refresh,
+}) => {
   const [open, setOpen] = useState(showModal);
   const [isLoading, setIsLoading] = useState(false);
   const [extension, setExtension] = useState("");
   const handleOpen = () => setShowModal(true);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([]);
   const [selectedMandatoryFile, setSelectedMandatoryFile] = useState([]);
   const handleClose = () => {
@@ -78,6 +89,13 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
   };
   return (
     <>
+      {showPdfModal && (
+        <PdfViewer
+          showPdfModal={showPdfModal}
+          setShowPdfModal={setShowPdfModal}
+          selectedPdf={selectedPdf}
+        />
+      )}
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>
         <DialogTitle>Tag Assets</DialogTitle>
         <DialogContent>
@@ -96,6 +114,66 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
                 setSelectedMandatoryFile={setSelectedMandatoryFile}
                 selectedMandatoryFile={selectedMandatoryFile}
               />
+            </div>
+          </div>
+          <div className="container-fluid">
+            <div className="table-responsive">
+              <table className="table f-11">
+                <thead className="table-dark">
+                  <tr>
+                    <th scope="col">File</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Uploaded By</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedAsset?.files?.map((file) => (
+                    <tr>
+                      <div>
+                        <button
+                          onClick={(e) => {
+                            e?.preventDefault();
+                            setShowPdfModal(true);
+                            setSelectedPdf(file?.fileBlobUrl);
+                          }}
+                        >
+                          <TextSnippetOutlinedIcon
+                            style={{ color: "#384BD3" }}
+                          />
+                          <span className="p-3 cursor">{file?.name}</span>
+                        </button>
+                      </div>
+                      <td>{file?.fileVersion ? file?.fileVersion : "--"}</td>
+                      <td>
+                        {file?.uploaderUserName ? file?.uploaderUserName : "--"}
+                      </td>
+                      <td>
+                        {file?.expiryDate
+                          ? moment(file?.expiryDate).format("DD/MM/YYYY")
+                          : "--"}
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-sm boder-less"
+                          onClick={(e) => {
+                            e?.preventDefault();
+                            setShowPdfModal(true);
+                            setSelectedPdf(file?.fileBlobUrl);
+                          }}
+                        >
+                          <i
+                            className="fa fa-eye fa-2x"
+                            aria-hidden="true"
+                            size="md"
+                          ></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </DialogContent>
