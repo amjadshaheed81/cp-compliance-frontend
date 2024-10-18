@@ -34,6 +34,8 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import "./AssetStyle.css";
 import Swal from "sweetalert2";
 import TagAsset from "./TagAsset";
+import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
+import PdfViewer from "../Documents/PdfViewer";
 
 async function fetchBlob(selectedPdf) {
   try {
@@ -78,6 +80,8 @@ const UpdateAsset = ({
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
   const [relatedAssetOption, setRelatedAssetOption] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
@@ -534,7 +538,6 @@ const UpdateAsset = ({
       {showModal && (
         <TagAsset
           showModal={showModal}
-          selectedAsset={selectedAsset}
           setShowModal={setShowModal}
           assetId={assetId}
           refresh={() => {
@@ -799,7 +802,11 @@ const UpdateAsset = ({
                           </select>
                         </div>
                         <div className="col-md-6 mt-2">
-                          <button type="button" className="btn btn-sm btn-primary" onClick={() => setShowModal(true)}>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={() => setShowModal(true)}
+                          >
                             Tag Asset Documents
                           </button>
                         </div>
@@ -1016,6 +1023,11 @@ const UpdateAsset = ({
                       value="6"
                     />
                   )}
+                  <Tab
+                    className="text-success"
+                    label="Tagged Assets"
+                    value="7"
+                  />
                 </TabList>
               </Box>
               <TabPanel value="1">
@@ -1518,27 +1530,42 @@ const UpdateAsset = ({
                               <td>
                                 {itm?.isEditing ? (
                                   <Autocomplete
-                                  id="stakeholder"
-                                  onChange={(event, item) => {
-                                   handleInputpATChange(
-                                      index,
-                                      "patUserId",
-                                      item?.key
-                                    )
-                                  }}
-                                  options={tester.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
-                                  getOptionLabel={(option) => option.label}
-                                  renderInput={(params) => (
-                                    <div ref={params.InputProps.ref} >
-                                      <input type="text"
-                                        {...params.inputProps}
-                                        required
-                                        className="form-control"
-                                        placeholder="Select User"
-                                      />
-                                    </div>
-                                  )}
-                                />
+                                    id="stakeholder"
+                                    onChange={(event, item) => {
+                                      handleInputpATChange(
+                                        index,
+                                        "patUserId",
+                                        item?.key
+                                      );
+                                    }}
+                                    options={tester.map((option) => {
+                                      return {
+                                        key: option.id,
+                                        label:
+                                          option.role +
+                                          " - " +
+                                          option.name +
+                                          " (" +
+                                          option.email +
+                                          ")" +
+                                          (option.companyName
+                                            ? " - " + option.companyName
+                                            : ""),
+                                      };
+                                    })}
+                                    getOptionLabel={(option) => option.label}
+                                    renderInput={(params) => (
+                                      <div ref={params.InputProps.ref}>
+                                        <input
+                                          type="text"
+                                          {...params.inputProps}
+                                          required
+                                          className="form-control"
+                                          placeholder="Select User"
+                                        />
+                                      </div>
+                                    )}
+                                  />
                                 ) : (
                                   getTesterName(itm?.patUserId)
                                 )}
@@ -2135,6 +2162,84 @@ const UpdateAsset = ({
                     </div>
                   </div>
                 </form>
+              </TabPanel>
+              <TabPanel value="7">
+                {showPdfModal && (
+                  <PdfViewer
+                    showPdfModal={showPdfModal}
+                    setShowPdfModal={setShowPdfModal}
+                    selectedPdf={selectedPdf}
+                  />
+                )}
+                <div className="container-fluid">
+                  <div className="table-responsive">
+                    <table className="table f-11">
+                      <thead className="table-dark">
+                        <tr>
+                          <th scope="col">File</th>
+                          <th scope="col">Version</th>
+                          <th scope="col">Uploaded By</th>
+                          <th scope="col">Date</th>
+                          <th scope="col">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {!selectedAsset?.files && (
+                          <tr className="text-enter">
+                            <td colSpan={5}>No Result Found.</td>
+                          </tr>
+                        )}
+                        {selectedAsset?.files?.map((file) => (
+                          <tr>
+                            <div>
+                              <button
+                                onClick={(e) => {
+                                  e?.preventDefault();
+                                  setShowPdfModal(true);
+                                  setSelectedPdf(file?.fileBlobUrl);
+                                }}
+                              >
+                                <TextSnippetOutlinedIcon
+                                  style={{ color: "#384BD3" }}
+                                />
+                                <span className="p-3 cursor">{file?.name}</span>
+                              </button>
+                            </div>
+                            <td>
+                              {file?.fileVersion ? file?.fileVersion : "--"}
+                            </td>
+                            <td>
+                              {file?.uploaderUserName
+                                ? file?.uploaderUserName
+                                : "--"}
+                            </td>
+                            <td>
+                              {file?.expiryDate
+                                ? moment(file?.expiryDate).format("DD/MM/YYYY")
+                                : "--"}
+                            </td>
+                            <td>
+                              <button
+                                className="btn btn-sm boder-less"
+                                onClick={(e) => {
+                                  e?.preventDefault();
+                                  setShowPdfModal(true);
+                                  setSelectedPdf(file?.fileBlobUrl);
+                                }}
+                              >
+                                <i
+                                  className="fa fa-eye fa-2x"
+                                  aria-hidden="true"
+                                  size="md"
+                                ></i>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </TabPanel>
             </TabContext>
           </Box>
