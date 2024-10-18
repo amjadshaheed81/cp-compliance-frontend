@@ -23,7 +23,7 @@ function configAxios() {
         const errorMessage = error.response.data.message;
         if (errorMessage.includes('JWT expired at')) {
           localStorage.clear();
-          window.location.href = '/login';
+          window.location.href = '/#/login';
         }
       }
   
@@ -42,7 +42,7 @@ axiosInstance.interceptors.response.use(
       const errorMessage = error.response.data.message;
       if (errorMessage.includes('JWT expired at')) {
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/#/login';
       }
     }
 
