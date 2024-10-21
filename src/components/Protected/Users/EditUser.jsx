@@ -107,17 +107,17 @@ const ViewUsers = ({
     formJson.company = selectedCompany;
     const data = {
       userId: selectedUser?.id,
-      firstName: formJson?.firstName || null,
-      lastName: formJson?.lastName || null,
-      email: formJson?.email || null,
-      phone: formJson?.phone || null,
-      role: formJson?.role || null,
-      userType: formJson?.userType || null,
+      firstName: formJson?.firstName || "",
+      lastName: formJson?.lastName || "",
+      email: formJson?.email || "",
+      phone: formJson?.phone || "",
+      role: formJson?.role || "",
+      userType: formJson?.userType || "",
       defaultSiteId:
-        formJson?.userType === "Internal" ? selectedUser?.defaultSiteId : null,
-      companyId: formJson?.company || null,
-      trade: formJson?.userType === "External" ? formJson?.trade : null,
-      status: formJson?.status || null,
+        formJson?.userType === "Internal" ? selectedUser?.defaultSiteId : "",
+      companyId: formJson?.company || "",
+      trade: formJson?.userType === "External" ? formJson?.trade : "",
+      status: formJson?.status || "",
     };
     setIsLoading(true);
     try {
@@ -274,23 +274,8 @@ const ViewUsers = ({
                         maxLength={11}
                         className="form-control"
                         id="phone"
-                        {...register("phone", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} phone`,
-                          },
-                          // pattern: {
-                          //   value: /^[0-9]+$/,
-                          //   message: "Please enter a number",
-                          // },
-                        })}
+                        {...register("phone")}
                       />
-                      {errors?.phone && (
-                        <InputError
-                          message={errors?.phone?.message}
-                          key={errors?.phone?.message}
-                        />
-                      )}
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">

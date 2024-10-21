@@ -90,20 +90,20 @@ const AddUser = ({
     formJson.company = selectedCompany;
     const data = {
       userId: null,
-      firstName: formJson?.firstName || null,
-      lastName: formJson?.lastName || null,
-      email: formJson?.email || null,
-      password: formJson?.password || null,
-      phone: formJson?.phone || null,
-      role: formJson?.role || null,
-      userType: formJson?.userType || null,
+      firstName: formJson?.firstName || "",
+      lastName: formJson?.lastName || "",
+      email: formJson?.email || "",
+      password: formJson?.password || "",
+      phone: formJson?.phone || "",
+      role: formJson?.role || "",
+      userType: formJson?.userType || "",
       defaultSiteId:
         formJson?.userType === "Internal"
           ? siteSelectedForGlobal?.siteId
-          : null,
-      companyId: formJson?.company || null,
-      trade: formJson?.userType === "External" ? formJson?.trade : null,
-      status: formJson?.status || null,
+          : "",
+      companyId: formJson?.company || "",
+      trade: formJson?.userType === "External" ? formJson?.trade : "",
+      status: formJson?.status || "",
     };
     setIsLoading(true);
     try {
@@ -246,23 +246,8 @@ const AddUser = ({
                         maxLength={11}
                         className="form-control"
                         id="phone"
-                        {...register("phone", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} phone`,
-                          },
-                          // pattern: {
-                          //   value: /^[0-9]+$/,
-                          //   message: "Please enter a number",
-                          // },
-                        })}
+                        {...register("phone")}
                       />
-                      {errors?.phone && (
-                        <InputError
-                          message={errors?.phone?.message}
-                          key={errors?.phone?.message}
-                        />
-                      )}
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">
