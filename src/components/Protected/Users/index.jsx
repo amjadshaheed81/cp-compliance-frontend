@@ -78,9 +78,11 @@ const Users = ({
 
     if (searchField || role || site || status) {
         const list = users?.filter((user) => {
-            const matchesName = !searchField || String(user?.name)
-                .toLowerCase()
-                .includes(String(searchField).toLowerCase());
+            const lowerCaseSearchField = String(searchField).toLowerCase();
+            
+            const matchesNameOrEmail = !searchField || 
+                String(user?.name).toLowerCase().includes(lowerCaseSearchField) ||
+                String(user?.email).toLowerCase().includes(lowerCaseSearchField);
 
             const matchesRole = !role || String(user?.role)
                 .toLowerCase()
@@ -95,7 +97,7 @@ const Users = ({
                 .includes(String(status).toLowerCase());
 
             // Returns true if all provided conditions match
-            return matchesName && matchesRole && matchesSite && matchesStatus;
+            return matchesNameOrEmail && matchesRole && matchesSite && matchesStatus;
         });
 
         console.log("Filtered List:", list);
