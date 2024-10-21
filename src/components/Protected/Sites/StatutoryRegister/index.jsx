@@ -249,7 +249,7 @@ const StatutoryRegister = ({
       ),
       waterOutletTemperature: inspections?.find(
         (itm) =>
-          itm?.subType === "Water" && itm?.category === "Outlet Temperature"
+          itm?.subType === "Water" && (itm?.category === "Outlet Temperature" || itm?.category === "Water Temperature Monitoring")
       ),
       waterStorage: inspections?.find(
         (itm) =>
@@ -287,7 +287,12 @@ const StatutoryRegister = ({
     // If a matching check exists, return the expiry date row
     // console.log("row", row);
     if (matchedCheck) {
-      if(row?.requirement == "Shower Head Cleaning") {
+      if(row?.requirement == "Water Temperature Monitoring") {
+        return getStartAndExpiryDateRow(
+          matchedCheck.startDate,
+          matchedCheck.dueDate
+        );
+      } else if(row?.requirement == "Shower Head Cleaning") {
         return getStartAndExpiryDateRow(
           matchedCheck.startDate,
           matchedCheck.dueDate
