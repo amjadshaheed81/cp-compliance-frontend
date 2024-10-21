@@ -19,6 +19,7 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get } from "../../../../api";
 import GoogleMap from "../UpdateSite/GoogleMap";
 import BusinessIcon from "@mui/icons-material/Business";
+import { SiteArea } from "../../../../Constant/SiteArea";
 
 const AddSite = ({
   updateSite,
@@ -223,22 +224,7 @@ const AddSite = ({
                           })}
                         >
                           <option value="">Select</option>
-                          <option value="East Midlands">East Midlands</option>
-                          <option value="Ireland & Northern Ireland">
-                            Ireland & Northern Ireland
-                          </option>
-                          <option value="London & Eastern">
-                            London & Eastern
-                          </option>
-                          <option value="North East, Yorkshire & Humberside">
-                            North East, Yorkshire & Humberside
-                          </option>
-                          <option value="North West">North West</option>
-                          <option value="Scotland">Scotland</option>
-                          <option value="South East">South East</option>
-                          <option value="South West">South West</option>
-                          <option value="Wales">Wales</option>
-                          <option value="West Midlands">West Midlands</option>
+                          {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
                         </select>
                         {errors?.area && (
                           <InputError

@@ -243,7 +243,7 @@ const LocalDetails = ({
           </form>
         </div>
         <div className="col-md-6">
-          <h2 className="fs-6 mt-4 border-bottom">Opening Timings</h2>
+          <h2 className="fs-6 mt-4 border-bottom">Opening Times</h2>
           <form
             className="p-2"
             onSubmit={timingForm.handleSubmit(submitOpeningTiming)}

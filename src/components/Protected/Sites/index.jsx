@@ -21,6 +21,7 @@ import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
 import { calculateLastPageIndex } from "../../../utils/calculateSearchedPageNumber";
+import { SiteArea } from "../../../Constant/SiteArea";
 
 const Sites = ({
   filterSite,
@@ -66,8 +67,8 @@ const Sites = ({
       searchSitesWithStatus({ target: { value: "open" } });
     } else {
       getSites(loggedInUserData);
-      getRisks();
     }
+    getRisks();
   }, [sites]);
 
   const getRisks = async () => {
@@ -172,27 +173,8 @@ const Sites = ({
                     id="area"
                     onChange={searchSitesWithArea}
                   >
-                    <option value="area">Area</option>
-                    {/* <option value="">Select</option> */}
-                          <option value="East Midlands">East Midlands</option>
-                          <option value="Ireland & Northern Ireland">
-                            Ireland & Northern Ireland
-                          </option>
-                          <option value="London & Eastern">
-                            London & Eastern
-                          </option>
-                          <option value="North East, Yorkshire & Humberside">
-                            North East, Yorkshire & Humberside
-                          </option>
-                          <option value="North West">North West</option>
-                          <option value="Scotland">Scotland</option>
-                          <option value="South East">South East</option>
-                          <option value="South West">South West</option>
-                          <option value="Wales">Wales</option>
-                          <option value="West Midlands">West Midlands</option>
-                    {/* {areaOption?.map((site) => (
-                      <option value={site.area}>{site.area}</option>
-                    ))} */}
+                    <option value="">Select</option>
+                    {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
                   </select>
                 </div>
                 <div className="col-md-3 col-sm-4 mt-2">
