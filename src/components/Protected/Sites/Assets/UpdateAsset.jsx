@@ -557,7 +557,16 @@ const UpdateAsset = ({
           <Box sx={{ width: "100%", typography: "body1" }}>
             <form onSubmit={handleSubmit(submitSiteAsset)}>
               <div className="row p-2 border">
-                <div className="col-md-12">
+                <div className="col-md-6">
+                <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Tag Asset Documents
+                  </button>
+                </div>
+                <div className="col-md-6">
                   <div className="float-end">
                     <button
                       type="button"
@@ -800,15 +809,6 @@ const UpdateAsset = ({
                               </option>
                             ))}
                           </select>
-                        </div>
-                        <div className="col-md-6 mt-2">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-primary"
-                            onClick={() => setShowModal(true)}
-                          >
-                            Tag Asset Documents
-                          </button>
                         </div>
                         <div className="row"></div>
                         <div className="row">
@@ -1613,9 +1613,7 @@ const UpdateAsset = ({
                                       ? "text-success"
                                       : "text-dark"
                                   }`}
-                                  onClick={() =>
-                                    updatePatStatus(index, "Pass")
-                                  }
+                                  onClick={() => updatePatStatus(index, "Pass")}
                                 ></i>
                                 &nbsp;
                                 <i
@@ -1624,9 +1622,7 @@ const UpdateAsset = ({
                                       ? "text-danger"
                                       : "text-dark"
                                   }`}
-                                  onClick={() =>
-                                    updatePatStatus(index, "Fail")
-                                  }
+                                  onClick={() => updatePatStatus(index, "Fail")}
                                 ></i>
                               </td>
                               <td>

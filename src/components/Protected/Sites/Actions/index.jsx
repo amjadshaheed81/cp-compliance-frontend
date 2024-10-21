@@ -35,10 +35,10 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
   };
 
   useEffect(() => {
-    getActions();
+    getActions({status: "Reported"});
   }, [siteSelectedForGlobal]);
   
-  const getActions = async () => {
+  const getActions = async ({ status }) => {
     if (!siteSelectedForGlobal?.siteId) {
       Swal.fire({
         icon: "error",
@@ -48,19 +48,20 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
       return;
     }
     const res = await get(`api/site/actions/${siteSelectedForGlobal?.siteId}`);
-    setFilteredActions(sortCompletedLast(res) || []);
     setActions(sortCompletedLast(res) || []);
+    const filtered = res.filter(action => action.status.toLowerCase() === status.toLowerCase());
+    setFilteredActions(sortCompletedLast(filtered));
   };
   
   const [formData, setFormData] = useState({
     searchField: "",
-    status: "",
+    status: "Reported",
   });
 
   const complete = async (action, status) => {
     action.status = status;
     await put("/api/site/actions", action);
-    getActions();
+    getActions({status: formData?.status});
   };
 
   const handleInputChange = (e) => {
@@ -73,7 +74,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
 
   useEffect(() => {
     searchActions();
-  }, [formData.role, formData.searchField, formData.site, formData.status]);
+  }, [formData.searchField, formData.status]);
 
   const searchActions = () => {
     const searchField = formData?.searchField;
@@ -109,7 +110,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
           toast.success(
             `#${action?.actionId} pre action has been deleted successfully.`
           );
-          getActions();
+          getActions({status: formData?.status});
         } else {
           toast.error(
             `Something went wrong while deleting pre action #${action?.actionId}. Please try again!!`
@@ -200,6 +201,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     name="status"
                     className="form-control form-select"
                     id="status"
+                    value={formData.status} // Ensure the value reflects formData.status
                     onChange={handleInputChange}
                   >
                     <option value="">Status</option>

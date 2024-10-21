@@ -247,7 +247,7 @@ const StatutoryRegister = ({
           itm?.subType === "Water" &&
           (itm?.category ===  "Domestic RA" || "Water Safety Annual Inspection")
       ),
-      waterOutletTemperature: surveys?.find(
+      waterOutletTemperature: inspections?.find(
         (itm) =>
           itm?.subType === "Water" && itm?.category === "Outlet Temperature"
       ),
@@ -450,7 +450,7 @@ const StatutoryRegister = ({
                           }}
                         >
                           <a
-                            href="/#/site-checks"
+                            href="/#/assets"
                             className="btn btn-primary mt-3 text-bg-primary"
                           >
                             View Evidence
