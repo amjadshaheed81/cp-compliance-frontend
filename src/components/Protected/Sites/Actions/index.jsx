@@ -134,10 +134,16 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
 
   const sortedActions = [...filteredActions].sort((a, b) => {
     if (sortConfig.key === "dueDate") {
-      const dateA = moment(a?.dueDate, "YYYY-MM-DD");
-      const dateB = moment(b?.dueDate, "YYYY-MM-DD");
-      if (dateA.isBefore(dateB)) return sortConfig.direction === "asc" ? -1 : 1;
-      if (dateA.isAfter(dateB)) return sortConfig.direction === "asc" ? 1 : -1;
+      const dateA = a?.dueDate ? moment(a?.dueDate, "YYYY-MM-DD") :  null;
+      const dateB = b?.dueDate ? moment(b?.dueDate, "YYYY-MM-DD") : null;
+
+      if(!dateA && dateB) return sortConfig.direction === "asc" ? -1 : 1;
+      if(dateA && !dateB) return sortConfig.direction === "asc" ? 1 : -1;
+
+      if(dateA && dateB) {
+        if (dateA.isBefore(dateB)) return sortConfig.direction === "asc" ? -1 : 1;
+        if (dateA.isAfter(dateB)) return sortConfig.direction === "asc" ? 1 : -1;
+      }
       return 0;
     } else if (sortConfig.key === "riskScore") {
       const riskA = a?.riskScore || 0;
