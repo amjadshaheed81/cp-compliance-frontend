@@ -39,29 +39,39 @@ const AddPatDetails = ({
     setShowPatModal(false);
   };
   function formatPATDates(assetPATItems) {
-    return assetPATItems.map(item => {
+    return assetPATItems.map((item) => {
       if (item.patDate) {
-        item.patDate = item.patDate.replace('T', ' ');
+        item.patDate = item.patDate.replace("T", " ");
       }
       if (item.patNextDate) {
-        item.patNextDate = item.patNextDate.replace('T', ' ');
+        item.patNextDate = item.patNextDate.replace("T", " ");
       }
       return item;
     });
   }
   const submitPatRecords = async (data) => {
-    setIsLoading(true)
+    setIsLoading(true);
     for (let itm of selectedAsset) {
+      console.log("itm", itm);
       let payload = [];
       if (itm?.assetPATItems?.length > 0) {
         payload.push(...itm?.assetPATItems, {
-            ...data,
-            patDate: `${data.patDate} 10:00:00`,
-            patNextDate: `${data.patNextDate} 10:00:00`,
-            patId: null,
-            assetId: itm?.assetId,
-            patUserId: selectedUser,
-          });
+          ...data,
+          patDate: `${data.patDate} 10:00:00`,
+          patNextDate: `${data.patNextDate} 10:00:00`,
+          patId: null,
+          assetId: itm?.assetId,
+          patUserId: selectedUser,
+        });
+      } else {
+        payload.push({
+          ...data,
+          patDate: `${data.patDate} 10:00:00`,
+          patNextDate: `${data.patNextDate} 10:00:00`,
+          patId: null,
+          assetId: itm?.assetId,
+          patUserId: selectedUser,
+        });
       }
       const url = `/api/site/assets/${itm?.assetId}/patDetails`;
       const res = await put(url, {
@@ -69,7 +79,7 @@ const AddPatDetails = ({
         deletedPatIds: [],
       });
     }
-    setIsLoading(false)
+    setIsLoading(false);
     handleClose();
     refresh();
     toast.success("Pat register update is successfully updated.");
