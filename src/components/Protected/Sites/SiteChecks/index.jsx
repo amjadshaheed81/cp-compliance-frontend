@@ -369,6 +369,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       form.reportValidity();
     }
     const body = formData;
+    if(body?.type === "Assessment") {
+      body.category = body.subType;
+    }
     body.siteId = site.siteId;
     body.dueDate = new Date(body.dueDate);
     body.startDate = new Date(body.startDate);
@@ -769,34 +772,35 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       </select>
                     </div>
                   </Grid>
-                  <Grid sm={4}>
-                    <div style={{ margin: "10px" }}>
-                      <label htmlFor="category" name="category">
-                        Category
-                      </label>
-                      <select
-                        required
-                        name="category"
-                        value={formData?.category}
-                        disabled={formData?.subType?.length === 0}
-                        className="form-control form-select"
-                        id="category"
-                        onChange={handleInputChange}
-                      >
-                        <option value="">Select Category</option>
-                        {catoptions.map((t) => (
-                          <option value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </Grid>
+                  {formData?.type !== "Assessment" && (
+                    <Grid sm={4}>
+                      <div style={{ margin: "10px" }}>
+                        <label htmlFor="category" name="category">
+                          Category
+                        </label>
+                        <select
+                          required
+                          name="category"
+                          value={formData?.category}
+                          disabled={formData?.subType?.length === 0}
+                          className="form-control form-select"
+                          id="category"
+                          onChange={handleInputChange}
+                        >
+                          <option value="">Select Category</option>
+                          {catoptions.map((t) => (
+                            <option value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </Grid>
+                  )}
                   <Grid sm={4}>
                     <div style={{ margin: "10px" }}>
                       <DatePicker
                         label="Start Date"
                         value={formData?.startDate}
                         onChange={(date) => {
-
                           let dueDateValue = formData?.dueDate;
                           const repeatFrequency = formData?.repeatFrequency;
 
