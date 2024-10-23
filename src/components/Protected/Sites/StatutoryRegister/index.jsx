@@ -454,12 +454,21 @@ const StatutoryRegister = ({
                                 : "none",
                           }}
                         >
-                          <a
-                            href="/#/assets"
-                            className="btn btn-primary mt-3 text-bg-primary"
-                          >
-                            View Evidence
-                          </a>
+                          {item.subType === "PAT / Microwave Testing" ? (
+                            <a
+                              href="/#/assets"
+                              className="btn btn-primary mt-3 text-bg-primary"
+                            >
+                              View Evidence
+                            </a>
+                          ) : (
+                            <a
+                              href="/#/site-checks"
+                              className="btn btn-primary mt-3 text-bg-primary"
+                            >
+                              View Evidence
+                            </a>
+                          )}
                         </div>
                       </th>
                       <th scope="col">

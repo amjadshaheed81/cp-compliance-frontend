@@ -442,9 +442,11 @@ const UpdateSite = ({
               </div>
             </div>
             <div className="col-md-4">
-              <div className="pic-medium pic-circle">
+              <div className="pic-medium pic-circle text-center">
                 <img
-                  className="img img-responsive w-100"
+                  className="img img-responsive"
+                  height="140px"
+                  width="220px"
                   src={
                     updateSiteImageSuccess
                       ? updateSiteImageSuccess?.data?.url
@@ -452,8 +454,7 @@ const UpdateSite = ({
                       ? updateSite?.siteImageUrl
                       : userDefault
                   }
-                  alt=""
-                  width="auto"
+                  alt="Site Image"
                 />
                 <div
                   style={{
@@ -465,7 +466,7 @@ const UpdateSite = ({
                   }}
                 >
                   <button
-                    className="btn btn-sm btn-primary mt-2 mb-2 "
+                    className="btn btn-sm btn-primary mt-2 mb-2"
                     onClick={handleDeleteSiteImage}
                   >
                     Delete
