@@ -105,29 +105,28 @@ const LocalDetails = ({
   };
   const submitOpeningTiming = (data) => {
     setLoader(true);
-    console.log("data", data);
     const formData = {
       monStartTime: timingDisable?.isMondayDisable
         ? "Closed"
         : data?.monStartTime,
       tuesStartTime: timingDisable?.isTuesdayDisable
         ? "Closed"
-        : updateSite?.tuesStartTime,
+        : data?.tuesStartTime,
       wedStartTime: timingDisable?.isWednesdayDisable
         ? "Closed"
-        : updateSite?.wedStartTime,
+        : data?.wedStartTime,
       thurStartTime: timingDisable?.isThursdayDisable
         ? "Closed"
-        : updateSite?.thurStartTime,
+        : data?.thurStartTime,
       friStartTime: timingDisable?.isFridayDisable
         ? "Closed"
-        : updateSite?.friStartTime,
+        : data?.friStartTime,
       satStartTime: timingDisable?.isSaturdayDisable
         ? "Closed"
-        : updateSite?.satStartTime,
+        : data?.satStartTime,
       sunStartTime: timingDisable?.isSundayDisable
         ? "Closed"
-        : updateSite?.sunStartTime,
+        : data?.sunStartTime,
       monEndTime: data?.monEndTime,
       tuesEndTime: data?.tuesEndTime,
       wedEndTime: data?.wedEndTime,
