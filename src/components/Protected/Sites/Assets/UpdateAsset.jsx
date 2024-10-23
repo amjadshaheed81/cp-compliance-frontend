@@ -1,6 +1,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import Box from "@mui/material/Box";
+import { CircularProgress } from "@mui/material";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
@@ -26,7 +27,7 @@ import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { get } from "../../../../api";
+import { get, put } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
 import moment from "moment";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -68,6 +69,7 @@ const UpdateAsset = ({
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [tester, setTester] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const assetId = searchParams.get("assetId");
   const [value, setTabValue] = useState("1");
   const [category, setCategory] = useState([]);
@@ -533,6 +535,44 @@ const UpdateAsset = ({
       }));
     }
   };
+
+  const [selectedAssetRows, setSelectedAssetRows] = useState([]);
+
+  // Handle row selection
+  const handleRowSelect = (file) => {
+    if (selectedAssetRows.includes(file)) {
+      // If already selected, deselect it
+      setSelectedAssetRows(
+        selectedAssetRows.filter((selectedFile) => selectedFile !== file)
+      );
+    } else {
+      // Otherwise, add it to the selected list
+      setSelectedAssetRows([...selectedAssetRows, file]);
+    }
+  };
+  // Method to get all selected rows
+  const untagAsset = async () => {
+    if (selectedAssetRows?.length === 0) {
+      toast.warn("Please select asset which you want to untag.");
+    } else {
+      const fileIds = selectedAssetRows?.map((item) => item.id);
+      const url = `/api/document/untag-file`;
+      const data = {
+        fileIds: fileIds,
+        assetId: Number(assetId),
+      };
+      const res = await put(url, data);
+      if (res?.status === 200) {
+        setIsLoading(false);
+        toast.success("Files un tagged successfully.");
+        getAssetDetails();
+        setSelectedAssetRows([]);
+      } else {
+        setIsLoading(false);
+        toast.error("Something went wrong while un tagging files.");
+      }
+    }
+  };
   return (
     <Fragment>
       {showModal && (
@@ -558,7 +598,7 @@ const UpdateAsset = ({
             <form onSubmit={handleSubmit(submitSiteAsset)}>
               <div className="row p-2 border">
                 <div className="col-md-6">
-                <button
+                  <button
                     type="button"
                     className="btn btn-primary"
                     onClick={() => setShowModal(true)}
@@ -2168,10 +2208,46 @@ const UpdateAsset = ({
                   />
                 )}
                 <div className="container-fluid">
+                  {isLoading && (
+                    <Box sx={{ display: "flex" }}>
+                      <CircularProgress />
+                    </Box>
+                  )}
+                  {!isLoading && (
+                    <button
+                      className="btn btn-sm btn-danger mb-2"
+                      onClick={() => {
+                        untagAsset();
+                      }}
+                    >
+                      Untag Asset
+                    </button>
+                  )}
+
                   <div className="table-responsive">
                     <table className="table f-11">
                       <thead className="table-dark">
                         <tr>
+                          <th scope="col">
+                            <input
+                              type="checkbox"
+                              onChange={(e) => {
+                                // Select or deselect all rows
+                                if (e.target.checked) {
+                                  setSelectedAssetRows(
+                                    selectedAsset?.files || []
+                                  );
+                                } else {
+                                  setSelectedAssetRows([]);
+                                }
+                              }}
+                              checked={
+                                selectedAsset?.files?.length > 0 &&
+                                selectedAssetRows.length ===
+                                  selectedAsset?.files?.length
+                              }
+                            />
+                          </th>
                           <th scope="col">File</th>
                           <th scope="col">Version</th>
                           <th scope="col">Uploaded By</th>
@@ -2181,26 +2257,38 @@ const UpdateAsset = ({
                       </thead>
                       <tbody>
                         {!selectedAsset?.files && (
-                          <tr className="text-enter">
-                            <td colSpan={5}>No Result Found.</td>
+                          <tr className="text-center">
+                            <td colSpan={6}>No Result Found.</td>
                           </tr>
                         )}
-                        {selectedAsset?.files?.map((file) => (
-                          <tr>
-                            <div>
-                              <button
-                                onClick={(e) => {
-                                  e?.preventDefault();
-                                  setShowPdfModal(true);
-                                  setSelectedPdf(file?.fileBlobUrl);
-                                }}
-                              >
-                                <TextSnippetOutlinedIcon
-                                  style={{ color: "#384BD3" }}
-                                />
-                                <span className="p-3 cursor">{file?.name}</span>
-                              </button>
-                            </div>
+                        {selectedAsset?.files?.map((file, index) => (
+                          <tr key={index}>
+                            {/* Checkbox column */}
+                            <td>
+                              <input
+                                type="checkbox"
+                                onChange={() => handleRowSelect(file)}
+                                checked={selectedAssetRows.includes(file)}
+                              />
+                            </td>
+                            <td>
+                              <div>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowPdfModal(true);
+                                    setSelectedPdf(file?.fileBlobUrl);
+                                  }}
+                                >
+                                  <TextSnippetOutlinedIcon
+                                    style={{ color: "#384BD3" }}
+                                  />
+                                  <span className="p-3 cursor">
+                                    {file?.name}
+                                  </span>
+                                </button>
+                              </div>
+                            </td>
                             <td>
                               {file?.fileVersion ? file?.fileVersion : "--"}
                             </td>
@@ -2216,9 +2304,9 @@ const UpdateAsset = ({
                             </td>
                             <td>
                               <button
-                                className="btn btn-sm boder-less"
+                                className="btn btn-sm border-less"
                                 onClick={(e) => {
-                                  e?.preventDefault();
+                                  e.preventDefault();
                                   setShowPdfModal(true);
                                   setSelectedPdf(file?.fileBlobUrl);
                                 }}
@@ -2226,7 +2314,6 @@ const UpdateAsset = ({
                                 <i
                                   className="fa fa-eye fa-2x"
                                   aria-hidden="true"
-                                  size="md"
                                 ></i>
                               </button>
                             </td>
