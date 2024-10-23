@@ -2213,7 +2213,7 @@ const UpdateAsset = ({
                       <CircularProgress />
                     </Box>
                   )}
-                  {!isLoading && (
+                  {!isLoading && selectedAsset?.files?.length > 0 && (
                     <button
                       className="btn btn-sm btn-danger mb-2"
                       onClick={() => {
