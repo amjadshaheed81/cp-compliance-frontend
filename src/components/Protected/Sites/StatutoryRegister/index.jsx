@@ -17,6 +17,7 @@ import DutiesNotMetLogo from "../../../../images/sreg-3.png";
 import StatuaryStatus from "../../../common/Alert/Status/StatuaryStatus";
 import { useForm } from "react-hook-form";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import { toast } from "react-toastify";
 
 const StatutoryRegister = ({
   loggedInUserData,
@@ -340,6 +341,22 @@ const StatutoryRegister = ({
     );
   };
 
+  const untagAsset = async (selectedRow, statutory) => {
+    const fileIds = [selectedRow]?.map((item) => item.id);
+      const url = `/api/document/untag-file`;
+      const data = {
+        fileIds: fileIds,
+        statutoryCategoryId: statutory?.id,
+      };
+      const res = await put(url, data);
+      if (res?.status === 200) {
+        toast.success("Files un tagged successfully.");
+        getStatutory(siteSelectedForGlobal?.siteId);
+      } else {
+        toast.error("Something went wrong while un tagging files.");
+      }
+  }
+
   return (
     <>
       <SidebarNew />
@@ -571,6 +588,17 @@ const StatutoryRegister = ({
                               >
                                 Ref No.
                               </th>
+                              {String(item?.type).toLowerCase() === "pdf" && (
+                                <th
+                                  scope="col"
+                                  style={{
+                                    backgroundColor: "#7D8793",
+                                    color: "#FFFFFF",
+                                  }}
+                                >
+                                  Action
+                                </th>
+                              )}
                             </tr>
                           </thead>
                           <tbody>
@@ -672,13 +700,34 @@ const StatutoryRegister = ({
                                   >
                                     {itm.uploaderUserId}
                                   </th>
+                                  {String(item?.type).toLowerCase() ===
+                                    "pdf" && (
+                                    <th
+                                      scope="col"
+                                      style={{
+                                        backgroundColor: "#DEE3E9",
+                                        color: "#5A6371",
+                                        border: "1px solid #5A6371",
+                                      }}
+                                    >
+                                      <button
+                                        className="btn btn-sm btn-danger"
+                                        onClick={() => {
+                                          untagAsset(itm, item);
+                                        }}
+                                      >
+                                        Untag
+                                      </button>
+                                    </th>
+                                  )}
                                 </tr>
                               );
                             })}
 
                             <tr>
                               <td
-                                colspan="7"
+                                colspan={String(item?.type).toLowerCase() ===
+                                  "pdf" ? 8 : 7}
                                 style={{
                                   backgroundColor: "#5A6371",
                                   color: "#FFFFFF",
