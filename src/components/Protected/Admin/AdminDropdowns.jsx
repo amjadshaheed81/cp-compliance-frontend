@@ -73,28 +73,28 @@ const AdminDropdowns = ({ }) => {
   };
 
   const addNew = () => {
-    const inProgress = data.findIndex(d => d.edit || d.add);
+    const inProgress = sortedData.findIndex(d => d.edit || d.add);
     if (inProgress >= 0) {
       toast.error("Please save or cancel existing data");
       return;
     }
-    const udata = [{ add: true }, ...data];
+    const udata = [{ add: true }, ...sortedData];
     setData(udata);
   };
 
   const editData = (idx) => {
-    const inProgress = data.findIndex(d => d.edit || d.add);
+    const inProgress = sortedData.findIndex(d => d.edit || d.add);
     if (inProgress >= 0) {
       toast.error("Please save existing data");
       return;
     }
-    const udata = [...data];
+    const udata = [...sortedData];
     udata[idx].edit = true;
     setData(udata);
   };
 
   const cancel = (idx) => {
-    const udata = [...data];
+    const udata = [...sortedData];
     if (udata[idx].add) {
       udata.splice(idx, 1);
     } else {
@@ -105,13 +105,13 @@ const AdminDropdowns = ({ }) => {
 
   const deletData = async (idx) => {
     setIsLoading(true);
-    const dataTSave = { ...data[idx] };
+    const dataTSave = { ...sortedData[idx] };
     await del("/api/lov/" + dataTSave.id, dataTSave);
     getLovType(dataTSave.lovType);
   };
 
   const save = async (idx) => {
-    const dataTSave = { lovType: selectedLovType, ...data[idx] };
+    const dataTSave = { lovType: selectedLovType, ...sortedData[idx] };
     const validationErrors = validateFields(dataTSave);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -142,9 +142,9 @@ const AdminDropdowns = ({ }) => {
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
-    const uAllData = [...data];
+    const uAllData = [...sortedData];
     const udata = {
-      ...data[idx],
+      ...sortedData[idx],
       [name]: value,
     };
     uAllData[idx] = udata;
@@ -158,11 +158,43 @@ const AdminDropdowns = ({ }) => {
       [name]: value,
     });
   };
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
+  const sortData = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = [...data].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return '⬆️';
+    return sortConfig.direction === 'asc' ? '⬆️' : '⬇️';
+  };
   return (
     <Fragment>
       <SidebarNew />
-      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false); }} maxWidth="lg" fullWidth>
+      <Dialog
+        open={addNewDrp}
+        onClose={() => {
+          setAddNewDrp(false);
+        }}
+        maxWidth="lg"
+        fullWidth
+      >
         <DialogTitle>Add New Dropdown </DialogTitle>
         <DialogContent dividers>
           <Fragment>
@@ -170,40 +202,46 @@ const AdminDropdowns = ({ }) => {
               <Grid sm={4}>
                 <label htmlFor="lovType">Type</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="text"
                   className="form-control"
                   name="lovType"
                   onChange={handleInputChange2}
                 />
-                {errors.lovType && <span className="text-danger">{errors.lovType}</span>}
+                {errors.lovType && (
+                  <span className="text-danger">{errors.lovType}</span>
+                )}
               </Grid>
               <Grid sm={4}>
                 <label htmlFor="lovValue">Value</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="text"
                   className="form-control"
                   name="lovValue"
                   onChange={handleInputChange2}
                 />
-                {errors.lovValue && <span className="text-danger">{errors.lovValue}</span>}
+                {errors.lovValue && (
+                  <span className="text-danger">{errors.lovValue}</span>
+                )}
               </Grid>
               <Grid sm={4}>
                 <label htmlFor="attribite1">Depends On</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="text"
                   className="form-control"
                   name="attribite1"
                   onChange={handleInputChange2}
                 />
-                {errors.attribite1 && <span className="text-danger">{errors.attribite1}</span>}
+                {errors.attribite1 && (
+                  <span className="text-danger">{errors.attribite1}</span>
+                )}
               </Grid>
               <Grid sm={4}>
                 <label htmlFor="attribite2">Additional Attribute</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="text"
                   className="form-control"
                   name="attribite2"
@@ -214,7 +252,10 @@ const AdminDropdowns = ({ }) => {
           </Fragment>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddNewDrp(false)} className="bg-light text-primary">
+          <Button
+            onClick={() => setAddNewDrp(false)}
+            className="bg-light text-primary"
+          >
             Cancel
           </Button>
           <Button className="bg-primary text-white" onClick={saveNew}>
@@ -233,29 +274,35 @@ const AdminDropdowns = ({ }) => {
               <select
                 className="form-control form-select"
                 name="score"
-                onChange={(e) => setselectedLovType(e.target.value)}
+                onChange={(e) => {
+                  setSortConfig({ key: sortConfig?.key, direction: "asc" });
+                  setselectedLovType(e.target.value)
+                }}
                 value={selectedLovType}
               >
                 <option value={null}>Select</option>
                 {lovTypes.map((o, index) => (
-                  <option key={index} value={o}> {o?.replaceAll("_", " ")} </option>
+                  <option key={index} value={o}>
+                    {" "}
+                    {o?.replaceAll("_", " ")}{" "}
+                  </option>
                 ))}
               </select>
             </Grid>
             <Grid sm={4}>
-              {data.length > 0 &&
+              {sortedData.length > 0 && (
                 <button
-                  style={{ width: "250px", margin: '20px' }}
+                  style={{ width: "250px", margin: "20px" }}
                   className="btn btn-primary"
                   onClick={addNew}
                 >
                   <i className="fas fa-plus" /> Add new value
                 </button>
-              }
+              )}
             </Grid>
             <Grid sm={4}>
               <button
-                style={{ width: "250px", margin: '20px' }}
+                style={{ width: "250px", margin: "20px" }}
                 className="btn btn-primary"
                 onClick={() => setAddNewDrp(true)}
               >
@@ -264,112 +311,265 @@ const AdminDropdowns = ({ }) => {
             </Grid>
           </Grid>
 
-          {selectedLovType && <div className="col-md-12 table-responsive">
-            <table className="table" style={{ border: "1px solid" }}>
-              <thead className="table-dark">
-                <tr>
-                  <th scope="col" style={{ border: "2px groove" }}>Value</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Description</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Depends On</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Additional Attribute</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Sort Order</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading && 
+          {selectedLovType && (
+            <div className="col-md-12 table-responsive">
+              <table className="table" style={{ border: "1px solid" }}>
+                <thead className="table-dark">
                   <tr>
-                    <td colSpan={5} align="center"><CircularProgress /></td>
+                    <th
+                      scope="col"
+                      style={{ border: "2px groove", cursor: "pointer" }}
+                      onClick={() => sortData("lovValue")}
+                    >
+                      Value {getSortIcon("lovValue")}
+                    </th>
+                    <th scope="col" style={{ border: "2px groove" }}>
+                      Description
+                    </th>
+                    <th
+                      scope="col"
+                      style={{ border: "2px groove", cursor: "pointer" }}
+                      onClick={() => sortData("attribite1")}
+                    >
+                      Depends On {getSortIcon("attribite1")}
+                    </th>{" "}
+                    <th scope="col" style={{ border: "2px groove" }}>
+                      Additional Attribute
+                    </th>
+                    <th scope="col" style={{ border: "2px groove" }}>
+                      Sort Order
+                    </th>
+                    <th scope="col" style={{ border: "2px groove" }}>
+                      Actions
+                    </th>
                   </tr>
-                }
+                </thead>
+                <tbody>
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={5} align="center">
+                        <CircularProgress />
+                      </td>
+                    </tr>
+                  )}
 
-                {!isLoading && data?.length === 0 && (
-                  <tr>
-                    <td colSpan={5} align="center">No result found!!</td>
-                  </tr>
-                )}
+                  {!isLoading && sortedData?.length === 0 && (
+                    <tr>
+                      <td colSpan={5} align="center">
+                        No result found!!
+                      </td>
+                    </tr>
+                  )}
 
-                {!isLoading && data.map((d, rowIndex) => (
-                  <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.lovValue}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-                        value={d.lovValue}
-                        name="lovValue"
-                        className="form-control"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.lovValue && <span className="text-danger">{errors.lovValue}</span>}
-                    </td>}
+                  {!isLoading &&
+                    sortedData.map((d, rowIndex) => (
+                      <tr
+                        key={rowIndex}
+                        style={{
+                          border: "2px groove",
+                          fontWeight: "500",
+                          fontSize: "14px",
+                        }}
+                      >
+                        {!d.add && !d.edit && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            {d.lovValue}
+                          </td>
+                        )}
+                        {(d.add || d.edit) && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              value={d.lovValue}
+                              name="lovValue"
+                              className="form-control"
+                              onChange={(e) => handleInputChange(e, rowIndex)}
+                            />
+                            {errors.lovValue && (
+                              <span className="text-danger">
+                                {errors.lovValue}
+                              </span>
+                            )}
+                          </td>
+                        )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.lovDesc}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-                        value={d.lovDesc}
-                        name="lovDesc"
-                        className="form-control"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                    </td>}
+                        {!d.add && !d.edit && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            {d.lovDesc}
+                          </td>
+                        )}
+                        {(d.add || d.edit) && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              value={d.lovDesc}
+                              name="lovDesc"
+                              className="form-control"
+                              onChange={(e) => handleInputChange(e, rowIndex)}
+                            />
+                          </td>
+                        )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.attribite1}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-                        value={d.attribite1}
-                        name="attribite1"
-                        className="form-control"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.attribite1 && <span className="text-danger">{errors.attribite1}</span>}
-                    </td>}
+                        {!d.add && !d.edit && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            {d.attribite1}
+                          </td>
+                        )}
+                        {(d.add || d.edit) && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              value={d.attribite1}
+                              name="attribite1"
+                              className="form-control"
+                              onChange={(e) => handleInputChange(e, rowIndex)}
+                            />
+                            {errors.attribite1 && (
+                              <span className="text-danger">
+                                {errors.attribite1}
+                              </span>
+                            )}
+                          </td>
+                        )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.attribite2}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-                        value={d.attribite2}
-                        name="attribite2"
-                        className="form-control"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.attribite2 && <span className="text-danger">{errors.attribite2}</span>}
-                    </td>}
+                        {!d.add && !d.edit && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            {d.attribite2}
+                          </td>
+                        )}
+                        {(d.add || d.edit) && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              value={d.attribite2}
+                              name="attribite2"
+                              className="form-control"
+                              onChange={(e) => handleInputChange(e, rowIndex)}
+                            />
+                            {errors.attribite2 && (
+                              <span className="text-danger">
+                                {errors.attribite2}
+                              </span>
+                            )}
+                          </td>
+                        )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.attribite3}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-                        value={d.attribite3}
-                        name="attribite3"
-                        className="form-control"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                    </td>}
+                        {!d.add && !d.edit && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            {d.attribite3}
+                          </td>
+                        )}
+                        {(d.add || d.edit) && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <input
+                              type="text"
+                              value={d.attribite3}
+                              name="attribite3"
+                              className="form-control"
+                              onChange={(e) => handleInputChange(e, rowIndex)}
+                            />
+                          </td>
+                        )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <button className="btn btn-sm btn-light" onClick={() => editData(rowIndex)}>
-                        <i className="fas fa-edit"></i>
-                      </button>{" "}
-                      <button className="btn btn-sm btn-light" onClick={() => deletData(rowIndex)}>
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <button className="btn btn-sm btn-success" onClick={() => save(rowIndex)}>
-                        <i className="fas fa-save"></i>&nbsp; Save
-                      </button>&nbsp;
-                      <button className="btn btn-sm btn-danger" onClick={() => cancel(rowIndex)}>
-                        <i className="fas fa-save"></i>&nbsp; Cancel
-                      </button>
-                    </td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>}
+                        {!d.add && !d.edit && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => editData(rowIndex)}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>{" "}
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => deletData(rowIndex)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </td>
+                        )}
+                        {(d.add || d.edit) && (
+                          <td
+                            style={{
+                              border: "2px groove",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => save(rowIndex)}
+                            >
+                              <i className="fas fa-save"></i>&nbsp; Save
+                            </button>
+                            &nbsp;
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => cancel(rowIndex)}
+                            >
+                              <i className="fas fa-save"></i>&nbsp; Cancel
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </Fragment>
