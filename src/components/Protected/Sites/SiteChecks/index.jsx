@@ -85,21 +85,57 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const lovtypes = await get(
       "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData2.type
     );
-    setsubtypeoptions(lovtypes.map((l) => l.lovValue));
+    setsubtypeoptions(
+      lovtypes
+        .map((l) => l.lovValue)
+        ?.sort((a, b) => {
+          if (a < b) {
+            return -1; // a comes before b
+          }
+          if (a > b) {
+            return 1; // b comes before a
+          }
+          return 0; // type are equal
+        })
+    );
   };
 
   const getcatoptions = async () => {
     const lovtypes = await get(
       "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData.subType
     );
-    setcatoptions(lovtypes.map((l) => l.lovValue));
+    setcatoptions(
+      lovtypes
+        .map((l) => l.lovValue)
+        ?.sort((a, b) => {
+          if (a < b) {
+            return -1; // a comes before b
+          }
+          if (a > b) {
+            return 1; // b comes before a
+          }
+          return 0; // type are equal
+        })
+    );
   };
 
   const getsubtypeoptions2 = async () => {
     const lovtypes = await get(
       "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData.type
     );
-    setsubtypeoptions2(lovtypes.map((l) => l.lovValue));
+    setsubtypeoptions2(
+      lovtypes
+        .map((l) => l.lovValue)
+        ?.sort((a, b) => {
+          if (a < b) {
+            return -1; // a comes before b
+          }
+          if (a > b) {
+            return 1; // b comes before a
+          }
+          return 0; // type are equal
+        })
+    );
   };
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
