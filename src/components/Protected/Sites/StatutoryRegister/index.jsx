@@ -245,21 +245,21 @@ const StatutoryRegister = ({
       ),
       waterSafetyRiskAssessment: inspections?.find(
         (itm) =>
-          itm?.subType === "Water" &&
+          itm?.subType === "Legionella" &&
           (itm?.category ===  "Domestic RA" || "Water Safety Annual Inspection")
       ),
       waterOutletTemperature: inspections?.find(
         (itm) =>
-          itm?.subType === "Water" && (itm?.category === "Outlet Temperature" || itm?.category === "Water Temperature Monitoring")
+          itm?.subType === "Legionella" && (itm?.category === "Outlet Temperature" || itm?.category === "Water Temperature Monitoring")
       ),
       waterStorage: inspections?.find(
         (itm) =>
-          itm?.subType === "Water" &&
+          itm?.subType === "Legionella" &&
           itm?.category === "Water - Storage System Chlorination"
       ),
       showerHeadCleaning: inspections?.find(
         (itm) =>
-          itm?.subType === "Water" &&
+          itm?.subType === "Legionella" &&
           itm?.category === "Periodic Shower Head Cleaning"
       ),
       fireRiskAssessment: assessments?.find(

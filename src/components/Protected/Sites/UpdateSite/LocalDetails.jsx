@@ -399,7 +399,7 @@ const LocalDetails = ({
                     </tr>
                     <tr>
                       <td>
-                        <label>wed:</label>
+                        <label>Wed:</label>
                       </td>
                       <td>
                         <input
