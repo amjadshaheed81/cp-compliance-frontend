@@ -32,7 +32,15 @@ const AdminDropdowns = ({ }) => {
   const getLovTypes = async () => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/lov-types");
-    setLovTypes(lovtypesData);
+    setLovTypes(lovtypesData?.sort((a, b) => {
+      if (a < b) {
+        return -1;
+      }
+      if (a > b) {
+        return 1;
+      }
+      return 0;
+    }));
     setIsLoading(false);
   };
 
