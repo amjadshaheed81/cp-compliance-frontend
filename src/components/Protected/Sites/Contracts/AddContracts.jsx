@@ -76,7 +76,15 @@ const AddContracts = ({
     const data = await get(
       `/api/user/all?userRole=Manager&siteId=${siteSelectedForGlobal?.siteId}`
     );
-    setManagerList(data?.users || []);
+    setManagerList(data?.users?.sort((a, b) => {
+      if (a.name < b.name) {
+          return -1; // a comes before b
+      }
+      if (a.name > b.name) {
+          return 1;  // b comes before a
+      }
+      return 0; // names are equal
+  }) || []);
   };
   const getCompanies = async () => {
     const companiesData = await get(`/api/companies/all`);

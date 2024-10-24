@@ -54,7 +54,15 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
     );
-    setManagerList(data?.users || []);
+    setManagerList(data?.users?.sort((a, b) => {
+      if (a.name < b.name) {
+          return -1; // a comes before b
+      }
+      if (a.name > b.name) {
+          return 1;  // b comes before a
+      }
+      return 0; // names are equal
+  }) || []);
   };
 
   const [itemsPerPage] = useState(7);

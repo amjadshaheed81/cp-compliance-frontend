@@ -1286,9 +1286,18 @@ export const getUsers = () => {
     try {
       const url = `/api/user/all`;
       const userList = await get(url);
+      const sortedData = userList?.users?.sort((a, b) => {
+        if (a.name < b.name) {
+            return -1; // a comes before b
+        }
+        if (a.name > b.name) {
+            return 1;  // b comes before a
+        }
+        return 0; // names are equal
+    });
       dispatch({
         type: GET_USER_ALL,
-        payload: userList?.users,
+        payload: sortedData,
       });
     } catch (error) {
       toast.error(

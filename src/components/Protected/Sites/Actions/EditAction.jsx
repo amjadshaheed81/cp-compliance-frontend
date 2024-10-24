@@ -81,7 +81,15 @@ const EditAction = ({
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
     );
     console.log('data?.users', data?.users);
-    setManagerList(data?.users || []);
+    setManagerList(data?.users?.sort((a, b) => {
+      if (a.name < b.name) {
+          return -1; // a comes before b
+      }
+      if (a.name > b.name) {
+          return 1;  // b comes before a
+      }
+      return 0; // names are equal
+  }) || []);
   };
 
   useEffect(() => {
