@@ -35,7 +35,7 @@ import CreateFiles from "./CreateFiles";
 import BulkUpload from "./BulkUpload";
 import VersionHistory from "./VersionHistory";
 import CreateFolder from "./CreateFolder";
-import { get } from "../../../../api";
+import { del, get } from "../../../../api";
 import Swal from "sweetalert2";
 import { Chip, Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
@@ -519,6 +519,42 @@ const SubFolder = ({
                                   setfolder(folder);
                                 }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Delete Folder`} arrow>
+                              <DeleteIcon
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: `Do you want to delete ${folder?.name}`,
+                                    showDenyButton: false,
+                                    showCancelButton: true,
+                                    confirmButtonText: "Delete",
+                                  }).then(async (result) => {
+                                    if (result.isConfirmed) {
+                                      try {
+                                        const url = `/api/document/folder/${folder?.id}/delete`;
+                                        const res = await del(url);
+                                        if (res?.status === 200) {
+                                          getSubFilesAndFolder(folderId);
+                                          toast.success(
+                                            `${folder?.name} has been deleted successully`
+                                          );
+                                        } else {
+                                          toast.error(
+                                            "Something went wrong while deleting document. Please try again!"
+                                          );
+                                        }
+                                      } catch (e) {
+                                        toast.error(
+                                          "Something went wrong while deleting document. Please try again!"
+                                        );
+                                      }
+                                    } else if (result.isDenied) {
+                                      // Swal.fire("Changes are not saved", "", "info");
+                                    }
+                                  });
+                                }}
+                                style={{ color: "red", cursor: "pointer" }}
                               />
                             </Tooltip>
                           </>
