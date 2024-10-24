@@ -103,9 +103,9 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck.subType === "Unite Maintenance Periodic") {
       setStep("audit-unit-maintenance-periodic")
-    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Outlet Temperature") {
+    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Water Temperature Monitoring") {
       setStep("survey-water-outlet-temperature")
-    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Domestic RA") {
+    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Water Risk Assessment") {
       setStep("survey-water-domestic-ra")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Asbestos") {
       setStep("survey-asbestos")
