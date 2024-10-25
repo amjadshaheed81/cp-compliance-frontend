@@ -11,6 +11,7 @@ import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample"
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
+import MonthlyInspection from "./MonthlyInspection";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
 import { useNavigate, useParams } from "react-router-dom";
@@ -364,7 +365,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
-            {step === "audit-monthly-inspection"  && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "audit-monthly-inspection"  && <Item><MonthlyInspection checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterTemperatureMonitoring checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}

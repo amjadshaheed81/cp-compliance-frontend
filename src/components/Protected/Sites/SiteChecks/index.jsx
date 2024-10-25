@@ -816,7 +816,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       </select>
                     </div>
                   </Grid>
-                  {formData?.type !== "Assessment" && (
+                  {formData?.type !== "Assessment" && formData?.type !== "Audit" &&(
                     <Grid sm={4}>
                       <div style={{ margin: "10px" }}>
                         <label htmlFor="category" name="category">
