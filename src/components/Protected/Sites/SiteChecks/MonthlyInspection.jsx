@@ -314,11 +314,11 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                           const uquest = [...quest]
                           uquest[idx].response = {
                             ...uquest[idx].response,
-                            assets: item.map(i => i.key).join(",")
+                            faultassets: item.map(i => i.key).join(",")
                           }
                           setquest(uquest);
                         }}
-                        value={siteAssets.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        value={siteAssets.filter(s => quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
                         options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                         getOptionLabel={(option) => option.label}
