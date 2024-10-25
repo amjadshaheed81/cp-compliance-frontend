@@ -20,7 +20,7 @@ const UpdateFloor = ({
     setPositionOption(positions || []);
   }, [siteLayout]);
   const getParentNodeName = (id) => {
-    return positionOption?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
+    return siteLayout?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
   };
   const sendFloorPlan = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
@@ -49,6 +49,7 @@ const UpdateFloor = ({
     }
   };
   const getFloorPlanInputs = () => {
+    console.log("siteLayout", siteLayout);
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     return list?.map((itm) => (
       <tr key="FloorName">
