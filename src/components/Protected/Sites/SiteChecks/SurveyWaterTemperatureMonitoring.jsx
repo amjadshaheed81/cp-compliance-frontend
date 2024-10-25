@@ -20,7 +20,7 @@ import {
 import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
 
-const SurveyWaterOutletTemperature = ({
+const SurveyWaterTemperatureMonitoring = ({
   checkId,
   siteAssets,
   siteLayout,
@@ -1058,5 +1058,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default connect(mapStateToProps, { getSiteAssets, getSiteLayout })(
-  SurveyWaterOutletTemperature
+  SurveyWaterTemperatureMonitoring
 );

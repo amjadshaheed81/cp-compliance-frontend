@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import InspectionElectricalFault from "./InspectionElectricalFault";
-import SurveyWaterOutletTemperature from "./SurveyWaterOutletTemperature";
+import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample"
@@ -365,7 +365,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "audit-monthly-inspection"  && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
-            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
+            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterTemperatureMonitoring checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestonSample checkId={checkId} sasToken={sasToken} /></Item>}

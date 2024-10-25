@@ -18,6 +18,7 @@ import { deleteUser, getSites, getUsers } from "../../../store/thunk/site";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
 import TagSites from "./TagSites";
+import { calculateLastPageIndex } from "../../../utils/calculateSearchedPageNumber";
 
 const Users = ({
   users,
@@ -100,7 +101,7 @@ const Users = ({
             return matchesNameOrEmail && matchesRole && matchesSite && matchesStatus;
         });
 
-        console.log("Filtered List:", list);
+        setCurrentPage(calculateLastPageIndex(list?.length, usersPerPage));
         setFilteredUser(list);
     } else {
         setFilteredUser(users);

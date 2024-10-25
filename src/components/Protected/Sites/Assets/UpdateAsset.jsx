@@ -947,6 +947,11 @@ const UpdateAsset = ({
                 }}
               >
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
+                <Tab
+                    className="text-success"
+                    label="Tagged Assets"
+                    value="1"
+                  />
                   <Tab
                     className={
                       selectedAsset?.purchaseDate &&
@@ -969,7 +974,7 @@ const UpdateAsset = ({
                       )
                     }
                     label="Purchase Details"
-                    value="1"
+                    value="2"
                   />
                   <Tab
                     icon={
@@ -989,7 +994,7 @@ const UpdateAsset = ({
                         : "text-warning"
                     }
                     label="Location"
-                    value="2"
+                    value="3"
                   />
                   <Tab
                     className={
@@ -1015,7 +1020,7 @@ const UpdateAsset = ({
                       )
                     }
                     label="Valuation & Disposal"
-                    value="3"
+                    value="4"
                   />
                   {selectedAsset?.patItem && (
                     <Tab
@@ -1027,7 +1032,7 @@ const UpdateAsset = ({
                         )
                       }
                       label="PAT Details"
-                      value="4"
+                      value="5"
                       className={
                         selectedAsset?.assetPATItems?.length > 0
                           ? "text-success"
@@ -1050,7 +1055,7 @@ const UpdateAsset = ({
                           : "text-warning"
                       }
                       label="Passive Fire Protection"
-                      value="5"
+                      value="6"
                     />
                   )}
                   {selectedAsset?.doorItem && (
@@ -1068,17 +1073,137 @@ const UpdateAsset = ({
                           : "text-warning"
                       }
                       label="Door Specifications"
-                      value="6"
+                      value="7"
                     />
                   )}
-                  <Tab
-                    className="text-success"
-                    label="Tagged Assets"
-                    value="7"
-                  />
                 </TabList>
               </Box>
               <TabPanel value="1">
+                {showPdfModal && (
+                  <PdfViewer
+                    showPdfModal={showPdfModal}
+                    setShowPdfModal={setShowPdfModal}
+                    selectedPdf={selectedPdf}
+                  />
+                )}
+                <div className="container-fluid">
+                  {isLoading && (
+                    <Box sx={{ display: "flex" }}>
+                      <CircularProgress />
+                    </Box>
+                  )}
+                  {!isLoading && selectedAsset?.files?.length > 0 && (
+                    <button
+                      className="btn btn-sm btn-danger mb-2"
+                      onClick={() => {
+                        untagAsset();
+                      }}
+                    >
+                      Untag Asset
+                    </button>
+                  )}
+
+                  <div className="table-responsive">
+                    <table className="table f-11">
+                      <thead className="table-dark">
+                        <tr>
+                          <th scope="col">
+                            <input
+                              type="checkbox"
+                              onChange={(e) => {
+                                // Select or deselect all rows
+                                if (e.target.checked) {
+                                  setSelectedAssetRows(
+                                    selectedAsset?.files || []
+                                  );
+                                } else {
+                                  setSelectedAssetRows([]);
+                                }
+                              }}
+                              checked={
+                                selectedAsset?.files?.length > 0 &&
+                                selectedAssetRows.length ===
+                                  selectedAsset?.files?.length
+                              }
+                            />
+                          </th>
+                          <th scope="col">File</th>
+                          <th scope="col">Version</th>
+                          <th scope="col">Uploaded By</th>
+                          <th scope="col">Date</th>
+                          <th scope="col">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {!selectedAsset?.files && (
+                          <tr className="text-center">
+                            <td colSpan={6}>No Result Found.</td>
+                          </tr>
+                        )}
+                        {selectedAsset?.files?.map((file, index) => (
+                          <tr key={index}>
+                            {/* Checkbox column */}
+                            <td>
+                              <input
+                                type="checkbox"
+                                onChange={() => handleRowSelect(file)}
+                                checked={selectedAssetRows.includes(file)}
+                              />
+                            </td>
+                            <td>
+                              <div>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowPdfModal(true);
+                                    setSelectedPdf(file?.fileBlobUrl);
+                                  }}
+                                >
+                                  <TextSnippetOutlinedIcon
+                                    style={{ color: "#384BD3" }}
+                                  />
+                                  <span className="p-3 cursor">
+                                    {file?.name}
+                                  </span>
+                                </button>
+                              </div>
+                            </td>
+                            <td>
+                              {file?.fileVersion ? file?.fileVersion : "--"}
+                            </td>
+                            <td>
+                              {file?.uploaderUserName
+                                ? file?.uploaderUserName
+                                : "--"}
+                            </td>
+                            <td>
+                              {file?.expiryDate
+                                ? moment(file?.expiryDate).format("DD/MM/YYYY")
+                                : "--"}
+                            </td>
+                            <td>
+                              <button
+                                className="btn btn-sm border-less"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowPdfModal(true);
+                                  setSelectedPdf(file?.fileBlobUrl);
+                                }}
+                              >
+                                <i
+                                  className="fa fa-eye fa-2x"
+                                  aria-hidden="true"
+                                ></i>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabPanel>
+              <TabPanel value="2">
                 <form
                   onSubmit={purchaseDetailForm.handleSubmit(
                     submitSiteAssetPurchaseDetail
@@ -1248,7 +1373,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="2">
+              <TabPanel value="3">
                 <form onSubmit={locationForm.handleSubmit(submitLocationForm)}>
                   <div className="row">
                     <div className="col-md-4">
@@ -1348,7 +1473,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="3">
+              <TabPanel value="4">
                 <form
                   onSubmit={valudationForm.handleSubmit(submitValudationForm)}
                 >
@@ -1544,7 +1669,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="4">
+              <TabPanel value="5">
                 {" "}
                 <div className="row">
                   <div>
@@ -1714,7 +1839,7 @@ const UpdateAsset = ({
                   </div>
                 </div>
               </TabPanel>
-              <TabPanel value="5">
+              <TabPanel value="6">
                 <form
                   onSubmit={passiveFireProtectionForm.handleSubmit(
                     submitPassiveFireProtectionForm
@@ -1949,7 +2074,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="6">
+              <TabPanel value="7">
                 <form
                   onSubmit={doorSpecificationForm.handleSubmit(
                     submitDoorSpecificationForm
@@ -2206,131 +2331,6 @@ const UpdateAsset = ({
                     </div>
                   </div>
                 </form>
-              </TabPanel>
-              <TabPanel value="7">
-                {showPdfModal && (
-                  <PdfViewer
-                    showPdfModal={showPdfModal}
-                    setShowPdfModal={setShowPdfModal}
-                    selectedPdf={selectedPdf}
-                  />
-                )}
-                <div className="container-fluid">
-                  {isLoading && (
-                    <Box sx={{ display: "flex" }}>
-                      <CircularProgress />
-                    </Box>
-                  )}
-                  {!isLoading && selectedAsset?.files?.length > 0 && (
-                    <button
-                      className="btn btn-sm btn-danger mb-2"
-                      onClick={() => {
-                        untagAsset();
-                      }}
-                    >
-                      Untag Asset
-                    </button>
-                  )}
-
-                  <div className="table-responsive">
-                    <table className="table f-11">
-                      <thead className="table-dark">
-                        <tr>
-                          <th scope="col">
-                            <input
-                              type="checkbox"
-                              onChange={(e) => {
-                                // Select or deselect all rows
-                                if (e.target.checked) {
-                                  setSelectedAssetRows(
-                                    selectedAsset?.files || []
-                                  );
-                                } else {
-                                  setSelectedAssetRows([]);
-                                }
-                              }}
-                              checked={
-                                selectedAsset?.files?.length > 0 &&
-                                selectedAssetRows.length ===
-                                  selectedAsset?.files?.length
-                              }
-                            />
-                          </th>
-                          <th scope="col">File</th>
-                          <th scope="col">Version</th>
-                          <th scope="col">Uploaded By</th>
-                          <th scope="col">Date</th>
-                          <th scope="col">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {!selectedAsset?.files && (
-                          <tr className="text-center">
-                            <td colSpan={6}>No Result Found.</td>
-                          </tr>
-                        )}
-                        {selectedAsset?.files?.map((file, index) => (
-                          <tr key={index}>
-                            {/* Checkbox column */}
-                            <td>
-                              <input
-                                type="checkbox"
-                                onChange={() => handleRowSelect(file)}
-                                checked={selectedAssetRows.includes(file)}
-                              />
-                            </td>
-                            <td>
-                              <div>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setShowPdfModal(true);
-                                    setSelectedPdf(file?.fileBlobUrl);
-                                  }}
-                                >
-                                  <TextSnippetOutlinedIcon
-                                    style={{ color: "#384BD3" }}
-                                  />
-                                  <span className="p-3 cursor">
-                                    {file?.name}
-                                  </span>
-                                </button>
-                              </div>
-                            </td>
-                            <td>
-                              {file?.fileVersion ? file?.fileVersion : "--"}
-                            </td>
-                            <td>
-                              {file?.uploaderUserName
-                                ? file?.uploaderUserName
-                                : "--"}
-                            </td>
-                            <td>
-                              {file?.expiryDate
-                                ? moment(file?.expiryDate).format("DD/MM/YYYY")
-                                : "--"}
-                            </td>
-                            <td>
-                              <button
-                                className="btn btn-sm border-less"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setShowPdfModal(true);
-                                  setSelectedPdf(file?.fileBlobUrl);
-                                }}
-                              >
-                                <i
-                                  className="fa fa-eye fa-2x"
-                                  aria-hidden="true"
-                                ></i>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
               </TabPanel>
             </TabContext>
           </Box>

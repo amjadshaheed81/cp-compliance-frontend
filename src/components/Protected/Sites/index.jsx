@@ -37,6 +37,9 @@ const Sites = ({
   const [sitesPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const [risks, setrisks] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("open");
+  const [selectedArea, setSelectedArea] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: 'siteName', // Default sort by 'site'
     direction: 'asc', // Default direction
@@ -70,6 +73,9 @@ const Sites = ({
     }
     getRisks();
   }, [sites]);
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, selectedStatus, selectedArea]);
 
   const getRisks = async () => {
     const risksdata = await get('/api/site-check/risks');
@@ -129,22 +135,39 @@ const Sites = ({
       const list = sites?.filter((x) =>
         String(x?.status).toLowerCase().includes(String(val).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
       setFilterSite(list);
     } else {
       setFilterSite(sites);
     }
   };
-  const searchSitesWithArea = (e) => {
-    const val = e.target.value;
-    setSelectedItem(val);
-    if (val === "area") {
-      setFilterSite(sites);
-    } else {
-      const list = sites?.filter((x) =>
-        String(x?.area).toLowerCase().includes(String(val).toLowerCase())
+  const applyFilters = () => {
+    let filteredSites = sites;
+
+    // Apply text search filter
+    if (searchTerm) {
+      filteredSites = filteredSites.filter((site) =>
+        site?.siteName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        site?.address1?.toLowerCase().includes(searchTerm?.toLowerCase())
       );
-      setFilterSite(list);
     }
+
+    // Apply status filter
+    if (selectedStatus !== "status") {
+      filteredSites = filteredSites.filter(
+        (site) => site?.status?.toLowerCase() === selectedStatus?.toLowerCase()
+      );
+    }
+
+    // Apply area filter
+    if (selectedArea) {
+      filteredSites = filteredSites.filter(
+        (site) => site?.area?.toLowerCase() === selectedArea?.toLowerCase()
+      );
+    }
+
+    setCurrentPage(calculateLastPageIndex(filteredSites.length, sitesPerPage));
+    setFilterSite(filteredSites);
   };
   return (
     <Fragment>
@@ -158,32 +181,40 @@ const Sites = ({
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col-md-3 col-sm-4 mt-2">
+              <div className="col-md-3 col-sm-4 mt-2">
                   <input
                     type="text"
                     className="form-control"
                     placeholder="Search site"
-                    onChange={searchSite}
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                    }}
                   />
                 </div>
                 <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="area"
                     className="form-control form-select"
-                    id="area"
-                    onChange={searchSitesWithArea}
+                    value={selectedArea}
+                    onChange={(e) => {
+                      setSelectedArea(e.target.value);
+                    }}
                   >
-                    <option value="">Select</option>
-                    {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
+                    <option value="">Select Area</option>
+                    {SiteArea?.map((itm) => (
+                      <option value={itm}>{itm}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="col-md-3 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
-                    id="status"
-                    value={selectedItem}
-                    onChange={searchSitesWithStatus}
+                    value={selectedStatus}
+                    onChange={(e) => {
+                      setSelectedStatus(e.target.value);
+                    }}
                   >
                     <option value="status">Status</option>
                     <option value="open">Open</option>

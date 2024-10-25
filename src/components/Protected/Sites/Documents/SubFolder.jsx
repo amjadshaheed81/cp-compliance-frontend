@@ -5,7 +5,7 @@ import FolderCopyIcon from "@mui/icons-material/FolderCopy";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import Bookmark from '@mui/icons-material/Bookmark';
+import Bookmark from "@mui/icons-material/Bookmark";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import moment from "moment";
 import ReplyIcon from "@mui/icons-material/Reply";
@@ -35,7 +35,7 @@ import CreateFiles from "./CreateFiles";
 import BulkUpload from "./BulkUpload";
 import VersionHistory from "./VersionHistory";
 import CreateFolder from "./CreateFolder";
-import { get } from "../../../../api";
+import { del, get, put } from "../../../../api";
 import Swal from "sweetalert2";
 import { Chip, Tooltip } from "@mui/material";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
@@ -74,8 +74,8 @@ const SubFolder = ({
   const [folderData, setfolder] = useState();
   const [fileId, setFileId] = useState();
   const [previousFolderId, setPreviousFolderId] = useState([]);
-  const [tags,settags] = useState({});
-  const [tagindex,settagindex] = useState(null);
+  const [tags, settags] = useState({});
+  const [tagindex, settagindex] = useState(null);
   const [selectedFileForCopy, setSelectedFileForCopy] = useState();
   const searchDocument = async (e) => {
     const value = e?.target?.value;
@@ -244,8 +244,11 @@ const SubFolder = ({
         )}
         {showModal && (
           <CreateFiles
-          folderfiles={subfolderFiles?.document?.files ? subfolderFiles?.document?.files : []}
-          
+            folderfiles={
+              subfolderFiles?.document?.files
+                ? subfolderFiles?.document?.files
+                : []
+            }
             showModal={showModal}
             setShowModal={setShowModal}
             folderData={folderData}
@@ -259,7 +262,11 @@ const SubFolder = ({
         )}
         {bulkUploadModal && (
           <BulkUpload
-          folderfiles={subfolderFiles?.document?.files ? subfolderFiles?.document?.files : []}
+            folderfiles={
+              subfolderFiles?.document?.files
+                ? subfolderFiles?.document?.files
+                : []
+            }
             bulkUploadModal={bulkUploadModal}
             folder={folderData}
             setBulkUploadModal={setBulkUploadModal}
@@ -308,57 +315,61 @@ const SubFolder = ({
           })}
         </Breadcrumbs>
         <div className="row mt-4 mb-4">
-        <div
-          className="col-md-6 col-sm-12"
-        >
-          <i
-            style={{
-              position: "absolute",
-              color: "lightgrey",
-              paddingLeft: "1.5rem",
-            }}
-            className="fas fa-search p-3"
-          ></i>
-          <input
-            type="text"
-            style={{ textAlign: "justify", paddingLeft: '2rem' }}
-            className="form-control m-2"
-            id="search"
-            name="search"
-            placeholder="Search for Document"
-            onChange={searchDocument}
-            onKeyDown={(event) => {
-              if (event.key === "Tab") {
-                setFileList([])
-              }
-            }}
-          />
-          {fileList && (
-            <ul
-              className="fileSearchResult fileSearchResultSite w-100"
+          <div className="col-md-6 col-sm-12">
+            <i
               style={{
-                display: fileList ? "block" : "none",
+                position: "absolute",
+                color: "lightgrey",
+                paddingLeft: "1.5rem",
               }}
-            >
-              {/* <p>{fileList}</p> */}
-              {fileList?.files?.map((itm) => {
-                <p>{itm}</p>;
-                return (
-                  <a href={itm.fileBlobUrl} target="_blank" download key={itm?.id} onClick={() => setFileList([])}>
-                    <span>
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-1x cursor"
-                      ></i>{" "}
-                      {itm?.folderName}/<b>{itm?.name}</b>
-                    </span>
-                  </a>
-                );
-              })}
-            </ul>
-          )}
-          {error && <p>{error}</p>}
-        </div>
+              className="fas fa-search p-3"
+            ></i>
+            <input
+              type="text"
+              style={{ textAlign: "justify", paddingLeft: "2rem" }}
+              className="form-control m-2"
+              id="search"
+              name="search"
+              placeholder="Search for Document"
+              onChange={searchDocument}
+              onKeyDown={(event) => {
+                if (event.key === "Tab") {
+                  setFileList([]);
+                }
+              }}
+            />
+            {fileList && (
+              <ul
+                className="fileSearchResult fileSearchResultSite w-100"
+                style={{
+                  display: fileList ? "block" : "none",
+                }}
+              >
+                {/* <p>{fileList}</p> */}
+                {fileList?.files?.map((itm) => {
+                  <p>{itm}</p>;
+                  return (
+                    <a
+                      href={itm.fileBlobUrl}
+                      target="_blank"
+                      download
+                      key={itm?.id}
+                      onClick={() => setFileList([])}
+                    >
+                      <span>
+                        <i
+                          style={{ color: "#384BD3" }}
+                          className="fas fa-folder fa-1x cursor"
+                        ></i>{" "}
+                        {itm?.folderName}/<b>{itm?.name}</b>
+                      </span>
+                    </a>
+                  );
+                })}
+              </ul>
+            )}
+            {error && <p>{error}</p>}
+          </div>
         </div>
         <div className="table-responsive w-100">
           <table className="table f-11">
@@ -438,20 +449,24 @@ const SubFolder = ({
                   <>
                     <tr style={{ backgroundColor: "red" }}>
                       <td>
-                        
-                        <div
-                          
-                        >
+                        <div>
                           &nbsp; &nbsp;
-                          <FolderOpenIcon style={{ color: "#384BD3" }} 
-                          onClick={() => {
-                            navigateToSubFolder(folder?.id);
-                            addStack(folder?.id, folder?.name);
-                          }}/>
-                          <span className="p-3 cursor" onClick={() => {
-                            navigateToSubFolder(folder?.id);
-                            addStack(folder?.id, folder?.name);
-                          }}>{folder?.name}</span>
+                          <FolderOpenIcon
+                            style={{ color: "#384BD3" }}
+                            onClick={() => {
+                              navigateToSubFolder(folder?.id);
+                              addStack(folder?.id, folder?.name);
+                            }}
+                          />
+                          <span
+                            className="p-3 cursor"
+                            onClick={() => {
+                              navigateToSubFolder(folder?.id);
+                              addStack(folder?.id, folder?.name);
+                            }}
+                          >
+                            {folder?.name}
+                          </span>
                           {/* &nbsp; &nbsp;{tags[i] && <Chip 
                             label={tags[i]}
                             color="primary"
@@ -483,7 +498,6 @@ const SubFolder = ({
                             }
                           }}/>} */}
                         </div>
-                        
                       </td>
                       <td>--</td>
                       <td>--</td>
@@ -515,8 +529,90 @@ const SubFolder = ({
 
                             <Tooltip title={`Buld Upload`} arrow>
                               <FolderCopyIcon
-                                onClick={() => { setBulkUploadModal(true) 
+                                onClick={() => {
+                                  setBulkUploadModal(true);
                                   setfolder(folder);
+                                }}
+                                style={{ color: "384bd3", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Delete Folder`} arrow>
+                              <DeleteIcon
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: `Do you want to delete ${folder?.name}`,
+                                    showDenyButton: false,
+                                    showCancelButton: true,
+                                    confirmButtonText: "Delete",
+                                  }).then(async (result) => {
+                                    if (result.isConfirmed) {
+                                      try {
+                                        const url = `/api/document/folder/${folder?.id}/delete`;
+                                        const res = await del(url);
+                                        if (res?.status === 200) {
+                                          getSubFilesAndFolder(folderId);
+                                          toast.success(
+                                            `${folder?.name} has been deleted successully`
+                                          );
+                                        } else {
+                                          toast.error(
+                                            "Something went wrong while deleting document. Please try again!"
+                                          );
+                                        }
+                                      } catch (e) {
+                                        toast.error(
+                                          "Something went wrong while deleting document. Please try again!"
+                                        );
+                                      }
+                                    } else if (result.isDenied) {
+                                      // Swal.fire("Changes are not saved", "", "info");
+                                    }
+                                  });
+                                }}
+                                style={{ color: "red", cursor: "pointer" }}
+                              />
+                            </Tooltip>
+                            <Tooltip title={`Edit Folder Name`} arrow>
+                              <Edit
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: "Update Folder Name",
+                                    input: "text",
+                                    inputAttributes: {
+                                      autocapitalize: "off",
+                                    },
+                                    inputValue: folder?.name || '',
+                                    showCancelButton: true,
+                                    confirmButtonText: "Update",
+                                    showLoaderOnConfirm: true,
+                                    preConfirm: async (data) => {
+                                      if (!data) {
+                                        Swal.showValidationMessage('Folder name is required');
+                                        return false; // Prevent further processing if input is empty
+                                      }
+                                      try {
+                                        const url = `/api/document/folder/${folder?.id}/manage`;
+                                        const response = await put(url, {
+                                          folderName: data,
+                                        });
+                                        if (response?.status === 200) {
+                                          toast.success(
+                                            `${folder?.name} has been updated successully`
+                                          );
+                                          getSubFilesAndFolder(folderId);
+                                        } else {
+                                          toast.error(
+                                            "Something went wrong while updating document. Please try again!"
+                                          );
+                                        }
+                                      } catch (error) {
+                                        Swal.showValidationMessage(`
+                                          Request failed: ${error}
+                                        `);
+                                      }
+                                    },
+                                    allowOutsideClick: () => !Swal.isLoading(),
+                                  });
                                 }}
                                 style={{ color: "384bd3", cursor: "pointer" }}
                               />
@@ -535,11 +631,13 @@ const SubFolder = ({
                       <td>
                         <div>
                           &nbsp;&nbsp;
-                          <button onClick={(e) => {
-                            e?.preventDefault();
-                            setShowPdfModal(true);
-                            setSelectedPdf(file?.fileBlobUrl)
-                          }}>
+                          <button
+                            onClick={(e) => {
+                              e?.preventDefault();
+                              setShowPdfModal(true);
+                              setSelectedPdf(file?.fileBlobUrl);
+                            }}
+                          >
                             <TextSnippetOutlinedIcon
                               style={{ color: "#384BD3" }}
                             />
