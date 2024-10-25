@@ -101,7 +101,9 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("inspection-electrical")
     } else if (siteCheck.type === "Assessment" && siteCheck.subType === "Fire Risk Assessment") {
       setStep("assessment-fire-risk")
-    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Unite Maintenance Periodic") {
+    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Monthly Inspection") {
+      setStep("audit-monthly-inspection")
+    } else if (siteCheck.type === "Audit") {
       setStep("audit-unit-maintenance-periodic")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Water Temperature Monitoring") {
       setStep("survey-water-outlet-temperature")
@@ -362,6 +364,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "audit-monthly-inspection"  && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterOutletTemperature checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
