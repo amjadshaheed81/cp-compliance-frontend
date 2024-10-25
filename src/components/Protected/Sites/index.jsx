@@ -129,6 +129,7 @@ const Sites = ({
       const list = sites?.filter((x) =>
         String(x?.status).toLowerCase().includes(String(val).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
       setFilterSite(list);
     } else {
       setFilterSite(sites);
@@ -143,6 +144,7 @@ const Sites = ({
       const list = sites?.filter((x) =>
         String(x?.area).toLowerCase().includes(String(val).toLowerCase())
       );
+      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
       setFilterSite(list);
     }
   };
