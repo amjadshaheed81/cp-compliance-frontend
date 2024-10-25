@@ -233,6 +233,10 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
           </Grid>
 
           {quest.map((q, idx) =>
+          {
+            console.log(q);
+            //const catAsset = siteAssets?.filter(s=> s.subCategory === q.)
+            return (
             <Accordion defaultExpanded={idx === openIndex} >
               <AccordionSummary expandIcon={<ExpandMore />} >
                 <Typography>Q{idx + 1}. {q.question}
@@ -508,6 +512,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                 </form>
               </AccordionDetails>}
             </Accordion>
+          )}
           )}
         </CardContent>
       </Card>
