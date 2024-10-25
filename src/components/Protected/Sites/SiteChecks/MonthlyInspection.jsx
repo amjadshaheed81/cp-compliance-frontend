@@ -177,7 +177,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
     dataToSave.responseDate = new Date();
     dataToSave.checkId = checkId;
     dataToSave.qid = quest[index].qid;
-    dataToSave.status = "Closed";
+    //dataToSave.status = "Closed";
     dataToSave.totalRiskScore = Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0)
     await post("/api/site-check/assessment/response", dataToSave);
     await getQuestions();
@@ -232,10 +232,22 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
             </Grid>
           </Grid>
 
-          {quest.map((q, idx) =>
+          {quest?.filter(s=> s.qid === 21).map((q, idx) =>
           {
-            console.log(q);
-            //const catAsset = siteAssets?.filter(s=> s.subCategory === q.)
+            let catAsset = [];
+            const assetCategory = q?.assetCategory?.split(",")??[];
+            if(assetCategory.length === 3) {
+              catAsset= siteAssets?.filter(s=> 
+                s.category === assetCategory[0] 
+                && s.subCategory === assetCategory[1] && s.subCategory2 === assetCategory[2]);
+               } else if(assetCategory.length === 2) {
+              catAsset= siteAssets?.filter(s=> s.category === assetCategory[0] 
+                && s.subCategory === assetCategory[1]);
+            } else if(assetCategory.length === 1 && assetCategory[0] !== '') {
+              catAsset= siteAssets?.filter(s=> s.category === assetCategory[0]);
+            } else {
+              catAsset = siteAssets;
+            }
             return (
             <Accordion defaultExpanded={idx === openIndex} >
               <AccordionSummary expandIcon={<ExpandMore />} >
@@ -261,7 +273,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                         name="totalAsset"
                         className="form-control"
                         id="totalAsset"
-                        value={siteAssets?.length}
+                        value={catAsset?.length}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
 
@@ -276,7 +288,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                         name="totalAsset"
                         className="form-control"
                         id="totalAsset"
-                        value={0}
+                        value={catAsset?.length - (quest[idx].response?.assets?.split(",")??[])?.length - (quest[idx].response?.faultassets?.split(",")??[])?.length}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
 
@@ -284,7 +296,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
 
                     <Grid item xs={12} sm={6}>
                       <Autocomplete
-                        disabled={quest[idx]?.completed}
+                        //disabled={quest[idx]?.completed}
                         multiple
                         onChange={(event, item) => {
                           const uquest = [...quest]
@@ -294,9 +306,9 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                           }
                           setquest(uquest);
                         }}
-                        value={siteAssets.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        value={catAsset.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                        options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        options={catAsset.filter(s => !quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                         getOptionLabel={(option) => option.label}
 
                         renderInput={(params) => (
@@ -312,7 +324,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Autocomplete
-                        disabled={quest[idx]?.completed}
+                        //disabled={quest[idx]?.completed}
                         multiple
                         onChange={(event, item) => {
                           const uquest = [...quest]
@@ -322,9 +334,9 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                           }
                           setquest(uquest);
                         }}
-                        value={siteAssets.filter(s => quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        value={catAsset.filter(s => quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                        options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        options={catAsset.filter(s => !quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                         getOptionLabel={(option) => option.label}
 
                         renderInput={(params) => (
