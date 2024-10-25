@@ -22,30 +22,44 @@ const UpdateFloor = ({
   const getParentNodeName = (id) => {
     return siteLayout?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
   };
+
   const sendFloorPlan = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     let form_data = new FormData();
     const files = [];
     const data = [];
+    let isValidForm = true;
+
     list.forEach((itm) => {
       const file = getValues(`floorImage-${itm?.id}`);
       if (file?.length) {
-        files.push(file?.[0]);
-        data.push({
-          nodeId: itm?.id,
-          fileName: file?.[0].name,
-        });
+        const fileType = file[0].type;
+        const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+        
+        if (validTypes.includes(fileType)) {
+          files.push(file[0]);
+          data.push({
+            nodeId: itm?.id,
+            fileName: file[0].name,
+          });
+        } else {
+          toast.warn(`Unsupported file type: ${fileType}. Only JPG, JPEG, and PNG are allowed.`);
+          isValidForm = false;
+        }
       }
     });
-    if (files?.length > 0) {
-      files.map((file) => {
-        form_data.append("files", file, file?.name);
-      });
-      form_data.append("floorPlans", JSON.stringify(data));
-      setLoader(true);
-      uploadFloorPlan(form_data, updateSite?.siteId);
-    } else {
-      toast.warn("Please select atleast one floor plan file to proceed.");
+    if(isValidForm) {
+      if (files.length > 0) {
+        files.forEach((file) => {
+          form_data.append("files", file, file.name);
+        });
+        form_data.append("floorPlans", JSON.stringify(data));
+        
+        setLoader(true);
+        uploadFloorPlan(form_data, updateSite?.siteId);
+      } else {
+        toast.warn("Please select at least one valid floor plan file to proceed.");
+      }
     }
   };
   const getFloorPlanInputs = () => {
