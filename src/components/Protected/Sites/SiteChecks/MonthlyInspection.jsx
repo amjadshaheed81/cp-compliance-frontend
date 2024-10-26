@@ -232,7 +232,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
             </Grid>
           </Grid>
 
-          {quest?.filter(s=> s.qid === 21).map((q, idx) =>
+          {quest?.map((q, idx) =>
           {
             let catAsset = [];
             const assetCategory = q?.assetCategory?.split(",")??[];
