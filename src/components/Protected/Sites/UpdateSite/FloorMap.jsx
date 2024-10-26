@@ -190,13 +190,16 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
             position: "absolute",
             left: item.left,
             top: item.top,
+            transform: isDragging ? "scale(1.05)" : "scale(1)",
+            transition: "transform 0.1s ease-out",
+            willChange: "transform",
             backgroundColor: "#d34053",
             color: "white",
             padding: "4px",
             fontSize: "8px",
             borderRadius: "50%",
             cursor: "move",
-            opacity: isDragging ? 0.5 : 1,
+            opacity: isDragging ? 0.7 : 1,
           }}
         >
           <a target="_blank" className="markerLink" href="/#/assets">{item.label}</a>
