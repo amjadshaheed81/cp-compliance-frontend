@@ -1,28 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { DndProvider, useDrop } from "react-dnd";
+import Tooltip from "@mui/material/Tooltip";
+import { DndProvider, useDrop, useDrag } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { useDrag } from "react-dnd";
-import TabPanel from "../../../common/TabPanel/TabPanel";
 import { setLoader, uploadFloorPlan } from "../../../../store/thunk/site";
-import { toast } from "react-toastify";
 import { connect } from "react-redux";
-import { saveAs } from "file-saver"; // For image download
 import { scrollToElement } from "../../../../utils/scrollToElement";
+import { toast } from "react-toastify";
+import { get, put } from "../../../../api";
 
 const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
-  const [tabValue, setTabValue] = useState(null);
   const [selectedTab, setSelectedTab] = useState(null);
   const [positionOption, setPositionOption] = useState([]);
+  const [markerLabels, setMarkerLabels] = useState([]);
   const [droppedItems, setDroppedItems] = useState([]);
   const [floorPlanUrl, setFloorPlanUrl] = useState("");
+  const [selectedFloor, setSelectedFloor] = useState({});
   const imageRef = useRef(null);
-  const canvasRef = useRef(null); // Reference for the canvas element
 
   useEffect(() => {
     const positions = siteLayout?.filter(
@@ -32,114 +27,84 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   }, [siteLayout]);
 
   const getParentNodeName = (id) => {
-    return positionOption?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
+    return positionOption?.find((itm) => itm?.id === id)?.nodeName;
   };
 
-  const handleChange = (event, newValue) => {
+  const handleFloorSelect = (index) => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    const selectedFloor = list?.[newValue];
-    console.log("selectedFloor", selectedFloor);
+    const selectedFloorData = list?.[index];
+    const filteredRooms = siteLayout?.filter(
+      (room) => room?.parentNode === selectedFloorData?.id
+    );
+    setSelectedFloor(selectedFloorData)
+    setMarkerLabels(filteredRooms);
     scrollToElement(".floorMapTitle");
-    setDroppedItems([]); // This clears all the dropped labels
-    setSelectedTab({ id: selectedFloor?.id, name: selectedFloor?.nodeName });
-    setTabValue(newValue);
-    setFloorPlanUrl(selectedFloor?.floorPlanUrl); // Store the current floor plan URL
+    // setDroppedItems([]); // Clear previously dropped items when changing floors
+    setSelectedTab({ id: selectedFloorData?.id, name: selectedFloorData?.nodeName });
+    setFloorPlanUrl(selectedFloorData?.floorPlanUrl);
+    getSavedMarger(selectedFloorData)
   };
 
-  const getTabLabel = () => {
+  const getFloorList = () => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    const roomList = siteLayout?.filter((itm) => itm?.nodeType === "room");
-
-    return list?.map((floor) => {
-      const filteredRooms = roomList?.filter(
-        (room) => room?.parentNode === floor?.id
-      );
-
-      return (
-        <Tab
-          label={
-            <>
-              <div>{`${getParentNodeName(floor?.parentNode)}: ${
-                floor?.nodeName
-              }`}</div>
-              {filteredRooms.length > 0 && (
-                <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
-                  {filteredRooms.map((room) => (
-                    <DraggableLabel key={room?.id} label={room?.nodeName} />
-                  ))}
-                </ul>
-              )}
-            </>
-          }
-        />
-      );
-    });
-  };
-
-  const getTabPanel = () => {
-    const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    return list?.map((itm, newValue) => (
-      <TabPanel value={tabValue} index={newValue}>
-        {itm?.floorPlanUrl ? (
-          <>
-            <div
-              ref={imageRef}
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "100%", // Full height for the right-side container
-                overflow: "hidden", // Prevent overflow
-              }}
-            >
-              <embed
-                src={floorPlanUrl}
-                style={{
-                  width: "100%",
-                  height: "500px", // Adjust height as needed
-                  objectFit: "contain", // Ensures aspect ratio is maintained and fits within the container
-                }}
-              />
-              {droppedItems.map((item, index) => (
-                <div
-                  key={index}
-                  style={{
-                    position: "absolute",
-                    left: item.left,
-                    top: item.top,
-                    width: "100px",
-                    height: "35px",
-                    backgroundColor: "#d34053",
-                    color: "white",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "2%",
-                    fontSize: "8px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  {item.label}
-                  <span
-                    style={{ cursor: "pointer", fontSize: "8px" }}
-                    onClick={() => handleDelete(index)}
-                  >
-                    X
-                  </span>
-                </div>
-              ))}
-            </div>
-            {/* Hidden canvas for saving the image */}
-            <canvas
-              ref={canvasRef}
-              style={{ display: "none", width: "500px", height: "auto" }} // Hidden canvas
-            />
-          </>
-        ) : (
-          "Floor plan file is not available."
-        )}
-      </TabPanel>
+    return list?.map((floor, index) => (
+      <li
+        key={index}
+        onClick={() => {
+          handleFloorSelect(index)
+        }}
+        style={{
+          cursor: "pointer",
+          padding: "10px",
+          borderBottom: "1px solid grey",
+        }}
+      >
+        <div>{`${getParentNodeName(floor?.parentNode)}: ${floor?.nodeName}`}</div>
+      </li>
     ));
   };
+
+  const updateMarkerPosition = (index, newLeft, newTop) => {
+    setDroppedItems((prevItems) =>
+      prevItems.map((item, i) =>
+        i === index ? { ...item, left: newLeft, top: newTop } : item
+      )
+    );
+  };
+
+  const saveImage = async () => {
+    const payload = droppedItems?.map(itm => {
+      return {
+        id: itm?.id || null,
+        label: itm?.label,
+        roomId: itm?.roomId,
+        siteId: updateSite?.siteId,
+        leftPosition: itm?.left,
+        topPosition: itm?.top,
+      }
+    });
+    for (const element of payload) {
+      const res = await put("/api/site/SaveMarker", element);
+    }
+    toast.success("Floor Marker updated Successully.");
+    getSavedMarger(selectedFloor);
+    // Logic to save image along with marker positions
+  };
+
+  const getSavedMarger = async (selectedFloorData) => {
+    const res = await get(`/api/site/SaveMarker/${updateSite?.siteId}`);
+    const filteredData = res?.map(itm => {
+      return {
+        id: itm?.id || null,
+        label: itm?.label,
+        roomId: itm?.roomId,
+        siteId: updateSite?.siteId,
+        left: Number(itm?.leftPosition),
+        top: Number(itm?.topPosition),
+      }
+    })?.filter(itm => itm?.roomId === selectedFloorData?.id);
+    setDroppedItems(filteredData || []);
+  }
 
   const [{ isOver }, drop] = useDrop({
     accept: "LABEL",
@@ -155,12 +120,15 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
         newLeft <= imageRect.width &&
         newTop <= imageRect.height
       ) {
-        const newDroppedItem = {
-          left: newLeft,
-          top: newTop,
-          label: item.label,
-        };
-        setDroppedItems((prev) => [...prev, newDroppedItem]);
+        setDroppedItems((prev) => [
+          ...prev,
+          {
+            left: newLeft,
+            top: newTop,
+            label: item.label,
+            roomId: item.roomId,
+          },
+        ]);
       }
     },
     collect: (monitor) => ({
@@ -168,130 +136,73 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
     }),
   });
 
-  const DraggableLabel = ({ label }) => {
+  const DraggableLabel = ({ label, roomId, isDisabled }) => {
     const [{ isDragging }, drag] = useDrag({
       type: "LABEL",
-      item: { label },
-      collect: (monitor) => ({
-        isDragging: !!monitor.isDragging(),
-      }),
+      item: { label, roomId },
+      collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
+      canDrag: !isDisabled, // Prevent dragging if label is disabled
     });
 
     return (
-      <div
+      <li
         ref={drag}
         style={{
+          display: "inline-block",
           opacity: isDragging ? 0.5 : 1,
-          padding: '6px',
-          cursor: "move",
-          width: "100%",
+          padding: "6px 10px",
+          cursor: isDisabled ? "not-allowed" : "move",
           height: "28px",
           fontSize: "8px",
           border: "1px solid grey",
           marginBottom: "4px",
+          marginRight: "4px",
+          borderRadius: "50%",
+          listStyleType: "none",
+          whiteSpace: "nowrap",
+          backgroundColor: isDisabled ? "#f0f0f0" : "white", // Grayed out background for disabled labels
         }}
       >
         {label}
-      </div>
+      </li>
     );
   };
 
-  const handleDelete = (indexToDelete) => {
-    setDroppedItems((prevItems) =>
-      prevItems.filter((_, index) => index !== indexToDelete)
+  const Marker = ({ index, item, updatePosition }) => {
+    const [{ isDragging }, drag] = useDrag({
+      type: "MARKER",
+      item: { index },
+      collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
+      end: (_, monitor) => {
+        const offset = monitor.getClientOffset();
+        const imageRect = imageRef.current.getBoundingClientRect();
+        const newLeft = offset.x - imageRect.left;
+        const newTop = offset.y - imageRect.top;
+        updatePosition(index, newLeft, newTop);
+      },
+    });
+
+    return (
+      <Tooltip title={`Assets: ${item.label}`} arrow>
+        <div
+          ref={drag}
+          style={{
+            position: "absolute",
+            left: item.left,
+            top: item.top,
+            backgroundColor: "#d34053",
+            color: "white",
+            padding: "4px",
+            fontSize: "8px",
+            borderRadius: "50%",
+            cursor: "move",
+            opacity: isDragging ? 0.5 : 1,
+          }}
+        >
+          <a target="_blank" className="markerLink" href="/#/assets">{item.label}</a>
+        </div>
+      </Tooltip>
     );
-  };
-  const saveImage = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      console.error("Canvas reference is null");
-      return;
-    }
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      console.error("Failed to get canvas context");
-      return;
-    }
-
-    const img = new Image();
-    img.crossOrigin = "Anonymous"; // Allow cross-origin requests
-    img.src = floorPlanUrl; // Use the stored floor plan URL
-
-    img.onload = () => {
-      // Resize the canvas to match the dimensions of the loaded image
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      // Calculate scale factor between displayed image and original image
-      const displayedImageWidth = imageRef.current.clientWidth;
-      const displayedImageHeight = imageRef.current.clientHeight;
-
-      const scaleX = img.width / displayedImageWidth;
-      const scaleY = img.height / displayedImageHeight;
-
-      // Clear the canvas and draw the image onto it
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // Loop through dropped items and render them on top of the image
-      droppedItems.forEach((item) => {
-        // Adjust the position of the labels based on the scale factor
-        const scaledLeft = item.left * scaleX;
-        const scaledTop = item.top * scaleY;
-
-        // Draw the background rectangle for the label
-        ctx.fillStyle = "#d34053";
-        ctx.fillRect(scaledLeft, scaledTop, 100 * scaleX, 35 * scaleY);
-
-        // Draw the label text
-        ctx.fillStyle = "white";
-        ctx.font = `${8 * scaleX}px Arial`; // Scale font size
-        ctx.fillText(
-          item.label,
-          scaledLeft + 5 * scaleX,
-          scaledTop + 25 * scaleY
-        );
-      });
-
-      // Convert the canvas to a Blob and trigger the download/upload
-      canvas.toBlob((blob) => {
-        if (blob) {
-          // Prepare the form data for upload
-          let form_data = new FormData();
-          // Append the Blob as a file in FormData
-          form_data.append("files", blob, `${selectedTab?.name}.png`);
-
-          // Add additional metadata about the floor plan
-          const data = [
-            {
-              nodeId: selectedTab?.id,
-              fileName: `${selectedTab?.name}.png`,
-            },
-          ];
-          form_data.append("floorPlans", JSON.stringify(data));
-
-          // Make the API call to upload the form data
-          setLoader(true);
-          uploadFloorPlan(form_data, updateSite?.siteId)
-            .then((response) => {
-              setDroppedItems([]); // This clears all the dropped labels
-              console.log("File uploaded successfully", response);
-              setLoader(false);
-            })
-            .catch((error) => {
-              console.error("Error uploading file", error);
-              setLoader(false);
-            });
-        } else {
-          console.error("Failed to create image blob");
-        }
-      }, "image/png");
-    };
-
-    img.onerror = (error) => {
-      console.error("Failed to load image:", error);
-    };
   };
 
   return (
@@ -305,18 +216,59 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
           height: 600,
         }}
       >
-        <Tabs
-          orientation="vertical"
-          variant="scrollable"
-          value={tabValue}
-          onChange={handleChange}
-          aria-label="Vertical tabs example"
-          sx={{ borderRight: 1, borderColor: "divider" }}
+        <ul
+          style={{
+            borderRight: "1px solid grey",
+            padding: "0",
+            margin: "0",
+            width: "200px",
+            listStyleType: "none",
+          }}
         >
-          {getTabLabel()}
-        </Tabs>
+          {getFloorList()}
+        </ul>
         <div ref={drop} style={{ position: "relative", width: "100%" }}>
-          {getTabPanel()}
+          <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+            {markerLabels.map((room) => {
+              const isDisabled = droppedItems.some(
+                (item) => item.label === room?.nodeName.split(" ")[1]
+              );
+              return (
+                <DraggableLabel
+                  key={room?.id}
+                  roomId={room?.parentNode}
+                  label={room?.nodeName?.split(" ")[1]}
+                  isDisabled={isDisabled}
+                />
+              );
+            })}
+          </ul>
+          {floorPlanUrl ? (
+            <div
+              ref={imageRef}
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+              }}
+            >
+              <embed
+                src={floorPlanUrl}
+                style={{ width: "100%", height: "500px", objectFit: "contain" }}
+              />
+              {droppedItems.map((item, index) => (
+                <Marker
+                  key={index}
+                  index={index}
+                  item={item}
+                  updatePosition={updateMarkerPosition}
+                />
+              ))}
+            </div>
+          ) : (
+            "Floor plan file is not available."
+          )}
         </div>
       </Box>
       <Button
@@ -325,7 +277,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
         color="primary"
         onClick={saveImage}
       >
-        Save Image
+        Save Markers
       </Button>
     </div>
   );
@@ -340,6 +292,5 @@ const FloorMapWithDnd = (props) => (
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
 });
-export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(
-  FloorMapWithDnd
-);
+
+export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(FloorMapWithDnd);

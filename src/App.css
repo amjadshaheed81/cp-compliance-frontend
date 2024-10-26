@@ -79,3 +79,6 @@ h2{
     padding-left: 1rem;
   }
 }
+a.markerLink {
+  color: #fff !important;
+}
