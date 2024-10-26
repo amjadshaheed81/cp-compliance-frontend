@@ -101,7 +101,7 @@ const Users = ({
             return matchesNameOrEmail && matchesRole && matchesSite && matchesStatus;
         });
 
-        setCurrentPage(calculateLastPageIndex(list?.length, usersPerPage));
+        setCurrentPage(1); //calculateLastPageIndex(list?.length, usersPerPage)
         setFilteredUser(list);
     } else {
         setFilteredUser(users);

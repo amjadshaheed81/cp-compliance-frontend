@@ -155,7 +155,7 @@ const Contracts = ({
             .includes(String(subCategory).toLowerCase()) &&
           String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, contractsPerPage));
+      setCurrentPage(1); //calculateLastPageIndex(list?.length, contractsPerPage)
       setFilteredContractList(list);
     } else {
       setFilteredContractList(contractList);

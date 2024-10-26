@@ -154,7 +154,7 @@ const Summary = ({
             .includes(String(floor).toLowerCase()) &&
           String(x?.room).toLowerCase().includes(String(room).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
+      setCurrentPage(1); //calculateLastPageIndex(list?.length, preActionsPerPage)
       setFilteredSiteAssets(list);
     } else {
       setFilteredSiteAssets(siteAssetsList);

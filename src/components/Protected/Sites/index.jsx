@@ -119,7 +119,7 @@ const Sites = ({
             .toLowerCase()
             .includes(String(value).toLowerCase()))
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
+      setCurrentPage(1); //calculateLastPageIndex(list?.length, sitesPerPage)
       setFilterSite(list);
     } else {
       setFilterSite(sites);
@@ -135,7 +135,7 @@ const Sites = ({
       const list = sites?.filter((x) =>
         String(x?.status).toLowerCase().includes(String(val).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
+      setCurrentPage(1); //calculateLastPageIndex(list?.length, sitesPerPage)
       setFilterSite(list);
     } else {
       setFilterSite(sites);
@@ -166,7 +166,7 @@ const Sites = ({
       );
     }
 
-    setCurrentPage(calculateLastPageIndex(filteredSites.length, sitesPerPage));
+    setCurrentPage(1);
     setFilterSite(filteredSites);
   };
   return (

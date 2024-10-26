@@ -90,7 +90,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
               .includes(String(searchField).toLowerCase())) &&
           String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
+      setCurrentPage(1); // calculateLastPageIndex(list?.length, preActionsPerPage)
       setFilteredActions(sortCompletedLast(list));
     } else {
       setFilteredActions(preActions);

@@ -142,7 +142,7 @@ const Door = ({
             .toLowerCase()
             .includes(String(room).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
+      setCurrentPage(1); //calculateLastPageIndex(list?.length, preActionsPerPage)
       setFilteredSiteDoorItems(list);
     } else {
       setFilteredSiteDoorItems(siteAssetsList);

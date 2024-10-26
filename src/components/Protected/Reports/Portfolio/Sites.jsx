@@ -76,7 +76,7 @@ const Sites = ({
             .toLowerCase()
             .includes(String(value).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, sitesPerPage));
+      setCurrentPage(1); // calculateLastPageIndex(list?.length, sitesPerPage)
       setFilterSite(list);
     } else {
       setFilterSite(sites);
