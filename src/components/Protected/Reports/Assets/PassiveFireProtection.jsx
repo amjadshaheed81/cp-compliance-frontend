@@ -115,7 +115,7 @@ const PassiveFireProtection = ({
             .toLowerCase()
             .includes(String(room).toLowerCase())
       );
-      setCurrentPage(calculateLastPageIndex(list?.length, preActionsPerPage));
+      setCurrentPage(1); // calculateLastPageIndex(list?.length, preActionsPerPage)
       setfilteredSitePFPItems(list);
     } else {
       setfilteredSitePFPItems(siteAssetsList);
