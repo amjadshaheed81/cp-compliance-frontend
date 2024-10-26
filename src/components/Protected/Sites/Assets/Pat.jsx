@@ -20,6 +20,7 @@ import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 import { getPatTestedEndDate, getPatTestedStartDate } from "../../../../utils/getPatTestedDate";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 import AddPatDetails from "./AddPatDetails";
+import { useLocation } from "react-router-dom";
 
 const Pat = ({
   sitePATItems,
@@ -42,6 +43,7 @@ const Pat = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
+  const location = useLocation();
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
@@ -164,7 +166,22 @@ const Pat = ({
       siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
     setFloorNode(floorNodes);
     setRoomNode(roomNodes);
-  }, [siteLayout]);
+    // Check if there is a label parameter in the URL
+    const queryParams = new URLSearchParams(location.search);
+    const label = queryParams.get("roomLabel");
+
+    if (label) {
+      const roomNumber = label; // Extract the part after '-'
+      const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
+      console.log("matchedRoom",matchedRoom);
+      if (matchedRoom) {
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          room: matchedRoom?.nodeName,
+        }));
+      }
+    }
+  }, [siteLayout, location.search]);
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -314,6 +331,7 @@ const Pat = ({
                 name="room"
                 className="form-control form-select"
                 id="room"
+                value={formData.room} // Set the selected value dynamically
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>

@@ -16,7 +16,7 @@ import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
-import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
+import { useLocation } from "react-router-dom";
 
 const PassiveFireProtection = ({
   sitePFPItems,
@@ -38,6 +38,7 @@ const PassiveFireProtection = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
+  const location = useLocation();
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
@@ -157,7 +158,22 @@ const PassiveFireProtection = ({
       siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
     setFloorNode(floorNodes);
     setRoomNode(roomNodes);
-  }, [siteLayout]);
+    // Check if there is a label parameter in the URL
+    const queryParams = new URLSearchParams(location.search);
+    const label = queryParams.get("roomLabel");
+
+    if (label) {
+      const roomNumber = label; // Extract the part after '-'
+      const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
+      console.log("matchedRoom",matchedRoom);
+      if (matchedRoom) {
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          room: matchedRoom?.nodeName,
+        }));
+      }
+    }
+  }, [siteLayout, location.search]);
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
@@ -300,6 +316,7 @@ const PassiveFireProtection = ({
                 name="room"
                 className="form-control form-select"
                 id="room"
+                value={formData.room} // Set the selected value dynamically
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>

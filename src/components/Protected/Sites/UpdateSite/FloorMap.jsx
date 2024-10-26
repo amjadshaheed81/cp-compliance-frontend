@@ -169,6 +169,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   };
 
   const Marker = ({ index, item, updatePosition }) => {
+    console.log("item", item);
     const [{ isDragging }, drag] = useDrag({
       type: "MARKER",
       item: { index },
@@ -183,7 +184,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
     });
 
     return (
-      <Tooltip title={`Assets: ${item.label}`} arrow>
+      <Tooltip title={`View Assets: ${item.label}`} arrow>
         <div
           ref={drag}
           style={{
@@ -202,7 +203,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
             opacity: isDragging ? 0.7 : 1,
           }}
         >
-          <a target="_blank" className="markerLink" href="/#/assets">{item.label}</a>
+          <a target="_blank" className="markerLink" href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}>{item.label}</a>
         </div>
       </Tooltip>
     );

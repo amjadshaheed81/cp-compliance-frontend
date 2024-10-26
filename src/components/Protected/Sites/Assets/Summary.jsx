@@ -18,7 +18,7 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
-import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
+import { useLocation } from "react-router-dom";
 
 const Summary = ({
   siteAssets,
@@ -41,6 +41,7 @@ const Summary = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
+  const location = useLocation();
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
   const currentSiteAssets = filteredSiteAssets
@@ -62,14 +63,30 @@ const Summary = ({
     getCategory();
     getSiteLayout(siteSelectedForGlobal?.siteId);
   }, [siteSelectedForGlobal]);
+
   useEffect(() => {
-    const floorNodes =
-      siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
-    const roomNodes =
-      siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+    const floorNodes = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+    const roomNodes = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
     setFloorNode(floorNodes);
     setRoomNode(roomNodes);
-  }, [siteLayout]);
+
+    // Check if there is a label parameter in the URL
+    const queryParams = new URLSearchParams(location.search);
+    const label = queryParams.get("roomLabel");
+
+    if (label) {
+      const roomNumber = label; // Extract the part after '-'
+      const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
+      console.log("matchedRoom",matchedRoom);
+      if (matchedRoom) {
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          room: matchedRoom?.nodeName,
+        }));
+      }
+    }
+  }, [siteLayout, location.search]);
+
   const getCategory = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
@@ -303,6 +320,7 @@ const Summary = ({
                 name="room"
                 className="form-control form-select"
                 id="room"
+                value={formData.room} // Set the selected value dynamically
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>
