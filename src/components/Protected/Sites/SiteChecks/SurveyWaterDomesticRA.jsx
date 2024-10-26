@@ -283,7 +283,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       value={riskFactor[idx]?.response?.score}
                     >
                       <option value="">Select </option>
-                      {scoreoptions.filter(o => o.attribite1 === String(q?.riskFactorID)).map(o =>(
+                      {scoreoptions.sort((a, b) => Number(a.lovValue) - Number(b.lovValue)).filter(o => o.attribite1 === String(q?.riskFactorID)).map(o =>(
                         <option value={o.lovValue}> {o.lovValue} -  {o.lovDesc} </option>
                       ))}
                     </select>
