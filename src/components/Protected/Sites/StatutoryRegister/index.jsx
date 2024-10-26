@@ -49,6 +49,9 @@ const StatutoryRegister = ({
   }, [searchTerm]);
   const updateResidence = async () => {
     const res = await put("/api/document/statutoryRegister/manage", searchTerm);
+    if (res?.status === 200) {
+      getStatutory(siteSelectedForGlobal?.siteId);
+    }
   };
   const navigate = useNavigate();
   let dutiesIdentified = 0;
