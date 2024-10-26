@@ -9,7 +9,7 @@ import {
 import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
 import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
+const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
@@ -75,7 +75,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
   // }
 
   const getQuestions = async () => {
-    const questionsFromDB = await get("/api/site-check/assessment/questions/assessment-fire-risk")
+    const questionsFromDB = await get("/api/site-check/assessment/questions/"+subType)
     const questionsResponse = await get("/api/site-check/assessment/response/" + checkId)
     questionsFromDB.forEach(q => {
       const resIdx = questionsResponse.findIndex(r => r.qid === q.qid);
