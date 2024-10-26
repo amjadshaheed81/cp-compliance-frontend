@@ -450,7 +450,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       </Grid>
                     </Grid> 
                   </Grid>*/}
-                  <Grid item xs={12}>
+                  {/* <Grid item xs={12}>
                     <label htmlFor="action" name="action">
                       Suggested Action
                     </label>
@@ -466,7 +466,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       onChange={(e) => handleInputChange(e, idx)}
                       style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
-                  </Grid>
+                  </Grid> */}
                   {!riskFactor[idx]?.completed &&
                     <Grid item xs={12}>
 
