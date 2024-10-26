@@ -68,7 +68,7 @@ const SurveyWaterTemperatureMonitoring = ({
         _.completed = true;
       });
       setalldata(data);
-      data = data.reverse();
+      //data = data.reverse();
       data = removeduplciate(data);
       setFormData(data);
     }
