@@ -18,16 +18,18 @@ import StatuaryStatus from "../../../common/Alert/Status/StatuaryStatus";
 import { useForm } from "react-hook-form";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { toast } from "react-toastify";
+import FaSave from "@mui/icons-material/Check";
+import { showLoader, hideLoader } from "js-loader-fn";
 
 export const findAssetWithNearestPatNextDate = (assets) => {
   let nearestAsset = null;
   let nearestPatItem = null;
   let nearestDate = null;
-  assets.forEach(asset => {
+  assets.forEach((asset) => {
     if (asset.assetPATItems) {
-      asset.assetPATItems.forEach(patItem => {
+      asset.assetPATItems.forEach((patItem) => {
         const patNextDate = new Date(patItem.patNextDate);
-        
+
         // Check if it's the first date or closer than the previous nearestDate
         if (!nearestDate || patNextDate < nearestDate) {
           nearestDate = patNextDate;
@@ -38,7 +40,9 @@ export const findAssetWithNearestPatNextDate = (assets) => {
     }
   });
 
-  return nearestAsset && nearestPatItem ? { asset: nearestAsset, patItem: nearestPatItem } : null;
+  return nearestAsset && nearestPatItem
+    ? { asset: nearestAsset, patItem: nearestPatItem }
+    : null;
 };
 
 const StatutoryRegister = ({
@@ -57,6 +61,35 @@ const StatutoryRegister = ({
   const [siteChecks, setSiteChecks] = useState([]);
   const [patItems, setPatItems] = useState([]);
   const [folder, setFolder] = useState({});
+  const [responsibleTexts, setResponsibleTexts] = useState({});
+  const [showSaveIcon, setShowSaveIcon] = useState({});
+
+  const handleTextChange = (e, item) => {
+    const { value } = e.target;
+    setResponsibleTexts({
+      ...responsibleTexts,
+      [item.id]: value,
+    });
+    setShowSaveIcon({
+      ...showSaveIcon,
+      [item.id]: true, // Show save icon when text changes
+    });
+  };
+
+  const handleSaveClick = (item) => {
+    // Only update setValue and setSearchTerm on save
+    setValue(`residence-${item.id}`, responsibleTexts[item.id]);
+    setSearchTerm({
+      ...item,
+      residence: responsibleTexts[item.id],
+    });
+
+    // Hide save icon after saving
+    setShowSaveIcon({
+      ...showSaveIcon,
+      [item.id]: false,
+    });
+  };
   const {
     register,
     formState: { errors },
@@ -64,15 +97,26 @@ const StatutoryRegister = ({
   } = useForm({});
   const [searchTerm, setSearchTerm] = useState({});
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      updateResidence();
-    }, 2000);
-    return () => clearTimeout(delayDebounceFn);
+    updateResidence();
   }, [searchTerm]);
   const updateResidence = async () => {
-    const res = await put("/api/document/statutoryRegister/manage", searchTerm);
-    if (res?.status === 200) {
-      getStatutory(siteSelectedForGlobal?.siteId);
+    try {
+      showLoader({ title: "Please wait..." });
+      const res = await put(
+        "/api/document/statutoryRegister/manage",
+        searchTerm
+      );
+      if (res?.status === 200) {
+        hideLoader();
+        getStatutory(siteSelectedForGlobal?.siteId);
+      } else {
+        hideLoader();
+        toast.error(
+          "Responsible text is not updated due to some technical issue. Please try again."
+        );
+      }
+    } catch (e) {
+      hideLoader();
     }
   };
   const navigate = useNavigate();
@@ -105,10 +149,13 @@ const StatutoryRegister = ({
     );
     setStatutory(getStatutoryDocuments);
     // Set initial values for residence fields using setValue
+    const newResponsibleTexts = {};
+
     getStatutoryDocuments.forEach((item) => {
+      newResponsibleTexts[item.id] = item.residence || "";
       setValue(`residence-${item.id}`, item.residence || ""); // Prepopulate with existing residence value if available
     });
-
+    setResponsibleTexts(newResponsibleTexts);
     chipColor = statutory.filter((item) => {
       return item.status === "Passed";
     });
@@ -214,21 +261,22 @@ const StatutoryRegister = ({
   const getPatItems = async () => {
     let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
     const { assets } = await get(url);
-    setPatItems(assets)
-  }
+    setPatItems(assets);
+  };
   const getSiteChecks = async () => {
     const siteChecksData = await get(
       `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
     );
     setSiteChecks(siteChecksData);
   };
-  
+
   const getViewEvidenceExpiryDate = (row) => {
     // Group siteChecks by types to avoid multiple filtering
     const surveys = siteChecks?.filter((itm) => itm?.type === "Survey");
     const inspections = siteChecks?.filter((itm) => itm?.type === "Inspection");
     const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
-    const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
+    const assetWithNearestPatNextDate =
+      findAssetWithNearestPatNextDate(patItems);
     console.log("assetWithNearestPatNextDate", assetWithNearestPatNextDate);
     // Pre-filter categories and subTypes for easier lookups
     const filteredSiteChecks = {
@@ -250,11 +298,13 @@ const StatutoryRegister = ({
       waterSafetyRiskAssessment: inspections?.find(
         (itm) =>
           itm?.subType === "Legionella" &&
-          (itm?.category ===  "Domestic RA" || "Water Safety Annual Inspection")
+          (itm?.category === "Domestic RA" || "Water Safety Annual Inspection")
       ),
       waterOutletTemperature: inspections?.find(
         (itm) =>
-          itm?.subType === "Legionella" && (itm?.category === "Outlet Temperature" || itm?.category === "Water Temperature Monitoring")
+          itm?.subType === "Legionella" &&
+          (itm?.category === "Outlet Temperature" ||
+            itm?.category === "Water Temperature Monitoring")
       ),
       waterStorage: inspections?.find(
         (itm) =>
@@ -270,10 +320,13 @@ const StatutoryRegister = ({
         (itm) => itm?.subType === "Fire Risk Assessment"
       ),
       waterTemprature: surveys?.find(
-        (itm) => itm?.subType === "Water" && itm?.category === "Water Temperature Monitoring"
+        (itm) =>
+          itm?.subType === "Water" &&
+          itm?.category === "Water Temperature Monitoring"
       ),
       waterRiskAssessment: surveys?.find(
-        (itm) => itm?.subType === "Water" && itm?.category === "Water Risk Assessment"
+        (itm) =>
+          itm?.subType === "Water" && itm?.category === "Water Risk Assessment"
       ),
     };
     // Define a mapping of row subTypes to filteredSiteChecks
@@ -294,33 +347,34 @@ const StatutoryRegister = ({
     const checkMappingsReq = {
       "PAT / Microwave Testing": filteredSiteChecks.patItems,
       "Shower Head Cleaning": filteredSiteChecks.waterStorage,
-      "Water Temperature Monitoring":  filteredSiteChecks.waterTemprature,
+      "Water Temperature Monitoring": filteredSiteChecks.waterTemprature,
       "Water Risk Assessment": filteredSiteChecks.waterRiskAssessment,
     };
 
     const matchedCheck =
       checkMappings[row?.subType] || checkMappings[row?.requirement];
-    const matchedCheckReq = checkMappingsReq[row?.requirement] || checkMappings[row?.subType];
+    const matchedCheckReq =
+      checkMappingsReq[row?.requirement] || checkMappings[row?.subType];
 
     // If a matching check exists, return the expiry date row
     // console.log("row", row);
     if (matchedCheck || matchedCheckReq) {
-      if(row?.requirement == "Water Risk Assessment") {
+      if (row?.requirement == "Water Risk Assessment") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.startDate,
           matchedCheckReq.dueDate
         );
-      }else if(row?.requirement == "Water Temperature Monitoring") {
+      } else if (row?.requirement == "Water Temperature Monitoring") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.startDate,
           matchedCheckReq.dueDate
         );
-      } else if(row?.requirement == "Shower Head Cleaning") {
+      } else if (row?.requirement == "Shower Head Cleaning") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.startDate,
           matchedCheckReq.dueDate
         );
-      } else if(row?.subType == "PAT / Microwave Testing") {
+      } else if (row?.subType == "PAT / Microwave Testing") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.patDate,
           matchedCheckReq.patNextDate
@@ -364,19 +418,19 @@ const StatutoryRegister = ({
 
   const untagAsset = async (selectedRow, statutory) => {
     const fileIds = [selectedRow]?.map((item) => item.id);
-      const url = `/api/document/untag-file`;
-      const data = {
-        fileIds: fileIds,
-        statutoryCategoryId: statutory?.id,
-      };
-      const res = await put(url, data);
-      if (res?.status === 200) {
-        toast.success("Files un tagged successfully.");
-        getStatutory(siteSelectedForGlobal?.siteId);
-      } else {
-        toast.error("Something went wrong while un tagging files.");
-      }
-  }
+    const url = `/api/document/untag-file`;
+    const data = {
+      fileIds: fileIds,
+      statutoryCategoryId: statutory?.id,
+    };
+    const res = await put(url, data);
+    if (res?.status === 200) {
+      toast.success("Files un tagged successfully.");
+      getStatutory(siteSelectedForGlobal?.siteId);
+    } else {
+      toast.error("Something went wrong while un tagging files.");
+    }
+  };
 
   return (
     <>
@@ -521,23 +575,28 @@ const StatutoryRegister = ({
                         />
                       </th>
                       <th scope="col">
-                        <input
-                          type="text"
-                          id="chkbox"
-                          style={{ width: "120px" }}
-                          className="form-control"
-                          placeholder=""
-                          disabled={!isManagerAdminLogin(loggedInUserData)}
-                          {...register(`residence-${item.id}`)}
-                          onChange={(e) => {
-                            console.log(e);
-                            setValue(`residence-${item.id}`, e.target.value);
-                            setSearchTerm({
-                              ...item,
-                              residence: e.target.value,
-                            });
-                          }}
-                        />
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <input
+                            type="text"
+                            id="chkbox"
+                            style={{ width: "120px" }}
+                            className="form-control"
+                            value={responsibleTexts[item.id] || ""}
+                            {...register(`residence-${item.id}`)}
+                            disabled={!isManagerAdminLogin(loggedInUserData)}
+                            onChange={(e) => handleTextChange(e, item)}
+                          />
+                          {showSaveIcon[item.id] && (
+                            <FaSave
+                              style={{
+                                color: "green",
+                                cursor: "pointer",
+                                marginLeft: "5px",
+                              }}
+                              onClick={() => handleSaveClick(item)}
+                            />
+                          )}
+                        </div>
                       </th>
                       <th scope="col">
                         <table
@@ -747,8 +806,11 @@ const StatutoryRegister = ({
 
                             <tr>
                               <td
-                                colspan={String(item?.type).toLowerCase() ===
-                                  "pdf" ? 8 : 7}
+                                colspan={
+                                  String(item?.type).toLowerCase() === "pdf"
+                                    ? 8
+                                    : 7
+                                }
                                 style={{
                                   backgroundColor: "#5A6371",
                                   color: "#FFFFFF",
