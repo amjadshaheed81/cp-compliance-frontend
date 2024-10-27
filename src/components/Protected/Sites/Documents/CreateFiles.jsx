@@ -519,7 +519,11 @@ const CreateFiles = ({
                 style={{
                   backgroundColor: "#f1f5f9",
                   margin: "10px",
-                  display: selectedMandatoryFile?.length > 0 ? "none" : "",
+                  display: selectedMandatoryFile?.length > 0 || !!(
+                    !selectedMandatoryFolder?.[0]?.requirement &&
+                    selectedMandatoryFolder?.[0]?.id &&
+                    isStatutory
+                  ) ? "none" : "",
                 }}
               >
                 <div className="uploadPhotoButton">
