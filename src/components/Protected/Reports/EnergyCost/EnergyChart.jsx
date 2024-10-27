@@ -80,14 +80,14 @@ const EnergyChart = ({ energyData }) => {
     ],
     datasets: [
       {
-        label: `Current Year Cost (${currentYear})`,
+        label: `Current Year Energy Reading (${currentYear})`,
         data: currentYearCosts,
         fill: false,
         backgroundColor: "rgba(75, 192, 192, 0.5)",
         borderColor: "rgba(75, 192, 192, 0.8)",
       },
       {
-        label: `Last Year Cost (${lastYear})`,
+        label: `Last Year Energy Reading (${lastYear})`,
         data: lastYearCosts,
         fill: false,
         backgroundColor: "rgba(255, 99, 132, 0.5)",
@@ -104,7 +104,7 @@ const EnergyChart = ({ energyData }) => {
       },
       title: {
         display: true,
-        text: `Cost Comparison: ${currentYear} vs ${lastYear}`,
+        text: `Energy Comparison: ${currentYear} vs ${lastYear}`,
       },
     },
     scales: {
