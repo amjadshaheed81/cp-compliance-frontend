@@ -784,30 +784,30 @@ const UpdateAsset = ({
                         ? "text-success"
                         : "text-warning"
                     }
-                    icon={
-                      selectedAsset?.purchaseDate &&
-                      selectedAsset?.supplier &&
-                      selectedAsset?.transactionId &&
-                      selectedAsset?.cost &&
-                      selectedAsset?.invoiceFile ? (
-                        <CheckCircleOutlineIcon />
-                      ) : (
-                        <WarningAmberIcon />
-                      )
-                    }
+                    // icon={
+                    //   selectedAsset?.purchaseDate &&
+                    //   selectedAsset?.supplier &&
+                    //   selectedAsset?.transactionId &&
+                    //   selectedAsset?.cost &&
+                    //   selectedAsset?.invoiceFile ? (
+                    //     <CheckCircleOutlineIcon />
+                    //   ) : (
+                    //     <WarningAmberIcon />
+                    //   )
+                    // }
                     label="Purchase Details"
                     value="2"
                   />
                   <Tab
-                    icon={
-                      selectedAsset?.position &&
-                      selectedAsset?.floor &&
-                      selectedAsset?.room ? (
-                        <CheckCircleOutlineIcon />
-                      ) : (
-                        <WarningAmberIcon />
-                      )
-                    }
+                    // icon={
+                    //   selectedAsset?.position &&
+                    //   selectedAsset?.floor &&
+                    //   selectedAsset?.room ? (
+                    //     <CheckCircleOutlineIcon />
+                    //   ) : (
+                    //     <WarningAmberIcon />
+                    //   )
+                    // }
                     className={
                       selectedAsset?.position &&
                       selectedAsset?.floor &&
@@ -829,30 +829,30 @@ const UpdateAsset = ({
                         ? "text-success"
                         : "text-warning"
                     }
-                    icon={
-                      selectedAsset?.valuationDate &&
-                      selectedAsset?.disposalDate &&
-                      selectedAsset?.disposalTo &&
-                      selectedAsset?.disposalValue &&
-                      selectedAsset?.valuationUserId &&
-                      selectedAsset?.valuationValue ? (
-                        <CheckCircleOutlineIcon />
-                      ) : (
-                        <WarningAmberIcon />
-                      )
-                    }
+                    // icon={
+                    //   selectedAsset?.valuationDate &&
+                    //   selectedAsset?.disposalDate &&
+                    //   selectedAsset?.disposalTo &&
+                    //   selectedAsset?.disposalValue &&
+                    //   selectedAsset?.valuationUserId &&
+                    //   selectedAsset?.valuationValue ? (
+                    //     <CheckCircleOutlineIcon />
+                    //   ) : (
+                    //     <WarningAmberIcon />
+                    //   )
+                    // }
                     label="Valuation & Disposal"
                     value="4"
                   />
                   {selectedAsset?.patItem && (
                     <Tab
-                      icon={
-                        selectedAsset?.assetPATItems?.length > 0 ? (
-                          <CheckCircleOutlineIcon />
-                        ) : (
-                          <WarningAmberIcon />
-                        )
-                      }
+                      // icon={
+                      //   selectedAsset?.assetPATItems?.length > 0 ? (
+                      //     <CheckCircleOutlineIcon />
+                      //   ) : (
+                      //     <WarningAmberIcon />
+                      //   )
+                      // }
                       label="PAT Details"
                       value="5"
                       className={
@@ -864,13 +864,13 @@ const UpdateAsset = ({
                   )}
                   {selectedAsset?.pfpItem && (
                     <Tab
-                      icon={
-                        selectedAsset?.assetPFPItem ? (
-                          <CheckCircleOutlineIcon />
-                        ) : (
-                          <WarningAmberIcon />
-                        )
-                      }
+                      // icon={
+                      //   selectedAsset?.assetPFPItem ? (
+                      //     <CheckCircleOutlineIcon />
+                      //   ) : (
+                      //     <WarningAmberIcon />
+                      //   )
+                      // }
                       className={
                         selectedAsset?.assetPFPItem
                           ? "text-success"
@@ -882,13 +882,13 @@ const UpdateAsset = ({
                   )}
                   {selectedAsset?.patItem && (
                     <Tab
-                      icon={
-                        selectedAsset?.assetDoorSpecifications ? (
-                          <CheckCircleOutlineIcon />
-                        ) : (
-                          <WarningAmberIcon />
-                        )
-                      }
+                      // icon={
+                      //   selectedAsset?.assetDoorSpecifications ? (
+                      //     <CheckCircleOutlineIcon />
+                      //   ) : (
+                      //     <WarningAmberIcon />
+                      //   )
+                      // }
                       className={
                         selectedAsset?.assetDoorSpecifications
                           ? "text-success"
