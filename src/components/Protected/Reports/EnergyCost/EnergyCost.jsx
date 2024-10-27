@@ -431,21 +431,18 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
       <div>
         <div>
-        <div className="row" style={{ height: "auto" }}>
-                <div className="col-md-6 mt-2 mb-4">
-                  <h3>Energy Cost</h3>
-                  <CostChart energyData={filteredEnergyCost
-} />
-                </div>
-                <div className="col-md-6 mt-2 mb-4">
-                  <h3>Energy Chart</h3>
-                  <EnergyChart energyData={filteredEnergyCost
-} />
-                </div>
-              </div>
+          <div className="row" style={{ height: "auto" }}>
+            <div className="col-md-6 mt-2 mb-4">
+              <h5>Energy Cost</h5>
+              <CostChart energyData={filteredEnergyCost} />
+            </div>
+            <div className="col-md-6 mt-2 mb-4">
+              <h5>Energy Reading</h5>
+              <EnergyChart energyData={filteredEnergyCost} />
+            </div>
+          </div>
           <div className="d-flex bd-highlight" style={{ flexWrap: "wrap" }}>
             <div className="pt-2 bd-highlight ">
-              
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
                   <div style={{ position: "relative" }}>

@@ -12,6 +12,8 @@ import { get, post, del, put } from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
 import { Chip, CircularProgress, Grid, Autocomplete } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
+import UserActionChart from "./UserActionChart";
+import MonthWiseCheckChart from "./MonthWiseCheckChart";
 
 const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,15 +40,17 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
     );
-    setManagerList(data?.users?.sort((a, b) => {
-      if (a.name < b.name) {
+    setManagerList(
+      data?.users?.sort((a, b) => {
+        if (a.name < b.name) {
           return -1; // a comes before b
-      }
-      if (a.name > b.name) {
-          return 1;  // b comes before a
-      }
-      return 0; // names are equal
-  }) || []);
+        }
+        if (a.name > b.name) {
+          return 1; // b comes before a
+        }
+        return 0; // names are equal
+      }) || []
+    );
   };
 
   const [itemsPerPage] = useState(7);
@@ -57,6 +61,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  console.log("currentSiteChecks", currentSiteChecks);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -254,7 +259,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       eventType: `${body.type} ${body.subType}`,
       userId: loggedInUserData?.id,
       includeCompanyUsers: false,
-      section: `/site-checks/${body.checkId}/update`
+      section: `/site-checks/${body.checkId}/update`,
     };
     put("/api/user/calendar", calenderBody);
     calenderBody.userId = body.assistantUserID;
@@ -318,6 +323,19 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
             <>
               <div className="">
                 <div className="">
+                  <div className="row" style={{ height: "auto" }}>
+                    <div className="col-md-4 mt-2 mb-4">
+                      <h5>Risk Scoreboard</h5>
+                    </div>
+                    <div className="col-md-4 mt-2 mb-4">
+                      <h5>Site Checks</h5>
+                      <MonthWiseCheckChart data={currentSiteChecks} />
+                    </div>
+                    <div className="col-md-4 mt-2 mb-4">
+                      <h5>Action Log</h5>
+                      <UserActionChart data={currentSiteChecks} managerList={managerList} />
+                    </div>
+                  </div>
                   <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-3 col-sm-4 mt-2">
                       <div>

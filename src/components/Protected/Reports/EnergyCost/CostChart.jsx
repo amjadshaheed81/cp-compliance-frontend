@@ -116,14 +116,13 @@ const CostChart = ({ energyData }) => {
     scales: {
       x: {
         title: {
-          display: true,
-          text: "Month",
+          display: false,
+          // text: "Month",
         },
       },
       y: {
         title: {
-          display: true,
-          text: "Cost (in USD)",
+          display: false,
         },
         beginAtZero: true,
       },
