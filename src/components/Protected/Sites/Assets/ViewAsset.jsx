@@ -33,6 +33,8 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import "./AssetStyle.css";
 import Swal from "sweetalert2";
+import PdfViewer from "../Documents/PdfViewer";
+import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 
 const UpdateAsset = ({
   setLoader,
@@ -64,6 +66,8 @@ const UpdateAsset = ({
   const [subCategory3, setSubCategory3] = useState([]);
   const [subCategory3List, setSubCategory3List] = useState([]);
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
@@ -108,15 +112,17 @@ const UpdateAsset = ({
   const getTester = async () => {
     const url = `/api/user/all?userRole=${ROLE.TESTER}`;
     const data = await get(url);
-    setTester(data?.users?.sort((a, b) => {
-      if (a.name < b.name) {
+    setTester(
+      data?.users?.sort((a, b) => {
+        if (a.name < b.name) {
           return -1; // a comes before b
-      }
-      if (a.name > b.name) {
-          return 1;  // b comes before a
-      }
-      return 0; // names are equal
-  }));
+        }
+        if (a.name > b.name) {
+          return 1; // b comes before a
+        }
+        return 0; // names are equal
+      })
+    );
   };
 
   const savePatDetails = async () => {
@@ -417,13 +423,15 @@ const UpdateAsset = ({
   const getSelectedValue = () => {
     const selectedAssets = getValues("relatedAssetId")?.split(",");
     const arr = [];
-    if(selectedAssets) {
+    if (selectedAssets) {
       for (const iterator of selectedAssets) {
         const selectedValue =
-        siteAssets.find((itm) => itm.assetId == iterator) ||
-        null;
+          siteAssets.find((itm) => itm.assetId == iterator) || null;
         if (selectedValue) {
-          arr.push({ key: selectedValue?.assetId, label: selectedValue?.assetName });
+          arr.push({
+            key: selectedValue?.assetId,
+            label: selectedValue?.assetName,
+          });
         }
       }
     }
@@ -503,7 +511,7 @@ const UpdateAsset = ({
                           <Autocomplete
                             multiple
                             value={getSelectedValue()}
-                           // disabled
+                            // disabled
                             onChange={(event, newValue) => {
                               setValue("relatedAssetId", newValue?.key);
                             }}
@@ -575,6 +583,113 @@ const UpdateAsset = ({
                           />
                         </div>
                       </div>
+                      <div className="col-md-6">
+                        <label for="category">Category</label>
+                        <select
+                          name="category"
+                          className="form-control form-select"
+                          id="category"
+                          disabled
+                          {...register("category", {
+                            required: {
+                              value: true,
+                              message: `Please select category`,
+                            },
+                          })}
+                          onChange={(e) => {
+                            categoryChange(e.target.value);
+                          }}
+                        >
+                          <option value="">Select category</option>
+                          {category?.map((itm) => (
+                            <option
+                              selected={
+                                selectedAsset?.category === itm?.lovValue
+                              }
+                              value={itm?.lovValue}
+                            >
+                              {itm?.lovValue}
+                            </option>
+                          ))}
+                        </select>
+                        {errors?.category && (
+                          <InputError
+                            message={errors?.category?.message}
+                            key={errors?.category?.message}
+                          />
+                        )}
+                      </div>
+                      <div className="col-md-6">
+                        <label for="subCategory">Sub Category 1</label>
+                        <select
+                          name="subCategory"
+                          className="form-control form-select"
+                          id="subCategory"
+                          disabled
+                          {...register("subCategory")}
+                          onChange={(e) => {
+                            subCategoryChange(e.target.value);
+                          }}
+                        >
+                          <option value="">Select Sub Category</option>
+                          {subCategoryList?.map((itm) => (
+                            <option
+                              selected={
+                                selectedAsset?.subCategory === itm?.lovValue
+                              }
+                              value={itm?.lovValue}
+                            >
+                              {itm?.lovValue}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label for="subCategory2">Sub Category 2</label>
+                        <select
+                          name="subCategory2"
+                          disabled
+                          className="form-control form-select"
+                          id="subCategory2"
+                          {...register("subCategory2")}
+                        >
+                          <option value="">Select Sub Category 2</option>
+                          {subCategory2List?.map((itm) => (
+                            <option
+                              selected={
+                                selectedAsset?.subCategory2 === itm?.lovValue
+                              }
+                              value={itm?.lovValue}
+                            >
+                              {itm?.lovValue}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <div className="col-md-6">
+                          <label for="subCategory3">Sub Category 3</label>
+                          <select
+                            name="subCategory3"
+                            disabled
+                            className="form-control form-select"
+                            id="subCategory3"
+                            {...register("subCategory3")}
+                          >
+                            <option value=""></option>
+                            {subCategory3List?.map((itm) => (
+                              <option
+                                selected={
+                                  selectedAsset?.subCategory3 === itm?.lovValue
+                                }
+                                value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="col-md-4 text-center">
@@ -582,7 +697,7 @@ const UpdateAsset = ({
                       {selectedAsset?.image && (
                         <img
                           src={selectedAsset?.image}
-                          style={{ width: "100%"}}
+                          style={{ width: "100%" }}
                           className="img img-responsive border p-2 m-2"
                         />
                       )}
@@ -593,111 +708,6 @@ const UpdateAsset = ({
                   </div>
                 </div>
                 <div className="row" style={{ height: "auto" }}>
-                  <div className="col-md-4">
-                    <label for="category">Category</label>
-                    <select
-                      name="category"
-                      className="form-control form-select"
-                      id="category"
-                      disabled
-                      {...register("category", {
-                        required: {
-                          value: true,
-                          message: `Please select category`,
-                        },
-                      })}
-                      onChange={(e) => {
-                        categoryChange(e.target.value);
-                      }}
-                    >
-                      <option value="">Select category</option>
-                      {category?.map((itm) => (
-                        <option
-                          selected={selectedAsset?.category === itm?.lovValue}
-                          value={itm?.lovValue}
-                        >
-                          {itm?.lovValue}
-                        </option>
-                      ))}
-                    </select>
-                    {errors?.category && (
-                      <InputError
-                        message={errors?.category?.message}
-                        key={errors?.category?.message}
-                      />
-                    )}
-                  </div>
-                  <div className="col-md-4">
-                    <label for="subCategory">Sub Category 1</label>
-                    <select
-                      name="subCategory"
-                      className="form-control form-select"
-                      id="subCategory"
-                      disabled
-                      {...register("subCategory")}
-                      onChange={(e) => {
-                        subCategoryChange(e.target.value);
-                      }}
-                    >
-                      <option value="">Select Sub Category</option>
-                      {subCategoryList?.map((itm) => (
-                        <option
-                          selected={
-                            selectedAsset?.subCategory === itm?.lovValue
-                          }
-                          value={itm?.lovValue}
-                        >
-                          {itm?.lovValue}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-md-4">
-                    <label for="subCategory2">Sub Category 2</label>
-                    <select
-                      name="subCategory2"
-                      disabled
-                      className="form-control form-select"
-                      id="subCategory2"
-                      {...register("subCategory2")}
-                    >
-                      <option value="">Select Sub Category 2</option>
-                      {subCategory2List?.map((itm) => (
-                        <option
-                          selected={
-                            selectedAsset?.subCategory2 === itm?.lovValue
-                          }
-                          value={itm?.lovValue}
-                        >
-                          {itm?.lovValue}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <div className="col-md-4">
-                      <label for="subCategory3">Sub Category 3</label>
-                      <select
-                        name="subCategory3"
-                        disabled
-                        className="form-control form-select"
-                        id="subCategory3"
-                        {...register("subCategory3")}
-                      >
-                        <option value=""></option>
-                        {subCategory3List?.map((itm) => (
-                          <option
-                            selected={
-                              selectedAsset?.subCategory3 === itm?.lovValue
-                            }
-                            value={itm?.lovValue}
-                          >
-                            {itm?.lovValue}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
                   <div className="col-md-4 mt-2">
                     <input
                       type="checkbox"
@@ -751,12 +761,19 @@ const UpdateAsset = ({
           {/*  */}
           <Box sx={{ width: "100%", typography: "body1" }}>
             <TabContext value={value}>
-              <Box sx={{
-    '& .MuiTabs-flexContainer': {
-      flexWrap: 'wrap',
-    },
-  }}>
+              <Box
+                sx={{
+                  "& .MuiTabs-flexContainer": {
+                    flexWrap: "wrap",
+                  },
+                }}
+              >
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
+                  <Tab
+                    className="text-success"
+                    label="Tagged Assets"
+                    value="1"
+                  />
                   <Tab
                     className={
                       selectedAsset?.purchaseDate &&
@@ -779,7 +796,7 @@ const UpdateAsset = ({
                       )
                     }
                     label="Purchase Details"
-                    value="1"
+                    value="2"
                   />
                   <Tab
                     icon={
@@ -799,7 +816,7 @@ const UpdateAsset = ({
                         : "text-warning"
                     }
                     label="Location"
-                    value="2"
+                    value="3"
                   />
                   <Tab
                     className={
@@ -825,7 +842,7 @@ const UpdateAsset = ({
                       )
                     }
                     label="Valuation & Disposal"
-                    value="3"
+                    value="4"
                   />
                   {selectedAsset?.patItem && (
                     <Tab
@@ -837,7 +854,7 @@ const UpdateAsset = ({
                         )
                       }
                       label="PAT Details"
-                      value="4"
+                      value="5"
                       className={
                         selectedAsset?.assetPATItems?.length > 0
                           ? "text-success"
@@ -860,7 +877,7 @@ const UpdateAsset = ({
                           : "text-warning"
                       }
                       label="Passive Fire Protection"
-                      value="5"
+                      value="6"
                     />
                   )}
                   {selectedAsset?.patItem && (
@@ -878,12 +895,93 @@ const UpdateAsset = ({
                           : "text-warning"
                       }
                       label="Door Specifications"
-                      value="6"
+                      value="7"
                     />
                   )}
                 </TabList>
               </Box>
               <TabPanel value="1">
+                {showPdfModal && (
+                  <PdfViewer
+                    showPdfModal={showPdfModal}
+                    setShowPdfModal={setShowPdfModal}
+                    selectedPdf={selectedPdf}
+                  />
+                )}
+                <div className="container-fluid">
+                  <div className="table-responsive">
+                    <table className="table f-11">
+                      <thead className="table-dark">
+                        <tr>
+                          <th scope="col">File</th>
+                          <th scope="col">Version</th>
+                          <th scope="col">Uploaded By</th>
+                          <th scope="col">Date</th>
+                          <th scope="col">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {!selectedAsset?.files && (
+                          <tr className="text-center">
+                            <td colSpan={6}>No Result Found.</td>
+                          </tr>
+                        )}
+                        {selectedAsset?.files?.map((file, index) => (
+                          <tr key={index}>
+                            <td>
+                              <div>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowPdfModal(true);
+                                    setSelectedPdf(file?.fileBlobUrl);
+                                  }}
+                                >
+                                  <TextSnippetOutlinedIcon
+                                    style={{ color: "#384BD3" }}
+                                  />
+                                  <span className="p-3 cursor">
+                                    {file?.name}
+                                  </span>
+                                </button>
+                              </div>
+                            </td>
+                            <td>
+                              {file?.fileVersion ? file?.fileVersion : "--"}
+                            </td>
+                            <td>
+                              {file?.uploaderUserName
+                                ? file?.uploaderUserName
+                                : "--"}
+                            </td>
+                            <td>
+                              {file?.expiryDate
+                                ? moment(file?.expiryDate).format("DD/MM/YYYY")
+                                : "--"}
+                            </td>
+                            <td>
+                              <button
+                                className="btn btn-sm border-less"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowPdfModal(true);
+                                  setSelectedPdf(file?.fileBlobUrl);
+                                }}
+                              >
+                                <i
+                                  className="fa fa-eye fa-2x"
+                                  aria-hidden="true"
+                                ></i>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabPanel>
+              <TabPanel value="2">
                 <form
                   onSubmit={purchaseDetailForm.handleSubmit(
                     submitSiteAssetPurchaseDetail
@@ -1023,7 +1121,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="2">
+              <TabPanel value="3">
                 <form onSubmit={locationForm.handleSubmit(submitLocationForm)}>
                   <div className="row">
                     <div className="col-md-4">
@@ -1041,9 +1139,11 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Internal/External</option>
-                        {["Internal", "External", "Interior", "Exterior"].map((num) => (
-                          <option value={num}>{num} </option>
-                        ))}
+                        {["Internal", "External", "Interior", "Exterior"].map(
+                          (num) => (
+                            <option value={num}>{num} </option>
+                          )
+                        )}
                       </select>
                       {locationForm.formState.errors?.position && (
                         <InputError
@@ -1119,7 +1219,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="3">
+              <TabPanel value="4">
                 <form
                   onSubmit={valudationForm.handleSubmit(submitValudationForm)}
                 >
@@ -1316,7 +1416,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="4">
+              <TabPanel value="5">
                 {" "}
                 <div className="row">
                   <div className="col-md-12 mt-2">
@@ -1415,7 +1515,7 @@ const UpdateAsset = ({
                   <div></div>
                 </div>
               </TabPanel>
-              <TabPanel value="5">
+              <TabPanel value="6">
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group mt-2">
@@ -1640,7 +1740,7 @@ const UpdateAsset = ({
                   </div>
                 </div>
               </TabPanel>
-              <TabPanel value="6">
+              <TabPanel value="7">
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group mt-2">
