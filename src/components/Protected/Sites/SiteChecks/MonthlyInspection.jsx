@@ -12,6 +12,7 @@ import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "..
 const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
+  const [header, setheaders] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
 
   useEffect(() => {
@@ -75,6 +76,9 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
   // }
 
   const getQuestions = async () => {
+    const lovs = await get("/api/lov/SITE_CHECK_AUDIT_MONTHLY_INSPECTION_HEADER");
+    const headers = lovs.sort((a, b) => parseFloat(a.lovDesc) - parseFloat(b.lovDesc));
+    setheaders(headers);
     const questionsFromDB = await get("/api/site-check/assessment/questions/monthly-inspection")
     const questionsResponse = await get("/api/site-check/assessment/response/" + checkId)
     questionsFromDB.forEach(q => {
@@ -196,9 +200,9 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
             </Grid>
             <Grid item>
               <Box display="flex" alignItems="center">
-                <Typography variant="body1" style={{ backgroundColor: '#E0E7FF', padding: '4px 8px', borderRadius: '4px' }}>
+                {/* <Typography variant="body1" style={{ backgroundColor: '#E0E7FF', padding: '4px 8px', borderRadius: '4px' }}>
                   Total: {quest.length}, Open: {quest.filter(q => q.status === "Open").length}, Closed: {quest.filter(q => q.status === "Closed").length}
-                </Typography>
+                </Typography> */}
                 <Box ml={2} display="flex" alignItems="center">
                   <Box width={24} height={24} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}>
                     {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
@@ -232,7 +236,11 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
             </Grid>
           </Grid>
 
-          {quest?.map((q, idx) =>
+          {quest?.length > 0 && header.map(h => { return (<div>
+            <h5>{h.lovDesc} {h.lovValue}</h5>
+          
+
+          {quest?.filter(q=> !q?.question?.includes("DELETE") && q.order.startsWith(h.lovDesc+".") )?.map((q, idx) =>
           {
             let catAsset = [];
             const assetCategory = q?.assetCategory?.split(",")??[];
@@ -251,7 +259,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
             return (
             <Accordion defaultExpanded={idx === openIndex} >
               <AccordionSummary expandIcon={<ExpandMore />} >
-                <Typography>Q{idx + 1}. {q.question}
+                <Typography>{q.order} {q.question}
                   {/* <Checkbox disabled={quest[idx]?.completed} checked={quest[idx]?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
                   <Checkbox disabled={quest[idx]?.completed} checked={quest[idx]?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
                 </Typography> 
@@ -526,6 +534,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
             </Accordion>
           )}
           )}
+          </div>)})}
+          
         </CardContent>
       </Card>
     </Box>
