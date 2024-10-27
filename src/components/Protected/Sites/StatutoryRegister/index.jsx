@@ -795,8 +795,9 @@ const StatutoryRegister = ({
                                         onClick={() => {
                                           untagAsset(itm, item);
                                         }}
+                                        style={{fontSize: '10px'}}
                                       >
-                                        Untag
+                                        Untag Document
                                       </button>
                                     </th>
                                   )}
