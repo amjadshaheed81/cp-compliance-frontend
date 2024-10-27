@@ -19,6 +19,8 @@ import {
 } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import CostChart from "./CostChart";
+import EnergyChart from "./EnergyChart";
 
 const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -429,8 +431,21 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
       <div>
         <div>
+        <div className="row" style={{ height: "auto" }}>
+                <div className="col-md-6 mt-2 mb-4">
+                  <h3>Energy Cost</h3>
+                  <CostChart energyData={filteredEnergyCost
+} />
+                </div>
+                <div className="col-md-6 mt-2 mb-4">
+                  <h3>Energy Chart</h3>
+                  <EnergyChart energyData={filteredEnergyCost
+} />
+                </div>
+              </div>
           <div className="d-flex bd-highlight" style={{ flexWrap: "wrap" }}>
             <div className="pt-2 bd-highlight ">
+              
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
                   <div style={{ position: "relative" }}>
@@ -507,7 +522,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
               <thead className="table-dark">
                 <tr>
                   <th scope="col">Meter Reference</th>
-                  {/* <th scope="col">Submitted By</th> */}
                   <th scope="col">Budget Category</th>
                   <th scope="col">From Date</th>
                   <th scope="col">To Date</th>
