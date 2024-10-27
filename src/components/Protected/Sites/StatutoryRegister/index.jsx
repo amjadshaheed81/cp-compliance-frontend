@@ -204,7 +204,6 @@ const StatutoryRegister = ({
     let nearestAsset = null;
     let nearestPatItem = null;
     let nearestDate = null;
-  
     assets.forEach(asset => {
       if (asset.assetPATItems) {
         asset.assetPATItems.forEach(patItem => {
@@ -228,6 +227,7 @@ const StatutoryRegister = ({
     const inspections = siteChecks?.filter((itm) => itm?.type === "Inspection");
     const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
     const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
+    console.log("assetWithNearestPatNextDate", assetWithNearestPatNextDate);
     // Pre-filter categories and subTypes for easier lookups
     const filteredSiteChecks = {
       asbestosManagementPlan: surveys?.find(

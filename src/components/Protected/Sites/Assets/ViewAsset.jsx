@@ -771,7 +771,7 @@ const UpdateAsset = ({
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
                   <Tab
                     className="text-success"
-                    label="Tagged Assets"
+                    label="Tagged Documents"
                     value="1"
                   />
                   <Tab

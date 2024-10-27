@@ -611,7 +611,7 @@ const UpdateAsset = ({
                     className="btn btn-primary"
                     onClick={() => setShowModal(true)}
                   >
-                    Tag Asset Documents
+                    Tag Documents
                   </button>
                 </div>
                 <div className="col-md-6">
@@ -949,7 +949,7 @@ const UpdateAsset = ({
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
                 <Tab
                     className="text-success"
-                    label="Tagged Assets"
+                    label="Tagged Documents"
                     value="1"
                   />
                   <Tab
@@ -1099,7 +1099,7 @@ const UpdateAsset = ({
                         untagAsset();
                       }}
                     >
-                      Untag Asset
+                      Untag Documents
                     </button>
                   )}
 
