@@ -444,7 +444,7 @@ const UpdateAsset = ({
         <Header />
         <div className="container-fluid">
           <BreadCrumHeader
-            header={`Update ${selectedAsset?.assetName}`}
+            header={`View ${selectedAsset?.assetName}`}
             page={"Asset Details"}
           />
 
