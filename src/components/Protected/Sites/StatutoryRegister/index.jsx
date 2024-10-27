@@ -19,6 +19,28 @@ import { useForm } from "react-hook-form";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { toast } from "react-toastify";
 
+export const findAssetWithNearestPatNextDate = (assets) => {
+  let nearestAsset = null;
+  let nearestPatItem = null;
+  let nearestDate = null;
+  assets.forEach(asset => {
+    if (asset.assetPATItems) {
+      asset.assetPATItems.forEach(patItem => {
+        const patNextDate = new Date(patItem.patNextDate);
+        
+        // Check if it's the first date or closer than the previous nearestDate
+        if (!nearestDate || patNextDate < nearestDate) {
+          nearestDate = patNextDate;
+          nearestPatItem = patItem;
+          nearestAsset = asset;
+        }
+      });
+    }
+  });
+
+  return nearestAsset && nearestPatItem ? { asset: nearestAsset, patItem: nearestPatItem } : null;
+};
+
 const StatutoryRegister = ({
   loggedInUserData,
   siteSelectedForGlobal,
@@ -200,27 +222,7 @@ const StatutoryRegister = ({
     );
     setSiteChecks(siteChecksData);
   };
-  const findAssetWithNearestPatNextDate = (assets) => {
-    let nearestAsset = null;
-    let nearestPatItem = null;
-    let nearestDate = null;
-    assets.forEach(asset => {
-      if (asset.assetPATItems) {
-        asset.assetPATItems.forEach(patItem => {
-          const patNextDate = new Date(patItem.patNextDate);
-          
-          // Check if it's the first date or closer than the previous nearestDate
-          if (!nearestDate || patNextDate < nearestDate) {
-            nearestDate = patNextDate;
-            nearestPatItem = patItem;
-            nearestAsset = asset;
-          }
-        });
-      }
-    });
   
-    return nearestAsset && nearestPatItem ? { asset: nearestAsset, patItem: nearestPatItem } : null;
-  };
   const getViewEvidenceExpiryDate = (row) => {
     // Group siteChecks by types to avoid multiple filtering
     const surveys = siteChecks?.filter((itm) => itm?.type === "Survey");

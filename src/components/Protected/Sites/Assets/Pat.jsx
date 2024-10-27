@@ -21,6 +21,28 @@ import { getPatTestedEndDate, getPatTestedStartDate } from "../../../../utils/ge
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 import AddPatDetails from "./AddPatDetails";
 import { useLocation } from "react-router-dom";
+import moment from "moment";
+
+export const findAssetWithNearestPatNextDate = (asset) => {
+  let nearestAsset = null;
+  let nearestPatItem = null;
+  let nearestDate = null;
+  if (asset.assetPATItems) {
+    asset.assetPATItems.forEach(patItem => {
+      const patNextDate = new Date(patItem.patNextDate);
+      
+      // Check if it's the first date or closer than the previous nearestDate
+      if (!nearestDate || patNextDate < nearestDate) {
+        nearestDate = patNextDate;
+        nearestPatItem = patItem;
+        nearestAsset = asset;
+      }
+    });
+  }
+
+  return nearestAsset && nearestPatItem ? { asset: nearestAsset, patItem: nearestPatItem } : null;
+};
+
 
 const Pat = ({
   sitePATItems,
@@ -481,8 +503,8 @@ const Pat = ({
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{getCategoryLabelValue(asset)}</th>
                   <th scope="col">{asset?.location}</th>
-                  <th scope="col">{getPatTestedStartDate(asset)}</th>
-                  <th scope="col">{getPatTestedEndDate(asset)}</th>
+                  <th scope="col">{findAssetWithNearestPatNextDate(asset)?.patItem?.patDate ? moment(findAssetWithNearestPatNextDate(asset)?.patItem?.patDate).format("DD-MM-YYYY") : "--"}</th>
+                  <th scope="col">{findAssetWithNearestPatNextDate(asset)?.patItem.patNextDate ? moment(findAssetWithNearestPatNextDate(asset)?.patItem.patNextDate).format("DD-MM-YYYY") : "--"}</th>
                   <th scope="col">{asset?.status}</th>
                   <th scope="col">
                     <Tooltip title={`View ${asset.assetName}`} arrow>
