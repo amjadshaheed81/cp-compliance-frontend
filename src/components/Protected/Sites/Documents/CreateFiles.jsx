@@ -17,8 +17,6 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import { InputError } from "../../../common/InputError";
 import MandatoryFolders from "../Contracts/MandatoryFolders";
-import SelectMandatoryFile from "./File/SelectMandatoryFile";
-import { getFileExtensionFromBlob } from "../../../../utils/getFileExtensionFromBlob";
 
 const CreateFiles = ({
   showModal,
@@ -493,25 +491,14 @@ const CreateFiles = ({
                     />
                   </div>
                 </Grid>
-                <Grid sm={6}>
+                {!isStatutory && <Grid sm={6}>
                   <MandatoryFolders
                     isStatutory={isStatutory}
                     isSingleFolderSelect={isStatutory ? false : true}
                     setSelectedMandatoryFolder={setSelectedMandatoryFolder}
                     selectedMandatoryFolder={selectedMandatoryFolder}
                   />
-                </Grid>
-                {isStatutory && (
-                  <>
-                    <Grid sm={6}>
-                      <SelectMandatoryFile
-                        isStatutory={isStatutory}
-                        setSelectedMandatoryFile={setSelectedMandatoryFile}
-                        selectedMandatoryFile={selectedMandatoryFile}
-                      />
-                    </Grid>
-                  </>
-                )}
+                </Grid>}
               </Grid>
             </Grid>
             <Grid sm={4}>

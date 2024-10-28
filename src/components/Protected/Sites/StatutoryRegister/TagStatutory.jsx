@@ -13,7 +13,7 @@ import SelectMandatoryFile from "../Documents/File/SelectMandatoryFile";
 import { toast } from "react-toastify";
 import { get, put } from "../../../../api";
 
-const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
+const TagStatutory = ({ showModal, setShowModal, statutoryCategory, refresh }) => {
   const [open, setOpen] = useState(showModal);
   const [isLoading, setIsLoading] = useState(false);
   const [extension, setExtension] = useState("");
@@ -28,7 +28,7 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
     const isFolderSelected = selectedMandatoryFolder?.length > 0;
     const isFileSelected = selectedMandatoryFile?.length > 0;
     if (!isFolderSelected && !isFileSelected) {
-      toast.warn("Please select folder or existing file to tag with asset.");
+      toast.warn("Please select folder or existing file to tag with statutory.");
     } else if (isFolderSelected) {
       const res = await get(
         `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders`
@@ -39,7 +39,7 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
         const url = `/api/document/tag-file`;
         const data = {
           fileIds: fileIds,
-          assetId: Number(assetId),
+          statutoryCategoryId: Number(statutoryCategory?.id),
         };
         const res = await put(url, data);
         if (res?.status === 200) {
@@ -61,7 +61,7 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
       const url = `/api/document/tag-file`;
       const data = {
         fileIds: fileIds,
-        assetId: Number(assetId),
+        statutoryCategoryId: Number(statutoryCategory?.id),
       };
       const res = await put(url, data);
       if (res?.status === 200) {
@@ -122,4 +122,4 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
   );
 };
 
-export default TagAsset;
+export default TagStatutory;

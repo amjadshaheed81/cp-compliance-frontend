@@ -20,6 +20,7 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { toast } from "react-toastify";
 import FaSave from "@mui/icons-material/Check";
 import { showLoader, hideLoader } from "js-loader-fn";
+import TagStatutory from "./TagStatutory";
 
 export const findAssetWithNearestPatNextDate = (assets) => {
   let nearestAsset = null;
@@ -63,6 +64,8 @@ const StatutoryRegister = ({
   const [folder, setFolder] = useState({});
   const [responsibleTexts, setResponsibleTexts] = useState({});
   const [showSaveIcon, setShowSaveIcon] = useState({});
+  const [showTagDocumentModal, setShowTagDocumentModal] = useState(false);
+  
 
   const handleTextChange = (e, item) => {
     const { value } = e.target;
@@ -434,6 +437,16 @@ const StatutoryRegister = ({
 
   return (
     <>
+    {showTagDocumentModal && (
+        <TagStatutory
+          showModal={showTagDocumentModal}
+          setShowModal={setShowTagDocumentModal}
+          statutoryCategory={folder}
+          refresh={() => {
+            getStatutory(siteSelectedForGlobal?.siteId);
+          }}
+        />
+      )}
       <SidebarNew />
 
       <div className="content">
@@ -806,11 +819,35 @@ const StatutoryRegister = ({
                             })}
 
                             <tr>
+                              <td colspan={2} style={{
+                                  backgroundColor: "#5A6371",
+                                  color: "#FFFFFF",
+                                }}>
+                              <label
+                                    id="upload-file"
+                                    class="text-decoration-underline"
+                                    onClick={() => {
+                                      setFolder(item);
+                                      setShowTagDocumentModal(true);
+                                    }}
+                                    style={{
+                                      display:
+                                        String(item?.type).toLowerCase() ===
+                                        "link"
+                                          ? "none"
+                                          : "",
+                                      color: "384bd3",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Tag Documents
+                                  </label>
+                              </td>
                               <td
                                 colspan={
                                   String(item?.type).toLowerCase() === "pdf"
-                                    ? 8
-                                    : 7
+                                    ? 6
+                                    : 5
                                 }
                                 style={{
                                   backgroundColor: "#5A6371",
