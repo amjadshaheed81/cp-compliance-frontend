@@ -38,7 +38,7 @@ import CreateFolder from "./CreateFolder";
 import { del, get, put } from "../../../../api";
 import Swal from "sweetalert2";
 import { Chip, Tooltip } from "@mui/material";
-import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import { isAdminLogin, isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import PdfViewer from "./PdfViewer";
 import CopyModal from "./CopyModal";
 import MoveModal from "./MoveModal";
@@ -536,87 +536,97 @@ const SubFolder = ({
                                 style={{ color: "384bd3", cursor: "pointer" }}
                               />
                             </Tooltip>
-                            <Tooltip title={`Delete Folder`} arrow>
-                              <DeleteIcon
-                                onClick={() => {
-                                  Swal.fire({
-                                    title: `Do you want to delete ${folder?.name}`,
-                                    showDenyButton: false,
-                                    showCancelButton: true,
-                                    confirmButtonText: "Delete",
-                                  }).then(async (result) => {
-                                    if (result.isConfirmed) {
-                                      try {
-                                        const url = `/api/document/folder/${folder?.id}/delete`;
-                                        const res = await del(url);
-                                        if (res?.status === 200) {
-                                          getSubFilesAndFolder(folderId);
-                                          toast.success(
-                                            `${folder?.name} has been deleted successully`
-                                          );
-                                        } else {
-                                          toast.error(
-                                            "Something went wrong while deleting document. Please try again!"
-                                          );
+                            {isAdminLogin(loggedInUserData) && (
+                              <>
+                                <Tooltip title={`Delete Folder`} arrow>
+                                  <DeleteIcon
+                                    onClick={() => {
+                                      Swal.fire({
+                                        title: `Do you want to delete ${folder?.name}`,
+                                        showDenyButton: false,
+                                        showCancelButton: true,
+                                        confirmButtonText: "Delete",
+                                      }).then(async (result) => {
+                                        if (result.isConfirmed) {
+                                          try {
+                                            const url = `/api/document/folder/${folder?.id}/delete`;
+                                            const res = await del(url);
+                                            if (res?.status === 200) {
+                                              getSubFilesAndFolder(folderId);
+                                              toast.success(
+                                                `${folder?.name} has been deleted successully`
+                                              );
+                                            } else {
+                                              toast.error(
+                                                "Something went wrong while deleting document. Please try again!"
+                                              );
+                                            }
+                                          } catch (e) {
+                                            toast.error(
+                                              "Something went wrong while deleting document. Please try again!"
+                                            );
+                                          }
+                                        } else if (result.isDenied) {
+                                          // Swal.fire("Changes are not saved", "", "info");
                                         }
-                                      } catch (e) {
-                                        toast.error(
-                                          "Something went wrong while deleting document. Please try again!"
-                                        );
-                                      }
-                                    } else if (result.isDenied) {
-                                      // Swal.fire("Changes are not saved", "", "info");
-                                    }
-                                  });
-                                }}
-                                style={{ color: "red", cursor: "pointer" }}
-                              />
-                            </Tooltip>
-                            <Tooltip title={`Edit Folder Name`} arrow>
-                              <Edit
-                                onClick={() => {
-                                  Swal.fire({
-                                    title: "Update Folder Name",
-                                    input: "text",
-                                    inputAttributes: {
-                                      autocapitalize: "off",
-                                    },
-                                    inputValue: folder?.name || '',
-                                    showCancelButton: true,
-                                    confirmButtonText: "Update",
-                                    showLoaderOnConfirm: true,
-                                    preConfirm: async (data) => {
-                                      if (!data) {
-                                        Swal.showValidationMessage('Folder name is required');
-                                        return false; // Prevent further processing if input is empty
-                                      }
-                                      try {
-                                        const url = `/api/document/folder/${folder?.id}/manage`;
-                                        const response = await put(url, {
-                                          folderName: data,
-                                        });
-                                        if (response?.status === 200) {
-                                          toast.success(
-                                            `${folder?.name} has been updated successully`
-                                          );
-                                          getSubFilesAndFolder(folderId);
-                                        } else {
-                                          toast.error(
-                                            "Something went wrong while updating document. Please try again!"
-                                          );
-                                        }
-                                      } catch (error) {
-                                        Swal.showValidationMessage(`
+                                      });
+                                    }}
+                                    style={{ color: "red", cursor: "pointer" }}
+                                  />
+                                </Tooltip>
+                                <Tooltip title={`Edit Folder Name`} arrow>
+                                  <Edit
+                                    onClick={() => {
+                                      Swal.fire({
+                                        title: "Update Folder Name",
+                                        input: "text",
+                                        inputAttributes: {
+                                          autocapitalize: "off",
+                                        },
+                                        inputValue: folder?.name || "",
+                                        showCancelButton: true,
+                                        confirmButtonText: "Update",
+                                        showLoaderOnConfirm: true,
+                                        preConfirm: async (data) => {
+                                          if (!data) {
+                                            Swal.showValidationMessage(
+                                              "Folder name is required"
+                                            );
+                                            return false; // Prevent further processing if input is empty
+                                          }
+                                          try {
+                                            const url = `/api/document/folder/${folder?.id}/manage`;
+                                            const response = await put(url, {
+                                              folderName: data,
+                                            });
+                                            if (response?.status === 200) {
+                                              toast.success(
+                                                `${folder?.name} has been updated successully`
+                                              );
+                                              getSubFilesAndFolder(folderId);
+                                            } else {
+                                              toast.error(
+                                                "Something went wrong while updating document. Please try again!"
+                                              );
+                                            }
+                                          } catch (error) {
+                                            Swal.showValidationMessage(`
                                           Request failed: ${error}
                                         `);
-                                      }
-                                    },
-                                    allowOutsideClick: () => !Swal.isLoading(),
-                                  });
-                                }}
-                                style={{ color: "384bd3", cursor: "pointer" }}
-                              />
-                            </Tooltip>
+                                          }
+                                        },
+                                        allowOutsideClick: () =>
+                                          !Swal.isLoading(),
+                                      });
+                                    }}
+                                    style={{
+                                      color: "384bd3",
+                                      cursor: "pointer",
+                                    }}
+                                  />
+                                </Tooltip>
+                              </>
+                            )}
                           </>
                         )}
                       </td>
