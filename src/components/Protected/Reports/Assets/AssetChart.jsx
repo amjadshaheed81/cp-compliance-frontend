@@ -52,7 +52,7 @@ const AssetChart = ({ assetChart, sitePATItems, sitePFPItems, siteAssets }) => {
       <div className="col-md-4 fs-5">
         Asset Type{" "}
         <span class="badge bg-light text-primary">
-          Total Assets: {assetChart?.totalAssets}
+          Total Assets: {(siteAssets?.length )}
         </span>
         <div>
           <Pie
