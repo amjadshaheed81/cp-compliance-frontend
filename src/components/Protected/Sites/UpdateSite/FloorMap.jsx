@@ -9,6 +9,7 @@ import { connect } from "react-redux";
 import { scrollToElement } from "../../../../utils/scrollToElement";
 import { toast } from "react-toastify";
 import { get, put } from "../../../../api";
+import { useSearchParams } from "react-router-dom";
 
 const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   const [selectedTab, setSelectedTab] = useState(null);
@@ -18,6 +19,8 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   const [floorPlanUrl, setFloorPlanUrl] = useState("");
   const [selectedFloor, setSelectedFloor] = useState({});
   const imageRef = useRef(null);
+  const [searchParams] = useSearchParams();
+  const isViewMode = searchParams.get("isViewMode");
 
   useEffect(() => {
     const positions = siteLayout?.filter(
@@ -65,11 +68,25 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   };
 
   const updateMarkerPosition = (index, newLeft, newTop) => {
-    setDroppedItems((prevItems) =>
-      prevItems.map((item, i) =>
-        i === index ? { ...item, left: newLeft, top: newTop } : item
-      )
-    );
+    if (imageRef.current) {
+      const imageRect = imageRef.current.getBoundingClientRect();
+  
+      // Enforce boundaries within the image box
+      const boundedLeft = Math.min(
+        Math.max(0, newLeft),
+        imageRect.width - 20 // Adjust marker size offset if needed
+      );
+      const boundedTop = Math.min(
+        Math.max(0, newTop),
+        imageRect.height - 20 // Adjust marker size offset if needed
+      );
+  
+      setDroppedItems((prevItems) =>
+        prevItems.map((item, i) =>
+          i === index ? { ...item, left: boundedLeft, top: boundedTop } : item
+        )
+      );
+    }
   };
 
   const saveImage = async () => {
@@ -169,7 +186,6 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
   };
 
   const Marker = ({ index, item, updatePosition }) => {
-    console.log("item", item);
     const [{ isDragging }, drag] = useDrag({
       type: "MARKER",
       item: { index },
@@ -177,35 +193,52 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
       end: (_, monitor) => {
         const offset = monitor.getClientOffset();
         const imageRect = imageRef.current.getBoundingClientRect();
-        const newLeft = offset.x - imageRect.left;
-        const newTop = offset.y - imageRect.top;
-        updatePosition(index, newLeft, newTop);
+  
+        if (offset) {
+          // Calculate new position within boundaries
+          const newLeft = Math.min(
+            Math.max(0, offset.x - imageRect.left),
+            imageRect.width - 20 // Marker width offset if necessary
+          );
+          const newTop = Math.min(
+            Math.max(0, offset.y - imageRect.top),
+            imageRect.height - 20 // Marker height offset if necessary
+          );
+  
+          updatePosition(index, newLeft, newTop);
+        }
       },
     });
 
     return (
       <Tooltip title={`View Assets: ${item.label}`} arrow>
-        <div
-          ref={drag}
-          style={{
-            position: "absolute",
-            left: item.left,
-            top: item.top,
-            transform: isDragging ? "scale(1.05)" : "scale(1)",
-            transition: "transform 0.1s ease-out",
-            willChange: "transform",
-            backgroundColor: "#d34053",
-            color: "white",
-            padding: "4px",
-            fontSize: "8px",
-            borderRadius: "50%",
-            cursor: "move",
-            opacity: isDragging ? 0.7 : 1,
-          }}
+      <div
+        ref={drag}
+        style={{
+          position: "absolute",
+          left: item.left,
+          top: item.top,
+          transform: isDragging ? "scale(1.05)" : "scale(1)",
+          transition: "transform 0.1s ease-out",
+          willChange: "transform",
+          backgroundColor: "#d34053",
+          color: "white",
+          padding: "4px",
+          fontSize: "8px",
+          borderRadius: "50%",
+          cursor: "move",
+          opacity: isDragging ? 0.7 : 1,
+        }}
+      >
+        <a
+          target="_blank"
+          className="markerLink"
+          href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}
         >
-          <a target="_blank" className="markerLink" href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}>{item.label}</a>
-        </div>
-      </Tooltip>
+          {item.label}
+        </a>
+      </div>
+    </Tooltip>
     );
   };
 
@@ -247,42 +280,50 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
               );
             })}
           </ul>
+          <div>
+          {isViewMode === "edit" && (
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={saveImage}
+        >
+          Save Markers
+        </Button>
+      )}
+          </div>
           {floorPlanUrl ? (
             <div
-              ref={imageRef}
+            ref={imageRef}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              overflow: "hidden", // Ensures no overflow from embed or markers
+            }}
+          >
+            <embed
+              src={floorPlanUrl}
               style={{
-                position: "relative",
                 width: "100%",
                 height: "100%",
-                overflow: "hidden",
+                objectFit: "contain",
+                display: "block",
               }}
-            >
-              <embed
-                src={floorPlanUrl}
-                style={{ width: "100%", height: "500px", objectFit: "contain" }}
+            />
+            {droppedItems.map((item, index) => (
+              <Marker
+                key={index}
+                index={index}
+                item={item}
+                updatePosition={updateMarkerPosition}
               />
-              {droppedItems.map((item, index) => (
-                <Marker
-                  key={index}
-                  index={index}
-                  item={item}
-                  updatePosition={updateMarkerPosition}
-                />
-              ))}
-            </div>
+            ))}
+          </div>
           ) : (
             "Floor plan file is not available."
           )}
         </div>
       </Box>
-      <Button
-        style={{ marginTop: "5%", marginBottom: "5%" }}
-        variant="contained"
-        color="primary"
-        onClick={saveImage}
-      >
-        Save Markers
-      </Button>
     </div>
   );
 };
