@@ -13,7 +13,29 @@ import { getUniqueSitesWithUserCount } from "../../../../utils/getUniqueSitesWit
 import BarChart from "./BarChart";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const SiteCharts = ({ siteChart }) => {
+const SiteCharts = ({
+  siteChart,
+  sites,
+  setSiteChart,
+  siteSelectedForGlobal,
+}) => {
+  const [state, setState] = useState({
+    selectedArea: "",
+    allSites: true,
+  });
+  const handleAreaChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: e.target.value,
+    }));
+  };
+
+  const handleAllSitesToggle = () => {
+    setState((prevState) => ({
+      ...prevState,
+      allSites: !prevState.allSites,
+    }));
+  };
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -30,21 +52,54 @@ const SiteCharts = ({ siteChart }) => {
   useEffect(() => {
     getUsers();
   }, []);
+  const areaOption = sites.filter(
+    (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
+  );
+  const searchSite = (data) => {
+    console.log(data);
+  };
   const getUsers = async () => {
     const url = `/api/user/all`;
     const data = await get(url);
     console.log("data", data);
-    setUsers(data?.users?.sort((a, b) => {
-      if (a.name < b.name) {
-          return -1; // a comes before b
-      }
-      if (a.name > b.name) {
-          return 1;  // b comes before a
-      }
-      return 0; // names are equal
-  }));
-    setUsersChart(getUniqueSitesWithUserCount(data?.users));
+    setUsers(data?.users);
+    setUsersChart(
+      getUniqueSitesWithUserCount(
+        data?.users,
+        sites,
+        state.selectedArea,
+        state.allSites,
+        siteSelectedForGlobal
+      )
+    );
   };
+  useEffect(() => {
+    setUsersChart(
+      getUniqueSitesWithUserCount(
+        users,
+        sites,
+        state.selectedArea,
+        state.allSites,
+        siteSelectedForGlobal
+      )
+    );
+  }, [state.selectedArea, state.allSites]);
+  useEffect(() => {
+    if (sites) {
+      setSiteChart({
+        totalSites: sites?.length,
+        openSites: sites?.filter(
+          (itm) => String(itm.status).toLowerCase() === "open"
+        )?.length,
+        soldSites: sites?.filter(
+          (itm) => String(itm.status).toLowerCase() === "sold"
+        )?.length,
+        closedSites: sites?.filter(
+          (itm) => String(itm.status).toLowerCase() === "closed"
+        )?.length,
+      });
+    }
+  }, [sites]);
   useEffect(() => {
     setChartData({
       labels: ["Open", "Closed", "Sold"],
@@ -76,7 +131,7 @@ const SiteCharts = ({ siteChart }) => {
               plugins: {
                 title: {
                   display: false,
-                //   text: "Users Gained between 2016-2020",
+                  //   text: "Users Gained between 2016-2020",
                 },
               },
             }}
@@ -84,9 +139,45 @@ const SiteCharts = ({ siteChart }) => {
         </div>
       </div>
       <div className="col-md-8 fs-5">
+        <div className="row" style={{ height: "auto" }}>
+          <div className="col-md-4 col-sm-4 mt-2">
+            <select
+              name="area"
+              className="form-control form-select"
+              id="area"
+              onChange={handleAreaChange}
+              value={state.selectedArea}
+              disabled={!state.allSites}
+            >
+              <option value="">Area</option>
+              {areaOption?.map((site) => (
+                <option key={site.area} value={site.area}>
+                  {site.area}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-4 col-sm-4 mt-2">
+            <div className="form-check form-switch">
+              <label
+                className="form-check-label"
+                htmlFor="flexSwitchCheckChecked"
+              >
+                {state.allSites ? "All Sites" : "Individual"}
+              </label>
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="flexSwitchCheckChecked"
+                checked={state.allSites}
+                onChange={handleAllSitesToggle}
+              />
+            </div>
+          </div>
+        </div>
         Staff Per Active Site &nbsp;
         <span class="badge bg-light text-primary">
-          Total Staff: {users?.length}
+          Total Staff: {state?.allSites ? users?.length : userschart?.[0]?.totalUsers}
         </span>
         <div>
           <BarChart data={userschart} />
@@ -99,6 +190,7 @@ const SiteCharts = ({ siteChart }) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getSites,

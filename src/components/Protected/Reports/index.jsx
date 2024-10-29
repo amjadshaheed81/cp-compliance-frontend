@@ -14,10 +14,6 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
-import MessageSharp from "@mui/icons-material/MessageSharp";
-import Sites from "./Portfolio/Sites";
 import SiteCharts from "./Portfolio/SiteCharts";
 import Assets from "./Assets/Assets";
 import AssetChart from "./Assets/AssetChart";
@@ -99,12 +95,11 @@ const Reports = ({}) => {
               <Tab label="Site Checks" {...a11yProps(5)} />
             </Tabs>
             <TabPanel value={value} index={0}>
-              <SiteCharts siteChart={siteChart} />
-              <Sites setSiteChart={setSiteChart} />
+              <SiteCharts siteChart={siteChart} setSiteChart={setSiteChart} />
             </TabPanel>
             <TabPanel value={value} index={1}>
               <div className="row">
-                <AssetChart assetChart={assetChart}/>
+                <AssetChart assetChart={assetChart} />
                 <Assets />
               </div>
             </TabPanel>
@@ -114,9 +109,7 @@ const Reports = ({}) => {
               </div>
             </TabPanel>
             <TabPanel value={value} index={3}>
-              <div className="row">
-                Worksheet
-              </div>
+              <div className="row">Worksheet</div>
             </TabPanel>
             <TabPanel value={value} index={4}>
               <div className="row">
