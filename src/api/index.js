@@ -25,10 +25,12 @@ function configAxios() {
           localStorage.clear();
           window.location.href = '/#/login';
         }
+      } else {
+        return Promise.reject(error);
       }
   
       // Return a rejected promise with the error
-      return Promise.reject(error);
+      //return Promise.reject(error);
     }
   );
 }
@@ -44,10 +46,12 @@ axiosInstance.interceptors.response.use(
         localStorage.clear();
         window.location.href = '/#/login';
       }
+    } else {
+      return Promise.reject(error);
     }
 
     // Return a rejected promise with the error
-    return Promise.reject(error);
+    
   }
 );
 
