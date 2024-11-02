@@ -1036,9 +1036,10 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   </Grid>
 
                   <Grid sm={4}>
-                    {(formData.type === "Audit" ||
+                    {((formData.type === "Audit" ||
                       (formData.type === "Survey" &&
-                        formData.subType === "Water")) && (
+                        formData.subType === "Water")) ||
+                        (formData.type === "Inspection")) && (
                       <div style={{ margin: "10px" }}>
                         <label htmlFor="folder" name="folder">
                           Repeats

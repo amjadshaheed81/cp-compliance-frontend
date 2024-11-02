@@ -220,7 +220,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     onChange={handleChange}
                     inputProps={{ "aria-label": "controlled" }}
                   />
-                  <label>Selected Site</label>
+                  <label>Individual Site</label>
                 </div>
                 {/* )} */}
               </div>
