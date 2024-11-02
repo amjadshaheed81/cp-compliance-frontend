@@ -147,7 +147,6 @@ const SiteCharts = ({
               id="area"
               onChange={handleAreaChange}
               value={state.selectedArea}
-              disabled={!state.allSites}
             >
               <option value="">Area</option>
               {areaOption?.map((site) => (

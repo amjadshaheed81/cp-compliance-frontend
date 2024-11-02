@@ -89,8 +89,8 @@ const Reports = ({}) => {
             >
               <Tab label="Portfolio Report" {...a11yProps(0)} />
               <Tab label="Asset Report" {...a11yProps(1)} />
-              <Tab label="Project Report" {...a11yProps(2)} />
-              <Tab label="Worksheet" {...a11yProps(3)} />
+              <Tab label="Contract Report" {...a11yProps(2)} />
+              {/* <Tab label="Worksheet" {...a11yProps(3)} /> */}
               <Tab label="Energy Report" {...a11yProps(4)} />
               <Tab label="Site Checks" {...a11yProps(5)} />
             </Tabs>
@@ -109,14 +109,11 @@ const Reports = ({}) => {
               </div>
             </TabPanel>
             <TabPanel value={value} index={3}>
-              <div className="row">Worksheet</div>
-            </TabPanel>
-            <TabPanel value={value} index={4}>
               <div className="row">
                 <EnergyCost />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={5}>
+            <TabPanel value={value} index={4}>
               <div className="row">
                 <SiteChecks />
               </div>

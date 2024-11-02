@@ -17,11 +17,9 @@ import Swal from "sweetalert2";
 import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
+import BarChart from "./Barchart";
 
-const Contracts = ({
-  loggedInUserData,
-  siteSelectedForGlobal,
-}) => {
+const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [filteredContractList, setFilteredContractList] = useState([]);
   const [contractList, setContractList] = useState([]);
   const [formData, setFormData] = useState({
@@ -48,7 +46,6 @@ const Contracts = ({
     setCurrentPage(pageNumber);
   };
   const handleInputChange = (e) => {
-    console.log("e", e)
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -89,11 +86,17 @@ const Contracts = ({
   const getProjectList = async (isSiteSelectedForContractor = false) => {
     setIsLoading(true);
     if (isManagerAdminLogin(loggedInUserData)) {
-      const projects = await get(
-        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
-      );
-      setFilteredContractList(projects?.projectContracts || []);
-      setContractList(projects?.projectContracts || []);
+      if (!isSiteSelectedForContractor) {
+        const projects = await get(`/api/project/contracts`);
+        setFilteredContractList(projects?.projectContracts || []);
+        setContractList(projects?.projectContracts || []);
+      } else {
+        const projects = await get(
+          `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+        );
+        setFilteredContractList(projects?.projectContracts || []);
+        setContractList(projects?.projectContracts || []);
+      }
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       try {
         let url = isSiteSelectedForContractor
@@ -159,7 +162,7 @@ const Contracts = ({
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight">
               <div className="row">
-                <div className="col-md-4 col-sm-4 mt-2">
+                {/* <div className="col-md-4 col-sm-4 mt-2">
                   <input
                     type="text"
                     className="form-control"
@@ -167,7 +170,7 @@ const Contracts = ({
                     name="searchField"
                     onChange={handleInputChange}
                   />
-                </div>
+                </div> */}
                 <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     className="form-control form-select"
@@ -196,7 +199,7 @@ const Contracts = ({
                     </select>
                   </div>
                 )}
-                <div className="col-md-4 col-sm-4 mt-2">
+                {/* <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -208,43 +211,25 @@ const Contracts = ({
                     <option value="Expired">Expired</option>
                     <option value="Terminated">Terminated</option>
                   </select>
+                </div> */}
+                {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
+                <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
+                  <label>All</label>
+                  <Switch
+                    checked={checked}
+                    onChange={handleChange}
+                    inputProps={{ "aria-label": "controlled" }}
+                  />
+                  <label>Selected Site</label>
                 </div>
-                {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                  <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                    <label>All</label>
-                    <Switch
-                      checked={checked}
-                      onChange={handleChange}
-                      inputProps={{ "aria-label": "controlled" }}
-                    />
-                    <label>Selected Site</label>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="ms-auto p-2 bd-highlight">
-              <div className="row" style={{ height: "auto" }}>
-                {isManagerAdminLogin(loggedInUserData) && (
-                  <>
-                    <div className="col-md-6 col-sm-4 mt-2">
-                        <CSVLink
-                          filename={"contracts-lists.csv"}
-                          className="btn btn-light bg-white text-primary"
-                          data={filteredContractList}
-                        >
-                          {" "}
-                          <Tooltip title={`Export`} arrow>
-                            <i className="fas fa-download"></i>
-                          </Tooltip>
-                        </CSVLink>
-                    </div>
-                  </>
-                )}
+                {/* )} */}
               </div>
             </div>
           </div>
           {/* row start*/}
-          <div className="row p-2"></div>
+          <div className="row p-2">
+            <BarChart data={filteredContractList} />
+          </div>
           <div className="col-md-12 table-responsive">
             <table className="table">
               <thead className="table-dark">
@@ -280,10 +265,7 @@ const Contracts = ({
                 {currentContracts?.map((itm) => (
                   <tr key={itm?.projectContractId}>
                     <td>
-                      <span
-                      >
-                        {itm?.summary}
-                      </span>
+                      <span>{itm?.summary}</span>
                     </td>
                     <td>{itm?.category}</td>
                     <td>{itm?.subCategory}</td>
@@ -303,7 +285,7 @@ const Contracts = ({
                         ? moment(itm?.endDate).format("DD-MM-YYYY")
                         : "-"}
                     </td>
-                    <td>{itm?.cost}</td>
+                    <td>{itm?.budget}</td>
                     <td>
                       <ChipComponent status={itm?.status} />
                     </td>
