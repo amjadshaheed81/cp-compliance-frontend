@@ -10,10 +10,17 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
-import { Chip, CircularProgress, Grid, Autocomplete } from "@mui/material";
+import {
+  Chip,
+  CircularProgress,
+  Grid,
+  Autocomplete,
+  Switch,
+} from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 import UserActionChart from "./UserActionChart";
 import MonthWiseCheckChart from "./MonthWiseCheckChart";
+import TotalAction from "./TotalAction";
 
 const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +34,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [siteChecks, setSiteChecks] = useState([]);
   const [managerList, setManagerList] = useState([]);
   const navigate = useNavigate();
+  const [checked, setChecked] = useState(true);
   const goTo = (link) => {
     navigate(link);
   };
@@ -35,7 +43,14 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     getManagerList();
     gettypeoptions();
   }, []);
-
+  const handleChange = (event) => {
+    setChecked(event.target.checked);
+    if (event.target.checked) {
+      getSiteChecks(false);
+    } else {
+      getSiteChecks(true);
+    }
+  };
   const getManagerList = async () => {
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
@@ -303,13 +318,15 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     return moment(date, "YYYY-MM-DD").add("days", daysToAdd);
   };
 
-  const getSiteChecks = async () => {
+  const getSiteChecks = async (isAll) => {
     if (!site?.siteId) {
       toast.error("Please select site from site search to proceed....");
       return;
     }
     setIsLoading(true);
-    const siteChecks = await get("/api/site-check/site/" + site?.siteId);
+    const siteChecks = isAll
+      ? await get("/api/site-check/all")
+      : await get("/api/site-check/site/" + site?.siteId);
     setFilteredSiteChecks(siteChecks);
     setSiteChecks(siteChecks);
     setIsLoading(false);
@@ -324,39 +341,14 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
               <div className="">
                 <div className="">
                   <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-4 mt-2 mb-4">
-                      <h5>Risk Scoreboard</h5>
-                    </div>
-                    <div className="col-md-4 mt-2 mb-4">
-                      <h5>Site Checks</h5>
-                      <MonthWiseCheckChart data={currentSiteChecks} />
-                    </div>
-                    <div className="col-md-4 mt-2 mb-4">
-                      <h5>Action Log</h5>
-                      <UserActionChart data={currentSiteChecks} managerList={managerList} />
-                    </div>
-                  </div>
-                  <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-3 col-sm-4 mt-2">
-                      <div>
-                        <i
-                          style={{
-                            position: "absolute",
-                            padding: "10px",
-                            color: "lightgrey",
-                            paddingLeft: "1.5rem",
-                          }}
-                          className="fas fa-search"
-                        ></i>
-                        <input
-                          type="text"
-                          placeholder="Search"
-                          name="searchField"
-                          style={{ paddingLeft: "20%" }}
-                          className="form-control"
-                          onChange={handleInputChange2}
-                        />
-                      </div>
+                      <label>All</label>
+                      <Switch
+                        checked={checked}
+                        onChange={handleChange}
+                        inputProps={{ "aria-label": "controlled" }}
+                      />
+                      <label>Individual Site</label>
                     </div>
                     <div className="col-md-2 col-sm-4 mt-2">
                       <select
@@ -398,131 +390,28 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         <option value="Done">Done</option>
                       </select>
                     </div>
-                    <div className="col-md-1 col-sm-4 mt-2">
-                      <CSVLink
-                        filename={
-                          "site-checks-list_" +
-                          moment(new Date()).format("DD-MM-YYYY") +
-                          ".csv"
-                        }
-                        className="btn btn-light bg-white text-primary"
-                        data={filteredSiteChecks}
-                      >
-                        <Tooltip title={`Export`} arrow>
-                          <i className="fas fa-download"></i>
-                        </Tooltip>
-                      </CSVLink>
+                  </div>
+                  <div className="row" style={{ height: "auto" }}>
+                    <div className="col-md-6 mt-2 mb-4">
+                      <h5>Total Actions</h5>
+                      <TotalAction
+                        data={currentSiteChecks}
+                        managerList={managerList}
+                      />
+                    </div>
+                    <div className="col-md-6 mt-2 mb-4">
+                      <h5>Site Checks</h5>
+                      <MonthWiseCheckChart data={currentSiteChecks} />
+                    </div>
+                    <div className="col-md-6 mt-2 mb-4">
+                      <h5>Action Log</h5>
+                      <UserActionChart
+                        data={currentSiteChecks}
+                        managerList={managerList}
+                      />
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="row p-2"></div>
-              <div className="col-md-12 table-responsive">
-                <table className="table">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col">Type</th>
-                      <th scope="col">Sub-Type</th>
-                      <th scope="col">Summary</th>
-                      <th scope="col">Lead</th>
-                      <th scope="col">Risk Score</th>
-                      <th scope="col">Date</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!isLoading && filteredSiteChecks?.length === 0 && (
-                      <tr>
-                        <td>No result found!!</td>
-                      </tr>
-                    )}
-                    {isLoading && (
-                      <tr>
-                        <td colSpan={8} align="center">
-                          <CircularProgress />
-                        </td>
-                      </tr>
-                    )}
-
-                    {!isLoading &&
-                      currentSiteChecks?.map((action) => {
-                        let leanName = "-";
-                        const lead = managerList.filter(
-                          (u) => u.id == action.leadUserID
-                        );
-                        if (lead.length > 0) {
-                          leanName =
-                            lead[0].role +
-                            " - " +
-                            lead[0].name +
-                            " (" +
-                            lead[0].email +
-                            ")" +
-                            (lead.companyName ? " - " + lead.companyName : "");
-                        }
-                        return (
-                          <tr key={action?.id}>
-                            <th scope="col">{action?.type}</th>
-                            <th scope="col">{action?.subType}</th>
-                            <th scope="col">{action?.category}</th>
-                            <th scope="col" style={{ width: "250px" }}>
-                              {leanName}
-                            </th>
-                            <th scope="col" style={{ width: "200px" }}>
-                              <span className="badge bg-danger p-2 m-1 risk-span">
-                                {action?.riskScoreRed ?? 0}
-                              </span>
-                              <span className="badge bg-warning p-2 m-1 risk-span">
-                                {action?.riskScoreAmber ?? 0}
-                              </span>
-                              <span className="badge bg-info p-2 m-1 risk-span">
-                                {action?.riskScoreYellow ?? 0}
-                              </span>
-                              <span className="badge bg-success p-2 m-1 risk-span">
-                                {action?.riskScoreGreen ?? 0}
-                              </span>
-                            </th>
-                            <th scope="col" style={{ width: "150px" }}>
-                              {moment(action?.dueDate).format("DD-MM-YYYY")}
-                            </th>
-                            <th scope="col">
-                              <Chip
-                                color={
-                                  action?.status === "Done"
-                                    ? "success"
-                                    : "warning"
-                                }
-                                label={action?.status}
-                              />
-                            </th>
-                            <th scope="col" style={{ width: "250px" }}>
-                              <Tooltip title={`View ${action?.type}`} arrow>
-                                <button
-                                  className="btn btn-sm btn-light"
-                                  onClick={() => {
-                                    navigate(
-                                      `/site-checks/${action?.checkId}/update`
-                                    );
-                                  }}
-                                >
-                                  <i className="fas fa-eye"></i>
-                                </button>{" "}
-                              </Tooltip>
-                            </th>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-                <Pagination
-                  totalPages={Math.ceil(
-                    filteredSiteChecks.length / itemsPerPage
-                  )}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                />
               </div>
             </>
           )}

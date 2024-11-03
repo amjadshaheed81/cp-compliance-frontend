@@ -8,7 +8,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const UserActionChart = ({ data, managerList }) => {
   // Extract unique user IDs for lead and assistant users and group statuses by user
   const userStatusCount = {};
-
+  console.log("data", data);
   data.forEach(item => {
     const leadUserId = item.leadUserID;
     const assistantUserId = item.assistantUserID;
