@@ -71,7 +71,7 @@ const AssetsByCost = ({ data, viewBy = "building" }) => {
       },
       title: {
         display: true,
-        text: `Fixed Asset Value by £{viewBy.charAt(0).toUpperCase() + viewBy.slice(1)}`,
+        text: `Fixed Asset Value by ${viewBy.charAt(0).toUpperCase() + viewBy.slice(1)}`,
       },
       tooltip: {
         callbacks: {

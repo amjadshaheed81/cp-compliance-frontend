@@ -17,7 +17,12 @@ import AssetsByCost from "./AssetsByCost";
 // import BarChart from "./BarChart";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const AssetChart = ({ sitePATItems, sitePFPItems, siteAssets, siteSelectedForGlobal }) => {
+const AssetChart = ({
+  sitePATItems,
+  sitePFPItems,
+  siteAssets,
+  siteSelectedForGlobal,
+}) => {
   const [dateRangeData, setDateRange] = useState([]);
 
   const [chartData, setChartData] = useState({
@@ -32,16 +37,14 @@ const AssetChart = ({ sitePATItems, sitePFPItems, siteAssets, siteSelectedForGlo
     ],
   });
   const [users, setUsers] = useState([]);
-  useEffect(() => {
-    
-  }, []);
+  useEffect(() => {}, []);
   useEffect(() => {
     setChartData({
       labels: ["Others", "PFS Items", "PAT Items"],
       datasets: [
         {
           data: [
-            (siteAssets?.length - sitePFPItems?.length - sitePATItems?.length),
+            siteAssets?.length - sitePFPItems?.length - sitePATItems?.length,
             sitePFPItems?.length,
             sitePATItems?.length,
           ],
@@ -54,41 +57,40 @@ const AssetChart = ({ sitePATItems, sitePFPItems, siteAssets, siteSelectedForGlo
     getSiteAssetsData();
   }, []);
 
-  
-// Fetch all assets and merge them
-const fetchAndMergeAssets = async () => {
-  const siteId = siteSelectedForGlobal?.siteId;
-const urls = [
-  `/api/site/${siteId}/assets`,
-  `/api/site/${siteId}/assets?pfpItem=true`,
-  `/api/site/${siteId}/assets?doorItem=true`,
-  `/api/site/${siteId}/assets?patItem=true`
-];
-  try {
-    const responses = await Promise.all(urls.map(url => get(url)));
-    
-    // Extract and merge the assets from each response
-    const mergedAssets = responses
-      .flatMap(response => response?.assets || []); // Flatten and filter any undefined assets
-    
-    return mergedAssets;
-  } catch (error) {
-    console.error("Error fetching assets:", error);
-    return [];
-  }
-};
+  // Fetch all assets and merge them
+  const fetchAndMergeAssets = async () => {
+    const siteId = siteSelectedForGlobal?.siteId;
+    const urls = [
+      `/api/site/${siteId}/assets`,
+      `/api/site/${siteId}/assets?pfpItem=true`,
+      `/api/site/${siteId}/assets?doorItem=true`,
+      `/api/site/${siteId}/assets?patItem=true`,
+    ];
+    try {
+      const responses = await Promise.all(urls.map((url) => get(url)));
+
+      // Extract and merge the assets from each response
+      const mergedAssets = responses.flatMap(
+        (response) => response?.assets || []
+      ); // Flatten and filter any undefined assets
+
+      return mergedAssets;
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+      return [];
+    }
+  };
   const getSiteAssetsData = async () => {
-    
-    const res = await fetchAndMergeAssets()
+    const res = await fetchAndMergeAssets();
     setDateRange(res || []);
     console.log("res", res);
-  }
+  };
   return (
     <div className="row pt-4 pb-4">
       <div className="col-md-4 fs-5">
         Asset Type{" "}
         <span class="badge bg-light text-primary">
-          Total Assets: {(siteAssets?.length )}
+          Total Assets: {siteAssets?.length}
         </span>
         <div>
           <Pie
@@ -113,10 +115,12 @@ const urls = [
         </div>
       </div>
       <div className="col-md-6">
-        <DateRangeChart data={dateRangeData} />
+        {dateRangeData?.length > 0 && <DateRangeChart data={dateRangeData} />}
       </div>
       <div className="col-md-6">
-        <AssetsByCost data={dateRangeData} viewBy="building"/>
+        {dateRangeData?.length > 0 && (
+          <AssetsByCost data={dateRangeData} viewBy="building" />
+        )}
       </div>
     </div>
   );
