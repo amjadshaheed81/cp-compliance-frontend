@@ -71,11 +71,11 @@ const AssetsByCost = ({ data, viewBy = "building" }) => {
       },
       title: {
         display: true,
-        text: `Fixed Asset Value by ${viewBy.charAt(0).toUpperCase() + viewBy.slice(1)}`,
+        text: `Fixed Asset Value by £{viewBy.charAt(0).toUpperCase() + viewBy.slice(1)}`,
       },
       tooltip: {
         callbacks: {
-          label: (context) => `Cost: $${context.raw.toLocaleString()}`,
+          label: (context) => `Cost: £${context.raw.toLocaleString()}`,
         },
       },
     },
@@ -90,7 +90,7 @@ const AssetsByCost = ({ data, viewBy = "building" }) => {
         beginAtZero: true,
         title: {
           display: true,
-          text: "Total Cost ($)",
+          text: "Total Cost (£)",
         },
       },
     },
