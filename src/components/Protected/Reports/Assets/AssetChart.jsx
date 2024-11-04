@@ -11,10 +11,15 @@ import { Pie } from "react-chartjs-2";
 import { get } from "../../../../api";
 import { getUniqueSitesWithUserCount } from "../../../../utils/getUniqueSitesWithUserCount";
 import BarChart from "./BarChart";
+import DateRangeChart from "./DateRangeChart";
+import AssetsByCost from "./AssetsByCost";
+
 // import BarChart from "./BarChart";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const AssetChart = ({ assetChart, sitePATItems, sitePFPItems, siteAssets }) => {
+const AssetChart = ({ sitePATItems, sitePFPItems, siteAssets, siteSelectedForGlobal }) => {
+  const [dateRangeData, setDateRange] = useState([]);
+
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -46,7 +51,38 @@ const AssetChart = ({ assetChart, sitePATItems, sitePFPItems, siteAssets }) => {
         },
       ],
     });
-  }, [assetChart]);
+    getSiteAssetsData();
+  }, []);
+
+  
+// Fetch all assets and merge them
+const fetchAndMergeAssets = async () => {
+  const siteId = siteSelectedForGlobal?.siteId;
+const urls = [
+  `/api/site/${siteId}/assets`,
+  `/api/site/${siteId}/assets?pfpItem=true`,
+  `/api/site/${siteId}/assets?doorItem=true`,
+  `/api/site/${siteId}/assets?patItem=true`
+];
+  try {
+    const responses = await Promise.all(urls.map(url => get(url)));
+    
+    // Extract and merge the assets from each response
+    const mergedAssets = responses
+      .flatMap(response => response?.assets || []); // Flatten and filter any undefined assets
+    
+    return mergedAssets;
+  } catch (error) {
+    console.error("Error fetching assets:", error);
+    return [];
+  }
+};
+  const getSiteAssetsData = async () => {
+    
+    const res = await fetchAndMergeAssets()
+    setDateRange(res || []);
+    console.log("res", res);
+  }
   return (
     <div className="row pt-4 pb-4">
       <div className="col-md-4 fs-5">
@@ -76,6 +112,12 @@ const AssetChart = ({ assetChart, sitePATItems, sitePFPItems, siteAssets }) => {
           <BarChart data={sitePATItems} />
         </div>
       </div>
+      <div className="col-md-6">
+        <DateRangeChart data={dateRangeData} />
+      </div>
+      <div className="col-md-6">
+        <AssetsByCost data={dateRangeData} viewBy="building"/>
+      </div>
     </div>
   );
 };
@@ -86,6 +128,7 @@ const mapStateToProps = (state) => ({
   sitePATItems: state.site.sitePATItems,
   sitePFPItems: state.site.sitePFPItems,
   siteAssets: state.site.siteAssets,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getSites,

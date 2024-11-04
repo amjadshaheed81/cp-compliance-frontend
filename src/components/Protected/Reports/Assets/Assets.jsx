@@ -16,16 +16,19 @@ import {
   getSitePFPAssets,
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
+import { get } from "../../../../api";
+import AssetChart from "./AssetChart";
 
 const Assets = ({
   siteSelectedForGlobal,
-  getSiteAssets,
   getSitePFPAssets,
   getSiteDoorAssets,
   getSitePATAssets,
+  getSiteAssets,
 }) => {
   // tab value
   const [value, setValue] = useState("1");
+  const [assets, setAssets] = useState([]);
   const tabChange = (event, newValue) => {
     event?.preventDefault();
     setValue(newValue);
@@ -36,6 +39,7 @@ const Assets = ({
       getSitePFPAssets(siteSelectedForGlobal?.siteId);
       getSiteDoorAssets(siteSelectedForGlobal?.siteId);
       getSitePATAssets(siteSelectedForGlobal?.siteId);
+      // getSiteAssetsData();
     } else {
       Swal.fire({
         icon: "error",
@@ -44,44 +48,10 @@ const Assets = ({
       });
     }
   }, []);
+  
   return (
     <Fragment>
-      <div className="">
-        <div className="">
-          <Box sx={{ width: "100%", typography: "body1" }}>
-            <TabContext value={value}>
-              <Box
-                sx={{
-                  "& .MuiTabs-flexContainer": {
-                    flexWrap: "wrap",
-                  },
-                }}
-              >
-                <TabList onChange={tabChange} aria-label="lab API tabs example">
-                  <Tab label="Summary" value="1" />
-                  <Tab label="Doors" value="2" />
-                  <Tab label="PAT" value="3" />
-                  <Tab label="Passive Fire Protection" value="4" />
-                </TabList>
-              </Box>
-              <TabPanel value="1">
-                <Summary />
-              </TabPanel>
-              <TabPanel value="2">
-                <Door />
-              </TabPanel>
-              <TabPanel value="3">
-                <Pat />
-              </TabPanel>
-              <TabPanel value="4">
-                <PassiveFireProtection />
-              </TabPanel>
-            </TabContext>
-          </Box>
-          {/*  */}
-          {/*  */}
-        </div>
-      </div>
+      <AssetChart />
     </Fragment>
   );
 };

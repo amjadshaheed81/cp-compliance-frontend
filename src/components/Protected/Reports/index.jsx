@@ -99,7 +99,6 @@ const Reports = ({}) => {
             </TabPanel>
             <TabPanel value={value} index={1}>
               <div className="row">
-                <AssetChart assetChart={assetChart} />
                 <Assets />
               </div>
             </TabPanel>
