@@ -2,7 +2,9 @@ name: BETA VM Deployment
 
 on:
   workflow_dispatch:
-
+  push:
+    branches:
+      - main
 env:
   HOST: cpc-beta.ukwest.cloudapp.azure.com
   USERNAME: github-user
