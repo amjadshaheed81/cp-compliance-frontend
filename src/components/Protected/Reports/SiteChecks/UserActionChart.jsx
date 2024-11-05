@@ -8,26 +8,35 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const UserActionChart = ({ data, managerList }) => {
   // Extract unique user IDs for lead and assistant users and group statuses by user
   const userStatusCount = {};
-  console.log("data", data);
+  const userActionDetails = {};
+
   data.forEach(item => {
     const leadUserId = item.leadUserID;
     const assistantUserId = item.assistantUserID;
-    const status = item.status;
+    const status = item.status.toLowerCase();
 
-    // Handle each user ID for status counting
+    // Handle each user ID for status counting and store action details
     [leadUserId, assistantUserId].forEach(userId => {
       if (!userStatusCount[userId]) {
         userStatusCount[userId] = { open: 0, done: 0 };
+        userActionDetails[userId] = [];
       }
-      userStatusCount[userId][status.toLowerCase()] += 1;
+      userStatusCount[userId][status] += 1;
+      
+      // Store action details for each user
+      userActionDetails[userId].push({
+        type: item.type,
+        subType: item.subType,
+        status: item.status,
+      });
     });
   });
 
   // Prepare data for the chart
   const userIds = Object.keys(userStatusCount);
   const labels = userIds.map(userId => {
-    const manager = managerList.find(manager => manager.id === parseInt(userId)); // Get manager by ID
-    return manager ? manager.name : userId; // Use manager name or user ID if not found
+    const manager = managerList.find(manager => manager.id === parseInt(userId));
+    return manager ? manager.name : `User ${userId}`;
   });
 
   const openCounts = userIds.map(userId => userStatusCount[userId].open);
@@ -49,7 +58,7 @@ const UserActionChart = ({ data, managerList }) => {
     ],
   };
 
-  // Chart options configuration
+  // Chart options configuration with custom tooltip
   const options = {
     responsive: true,
     plugins: {
@@ -59,6 +68,26 @@ const UserActionChart = ({ data, managerList }) => {
       title: {
         display: false,
         text: 'User Status Counts (Open and Done)',
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            const userId = userIds[context.dataIndex];
+            const totalOpen = userStatusCount[userId].open;
+            const totalDone = userStatusCount[userId].done;
+
+            // Construct tooltip details with total counts and individual actions
+            const details = [
+              `Total Open: ${totalOpen}`,
+              `Total Done: ${totalDone}`,
+              ...userActionDetails[userId].map(action =>
+                `• ${action.type} (${action.subType}): ${action.status}`
+              )
+            ];
+
+            return details;
+          },
+        },
       },
     },
     scales: {
