@@ -32,7 +32,7 @@ const DateRangeChart = ({ data }) => {
         dateCounts[purchaseDate] = { count: 0, names: [] };
       }
       dateCounts[purchaseDate].count += 1;
-      dateCounts[purchaseDate].names.push(asset.assetName); // Assuming asset has a 'name' property
+      dateCounts[purchaseDate].names.push(`${asset.assetName} (£${asset.cost || 0})`); // Assuming asset has a 'name' property
     }
   });
 
