@@ -45,7 +45,18 @@ export const findAssetWithNearestPatNextDate = (assets) => {
     ? { asset: nearestAsset, patItem: nearestPatItem }
     : null;
 };
-
+export const requirementsNotRequiredForFileCheck = [
+  "Asbestos Surveys",
+  "Fire Emergency Plan",
+  "Fire alarm Commissioning Certificate",
+  "Fire Alarm Commissioning Certificate (BS5839)",
+  "Fire Log Book Hard Copy",
+  "Health and Safety Law Poster",
+  "Health and Certificate Accident Book",
+  "Health and Safety Accident Book",
+  "Water Schematic Drawing",
+  "Water Legionella Samples"
+];
 const StatutoryRegister = ({
   loggedInUserData,
   siteSelectedForGlobal,
@@ -237,10 +248,14 @@ const StatutoryRegister = ({
       status: status,
       required: isChecked,
     };
-    console.log("Checkbox checked state:", isChecked);
     if (!isChecked) {
       payload.status = "";
     }
+
+    if (isChecked && requirementsNotRequiredForFileCheck.includes(item?.requirement)) {
+      payload.status = "Passed";
+    }
+
     const res = await put("/api/document/statutoryRegister/manage", payload);
     if (res?.status === 200) {
       getStatutory(siteSelectedForGlobal?.siteId);

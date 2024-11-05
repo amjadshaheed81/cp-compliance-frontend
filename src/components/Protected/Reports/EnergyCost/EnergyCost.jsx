@@ -16,6 +16,7 @@ import {
   Link,
   Dialog,
   CircularProgress,
+  Switch,
 } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
@@ -35,6 +36,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const site = JSON.parse(localStorage.getItem("site"));
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
+  const [checked, setChecked] = useState(true);
 
   useEffect(() => {
     gettypeoptions();
@@ -57,6 +59,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
+  console.log("filteredEnergyCost", filteredEnergyCost);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -125,7 +128,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   };
 
   useEffect(() => {
-    getEnergyCost();
+    getEnergyCost(false);
   }, [siteSelectedForGlobal]);
 
   const handleFileUploadReading = (event) => {
@@ -276,13 +279,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     await getEnergyCost();
   };
 
-  const getEnergyCost = async () => {
+  const getEnergyCost = async (isAll) => {
     if (!site?.siteId) {
       toast.error("Please select site from site search to proceed....");
       return;
     }
     setIsLoading(true);
-    const energyCost = await get("/api/energy/site/survey/" + site?.siteId);
+    const energyCost = isAll
+      ? await get("/api/energy/survey/all")
+      : await get("/api/energy/site/survey/" + site?.siteId);
     energyCost.forEach((energy) => {
       const dates = energy.costList.map((c) => new Date(c.fromDate));
       const minDate =
@@ -316,7 +321,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       getEnergyCost();
     }
   };
-
+  const handleChange = (event) => {
+    setChecked(event.target.checked);
+    if (event.target.checked) {
+      getEnergyCost(false);
+    } else {
+      getEnergyCost(true);
+    }
+  };
   return (
     <Fragment>
       <Dialog
@@ -331,20 +343,22 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
         <DialogContent dividers>
           <Fragment>
             {!bulkCategory && (
-              <div className="col">
-                <label for="budgetCategory">Select Budget Category</label>
-                <select
-                  name="budgetCategory"
-                  className="form-control form-select"
-                  id="budgetCategory"
-                  onChange={(e) => setBulkCategory(e.target.value)}
-                >
-                  <option value="">Budget Category</option>
-                  {typeoptions.map((t) => (
-                    <option value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="col">
+                  <label for="budgetCategory">Select Budget Category</label>
+                  <select
+                    name="budgetCategory"
+                    className="form-control form-select"
+                    id="budgetCategory"
+                    onChange={(e) => setBulkCategory(e.target.value)}
+                  >
+                    <option value="">Budget Category</option>
+                    {typeoptions.map((t) => (
+                      <option value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
             )}
             {bulkCategory && (
               <>
@@ -431,40 +445,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
       <div>
         <div>
-          <div className="row" style={{ height: "auto" }}>
-            <div className="col-md-6 mt-2 mb-4">
-              <h5>Energy Cost</h5>
-              <CostChart energyData={filteredEnergyCost} />
-            </div>
-            <div className="col-md-6 mt-2 mb-4">
-              <h5>Energy Reading</h5>
-              <EnergyChart energyData={filteredEnergyCost} />
-            </div>
-          </div>
           <div className="d-flex bd-highlight" style={{ flexWrap: "wrap" }}>
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-                <div className="col">
-                  <div style={{ position: "relative" }}>
-                    <i
-                      style={{
-                        position: "absolute",
-                        padding: "10px",
-                        color: "lightgrey",
-                        paddingLeft: "1.5rem",
-                      }}
-                      className="fas fa-search"
-                    ></i>
-                    <input
-                      type="text"
-                      placeholder="Search"
-                      name="searchField"
-                      style={{ textAlign: "center", width: "250px" }}
-                      className="form-control"
-                      onChange={handleInputChange2}
-                    />
-                  </div>
-                </div>
                 <div className="col">
                   <select
                     name="budgetCategory"
@@ -478,9 +461,18 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     ))}
                   </select>
                 </div>
+                <div className="col">
+                  <label>All</label>
+                  <Switch
+                    checked={checked}
+                    onChange={handleChange}
+                    inputProps={{ "aria-label": "controlled" }}
+                  />
+                  <label>Individual Site</label>
+                </div>
               </div>
             </div>
-            {isManagerAdminLogin(loggedInUserData) && (
+            {/* {isManagerAdminLogin(loggedInUserData) && (
               <>
                 <div className="ms-auto p-2 bd-highlight">
                   <div className="row" style={{ height: "auto" }}>
@@ -510,7 +502,17 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   </div>
                 </div>
               </>
-            )}
+            )} */}
+          </div>
+          <div className="row" style={{ height: "auto" }}>
+            <div className="col-md-6 mt-2 mb-4">
+              <h5>Energy Cost</h5>
+              <CostChart energyData={filteredEnergyCost} />
+            </div>
+            <div className="col-md-6 mt-2 mb-4">
+              <h5>Energy Reading</h5>
+              <EnergyChart energyData={filteredEnergyCost} />
+            </div>
           </div>
 
           <div className="row p-2"></div>
