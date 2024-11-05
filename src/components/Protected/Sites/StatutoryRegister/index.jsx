@@ -545,7 +545,7 @@ const StatutoryRegister = ({
                           className="text-primary cursor"
                           onClick={() => {}}
                         >
-                          {item.id}
+                          {item.sortOrder}
                         </span>
                       </th>
                       <th scope="col">

@@ -683,9 +683,7 @@ const UpdateAsset = ({
                               options={siteAssets.map((option) => {
                                 return {
                                   key: option.assetId,
-                                  label: option.assetName,
-                                };
-                              })}
+                                  label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })}
                               getOptionLabel={(option) => (
                                 <Fragment key={option.key}>
                                   {option.label || ""}
@@ -695,8 +693,8 @@ const UpdateAsset = ({
                                 <TextField
                                   disabled
                                   {...params}
-                                  label="Tag Asset"
-                                  placeholder="Tag Asset"
+                                  //label="Tag Asset"
+                                  //placeholder="Tag Asset"
                                 />
                               )}
                             />

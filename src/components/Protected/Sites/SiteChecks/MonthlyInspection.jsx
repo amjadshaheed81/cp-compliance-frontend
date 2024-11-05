@@ -316,7 +316,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
                         }}
                         value={catAsset.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                        options={catAsset.filter(s => !quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        options={catAsset.filter(s => !quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString()))
+                          .map((option) => { return { key: option.assetId, label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })}
                         getOptionLabel={(option) => option.label}
 
                         renderInput={(params) => (

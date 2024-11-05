@@ -79,6 +79,7 @@ const SurveyWaterTemperatureMonitoring = ({
 
     return array.filter((item) => {
       const key = `${item.assetId}-${item.outletType}-${item.temperature}-${item.normalRunTime}-${item.floor}-${item.room}`;
+      //check for date
       if (!seen.has(key)) {
         seen.set(key, true);
         return true;
