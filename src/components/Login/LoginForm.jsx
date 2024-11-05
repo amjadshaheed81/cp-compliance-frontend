@@ -95,21 +95,21 @@ const LoginForm = ({ login, loginUser }) => {
                   />
                 )}
               </div>
-              {isLoading && (
+              {/* {isLoading && (
                 <Box sx={{ display: "flex" }}>
                   <CircularProgress />
                 </Box>
-              )}
-              {!isLoading && (
+              )} */}
+              {/* {!isLoading && ( */}
                 <div className="form-group mt-2">
                   <button
                     type="submit"
                     className="btn btn-primary rounded w-100 login-submit"
                   >
-                    Login
+                    {isLoading ? <CircularProgress sx={{ color: 'white' }}/>  : "Login"}
                   </button>
                 </div>
-              )}
+              {/* )} */}
 
               <div className="mt-2 text-center">
                 <p>
