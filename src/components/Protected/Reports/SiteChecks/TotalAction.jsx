@@ -79,7 +79,7 @@ const TotalAction = ({ data, managerList }) => {
     ],
   };
 
-  // Chart options configuration
+  // Chart options configuration with custom tooltip
   const options = {
     responsive: true,
     plugins: {
@@ -89,6 +89,25 @@ const TotalAction = ({ data, managerList }) => {
       title: {
         display: true,
         text: "Total Actions Analysis",
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            // Get the current category's data count
+            const categoryIndex = context.dataIndex;
+            const actionCount = context.raw;
+
+            // Create an array to store all action details
+            const actionDetails = data.map(item => (
+              `• ${item.type} (${item.subType}): ` +
+              `Red ${item.riskScoreRed || 0}, Amber ${item.riskScoreAmber || 0}, ` +
+              `Yellow ${item.riskScoreYellow || 0}, Green ${item.riskScoreGreen || 0}`
+            ));
+
+            // Prepend the total count to the action details
+            return [`Total Actions: ${actionCount}`, ...actionDetails];
+          },
+        },
       },
     },
     scales: {
