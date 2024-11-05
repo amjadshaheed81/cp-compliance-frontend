@@ -16,12 +16,15 @@ const BarChart = ({ data }) => {
     ],
   });
 
+  const [monthlyContracts, setMonthlyContracts] = useState({});
+
   useEffect(() => {
     processChartData();
   }, [data]);
 
   const processChartData = () => {
     const monthlyBudget = {};
+    const contractsByMonth = {};
 
     data.forEach((item) => {
       if (item.status === "Active" && item.budget) {
@@ -30,8 +33,13 @@ const BarChart = ({ data }) => {
 
         if (!monthlyBudget[monthYear]) {
           monthlyBudget[monthYear] = 0;
+          contractsByMonth[monthYear] = [];
         }
         monthlyBudget[monthYear] += parseFloat(item.budget);
+        contractsByMonth[monthYear].push({
+          name: item.summary,
+          budget: parseFloat(item.budget),
+        });
       }
     });
 
@@ -50,6 +58,7 @@ const BarChart = ({ data }) => {
         },
       ],
     });
+    setMonthlyContracts(contractsByMonth);
   };
 
   const options = {
@@ -57,6 +66,22 @@ const BarChart = ({ data }) => {
     scales: {
       y: {
         beginAtZero: true,
+      },
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            const month = context.label;
+            const contracts = monthlyContracts[month] || [];
+          
+            // Format each contract entry
+            const details = contracts.map(contract => `• ${contract.name}: £${contract.budget.toFixed(2)}`);
+          
+            // Return an array where each item is a new line in the tooltip
+            return [`Total: £${context.raw}`, ...details];
+          },
+        },
       },
     },
   };
