@@ -47,7 +47,7 @@ const Assets = ({
         text: "Please select site from site search and try again.",
       });
     }
-  }, []);
+  }, [siteSelectedForGlobal]);
   
   return (
     <Fragment>

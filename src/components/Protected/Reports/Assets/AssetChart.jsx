@@ -39,6 +39,9 @@ const AssetChart = ({
   const [users, setUsers] = useState([]);
   useEffect(() => {}, []);
   useEffect(() => {
+    getSiteAssetsData();
+  }, [siteSelectedForGlobal]);
+  useEffect(() => {
     setChartData({
       labels: ["Others", "PFS Items", "PAT Items"],
       datasets: [
@@ -54,8 +57,7 @@ const AssetChart = ({
         },
       ],
     });
-    getSiteAssetsData();
-  }, []);
+  }, [siteAssets, sitePFPItems, sitePATItems]);
 
   // Fetch all assets and merge them
   const fetchAndMergeAssets = async () => {
