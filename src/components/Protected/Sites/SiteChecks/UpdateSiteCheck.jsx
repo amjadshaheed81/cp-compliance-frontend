@@ -102,7 +102,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("inspection-electrical")
     } else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
-    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Monthly Inspection") {
+    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Monthly Audit") {
       setStep("audit-monthly-inspection")
     } else if (siteCheck.type === "Audit") {
       setStep("audit-unit-maintenance-periodic")
