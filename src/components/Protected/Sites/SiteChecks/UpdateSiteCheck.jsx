@@ -11,7 +11,7 @@ import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample"
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
 import AssessmentFireRisk from "./AssessmentFireRisk";
-import MonthlyInspection from "./MonthlyInspection";
+import Audit from "./Audit";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA"
 import { useNavigate, useParams } from "react-router-dom";
@@ -103,7 +103,9 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     } else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck.subType === "Monthly Audit") {
-      setStep("audit-monthly-inspection")
+      setStep("audit-question")
+    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Annual Winter Audit") {
+      setStep("audit-question")
     } else if (siteCheck.type === "Audit") {
       setStep("audit-unit-maintenance-periodic")
     } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Water Temperature Monitoring") {
@@ -365,7 +367,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck.subType}/></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
-            {step === "audit-monthly-inspection"  && <Item><MonthlyInspection checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck.subType} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterTemperatureMonitoring checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}

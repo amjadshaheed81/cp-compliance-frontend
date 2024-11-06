@@ -2,6 +2,8 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post, put, uploadSiteCheckDoc } from "../../../../api";
+
+import CircularProgress from '@mui/material/CircularProgress';
 import {
   Grid, TextField, Checkbox, Typography, Box, IconButton, FormGroup, Select, InputLabel, FormControl, FormControlLabel,
   Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete
@@ -9,11 +11,12 @@ import {
 import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
 import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
+const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [header, setheaders] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     getQuestions();
@@ -24,62 +27,14 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
     }
   }, []);
 
-  // const defaultQuestions = [
-  //   {
-  //     q: "Are all means of escape free from combustible and other storage?",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "Are sufficiently robust and applicable systems in place for the safe storage and use of flammable substances?",
-  //     s: "Closed"
-  //   },
-  //   {
-  //     q: "Are all means of escape free from combustible and other storage?",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "All means provided to ensure adequate Means Of Escape (other than floors walls and ceilings, see above) must be properly maintained",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "Is the building provided with signs and notices in accordance with the Signs and Signals Regulations 1996?",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "Were there is a need for a degree of fire resistance, are doors provided constructed in accordance with relevant part of B.S. 476?",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "Is emergency lighting provided and maintained in accordance with B.S.5266: 2003?",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "Is the building provided with fire fighting equipment in compliance with B.S 5306, Part 3?",
-  //     s: "Open"
-  //   },
-  //   {
-  //     q: "Are all means of escape free from combustible and other storage?",
-  //     s: "Open"
-  //   },
-  // ]
-
-  // const temp = async () => {
-  //   for (let d of defaultQuestions) {
-  //     const data = {
-  //       question: d.q,
-  //       category: "assessment-fire-risk"
-  //     }
-  //     await post("/api/site-check/assessment/questions", data)
-  //   }
-
-
-  // }
 
   const getQuestions = async () => {
-    const lovs = await get("/api/lov/SITE_CHECK_AUDIT_MONTHLY_INSPECTION_HEADER");
-    const headers = lovs.sort((a, b) => parseFloat(a.lovDesc) - parseFloat(b.lovDesc));
+    setIsLoading(true);
+    let questionCat = subType === 'Annual Winter Audit' ? "annual-winter-audit" : "monthly-inspection";
+    const lovs = await get("/api/lov/SITE_CHECK_AUDIT_HEADER");
+    const questionsFromDB = await get("/api/site-check/assessment/questions/"+questionCat)
+    const headers = lovs.filter(a=>a.attribite1 === questionCat).sort((a, b) => parseFloat(a.lovDesc) - parseFloat(b.lovDesc));
     setheaders(headers);
-    const questionsFromDB = await get("/api/site-check/assessment/questions/monthly-inspection")
     const questionsResponse = await get("/api/site-check/assessment/response/" + checkId)
     questionsFromDB.forEach(q => {
       const resIdx = questionsResponse.findIndex(r => r.qid === q.qid);
@@ -115,6 +70,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
     }
     await put("/api/site-check/" + checkId, body);
     setquest(questionsFromDB);
+    setIsLoading(false);
   }
 
 
@@ -193,6 +149,8 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
 
     <Box p={3}>
       <Card>
+      {isLoading && <CircularProgress />}
+          {!isLoading &&
         <CardContent>
           <Grid container alignItems="center" justifyContent="space-between" mb={2}>
             <Grid item>
@@ -538,6 +496,7 @@ const AssessmentFireRisk = ({ sasToken, checkId, siteAssets, getSiteAssets, site
           </div>)})}
           
         </CardContent>
+        }
       </Card>
     </Box>
 
