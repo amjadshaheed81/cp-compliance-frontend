@@ -81,7 +81,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
       return;
     }
     getCategories();
-    getProjectList();
+    getProjectList(checked);
   }, [siteSelectedForGlobal]);
   const getProjectList = async (isSiteSelectedForContractor = false) => {
     setIsLoading(true);
