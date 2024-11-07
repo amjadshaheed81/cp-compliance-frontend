@@ -11,6 +11,7 @@ import { Pie } from "react-chartjs-2";
 import { get } from "../../../../api";
 import { getUniqueSitesWithUserCount } from "../../../../utils/getUniqueSitesWithUserCount";
 import BarChart from "./BarChart";
+import { SiteArea } from "../../../../Constant/SiteArea";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const SiteCharts = ({
@@ -149,11 +150,7 @@ const SiteCharts = ({
               value={state.selectedArea}
             >
               <option value="">Area</option>
-              {areaOption?.map((site) => (
-                <option key={site.area} value={site.area}>
-                  {site.area}
-                </option>
-              ))}
+              {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
             </select>
           </div>
           <div className="col-md-4 col-sm-4 mt-2">
