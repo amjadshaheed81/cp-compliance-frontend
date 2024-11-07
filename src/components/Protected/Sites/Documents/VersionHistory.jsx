@@ -243,6 +243,11 @@ const VersionHistory = ({
                     type="date"
                     name="issueDate"
                     className="form-control"
+                    onChange={(e) => {
+                      const date = moment(e.target.value).add(1, "years").format("YYYY-MM-DD");
+                      setValue("expiryDate", date);
+                      setValue("issuDate", moment(e.target.value).format("YYYY-MM-DD"));
+                    }}
                   />
                 </div>
                 <div className="col-md-4 mt-2">
