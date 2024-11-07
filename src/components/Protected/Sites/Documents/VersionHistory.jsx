@@ -96,6 +96,12 @@ const VersionHistory = ({
             originalFileName: formData?.fileUpload?.[0]?.name,
             fileVersion: fileVerions?.length + 1,
             siteId: siteSelectedForGlobal?.siteId,
+            issueDate: formData?.issueDate
+              ? `${formData?.issueDate} 10:00:00`
+              : "",
+            expiryDate: formData?.expiryDate
+              ? `${formData?.expiryDate} 10:00:00`
+              : "",
           },
         ],
       };
@@ -119,12 +125,6 @@ const VersionHistory = ({
 
     reqData.documentRequestString.folderId = fileVerions?.[0]?.folderId;
     reqData.documentRequestString.files[0].id = fileId;
-    reqData.documentRequestString.files[0].issueDate = `${moment(
-      new Date()
-    ).format("YYYY-MM-DD")} 10:00:00`;
-    reqData.documentRequestString.files[0].expiryDate = `${moment(new Date())
-      .add(1, "years")
-      .format("YYYY-MM-DD")} 10:00:00`;
     reqData.documentRequestString.files[0].uploaderUserId =
       loggedInUserData?.id || "";
     reqData.documentRequestString.files[0].reviewerUserId =
@@ -236,6 +236,24 @@ const VersionHistory = ({
                     />
                   )}
                 </div>
+                <div className="col-md-4 mt-2">
+                  <label htmlFor="issueDate">Issue Date</label>
+                  <input
+                    {...register("issueDate")}
+                    type="date"
+                    name="issueDate"
+                    className="form-control"
+                  />
+                </div>
+                <div className="col-md-4 mt-2">
+                  <label htmlFor="expiryDate">Expiry Date</label>
+                  <input
+                    {...register("expiryDate")}
+                    type="date"
+                    name="expiryDate"
+                    className="form-control"
+                  />
+                </div>
               </div>
             )}
             <div className="table-responsive">
@@ -245,7 +263,8 @@ const VersionHistory = ({
                     <th scope="col">File</th>
                     <th scope="col">Version</th>
                     <th scope="col">Uploaded By</th>
-                    <th scope="col">Date</th>
+                    <th scope="col">Issue Date</th>
+                    <th scope="col">Expiry Date</th>
                     <th scope="col">Action</th>
                   </tr>
                 </thead>
@@ -283,6 +302,11 @@ const VersionHistory = ({
                         <td>
                           {file?.uploaderUserName
                             ? file?.uploaderUserName
+                            : "--"}
+                        </td>
+                        <td>
+                          {file?.issueDate
+                            ? moment(file?.issueDate).format("DD/MM/YYYY")
                             : "--"}
                         </td>
                         <td>
