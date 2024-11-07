@@ -1,10 +1,10 @@
 import React from "react";
-import { Bar } from "react-chartjs-2";
+import { Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -14,7 +14,7 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -88,24 +88,9 @@ const TotalAction = ({ data }) => {
         },
       },
     },
-    scales: {
-      x: {
-        title: {
-          display: true,
-          text: "Categories",
-        },
-      },
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: "Count",
-        },
-      },
-    },
   };
 
-  return <Bar data={chartData} options={options} />;
+  return <Pie data={chartData} options={options} />;
 };
 
 export default TotalAction;
