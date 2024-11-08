@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import { getSites } from "../../../../store/thunk/site";
 import TotalAction from "./TotalAction";
+import { SiteArea } from "../../../../Constant/SiteArea";
 
 const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,15 +13,22 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [managerList, setManagerList] = useState([]);
   const [actions, setActions] = useState([]);
+  const [state, setState] = useState({
+    selectedArea: "",
+    allSites: true,
+  });
 
-
-  useEffect(() => {
-    getActions(siteSelectedForGlobal?.siteId);
-  }, []);
-  const getActions = async (siteId) => {
+  const getActions = async (allSites = false) => {
     setIsLoading(true);
-    const res = await get(`api/site/actions/${siteId}`);
-    setActions(res);
+    if (allSites) {
+      const res = await get(`/api/site/actions/all`);
+      setActions(res);
+    } else {
+      const res = await get(
+        `api/site/actions/${siteSelectedForGlobal?.siteId}`
+      );
+      setActions(res);
+    }
     setIsLoading(false);
   };
 
@@ -32,7 +40,26 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-
+  const handleAreaChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: e.target.value,
+    }));
+    getActionsByArea(e.target.value);
+  };
+  const getActionsByArea = async (area) => {
+    const res = await get(`/api/site/actions/all?area=${area}`);
+    setActions(res);
+  };
+  const handleAllSitesToggle = () => {
+    setState((prevState) => ({
+      ...prevState,
+      allSites: !prevState.allSites,
+    }));
+  };
+  useEffect(() => {
+    getActions(state.allSites);
+  }, [state.allSites]);
   return (
     <Fragment>
       <div>
@@ -44,9 +71,40 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-6 mt-2 mb-4">
                       <h5>Actions</h5>
-                      <TotalAction
-                        data={actions}
-                      />
+                      <div className="row" style={{ height: "auto" }}>
+                        <div className="col-md-4 col-sm-4 mt-2">
+                          <select
+                            name="area"
+                            className="form-control form-select"
+                            id="area"
+                            onChange={handleAreaChange}
+                            value={state.selectedArea}
+                          >
+                            <option value="">Area</option>
+                            {SiteArea?.map((itm) => (
+                              <option value={itm}>{itm}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-4 col-sm-4 mt-2">
+                          <div className="form-check form-switch">
+                            <label
+                              className="form-check-label"
+                              htmlFor="flexSwitchCheckChecked"
+                            >
+                              {state.allSites ? "All Sites" : "Individual"}
+                            </label>
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="flexSwitchCheckChecked"
+                              checked={state.allSites}
+                              onChange={handleAllSitesToggle}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <TotalAction data={actions} />
                     </div>
                   </div>
                 </div>
