@@ -18,8 +18,13 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 import BarChart from "./Barchart";
+import { SiteArea } from "../../../../Constant/SiteArea";
 
 const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
+  const [state, setState] = useState({
+    selectedArea: "",
+    allSites: true,
+  });
   const [filteredContractList, setFilteredContractList] = useState([]);
   const [contractList, setContractList] = useState([]);
   const [formData, setFormData] = useState({
@@ -63,8 +68,23 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     formData.subCategory,
     formData.status,
   ]);
+  const handleAreaChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: e.target.value,
+    }));
+    getContractsByArea(e.target.value);
+  };
+  const getContractsByArea = async (area) => {
+    const projects = await get(`/api/project/contracts?area=${area}`);
+    setFilteredContractList(projects?.projectContracts || []);
+    setContractList(projects?.projectContracts || []);
+  };
   const handleChange = (event) => {
-    setChecked(event.target.checked);
+    setState((prevState) => ({
+      ...prevState,
+      allSites: event.target.checked,
+    }));
     if (event.target.checked) {
       getProjectList(true);
     } else {
@@ -81,7 +101,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
       return;
     }
     getCategories();
-    getProjectList(checked);
+    getProjectList(state.allSites);
   }, [siteSelectedForGlobal]);
   const getProjectList = async (isSiteSelectedForContractor = false) => {
     setIsLoading(true);
@@ -212,15 +232,29 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     <option value="Terminated">Terminated</option>
                   </select>
                 </div> */}
+                <div className="col-md-4 col-sm-4 mt-2">
+            <select
+              name="area"
+              className="form-control form-select"
+              id="area"
+              value={state.selectedArea}
+              onChange={handleAreaChange}
+            >
+              <option value="">Area</option>
+              {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
+            </select>
+          </div>
                 {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
                 <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                  <label>All</label>
+                <label>All</label>
                   <Switch
-                    checked={checked}
+                    checked={state.allSites}
                     onChange={handleChange}
                     inputProps={{ "aria-label": "controlled" }}
                   />
                   <label>Individual Site</label>
+                  
+                  
                 </div>
                 {/* )} */}
               </div>
