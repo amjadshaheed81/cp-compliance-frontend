@@ -48,8 +48,12 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
     getActionsByArea(e.target.value);
   };
   const getActionsByArea = async (area) => {
-    const res = await get(`/api/site/actions/all?area=${area}`);
-    setActions(res);
+    if (area) {
+      const res = await get(`/api/site/actions/all?area=${area}`);
+      setActions(res);
+    } else {
+      getActions(state.allSites);
+    }
   };
   const handleAllSitesToggle = () => {
     setState((prevState) => ({

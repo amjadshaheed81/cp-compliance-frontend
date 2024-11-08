@@ -1396,6 +1396,21 @@ export const getSiteAssets = (id) => {
   };
 };
 
+export const setSiteAssets = (data) => {
+  return async (dispatch) => {
+    try {
+      dispatch({
+        type: GET_SITES_ASSET,
+        payload: data,
+      });
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site assets. Please try again."
+      );
+    }
+  };
+};
+
 export const getSitePFPAssets = (id) => {
   return async (dispatch) => {
     try {

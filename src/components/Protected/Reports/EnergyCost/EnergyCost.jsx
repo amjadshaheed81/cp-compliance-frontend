@@ -22,6 +22,7 @@ import { getSites } from "../../../../store/thunk/site";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import CostChart from "./CostChart";
 import EnergyChart from "./EnergyChart";
+import { SiteArea } from "../../../../Constant/SiteArea";
 
 const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +38,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
   const [checked, setChecked] = useState(true);
+  const [state, setState] = useState({
+    selectedArea: "",
+  });
 
   useEffect(() => {
     gettypeoptions();
@@ -329,6 +333,35 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       getEnergyCost(true);
     }
   };
+  const handleAreaChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: e.target.value,
+    }));
+    getActionsByArea(e.target.value);
+  };
+  const getActionsByArea = async (area) => {
+    if (area) {
+      const energyCost = await get(`/api/energy/survey/all?area=${area}`);
+      energyCost.forEach((energy) => {
+        const dates = energy.costList.map((c) => new Date(c.fromDate));
+        const minDate =
+          Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
+        const dates2 = energy.costList.map((c) => new Date(c.toDate));
+        const maxDate =
+          Math.max(...dates2) !== -Infinity
+            ? new Date(Math.max(...dates2))
+            : null;
+        energy.minDate = minDate;
+        energy.maxDate = maxDate;
+      });
+
+      setFilteredEnergyCost(energyCost);
+      setEnergyCost(energyCost);
+    } else {
+      getEnergyCost(checked);
+    }
+  };
   return (
     <Fragment>
       <Dialog
@@ -458,6 +491,20 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     <option value="">Budget Category</option>
                     {typeoptions.map((t) => (
                       <option value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col">
+                  <select
+                    name="area"
+                    className="form-control form-select"
+                    id="area"
+                    onChange={handleAreaChange}
+                    value={state.selectedArea}
+                  >
+                    <option value="">Area</option>
+                    {SiteArea?.map((itm) => (
+                      <option value={itm}>{itm}</option>
                     ))}
                   </select>
                 </div>

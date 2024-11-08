@@ -20,7 +20,7 @@ ChartJS.register(
   Legend
 );
 
-const AssetsByCost = ({ data, viewBy = "building" }) => {
+const AssetsByCost = ({ data, viewBy = "building", area }) => {
   // Organize data based on the selected view (building, region, or all)
   const costByView = {};
   const dateByView = {};
@@ -33,7 +33,7 @@ const AssetsByCost = ({ data, viewBy = "building" }) => {
     if (viewBy === "building") {
       key = asset.siteName || "Unknown Building";
     } else if (viewBy === "region") {
-      key = asset.region || "Unknown Region"; // Assuming a region field exists
+      key = area; // Assuming a region field exists
     } else {
       key = "All Sites";
     }

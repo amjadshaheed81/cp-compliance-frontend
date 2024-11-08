@@ -76,9 +76,13 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     getContractsByArea(e.target.value);
   };
   const getContractsByArea = async (area) => {
-    const projects = await get(`/api/project/contracts?area=${area}`);
-    setFilteredContractList(projects?.projectContracts || []);
-    setContractList(projects?.projectContracts || []);
+    if (area) {
+      const projects = await get(`/api/project/contracts?area=${area}`);
+      setFilteredContractList(projects?.projectContracts || []);
+      setContractList(projects?.projectContracts || []);
+    } else {
+      getProjectList(state.allSites);
+    }
   };
   const handleChange = (event) => {
     setState((prevState) => ({
@@ -233,28 +237,28 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   </select>
                 </div> */}
                 <div className="col-md-4 col-sm-4 mt-2">
-            <select
-              name="area"
-              className="form-control form-select"
-              id="area"
-              value={state.selectedArea}
-              onChange={handleAreaChange}
-            >
-              <option value="">Area</option>
-              {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
-            </select>
-          </div>
+                  <select
+                    name="area"
+                    className="form-control form-select"
+                    id="area"
+                    value={state.selectedArea}
+                    onChange={handleAreaChange}
+                  >
+                    <option value="">Area</option>
+                    {SiteArea?.map((itm) => (
+                      <option value={itm}>{itm}</option>
+                    ))}
+                  </select>
+                </div>
                 {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
                 <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                <label>All</label>
+                  <label>All</label>
                   <Switch
                     checked={state.allSites}
                     onChange={handleChange}
                     inputProps={{ "aria-label": "controlled" }}
                   />
                   <label>Individual Site</label>
-                  
-                  
                 </div>
                 {/* )} */}
               </div>

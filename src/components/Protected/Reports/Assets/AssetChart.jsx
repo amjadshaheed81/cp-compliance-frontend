@@ -5,6 +5,7 @@ import {
   addUserTagSite,
   getSites,
   setLoggedInUser,
+  setSiteAssets,
 } from "../../../../store/thunk/site";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Pie } from "react-chartjs-2";
@@ -13,6 +14,8 @@ import { getUniqueSitesWithUserCount } from "../../../../utils/getUniqueSitesWit
 import BarChart from "./BarChart";
 import DateRangeChart from "./DateRangeChart";
 import AssetsByCost from "./AssetsByCost";
+import { SiteArea } from "../../../../Constant/SiteArea";
+import { Switch } from "@mui/material";
 
 // import BarChart from "./BarChart";
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -24,7 +27,10 @@ const AssetChart = ({
   siteSelectedForGlobal,
 }) => {
   const [dateRangeData, setDateRange] = useState([]);
-
+  const [state, setState] = useState({
+    selectedArea: "",
+    allSites: true,
+  });
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
@@ -87,8 +93,70 @@ const AssetChart = ({
     setDateRange(res || []);
     console.log("res", res);
   };
+  const handleChange = (event) => {
+    setState((prevState) => ({
+      ...prevState,
+      allSites: event.target.checked,
+    }));
+    if (event.target.checked) {
+      getSiteAssetsData();
+    } else {
+      getAllSiteAssetsData();
+    }
+  };
+  const getAllSiteAssetsData = async () => {
+    const res = await get(`/api/site/assets/all`);
+    setDateRange(res?.assets || []);
+    setSiteAssets(res?.assets || []);
+  }
+  const getAllSiteAssetsDataWithArea = async (area) => {
+    if(area){
+      const res = await get(`/api/site/assets/all?area=${area}`);
+      setDateRange(res?.assets || []);
+      setSiteAssets(res?.assets || []);  
+    }else{
+      if(state.allSites){
+        getAllSiteAssetsData();
+      }else{
+        getSiteAssetsData();
+      }
+    }
+  }
+  const handleAreaChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: e.target.value,
+    }));
+    getAllSiteAssetsDataWithArea(e.target.value);
+  };
   return (
     <div className="row pt-4 pb-4">
+      <div className="row mb-2">
+      <div className="col-md-4 col-sm-4 mt-2">
+                  <select
+                    name="area"
+                    className="form-control form-select"
+                    id="area"
+                    value={state.selectedArea}
+                    onChange={handleAreaChange}
+                  >
+                    <option value="">Area</option>
+                    {SiteArea?.map((itm) => (
+                      <option value={itm}>{itm}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
+                <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
+                  <label>All</label>
+                  <Switch
+                    checked={state.allSites}
+                    onChange={handleChange}
+                    inputProps={{ "aria-label": "controlled" }}
+                  />
+                  <label>Individual Site</label>
+                </div>
+      </div>
       <div className="col-md-4 fs-5">
         Asset Type{" "}
         <span class="badge bg-light text-primary">
@@ -121,7 +189,7 @@ const AssetChart = ({
       </div>
       <div className="col-md-6">
         {dateRangeData?.length > 0 && (
-          <AssetsByCost data={dateRangeData} viewBy="building" />
+          <AssetsByCost data={dateRangeData} viewBy={state?.selectedArea ? "region": "building"} area={state?.selectedArea}/>
         )}
       </div>
     </div>
@@ -141,4 +209,5 @@ export default connect(mapStateToProps, {
   addUser,
   addUserTagSite,
   setLoggedInUser,
+  setSiteAssets,
 })(AssetChart);

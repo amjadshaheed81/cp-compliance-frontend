@@ -21,6 +21,7 @@ import { getSites } from "../../../../store/thunk/site";
 import UserActionChart from "./UserActionChart";
 import MonthWiseCheckChart from "./MonthWiseCheckChart";
 import TotalAction from "./TotalAction";
+import { SiteArea } from "../../../../Constant/SiteArea";
 
 const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +39,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const goTo = (link) => {
     navigate(link);
   };
+  const [state, setState] = useState({
+    selectedArea: "",
+  });
 
   useEffect(() => {
     getManagerList();
@@ -332,6 +336,25 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setIsLoading(false);
   };
 
+  const handleAreaChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: e.target.value,
+    }));
+    getActionsByArea(e.target.value);
+  };
+  const getActionsByArea = async (area) => {
+    if (area) {
+      setIsLoading(true);
+      const siteChecks = await get(`/api/site-check/all?area=${area}`);
+      setFilteredSiteChecks(siteChecks);
+      setSiteChecks(siteChecks);
+      setIsLoading(false);
+    } else {
+      getSiteChecks(checked);
+    }
+  };
+
   return (
     <Fragment>
       <div>
@@ -341,6 +364,20 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
               <div className="">
                 <div className="">
                   <div className="row" style={{ height: "auto" }}>
+                    <div className="col-md-3 col-sm-3 mt-2">
+                      <select
+                        name="area"
+                        className="form-control form-select"
+                        id="area"
+                        onChange={handleAreaChange}
+                        value={state.selectedArea}
+                      >
+                        <option value="">Area</option>
+                        {SiteArea?.map((itm) => (
+                          <option value={itm}>{itm}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="col-md-3 col-sm-4 mt-2">
                       <label>All</label>
                       <Switch
