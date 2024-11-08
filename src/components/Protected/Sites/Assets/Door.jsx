@@ -63,28 +63,21 @@ const Door = ({
 
   useEffect(() => {
     if (siteDoorItems) {
-      setFilteredSiteDoorItems(
-        siteDoorItems?.map((itm) => {
-          return {
-            ...itm,
-            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
-              itm?.room || "NA"
-            }`,
-          };
-        })
-      );
-      setSiteAssetsList(
-        siteDoorItems?.map((itm) => {
-          return {
-            ...itm,
-            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
-              itm?.room || "NA"
-            }`,
-          };
-        })
-      );
+      const formattedDoorItems = siteDoorItems.map((itm) => ({
+        ...itm,
+        location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
+      }));
+  
+      // Update both state values, then call searchAssets after both updates are done
+      Promise.all([
+        setFilteredSiteDoorItems(formattedDoorItems),
+        setSiteAssetsList(formattedDoorItems),
+      ]).then(() => {
+        searchAssets(); // Trigger search after both states are updated
+      });
     }
   }, [siteDoorItems]);
+  
 
   const [formData, setFormData] = useState({
     assetName: "",

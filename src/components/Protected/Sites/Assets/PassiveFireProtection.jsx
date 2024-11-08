@@ -59,27 +59,18 @@ const PassiveFireProtection = ({
   };
   useEffect(() => {
     if (sitePFPItems) {
-      setfilteredSitePFPItems(
-        sitePFPItems?.map((itm) => {
-          return {
-            ...itm,
-            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
-              itm?.room || "NA"
-            }`,
-          };
-        })
-      );
-      setSiteAssetsList(
-        sitePFPItems?.map((itm) => {
-          return {
-            ...itm,
-            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
-              itm?.room || "NA"
-            }`,
-          };
-        })
-      );
-      setfilteredSitePFPItems(sitePFPItems);
+      const formattedItems = sitePFPItems.map((itm) => ({
+        ...itm,
+        location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
+      }));
+      
+      // Update states and call searchAssets once all updates are done
+      Promise.all([
+        setfilteredSitePFPItems(formattedItems),
+        setSiteAssetsList(formattedItems),
+      ]).then(() => {
+        searchAssets(); // Trigger search after the state updates
+      });
     }
   }, [sitePFPItems]);
   const [formData, setFormData] = useState({

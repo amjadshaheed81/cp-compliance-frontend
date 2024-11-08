@@ -86,28 +86,21 @@ const Pat = ({
   };
   useEffect(() => {
     if (sitePATItems) {
-      setFilteredSitePATItems(
-        sitePATItems?.map((itm) => {
-          return {
-            ...itm,
-            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
-              itm?.room || "NA"
-            }`,
-          };
-        })
-      );
-      setSiteAssetsList(
-        sitePATItems?.map((itm) => {
-          return {
-            ...itm,
-            location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
-              itm?.room || "NA"
-            }`,
-          };
-        })
-      );
+      const formattedPATItems = sitePATItems.map((itm) => ({
+        ...itm,
+        location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
+      }));
+  
+      // Use Promise.all to ensure both state updates before calling searchAssets
+      Promise.all([
+        setFilteredSitePATItems(formattedPATItems),
+        setSiteAssetsList(formattedPATItems),
+      ]).then(() => {
+        searchAssets(); // Trigger search after both states are updated
+      });
     }
   }, [sitePATItems]);
+  
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
