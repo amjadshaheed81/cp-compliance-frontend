@@ -273,6 +273,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
               <thead className="table-dark">
                 <tr>
                   <th scope="col">Summary</th>
+                  <th scope="col">Site Name</th>
                   <th scope="col">Category</th>
                   <th scope="col">SubCategory</th>
                   {isManagerAdminLogin(loggedInUserData) && (
@@ -304,6 +305,9 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   <tr key={itm?.projectContractId}>
                     <td>
                       <span>{itm?.summary}</span>
+                    </td>
+                    <td>
+                      <span>{itm?.siteName}</span>
                     </td>
                     <td>{itm?.category}</td>
                     <td>{itm?.subCategory}</td>
