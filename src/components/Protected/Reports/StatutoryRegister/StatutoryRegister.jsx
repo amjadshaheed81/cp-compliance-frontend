@@ -85,7 +85,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     </div>
                     <div className="col-md-6 mt-2 mb-4">
                       <div>
-                        <label>All Sites</label>
+                        <label>Select Requirement</label>
                         <select
                         name="requirements"
                         className="form-control form-select"
