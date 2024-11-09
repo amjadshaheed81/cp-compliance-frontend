@@ -22,6 +22,7 @@ import SiteChecks from "./SiteChecks/SiteChecks";
 import EnergyCost from "./EnergyCost/EnergyCost";
 import StatutoryRegister from "./StatutoryRegister/StatutoryRegister";
 import Actions from "./Actions/Actions";
+import BasicReports from "./BasicReports/BasicReports";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -97,6 +98,7 @@ const Reports = ({}) => {
               <Tab label="Site Checks" {...a11yProps(5)} />
               <Tab label="Statutory Register" {...a11yProps(6)} />
               <Tab label="Actions" {...a11yProps(7)} />
+              <Tab label="Basic Reports" {...a11yProps(8)} />
             </Tabs>
             <TabPanel value={value} index={0}>
               <SiteCharts siteChart={siteChart} setSiteChart={setSiteChart} />
@@ -129,6 +131,11 @@ const Reports = ({}) => {
             <TabPanel value={value} index={6}>
               <div className="row">
                 <Actions />
+              </div>
+            </TabPanel>
+            <TabPanel value={value} index={7}>
+              <div className="row">
+                <BasicReports />
               </div>
             </TabPanel>
           </Box>
