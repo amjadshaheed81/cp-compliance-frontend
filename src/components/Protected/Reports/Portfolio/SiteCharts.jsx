@@ -171,9 +171,9 @@ const SiteCharts = ({
             </div>
           </div>
         </div>
-        Staff Per Active Site &nbsp;
+        Users Per Active Site &nbsp;
         <span class="badge bg-light text-primary">
-          Total Staff: {state?.allSites ? users?.length : userschart?.[0]?.totalUsers}
+          Total Users: {state?.allSites ? users?.length : userschart?.[0]?.totalUsers}
         </span>
         <div>
           <BarChart data={userschart} />
