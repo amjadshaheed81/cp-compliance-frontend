@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import { getSites } from "../../../../store/thunk/site";
 import TotalAction from "./TotalAction";
+import TotalRequirements from "./TotalRequirements";
 
 const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,10 +13,16 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [managerList, setManagerList] = useState([]);
   const [statutory, setStatutory] = useState([]);
-
+  const [allstatutory, setAllStatutory] = useState([]);
+  const [requirements, setRequirements] = useState([]);
+  const [state, setState] = useState({
+    selectedRequirements: "",
+  });
 
   useEffect(() => {
     getStatutory(siteSelectedForGlobal?.siteId);
+    getAllStatutory();
+    getRequirements();
   }, []);
   const getStatutory = async (siteId) => {
     setIsLoading(true);
@@ -27,6 +34,28 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
     );
     setStatutory(getStatutoryDocuments);
     setIsLoading(false);
+  };
+  const getAllStatutory = async (siteId) => {
+    setIsLoading(true);
+    const getStatutoryDocuments = await get(
+      `/api/document/statutoryRegister/all`
+    );
+    setAllStatutory(getStatutoryDocuments);
+    setIsLoading(false);
+  };
+  const getRequirements = async () => {
+    const res = await get(
+      `/api/lov/STATUARY_CATEGORY`
+    );
+    setRequirements(res?.filter(itm => itm.attribite2));
+  };
+
+  const handleRequirementsChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      selectedRequirements: e.target.value,
+    }));
+    // getActionsByArea(e.target.value);
   };
 
   const [itemsPerPage] = useState(7);
@@ -49,9 +78,28 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-6 mt-2 mb-4">
                       <h5>Statutory Register</h5>
+                      <p>Individual Site</p>
                       <TotalAction
                         data={statutory}
                       />
+                    </div>
+                    <div className="col-md-6 mt-2 mb-4">
+                      <div>
+                        <label>All Sites</label>
+                        <select
+                        name="requirements"
+                        className="form-control form-select"
+                        id="requirements"
+                        onChange={handleRequirementsChange}
+                        value={state.selectedRequirements}>
+                          <option>Select Requirements</option>
+                          {requirements?.map(itm => (<option>{itm?.attribite2}</option>))}
+                        </select>
+                      </div>
+                      {/* <TotalRequirements
+                        requirement={state.selectedRequirements}
+                        data={allstatutory}
+                      /> */}
                     </div>
                   </div>
                 </div>
