@@ -22,19 +22,19 @@ ChartJS.register(
 
 const TotalAction = ({ data }) => {
   // Count total duties identified, duties met, and duties not met
-  const dutiesIdentified = data.filter((item) => item.required === true).length;
+  // const dutiesIdentified = data.filter((item) => item.required === true).length;
   const dutiesMet = data.filter((item) => item.status === "Passed").length;
   const dutiesNotMet = data.filter((item) => item.status === "Fail").length;
 
   // Prepare data for the chart
   const chartData = {
-    labels: ["Duties Identified", "Duties Met", "Duties Not Met"],
+    labels: ["Duties Met", "Duties Not Met"],
     datasets: [
       {
         label: "Duties Summary",
-        data: [dutiesIdentified, dutiesMet, dutiesNotMet],
+        data: [dutiesMet, dutiesNotMet],
         backgroundColor: [
-          "rgba(255, 159, 64, 0.8)", // Duties Identified
+          // "rgba(255, 159, 64, 0.8)", // Duties Identified
           "rgba(75, 192, 192, 0.8)", // Duties Met
           "rgba(255, 99, 132, 0.8)", // Duties Not Met
         ],
@@ -81,8 +81,6 @@ const TotalAction = ({ data }) => {
                 });
 
               return tooltipText; // Returning an array to display each line separately
-            } else {
-              return `${label}: ${value}`; // Default label for other categories
             }
           },
         },
