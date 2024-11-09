@@ -252,7 +252,6 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     setIsLoading(true);
     const data = await get("/api/site/site/all?withDetails=true");
     setBasicReportsData(data);
-    setFilteredData(data); // Show all data initially
     setIsLoading(false);
   };
 
