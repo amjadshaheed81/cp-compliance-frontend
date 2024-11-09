@@ -108,20 +108,20 @@ const AssetChart = ({
     const res = await get(`/api/site/assets/all`);
     setDateRange(res?.assets || []);
     setSiteAssets(res?.assets || []);
-  }
+  };
   const getAllSiteAssetsDataWithArea = async (area) => {
-    if(area){
+    if (area) {
       const res = await get(`/api/site/assets/all?area=${area}`);
       setDateRange(res?.assets || []);
-      setSiteAssets(res?.assets || []);  
-    }else{
-      if(state.allSites){
+      setSiteAssets(res?.assets || []);
+    } else {
+      if (state.allSites) {
         getAllSiteAssetsData();
-      }else{
+      } else {
         getSiteAssetsData();
       }
     }
-  }
+  };
   const handleAreaChange = (e) => {
     setState((prevState) => ({
       ...prevState,
@@ -132,32 +132,32 @@ const AssetChart = ({
   return (
     <div className="row pt-4 pb-4">
       <div className="row mb-2">
-      <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    name="area"
-                    className="form-control form-select"
-                    id="area"
-                    value={state.selectedArea}
-                    onChange={handleAreaChange}
-                  >
-                    <option value="">Area</option>
-                    {SiteArea?.map((itm) => (
-                      <option value={itm}>{itm}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
-                <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                  <label>All</label>
-                  <Switch
-                    checked={state.allSites}
-                    onChange={handleChange}
-                    inputProps={{ "aria-label": "controlled" }}
-                  />
-                  <label>Individual Site</label>
-                </div>
+        <div className="col-md-4 col-sm-4 mt-2">
+          <select
+            name="area"
+            className="form-control form-select"
+            id="area"
+            value={state.selectedArea}
+            onChange={handleAreaChange}
+          >
+            <option value="">Area</option>
+            {SiteArea?.map((itm) => (
+              <option value={itm}>{itm}</option>
+            ))}
+          </select>
+        </div>
+        {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
+        <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
+          <label>All</label>
+          <Switch
+            checked={state.allSites}
+            onChange={handleChange}
+            inputProps={{ "aria-label": "controlled" }}
+          />
+          <label>Individual Site</label>
+        </div>
       </div>
-      <div className="col-md-4 fs-5">
+      <div className="col-md-6 fs-5">
         Asset Type{" "}
         <span class="badge bg-light text-primary">
           Total Assets: {siteAssets?.length}
@@ -175,7 +175,10 @@ const AssetChart = ({
           />
         </div>
       </div>
-      <div className="col-md-8 fs-5">
+      <div className="col-md-6">
+        {dateRangeData?.length > 0 && <DateRangeChart data={dateRangeData} />}
+      </div>
+      <div className="col-md-6 fs-5">
         PAT Result &nbsp;
         <span class="badge bg-light text-primary">
           Total PATs: {sitePATItems?.length}
@@ -184,12 +187,14 @@ const AssetChart = ({
           <BarChart data={sitePATItems} />
         </div>
       </div>
-      <div className="col-md-6">
-        {dateRangeData?.length > 0 && <DateRangeChart data={dateRangeData} />}
-      </div>
+
       <div className="col-md-6">
         {dateRangeData?.length > 0 && (
-          <AssetsByCost data={dateRangeData} viewBy={state?.selectedArea ? "region": "building"} area={state?.selectedArea}/>
+          <AssetsByCost
+            data={dateRangeData}
+            viewBy={state?.selectedArea ? "region" : "building"}
+            area={state?.selectedArea}
+          />
         )}
       </div>
     </div>

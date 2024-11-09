@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
@@ -17,29 +17,33 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
     selectedArea: "",
     allSites: true,
   });
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const getActions = async (allSites = false) => {
     setIsLoading(true);
+    let res;
     if (allSites) {
-      const res = await get(`/api/site/actions/all`);
-      setActions(res);
+      res = await get(`/api/site/actions/all`);
     } else {
-      const res = await get(
-        `api/site/actions/${siteSelectedForGlobal?.siteId}`
-      );
-      setActions(res);
+      res = await get(`api/site/actions/${siteSelectedForGlobal?.siteId}`);
     }
+
+    // Filter actions by createdAt date range
+    const filteredActions = res.filter(action => {
+      const createdAtDate = new Date(action.createdAt);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      return (!start || createdAtDate >= start) && (!end || createdAtDate <= end);
+    });
+
+    setActions(filteredActions);
     setIsLoading(false);
   };
 
-  const [itemsPerPage] = useState(7);
-  const [currentPage, setCurrentPage] = useState(1);
-  const indexOfLastPreAction = currentPage * itemsPerPage;
-  const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
-  const currentSiteChecks = filteredSiteChecks.slice(
-    indexOfFirstPreAction,
-    indexOfLastPreAction
-  );
+  const handleStartDateChange = (e) => setStartDate(e.target.value);
+  const handleEndDateChange = (e) => setEndDate(e.target.value);
+
   const handleAreaChange = (e) => {
     setState((prevState) => ({
       ...prevState,
@@ -47,6 +51,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
     }));
     getActionsByArea(e.target.value);
   };
+
   const getActionsByArea = async (area) => {
     if (area) {
       const res = await get(`/api/site/actions/all?area=${area}`);
@@ -55,15 +60,18 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
       getActions(state.allSites);
     }
   };
+
   const handleAllSitesToggle = () => {
     setState((prevState) => ({
       ...prevState,
       allSites: !prevState.allSites,
     }));
   };
+
   useEffect(() => {
     getActions(state.allSites);
-  }, [state.allSites]);
+  }, [state.allSites, startDate, endDate]);
+
   return (
     <Fragment>
       <div>
@@ -86,7 +94,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           >
                             <option value="">Area</option>
                             {SiteArea?.map((itm) => (
-                              <option value={itm}>{itm}</option>
+                              <option key={itm} value={itm}>{itm}</option>
                             ))}
                           </select>
                         </div>
@@ -108,6 +116,27 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           </div>
                         </div>
                       </div>
+                      <div className="row mt-2" style={{ height: 'auto'}}>
+                        <p>Select Date Range</p>
+                        <div className="col-md-4">
+                          <input
+                            type="date"
+                            className="form-control"
+                            value={startDate}
+                            onChange={handleStartDateChange}
+                            placeholder="Start Date"
+                          />
+                        </div>
+                        <div className="col-md-4">
+                          <input
+                            type="date"
+                            className="form-control"
+                            value={endDate}
+                            onChange={handleEndDateChange}
+                            placeholder="End Date"
+                          />
+                        </div>
+                      </div>
                       <TotalAction data={actions} />
                     </div>
                   </div>
@@ -126,4 +155,5 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
+
 export default connect(mapStateToProps, { getSites })(Actions);
