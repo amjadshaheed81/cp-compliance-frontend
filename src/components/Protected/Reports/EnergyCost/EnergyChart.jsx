@@ -21,7 +21,7 @@ ChartJS.register(
   Legend
 );
 
-const EnergyChart = ({ energyData }) => {
+const EnergyChart = ({ energyData, currentYear, previousYear }) => {
   const processMonthlyReading = (data, year) => {
     const monthlyCosts = Array(12).fill(0);
 
@@ -37,8 +37,7 @@ const EnergyChart = ({ energyData }) => {
   };
 
   // Define the years for which we need data
-  const currentYear = new Date().getFullYear();
-  const lastYear = currentYear - 1;
+  const lastYear = previousYear;
 
   // Initialize cumulative rading for each year
   let currentYearCosts = Array(12).fill(0);

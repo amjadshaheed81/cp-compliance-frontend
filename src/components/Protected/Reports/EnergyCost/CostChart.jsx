@@ -22,7 +22,7 @@ ChartJS.register(
   Legend
 );
 
-const CostChart = ({ energyData }) => {
+const CostChart = ({ energyData, currentYear, previousYear }) => {
   // Helper function to process monthly cost data by year
   const processMonthlyCosts = (data, year) => {
     const monthlyCosts = Array(12).fill(0); // Initialize monthly costs with 0 for each month of the year
@@ -41,8 +41,7 @@ const CostChart = ({ energyData }) => {
   };
 
   // Define years for cost comparison
-  const currentYear = new Date().getFullYear();
-  const lastYear = currentYear - 1;
+  const lastYear = previousYear;
 
   // Initialize arrays for accumulated costs
   let currentYearCosts = Array(12).fill(0);

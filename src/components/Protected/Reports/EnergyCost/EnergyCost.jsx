@@ -40,7 +40,13 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [checked, setChecked] = useState(true);
   const [state, setState] = useState({
     selectedArea: "",
+    currentYear: new Date().getFullYear(),
+    previousYear: new Date().getFullYear() - 1,
   });
+  const years = Array.from(
+    { length: 11 },
+    (_, i) => new Date().getFullYear() - i
+  );
 
   useEffect(() => {
     gettypeoptions();
@@ -63,7 +69,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  console.log("filteredEnergyCost", filteredEnergyCost);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -340,6 +345,19 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     }));
     getActionsByArea(e.target.value);
   };
+  const handleYearChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      currentYear: Number(e.target.value),
+    }));
+  };
+  const handlePreviousYearChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      previousYear: Number(e.target.value),
+    }));
+  };
+
   const getActionsByArea = async (area) => {
     if (area) {
       const energyCost = await get(`/api/energy/survey/all?area=${area}`);
@@ -517,6 +535,36 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   />
                   <label>Individual Site</label>
                 </div>
+                <div className="col">
+                  <label htmlFor="year-select">Select Year:</label>
+                  <select
+                    id="year-select"
+                    className="form-control form-select"
+                    value={state.currentYear}
+                    onChange={handleYearChange}
+                  >
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col">
+                  <label htmlFor="year-select">Select previous year:</label>
+                  <select
+                    id="year-select"
+                    value={state.previousYear}
+                    className="form-control form-select"
+                    onChange={handlePreviousYearChange}
+                  >
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             {/* {isManagerAdminLogin(loggedInUserData) && (
@@ -554,11 +602,19 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
           <div className="row" style={{ height: "auto" }}>
             <div className="col-md-6 mt-2 mb-4">
               <h5>Energy Cost</h5>
-              <CostChart energyData={filteredEnergyCost} />
+              <CostChart
+                energyData={filteredEnergyCost}
+                currentYear={state.currentYear}
+                previousYear={state.previousYear}
+              />
             </div>
             <div className="col-md-6 mt-2 mb-4">
               <h5>Energy Reading</h5>
-              <EnergyChart energyData={filteredEnergyCost} />
+              <EnergyChart
+                energyData={filteredEnergyCost}
+                currentYear={state.currentYear}
+                previousYear={state.previousYear}
+              />
             </div>
           </div>
 
