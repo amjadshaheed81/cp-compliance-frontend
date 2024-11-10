@@ -823,7 +823,12 @@ const StatutoryRegister = ({
                                         onClick={() => {
                                           untagAsset(itm, item);
                                         }}
-                                        style={{fontSize: '10px'}}
+                                        style={{fontSize: '10px', display:
+                                          (!isManagerAdminLogin(
+                                            loggedInUserData
+                                          ))
+                                            ? "none"
+                                            : "",}}
                                       >
                                         Untag Document
                                       </button>
@@ -847,8 +852,10 @@ const StatutoryRegister = ({
                                     }}
                                     style={{
                                       display:
-                                        String(item?.type).toLowerCase() ===
-                                        "link"
+                                        (String(item?.type).toLowerCase() ===
+                                        "link" || !isManagerAdminLogin(
+                                          loggedInUserData
+                                        ))
                                           ? "none"
                                           : "",
                                       color: "384bd3",
