@@ -64,7 +64,22 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
   const getRequirements = async () => {
     const res = await get(`/api/lov/STATUARY_CATEGORY`);
-    setRequirements(res?.filter((itm) => itm.attribite2));
+    setRequirements(filterAndRemoveDuplicates(res));
+  };
+
+  const filterAndRemoveDuplicates = (data) => {
+     // Step 1: Filter out items without attribite2
+     const filteredData = data.filter(item => item.attribite2);
+
+     // Step 2: Remove duplicates by attribite2
+     const uniqueData = filteredData.reduce((acc, item) => {
+         if (!acc.some(existingItem => String(existingItem.attribite2).trim() === String(item.attribite2).trim())) {
+             acc.push(item); // Only add item if attribite2 hasn't been added before
+         }
+         return acc;
+     }, []);
+ 
+     return uniqueData;
   };
 
   const handleRequirementsChange = (e) => {
