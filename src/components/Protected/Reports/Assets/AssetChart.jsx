@@ -46,7 +46,15 @@ const AssetChart = ({
   });
 
   useEffect(() => {
-    getSiteAssetsData();
+    if (state.allSites) {
+      if (state.selectedArea) {
+        getAllSiteAssetsDataArea(state.selectedArea);
+      } else {
+        getAllSiteAssetsData();
+      }
+    } else {
+      getSiteAssetsData();
+    }
   }, [siteSelectedForGlobal, startDate, endDate]);
 
   const getSiteAssetsData = async () => {
