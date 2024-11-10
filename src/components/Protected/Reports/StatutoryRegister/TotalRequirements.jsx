@@ -21,10 +21,16 @@ ChartJS.register(
 );
 
 const TotalRequirements = ({ requirement, data }) => {
-  // Count total duties identified, duties met, and duties not met
-  // const dutiesIdentified = data.filter((item) => item.required === true).length;
-  const dutiesMet = data.filter((item) => item.status === "Passed").length;
-  const dutiesNotMet = data.filter((item) => item.status === "Fail").length;
+  // Filter statutory registers based on "required: true" and the specific requirement
+  const statutoryRegisters = data
+    .flatMap((site) => site.statutoryRegisters.map(register => ({
+      ...register,
+      siteName: site.siteName
+    })))
+    .filter((register) => register.required && register.requirement === requirement);
+
+  const dutiesMet = statutoryRegisters.filter((item) => item.status === "Passed").length;
+  const dutiesNotMet = statutoryRegisters.filter((item) => item.status === "Fail").length;
 
   // Prepare data for the chart
   const chartData = {
@@ -34,7 +40,6 @@ const TotalRequirements = ({ requirement, data }) => {
         label: "Duties Summary",
         data: [dutiesMet, dutiesNotMet],
         backgroundColor: [
-          // "rgba(255, 159, 64, 0.8)", // Duties Identified
           "rgba(75, 192, 192, 0.8)", // Duties Met
           "rgba(255, 99, 132, 0.8)", // Duties Not Met
         ],
@@ -51,37 +56,28 @@ const TotalRequirements = ({ requirement, data }) => {
       },
       title: {
         display: true,
-        text: "Duties Status Analysis",
+        text: `${dutiesMet + dutiesNotMet} Duties Status Analysis for Requirement: ${requirement}`,
       },
       tooltip: {
         callbacks: {
           label: function (context) {
             const label = context.label;
             const value = context.raw;
-            // Show additional information only for "Duties Met" label
-            if (label === "Duties Met") {
-              const tooltipText = [`${label}: ${value}`];
-              
-              // Add each subType and requirement for "Duties Met"
-              data
-                .filter((item) => item.status === "Passed")
-                .forEach((item) => {
-                  tooltipText.push(`• ${item.subType || ''} (${item.requirement})`);
-                });
+            const tooltipText = [`${label}: ${value}`];
+            
+            // Filter sites based on status for tooltip
+            const filteredSites = statutoryRegisters
+              .filter((item) => 
+                (label === "Duties Met" && item.status === "Passed") ||
+                (label === "Duties Not Met" && item.status === "Fail")
+              );
 
-              return tooltipText; // Returning an array to display each line separately
-            }else if (label === "Duties Not Met") {
-              const tooltipText = [`${label}: ${value}`];
-              
-              // Add each subType and requirement for "Duties Met"
-              data
-                .filter((item) => item.status === "Fail")
-                .forEach((item) => {
-                  tooltipText.push(`• ${item.subType || ''} (${item.requirement})`);
-                });
+            // Add each site name to the tooltip
+            filteredSites.forEach((item) => {
+              tooltipText.push(`• ${item.siteName} (${item.subType || item.requirement})`);
+            });
 
-              return tooltipText; // Returning an array to display each line separately
-            }
+            return tooltipText; // Return as an array for line-by-line display
           },
         },
       },

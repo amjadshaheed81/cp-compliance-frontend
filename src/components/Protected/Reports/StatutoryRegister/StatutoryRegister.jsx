@@ -5,6 +5,7 @@ import { get } from "../../../../api";
 import { getSites } from "../../../../store/thunk/site";
 import TotalAction from "./TotalAction";
 import TotalRequirements from "./TotalRequirements";
+import { showLoader, hideLoader } from "js-loader-fn";
 
 const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,29 +26,45 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
     getRequirements();
   }, []);
   const getStatutory = async (siteId) => {
-    setIsLoading(true);
-    let getStatutoryDocuments = await get(
-      `/api/document/${siteId}/statutoryRegister`
-    );
-    getStatutoryDocuments = getStatutoryDocuments.sort(
-      (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
-    );
-    setStatutory(getStatutoryDocuments);
-    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      showLoader({
+        title: "Please wait. We are collecting statutory detail...",
+      });
+      let getStatutoryDocuments = await get(
+        `/api/document/${siteId}/statutoryRegister`
+      );
+      getStatutoryDocuments = getStatutoryDocuments.sort(
+        (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
+      );
+      setStatutory(getStatutoryDocuments);
+      setIsLoading(false);
+      hideLoader();
+    } catch (e) {
+      hideLoader();
+      setIsLoading(false);
+    }
   };
   const getAllStatutory = async (siteId) => {
-    setIsLoading(true);
-    const getStatutoryDocuments = await get(
-      `/api/document/statutoryRegister/all`
-    );
-    setAllStatutory(getStatutoryDocuments);
-    setIsLoading(false);
+    try {
+      showLoader({
+        title: "Please wait. We are collecting statutory detail...",
+      });
+      setIsLoading(true);
+      const getStatutoryDocuments = await get(
+        `/api/document/statutoryRegister/all`
+      );
+      setAllStatutory(getStatutoryDocuments);
+      setIsLoading(false);
+      hideLoader();
+    } catch (e) {
+      setIsLoading(false);
+      hideLoader();
+    }
   };
   const getRequirements = async () => {
-    const res = await get(
-      `/api/lov/STATUARY_CATEGORY`
-    );
-    setRequirements(res?.filter(itm => itm.attribite2));
+    const res = await get(`/api/lov/STATUARY_CATEGORY`);
+    setRequirements(res?.filter((itm) => itm.attribite2));
   };
 
   const handleRequirementsChange = (e) => {
@@ -79,27 +96,28 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     <div className="col-md-6 mt-2 mb-4">
                       <h5>Statutory Register</h5>
                       <p>Individual Site</p>
-                      <TotalAction
-                        data={statutory}
-                      />
+                      <TotalAction data={statutory} />
                     </div>
                     <div className="col-md-6 mt-2 mb-4">
                       <div>
-                        <label>Select Requirement</label>
+                        <label>Select Requirement to check all sites</label>
                         <select
-                        name="requirements"
-                        className="form-control form-select"
-                        id="requirements"
-                        onChange={handleRequirementsChange}
-                        value={state.selectedRequirements}>
+                          name="requirements"
+                          className="form-control form-select"
+                          id="requirements"
+                          onChange={handleRequirementsChange}
+                          value={state.selectedRequirements}
+                        >
                           <option>Select Requirements</option>
-                          {requirements?.map(itm => (<option>{itm?.attribite2}</option>))}
+                          {requirements?.map((itm) => (
+                            <option>{itm?.attribite2}</option>
+                          ))}
                         </select>
                       </div>
-                      {/* <TotalRequirements
+                      <TotalRequirements
                         requirement={state.selectedRequirements}
                         data={allstatutory}
-                      /> */}
+                      />
                     </div>
                   </div>
                 </div>
