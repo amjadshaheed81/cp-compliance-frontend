@@ -23,8 +23,10 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import CostChart from "./CostChart";
 import EnergyChart from "./EnergyChart";
 import { SiteArea } from "../../../../Constant/SiteArea";
+import SitesEnergyChart from "./SitesEnergyChart";
+import SitesCostChart from "./SitesCostChart";
 
-const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
+const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [openCost, setOpenCost] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
@@ -38,13 +40,20 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
   const [checked, setChecked] = useState(true);
+  const [site1EnergyReadingData, setSite1EnergyReadingData] = useState([]);
+  const [site2EnergyReadingData, setSite2EnergyReadingData] = useState([]);
+  const [site1EnergyCostData, setSite1EnergyCostData] = useState([]);
+  const [site2EnergyCostData, setSite2EnergyCostData] = useState([]);
   const [state, setState] = useState({
     selectedArea: "",
+    site1: "",
+    site2: "",
+    siteComparisonYear: new Date().getFullYear(),
     currentYear: new Date().getFullYear(),
     previousYear: new Date().getFullYear() - 1,
   });
   const years = Array.from(
-    { length: 11 },
+    { length: 16 },
     (_, i) => new Date().getFullYear() - i
   );
 
@@ -345,6 +354,53 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     }));
     getActionsByArea(e.target.value);
   };
+  const handleSite1Change = async (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      site1: e.target.value,
+    }));
+    const energyCost = await get("/api/energy/site/survey/" + e.target.value);
+    energyCost.forEach((energy) => {
+      const dates = energy.costList.map((c) => new Date(c.fromDate));
+      const minDate =
+        Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
+      const dates2 = energy.costList.map((c) => new Date(c.toDate));
+      const maxDate =
+        Math.max(...dates2) !== -Infinity
+          ? new Date(Math.max(...dates2))
+          : null;
+      energy.minDate = minDate;
+      energy.maxDate = maxDate;
+    });
+    setSite1EnergyCostData(energyCost);
+  };
+  const handleSite2Change = async (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      site2: e.target.value,
+    }));
+    const energyCost = await get("/api/energy/site/survey/" + e.target.value);
+    energyCost.forEach((energy) => {
+      const dates = energy.costList.map((c) => new Date(c.fromDate));
+      const minDate =
+        Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
+      const dates2 = energy.costList.map((c) => new Date(c.toDate));
+      const maxDate =
+        Math.max(...dates2) !== -Infinity
+          ? new Date(Math.max(...dates2))
+          : null;
+      energy.minDate = minDate;
+      energy.maxDate = maxDate;
+    });
+    setSite2EnergyCostData(energyCost);
+  };
+
+  const handleComparisonYearChange = (e) => {
+    setState((prevState) => ({
+      ...prevState,
+      siteComparisonYear: Number(e.target.value),
+    }));
+  };
   const handleYearChange = (e) => {
     setState((prevState) => ({
       ...prevState,
@@ -618,7 +674,79 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             </div>
           </div>
 
-          <div className="row p-2"></div>
+          <div className="row p-2 mb-2" style={{ height: "auto" }}>
+            <div>
+              <h3>Compare 2 Sites</h3>
+            </div>
+            <div className="col-md-4">
+              <label htmlFor="site1">Site 1:</label>
+              <select
+                name="site1"
+                className="form-control form-select"
+                id="site1"
+                onChange={handleSite1Change}
+                value={state.site1}
+              >
+                <option value="">Select Site 1</option>
+                {sites?.map((itm) => (
+                  <option key={itm?.siteId} value={itm?.siteId}>
+                    {itm?.siteName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4">
+              <label htmlFor="site1">Site 2:</label>
+
+              <select
+                name="site2"
+                className="form-control form-select"
+                id="site2"
+                onChange={handleSite2Change}
+                value={state.site2}
+              >
+                <option value="">Select Site 2</option>
+                {sites?.map((itm) => (
+                  <option key={itm?.siteId} value={itm?.siteId}>
+                    {itm?.siteName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4">
+              <label htmlFor="year-select">Select Year:</label>
+              <select
+                id="year-select"
+                className="form-control form-select"
+                value={state.siteComparisonYear}
+                onChange={handleComparisonYearChange}
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="row" style={{ height: "auto" }}>
+            <div className="col-md-6 mt-2 mb-4">
+              <h5>Energy Cost</h5>
+              <SitesCostChart
+                site1energyData={site1EnergyCostData}
+                site2energyData={site2EnergyCostData}
+                currentYear={state.siteComparisonYear}
+              />
+            </div>
+            <div className="col-md-6 mt-2 mb-4">
+              <h5>Energy Reading</h5>
+              <SitesEnergyChart
+                site1energyData={site1EnergyCostData}
+                site2energyData={site2EnergyCostData}
+                currentYear={state.siteComparisonYear}
+              />
+            </div>
+          </div>
           <div className="col-md-12 table-responsive">
             <table className="table">
               <thead className="table-dark">
