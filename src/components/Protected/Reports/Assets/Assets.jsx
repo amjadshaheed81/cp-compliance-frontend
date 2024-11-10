@@ -1,14 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import Box from "@mui/material/Box";
-import Tab from "@mui/material/Tab";
-import TabContext from "@mui/lab/TabContext";
-import TabList from "@mui/lab/TabList";
-import TabPanel from "@mui/lab/TabPanel";
-import Summary from "./Summary";
-import Door from "./Door";
-import Pat from "./Pat";
-import PassiveFireProtection from "./PassiveFireProtection";
 import {
   getSiteAssets,
   getSiteDoorAssets,
@@ -16,7 +7,6 @@ import {
   getSitePFPAssets,
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
-import { get } from "../../../../api";
 import AssetChart from "./AssetChart";
 
 const Assets = ({

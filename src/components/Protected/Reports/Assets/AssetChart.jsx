@@ -7,6 +7,7 @@ import {
   setLoggedInUser,
   setSiteAssets,
 } from "../../../../store/thunk/site";
+import { showLoader, hideLoader } from "js-loader-fn";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Pie } from "react-chartjs-2";
 import { get } from "../../../../api";
@@ -15,6 +16,7 @@ import { Switch } from "@mui/material";
 import BarChart from "./BarChart";
 import DateRangeChart from "./DateRangeChart";
 import AssetsByCost from "./AssetsByCost";
+import { toast } from "react-toastify";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -54,6 +56,7 @@ const AssetChart = ({
   };
 
   const fetchAndMergeAssets = async () => {
+    showLoader({ title: "Please wait. We are collecting data for assets..." });
     const siteId = siteSelectedForGlobal?.siteId;
     const urls = [
       `/api/site/${siteId}/assets`,
@@ -66,8 +69,10 @@ const AssetChart = ({
       const mergedAssets = responses.flatMap(
         (response) => response?.assets || []
       );
+      hideLoader();
       return mergedAssets;
     } catch (error) {
+      hideLoader();
       console.error("Error fetching assets:", error);
       return [];
     }
@@ -93,10 +98,31 @@ const AssetChart = ({
   };
 
   const getAllSiteAssetsData = async () => {
-    const res = await get(`/api/site/assets/all`);
-    const filteredData = filterDataByDateRange(res?.assets || []);
-    setDateRange(filteredData);
-    setSiteAssets(res?.assets || []);
+    showLoader({ title: "Please wait. We are collecting data for assets..." });
+    try {
+      const res = await get(`/api/site/assets/all`);
+      const filteredData = filterDataByDateRange(res?.assets || []);
+      setDateRange(filteredData);
+      setSiteAssets(res?.assets || []);
+      hideLoader();
+    } catch (e) {
+      hideLoader();
+      toast.error("Something went wrong while fetching all assets data.");
+    }
+  };
+
+  const getAllSiteAssetsDataArea = async (area) => {
+    showLoader({ title: "Please wait. We are collecting data for assets..." });
+    try {
+      const res = await get(`/api/site/assets/all?area=${area}`);
+      const filteredData = filterDataByDateRange(res?.assets || []);
+      setDateRange(filteredData);
+      setSiteAssets(res?.assets || []);
+      hideLoader();
+    } catch (e) {
+      hideLoader();
+      toast.error("Something went wrong while fetching all assets data.");
+    }
   };
 
   return (
@@ -108,9 +134,10 @@ const AssetChart = ({
             className="form-control form-select"
             id="area"
             value={state.selectedArea}
-            onChange={(e) =>
-              setState({ ...state, selectedArea: e.target.value })
-            }
+            onChange={(e) => {
+              getAllSiteAssetsDataArea(e.target.value);
+              setState({ ...state, selectedArea: e.target.value });
+            }}
           >
             <option value="">Area</option>
             {SiteArea?.map((itm) => (
