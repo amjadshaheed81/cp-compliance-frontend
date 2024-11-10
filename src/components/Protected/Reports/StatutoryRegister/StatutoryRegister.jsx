@@ -6,6 +6,7 @@ import { getSites } from "../../../../store/thunk/site";
 import TotalAction from "./TotalAction";
 import TotalRequirements from "./TotalRequirements";
 import { showLoader, hideLoader } from "js-loader-fn";
+import { toast } from "react-toastify";
 
 const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,10 +22,14 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   });
 
   useEffect(() => {
-    getStatutory(siteSelectedForGlobal?.siteId);
-    getAllStatutory();
-    getRequirements();
-  }, []);
+    if(siteSelectedForGlobal?.siteId) {
+      getStatutory(siteSelectedForGlobal?.siteId);
+      getAllStatutory();
+      // getRequirements();
+    }else{
+      toast.error("Please select site from site search to proceed....");
+    }
+  }, [siteSelectedForGlobal]);
   const getStatutory = async (siteId) => {
     try {
       setIsLoading(true);
@@ -62,25 +67,10 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
       hideLoader();
     }
   };
-  const getRequirements = async () => {
-    const res = await get(`/api/lov/STATUARY_CATEGORY`);
-    setRequirements(filterAndRemoveDuplicates(res));
-  };
-
-  const filterAndRemoveDuplicates = (data) => {
-     // Step 1: Filter out items without attribite2
-     const filteredData = data.filter(item => item.attribite2);
-
-     // Step 2: Remove duplicates by attribite2
-     const uniqueData = filteredData.reduce((acc, item) => {
-         if (!acc.some(existingItem => String(existingItem.attribite2).trim() === String(item.attribite2).trim())) {
-             acc.push(item); // Only add item if attribite2 hasn't been added before
-         }
-         return acc;
-     }, []);
- 
-     return uniqueData;
-  };
+  // const getRequirements = async () => {
+  //   const res = await get(`/api/lov/STATUARY_CATEGORY`);
+  //   setRequirements(filterAndRemoveDuplicates(res));
+  // };
 
   const handleRequirementsChange = (e) => {
     setState((prevState) => ({
@@ -124,8 +114,8 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           value={state.selectedRequirements}
                         >
                           <option>Select Requirements</option>
-                          {requirements?.map((itm) => (
-                            <option>{itm?.attribite2}</option>
+                          {statutory?.map((itm) => (
+                            <option>{itm?.requirement}</option>
                           ))}
                         </select>
                       </div>
