@@ -45,8 +45,6 @@ const CopyFolder = ({
   const handleRemoveFolder = (id) => {};
 
   const handleAddFolder = (folder) => {
-    console.log("folder", folder);
-    console.log("selectedFileForCopy", selectedFileForCopy);
     Swal.fire({
         target: document.getElementById("Modal-container"),
         title: `Do you want to move ${selectedFileForCopy?.name} to ${folder?.name}`,
@@ -57,7 +55,6 @@ const CopyFolder = ({
         if (result.isConfirmed) {
           const url = `/api/document/file/${selectedFileForCopy?.id}/move/${folder?.id}`;
           const res = await put(url);
-          console.log("res", res);
           if (res.status === 200) {
             toast.success(`${selectedFileForCopy?.name} is successfully moved to  ${folder?.name}`);
             handleClose();

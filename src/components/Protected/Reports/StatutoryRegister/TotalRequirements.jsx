@@ -21,8 +21,6 @@ ChartJS.register(
 );
 
 const TotalRequirements = ({ requirement, data }) => {
-  console.log("requirement", requirement)
-  console.log("data", data)
   // Count total duties identified, duties met, and duties not met
   // const dutiesIdentified = data.filter((item) => item.required === true).length;
   const dutiesMet = data.filter((item) => item.status === "Passed").length;

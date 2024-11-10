@@ -50,9 +50,7 @@ const ViewUsers = ({
     const {
       target: { value },
     } = event;
-    console.log("event", event);
     event?.view?.focus();
-    console.log("value", value);
     setTagSite(typeof value ? value : value);
   };
   const {
@@ -72,7 +70,6 @@ const ViewUsers = ({
       lastName: name?.[1] || "",
       isCompany: selectedUser?.companyId ? true : false,
     });
-    console.log("selectedUser", selectedUser);
     setTagSite(
       selectedUser?.taggedSites
         ? selectedUser?.taggedSites?.map((itm) => itm?.id)
@@ -148,7 +145,6 @@ const ViewUsers = ({
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
@@ -347,7 +343,6 @@ const ViewUsers = ({
                         onChange={(event, newValue) => {
                           const keys = newValue
                             ?.map((itm) => itm?.key);
-                            console.log("keys", keys);
                             setTagSite(keys)
                         }}
                         options={sites.filter(s=> {

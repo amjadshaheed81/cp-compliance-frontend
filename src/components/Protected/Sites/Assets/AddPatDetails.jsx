@@ -60,7 +60,6 @@ const AddPatDetails = ({
   const submitPatRecords = async (data) => {
     setIsLoading(true);
     for (let itm of selectedAsset) {
-      console.log("itm", itm);
       let payload = [];
       if (itm?.assetPATItems?.length > 0) {
         payload.push(...itm?.assetPATItems, {
@@ -184,7 +183,6 @@ const AddPatDetails = ({
                 <Autocomplete
                   id="patUserId"
                   onChange={(event, newValue) => {
-                    console.log(newValue);
                     setSelectedUser(newValue?.key);
                   }}
                   options={tester.map((option) => {

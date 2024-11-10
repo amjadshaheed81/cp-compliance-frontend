@@ -50,7 +50,6 @@ const EditProfile = ({
       lastName: name?.[1] || "",
       isCompany: loggedInUserData?.companyId ? true : false,
     });
-    console.log("loggedInUserData", loggedInUserData);
     setTagSite(
       loggedInUserData?.taggedSites
         ? loggedInUserData?.taggedSites?.map((itm) => itm?.id)
@@ -129,7 +128,6 @@ const EditProfile = ({
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
@@ -308,7 +306,6 @@ const EditProfile = ({
                         value={getSelectedTagValue()}
                         onChange={(event, newValue) => {
                           const keys = newValue?.map((itm) => itm?.key);
-                          console.log("keys", keys);
                           setTagSite(keys);
                         }}
                         options={sites.map((option) => {

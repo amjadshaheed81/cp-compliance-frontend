@@ -57,7 +57,6 @@ const AdminCategoriesAdd = ({ }) => {
       lovType: "SITE_CHECK_TYPE",
       lovValue: type
     }
-    console.log("typeBody", typeBody)
     await post("/api/lov/", typeBody);
     for (let subtype of subtypes) {
       const subtypeBody = {
@@ -65,7 +64,6 @@ const AdminCategoriesAdd = ({ }) => {
         lovValue: subtype.name,
         attribite1: type
       }
-      console.log("subtypeBody", subtypeBody)
       await post("/api/lov/", subtypeBody);
       for (let category of subtype.categories) { 
         const categoryBody = {
@@ -73,7 +71,6 @@ const AdminCategoriesAdd = ({ }) => {
           lovValue: category,
           attribite1: subtype.name
         }
-        console.log("categoryBody", categoryBody)
         await post("/api/lov/", categoryBody);
       }
     }

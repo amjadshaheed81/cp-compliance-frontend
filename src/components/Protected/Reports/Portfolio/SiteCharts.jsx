@@ -56,13 +56,9 @@ const SiteCharts = ({
   const areaOption = sites.filter(
     (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
   );
-  const searchSite = (data) => {
-    console.log(data);
-  };
   const getUsers = async () => {
     const url = `/api/user/all`;
     const data = await get(url);
-    console.log("data", data);
     setUsers(data?.users);
     setUsersChart(
       getUniqueSitesWithUserCount(

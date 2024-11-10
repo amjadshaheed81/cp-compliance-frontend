@@ -97,7 +97,6 @@ const SubFolder = ({
   };
 
   const navigate2 = () => {
-    console.log("previousFolderId", previousFolderId);
     const previos = previousFolderId[previousFolderId?.length - 2];
     if (previos?.isParent === true || !previos) {
       navigate("/documents");
@@ -166,7 +165,6 @@ const SubFolder = ({
   };
 
   const navigateToSubFolder = (id) => {
-    console.log("target", id);
     navigate(`/subfolder/?id=${id}`);
   };
 

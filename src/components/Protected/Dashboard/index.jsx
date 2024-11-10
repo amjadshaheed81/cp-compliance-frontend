@@ -20,7 +20,6 @@ const Dashboard = ({
   siteSelectedForGlobal,
 }) => {
   useEffect(() => {
-    console.log('loggedInUserData',loggedInUserData)
     if (loggedInUserData) {
       if (!siteSelectedForGlobal?.siteId) {
         selectGlobalSite({

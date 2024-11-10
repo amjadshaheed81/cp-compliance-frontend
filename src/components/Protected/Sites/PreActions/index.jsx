@@ -33,7 +33,6 @@ const PreActions = ({
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  console.log("currentPreActions", currentPreActions);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -57,7 +56,6 @@ const PreActions = ({
     const res = await get(
       `api/action/${siteSelectedForGlobal?.siteId}/summary`
     );
-    console.log("res", res);
     setFilteredPreActions(res?.preActions || []);
     setPreActions(res?.preActions || []);
   };

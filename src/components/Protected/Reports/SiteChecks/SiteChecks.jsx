@@ -80,7 +80,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  console.log("currentSiteChecks", currentSiteChecks);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };

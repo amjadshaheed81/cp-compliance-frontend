@@ -47,8 +47,6 @@ const AdminDropdowns = ({ }) => {
   const getLovType = async (type) => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/" + type);
-    console.log("type", type)
-    console.log("lovtypesData", lovtypesData)
     if(type === "STATUARY_CATEGORY") {
       setData(lovtypesData.sort((a, b) => parseInt(a.attribite3) - parseInt(b.attribite3)));
     }else{

@@ -80,7 +80,6 @@ const EditAction = ({
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
     );
-    console.log('data?.users', data?.users);
     setManagerList(data?.users?.sort((a, b) => {
       if (a.name < b.name) {
           return -1; // a comes before b
@@ -153,7 +152,6 @@ const EditAction = ({
       ...formData,
       [name]: value,
     };
-    console.log(udata)
     setFormData(udata);
   };
 
@@ -185,7 +183,6 @@ const EditAction = ({
   const markAsClosed = async () => {
     let form_data = new FormData();
     const actionImage = getValues("closeActionImage");
-    console.log("actionImage", actionImage);
     const data = {
       status: "Closed",
       actionTaken: getValues("actionTaken"),
@@ -208,7 +205,6 @@ const EditAction = ({
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       toast.error("Something went wrong while updating pre action.");
       setIsLoading(false);
     }

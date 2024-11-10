@@ -44,12 +44,10 @@ const BulkUpload = ({
   const getFiles = async () => {
     const url = `/api/document/parent/${selectedMandatoryFolder[0].id}/folders`;
     const res = await get(url);
-    console.log("s", res)
     setFiles(res?.document?.files || [])
   }
   const { register, handleSubmit, watch } = useForm({});
   const values = watch() || {};
-  console.log("values", values);
   const submitBulkUpload = async (formData) => {
     setIsLoading(true);
     const filesToUpload = [];

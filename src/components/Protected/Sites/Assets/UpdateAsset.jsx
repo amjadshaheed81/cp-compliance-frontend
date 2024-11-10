@@ -161,7 +161,6 @@ const UpdateAsset = ({
   const savePatDetails = async () => {
     setLoader(true);
     const data = patRecord?.map((itm) => {
-      console.log("itm", itm);
       return {
         ...itm,
         patDate: itm?.patDate?.includes("T")
@@ -496,7 +495,6 @@ const UpdateAsset = ({
   };
   const changePatItem = (e) => {
     const value = e.target.checked;
-    console.log("value", value);
     setValue("patItem", value);
     setSelectedAsset((prevState) => ({ ...prevState, patItem: value }));
     const ispfpItem = getValues("pfpItem");

@@ -105,8 +105,6 @@ const ContractorContractView = ({
     }
   }, [category, subCategory]);
   const fileSelect = (e, folderData) => {
-    console.log(e);
-    console.log(currentContract);
     const data = {
       folderId: folderData.id,
       files: [
@@ -157,8 +155,6 @@ const ContractorContractView = ({
     }
   };
   const submitUpdateContract = async (data) => {
-    console.log("submitUpdateContract", data);
-    console.log("loggedInUserData", loggedInUserData);
     setIsLoading(true);
     const quotation = {
       quoteId: null,
@@ -176,7 +172,6 @@ const ContractorContractView = ({
       return;
     }
     if (loggedInUserData?.id) {
-      console.log("data", data);
       const formData = {
         projectContractId: currentContract?.projectContractId,
         summary: data?.summary,

@@ -34,7 +34,6 @@ const Document = ({
     }
   }, [siteSelectedForGlobal]);
   const navigateToSubFolder = (id) => {
-    console.log("target", id);
     navigate(`/subfolder/?id=${id}`);
   };
   const searchDocument = async (e) => {

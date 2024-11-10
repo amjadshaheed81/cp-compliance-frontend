@@ -81,7 +81,6 @@ const Projects = ({
     const contractors = [];
     const quoteIds = [];
     for (let i of data) {
-      console.log("update contractors", i);
       if (i?.quoteId) {
         quoteIds.push(i?.quoteId);
       }

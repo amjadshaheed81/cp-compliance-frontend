@@ -189,7 +189,6 @@ const CreateFiles = ({
         PaperProps={{
           component: "form",
           onSubmit: handleSubmit(async (formData) => {
-            console.log("formData", formData);
             try {
               setIsLoading(true);
               let folderIdForUpload = selectedMandatoryFolder?.[0]?.id;
@@ -373,7 +372,6 @@ const CreateFiles = ({
                 setIsLoading(false);
               }
             } catch (e) {
-              console.log(e);
               toast.error(
                 "Something went wrong while adding new file. Please try again!!"
               );

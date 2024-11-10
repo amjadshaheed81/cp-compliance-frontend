@@ -22,7 +22,6 @@ const CopyModal = ({
     setShowCopyModal(false);
     refresh();
   };
-  console.log("selectedFileForCopy", selectedFileForCopy);
   return (
     <>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>

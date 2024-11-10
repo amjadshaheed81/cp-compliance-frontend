@@ -32,7 +32,6 @@ const AdminCategoriesAdd = ({ }) => {
 
   const handleCategoryChange = (subtypeIndex, categoryIndex, value) => {
     const updatedSubtypes = [...subtypes];
-    console.log('updatedSubtypes', updatedSubtypes)
     updatedSubtypes[subtypeIndex].categories[categoryIndex] = { category: value, ...updatedSubtypes[subtypeIndex].categories[categoryIndex] }
     setSubtypes(updatedSubtypes);
   };

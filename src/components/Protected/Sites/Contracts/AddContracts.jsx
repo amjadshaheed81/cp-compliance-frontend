@@ -116,7 +116,6 @@ const AddContracts = ({
 
 
   const submitAddContract = async (data) => {
-    console.log("data", data);
     // let form_data = new FormData();
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed.");
@@ -125,7 +124,6 @@ const AddContracts = ({
     if (loggedInUserData?.id) {
       try {
         setIsLoading(true);
-        console.log("data", data);
         const formData = {
           projectContractId: null,
           summary: data?.summary,

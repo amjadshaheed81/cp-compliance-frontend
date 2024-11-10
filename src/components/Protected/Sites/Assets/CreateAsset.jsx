@@ -131,7 +131,6 @@ const CreateAsset = ({
   };
   const submitSiteAsset = async (data) => {
     setLoader(true);
-    console.log("data", data);
     let form_data = new FormData();
     if (data?.assetImage?.length > 0) {
       form_data.append("assetImage", data?.assetImage?.[0], data?.assetName);

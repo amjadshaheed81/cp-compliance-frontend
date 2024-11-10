@@ -42,7 +42,6 @@ const AddPreActions = ({
     handleSubmit,
   } = useForm({});
   const values = watch();
-  console.log("values", values);
   useEffect(() => {
     // reset(selectedUser);
     getSiteAssets(siteSelectedForGlobal?.siteId)

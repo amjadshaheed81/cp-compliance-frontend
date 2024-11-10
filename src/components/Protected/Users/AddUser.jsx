@@ -59,9 +59,7 @@ const AddUser = ({
     const {
       target: { value },
     } = event;
-    console.log("event", event);
     event?.view?.focus();
-    console.log("value", value);
     setTagSite(typeof value ? value : value);
   };
   const [selectedCompany, setSelectedCompany] = useState();
@@ -108,7 +106,6 @@ const AddUser = ({
     setIsLoading(true);
     try {
       const res = await addUser(data);
-      console.log("res", res);
       if (res?.id) {
         const tagSiteArray = {
           addedSites: tagSite,
@@ -321,7 +318,6 @@ const AddUser = ({
                         onChange={(event, newValue) => {
                           const keys = newValue
                             ?.map((itm) => itm?.key);
-                            console.log("keys", keys);
                             setTagSite(keys)
                         }}
                         options={sites.map((option) => {
@@ -366,7 +362,6 @@ const AddUser = ({
                         <Autocomplete
                           id="leadUserID"
                           onChange={(event, item) => {
-                            console.log("item", item);
                             setSelectedCompany(item?.key);
                           }}
                           options={companies.map((option) => {

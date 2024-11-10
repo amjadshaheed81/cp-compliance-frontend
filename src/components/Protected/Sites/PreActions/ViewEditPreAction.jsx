@@ -146,7 +146,6 @@ const ViewEditPreAction = ({
   const markAsClosed = async () => {
     let form_data = new FormData();
     const actionImage = getValues("closeActionImage");
-    console.log("actionImage", actionImage);
     const data = {
       status: "Closed",
       actionTaken: getValues("actionTaken"),
@@ -169,7 +168,6 @@ const ViewEditPreAction = ({
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       toast.error("Something went wrong while updating pre action.");
       setIsLoading(false);
     }

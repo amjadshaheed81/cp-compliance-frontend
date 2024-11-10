@@ -115,7 +115,6 @@ const ManagerContractView = ({
     });
     setAssetData(data?.projectContractAssets);
     setCurrentContract(data);
-    console.log("data", data)
     if (data?.contractorQuotes) {
       data?.contractorQuotes?.forEach((item) => {
         quoteForm.setValue(`managerNote-${item.quoteId}`, item.managerNotes || ""); // Prepopulate with existing residence value if available
@@ -143,14 +142,12 @@ const ManagerContractView = ({
     setSubCategoryListData(subCategoryData);
   };
   const submitAddContract = async (data) => {
-    console.log("data", data);
     // let form_data = new FormData();
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed.");
       return;
     }
     if (loggedInUserData?.id) {
-      console.log("data", data);
       const formData = {
         projectContractId: currentContract?.projectContractId,
         summary: data?.summary,
@@ -203,9 +200,6 @@ const ManagerContractView = ({
     } else {
       toast.error("Please login with valid user details to proceed.");
     }
-  };
-  const deleteAsset = (asset) => {
-    console.log("asset", asset);
   };
 
   const checkAndAddExpiryCalenderEvent = async (data) => {
@@ -373,7 +367,6 @@ const ManagerContractView = ({
       for (let itm of currentContract?.contractorQuotes) {
         if (itm?.quoteId === row?.quoteId) {
           const managerNote =  quoteForm.getValues(`managerNote-${itm.quoteId}`);
-          console.log("managerNote", managerNote);
           contractorQuotesList.push({ ...itm, status: status, managerNotes: managerNote });
         } else {
           contractorQuotesList.push(itm);

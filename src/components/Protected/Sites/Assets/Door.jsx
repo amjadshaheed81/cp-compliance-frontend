@@ -162,7 +162,6 @@ const Door = ({
     if (label) {
       const roomNumber = label; // Extract the part after '-'
       const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
-      console.log("matchedRoom",matchedRoom);
       if (matchedRoom) {
         setFormData((prevFormData) => ({
           ...prevFormData,

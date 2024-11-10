@@ -64,7 +64,6 @@ const Contracts = ({
     setCurrentPage(pageNumber);
   };
   const handleInputChange = (e) => {
-    console.log("e", e)
     const { name, value } = e.target;
     setFormData({
       ...formData,

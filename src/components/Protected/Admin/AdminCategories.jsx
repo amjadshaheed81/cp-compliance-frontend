@@ -25,7 +25,6 @@ const AdminCategories = ({ }) => {
     const lovsubtypes = await get("/api/lov/SITE_CHECK_SUB_TYPE");
     const categories = await get("/api/lov/SITE_CHECK_CATEGORY");
 
-    console.log(lovtypes, lovsubtypes, categories)
     const fetchData = [];
     lovtypes.forEach(t => {
       const subTypes = lovsubtypes.filter(l => l.attribite1 === t.lovValue);
@@ -47,7 +46,6 @@ const AdminCategories = ({ }) => {
         subTypes: subTypesList
       })
     })
-    console.log(fetchData)
     setData(fetchData);
     setIsLoading(false);
     const fetchData2 = [

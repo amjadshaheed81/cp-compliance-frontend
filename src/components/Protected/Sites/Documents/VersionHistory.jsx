@@ -131,7 +131,6 @@ const VersionHistory = ({
       loggedInUserData?.id || "";
     reqData.documentRequestString.files[0].referenceNumber =
       data.files[0].note || "";
-      console.log("reqData", reqData);
     delete reqData.documentRequestString.files[0].folder;
     const url = `/api/document/file/newVersion/upload`;
     const formData = new FormData();
@@ -147,7 +146,6 @@ const VersionHistory = ({
       refresh();
       handleClose();
     }catch(e){
-      console.log(e);
       toast.error("Version is not uploaded!!");
       setIsLoading(false);
     }

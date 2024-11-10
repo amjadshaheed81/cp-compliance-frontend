@@ -29,7 +29,6 @@ const Contractors = ({
     const [row, setRowdata] = useState(itm);
     const deleteContractById = (index) => {
       const res = removeByIndex(data, index);
-      console.log("res", res);
       setData(res);
     };
     let color = "secondary" 
@@ -46,7 +45,6 @@ const Contractors = ({
               id="contractors"
               onChange={(e) => {
                 const selectedValue = e.target.value;
-                console.log(selectedValue);
                 const getContractorList = contractsList?.filter(
                   (contractor) => contractor?.id == selectedValue
                 );

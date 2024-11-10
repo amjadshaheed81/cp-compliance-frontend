@@ -51,7 +51,6 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
       }
     })
-    console.log("datatatatat", event)
     setCalendarEvent(event);
   }
  

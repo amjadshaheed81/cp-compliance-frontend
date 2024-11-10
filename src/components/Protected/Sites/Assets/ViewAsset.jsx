@@ -329,7 +329,6 @@ const UpdateAsset = ({
 
   const locationForm = useForm({});
   const submitLocationForm = async (data) => {
-    console.log("data", data);
     let form_data = new FormData();
     const submitData = {
       ...data,
