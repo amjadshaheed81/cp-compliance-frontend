@@ -688,11 +688,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 value={state.site1}
               >
                 <option value="">Select Site 1</option>
-                {sites?.map((itm) => (
-                  <option key={itm?.siteId} value={itm?.siteId}>
-                    {itm?.siteName}
-                  </option>
-                ))}
+                {sites
+                  ?.filter(
+                    (itm) => String(itm?.status).toLowerCase() === "open"
+                  )
+                  ?.map((itm) => (
+                    <option key={itm?.siteId} value={itm?.siteId}>
+                      {itm?.siteName}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="col-md-4">
@@ -706,7 +710,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 value={state.site2}
               >
                 <option value="">Select Site 2</option>
-                {sites?.map((itm) => (
+                {sites?.filter(
+                    (itm) => String(itm?.status).toLowerCase() === "open"
+                  )?.map((itm) => (
                   <option key={itm?.siteId} value={itm?.siteId}>
                     {itm?.siteName}
                   </option>
