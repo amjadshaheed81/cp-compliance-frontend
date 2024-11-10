@@ -1,17 +1,15 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import { getSites } from "../../../../store/thunk/site";
 import TotalAction from "./TotalAction";
 import { SiteArea } from "../../../../Constant/SiteArea";
+import { showLoader, hideLoader } from "js-loader-fn";
 
 const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [create, setCreate] = useState(false);
   const site = JSON.parse(localStorage.getItem("site"));
-  const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
-  const [managerList, setManagerList] = useState([]);
   const [actions, setActions] = useState([]);
   const [state, setState] = useState({
     selectedArea: "",
@@ -22,6 +20,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const getActions = async (allSites = false) => {
     setIsLoading(true);
+    showLoader({ title: "Please wait. we are fetching action details." });
     let res;
     if (allSites) {
       res = await get(`/api/site/actions/all`);
@@ -39,6 +38,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
     setActions(filteredActions);
     setIsLoading(false);
+    hideLoader();
   };
 
   const handleStartDateChange = (e) => setStartDate(e.target.value);
@@ -53,12 +53,14 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
 
   const getActionsByArea = async (area) => {
+    showLoader({ title: "Please wait. we are fetching action details." });
     if (area) {
       const res = await get(`/api/site/actions/all?area=${area}`);
       setActions(res);
     } else {
       getActions(state.allSites);
     }
+    hideLoader();
   };
 
   const handleAllSitesToggle = () => {
