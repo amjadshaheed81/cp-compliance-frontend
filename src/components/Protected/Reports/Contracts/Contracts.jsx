@@ -19,6 +19,7 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 import BarChart from "./Barchart";
 import { SiteArea } from "../../../../Constant/SiteArea";
+import { showLoader, hideLoader } from "js-loader-fn";
 
 const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [state, setState] = useState({
@@ -76,11 +77,14 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     getContractsByArea(e.target.value);
   };
   const getContractsByArea = async (area) => {
+    showLoader("Please wait. we are collecting contracts details.")
     if (area) {
       const projects = await get(`/api/project/contracts?area=${area}`);
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);
+      hideLoader();
     } else {
+      hideLoader();
       getProjectList(state.allSites);
     }
   };
@@ -109,6 +113,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   }, [siteSelectedForGlobal]);
   const getProjectList = async (isSiteSelectedForContractor = false) => {
     setIsLoading(true);
+    showLoader("Please wait. we are collecting contracts details.")
     if (isManagerAdminLogin(loggedInUserData)) {
       if (!isSiteSelectedForContractor) {
         const projects = await get(`/api/project/contracts`);
@@ -134,6 +139,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
         setContractList([]);
       }
     }
+    hideLoader();
     setIsLoading(false);
   };
   const getCategories = async () => {
