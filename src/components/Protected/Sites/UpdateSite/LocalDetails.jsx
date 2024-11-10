@@ -11,6 +11,7 @@ import {
 import Success from "../../../common/Alert/Success";
 import Error from "../../../common/Alert/Error";
 import { useNavigate } from "react-router-dom";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const LocalDetails = ({
   updateLocalDetails,
@@ -21,6 +22,7 @@ const LocalDetails = ({
   timingError,
   updateSite,
   setLoader,
+  loggedInUserData,
 }) => {
   const {
     register,
@@ -235,7 +237,7 @@ const LocalDetails = ({
                 Cancel
               </button>
               &nbsp; &nbsp;
-              <button type="submit" className="btn btn-primary mb-3 mr-4">
+              <button disabled={!isManagerAdminLogin(loggedInUserData)} type="submit" className="btn btn-primary mb-3 mr-4">
                 Save
               </button>
             </div>
@@ -650,7 +652,7 @@ const LocalDetails = ({
                 Cancel
               </button>
               &nbsp; &nbsp;
-              <button type="submit" className="btn btn-primary mb-3 mr-4">
+              <button disabled={!isManagerAdminLogin(loggedInUserData)} type="submit" className="btn btn-primary mb-3 mr-4">
                 Save
               </button>
             </div>
@@ -667,6 +669,7 @@ const mapStateToProps = (state) => ({
   timingSuccess: state.site.timingSuccess,
   timingError: state.site.timingError,
   updateSite: state.site.updateSite,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   updateLocalDetails,

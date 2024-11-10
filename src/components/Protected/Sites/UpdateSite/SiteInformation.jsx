@@ -19,6 +19,7 @@ import SafetySecurity from "./SiteInformation/SafetySecurity";
 import UtilityEnergy from "./SiteInformation/UtilityEnergy";
 import LiftsStairways from "./SiteInformation/LiftsStairways";
 import Landscape from "./SiteInformation/Landscape";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const SiteInformation = ({
   updateSite,
@@ -28,6 +29,7 @@ const SiteInformation = ({
   getAreaAndOccupancy,
   isLoading,
   setLoader,
+  loggedInUserData,
 }) => {
   const { register, handleSubmit, reset, setValue, getValues } = useForm({});
   const siteAreaForm = useForm();
@@ -146,7 +148,7 @@ const SiteInformation = ({
         <div
           className="pb-4 "
           style={{
-            display: isViewMode ? "none" : "block",
+            display: (isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
           }}
         >
           <button className="float-end btn btn-primary" type="submit">
@@ -413,7 +415,7 @@ const SiteInformation = ({
             <div
               className="pb-4"
               style={{
-                display: isViewMode ? "none" : "block",
+                display: (isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
               }}
             >
               <button className="btn btn-primary float-end" type="submit">
@@ -481,6 +483,7 @@ const mapStateToProps = (state) => ({
   error: state.site.updateError,
   siteInformation: state.site.siteInformation,
   isLoading: state.site.isLoading,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   saveSiteBuildingData,

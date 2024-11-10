@@ -6,11 +6,13 @@ import {
   getSiteLiftStairways,
   setLoader,
 } from "../../../../../store/thunk/site";
+import { isManagerAdminLogin } from "../../../../../utils/isManagerAdminLogin";
 const LiftsStairways = ({
   updateSite,
   getSiteLiftStairways,
   saveLiftAndStairways,
   setLoader,
+  loggedInUserData,
 }) => {
   const isViewMode = updateSite?.isViewMode;
   const {
@@ -227,7 +229,7 @@ const LiftsStairways = ({
         </div>
         <div
           style={{
-            display: isViewMode ? "none" : "block",
+            display: (isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">
@@ -240,6 +242,7 @@ const LiftsStairways = ({
 };
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   getSiteLiftStairways,

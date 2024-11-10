@@ -7,12 +7,14 @@ import {
   saveSafetyAndSecurityDetails,
   setLoader,
 } from "../../../../../store/thunk/site";
+import { isManagerAdminLogin } from "../../../../../utils/isManagerAdminLogin";
 
 const SafetySecurity = ({
   updateSite,
   saveSafetyAndSecurityDetails,
   getSafetyAndSecurityDetails,
   setLoader,
+  loggedInUserData,
 }) => {
   const isViewMode = updateSite?.isViewMode;
   const {
@@ -526,7 +528,7 @@ const SafetySecurity = ({
         </div>
         <div
           style={{
-            display: isViewMode ? "none" : "block",
+            display: (isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">
@@ -542,6 +544,7 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   success: state.site.updateSuccess,
   error: state.site.updateError,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   saveSafetyAndSecurityDetails,

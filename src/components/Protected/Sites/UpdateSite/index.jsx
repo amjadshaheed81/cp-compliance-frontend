@@ -24,6 +24,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { SiteArea } from "../../../../Constant/SiteArea";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const UpdateSite = ({
   getAddresOnPostCodeSuccess,
@@ -36,6 +37,7 @@ const UpdateSite = ({
   handleOnPostCodeSearch,
   getSiteDetailsById,
   setLoader,
+  loggedInUserData,
 }) => {
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const navigate = useNavigate();
@@ -429,7 +431,7 @@ const UpdateSite = ({
                         </button>
                         &nbsp; &nbsp;
                         <button
-                          disabled={isViewMode}
+                          disabled={isViewMode || !isManagerAdminLogin(loggedInUserData)}
                           type="submit"
                           className="btn btn-primary mb-3 mr-4"
                         >
@@ -466,6 +468,7 @@ const UpdateSite = ({
                   }}
                 >
                   <button
+                    style={{display: isManagerAdminLogin(loggedInUserData) ? "" : "none"}}
                     className="btn btn-sm btn-primary mt-2 mb-2"
                     onClick={handleDeleteSiteImage}
                   >
@@ -537,6 +540,7 @@ const mapStateToProps = (state) => ({
   updateSiteImageSuccess: state.site.updateSiteImageSuccess,
   siteDetailsById: state.site.siteDetailsById,
   getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   updateSiteDetail,

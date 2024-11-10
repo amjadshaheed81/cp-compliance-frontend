@@ -17,6 +17,7 @@ import { get } from "../../../api";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import { isAdminLogin } from "../../../utils/isManagerAdminLogin";
 
 const EditProfile = ({
   sites,
@@ -504,7 +505,7 @@ const EditProfile = ({
                   <CircularProgress />
                 </Box>
               )}
-              {!isLoading && (
+              {!isLoading && isAdminLogin(loggedInUserData) && (
                 <button type="submit" className="btn btn-sm btn-primary mt-4">
                   Save
                 </button>

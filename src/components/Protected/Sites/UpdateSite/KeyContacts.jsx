@@ -11,6 +11,7 @@ import Error from "../../../common/Alert/Error";
 import { toast } from "react-toastify";
 import { useSearchParams } from "react-router-dom";
 import { InputError } from "../../../common/InputError";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const KeyContacts = ({
   updateSite,
@@ -19,6 +20,7 @@ const KeyContacts = ({
   addKeyContact,
   getKeyContact,
   deleteKeyContact,
+  loggedInUserData,
   setLoader,
 }) => {
   const {
@@ -237,6 +239,7 @@ const KeyContacts = ({
                     style={{
                       display: isViewMode ? "none" : "",
                     }}
+                    disabled={!isManagerAdminLogin(loggedInUserData)}
                     type="button"
                     onClick={() => addKeyContactClick()}
                     className="btn btn-light"
@@ -260,6 +263,7 @@ const mapStateToProps = (state) => ({
   error: state.site.localDetailsError,
   updateSite: state.site.updateSite,
   keyContacts: state.site.keyContacts,
+  loggedInUserData: state.site.loggedInUserData,
   keyContactsFailure: state.site.keyContactsFailure,
 });
 export default connect(mapStateToProps, {

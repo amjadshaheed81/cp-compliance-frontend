@@ -4,12 +4,14 @@ import { connect } from "react-redux";
 import { setLoader, uploadFloorPlan } from "./../../../../store/thunk/site";
 import { toast } from "react-toastify";
 import PdfViewer from "../Documents/PdfViewer";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const UpdateFloor = ({
   siteLayout,
   uploadFloorPlan,
   updateSite,
   setLoader,
+  loggedInUserData,
 }) => {
   const { register, getValues } = useForm({});
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -136,7 +138,7 @@ const UpdateFloor = ({
       </div>
       <div className="row">
         <div className="col-md-3">
-          <button className="btn btn-primary" onClick={() => sendFloorPlan()}>
+          <button disabled={!isManagerAdminLogin(loggedInUserData)} className="btn btn-primary" onClick={() => sendFloorPlan()}>
             Upload All
           </button>
         </div>
@@ -148,6 +150,7 @@ const mapStateToProps = (state) => ({
   error: state.site.siteLayoutFailure,
   updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(
   UpdateFloor

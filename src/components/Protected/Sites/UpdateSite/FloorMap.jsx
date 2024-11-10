@@ -10,8 +10,9 @@ import { scrollToElement } from "../../../../utils/scrollToElement";
 import { toast } from "react-toastify";
 import { get, put } from "../../../../api";
 import { useSearchParams } from "react-router-dom";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
-const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
+const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedInUserData }) => {
   const [selectedTab, setSelectedTab] = useState(null);
   const [positionOption, setPositionOption] = useState([]);
   const [markerLabels, setMarkerLabels] = useState([]);
@@ -286,6 +287,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite }) => {
           variant="contained"
           color="primary"
           onClick={saveImage}
+          disabled={!isManagerAdminLogin(loggedInUserData)}
         >
           Save Markers
         </Button>
@@ -336,6 +338,7 @@ const FloorMapWithDnd = (props) => (
 
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
+  loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(FloorMapWithDnd);

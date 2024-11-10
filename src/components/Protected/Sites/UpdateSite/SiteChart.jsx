@@ -14,6 +14,7 @@ import {
 import { toast } from "react-toastify";
 import { InputError } from "../../../common/InputError";
 import UpdateSiteLayout from "./UpdateSiteLayout";
+import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const InteriorExteriorStyledNode = styled.div`
   padding: 5px;
@@ -75,6 +76,7 @@ const SiteChart = ({
   siteLayout,
   updateSite,
   setLoader,
+  loggedInUserData,
 }) => {
   const {
     register,
@@ -239,7 +241,7 @@ const SiteChart = ({
         </Tree>
         <div
           style={{
-            display: updateSite?.isViewMode ? "none" : "block",
+            display: (updateSite?.isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
           }}
         >
           <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
@@ -350,6 +352,7 @@ const mapStateToProps = (state) => ({
   error: state.site.siteLayoutFailure,
   updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   getSiteLayout,

@@ -7,12 +7,14 @@ import {
   setLoader,
   getSiteLandScapeInfo,
 } from "../../../../../store/thunk/site";
+import { isManagerAdminLogin } from "../../../../../utils/isManagerAdminLogin";
 
 const Landscape = ({
   updateSite,
   saveSiteLandScapes,
   getSiteLandScapeInfo,
   setLoader,
+  loggedInUserData,
 }) => {
   const isViewMode = updateSite?.isViewMode;
   const {
@@ -52,7 +54,7 @@ const Landscape = ({
               id="hardLandScaping"
               className="form-control form-select"
               {...register("hardLandScaping")}
-              disabled={isViewMode}
+              disabled={(isViewMode || !isManagerAdminLogin(loggedInUserData))}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -250,7 +252,7 @@ const Landscape = ({
 
         <div
           style={{
-            display: isViewMode ? "none" : "block",
+            display: (isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">
@@ -264,6 +266,7 @@ const Landscape = ({
 
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   saveSiteLandScapes,
