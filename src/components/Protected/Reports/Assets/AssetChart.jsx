@@ -29,15 +29,16 @@ const AssetChart = ({
   const [dateRangeData, setDateRange] = useState([]);
   const [state, setState] = useState({
     selectedArea: "",
-    allSites: true,
+    allSites: false,
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [assetLength, setAssetLength] = useState(0);
   const [chartData, setChartData] = useState({
-    labels: [],
+    labels: ["Summary", "Doors", "PAT", "PFP"],
     datasets: [
       {
-        data: [1, 1, 3],
+        data: [0, 0, 0, 0],
         backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
         borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
         borderWidth: 1,
@@ -74,10 +75,27 @@ const AssetChart = ({
     ];
     try {
       const responses = await Promise.all(urls.map((url) => get(url)));
+      setChartData({
+        labels: ["Summary", "Doors", "PAT", "PFP"],
+        datasets: [
+          {
+            data: [
+              responses?.[0]?.assets?.length || 0,
+              responses?.[2]?.assets?.length || 0,
+              responses?.[3]?.assets?.length || 0,
+              responses?.[1]?.assets?.length || 0,
+            ],
+            backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
+            borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
+            borderWidth: 1,
+          },
+        ],
+      });
       const mergedAssets = responses.flatMap(
         (response) => response?.assets || []
       );
       hideLoader();
+      setAssetLength(mergedAssets?.length)
       return mergedAssets;
     } catch (error) {
       hideLoader();
@@ -100,9 +118,9 @@ const AssetChart = ({
   const handleChange = (event) => {
     setState((prevState) => ({
       ...prevState,
-      allSites: event.target.checked,
+      allSites: !event.target.checked,
     }));
-    event.target.checked ? getSiteAssetsData() : getAllSiteAssetsData();
+    event.target.checked ? getAllSiteAssetsData() : getSiteAssetsData();
   };
 
   const getAllSiteAssetsData = async () => {
@@ -111,7 +129,29 @@ const AssetChart = ({
       const res = await get(`/api/site/assets/all`);
       const filteredData = filterDataByDateRange(res?.assets || []);
       setDateRange(filteredData);
-      setSiteAssets(res?.assets || []);
+      setChartData({
+        labels: ["Summary", "Doors", "PAT", "PFP"],
+        datasets: [
+          {
+            data: [
+              res?.assets?.filter(
+                (itm) =>
+                  itm?.patItem === false &&
+                  itm?.pfpItem === false &&
+                  itm?.doorItem === false
+              )?.length || 0,
+              res?.assets?.filter((itm) => itm?.doorItem === true)?.length || 0,
+              res?.assets?.filter((itm) => itm?.patItem === true)?.length || 0,
+              res?.assets?.filter((itm) => itm?.pfpItem === true)?.length || 0,
+            ],
+            backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
+            borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
+            borderWidth: 1,
+          },
+        ],
+      });
+      setAssetLength(res?.assets?.length)
+      // setSiteAssets(res?.assets || []);
       hideLoader();
     } catch (e) {
       hideLoader();
@@ -156,13 +196,13 @@ const AssetChart = ({
           </select>
         </div>
         <div className="col-md-3 col-sm-4 mt-2">
-          <label>All</label>
+          <label>Individual Site</label>
           <Switch
             checked={state.allSites}
             onChange={handleChange}
             inputProps={{ "aria-label": "controlled" }}
           />
-          <label>Individual Site</label>
+          <label>All</label>
         </div>
         <div className="col-md-3 col-sm-4 mt-2">
           <label>Start Date Range</label>
@@ -188,7 +228,7 @@ const AssetChart = ({
       <div className="col-md-6 fs-5">
         Asset Type{" "}
         <span className="badge bg-light text-primary">
-          Total Assets: {siteAssets?.length}
+          Total Assets: {assetLength}
         </span>
         <div>
           <Pie
@@ -202,7 +242,13 @@ const AssetChart = ({
         </div>
       </div>
       <div className="col-md-6">
-        {dateRangeData?.length > 0 && <DateRangeChart data={dateRangeData} />}
+        {dateRangeData?.length > 0 && (
+          <DateRangeChart
+            data={dateRangeData}
+            startDateRange={startDate}
+            endDateRange={endDate}
+          />
+        )}
       </div>
       <div className="col-md-6 fs-5">
         PAT Result &nbsp;
