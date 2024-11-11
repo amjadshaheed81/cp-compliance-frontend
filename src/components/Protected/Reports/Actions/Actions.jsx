@@ -13,27 +13,33 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [actions, setActions] = useState([]);
   const [state, setState] = useState({
     selectedArea: "",
-    allSites: true,
+    isIndividual: false,
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const getActions = async (allSites = false) => {
+  const getActions = async (isIndividual = false) => {
     setIsLoading(true);
     showLoader({ title: "Please wait. we are fetching action details." });
     let res;
-    if (allSites) {
-      res = await get(`/api/site/actions/all`);
+    if (!isIndividual) {
+      if (state.selectedArea) {
+        res = await get(`/api/site/actions/all?area=${state.selectedArea}`);
+      } else {
+        res = await get(`/api/site/actions/all`);
+      }
     } else {
       res = await get(`api/site/actions/${siteSelectedForGlobal?.siteId}`);
     }
 
     // Filter actions by createdAt date range
-    const filteredActions = res.filter(action => {
+    const filteredActions = res.filter((action) => {
       const createdAtDate = new Date(action.createdAt);
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
-      return (!start || createdAtDate >= start) && (!end || createdAtDate <= end);
+      return (
+        (!start || createdAtDate >= start) && (!end || createdAtDate <= end)
+      );
     });
 
     setActions(filteredActions);
@@ -49,7 +55,6 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
       ...prevState,
       selectedArea: e.target.value,
     }));
-    getActionsByArea(e.target.value);
   };
 
   const getActionsByArea = async (area) => {
@@ -58,7 +63,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
       const res = await get(`/api/site/actions/all?area=${area}`);
       setActions(res);
     } else {
-      getActions(state.allSites);
+      getActions(state.isIndividual);
     }
     hideLoader();
   };
@@ -66,13 +71,13 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const handleAllSitesToggle = () => {
     setState((prevState) => ({
       ...prevState,
-      allSites: !prevState.allSites,
+      isIndividual: !prevState.isIndividual,
     }));
   };
 
   useEffect(() => {
-    getActions(state.allSites);
-  }, [state.allSites, startDate, endDate]);
+    getActions(state.isIndividual);
+  }, [state.isIndividual, state.selectedArea, startDate, endDate]);
 
   return (
     <Fragment>
@@ -91,10 +96,11 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                             name="area"
                             className="form-control form-select"
                             id="area"
+                            disabled={state.isIndividual}
                             onChange={handleAreaChange}
                             value={state.selectedArea}
                           >
-                            <option value="">Area</option>
+                            <option value="">All Sites</option>
                             {SiteArea?.map((itm) => (
                               <option key={itm} value={itm}>{itm}</option>
                             ))}
@@ -106,13 +112,13 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                               className="form-check-label"
                               htmlFor="flexSwitchCheckChecked"
                             >
-                              {state.allSites ? "All Sites" : "Individual"}
+                              {"Individual"}
                             </label>
                             <input
                               className="form-check-input"
                               type="checkbox"
                               id="flexSwitchCheckChecked"
-                              checked={state.allSites}
+                              checked={state.isIndividual}
                               onChange={handleAllSitesToggle}
                             />
                           </div>
