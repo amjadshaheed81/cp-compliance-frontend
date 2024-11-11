@@ -118,7 +118,7 @@ const AssetChart = ({
   const handleChange = (event) => {
     setState((prevState) => ({
       ...prevState,
-      allSites: !event.target.checked,
+      allSites: event.target.checked,
     }));
     event.target.checked ? getAllSiteAssetsData() : getSiteAssetsData();
   };
