@@ -23,7 +23,7 @@ import PieChartContracts from "./PieChartContracts";
 const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [state, setState] = useState({
     selectedArea: "",
-    allSites: true,
+    isIndividual: false,
   });
   const [filteredContractList, setFilteredContractList] = useState([]);
   const [contractList, setContractList] = useState([]);
@@ -76,7 +76,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     getContractsByArea(e.target.value);
   };
   const getContractsByArea = async (area) => {
-    showLoader("Please wait. we are collecting contracts details.")
+    showLoader("Please wait. we are collecting contracts details.");
     if (area) {
       const projects = await get(`/api/project/contracts?area=${area}`);
       setFilteredContractList(projects?.projectContracts || []);
@@ -84,18 +84,18 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
       hideLoader();
     } else {
       hideLoader();
-      getProjectList(state.allSites);
+      getProjectList(state.isIndividual ? false : true);
     }
   };
   const handleChange = (event) => {
     setState((prevState) => ({
       ...prevState,
-      allSites: event.target.checked,
+      isIndividual: event.target.checked,
     }));
     if (event.target.checked) {
-      getProjectList(true);
-    } else {
       getProjectList(false);
+    } else {
+      getProjectList(true);
     }
   };
   useEffect(() => {
@@ -108,35 +108,21 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
       return;
     }
     getCategories();
-    getProjectList(state.allSites);
+    getProjectList(state.isIndividual ? false : true);
   }, [siteSelectedForGlobal]);
-  const getProjectList = async (isSiteSelectedForContractor = false) => {
+  const getProjectList = async (isAllSites = true) => {
     setIsLoading(true);
-    showLoader("Please wait. we are collecting contracts details.")
-    if (isManagerAdminLogin(loggedInUserData)) {
-      if (!isSiteSelectedForContractor) {
-        const projects = await get(`/api/project/contracts`);
-        setFilteredContractList(projects?.projectContracts || []);
-        setContractList(projects?.projectContracts || []);
-      } else {
-        const projects = await get(
-          `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
-        );
-        setFilteredContractList(projects?.projectContracts || []);
-        setContractList(projects?.projectContracts || []);
-      }
-    } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
-      try {
-        let url = isSiteSelectedForContractor
-          ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorCompanyId=${loggedInUserData?.companyId}`
-          : `/api/project/contracts?contractorCompanyId=${loggedInUserData?.companyId}`;
-        const projects = await get(url);
-        setFilteredContractList(projects?.projectContracts || []);
-        setContractList(projects?.projectContracts || []);
-      } catch (e) {
-        setFilteredContractList([]);
-        setContractList([]);
-      }
+    showLoader("Please wait. we are collecting contracts details.");
+    if (isAllSites) {
+      const projects = await get(`/api/project/contracts`);
+      setFilteredContractList(projects?.projectContracts || []);
+      setContractList(projects?.projectContracts || []);
+    } else {
+      const projects = await get(
+        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+      );
+      setFilteredContractList(projects?.projectContracts || []);
+      setContractList(projects?.projectContracts || []);
     }
     hideLoader();
     setIsLoading(false);
@@ -246,10 +232,11 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     name="area"
                     className="form-control form-select"
                     id="area"
+                    disabled={state.isIndividual}
                     value={state.selectedArea}
                     onChange={handleAreaChange}
                   >
-                    <option value="">Area</option>
+                    <option value="">All Sites</option>
                     {SiteArea?.map((itm) => (
                       <option value={itm}>{itm}</option>
                     ))}
@@ -257,9 +244,8 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                 </div>
                 {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
                 <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                  <label>All</label>
                   <Switch
-                    checked={state.allSites}
+                    checked={state.isIndividual}
                     onChange={handleChange}
                     inputProps={{ "aria-label": "controlled" }}
                   />
@@ -270,7 +256,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
             </div>
           </div>
           {/* row start*/}
-          <div className="row p-2 text-center" style={{ maxHeight: "400px"}}>
+          <div className="row p-2 text-center" style={{ maxHeight: "400px" }}>
             <PieChartContracts data={filteredContractList} />
           </div>
           <div className="col-md-12 table-responsive">
