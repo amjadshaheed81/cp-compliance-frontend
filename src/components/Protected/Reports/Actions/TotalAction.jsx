@@ -1,10 +1,10 @@
 import React from "react";
-import { Bar } from "react-chartjs-2";
+import { Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -14,7 +14,7 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -27,12 +27,12 @@ const TotalAction = ({ data }) => {
   let reassessedActions = 0;
 
   // Loop through data to calculate totals based on status
-  data.forEach((item) => {
-    if (item.status === "Completed") {
+  data?.forEach((item) => {
+    if (item?.status === "Completed") {
       completedActions += 1;
-    } else if (item.status === "Reported") {
+    } else if (item?.status === "Reported") {
       reportedActions += 1;
-    } else if (item.status === "Reassessed") {
+    } else if (item?.status === "Reassessed") {
       reassessedActions += 1;
     }
   });
@@ -75,22 +75,9 @@ const TotalAction = ({ data }) => {
         },
       },
     },
-    scales: {
-      x: {
-        title: {
-          display: false,
-        },
-      },
-      y: {
-        title: {
-          display: false,
-        },
-        beginAtZero: true,
-      },
-    },
   };
 
-  return <Bar data={chartData} options={options} />;
+  return <Pie data={chartData} options={options} />;
 };
 
 export default TotalAction;
