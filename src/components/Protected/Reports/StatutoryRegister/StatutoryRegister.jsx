@@ -22,11 +22,11 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   });
 
   useEffect(() => {
-    if(siteSelectedForGlobal?.siteId) {
+    if (siteSelectedForGlobal?.siteId) {
       getStatutory(siteSelectedForGlobal?.siteId);
       getAllStatutory();
       // getRequirements();
-    }else{
+    } else {
       toast.error("Please select site from site search to proceed....");
     }
   }, [siteSelectedForGlobal]);
@@ -100,10 +100,6 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   <div className="row" style={{ height: "auto" }}>
                     <div className="col-md-6 mt-2 mb-4">
                       <h5>Statutory Register</h5>
-                      <p>Individual Site</p>
-                      <TotalAction data={statutory} />
-                    </div>
-                    <div className="col-md-6 mt-2 mb-4">
                       <div>
                         <label>Select Requirement to check all sites</label>
                         <select
@@ -123,6 +119,8 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         requirement={state.selectedRequirements}
                         data={allstatutory}
                       />
+                      {/* <p>Individual Site</p> */}
+                      {/* <TotalAction data={statutory} /> */}
                     </div>
                   </div>
                 </div>

@@ -1,41 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import {
-  addUser,
-  addUserTagSite,
-  getSites,
-  setLoggedInUser,
-  setSiteAssets,
-} from "../../../../store/thunk/site";
 import { showLoader, hideLoader } from "js-loader-fn";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Pie } from "react-chartjs-2";
 import { get } from "../../../../api";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { Switch } from "@mui/material";
-import BarChart from "./BarChart";
 import DateRangeChart from "./DateRangeChart";
-import AssetsByCost from "./AssetsByCost";
-import { toast } from "react-toastify";
+import DateRangeChartQuantity from "./DateRangeChartQuantity";
+import CostsBySite from "./CostsBySite";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const AssetChart = ({
-  sitePATItems,
-  sitePFPItems,
-  siteAssets,
-  siteSelectedForGlobal,
-}) => {
+const AssetChart = ({ siteSelectedForGlobal }) => {
   const [dateRangeData, setDateRange] = useState([]);
+  const [chartResponse, setChartResponse] = useState();
   const [state, setState] = useState({
     selectedArea: "",
     allSites: false,
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [assetLength, setAssetLength] = useState(0);
   const [chartData, setChartData] = useState({
-    labels: ["Summary", "Doors", "PAT", "PFP"],
+    labels: ["General", "Doors", "PAT", "PFP"],
     datasets: [
       {
         data: [0, 0, 0, 0],
@@ -47,43 +34,52 @@ const AssetChart = ({
   });
 
   useEffect(() => {
-    if (state.allSites) {
-      if (state.selectedArea) {
-        getAllSiteAssetsDataArea(state.selectedArea);
-      } else {
-        getAllSiteAssetsData();
-      }
-    } else {
-      getSiteAssetsData();
-    }
-  }, [siteSelectedForGlobal, startDate, endDate]);
+    getSiteChartData();
+  }, [
+    siteSelectedForGlobal,
+    startDate,
+    endDate,
+    state.allSites,
+    state.selectedArea,
+  ]);
+  const appendParams = (url, params) => {
+    const separator = url.includes("?") ? "&" : "?";
+    const queryString = Object.keys(params)
+      .map(
+        (key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
+      )
+      .join("&");
 
-  const getSiteAssetsData = async () => {
-    const res = await fetchAndMergeAssets();
-    const filteredData = filterDataByDateRange(res);
-    setDateRange(filteredData);
+    return url + separator + queryString;
   };
-
-  const fetchAndMergeAssets = async () => {
-    showLoader({ title: "Please wait. We are collecting data for assets..." });
-    const siteId = siteSelectedForGlobal?.siteId;
-    const urls = [
-      `/api/site/${siteId}/assets`,
-      `/api/site/${siteId}/assets?pfpItem=true`,
-      `/api/site/${siteId}/assets?doorItem=true`,
-      `/api/site/${siteId}/assets?patItem=true`,
-    ];
+  const getSiteChartData = async () => {
     try {
-      const responses = await Promise.all(urls.map((url) => get(url)));
+      showLoader({
+        title: "Please wait. We are collecting data for assets...",
+      });
+      let url = `/api/site/assets/all/v2`;
+      let params = {};
+      if (!state.allSites) {
+        params = { ...params, siteId: siteSelectedForGlobal?.siteId };
+      }
+      if (state.selectedArea) {
+        params = { ...params, area: state.selectedArea };
+      }
+      if (startDate && endDate) {
+        params = { ...params, fromDate: startDate, toDate: endDate };
+      }
+      const newUrl = appendParams(url, params);
+      const res = await get(newUrl);
+      setChartResponse(res);
       setChartData({
-        labels: ["Summary", "Doors", "PAT", "PFP"],
+        labels: ["General", "Doors", "PAT", "PFP"],
         datasets: [
           {
             data: [
-              responses?.[0]?.assets?.length || 0,
-              responses?.[2]?.assets?.length || 0,
-              responses?.[3]?.assets?.length || 0,
-              responses?.[1]?.assets?.length || 0,
+              res?.genral || 0,
+              res?.door || 0,
+              res?.pat || 0,
+              res?.pfp || 0,
             ],
             backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
             borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
@@ -91,26 +87,10 @@ const AssetChart = ({
           },
         ],
       });
-      const mergedAssets = responses.flatMap(
-        (response) => response?.assets || []
-      );
       hideLoader();
-      setAssetLength(mergedAssets?.length)
-      return mergedAssets;
-    } catch (error) {
+    } catch (e) {
       hideLoader();
-      console.error("Error fetching assets:", error);
-      return [];
     }
-  };
-
-  const filterDataByDateRange = (data) => {
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    return data.filter((item) => {
-      const purchaseDate = new Date(item.purchaseDate);
-      return (!start || purchaseDate >= start) && (!end || purchaseDate <= end);
-    });
   };
 
   const handleDateChange = (setter) => (e) => setter(e.target.value);
@@ -120,57 +100,6 @@ const AssetChart = ({
       ...prevState,
       allSites: event.target.checked,
     }));
-    event.target.checked ? getAllSiteAssetsData() : getSiteAssetsData();
-  };
-
-  const getAllSiteAssetsData = async () => {
-    showLoader({ title: "Please wait. We are collecting data for assets..." });
-    try {
-      const res = await get(`/api/site/assets/all`);
-      const filteredData = filterDataByDateRange(res?.assets || []);
-      setDateRange(filteredData);
-      setChartData({
-        labels: ["Summary", "Doors", "PAT", "PFP"],
-        datasets: [
-          {
-            data: [
-              res?.assets?.filter(
-                (itm) =>
-                  itm?.patItem === false &&
-                  itm?.pfpItem === false &&
-                  itm?.doorItem === false
-              )?.length || 0,
-              res?.assets?.filter((itm) => itm?.doorItem === true)?.length || 0,
-              res?.assets?.filter((itm) => itm?.patItem === true)?.length || 0,
-              res?.assets?.filter((itm) => itm?.pfpItem === true)?.length || 0,
-            ],
-            backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
-            borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
-            borderWidth: 1,
-          },
-        ],
-      });
-      setAssetLength(res?.assets?.length)
-      // setSiteAssets(res?.assets || []);
-      hideLoader();
-    } catch (e) {
-      hideLoader();
-      toast.error("Something went wrong while fetching all assets data.");
-    }
-  };
-
-  const getAllSiteAssetsDataArea = async (area) => {
-    showLoader({ title: "Please wait. We are collecting data for assets..." });
-    try {
-      const res = await get(`/api/site/assets/all?area=${area}`);
-      const filteredData = filterDataByDateRange(res?.assets || []);
-      setDateRange(filteredData);
-      setSiteAssets(res?.assets || []);
-      hideLoader();
-    } catch (e) {
-      hideLoader();
-      toast.error("Something went wrong while fetching all assets data.");
-    }
   };
 
   return (
@@ -183,7 +112,7 @@ const AssetChart = ({
             id="area"
             value={state.selectedArea}
             onChange={(e) => {
-              getAllSiteAssetsDataArea(e.target.value);
+              // getAllSiteAssetsDataArea(e.target.value);
               setState({ ...state, selectedArea: e.target.value });
             }}
           >
@@ -225,10 +154,14 @@ const AssetChart = ({
           />
         </div>
       </div>
-      <div className="col-md-6 fs-5">
+      <div className="col-md-4 fs-5 mt-2">
         Asset Type{" "}
         <span className="badge bg-light text-primary">
-          Total Assets: {assetLength}
+          Total Assets:{" "}
+          {(chartResponse?.door || 0) +
+            (chartResponse?.genral || 0) +
+            (chartResponse?.pat || 0) +
+            (chartResponse?.pfp || 0)}
         </span>
         <div>
           <Pie
@@ -241,32 +174,14 @@ const AssetChart = ({
           />
         </div>
       </div>
-      <div className="col-md-6">
-        {dateRangeData?.length > 0 && (
-          <DateRangeChart
-            data={dateRangeData}
-            startDateRange={startDate}
-            endDateRange={endDate}
-          />
-        )}
+      <div className="col-md-4 mt-2">
+        <DateRangeChart data={chartResponse?.cost} />
       </div>
-      {/* <div className="col-md-6 fs-5">
-        PAT Result &nbsp;
-        <span className="badge bg-light text-primary">
-          Total PATs: {sitePATItems?.length}
-        </span>
-        <div>
-          <BarChart data={sitePATItems} />
-        </div>
-      </div> */}
-      <div className="col-md-6">
-        {dateRangeData?.length > 0 && (
-          <AssetsByCost
-            data={dateRangeData}
-            viewBy={state?.selectedArea ? "region" : "building"}
-            area={state?.selectedArea}
-          />
-        )}
+      <div className="col-md-4 mt-2">
+        <DateRangeChartQuantity data={chartResponse?.quantity} />
+      </div>
+      <div className="col-md-6 mt-4">
+        <CostsBySite data={chartResponse?.costSite} />
       </div>
     </div>
   );
@@ -280,10 +195,4 @@ const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
-export default connect(mapStateToProps, {
-  getSites,
-  addUser,
-  addUserTagSite,
-  setLoggedInUser,
-  setSiteAssets,
-})(AssetChart);
+export default connect(mapStateToProps, {})(AssetChart);

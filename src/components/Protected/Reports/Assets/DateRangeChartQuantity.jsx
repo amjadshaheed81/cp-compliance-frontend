@@ -14,13 +14,13 @@ import {
 // Registering the components with Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const DateRangeChart = ({ data }) => {
+const DateRangeChartQuantity = ({ data }) => {
   // Prepare data for Chart.js based on provided data
   const chartData = {
     labels: data?.map((entry) => entry?.x), // x-values for the labels
     datasets: [
       {
-        label: "Total Cost of Purchases (£)",
+        label: "Total Quantity of Purchased Assets",
         data: data?.map((entry) => entry?.y), // y-values for the dataset
         backgroundColor: "#50e03c",
         borderColor: "#50e03c",
@@ -38,12 +38,12 @@ const DateRangeChart = ({ data }) => {
       },
       title: {
         display: true,
-        text: "Fixed Assets Purchased in Selected Range",
+        text: "Total Assets Quantity in Selected Range",
       },
       tooltip: {
         callbacks: {
           label: function (context) {
-            return `Total Cost: £${context.raw}`;
+            return `Total Quantity: ${context.raw}`;
           },
         },
       },
@@ -59,7 +59,7 @@ const DateRangeChart = ({ data }) => {
         beginAtZero: true,
         title: {
           display: true,
-          text: "Total Cost (£)",
+          text: "Total Assets",
         },
         ticks: {
           precision: 0, // Ensure no decimals are shown
@@ -71,4 +71,4 @@ const DateRangeChart = ({ data }) => {
   return <Bar data={chartData} options={options} />;
 };
 
-export default DateRangeChart;
+export default DateRangeChartQuantity;

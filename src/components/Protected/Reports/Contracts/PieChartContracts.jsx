@@ -64,6 +64,10 @@ const PieChartContracts = ({ data }) => {
   const options = {
     responsive: true,
     plugins: {
+      title: {
+        display: true,
+        text: "Active Contract Costs",
+      },
       tooltip: {
         callbacks: {
           label: function (context) {

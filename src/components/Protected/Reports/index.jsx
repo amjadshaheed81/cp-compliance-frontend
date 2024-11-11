@@ -95,10 +95,10 @@ const Reports = ({}) => {
               <Tab label="Contract Report" {...a11yProps(2)} />
               {/* <Tab label="Worksheet" {...a11yProps(3)} /> */}
               <Tab label="Energy Report" {...a11yProps(4)} />
-              <Tab label="Site Checks" {...a11yProps(5)} />
-              <Tab label="Statutory Register" {...a11yProps(6)} />
-              <Tab label="Actions" {...a11yProps(7)} />
-              <Tab label="Basic Reports" {...a11yProps(8)} />
+              {/* <Tab label="Site Checks" {...a11yProps(5)} /> */}
+              <Tab label="Statutory Register" {...a11yProps(5)} />
+              <Tab label="Actions" {...a11yProps(6)} />
+              <Tab label="Basic Reports" {...a11yProps(7)} />
             </Tabs>
             <TabPanel value={value} index={0}>
               <SiteCharts siteChart={siteChart} setSiteChart={setSiteChart} />
@@ -118,22 +118,22 @@ const Reports = ({}) => {
                 <EnergyCost />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={4}>
+            {/* <TabPanel value={value} index={4}>
               <div className="row">
                 <SiteChecks />
               </div>
-            </TabPanel>
-            <TabPanel value={value} index={5}>
+            </TabPanel> */}
+            <TabPanel value={value} index={4}>
               <div className="row">
                 <StatutoryRegister />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={6}>
+            <TabPanel value={value} index={5}>
               <div className="row">
                 <Actions />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={7}>
+            <TabPanel value={value} index={6}>
               <div className="row">
                 <BasicReports />
               </div>

@@ -14,16 +14,16 @@ import {
 // Registering the components with Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const DateRangeChart = ({ data }) => {
+const CostsBySite = ({ data }) => {
   // Prepare data for Chart.js based on provided data
   const chartData = {
     labels: data?.map((entry) => entry?.x), // x-values for the labels
     datasets: [
       {
-        label: "Total Cost of Purchases (£)",
+        label: "Fixed Assets Purchased by Building",
         data: data?.map((entry) => entry?.y), // y-values for the dataset
-        backgroundColor: "#50e03c",
-        borderColor: "#50e03c",
+        backgroundColor: "#3c50e0",
+        borderColor: "#3c50e0",
         borderWidth: 1,
       },
     ],
@@ -36,10 +36,10 @@ const DateRangeChart = ({ data }) => {
         display: true,
         position: "top",
       },
-      title: {
-        display: true,
-        text: "Fixed Assets Purchased in Selected Range",
-      },
+      // title: {
+      //   display: true,
+      //   text: "Fixed Assets Purchased",
+      // },
       tooltip: {
         callbacks: {
           label: function (context) {
@@ -49,20 +49,11 @@ const DateRangeChart = ({ data }) => {
       },
     },
     scales: {
-      x: {
-        title: {
-          display: true,
-          text: "Month",
-        },
-      },
       y: {
         beginAtZero: true,
         title: {
           display: true,
           text: "Total Cost (£)",
-        },
-        ticks: {
-          precision: 0, // Ensure no decimals are shown
         },
       },
     },
@@ -71,4 +62,4 @@ const DateRangeChart = ({ data }) => {
   return <Bar data={chartData} options={options} />;
 };
 
-export default DateRangeChart;
+export default CostsBySite;
