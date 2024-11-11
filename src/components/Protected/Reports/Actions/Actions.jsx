@@ -96,7 +96,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           >
                             <option value="">Area</option>
                             {SiteArea?.map((itm) => (
-                              <option key={itm} value={itm}>{itm}</option>
+                              <option key={itm} value={itm.replace('&','%26')}>{itm}</option>
                             ))}
                           </select>
                         </div>

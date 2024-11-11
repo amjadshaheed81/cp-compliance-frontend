@@ -32,12 +32,11 @@ const SitesCostChart = ({ site1energyData, site2energyData, currentYear, budgetC
       // Check if budget category is required and matches
       if (!budgetCategory || energyItem.budgetCategory === budgetCategory) {
         energyItem?.costList?.forEach((item) => {
-          const fromDate = new Date(item.fromDate);
           const toDate = new Date(item.toDate);
 
           // Check if the cost is relevant for the specified year
-          if (fromDate.getFullYear() === year || toDate.getFullYear() === year) {
-            const monthIndex = fromDate.getMonth();
+          if (toDate.getFullYear() === year) {
+            const monthIndex = toDate.getMonth();
             monthlyCosts[monthIndex] += item.cost; // Accumulate cost for the month
           }
         });

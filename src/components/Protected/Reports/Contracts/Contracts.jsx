@@ -251,7 +251,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   >
                     <option value="">Area</option>
                     {SiteArea?.map((itm) => (
-                      <option value={itm}>{itm}</option>
+                      <option value={itm.replace('&','%26')}>{itm}</option>
                     ))}
                   </select>
                 </div>

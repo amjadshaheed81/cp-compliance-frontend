@@ -119,7 +119,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
           >
             <option value="">All Sites</option>
             {SiteArea?.map((itm) => (
-              <option key={itm} value={itm}>
+              <option key={itm} value={itm.replace('&','%26')}>
                 {itm}
               </option>
             ))}

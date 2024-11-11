@@ -1,17 +1,17 @@
 import axios from "axios";
 
 let axiosInstance = axios.create({
-  baseURL: window?.location?.origin,
+  //baseURL: window?.location?.origin,
   //baseURL: "http://ccp-util-man.ukwest.cloudapp.azure.com",
-  //baseURL: "http://cpc-beta.ukwest.cloudapp.azure.com",
+  baseURL: "http://cpc-beta.ukwest.cloudapp.azure.com",
   timeout: 2000000,
 });
 
 function configAxios() {
   axiosInstance = axios.create({
-    baseURL: window?.location?.origin,
+    //baseURL: window?.location?.origin,
     //baseURL: "http://ccp-util-man.ukwest.cloudapp.azure.com",
-    //baseURL: "http://cpc-beta.ukwest.cloudapp.azure.com",
+    baseURL: "http://cpc-beta.ukwest.cloudapp.azure.com",
     timeout: 2000000,
   });
   axiosInstance.interceptors.response.use(
