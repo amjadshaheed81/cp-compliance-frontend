@@ -461,6 +461,7 @@ const EditAction = ({
                           <label for="internalExternal">Internal/External</label>
                           <select
                             name="internalExternal"
+                            disabled={isViewRoleForActions(loggedInUserData)}
                             className="form-control form-select"
                             id="internalExternal"
                             value={formData?.internalExternal}
@@ -481,6 +482,7 @@ const EditAction = ({
                             name="floor"
                             className="form-control form-select"
                             id="floor"
+                            disabled={isViewRoleForActions(loggedInUserData)}
                             value={formData?.floor}
                             onChange={handleInputChange}
                           >
@@ -503,6 +505,7 @@ const EditAction = ({
                             name="room"
                             className="form-control form-select"
                             id="room"
+                            disabled={isViewRoleForActions(loggedInUserData)}
                             value={formData?.room}
                             onChange={handleInputChange}
                           >
@@ -529,6 +532,7 @@ const EditAction = ({
                         <div className="form-group mt-4">
                           <Autocomplete
                             multiple
+                            disabled={isViewRoleForActions(loggedInUserData)}
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.taggedAsset = item.map(i => i.key).join(",");
