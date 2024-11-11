@@ -22,29 +22,35 @@ ChartJS.register(
   Legend
 );
 
-const SitesCostChart = ({ site1energyData, site2energyData, currentYear }) => {
-  // Helper function to process monthly cost data by year
-  const processMonthlyCosts = (data, year) => {
+const SitesCostChart = ({ site1energyData, site2energyData, currentYear, budgetCategoryForompare }) => {
+  console.log("site1energyData", site1energyData);
+
+  // Helper function to process monthly cost data by year, with optional budget category filtering
+  const processMonthlyCosts = (data, year, budgetCategory) => {
     const monthlyCosts = Array(12).fill(0); // Initialize monthly costs with 0 for each month of the year
 
     data?.forEach((energyItem) => {
-      energyItem?.costList?.forEach((item) => {
-        const fromDate = new Date(item.fromDate);
-        const toDate = new Date(item.toDate);
+      // Check if budget category is required and matches
+      if (!budgetCategory || energyItem.budgetCategory === budgetCategory) {
+        energyItem?.costList?.forEach((item) => {
+          const fromDate = new Date(item.fromDate);
+          const toDate = new Date(item.toDate);
 
-        // Check if the cost is relevant for the specified year
-        if (fromDate.getFullYear() === year || toDate.getFullYear() === year) {
-          const monthIndex = fromDate.getMonth();
-          monthlyCosts[monthIndex] += item.cost; // Accumulate cost for the month
-        }
-      });
+          // Check if the cost is relevant for the specified year
+          if (fromDate.getFullYear() === year || toDate.getFullYear() === year) {
+            const monthIndex = fromDate.getMonth();
+            monthlyCosts[monthIndex] += item.cost; // Accumulate cost for the month
+          }
+        });
+      }
     });
+
     return monthlyCosts;
   };
 
-  // Process costs for the specified year for each site
-  const site1Costs = processMonthlyCosts(site1energyData, currentYear);
-  const site2Costs = processMonthlyCosts(site2energyData, currentYear);
+  // Process costs for the specified year for each site, with optional budget category filtering
+  const site1Costs = processMonthlyCosts(site1energyData, currentYear, budgetCategoryForompare);
+  const site2Costs = processMonthlyCosts(site2energyData, currentYear, budgetCategoryForompare);
 
   // Chart data configuration with darker colors and fill
   const data = {

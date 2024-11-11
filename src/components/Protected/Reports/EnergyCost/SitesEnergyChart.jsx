@@ -21,30 +21,33 @@ ChartJS.register(
   Legend
 );
 
-const SitesEnergyChart = ({ site1energyData, site2energyData, currentYear }) => {
-  const processMonthlyConsumption = (data, year) => {
+const SitesEnergyChart = ({ site1energyData, site2energyData, currentYear, budgetCategoryForompare }) => {
+  const processMonthlyConsumption = (data, year, budgetCategory) => {
     const monthlyConsumption = Array(12).fill(0); // Initialize array to store aggregated monthly consumption
 
     data?.forEach((meter) => {
-      // Filter and sort readings for the current meter
-      const filteredReadings = meter?.readingList
-        ?.filter((reading) => new Date(reading.readingDate).getFullYear() === year)
-        ?.sort((a, b) => new Date(a.readingDate) - new Date(b.readingDate));
+      // Check if budget category is required and matches
+      if (!budgetCategory || meter.budgetCategory === budgetCategory) {
+        // Filter and sort readings for the current meter
+        const filteredReadings = meter?.readingList
+          ?.filter((reading) => new Date(reading.readingDate).getFullYear() === year)
+          ?.sort((a, b) => new Date(a.readingDate) - new Date(b.readingDate));
 
-      // Calculate consumption for this meter and add to monthly totals
-      for (let i = 1; i < filteredReadings.length; i++) {
-        const currentReading = filteredReadings[i];
-        const previousReading = filteredReadings[i - 1];
+        // Calculate consumption for this meter and add to monthly totals
+        for (let i = 1; i < filteredReadings.length; i++) {
+          const currentReading = filteredReadings[i];
+          const previousReading = filteredReadings[i - 1];
 
-        const currentDate = new Date(currentReading.readingDate);
-        const previousDate = new Date(previousReading.readingDate);
+          const currentDate = new Date(currentReading.readingDate);
+          const previousDate = new Date(previousReading.readingDate);
 
-        // Ensure readings are in the same year and for consecutive months
-        if (currentDate.getFullYear() === year) {
-          const monthIndex = currentDate.getMonth();
-          if (monthIndex > 0 && monthIndex < 12) {
-            const consumption = currentReading.readingValue - previousReading.readingValue;
-            monthlyConsumption[monthIndex] += consumption; // Aggregate consumption across meters
+          // Ensure readings are in the same year and for consecutive months
+          if (currentDate.getFullYear() === year) {
+            const monthIndex = currentDate.getMonth();
+            if (monthIndex >= 0 && monthIndex < 12) {
+              const consumption = currentReading.readingValue - previousReading.readingValue;
+              monthlyConsumption[monthIndex] += consumption; // Aggregate consumption across meters
+            }
           }
         }
       }
@@ -53,9 +56,9 @@ const SitesEnergyChart = ({ site1energyData, site2energyData, currentYear }) => 
     return monthlyConsumption;
   };
 
-  // Process data for current year for both sites
-  const site1CurrentYearConsumption = processMonthlyConsumption(site1energyData, currentYear);
-  const site2CurrentYearConsumption = processMonthlyConsumption(site2energyData, currentYear);
+  // Process data for current year for both sites, with optional budget category filtering
+  const site1CurrentYearConsumption = processMonthlyConsumption(site1energyData, currentYear, budgetCategoryForompare);
+  const site2CurrentYearConsumption = processMonthlyConsumption(site2energyData, currentYear, budgetCategoryForompare);
 
   // Chart data configuration
   const data = {

@@ -72,6 +72,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkCategory, setBulkCategory] = useState();
+  const [bulkCategoryForCompare, setBulkCategoryForCompare] = useState();
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
   const currentEnergyCost = filteredEnergyCost.slice(
@@ -678,7 +679,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
             <div>
               <h3>Compare 2 Sites</h3>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label htmlFor="site1">Site 1:</label>
               <select
                 name="site1"
@@ -699,7 +700,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                   ))}
               </select>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label htmlFor="site1">Site 2:</label>
 
               <select
@@ -719,7 +720,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 ))}
               </select>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label htmlFor="year-select">Select Year:</label>
               <select
                 id="year-select"
@@ -734,6 +735,20 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 ))}
               </select>
             </div>
+            <div className="col-md-3">
+            <label for="budgetCategoryCompare">Select Budget Category</label>
+                  <select
+                    name="budgetCategoryCompare"
+                    className="form-control form-select"
+                    id="budgetCategoryCompare"
+                    onChange={(e) => setBulkCategoryForCompare(e.target.value)}
+                  >
+                    <option value="">Budget Category</option>
+                    {typeoptions.map((t) => (
+                      <option value={t}>{t}</option>
+                    ))}
+                  </select>
+            </div>
           </div>
           <div className="row" style={{ height: "auto" }}>
             <div className="col-md-6 mt-2 mb-4">
@@ -742,6 +757,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 site1energyData={site1EnergyCostData}
                 site2energyData={site2EnergyCostData}
                 currentYear={state.siteComparisonYear}
+                budgetCategoryForompare={bulkCategoryForCompare}
               />
             </div>
             <div className="col-md-6 mt-2 mb-4">
@@ -750,6 +766,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 site1energyData={site1EnergyCostData}
                 site2energyData={site2EnergyCostData}
                 currentYear={state.siteComparisonYear}
+                budgetCategoryForompare={bulkCategoryForCompare}
               />
             </div>
           </div>
