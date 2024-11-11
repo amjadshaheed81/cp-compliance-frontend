@@ -30,11 +30,23 @@ export const filterMenuItems = (loggedInRole) => {
   return GeneralMenu;
 };
 
+const siteContractsallowedRoles = [
+  ROLE.ADMIN,
+  ROLE.MANAGER,
+  ROLE.SITE_ACTION_MANAGER,
+  ROLE.SITE_USERS,
+  ROLE.CARE_TAKER,
+  ROLE.CONTRACTOR,
+];
+
 export const filterSiteMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
+    if (!siteContractsallowedRoles.includes(loggedInRole)) {
+      return SiteMenu.filter((item) => item !== "Site Contracts" && item !== "Create Site");
+    }
     return SiteMenu.filter(
       (item) => item !== "Create Site"
     );
-  }
+  } 
   return SiteMenu;
 };
