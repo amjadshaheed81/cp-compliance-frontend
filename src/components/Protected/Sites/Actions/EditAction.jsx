@@ -30,6 +30,7 @@ import {
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken } from "../../../../api";
 import { getSiteAssets, setLoader, getSiteLayout } from "../../../../store/thunk/site";
+import { isViewRoleForActions } from "../../../../utils/isManagerAdminLogin";
 
 const EditAction = ({
   createUpdatePreActions,
@@ -661,6 +662,7 @@ const EditAction = ({
                                 <input type="text"
                                   {...params.inputProps}
                                   required
+                                  disabled={isViewRoleForActions(loggedInUserData)}
                                   className="form-control"
                                   placeholder="Select User"
                                 />
@@ -696,6 +698,7 @@ const EditAction = ({
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
                                   {...params.inputProps}
+                                  disabled={isViewRoleForActions(loggedInUserData)}
                                   required
                                   className="form-control"
                                   placeholder="Select User"
@@ -710,6 +713,7 @@ const EditAction = ({
                       <div className="col-md-4">
                         <div className="form-group mt-2">
                         <Button
+                          disabled={isViewRoleForActions(loggedInUserData)}
                           onClick={() => goTo("/site-contracts")}
                           className="bg-light text-primary"
                         >

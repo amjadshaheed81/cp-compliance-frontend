@@ -18,3 +18,12 @@ export const isAdminLogin = (loggedInUserData) => {
   }
   return false;
 };
+
+export const isViewRoleForActions = (loggedInUserData) => {
+  if (
+    loggedInUserData?.role === ROLE.SITE_USERS || loggedInUserData?.role === ROLE.SURVEYOR
+  ) {
+    return true;
+  }
+  return false;
+};

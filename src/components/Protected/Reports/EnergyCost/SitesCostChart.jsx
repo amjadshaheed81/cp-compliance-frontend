@@ -23,7 +23,7 @@ ChartJS.register(
 );
 
 const SitesCostChart = ({ site1energyData, site2energyData, currentYear, budgetCategoryForompare }) => {
-
+  console.log("site1energyData", site1energyData);
   // Helper function to process monthly cost data by year, with optional budget category filtering
   const processMonthlyCosts = (data, year, budgetCategory) => {
     const monthlyCosts = Array(12).fill(0); // Initialize monthly costs with 0 for each month of the year
