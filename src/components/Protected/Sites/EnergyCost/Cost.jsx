@@ -115,7 +115,7 @@ const Cost = ({
                     <DatePicker
                       label="From Date"
                       value={formData?.fromDate}
-                      enabled={!isView}
+                      disabled={isView}
                       onChange={(date) => {
                         setFormData({
                           ...formData,

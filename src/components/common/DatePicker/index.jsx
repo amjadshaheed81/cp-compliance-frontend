@@ -12,6 +12,7 @@ const TdkDatePicker = ({
   required,
   label,
   width = "380px",
+  disabled,
 }) => {
   const datePickerRef = useRef(null);
   const [manualInput, setManualInput] = useState(
@@ -64,6 +65,7 @@ const TdkDatePicker = ({
           value={manualInput}
           placeholder="dd/mm/yyyy"
           className="form-control"
+          disabled={disabled ? true : false}
           style={{
             width: width,
           }}
