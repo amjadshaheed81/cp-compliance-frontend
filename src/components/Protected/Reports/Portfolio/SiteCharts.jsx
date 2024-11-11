@@ -22,7 +22,7 @@ const SiteCharts = ({
 }) => {
   const [state, setState] = useState({
     selectedArea: "",
-    allSites: true,
+    isIndividual: false,
   });
   const handleAreaChange = (e) => {
     setState((prevState) => ({
@@ -34,7 +34,7 @@ const SiteCharts = ({
   const handleAllSitesToggle = () => {
     setState((prevState) => ({
       ...prevState,
-      allSites: !prevState.allSites,
+      isIndividual: !prevState.isIndividual,
     }));
   };
   const [chartData, setChartData] = useState({
@@ -65,7 +65,7 @@ const SiteCharts = ({
         data?.users,
         sites,
         state.selectedArea,
-        state.allSites,
+        true,
         siteSelectedForGlobal
       )
     );
@@ -75,12 +75,12 @@ const SiteCharts = ({
       getUniqueSitesWithUserCount(
         users,
         sites,
-        state.selectedArea,
-        state.allSites,
+        state.isIndividual ? "" : state.selectedArea,
+        state.isIndividual ? false : true,
         siteSelectedForGlobal
       )
     );
-  }, [state.selectedArea, state.allSites]);
+  }, [state.selectedArea, state.isIndividual]);
   useEffect(() => {
     if (sites) {
       setSiteChart({
@@ -142,10 +142,11 @@ const SiteCharts = ({
               name="area"
               className="form-control form-select"
               id="area"
+              disabled={state.isIndividual}
               onChange={handleAreaChange}
               value={state.selectedArea}
             >
-              <option value="">Area</option>
+              <option value="">All Sites</option>
               {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
             </select>
           </div>
@@ -155,13 +156,13 @@ const SiteCharts = ({
                 className="form-check-label"
                 htmlFor="flexSwitchCheckChecked"
               >
-                {state.allSites ? "All Sites" : "Individual"}
+                {"Individual"}
               </label>
               <input
                 className="form-check-input"
                 type="checkbox"
                 id="flexSwitchCheckChecked"
-                checked={state.allSites}
+                checked={state.isIndividual}
                 onChange={handleAllSitesToggle}
               />
             </div>
