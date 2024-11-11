@@ -119,7 +119,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
           >
             <option value="">All Sites</option>
             {SiteArea?.map((itm) => (
-              <option key={itm} value={itm.replace('&','%26')}>
+              <option key={itm} value={itm.replace("&", "%26")}>
                 {itm}
               </option>
             ))}
@@ -175,10 +175,12 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
         </div>
       </div>
       <div className="col-md-6 mt-2">
-        <DateRangeChart data={chartResponse?.cost} />
-      </div>
-      <div className="col-md-6 mt-2">
-        <DateRangeChartQuantity data={chartResponse?.quantity} />
+        <div className="col-md-12">
+          <DateRangeChart data={chartResponse?.cost} />
+        </div>
+        <div className="col-md-12">
+          <DateRangeChartQuantity data={chartResponse?.quantity} />
+        </div>
       </div>
       <div className="col-md-6 mt-4">
         <CostsBySite data={chartResponse?.costSite} />
