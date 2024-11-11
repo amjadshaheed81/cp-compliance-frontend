@@ -510,7 +510,7 @@ const UpdateAsset = ({
                           <Autocomplete
                             multiple
                             value={getSelectedValue()}
-                            // disabled
+                            disabled
                             onChange={(event, newValue) => {
                               setValue("relatedAssetId", newValue?.key);
                             }}
