@@ -17,7 +17,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
   const [chartResponse, setChartResponse] = useState();
   const [state, setState] = useState({
     selectedArea: "",
-    allSites: false,
+    isIndividualSite: false,
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -39,7 +39,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
     siteSelectedForGlobal,
     startDate,
     endDate,
-    state.allSites,
+    state.isIndividualSite,
     state.selectedArea,
   ]);
   const appendParams = (url, params) => {
@@ -59,10 +59,10 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
       });
       let url = `/api/site/assets/all/v2`;
       let params = {};
-      if (!state.allSites) {
+      if (state.isIndividualSite) {
         params = { ...params, siteId: siteSelectedForGlobal?.siteId };
       }
-      if (state.selectedArea) {
+      if (!state.isIndividualSite && state.selectedArea) {
         params = { ...params, area: state.selectedArea };
       }
       if (startDate && endDate) {
@@ -98,7 +98,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
   const handleChange = (event) => {
     setState((prevState) => ({
       ...prevState,
-      allSites: event.target.checked,
+      isIndividualSite: event.target.checked,
     }));
   };
 
@@ -110,13 +110,14 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
             name="area"
             className="form-control form-select"
             id="area"
+            disabled={state.isIndividualSite}
             value={state.selectedArea}
             onChange={(e) => {
               // getAllSiteAssetsDataArea(e.target.value);
               setState({ ...state, selectedArea: e.target.value });
             }}
           >
-            <option value="">Area</option>
+            <option value="">All Sites</option>
             {SiteArea?.map((itm) => (
               <option key={itm} value={itm}>
                 {itm}
@@ -125,13 +126,12 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
           </select>
         </div>
         <div className="col-md-3 col-sm-4 mt-2">
-          <label>Individual Site</label>
           <Switch
-            checked={state.allSites}
+            checked={state.isIndividualSite}
             onChange={handleChange}
             inputProps={{ "aria-label": "controlled" }}
           />
-          <label>All</label>
+          <label>Individual Site</label>
         </div>
         <div className="col-md-3 col-sm-4 mt-2">
           <label>Start Date Range</label>
