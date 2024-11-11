@@ -250,7 +250,7 @@ const AssetChart = ({
           />
         )}
       </div>
-      <div className="col-md-6 fs-5">
+      {/* <div className="col-md-6 fs-5">
         PAT Result &nbsp;
         <span className="badge bg-light text-primary">
           Total PATs: {sitePATItems?.length}
@@ -258,7 +258,7 @@ const AssetChart = ({
         <div>
           <BarChart data={sitePATItems} />
         </div>
-      </div>
+      </div> */}
       <div className="col-md-6">
         {dateRangeData?.length > 0 && (
           <AssetsByCost

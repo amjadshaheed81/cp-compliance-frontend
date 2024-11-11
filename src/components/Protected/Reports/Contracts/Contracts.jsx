@@ -16,10 +16,9 @@ import ChipComponent from "../../../common/Chips/Chips";
 import Swal from "sweetalert2";
 import Pagination from "../../../common/Pagination/Pagination";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
-import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
-import BarChart from "./Barchart";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { showLoader, hideLoader } from "js-loader-fn";
+import PieChartContracts from "./PieChartContracts";
 
 const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [state, setState] = useState({
@@ -271,8 +270,8 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
             </div>
           </div>
           {/* row start*/}
-          <div className="row p-2">
-            <BarChart data={filteredContractList} />
+          <div className="row p-2 text-center" style={{ maxHeight: "400px"}}>
+            <PieChartContracts data={filteredContractList} />
           </div>
           <div className="col-md-12 table-responsive">
             <table className="table">
