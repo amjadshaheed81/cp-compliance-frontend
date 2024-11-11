@@ -154,7 +154,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
           />
         </div>
       </div>
-      <div className="col-md-4 fs-5 mt-2">
+      <div className="col-md-6 fs-5 mt-2">
         Asset Type{" "}
         <span className="badge bg-light text-primary">
           Total Assets:{" "}
@@ -174,10 +174,10 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
           />
         </div>
       </div>
-      <div className="col-md-4 mt-2">
+      <div className="col-md-6 mt-2">
         <DateRangeChart data={chartResponse?.cost} />
       </div>
-      <div className="col-md-4 mt-2">
+      <div className="col-md-6 mt-2">
         <DateRangeChartQuantity data={chartResponse?.quantity} />
       </div>
       <div className="col-md-6 mt-4">
