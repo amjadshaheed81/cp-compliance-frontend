@@ -207,7 +207,6 @@ const AsbestonSample = ({
   };
 
   const handleFileDelete = (idx) => {
-    console.log("Set the file object as null for the index:: ", idx);
     const uformData = [...formData];
     const udata = {
       ...formData[idx],
@@ -223,15 +222,12 @@ const AsbestonSample = ({
   };
 
   const handleFileChange = (e, idx) => {
-    console.log("FIle uplaoded at data index:: ", idx);
     const uformData = [...formData];
     const udata = {
       ...formData[idx],
       file: e.target.files[0],
       update: true,
     };
-    console.log("uFormdata:: ", uformData);
-    console.log("udata:: ", udata);
     uformData[idx] = udata;
     setFormData(uformData);
   };
@@ -260,7 +256,6 @@ const AsbestonSample = ({
         data.nextInspectionDate = new Date(data.nextInspectionDate);
         data.checkId = checkId;
         data.status = "Pending";
-        console.log(formData);
         await post("/api/site-check/asbestos-sample", data);
       }
     }

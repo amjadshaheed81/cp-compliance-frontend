@@ -194,7 +194,6 @@ const StatutoryRegister = ({
         const isExpiryDateValid = item.files.every((file) =>
           moment(file.expiryDate).isAfter(new Date())
         );
-        console.log("isExpiryDateValid", isExpiryDateValid);
         status = isExpiryDateValid ? "Passed" : "Fail";
       }
     } else if (String(item?.type).toLowerCase() === "link" && isChecked) {
@@ -295,7 +294,6 @@ const StatutoryRegister = ({
     const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
     const assetWithNearestPatNextDate =
       findAssetWithNearestPatNextDate(patItems);
-    console.log("assetWithNearestPatNextDate", assetWithNearestPatNextDate);
     // Pre-filter categories and subTypes for easier lookups
     const filteredSiteChecks = {
       asbestosManagementPlan: surveys?.find(

@@ -65,7 +65,6 @@ const UpdateFloor = ({
     }
   };
   const getFloorPlanInputs = () => {
-    console.log("siteLayout", siteLayout);
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     return list?.map((itm) => (
       <tr key="FloorName">
@@ -92,7 +91,6 @@ const UpdateFloor = ({
                 marginTop: "2px",
               }}
               onClick={(e) => {
-                console.log("itm", itm);
                 e?.preventDefault();
                 setShowPdfModal(true);
                 setSelectedPdf(itm?.floorPlanUrl);

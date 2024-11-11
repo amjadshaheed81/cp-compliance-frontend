@@ -163,7 +163,6 @@ const SurveyWaterTemperatureMonitoring = ({
       form.reportValidity();
     }
     for (const data of formData) {
-      console.log("data", data);
       if (!data.completed || data.update) {
         if (isDuplicate(data) && !data.update) {
           toast.error("Duplicate data!!!");

@@ -56,7 +56,6 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     if (siteCheck?.startDate && siteCheck?.repeatFrequency && !siteCheck?.dueDate) {
       // Convert start date to Date object
       const startDate = new Date(siteCheck.startDate);
-      console.log("startDate", startDate);
       // Add repeatFrequency (assumed in days) to start date
       const expiryDate =startDate;
       expiryDate.setDate(startDate.getDate() + getRepeatFrequency(siteCheck.repeatFrequency));
@@ -140,7 +139,6 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     accordions.forEach((accordion, index) => {
       const summary = accordion.querySelector('.MuiAccordionSummary-root');
       const details = accordion.querySelector('.MuiCollapse-root');
-      console.log('details.style.display', summary.style.display, details.style.details);
 
       // Store the original state
       //originalStates[index] = details.style.display !== 'none';

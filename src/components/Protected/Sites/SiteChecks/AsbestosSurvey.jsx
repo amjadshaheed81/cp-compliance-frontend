@@ -68,7 +68,6 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
     }
     data.reportDate = new Date(data.reportDate);
     data.checkId = checkId;
-    console.log(data);
     await post("/api/site-check/asbestos-survey", data);
     toast.success("Inspection data saved");
     setCompleted(true);

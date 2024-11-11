@@ -26,7 +26,6 @@ const UtilityEnergy = ({
     getUtilityAndEnergyDetails(updateSite?.siteId, setValue);
   }, []);
   const saveUtilityAndEnergy = (data) => {
-    console.log("saveAreaAndOccupancy", data);
     setLoader(true);
     saveUtilityAndEnergyDetails(updateSite?.siteId, data);
   };

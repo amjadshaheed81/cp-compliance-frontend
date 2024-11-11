@@ -17,7 +17,6 @@ const GoogleMap = ({ lat, long, postCode, streetViewURL }) => {
   useEffect(() => {
     if (streetViewURL) {
       const data = getLatLong(streetViewURL);
-      console.log("data", data);
       setdefaultCenter({ lat: data?.latitude, lng: data?.longitude });
     }
   }, [streetViewURL]);

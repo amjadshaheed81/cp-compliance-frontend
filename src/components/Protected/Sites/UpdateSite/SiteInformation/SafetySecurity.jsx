@@ -22,13 +22,11 @@ const SafetySecurity = ({
     handleSubmit,
     setValue,
   } = useForm({});
-  console.log("update site ", updateSite);
   useEffect(() => {
     getSafetyAndSecurityDetails(updateSite?.siteId, setValue);
   }, []);
   const saveSafetyAndSecurity = (data) => {
     setLoader(true);
-    console.log("getSafetyAndSecurity", data);
     saveSafetyAndSecurityDetails(updateSite?.siteId, data);
   };
   return (

@@ -43,7 +43,6 @@ const LocalDetails = ({
   });
   const isViewMode = updateSite?.isViewMode;
   useEffect(() => {
-    console.log("updateSite ===>", updateSite);
     if (updateSite) {
       reset({
         localAuthority: updateSite?.localAuthority,

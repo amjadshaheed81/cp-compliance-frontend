@@ -105,7 +105,6 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
     })
     dataToSave.checkId = checkId;
     dataToSave.status = "Open";
-    console.log('dataToSave', dataToSave, quest);
    
     // dataToSave.responseDate = new Date();
     // dataToSave.checkId = checkId;

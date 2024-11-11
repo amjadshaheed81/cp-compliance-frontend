@@ -46,7 +46,6 @@ const UpdateSiteLayout = ({
       if (result.isConfirmed) {
         const url = `/api/site/layout/remove/${selectedNode?.siteId}/${selectedNode?.id}`;
         const res = await deleteSiteNode(url);
-        console.log("res");
         if (res === "Success") {
           toast.success("Node successfully deleted.");
           handleClose();
@@ -84,7 +83,6 @@ const UpdateSiteLayout = ({
     }
   };
   useEffect(() => {
-    console.log("selectedNode", selectedNode);
     setValue("nodeNameValue", selectedNode?.nodeName);
   }, []);
   const {
