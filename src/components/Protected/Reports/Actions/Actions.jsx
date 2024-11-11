@@ -102,7 +102,9 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           >
                             <option value="">All Sites</option>
                             {SiteArea?.map((itm) => (
-                              <option key={itm} value={itm}>{itm}</option>
+                              <option key={itm} value={itm}>
+                                {itm}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -124,7 +126,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           </div>
                         </div>
                       </div>
-                      <div className="row mt-2" style={{ height: 'auto'}}>
+                      <div className="row mt-2" style={{ height: "auto" }}>
                         <p>Select Date Range</p>
                         <div className="col-md-4">
                           <input
@@ -145,7 +147,9 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           />
                         </div>
                       </div>
-                      <TotalAction data={actions} />
+                      <div style={{ height: "300px" }}>
+                        <TotalAction data={actions} />
+                      </div>
                     </div>
                   </div>
                 </div>
