@@ -1,11 +1,10 @@
 import React from "react";
-import { Bar } from "react-chartjs-2";
+import { Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
-  Title,
+  ArcElement,
   Tooltip,
   Legend,
 } from "chart.js";
@@ -14,24 +13,19 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
-  Title,
+  ArcElement,
   Tooltip,
   Legend
 );
 
 const TotalAction = ({ data, managerList }) => {
-  const currentDate = new Date();
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
-
   // Initialize counters
   let outstandingActions = 0;
-  let actionsCompletedPast12Months = 0;
-  let actionsRaisedPast12Months = 0;
+  let actionsCompleted = 0;
+  let actionsRaised = 0;
 
   // Loop through data to calculate totals
-  data.forEach((item) => {
+  data?.forEach((item) => {
     const startDate = new Date(item.startDate);
     const dueDate = new Date(item.dueDate);
 
@@ -40,18 +34,14 @@ const TotalAction = ({ data, managerList }) => {
       outstandingActions += 1;
     }
 
-    // Calculate actions completed in the past 12 months
-    if (
-      item.status === "Done" &&
-      dueDate >= oneYearAgo &&
-      dueDate <= currentDate
-    ) {
-      actionsCompletedPast12Months += 1;
+    // Calculate actions completed (no time restriction)
+    if (item.status === "Done") {
+      actionsCompleted += 1;
     }
 
-    // Calculate actions raised in the past 12 months
-    if (startDate >= oneYearAgo && startDate <= currentDate) {
-      actionsRaisedPast12Months += 1;
+    // Calculate actions raised (no time restriction)
+    if (startDate) {
+      actionsRaised += 1;
     }
   });
 
@@ -59,16 +49,16 @@ const TotalAction = ({ data, managerList }) => {
   const chartData = {
     labels: [
       "Outstanding Actions",
-      "Completed in Past 12 Months",
-      "Raised in Past 12 Months",
+      "Completed Actions",
+      "Raised Actions",
     ],
     datasets: [
       {
         label: "Actions",
         data: [
           outstandingActions,
-          actionsCompletedPast12Months,
-          actionsRaisedPast12Months,
+          actionsCompleted,
+          actionsRaised,
         ],
         backgroundColor: [
           "rgba(255, 99, 132, 0.8)",
@@ -93,8 +83,6 @@ const TotalAction = ({ data, managerList }) => {
       tooltip: {
         callbacks: {
           label: function (context) {
-            // Get the current category's data count
-            const categoryIndex = context.dataIndex;
             const actionCount = context.raw;
 
             // Create an array to store all action details
@@ -104,32 +92,14 @@ const TotalAction = ({ data, managerList }) => {
               `Yellow ${item.riskScoreYellow || 0}, Green ${item.riskScoreGreen || 0}`
             ));
 
-            // Prepend the total count to the action details
             return [`Total Actions: ${actionCount}`, ...actionDetails];
           },
         },
       },
     },
-    scales: {
-      x: {
-        stacked: false,
-        title: {
-          display: false,
-          text: "Categories",
-        },
-      },
-      y: {
-        stacked: false,
-        title: {
-          display: false,
-          text: "Action Count",
-        },
-        beginAtZero: true,
-      },
-    },
   };
 
-  return <Bar data={chartData} options={options} />;
+  return <Pie data={chartData} options={options} />;
 };
 
 export default TotalAction;

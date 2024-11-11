@@ -85,6 +85,11 @@ const MonthWiseCheckChart = ({ data }) => {
         },
         beginAtZero: true,
         stacked: true, // Enable stacking
+        ticks: {
+          callback: function (value) {
+            return Math.floor(value); // Remove decimals
+          },
+        },
       },
     },
   };
