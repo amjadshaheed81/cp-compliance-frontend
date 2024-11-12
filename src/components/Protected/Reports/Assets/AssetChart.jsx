@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { showLoader, hideLoader } from "js-loader-fn";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Pie } from "react-chartjs-2";
 import { get } from "../../../../api";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { Switch } from "@mui/material";
 import DateRangeChart from "./DateRangeChart";
 import DateRangeChartQuantity from "./DateRangeChartQuantity";
 import CostsBySite from "./CostsBySite";
+import TotalAssetsPieChart from "./TotalAssetsPieChart";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
 
 const AssetChart = ({ siteSelectedForGlobal }) => {
-  const [dateRangeData, setDateRange] = useState([]);
   const [chartResponse, setChartResponse] = useState();
   const [state, setState] = useState({
     selectedArea: "",
@@ -21,17 +18,6 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
   });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [chartData, setChartData] = useState({
-    labels: ["General", "Doors", "PAT", "PFP"],
-    datasets: [
-      {
-        data: [0, 0, 0, 0],
-        backgroundColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
-        borderColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
-        borderWidth: 1,
-      },
-    ],
-  });
 
   useEffect(() => {
     getSiteChartData();
@@ -71,22 +57,6 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
       const newUrl = appendParams(url, params);
       const res = await get(newUrl);
       setChartResponse(res);
-      setChartData({
-        labels: ["General", "Doors", "PAT", "PFP"],
-        datasets: [
-          {
-            data: [
-              res?.genral || 0,
-              res?.door || 0,
-              res?.pat || 0,
-              res?.pfp || 0,
-            ],
-            backgroundColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
-            borderColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
-            borderWidth: 1,
-          },
-        ],
-      });
       hideLoader();
     } catch (e) {
       hideLoader();
@@ -155,22 +125,12 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
         </div>
       </div>
       <div className="col-md-6 fs-5 mt-2">
-        Asset Type{" "}
-        <span className="badge bg-light text-primary">
-          Total Assets:{" "}
-          {(chartResponse?.door || 0) +
-            (chartResponse?.genral || 0) +
-            (chartResponse?.pat || 0) +
-            (chartResponse?.pfp || 0)}
-        </span>
         <div style={{ height: "250px" }}>
-          <Pie
-            data={chartData}
-            options={{
-              plugins: {
-                title: { display: false },
-              },
-            }}
+          <TotalAssetsPieChart
+            general={chartResponse?.genral || 0}
+            doors={chartResponse?.door || 0}
+            pat={chartResponse?.pat || 0}
+            pfp={chartResponse?.pfp || 0}
           />
         </div>
       </div>
