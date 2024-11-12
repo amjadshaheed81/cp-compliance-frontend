@@ -36,7 +36,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [actionSurvey, setActionSurvey] = useState();
   const [openReading, setOpenReading] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
-  const site = JSON.parse(localStorage.getItem("site"));
+  // const site = JSON.parse(localStorage.getItem("site"));
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
   const [checked, setChecked] = useState(true);
@@ -157,7 +157,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   useEffect(() => {
-    getEnergyCost(false);
+    getEnergyCost(true);
   }, [siteSelectedForGlobal]);
 
   const handleFileUploadReading = (event) => {
@@ -296,7 +296,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       form.reportValidity();
     }
     const body = formData;
-    body.siteId = site.siteId;
+    body.siteId = siteSelectedForGlobal?.siteId;
     const dupIdx = energyCost.findIndex((e) => e.reference === body.reference);
     if (dupIdx >= 0) {
       toast.error("Meter Reference already exist");
@@ -309,14 +309,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   const getEnergyCost = async (isAll) => {
-    if (!site?.siteId) {
+    if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed....");
       return;
     }
     setIsLoading(true);
     const energyCost = isAll
       ? await get("/api/energy/survey/all")
-      : await get("/api/energy/site/survey/" + site?.siteId);
+      : await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
     energyCost.forEach((energy) => {
       const dates = energy.costList.map((c) => new Date(c.fromDate));
       const minDate =
@@ -344,7 +344,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
 
   const saveCost = async (data) => {
     data.submittedUserId = loggedInUserData?.id;
-    data.siteId = site.siteId;
+    data.siteId = siteSelectedForGlobal?.siteId;
     await post("/api/energy/cost", data);
     getEnergyCost();
   };
@@ -352,7 +352,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const saveReading = async (data) => {
     if (data) {
       data.submittedUserId = loggedInUserData?.id;
-      data.siteId = site.siteId;
+      data.siteId = siteSelectedForGlobal?.siteId;
       await post("/api/energy/reading", data);
       getEnergyCost();
     }

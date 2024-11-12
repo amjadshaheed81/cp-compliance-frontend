@@ -1,97 +1,63 @@
-import React, { useEffect, useState } from "react";
-import { Pie } from "react-chartjs-2";
-import "chart.js/auto";
+import React from "react";
+import ReactECharts from "echarts-for-react";
 
 const PieChartContracts = ({ data }) => {
-  const [chartData, setChartData] = useState({
-    labels: [],
-    datasets: [
-      {
-        label: "Total Budget by Category",
-        data: [],
-        backgroundColor: [
-          "#3c50e0", "#E64A19", "#388E3C", "#FFC107", "#8E24AA", "#00796B"
-        ],
-        borderColor: "#ffffff",
-        borderWidth: 2,
-      },
-    ],
-  });
-
-  const [categoryDetails, setCategoryDetails] = useState({});
-
-  useEffect(() => {
-    processChartData();
-  }, [data]);
-
   const processChartData = () => {
     const categoryBudget = {};
-    const contractsByCategory = {};
 
     data?.forEach((item) => {
       if (item?.status === "Active" && item?.budget) {
         const category = item?.category;
-
-        if (!categoryBudget[category]) {
-          categoryBudget[category] = 0;
-          contractsByCategory[category] = [];
-        }
-        categoryBudget[category] += parseFloat(item?.budget || 0);
-        contractsByCategory[category].push({
-          name: item?.summary,
-          budget: parseFloat(item?.budget || 0),
-        });
+        categoryBudget[category] = (categoryBudget[category] || 0) + parseFloat(item.budget);
       }
     });
 
-    setChartData({
-      labels: Object.keys(categoryBudget),
-      datasets: [
-        {
-          label: "Total Budget by Category",
-          data: Object.values(categoryBudget),
-          backgroundColor: [
-            "#1E3A8A",
-            "#2563EB",
-            "#60A5FA",
-            "#93C5FD",
-            "#0A2540",
-            "#0077B6",
-            "#00B4D8",
-          ],
-          borderColor: "#ffffff",
-          borderWidth: 2,
-        },
-      ],
-    });
-    setCategoryDetails(contractsByCategory);
+    return Object.entries(categoryBudget).map(([name, value]) => ({ name, value }));
   };
+
+  const chartData = processChartData();
 
   const options = {
-    responsive: true,
-    plugins: {
-      title: {
-        display: true,
-        text: "Active Contract Costs",
-      },
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            const category = context.label;
-            const contracts = categoryDetails[category] || [];
-            
-            const details = contracts.map(
-              (contract) => `• ${contract.name}: £${contract.budget.toFixed(2)}`
-            );
-
-            return [`Total: £${context.raw}`, ...details];
+    title: {
+      text: "Active Contract Costs",
+      left: "center",
+      top: "top",
+    },
+    tooltip: {
+      trigger: "item",
+      formatter: "{a} <br/>{b}: £{c} ({d}%)",
+    },
+    color: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD", "#0A2540", "#0077B6", "#CAF0F8"],
+    series: [
+      {
+        name: "Total Budget by Category",
+        type: "pie",
+        radius: [30, 110],
+        roseType: "radius",
+        itemStyle: {
+          borderRadius: 5,
+          borderColor: "#fff",
+          borderWidth: 2,
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: "rgba(0, 0, 0, 0.5)",
+        },
+        label: {
+          show: true,
+          formatter: "{b}: £{c}",
+        },
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 20,
+            shadowColor: "rgba(0, 0, 0, 0.8)",
           },
         },
+        data: chartData,
       },
-    },
+    ],
   };
 
-  return <Pie data={chartData} options={options} />;
+  return <ReactECharts option={options} style={{ height: 400, width: "100%" }} />;
 };
 
 export default PieChartContracts;

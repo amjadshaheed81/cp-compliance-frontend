@@ -98,9 +98,9 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
               <div className="">
                 <div className="">
                   <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-4 mt-2 mb-4">
+                    <div className="col-md-12 mt-2 mb-4">
                       <h5>Statutory Register</h5>
-                      <div>
+                      <div className="col-md-6">
                         <label>Select Requirement to check all sites</label>
                         <select
                           name="requirements"
