@@ -422,7 +422,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     body.dueDate = body?.dueDate ? new Date(body.dueDate) : "";
     body.startDate = body?.startDate ? new Date(body.startDate) : "";
     const sitecheckres = await post("/api/site-check/", body);
-    body.checkId = sitecheckres?.checkId;
+    body.checkId = sitecheckres?.data?.checkId;
     if(body.startDate) {
       setCalenderEvents(body);
     }
