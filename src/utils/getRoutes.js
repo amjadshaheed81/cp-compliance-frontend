@@ -119,7 +119,6 @@ export const getRoutes = () => {
         ROLE.SITE_ACTION_MANAGER,
         ROLE.SITE_USERS,
         ROLE.CARE_TAKER,
-        ROLE.CONTRACTOR,
       ],
     },
     {
@@ -142,6 +141,13 @@ export const getRoutes = () => {
     {
       path: "/pre-actions",
       element: <PreActions />,
+      allowedRoles: [
+        ROLE.ADMIN,
+        ROLE.MANAGER,
+        ROLE.SITE_ACTION_MANAGER,
+        ROLE.SITE_USERS,
+        ROLE.CARE_TAKER,
+      ],
     },
     {
       path: "/actions",
@@ -213,6 +219,7 @@ export const getRoutes = () => {
     {
       path: "/edit-profile",
       element: <EditProfile />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {
       path: "/notifications",
