@@ -1,7 +1,6 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import moment from "moment";
 import { ROLE } from "../../../../Constant/Role";
 import Header from "../../../common/Header/Header";
@@ -27,6 +26,7 @@ import {
   TextField,
 } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
+import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 
 const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const datePickerRef = useRef(null);
@@ -54,15 +54,17 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
     );
-    setManagerList(data?.users?.sort((a, b) => {
-      if (a.name < b.name) {
+    setManagerList(
+      data?.users?.sort((a, b) => {
+        if (a.name < b.name) {
           return -1; // a comes before b
-      }
-      if (a.name > b.name) {
-          return 1;  // b comes before a
-      }
-      return 0; // names are equal
-  }) || []);
+        }
+        if (a.name > b.name) {
+          return 1; // b comes before a
+        }
+        return 0; // names are equal
+      }) || []
+    );
   };
 
   const [itemsPerPage] = useState(7);
@@ -413,7 +415,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       form.reportValidity();
     }
     const body = formData;
-    if(body?.type === "Assessment") {
+    if (body?.type === "Assessment") {
       body.category = body.subType;
     }
     body.siteId = site.siteId;
@@ -437,7 +439,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       eventType: `${body.type} ${body.subType}`,
       userId: loggedInUserData?.id,
       includeCompanyUsers: false,
-      section: `/site-checks/${body.checkId}/update`
+      section: `/site-checks/${body.checkId}/update`,
     };
     put("/api/user/calendar", calenderBody);
     calenderBody.userId = body.assistantUserID;
@@ -676,7 +678,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                               </span>
                             </th>
                             <th scope="col" style={{ width: "150px" }}>
-                              {moment(action?.dueDate).format("DD-MM-YYYY")}
+                              {action?.dueDate
+                                ? moment(action?.dueDate).format("DD-MM-YYYY")
+                                : getSiteCheckDueDate(action)}
                             </th>
                             <th scope="col">
                               <Chip
@@ -816,29 +820,30 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       </select>
                     </div>
                   </Grid>
-                  {formData?.type !== "Assessment" && formData?.type !== "Audit" &&(
-                    <Grid sm={4}>
-                      <div style={{ margin: "10px" }}>
-                        <label htmlFor="category" name="category">
-                          Category
-                        </label>
-                        <select
-                          required
-                          name="category"
-                          value={formData?.category}
-                          disabled={formData?.subType?.length === 0}
-                          className="form-control form-select"
-                          id="category"
-                          onChange={handleInputChange}
-                        >
-                          <option value="">Select Category</option>
-                          {catoptions.map((t) => (
-                            <option value={t}>{t}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </Grid>
-                  )}
+                  {formData?.type !== "Assessment" &&
+                    formData?.type !== "Audit" && (
+                      <Grid sm={4}>
+                        <div style={{ margin: "10px" }}>
+                          <label htmlFor="category" name="category">
+                            Category
+                          </label>
+                          <select
+                            required
+                            name="category"
+                            value={formData?.category}
+                            disabled={formData?.subType?.length === 0}
+                            className="form-control form-select"
+                            id="category"
+                            onChange={handleInputChange}
+                          >
+                            <option value="">Select Category</option>
+                            {catoptions.map((t) => (
+                              <option value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </Grid>
+                    )}
                   <Grid sm={4}>
                     <div style={{ margin: "10px" }}>
                       <DatePicker
@@ -1036,10 +1041,10 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   </Grid>
 
                   <Grid sm={4}>
-                    {((formData.type === "Audit" ||
+                    {(formData.type === "Audit" ||
                       (formData.type === "Survey" &&
-                        formData.subType === "Water")) ||
-                        (formData.type === "Inspection")) && (
+                        formData.subType === "Water") ||
+                      formData.type === "Inspection") && (
                       <div style={{ margin: "10px" }}>
                         <label htmlFor="folder" name="folder">
                           Repeats

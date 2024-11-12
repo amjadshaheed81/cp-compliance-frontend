@@ -143,7 +143,6 @@ const Sites = ({
   };
   const applyFilters = () => {
     let filteredSites = sites;
-
     // Apply text search filter
     if (searchTerm) {
       filteredSites = filteredSites.filter((site) =>
@@ -198,7 +197,7 @@ const Sites = ({
                     className="form-control form-select"
                     value={selectedArea}
                     onChange={(e) => {
-                      setSelectedArea(e.target.value);
+                      setSelectedArea(e.target.value.replace('%26','&'));
                     }}
                   >
                     <option value="">Select Area</option>

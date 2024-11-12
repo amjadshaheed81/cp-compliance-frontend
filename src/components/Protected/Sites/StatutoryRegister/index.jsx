@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 import FaSave from "@mui/icons-material/Check";
 import { showLoader, hideLoader } from "js-loader-fn";
 import TagStatutory from "./TagStatutory";
+import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 
 export const findAssetWithNearestPatNextDate = (assets) => {
   let nearestAsset = null;
@@ -378,27 +379,32 @@ const StatutoryRegister = ({
       if (row?.requirement == "Water Risk Assessment") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.startDate,
-          matchedCheckReq.dueDate
+          matchedCheckReq.dueDate,
+          matchedCheckReq,
         );
       } else if (row?.requirement == "Water Temperature Monitoring") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.startDate,
-          matchedCheckReq.dueDate
+          matchedCheckReq.dueDate,
+          matchedCheckReq,
         );
       } else if (row?.requirement == "Shower Head Cleaning") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.startDate,
-          matchedCheckReq.dueDate
+          matchedCheckReq.dueDate,
+          matchedCheckReq,
         );
       } else if (row?.subType == "PAT / Microwave Testing") {
         return getStartAndExpiryDateRow(
           matchedCheckReq.patDate,
-          matchedCheckReq.patNextDate
+          matchedCheckReq.patNextDate,
+          matchedCheckReq,
         );
       } else {
         return getStartAndExpiryDateRow(
           matchedCheck.startDate,
-          matchedCheck.dueDate
+          matchedCheck.dueDate,
+          matchedCheckReq,
         );
       }
     }
@@ -407,7 +413,7 @@ const StatutoryRegister = ({
   };
 
   // Helper function to create table row with start and expiry dates
-  const getStartAndExpiryDateRow = (startDate, dueDate) => {
+  const getStartAndExpiryDateRow = (startDate, dueDate, action) => {
     return (
       <tr>
         {[...Array(3)].map((_, idx) => (
@@ -417,10 +423,10 @@ const StatutoryRegister = ({
           />
         ))}
         <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
-          {moment(startDate).format("DD-MM-YYYY")}
+          {startDate ? moment(startDate).format("DD-MM-YYYY") : "--"}
         </th>
         <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
-          {moment(dueDate).format("DD-MM-YYYY")}
+          {getSiteCheckDueDate(action)}
         </th>
         {[...Array(2)].map((_, idx) => (
           <th
