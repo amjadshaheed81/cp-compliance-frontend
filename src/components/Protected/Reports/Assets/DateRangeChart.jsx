@@ -22,8 +22,8 @@ const DateRangeChart = ({ data }) => {
       {
         label: "Total Cost of Purchases (£)",
         data: data?.map((entry) => entry?.y), // y-values for the dataset
-        backgroundColor: "#50e03c",
-        borderColor: "#50e03c",
+        backgroundColor: "#3c50e0",
+        borderColor: "#3c50e0",
         borderWidth: 1,
       },
     ],

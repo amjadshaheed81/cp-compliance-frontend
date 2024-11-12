@@ -51,7 +51,13 @@ const PieChartContracts = ({ data }) => {
           label: "Total Budget by Category",
           data: Object.values(categoryBudget),
           backgroundColor: [
-            "#3c50e0", "#E64A19", "#388E3C", "#FFC107", "#8E24AA", "#00796B"
+            "#1E3A8A",
+            "#2563EB",
+            "#60A5FA",
+            "#93C5FD",
+            "#0A2540",
+            "#0077B6",
+            "#00B4D8",
           ],
           borderColor: "#ffffff",
           borderWidth: 2,

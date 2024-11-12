@@ -40,12 +40,12 @@ const TotalRequirements = ({ requirement, data }) => {
         label: "Duties Summary",
         data: [dutiesMet, dutiesNotMet],
         backgroundColor: [
-          "rgba(0, 123, 255, 0.8)", // Dark Blue for Duties Met
-          "rgba(220, 53, 69, 0.8)", // Dark Red for Duties Not Met
+          "#1E3A8A", // Dark Blue for Duties Met
+          "#2563EB", // Dark Red for Duties Not Met
         ],
         borderColor: [
-          "rgba(0, 123, 255, 1)", // Dark Blue border for Duties Met
-          "rgba(220, 53, 69, 1)", // Dark Red border for Duties Not Met
+          "#1E3A8A", // Dark Blue for Duties Met
+          "#2563EB", // Dark Red for Duties Not Met
         ],
       },
     ],

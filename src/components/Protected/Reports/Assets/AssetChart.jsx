@@ -26,8 +26,8 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
     datasets: [
       {
         data: [0, 0, 0, 0],
-        backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
-        borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
+        backgroundColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
+        borderColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
         borderWidth: 1,
       },
     ],
@@ -81,8 +81,8 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
               res?.pat || 0,
               res?.pfp || 0,
             ],
-            backgroundColor: ["#3c50e0", "#0a0338", "#6b7c93"],
-            borderColor: ["#3c50e0", "#0a0338", "#6b7c93"],
+            backgroundColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
+            borderColor: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD"],
             borderWidth: 1,
           },
         ],
@@ -163,7 +163,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
             (chartResponse?.pat || 0) +
             (chartResponse?.pfp || 0)}
         </span>
-        <div>
+        <div style={{ height: "250px" }}>
           <Pie
             data={chartData}
             options={{

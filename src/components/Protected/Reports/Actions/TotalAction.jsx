@@ -45,9 +45,9 @@ const TotalAction = ({ data }) => {
         label: "Actions",
         data: [completedActions, reportedActions, reassessedActions],
         backgroundColor: [
-          "rgba(75, 192, 192, 0.8)", // Completed
-          "rgba(255, 159, 64, 0.8)", // Reported
-          "rgba(153, 102, 255, 0.8)", // Reassessed
+          "#1E3A8A",
+          "#2563EB",
+          "#60A5FA",
         ],
       },
     ],

@@ -795,6 +795,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                   <th scope="col">To Date</th>
                   <th scope="col">Reading</th>
                   <th scope="col">Cost (GBP)</th>
+                  <th scope="col">Site Name</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -848,6 +849,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                               ?.toFixed(2)
                           )}
                         </th>
+                        <th>{action?.siteName || "--"}</th>
 
                         <th scope="col" style={{ width: "250px" }}>
                           <Tooltip title={`View Energy Cost`} arrow>
