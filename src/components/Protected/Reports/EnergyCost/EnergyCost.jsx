@@ -88,6 +88,8 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     settypeoptions(lovtypes.map((l) => l.lovValue));
   };
 
+ 
+
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
     searchField: "",
@@ -325,6 +327,13 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     setIsLoading(false);
   };
 
+  const handleAllSitesToggle = () => {
+    setState((prevState) => ({
+      ...prevState,
+      isIndividual: !prevState.isIndividual,
+    }));
+  };
+
   const saveCost = async (data) => {
     data.submittedUserId = loggedInUserData?.id;
     data.siteId = site.siteId;
@@ -340,8 +349,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       getEnergyCost();
     }
   };
+  
   const handleChange = (event) => {
-    setChecked(event.target.checked);
+    setState((prevState) => ({
+      ...prevState,
+      isIndividual: event.target.checked,
+    }));
     if (event.target.checked) {
       getEnergyCost(false);
     } else {
@@ -574,19 +587,21 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     name="area"
                     className="form-control form-select"
                     id="area"
+                    disabled={state.isIndividual}
                     onChange={handleAreaChange}
                     value={state.selectedArea}
                   >
-                    <option value="">Area</option>
+                    <option value="">All Sites</option>
                     {SiteArea?.map((itm) => (
                       <option value={itm.replace('&','%26')}>{itm}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col">
-                  <label>All</label>
+                  
+                
                   <Switch
-                    checked={checked}
+                    checked={state.isIndividual}
                     onChange={handleChange}
                     inputProps={{ "aria-label": "controlled" }}
                   />
