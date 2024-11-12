@@ -925,7 +925,7 @@ const SurveyWaterTemperatureMonitoring = ({
                             {siteLayout
                               .filter((site) => site.nodeType === "floor")
                               .map((site) => (
-                                <option key={site.id} value={site.id}>
+                                <option key={site.id} value={site.nodeName}>
                                   {site.nodeName}{" "}
                                 </option>
                               ))}
@@ -944,7 +944,7 @@ const SurveyWaterTemperatureMonitoring = ({
                             {siteLayout
                               .filter((site) => site.nodeType === "room")
                               .map((site) => (
-                                <option key={site.id} value={site.id}>
+                                <option key={site.id} value={site.nodeName}>
                                   {site.nodeName}{" "}
                                 </option>
                               ))}
