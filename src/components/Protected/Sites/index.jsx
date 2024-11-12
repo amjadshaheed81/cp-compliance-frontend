@@ -319,7 +319,7 @@ const Sites = ({
                         </button>{" "}
                       </Tooltip>
                       &nbsp;
-                      {loggedInUserData?.userType === "External" &&
+                      {/* {loggedInUserData?.userType === "External" &&
                         loggedInUserData?.role !== ROLE.ADMIN && (
                           <Tooltip title={`Edit ${itm?.siteName}`} arrow>
                             <button
@@ -336,7 +336,7 @@ const Sites = ({
                               <i className="fas fa-pen"></i>
                             </button>{" "}
                           </Tooltip>
-                        )}
+                        )} */}
                       {loggedInUserData?.role === ROLE.ADMIN && (
                         <Fragment>
                           <Tooltip title={`Edit ${itm?.siteName}`} arrow>
