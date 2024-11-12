@@ -799,11 +799,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 <tr>
                   <th scope="col">Meter Reference</th>
                   <th scope="col">Budget Category</th>
+                  <th scope="col">Site Name</th>
                   <th scope="col">From Date</th>
                   <th scope="col">To Date</th>
                   <th scope="col">Reading</th>
                   <th scope="col">Cost (GBP)</th>
-                  <th scope="col">Site Name</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -827,6 +827,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                       <tr key={action?.id}>
                         <th scope="col">{action?.reference}</th>
                         <th scope="col">{action?.budgetCategory}</th>
+                        <th>{getSiteName(action?.siteId)}</th>
                         <th scope="col" style={{ width: "150px" }}>
                           {action?.minDate
                             ? moment(action?.minDate).format("DD/MM/YYYY")
@@ -857,8 +858,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                               ?.toFixed(2)
                           )}
                         </th>
-                        <th>{getSiteName(action?.siteId)}</th>
-
                         <th scope="col" style={{ width: "250px" }}>
                           <Tooltip title={`View Energy Cost`} arrow>
                             <button
