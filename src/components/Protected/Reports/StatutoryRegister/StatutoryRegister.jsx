@@ -115,7 +115,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           ))}
                         </select>
                       </div>
-                      <div style={{ height: "350px" }} className="mt-2">
+                      <div style={{ height: "350px" }} className="mt-4">
                         <TotalRequirements
                           requirement={state.selectedRequirements}
                           data={allstatutory}

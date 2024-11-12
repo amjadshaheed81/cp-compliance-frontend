@@ -145,7 +145,7 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           />
                         </div>
                       </div>
-                      <div style={{ height: "300px" }}>
+                      <div style={{ height: "300px" }} className="mt-4">
                         <TotalAction data={actions} />
                       </div>
                     </div>
