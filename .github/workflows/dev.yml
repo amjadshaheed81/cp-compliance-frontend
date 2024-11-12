@@ -1,0 +1,111 @@
+name: BETA VM Deployment 
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+env:
+  HOST: cpc-dev.ukwest.cloudapp.azure.com
+  USERNAME: github-user
+  PORT: 22
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build
+    env:
+      CI: false
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.20.2
+          cache: 'npm'
+
+      - run: npm install
+      - run: npm run build
+        env: 
+          CI: false
+
+      - name: Set outputs
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: build
+          retention-days: 2
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_static
+          path: build/static
+          retention-days: 2
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: src
+          path: src
+          retention-days: 2
+
+  Deployment:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+
+      - name: copy build via ssh password
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.BETA_VM_PASSWORD }}
+          port: ${{ env.PORT }}
+          source: "*"
+          target: /var/www/html/
+
+      - name: clean build files
+        run: rm -rf *
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build_static
+
+      - name: copy build_static via ssh password
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.BETA_VM_PASSWORD }}
+          port: ${{ env.PORT }}
+          source: "*"
+          target: /var/www/html/static/
+
+      - name: clean build_static files
+        run: rm -rf *
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: src
+
+      - name: copy file via ssh password
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.BETA_VM_PASSWORD }}
+          port: ${{ env.PORT }}
+          source: "*"
+          target: /var/www/html/src/
