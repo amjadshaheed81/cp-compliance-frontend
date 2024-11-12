@@ -822,6 +822,7 @@ const EditAction = ({
                         </Button>
                         &nbsp;&nbsp;
                         <Button
+                          style={{display: isViewRoleForActions(loggedInUserData) ? "none" : "" }}
                           onClick={(e) => saveAction(e)}
                           type="button"
                           className="bg-primary text-white"

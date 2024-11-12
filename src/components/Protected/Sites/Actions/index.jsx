@@ -260,14 +260,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                     )}
                   </th>
                   <th scope="col">Status</th>
-                  {(loggedInUserData?.role === ROLE.ADMIN ||
-                    loggedInUserData?.role === ROLE.MANAGER ||
-                    loggedInUserData?.role === ROLE.SITE_ACTION_MANAGER ||
-                    loggedInUserData?.role === ROLE.CARE_TAKER ||
-                    loggedInUserData?.role === ROLE.CONTRACTOR ||
-                    loggedInUserData?.role === ROLE.TRADESMAN) && (
-                    <th scope="col">Actions</th>
-                  )}
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
