@@ -40,7 +40,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
   const [checked, setChecked] = useState(true);
-  const [site1EnergyReadingData, setSite1EnergyReadingData] = useState([]);
+  const [allSites, setAllSites] = useState([]);
   const [site2EnergyReadingData, setSite2EnergyReadingData] = useState([]);
   const [site1EnergyCostData, setSite1EnergyCostData] = useState([]);
   const [site2EnergyCostData, setSite2EnergyCostData] = useState([]);
@@ -59,8 +59,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
 
   useEffect(() => {
     gettypeoptions();
+    getAllSites();
   }, []);
-
+  const getAllSites = async () => {
+    const res = await get("/api/site/site/all?sort=asc&sortName=siteName");
+    setAllSites(res);
+  }
   const customColumnNamesCost = ["reference", "fromDate", "toDate", "cost"];
   const customColumnNamesReading = [
     "reference",
@@ -68,6 +72,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     "readingValue",
     "readingUnit",
   ];
+
+  const getSiteName = (siteId) => {
+    return allSites?.filter(site => site?.siteId === siteId)?.[0]?.siteName || "--";
+  }
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -849,7 +857,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                               ?.toFixed(2)
                           )}
                         </th>
-                        <th>{action?.siteName || "--"}</th>
+                        <th>{getSiteName(action?.siteId)}</th>
 
                         <th scope="col" style={{ width: "250px" }}>
                           <Tooltip title={`View Energy Cost`} arrow>
