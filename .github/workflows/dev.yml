@@ -1,10 +1,8 @@
-name: BETA VM Deployment 
+name: DEV VM Deployment 
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
 env:
   HOST: cpc-dev.ukwest.cloudapp.azure.com
   USERNAME: github-user
