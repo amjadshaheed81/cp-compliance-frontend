@@ -19,7 +19,8 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
     getData();
   }, [])
   const getData = async () => {
-    const data = await get("/api/user/calendar/events??siteId="+siteSelectedForGlobal?.siteId??0);
+    let data = await get("/api/user/calendar/events??siteId="+siteSelectedForGlobal?.siteId??0);
+    data = filterDuplicates(data);
     const event = data.map(d => {
       return {
         title: JSON.stringify([
@@ -34,6 +35,20 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
     })
     setData(event);
   }
+
+  const filterDuplicates = (arr) => {
+    const uniqueSet = new Set();
+    return arr.filter(item => {
+        const key = `${item.section}-${item.eventType}-${item.siteId}-${item.startDate}-${item.endDate}-${item.shortText}`;
+        
+        if (uniqueSet.has(key)) {
+            return false;
+        } else {
+            uniqueSet.add(key); 
+            return true;
+        }
+    });
+}
   
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);

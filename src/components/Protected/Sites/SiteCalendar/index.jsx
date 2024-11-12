@@ -36,7 +36,8 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
            date.getFullYear() === today.getFullYear();
   }
   const getData = async () => {
-    const data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
+    let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
+    data = filterDuplicates(data);
     const todays = data.filter(e => isToday(new Date(e.endDate)));
     settodayEvents(todays);
     const event = data.map(d => {
@@ -53,6 +54,21 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     })
     setCalendarEvent(event);
   }
+
+  const filterDuplicates = (arr) => {
+    const uniqueSet = new Set();
+    return arr.filter(item => {
+        const key = `${item.section}-${item.eventType}-${item.siteId}-${item.startDate}-${item.endDate}-${item.shortText}`;
+        
+        if (uniqueSet.has(key)) {
+            return false;
+        } else {
+            uniqueSet.add(key); 
+            return true;
+        }
+    });
+}
+
  
   const [formData, setFormData] = useState({
     searchField: "",
