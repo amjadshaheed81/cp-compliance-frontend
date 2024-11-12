@@ -42,10 +42,10 @@ const TotalAction = ({ data }) => {
         type: "pie",
         radius: "50%",
         data: [
-          { value: completedActions, name: "Completed" },
-          { value: reportedActions, name: "Reported" },
-          { value: reassessedActions, name: "Reassessed" },
-        ],
+          completedActions > 0  ? { value: completedActions, name: "Completed" } : null,
+          reportedActions > 0 ? { value: reportedActions, name: "Reported" } : null,
+          reassessedActions > 0 ? { value: reassessedActions, name: "Reassessed" } : null,
+        ].filter(Boolean),
         color: ["#1E3A8A", "#2563EB", "#60A5FA"], // Custom colors for the chart
         emphasis: {
           itemStyle: {

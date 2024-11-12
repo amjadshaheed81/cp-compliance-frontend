@@ -18,7 +18,7 @@ const TotalRequirements = ({ requirement, data }) => {
   // Prepare options for the ECharts pie chart
   const options = {
     title: {
-      text: `${totalDuties} Duties Status Analysis for Requirement: ${requirement}`,
+      text: totalDuties > 0 ? `${totalDuties} Duties Status Analysis for Requirement: ${requirement}` : `No duties for Requirement: ${requirement}`,
       left: "center",
     },
     tooltip: {
@@ -44,6 +44,7 @@ const TotalRequirements = ({ requirement, data }) => {
     legend: {
       orient: "vertical",
       left: "left",
+      data: ["Duties Met", "Duties Not Met"], // Only show items with data
     },
     color: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD", "#0A2540", "#0077B6", "#CAF0F8"],
     series: [
@@ -52,9 +53,9 @@ const TotalRequirements = ({ requirement, data }) => {
         type: "pie",
         radius: "50%",
         data: [
-          { value: dutiesMet, name: "Duties Met" },
-          { value: dutiesNotMet, name: "Duties Not Met" },
-        ],
+          dutiesMet > 0 ? { value: dutiesMet, name: "Duties Met" } : null,
+          dutiesNotMet > 0 ? { value: dutiesNotMet, name: "Duties Not Met" } : null,
+        ].filter(Boolean), // Remove null values to avoid empty sections
         color: ["#1E3A8A", "#2563EB"], // Custom colors for the chart
         emphasis: {
           itemStyle: {
