@@ -26,7 +26,7 @@ const DashboardNotification = (siteSelectedForGlobal) => {
         actions?.preActions?.filter(
           (a) => a.status === "Pending Action" || a.status === "Closed"
         ) || [];
-      setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
+      //setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
     }
   };
 
