@@ -12,6 +12,7 @@ import { get } from "../../../../api";
 import { getUniqueSitesWithUserCount } from "../../../../utils/getUniqueSitesWithUserCount";
 import BarChart from "./BarChart";
 import { SiteArea } from "../../../../Constant/SiteArea";
+import TotalSites from "./TotalSites";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const SiteCharts = ({
@@ -118,20 +119,14 @@ const SiteCharts = ({
     <div className="row pt-4 pb-4">
       <div className="col-md-4 fs-5">
         Sites By Status{" "}
-        <span class="badge bg-light text-primary">
+        {/* <span class="badge bg-light text-primary">
           Total Sites: {siteChart?.totalSites}
-        </span>
+        </span> */}
         <div>
-          <Pie
-            data={chartData}
-            options={{
-              plugins: {
-                title: {
-                  display: false,
-                  //   text: "Users Gained between 2016-2020",
-                },
-              },
-            }}
+          <TotalSites
+            open={siteChart?.openSites || 0}
+            close={siteChart?.closedSites || 0}
+            sold={siteChart?.soldSites || 0}
           />
         </div>
       </div>
@@ -147,7 +142,9 @@ const SiteCharts = ({
               value={state.selectedArea}
             >
               <option value="">All Sites</option>
-              {SiteArea?.map((itm)=> <option value={itm}>{itm}</option>)}
+              {SiteArea?.map((itm) => (
+                <option value={itm}>{itm}</option>
+              ))}
             </select>
           </div>
           <div className="col-md-4 col-sm-4 mt-2">
@@ -170,7 +167,8 @@ const SiteCharts = ({
         </div>
         Users Per Active Site &nbsp;
         <span class="badge bg-light text-primary">
-          Total Users: {state?.allSites ? users?.length : userschart?.[0]?.totalUsers}
+          Total Users:{" "}
+          {state?.allSites ? users?.length : userschart?.[0]?.totalUsers}
         </span>
         <div>
           <BarChart data={userschart} />
