@@ -25,24 +25,22 @@ export const SiteMenu = [
 
 export const filterMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
-    return GeneralMenu.filter((item) => item !== "Users");
+    return GeneralMenu.filter((item) => item !== "Users" && item !== "Edit Profile");
   }
   return GeneralMenu;
 };
 
-const siteContractsallowedRoles = [
-  ROLE.ADMIN,
+const siteContractsPreActionallowedRoles = [
   ROLE.MANAGER,
   ROLE.SITE_ACTION_MANAGER,
   ROLE.SITE_USERS,
   ROLE.CARE_TAKER,
-  ROLE.CONTRACTOR,
 ];
 
 export const filterSiteMenuItems = (loggedInRole) => {
   if (loggedInRole !== ROLE.ADMIN) {
-    if (!siteContractsallowedRoles.includes(loggedInRole)) {
-      return SiteMenu.filter((item) => item !== "Site Contracts" && item !== "Create Site");
+    if (!siteContractsPreActionallowedRoles.includes(loggedInRole)) {
+      return SiteMenu.filter((item) => item !== "Site Contracts" && item !== "Pre-Action" && item !== "Create Site");
     }
     return SiteMenu.filter(
       (item) => item !== "Create Site"
