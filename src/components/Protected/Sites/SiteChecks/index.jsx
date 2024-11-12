@@ -169,7 +169,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     let dueDateValue = formData?.dueDate;
     if (name === "repeatFrequency") {
       // If repeatFrequency is set and dueDate is not provided
-      const startDate = new Date(formData?.startDate);
+      const startDate = formData?.startDate ? new Date(formData?.startDate) : "";
 
       switch (value) {
         case "Daily":
@@ -187,11 +187,11 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
           );
           break;
         default:
-          dueDateValue = new Date(startDate);
+          dueDateValue = startDate ? new Date(startDate) : "";
           break;
       }
 
-      dueDateValue = dueDateValue.toISOString(); // Convert to ISO string
+      dueDateValue = dueDateValue ? dueDateValue.toISOString() : ""; // Convert to ISO string
       setFormData({
         ...formData,
         [name]: value,
@@ -418,11 +418,11 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     if (body?.type === "Assessment") {
       body.category = body.subType;
     }
-    body.siteId = site.siteId;
-    body.dueDate = new Date(body.dueDate);
-    body.startDate = new Date(body.startDate);
+    body.siteId = site?.siteId;
+    body.dueDate = body?.dueDate ? new Date(body.dueDate) : "";
+    body.startDate = body?.startDate ? new Date(body.startDate) : "";
     const sitecheckres = await post("/api/site-check/", body);
-    body.checkId = sitecheckres.checkId;
+    body.checkId = sitecheckres?.checkId;
     setCalenderEvents(body);
 
     await getSiteChecks();
@@ -884,15 +884,15 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                 break;
                             }
 
-                            dueDateValue = dueDateValue.toISOString(); // Convert to ISO string
+                            dueDateValue =  dueDateValue ? dueDateValue.toISOString() : ""; // Convert to ISO string
                           }
 
                           setFormData({
                             ...formData,
                             dueDate: dueDateValue, // Set the calculated dueDate
-                            startDate: new Date(
+                            startDate: date ? new Date(
                               date.getTime() - date.getTimezoneOffset() * 60000
-                            ).toISOString(),
+                            ).toISOString() : "",
                           });
                         }}
                       />
