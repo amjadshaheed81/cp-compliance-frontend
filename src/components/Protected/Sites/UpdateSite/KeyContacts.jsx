@@ -111,6 +111,7 @@ const KeyContacts = ({
                       style={{
                         display: isViewMode ? "none" : "",
                       }}
+                      disabled={!isManagerAdminLogin(loggedInUserData)}
                       className="btn btn-sm btn-light"
                       onClick={() => deleteKeyContactClick(row)}
                     >
