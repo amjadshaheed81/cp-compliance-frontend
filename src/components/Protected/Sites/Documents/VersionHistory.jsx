@@ -76,7 +76,8 @@ const VersionHistory = ({
        
     
     try {
-      const oldfileExtension = fileVerions?.[0]?.name?.split(".")?.pop();
+      const splitted = fileVerions?.[0]?.name?.split(".");
+      const oldfileExtension = splitted.length > 1 ? splitted.pop() : "pdf";
       
       const fileExtension = formData?.fileUpload?.[0]?.name?.split(".")?.pop();
       if(oldfileExtension  !== fileExtension) {
