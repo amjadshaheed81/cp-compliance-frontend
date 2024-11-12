@@ -40,7 +40,7 @@ export const getSiteCheckDueDate = (siteCheck) => {
     return moment(nextDueDate).format("DD-MM-YYYY");
   } else {
     return siteCheck?.dueDate
-      ? String(siteCheck.dueDate).substring(0, 10)
+      ? moment(siteCheck.dueDate).format("DD-MM-YYYY")
       : "--";
   }
 };
