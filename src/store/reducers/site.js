@@ -505,6 +505,7 @@ const reducer = (state = initialState, action) => {
     case GET_DOCUMENTS_ROOT_FOLDER_FAILURE:
       return {
         ...state,
+        isLoading: false,
         rootFolderFailure: "",
       };
     case GET_DOCUMENTS_SUB_FOLDER_FILES:
