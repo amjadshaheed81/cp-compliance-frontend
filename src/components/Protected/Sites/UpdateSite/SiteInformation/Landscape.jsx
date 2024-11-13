@@ -54,7 +54,7 @@ const Landscape = ({
               id="hardLandScaping"
               className="form-control form-select"
               {...register("hardLandScaping")}
-              disabled={(isViewMode || !isManagerAdminLogin(loggedInUserData))}
+              disabled={isViewMode || !isManagerAdminLogin(loggedInUserData)}
             >
               {yesNoOptions.map((itm) => (
                 <option value={itm.value}>{itm.label}</option>
@@ -205,14 +205,17 @@ const Landscape = ({
             Demolition Site or Vacant Land Adjacent
           </label>
           <div>
-            <input
-              type="string"
+            <select
               name="vacantLandAdjacent"
               id="vacantLandAdjacent"
-              className="form-control"
+              className="form-control form-select"
               {...register("vacantLandAdjacent")}
               disabled={isViewMode}
-            />
+            >
+              {yesNoOptions.map((itm) => (
+                <option value={itm.value}>{itm.label}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div>
@@ -220,14 +223,18 @@ const Landscape = ({
             Risk of Flooding
           </label>
           <div>
-            <input
-              type="string"
+          <select
               name="floodRisk"
               id="floodRisk"
-              className="form-control"
+              className="form-control form-select"
               {...register("floodRisk")}
               disabled={isViewMode}
-            />
+            >
+              <option value=""></option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
           </div>
         </div>
         <div>
@@ -239,20 +246,26 @@ const Landscape = ({
             Railway Line Adjacent
           </label>
           <div>
-            <input
-              type="string"
+            <select
               name="railwayLineAdjacent"
               id="railwayLineAdjacent"
-              className="form-control"
+              className="form-control form-select"
               {...register("railwayLineAdjacent")}
               disabled={isViewMode}
-            />
+            >
+              {yesNoOptions.map((itm) => (
+                <option value={itm.value}>{itm.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
         <div
           style={{
-            display: (isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
+            display:
+              isViewMode || !isManagerAdminLogin(loggedInUserData)
+                ? "none"
+                : "block",
           }}
         >
           <button className="btn btn-primary float-end m-3" type="submit">

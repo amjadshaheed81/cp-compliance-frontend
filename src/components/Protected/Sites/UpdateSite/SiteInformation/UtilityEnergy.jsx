@@ -253,6 +253,14 @@ const UtilityEnergy = ({
               className="form-control"
               {...register("hotWaterCalorifier")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("hotWaterCalorifier").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -291,6 +299,14 @@ const UtilityEnergy = ({
               className="form-control"
               {...register("pressureVessel")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("pressureVessel").onChange(e);
+              }}
             />
           </div>
         </div>

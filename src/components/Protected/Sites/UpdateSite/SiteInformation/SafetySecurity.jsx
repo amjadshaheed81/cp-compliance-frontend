@@ -66,6 +66,14 @@ const SafetySecurity = ({
               className="form-control"
               {...register("extMetallicFireEscapeStaircases")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("extMetallicFireEscapeStaircases").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -85,6 +93,14 @@ const SafetySecurity = ({
               className="form-control"
               {...register("extTimberFireEscapeStaircases")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("extTimberFireEscapeStaircases").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -104,6 +120,14 @@ const SafetySecurity = ({
               className="form-control"
               {...register("verticalLadder")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("verticalLadder").onChange(e);
+              }}
             />
           </div>
         </div>

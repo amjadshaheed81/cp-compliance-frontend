@@ -165,11 +165,12 @@ const SiteInformation = ({
           Area & Occupancy
         </AccordionSummary>
         <AccordionDetails>
+          <div className="container">
           <form
-            className="row"
+            className="d-flex flex-wrap gap-3"
             onSubmit={siteAreaForm.handleSubmit(saveAreaAndOccupancy)}
           >
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="totalBuildingArea"
                 name="totalBuildingArea"
@@ -177,7 +178,7 @@ const SiteInformation = ({
               >
                 Total Building Area(Sq.m)
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="totalBuildingArea"
@@ -188,7 +189,7 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="clientOccupiedArea"
                 name="clientOccupiedArea"
@@ -196,7 +197,7 @@ const SiteInformation = ({
               >
                 Client Occupied Area(Sq.m)
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="clientOccupiedArea"
@@ -207,7 +208,7 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="tenantOccupiedArea"
                 name="tenantOccupiedArea"
@@ -215,7 +216,7 @@ const SiteInformation = ({
               >
                 Tenant Occupied Area(Sq.m)
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="tenantOccupiedArea"
                   name="tenantOccupiedArea"
@@ -226,7 +227,7 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="maxOccupancy"
                 name="maxOccupancy"
@@ -234,7 +235,7 @@ const SiteInformation = ({
               >
                 Maximum Occupancy(Client)
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="maxOccupancy"
@@ -245,7 +246,7 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="meetingClients"
                 name="meetingClients"
@@ -253,9 +254,8 @@ const SiteInformation = ({
               >
                 Meeting/Conferences Client
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <select
-                  type="text"
                   name="meetingClients"
                   id="meetingClients"
                   className="form-control form-select"
@@ -268,7 +268,7 @@ const SiteInformation = ({
                 </select>
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="numberOfStaff"
                 name="numberOfStaff"
@@ -276,18 +276,18 @@ const SiteInformation = ({
               >
                 Number Of Staff
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="numberOfStaff"
                   id="numberOfStaff"
-                  className="form-control mt-4"
+                  className="form-control"
                   {...siteAreaForm.register("numberOfStaff")}
                   disabled={isViewMode}
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="tenantInOccupation"
                 name="tenantInOccupation"
@@ -295,33 +295,37 @@ const SiteInformation = ({
               >
                 Tenants in Occupation
               </label>
-              <div className="pt-2 pb-2">
-                <input
+              <div>
+              <select
                   type="text"
                   name="tenantInOccupation"
                   id="tenantInOccupation"
-                  className="form-control mt-4"
+                  className="form-control form-select"
                   {...siteAreaForm.register("tenantInOccupation")}
                   disabled={isViewMode}
-                />
+                >
+                  {yesNoOptions.map((itm) => (
+                    <option value={itm.value}>{itm.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label htmlFor="tenantName" name="tenantName" id="tenantName">
                 Name Of Tenant
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="tenantName"
                   id="tenantName"
-                  className="form-control mt-4"
+                  className="form-control"
                   {...siteAreaForm.register("tenantName")}
                   disabled={isViewMode}
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="vacantAreaInBuilding"
                 name="vacantAreaInBuilding"
@@ -329,33 +333,37 @@ const SiteInformation = ({
               >
                 Vacant Areas in building
               </label>
-              <div className="pt-2 pb-2">
-                <input
+              <div>
+              <select
                   type="text"
                   name="vacantAreaInBuilding"
                   id="vacantAreaInBuilding"
-                  className="form-control"
+                  className="form-control form-select"
                   {...siteAreaForm.register("vacantAreaInBuilding")}
                   disabled={isViewMode}
-                />
+                >
+                  {yesNoOptions.map((itm) => (
+                    <option value={itm.value}>{itm.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label htmlFor="numOfFloors" name="numOfFloors" id="numOfFloors">
                 Number Of Floors
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="numOfFloors"
                   id="numOfFloors"
-                  className="form-control mt-4"
+                  className="form-control"
                   {...siteAreaForm.register("numOfFloors")}
                   disabled={isViewMode}
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="carParkSpaceAboveGround"
                 name="carParkSpaceAboveGround"
@@ -363,7 +371,7 @@ const SiteInformation = ({
               >
                 Cark Park Spaces Above Ground
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="carParkSpaceAboveGround"
@@ -374,7 +382,7 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="carParkSpaceBelowGround"
                 name="carParkSpaceBelowGround"
@@ -382,7 +390,7 @@ const SiteInformation = ({
               >
                 Cark Park Spaces Below Ground
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="carParkSpaceBelowGround"
@@ -393,7 +401,7 @@ const SiteInformation = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+            <div>
               <label
                 htmlFor="numOfBasementLevels"
                 name="numOfBasementLevels"
@@ -401,7 +409,7 @@ const SiteInformation = ({
               >
                 Number Of Basement Levels
               </label>
-              <div className="pt-2 pb-2">
+              <div>
                 <input
                   type="text"
                   name="numOfBasementLevels"
@@ -423,6 +431,7 @@ const SiteInformation = ({
               </button>
             </div>
           </form>
+          </div>
         </AccordionDetails>
       </Accordion>
       <Accordion>

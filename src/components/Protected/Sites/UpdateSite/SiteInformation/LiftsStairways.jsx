@@ -53,6 +53,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("disabledHoistLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("disabledHoistLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -72,6 +80,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("goodsTractionLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("goodsTractionLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -91,6 +107,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("goodsHydraulicLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("goodsHydraulicLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -110,6 +134,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("passengerTractionLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("passengerTractionLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -129,6 +161,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("passengerHydraulicLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("passengerHydraulicLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -148,6 +188,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("passengerMonospaceLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("passengerMonospaceLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -167,6 +215,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("fireFightingLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("fireFightingLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -186,6 +242,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("fireEvacuationLift")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("fireEvacuationLift").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -205,6 +269,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("internalStairways")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("internalStairways").onChange(e);
+              }}
             />
           </div>
         </div>
@@ -224,6 +296,14 @@ const LiftsStairways = ({
               className="form-control"
               {...register("externalStairways")}
               disabled={isViewMode}
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("externalStairways").onChange(e);
+              }}
             />
           </div>
         </div>
