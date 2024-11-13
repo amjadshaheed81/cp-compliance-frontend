@@ -15,7 +15,6 @@ const TotalRequirements = ({ requirement, data }) => {
 
   const totalDuties = dutiesMet + dutiesNotMet;
 
-  // Prepare options for the ECharts pie chart
   const options = {
     title: {
       text: totalDuties > 0 ? `${totalDuties} Duties Status Analysis for Requirement: ${requirement}` : `No duties for Requirement: ${requirement}`,
@@ -23,30 +22,43 @@ const TotalRequirements = ({ requirement, data }) => {
     },
     tooltip: {
       trigger: "item",
+      confine: true, // Ensures tooltip does not overflow the visible screen
       formatter: (params) => {
         const { name, value } = params;
-        const tooltipText = [`${name}: ${value}`];
-
+        const tooltipText = [`<strong>${name}: ${value}</strong>`];
+  
         // Filter sites based on status for tooltip
         const filteredSites = statutoryRegisters.filter((item) =>
           (name === "Duties Met" && item.status === "Passed") ||
           (name === "Duties Not Met" && item.status === "Fail")
         );
-
+  
         // Add each site name to the tooltip
         filteredSites.forEach((item) => {
-          tooltipText.push(`• ${item.siteName} (${item.subType || item.requirement})`);
+          tooltipText.push(`<span>• ${item.siteName} (${item.subType || item.requirement})</span>`);
         });
+  
+        // Wrap tooltip text in a grid layout for multiple columns
+        return `
+          <div style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 0px;
+            max-width: 100%;
+            font-size: 10px;
+            padding: 0px;
 
-        return tooltipText.join("<br/>"); // Join for line-by-line display in tooltip
+          ">
+            ${tooltipText.join("")}
+          </div>`;
       },
     },
     legend: {
       orient: "vertical",
       left: "left",
-      data: ["Duties Met", "Duties Not Met"], // Only show items with data
+      data: ["Duties Met", "Duties Not Met"],
     },
-    color: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD", "#0A2540", "#0077B6", "#CAF0F8"],
+    color: ["#1E3A8A", "#2563EB"],
     series: [
       {
         name: "Duties Summary",
@@ -55,8 +67,7 @@ const TotalRequirements = ({ requirement, data }) => {
         data: [
           dutiesMet > 0 ? { value: dutiesMet, name: "Duties Met" } : null,
           dutiesNotMet > 0 ? { value: dutiesNotMet, name: "Duties Not Met" } : null,
-        ].filter(Boolean), // Remove null values to avoid empty sections
-        color: ["#1E3A8A", "#2563EB"], // Custom colors for the chart
+        ].filter(Boolean),
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -76,34 +87,6 @@ const TotalRequirements = ({ requirement, data }) => {
           fill: "#000000",
           font: "20px Arial",
         },
-      },
-      {
-        type: "line",
-        shape: {
-          x1: "50%",
-          y1: "40%", // Adjust to place the arrow properly
-          x2: "50%",
-          y2: "60%", // Adjust to place the arrow properly
-        },
-        style: {
-          stroke: "#FF0000",
-          lineWidth: 2,
-        },
-        silent: true,
-      },
-      {
-        type: "polygon",
-        shape: {
-          points: [
-            ["50%", "60%"], // Starting point for the arrow
-            ["48%", "62%"], // Left part of the arrow
-            ["52%", "62%"], // Right part of the arrow
-          ],
-        },
-        style: {
-          fill: "#FF0000",
-        },
-        silent: true,
       },
     ],
   };
