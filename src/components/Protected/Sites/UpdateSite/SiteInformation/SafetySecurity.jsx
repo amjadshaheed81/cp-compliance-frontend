@@ -141,7 +141,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="confinedSpaces"
               id="confinedSpaces"
               className="form-control form-select"
@@ -164,7 +163,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="accessibleUnguardedRoofAreas"
               id="accessibleUnguardedRoofAreas"
               className="form-control form-select"
@@ -183,7 +181,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="fragileRoof"
               id="fragileRoof"
               className="form-control form-select"
@@ -206,7 +203,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="lightingConductoreInstalltion"
               id="lightingConductoreInstalltion"
               className="form-control form-select"
@@ -229,7 +225,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="fireAlarmSystem"
               id="fireAlarmSystem"
               className="form-control form-select"
@@ -271,7 +266,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="oilStorageOnSite"
               id="oilStorageOnSite"
               className="form-control form-select"
@@ -294,7 +288,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="lpgStorageOnSite"
               id="lpgStorageOnSite"
               className="form-control form-select"
@@ -317,7 +310,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="lpgBulkStorageOnSite"
               id="lpgBulkStorageOnSite"
               className="form-control form-select"
@@ -332,19 +324,18 @@ const SafetySecurity = ({
         </div>
         <div>
           <label
-            htmlFor="sprinklerSystem"
-            name="sprinklerSystem"
-            id="sprinklerSystem"
+            htmlFor="lpgStorageOnSite"
+            name="lpgStorageOnSite"
+            id="lpgStorageOnSite"
           >
             LPG Cylinder Storage on Site
           </label>
           <div>
             <select
-              type="text"
-              name="sprinklerSystem"
-              id="sprinklerSystem"
+              name="lpgStorageOnSite"
+              id="lpgStorageOnSite"
               className="form-control form-select"
-              {...register("sprinklerSystem")}
+              {...register("lpgStorageOnSite")}
               disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (
@@ -363,7 +354,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="sprinklerSystem"
               id="sprinklerSystem"
               className="form-control form-select"
@@ -382,7 +372,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="hoseReels"
               id="hoseReels"
               className="form-control form-select"
@@ -405,7 +394,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="securityGuardEmployed"
               id="securityGuardEmployed"
               className="form-control form-select"
@@ -424,7 +412,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="internalCCTV"
               id="internalCCTV"
               className="form-control form-select"
@@ -443,7 +430,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="externalCCTV"
               id="externalCCTV"
               className="form-control form-select"
@@ -466,7 +452,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="automaticBarrier"
               id="automaticBarrier"
               className="form-control form-select"
@@ -489,7 +474,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="automaticGatesSliding"
               id="automaticGatesSliding"
               className="form-control form-select"
@@ -512,7 +496,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="automaticGatesHinged"
               id="automaticGatesHinged"
               className="form-control form-select"
@@ -535,7 +518,6 @@ const SafetySecurity = ({
           </label>
           <div>
             <select
-              type="text"
               name="manualSwingGates"
               id="manualSwingGates"
               className="form-control form-select"

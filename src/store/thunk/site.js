@@ -604,6 +604,8 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
       const url = `/api/site/siteinfo/${id}?q=siteSafety`;
       const siteSafetyInformation = await get(url);
       setValue("extFabric", siteSafetyInformation?.extFabric);
+      setValue("sprinklerSystem", siteSafetyInformation?.sprinklerSystem);
+      setValue("oilStorageOnSite", siteSafetyInformation?.oilStorageOnSite);
       setValue(
         "extMetallicFireEscapeStaircases",
         siteSafetyInformation?.extMetallicFireEscapeStaircases
