@@ -227,14 +227,17 @@ const UtilityEnergy = ({
             Water Tank Location
           </label>
           <div>
-            <input
-              type="text"
+          <select
               name="waterTanks"
               id="waterTanks"
-              className="form-control"
+              className="form-control form-select"
               {...register("waterTanks")}
               disabled={isViewMode}
-            />
+            >
+              {yesNoOptions.map((itm) => (
+                <option value={itm.value}>{itm.label}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div>
