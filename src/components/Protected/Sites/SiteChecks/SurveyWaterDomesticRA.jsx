@@ -195,7 +195,10 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
         <CardContent>
           <Grid container alignItems="center" justifyContent="space-between" mb={2}>
             <Grid item>
-              <Typography variant="h6">Risk Factors <span style={{ backgroundColor: '#FF9800', color: 'white', padding: '7px 8px', borderRadius: '5px' }}><InfoOutlinedIcon />&nbsp; Overall Risk Score: {totalrisks}</span></Typography>
+              <Typography variant="h6">Risk Factor Summary 
+                {/* <span style={{ backgroundColor: '#FF9800', color: 'white', padding: '7px 8px', borderRadius: '5px' }}><InfoOutlinedIcon />&nbsp; Overall Risk Score: {totalrisks}
+                </span> */}
+                </Typography>
 
             </Grid>
 
@@ -204,29 +207,24 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
 
               <Box display="flex" alignItems="center">
 
-                <Box ml={2} display="flex" alignItems="center">
+                <Box ml={6} display="flex" alignItems="center">
                   {/* <Box width={32} height={32} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
-                    {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
-                    <span className="badge bg-danger p-2 m-1 risk-span">
-                      {risks[0]}
+                    {/* <Typography variant="body2" color="white"></Typography> */}
+                    <span className="badge bg-danger p-3 m-2 risk-span">
+                      High <br/><br/> {">250"}
                     </span>
                   {/* </Box> */}
                   {/* <Box width={32} height={32} bgcolor="#FF9800" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
                     {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
-                    <span className="badge bg-warning p-2 m-1 risk-span">
-                      {risks[1]}
+                    <span className="badge bg-warning p-3 m-2 risk-span">
+                      Medium<br/><br/>{"150 - 250"}
                     </span>
                   {/* </Box> */}
-                  {/* <Box width={32} height={32} bgcolor="#FFEB3B" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
-                    {/* <Typography variant="body2" color="white">{risks[2]}</Typography> */}
-                    <span className="badge bg-info p-2 m-1 risk-span">
-                      {risks[2]}
-                    </span>
-                  {/* </Box> */}
+                  
                   {/* <Box width={32} height={32} bgcolor="#4CAF50" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
                     {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
-                    <span className="badge bg-success p-2 m-1 risk-span">
-                      {risks[3]}
+                    <span className="badge bg-success p-3 m-2 risk-span">
+                      Low<br/><br/>{"<150"}
                     </span>
                   {/* </Box> */}
                 </Box>
