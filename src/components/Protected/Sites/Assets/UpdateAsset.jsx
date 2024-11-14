@@ -353,7 +353,8 @@ const UpdateAsset = ({
   const submitSiteAssetPurchaseDetail = async (data) => {
     let form_data = new FormData();
     const { purchaseInvoice, ...formData } = data;
-    if (purchaseInvoice) {
+    console.log("purchaseInvoice", purchaseInvoice);
+    if (purchaseInvoice?.length > 0) {
       form_data.append(
         "purchaseInvoice",
         data?.purchaseInvoice?.[0],
@@ -1275,12 +1276,7 @@ const UpdateAsset = ({
                           id="transactionId"
                           name="transactionId"
                           placeholder=""
-                          {...purchaseDetailForm.register("transactionId", {
-                            required: {
-                              value: true,
-                              message: `Please enter transaction ID`,
-                            },
-                          })}
+                          {...purchaseDetailForm.register("transactionId")}
                         />
                         {purchaseDetailForm.formState.errors?.transactionId && (
                           <InputError
@@ -1334,12 +1330,7 @@ const UpdateAsset = ({
                           id="purchaseInvoice"
                           name="purchaseInvoice"
                           placeholder=""
-                          {...purchaseDetailForm.register("purchaseInvoice", {
-                            required: {
-                              value: true,
-                              message: `Please select invoice file`,
-                            },
-                          })}
+                          {...purchaseDetailForm.register("purchaseInvoice")}
                         />
                         {purchaseDetailForm.formState.errors
                           ?.purchaseInvoice && (

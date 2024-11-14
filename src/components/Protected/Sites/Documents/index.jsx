@@ -4,7 +4,7 @@ import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import CreateFiles from "./CreateFiles";
 import { connect } from "react-redux";
-import { getDocumentsRootFolder } from "../../../../store/thunk/site";
+import { getDocumentsRootFolder, setLoader } from "../../../../store/thunk/site";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
 import "./Documents.css";
@@ -15,6 +15,7 @@ const Document = ({
   getDocumentsRootFolder,
   siteSelectedForGlobal,
   loggedInUserData,
+  setLoader,
 }) => {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] =
     React.useState(false);
@@ -24,6 +25,7 @@ const Document = ({
   const navigate = useNavigate();
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
+      setLoader(true);
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
     } else {
       Swal.fire({
@@ -178,4 +180,5 @@ const mapStateToProps = (state) => ({
 });
 export default connect(mapStateToProps, {
   getDocumentsRootFolder,
+  setLoader,
 })(Document);

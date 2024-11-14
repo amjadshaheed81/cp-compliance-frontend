@@ -324,18 +324,18 @@ const SafetySecurity = ({
         </div>
         <div>
           <label
-            htmlFor="lpgStorageOnSite"
-            name="lpgStorageOnSite"
-            id="lpgStorageOnSite"
+            htmlFor="lpgCylinderStorageOnSite"
+            name="lpgCylinderStorageOnSite"
+            id="lpgCylinderStorageOnSite"
           >
             LPG Cylinder Storage on Site
           </label>
           <div>
             <select
-              name="lpgStorageOnSite"
-              id="lpgStorageOnSite"
+              name="lpgCylinderStorageOnSite"
+              id="lpgCylinderStorageOnSite"
               className="form-control form-select"
-              {...register("lpgStorageOnSite")}
+              {...register("lpgCylinderStorageOnSite")}
               disabled={isViewMode}
             >
               {yesNoOptions.map((itm) => (

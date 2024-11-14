@@ -606,6 +606,7 @@ export const getSafetyAndSecurityDetails = (id, setValue) => {
       setValue("extFabric", siteSafetyInformation?.extFabric);
       setValue("sprinklerSystem", siteSafetyInformation?.sprinklerSystem);
       setValue("oilStorageOnSite", siteSafetyInformation?.oilStorageOnSite);
+      setValue("lpgCylinderStorageOnSite", siteSafetyInformation?.lpgCylinderStorageOnSite);
       setValue(
         "extMetallicFireEscapeStaircases",
         siteSafetyInformation?.extMetallicFireEscapeStaircases
