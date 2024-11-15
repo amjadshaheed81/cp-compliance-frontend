@@ -250,7 +250,8 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
   const getProjectList = async () => {
     setIsLoading(true);
-    const data = await get("/api/site/site/all?withDetails=true");
+    let data = await get("/api/site/site/all?withDetails=true");
+    data = data.filter(d => d?.status === 'open');
     setBasicReportsData(data);
     setIsLoading(false);
   };
