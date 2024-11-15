@@ -110,7 +110,7 @@ const ForgotPassword = ({ login }) => {
                     className="form-control"
                     id="otp"
                     value={otp}
-                    placeholder="Enter otp"
+                    placeholder="Enter secure code"
                     onChange={handleOtoChange}
                   />
                 )}
