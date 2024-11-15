@@ -44,3 +44,21 @@ export const getSiteCheckDueDate = (siteCheck) => {
       : "--";
   }
 };
+
+export const getSiteCheckDueDateForStatus = (siteCheck) => {
+  if (siteCheck?.startDate && siteCheck?.repeatFrequency && !siteCheck?.dueDate) {
+    const currentDate = new Date();
+    let nextDueDate = new Date(siteCheck.startDate);
+    
+    // Keep advancing by the repeat frequency until the next due date is in the future
+    while (nextDueDate <= currentDate) {
+      nextDueDate = addRepeatFrequency(nextDueDate, siteCheck.repeatFrequency);
+    }
+
+    return nextDueDate.toISOString(); // Return in ISO format for comparisons
+  } else {
+    return siteCheck?.dueDate
+      ? new Date(siteCheck.dueDate).toISOString()
+      : null; // Return null if no due date is available
+  }
+};

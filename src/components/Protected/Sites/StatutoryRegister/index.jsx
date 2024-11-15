@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import FaSave from "@mui/icons-material/Check";
 import { showLoader, hideLoader } from "js-loader-fn";
 import TagStatutory from "./TagStatutory";
-import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
+import { getSiteCheckDueDate, getSiteCheckDueDateForStatus } from "../../../../utils/getSiteCheckDueDate";
 
 export const findAssetWithNearestPatNextDate = (assets) => {
   let nearestAsset = null;
@@ -214,7 +214,7 @@ const StatutoryRegister = ({
               itm?.type === "Inspection" &&
               itm?.subType === "Electrical" &&
               itm?.category === "WC Alarm Testing" &&
-              moment(itm?.dueDate).isAfter(new Date())
+              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
           );
           status = isPAtExpired ? "Passed" : "Fail";
         }
@@ -223,19 +223,59 @@ const StatutoryRegister = ({
         else if (item?.subType === "Emergency light and Fire Alarm") {
           const isEmergencyAvailable = siteChecks?.some(
             (itm) =>
-              itm?.type === "Audit" && moment(itm?.dueDate).isAfter(new Date())
+              itm?.type === "Audit" && moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
           );
           status = isEmergencyAvailable ? "Passed" : "Fail";
         }
 
         // Water Risk Assessment Check
-        else if (item?.subType === "Water Risk Assessment/Water Temperature") {
+        else if (item?.requirement === "Water Risk Assessment" && item?.subType === "Water") {
           const isWaterAvailable = siteChecks?.some(
             (itm) =>
-              itm?.subType === "Water" &&
-              moment(itm?.dueDate).isAfter(new Date())
+              itm?.subType === "Water Risk Assessment" && itm?.category === "Water" &&
+              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
           );
           status = isWaterAvailable ? "Passed" : "Fail";
+        }
+        // Water Risk Assessment Check
+        else if (item?.subType === "Water Risk Assessment" && item?.requirement === "Water Risk Assessment") {
+          const isWaterAvailable = siteChecks?.some(
+            (itm) =>
+              itm?.category === "Water Risk Assessment" &&
+              itm?.subType === "Water" &&
+              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+          );
+          status = isWaterAvailable ? "Passed" : "Fail";
+        }
+        // Water Risk Assessment Check
+        else if (item?.requirement === "Fire Alarm Weekly Call Point Test" && item?.subType === "Fire Alarm Weekly In House Testing") {
+          const isFireAlarm = siteChecks?.some(
+            (itm) =>
+              itm?.category === "Fire Alarm - Weekly Call Point testing to meet BS5839" &&
+              itm?.subType === "Fire Alarm to meet BS5839" &&
+              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+          );
+          status = isFireAlarm ? "Passed" : "Fail";
+        }
+        // Water Risk Assessment Check
+        else if (item?.requirement === "Water Temperature Monitoring" && item?.subType === "Water Systems Service & Test Records") {
+          const isWaterTempMonitor = siteChecks?.some(
+            (itm) =>
+              itm?.category === "Water Temperature Monitoring" &&
+              itm?.subType === "Water" &&
+              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+          );
+          status = isWaterTempMonitor ? "Passed" : "Fail";
+        }
+        // Water Risk Assessment Check
+        else if (item?.requirement === "Shower Head Cleaning" && item?.subType === " Water Systems Service & Test Records") {
+          const isShowerClaeaning = siteChecks?.some(
+            (itm) =>
+              itm?.category === "Periodic Shower Head Cleaning" &&
+              itm?.subType === "Legionella" &&
+              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+          );
+          status = isShowerClaeaning ? "Passed" : "Fail";
         }
       } catch (error) {
         console.error("Error fetching site data:", error);
