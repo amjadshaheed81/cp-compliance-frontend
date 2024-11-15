@@ -188,6 +188,7 @@ function SearchSite({
               selectGlobalSite(site);
               localStorage.setItem("site", JSON.stringify(site));
               setState({ ...state, [anchor]: false });
+              goTo("/dashboard")
             }}
               />
             </ListItemButton>
@@ -207,6 +208,7 @@ function SearchSite({
               selectGlobalSite(site);
               localStorage.setItem("site", JSON.stringify(site));
               setState({ ...state, [anchor]: false });
+              goTo("/dashboard")
             }}
               />
             </ListItemButton>
