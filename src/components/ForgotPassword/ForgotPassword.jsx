@@ -8,11 +8,13 @@ import { useNavigate } from "react-router-dom";
 import "./ForgotPassword.css";
 import { post } from "../../api";
 import { toast } from "react-toastify";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const ForgotPassword = ({ login }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otpSend, setotpSend] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [otp, setotp] = useState("");
   const navigate = useNavigate();
 
@@ -34,11 +36,12 @@ const ForgotPassword = ({ login }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+    setIsLoading(true);
     const body = { email, otp, password };
     post("/api/user/reset-password", body)
       .then((res) => {
         setotpSend(true);
+        setIsLoading(false);
         if (otp) {
           setotp("");
           setPassword("");
@@ -51,7 +54,9 @@ const ForgotPassword = ({ login }) => {
       .catch((err) => {
         setotp("");
         toast.error(err?.response?.data?.message);
+        setIsLoading(false);
       });
+     // setIsLoading(false);
   };
 
   return (
@@ -120,7 +125,7 @@ const ForgotPassword = ({ login }) => {
                   type="submit"
                   className="btn btn-primary rounded w-100 login-submit"
                 >
-                  {otpSend ? "Submit" : "Send Password Reset Link"}
+                   {isLoading ? <CircularProgress sx={{ color: 'white' }}/>  : otpSend ? "Submit" : "Send Password Reset Link"}
                 </button>
               </div>
             </form>
