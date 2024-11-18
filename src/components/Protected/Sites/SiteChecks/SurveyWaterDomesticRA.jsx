@@ -323,7 +323,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       Observation
                     </label>
                       <textarea
-                        required
+                        //required
                       //disabled={riskFactor[idx]?.completed}
                       name="observation"
                       className="form-control"
@@ -466,7 +466,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                     />
                   </Grid> */}
-                  {!riskFactor[idx]?.completed &&
+                  
                     <Grid item xs={12}>
 
                       <button
@@ -486,7 +486,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       </button>
 
 
-                    </Grid>}
+                    </Grid>
                 </Grid>
                 </AccordionDetails>
               </form>
