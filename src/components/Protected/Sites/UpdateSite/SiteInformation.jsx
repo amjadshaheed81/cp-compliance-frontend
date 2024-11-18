@@ -55,18 +55,22 @@ const SiteInformation = ({
             <label htmlFor="buildYear" name="buildYear" id="buildYear">
               Year Of Build
             </label>
-            <select
+            <input
+              type="number"
               name="buildYear"
               id="buildYear"
-              className="form-control w-100 form-select"
+              className="form-control"
               {...register("buildYear")}
               disabled={isViewMode}
-            >
-              {isViewMode && <option value={getValues("buildYear")}>{getValues("buildYear")}</option>}
-              {!isViewMode && yearOptions.map((year) => (
-                <option value={year.value}>{year.label}</option>
-              ))}
-            </select>
+              min="0"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value < 0) {
+                  e.target.value = 0;
+                }
+                register("buildYear").onChange(e);
+              }}
+            />
           </div>
         </div>
         <div className="col-md-4">
