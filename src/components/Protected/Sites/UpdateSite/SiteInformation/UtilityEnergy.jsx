@@ -201,33 +201,15 @@ const UtilityEnergy = ({
         </div>
         <div>
           <label
-            htmlFor="waterTankLocation"
-            name="waterTankLocation"
-            id="waterTankLocation"
+            htmlFor="waterTanks"
+            name="waterTanks"
+            id="waterTanks"
           >
             Water Tanks
           </label>
           <div>
             <select
               type="text"
-              name="waterTankLocation"
-              id="waterTankLocation"
-              className="form-control form-select"
-              {...register("waterTankLocation")}
-              disabled={isViewMode}
-            >
-              {yesNoOptions.map((itm) => (
-                <option value={itm.value}>{itm.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label htmlFor="waterTanks" name="waterTanks" id="waterTanks">
-            Water Tank Location
-          </label>
-          <div>
-          <select
               name="waterTanks"
               id="waterTanks"
               className="form-control form-select"
@@ -238,6 +220,21 @@ const UtilityEnergy = ({
                 <option value={itm.value}>{itm.label}</option>
               ))}
             </select>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="waterTankLocation" name="waterTankLocation" id="waterTankLocation">
+            Water Tank Location
+          </label>
+          <div>
+          <input
+              type="text"
+              name="waterTankLocation"
+              id="waterTankLocation"
+              className="form-control"
+              {...register("waterTankLocation")}
+              disabled={isViewMode}
+            />
           </div>
         </div>
         <div>

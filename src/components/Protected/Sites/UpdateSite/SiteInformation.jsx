@@ -186,6 +186,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("totalBuildingArea")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -205,6 +210,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("clientOccupiedArea")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -224,6 +234,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("tenantOccupiedArea")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -243,6 +258,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("maxOccupancy")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -284,6 +304,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("numberOfStaff")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -322,6 +347,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("tenantName")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -360,6 +390,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("numOfFloors")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -379,6 +414,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("carParkSpaceAboveGround")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -398,6 +438,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("carParkSpaceBelowGround")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -417,6 +462,11 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("numOfBasementLevels")}
                   disabled={isViewMode}
+                  onKeyPress={(e) => {
+                    if (!/^\d*$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
