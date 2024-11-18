@@ -351,11 +351,6 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("tenantName")}
                   disabled={isViewMode}
-                  onKeyPress={(e) => {
-                    if (!/^\d*$/.test(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </div>
             </div>
