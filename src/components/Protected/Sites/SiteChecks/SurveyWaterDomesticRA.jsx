@@ -253,7 +253,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
               }}>
               <AccordionDetails>
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
+                  {/* <Grid item xs={6}>
                     <label htmlFor="responseDate" name="responseDate">
                       Date
                     </label>
@@ -267,14 +267,14 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       value={String(riskFactor[idx]?.response?.responseDate)?.substring(0, 10)}
                     />
 
-                  </Grid>
+                  </Grid> */}
                   <Grid item xs={12} sm={6}>
                     <label htmlFor="score" name="score">
                       Score
                     </label>
                       <select
                         required
-                      disabled={riskFactor[idx]?.completed}
+                      //disabled={riskFactor[idx]?.completed}
                       className="form-control form-select"
                       name="score"
                       onChange={(e) => handleInputChange(e, idx)}
@@ -286,6 +286,36 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       ))}
                     </select>
                   </Grid>
+                  <Grid item xs={6}>
+                    <Autocomplete
+                      //disabled={riskFactor[idx]?.completed}
+                      multiple
+                      onChange={(event, item) => {
+                        const uquest = [...riskFactor]
+
+                        uquest[idx].response = {
+                          ...uquest[idx].response,
+                          assets: item.map(i => i.key).join(",")
+                        }
+                        setRiskFactor(uquest);
+                      }}
+                      value={siteAssets.filter(s => riskFactor[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+
+                      options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                      getOptionLabel={(option) => option.label}
+
+                      
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          //required
+                          variant="outlined"
+                          label="Search Asset"
+                        //placeholder="Assets"
+                        />
+                      )}
+                    />
+                  </Grid>
 
 
                   <Grid item xs={12}>
@@ -294,7 +324,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     </label>
                       <textarea
                         required
-                      disabled={riskFactor[idx]?.completed}
+                      //disabled={riskFactor[idx]?.completed}
                       name="observation"
                       className="form-control"
                       id="observation"
@@ -350,36 +380,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                     </div>
 
                   </Grid>
-                  <Grid item xs={6}>
-                    <Autocomplete
-                      disabled={riskFactor[idx]?.completed}
-                      multiple
-                      onChange={(event, item) => {
-                        const uquest = [...riskFactor]
-
-                        uquest[idx].response = {
-                          ...uquest[idx].response,
-                          assets: item.map(i => i.key).join(",")
-                        }
-                        setRiskFactor(uquest);
-                      }}
-                      value={siteAssets.filter(s => riskFactor[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-
-                      options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-                      getOptionLabel={(option) => option.label}
-
-                      
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          //required
-                          variant="outlined"
-                          label="Search Asset"
-                        //placeholder="Assets"
-                        />
-                      )}
-                    />
-                  </Grid>
+                  
 
 
 
