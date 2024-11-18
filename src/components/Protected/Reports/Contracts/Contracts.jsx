@@ -78,7 +78,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const getContractsByArea = async (area) => {
     showLoader("Please wait. we are collecting contracts details.");
     if (area) {
-      const projects = await get(`/api/project/contracts?area=${area}`);
+      const projects = await get(`/api/project/contracts?userId=${loggedInUserData?.id}&area=${area}`);
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);
       hideLoader();
@@ -114,7 +114,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     setIsLoading(true);
     showLoader("Please wait. we are collecting contracts details.");
     if (isAllSites) {
-      const projects = await get(`/api/project/contracts`);
+      const projects = await get(`/api/project/contracts?userId=${loggedInUserData?.id}`);
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);
     } else {
