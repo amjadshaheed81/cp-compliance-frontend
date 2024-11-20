@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { get, post, put } from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
+import CircularProgress from "@mui/material/CircularProgress";
 import moment from "moment";
 import {
   Button,
@@ -42,6 +43,8 @@ const SurveyWaterTemperatureMonitoring = ({
   const [formData2, setFormData2] = useState({});
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -52,6 +55,7 @@ const SurveyWaterTemperatureMonitoring = ({
   }, []);
 
   const getSurvey = async () => {
+    setIsLoading(true);
     const outlettypes = await get("/api/lov/SITE_CHECK_SURVEY_OUTLET_TYPE");
     setoutletoptions(outlettypes.map((l) => l.lovValue));
     const tempratureoptionstypes = await get(
@@ -72,6 +76,7 @@ const SurveyWaterTemperatureMonitoring = ({
       data = removeduplciate(data);
       setFormData(data);
     }
+    setIsLoading(false);
   };
 
   const removeduplciate = (array) => {
@@ -786,7 +791,13 @@ const SurveyWaterTemperatureMonitoring = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.map((d, idx) => {
+                {isLoading && (
+                  <tr>
+                  <td colSpan={9} align="center"><CircularProgress /></td>
+                </tr>
+            )}
+            {!isLoading && 
+                  formData.map((d, idx) => {
                     const isAllFilled =
                       formData[idx].assetId &&
                       formData?.[idx]?.outletType &&
