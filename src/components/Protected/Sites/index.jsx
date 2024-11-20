@@ -161,7 +161,7 @@ const Sites = ({
     // Apply area filter
     if (selectedArea) {
       filteredSites = filteredSites.filter(
-        (site) => site?.area?.toLowerCase() === selectedArea?.toLowerCase()
+        (site) => site?.area?.toLowerCase() === selectedArea?.replace('%26','&')?.toLowerCase()
       );
     }
 
@@ -197,7 +197,7 @@ const Sites = ({
                     className="form-control form-select"
                     value={selectedArea}
                     onChange={(e) => {
-                      setSelectedArea(e.target.value.replace('%26','&'));
+                      setSelectedArea(e.target.value);
                     }}
                   >
                     <option value="">Select Area</option>
