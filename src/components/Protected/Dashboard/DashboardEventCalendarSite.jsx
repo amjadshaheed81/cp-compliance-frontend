@@ -16,7 +16,10 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
 
   const [data, setData] = useState([]);
   useEffect(() => {
-    getData();
+    const hasAccessToSite = loggedInUserData?.taggedSites?.filter(itm => itm.id === siteSelectedForGlobal?.siteId);
+    if(hasAccessToSite?.length > 0) {
+      getData();
+    }
   }, [])
   const getData = async () => {
     let data = await get("/api/user/calendar/events??siteId="+siteSelectedForGlobal?.siteId??0);
