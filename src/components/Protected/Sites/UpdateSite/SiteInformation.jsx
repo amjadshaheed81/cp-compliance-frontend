@@ -190,11 +190,6 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("totalBuildingArea")}
                   disabled={isViewMode}
-                  onKeyPress={(e) => {
-                    if (!/^\d*$/.test(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </div>
             </div>
@@ -214,11 +209,6 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("clientOccupiedArea")}
                   disabled={isViewMode}
-                  onKeyPress={(e) => {
-                    if (!/^\d*$/.test(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </div>
             </div>
@@ -238,11 +228,6 @@ const SiteInformation = ({
                   className="form-control"
                   {...siteAreaForm.register("tenantOccupiedArea")}
                   disabled={isViewMode}
-                  onKeyPress={(e) => {
-                    if (!/^\d*$/.test(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </div>
             </div>
