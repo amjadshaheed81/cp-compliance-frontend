@@ -25,7 +25,10 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [todayEvents, settodayEvents] = useState([]);
   //const [data, setData] = useState([]);
   useEffect(() => {
-    getData();
+    const hasAccessToSite = loggedInUserData?.taggedSites?.filter(itm => itm.id === siteSelectedForGlobal?.siteId);
+    if(hasAccessToSite?.length > 0) {
+      getData();
+    }
   }, [])
 
   const isToday = (date) => {
