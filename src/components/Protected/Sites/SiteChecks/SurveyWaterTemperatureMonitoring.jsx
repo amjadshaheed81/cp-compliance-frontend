@@ -354,7 +354,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                   value={
                                     formData?.[readingPop]?.update
                                       ? formData?.[readingPop]?.r1Date
-                                      : null
+                                      : moment()
                                   }
                                   onChange={(date) => {
                                     const uformData = [...formData];
@@ -943,26 +943,30 @@ const SurveyWaterTemperatureMonitoring = ({
                           </select>
                         </td>
                         <td>
-                          <select
-                            disabled={formData?.[idx]?.completed}
-                            className="form-control form-select"
-                            name="room"
-                            value={formData?.[idx]?.room}
-                            required
-                            onChange={(e) => handleInputChange(e, idx)}
-                          >
-                            <option value="">Select </option>
-                            {siteLayout
-                              .filter((site) => site.nodeType === "room")
-                              .map((site) => (
-                                <option key={site.id} value={site.nodeName}>
-                                  {site.nodeName}{" "}
-                                </option>
-                              ))}
-                          </select>
+                          {formData?.[idx]?.completed ? (
+                            formData?.[idx]?.room != 'null' ? formData?.[idx]?.room : '--'
+                          ) : (
+                            <select
+                              disabled={formData?.[idx]?.completed}
+                              className="form-control form-select"
+                              name="room"
+                              value={formData?.[idx]?.room}
+                              required
+                              onChange={(e) => handleInputChange(e, idx)}
+                            >
+                              <option value="">Select </option>
+                              {siteLayout
+                                .filter((site) => site.nodeType === "room")
+                                .map((site) => (
+                                  <option key={site.id} value={site.nodeName}>
+                                    {site.nodeName}{" "}
+                                  </option>
+                                ))}
+                            </select>
+                          )}
                         </td>
                         <td style={{ width: "200px" }}>
-                          <p style={{ lineHeight: "3px" }}>
+                          <p>
                             1st : {formData?.[idx]?.reading1 ?? ""}{" "}
                             {formData?.[idx]?.r1Date
                               ? "(" +
@@ -973,7 +977,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                 ")"
                               : "N/A"}
                           </p>
-                          <p style={{ lineHeight: "3px" }}>
+                          <p>
                             2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
                             {formData?.[idx]?.r2Date
                               ? "(" +
@@ -984,7 +988,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                 ")"
                               : "N/A"}
                           </p>
-                          <p style={{ lineHeight: "3px" }}>
+                          <p>
                             3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
                             {formData?.[idx]?.r3Date
                               ? "(" +
