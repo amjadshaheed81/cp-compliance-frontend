@@ -82,7 +82,7 @@ const SitesCostChart = ({ site1energyData, site2energyData, currentYear, budgetC
       },
       title: {
         display: true,
-        text: `Cost Comparison for ${currentYear}`,
+        text: `Cost Comparison (Net of VAT) for ${currentYear}`,
       },
     },
     scales: {

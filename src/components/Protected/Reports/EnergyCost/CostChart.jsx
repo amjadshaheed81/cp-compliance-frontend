@@ -109,7 +109,7 @@ const CostChart = ({ energyData, currentYear, previousYear }) => {
       },
       title: {
         display: true,
-        text: `Cost Comparison: ${currentYear} vs ${lastYear}`,
+        text: `Cost Comparison (Net of VAT): ${currentYear} vs ${lastYear}`,
       },
     },
     scales: {
