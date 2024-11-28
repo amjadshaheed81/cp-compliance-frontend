@@ -335,37 +335,51 @@ const ViewUsers = ({
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">
-                    <div className="form-group">
-                      <label for="tagSite">Tag Site</label>
-                      <Autocomplete
-                        multiple
-                        value={getSelectedTagValue()}
-                        onChange={(event, newValue) => {
-                          const keys = newValue
-                            ?.map((itm) => itm?.key);
-                            setTagSite(keys)
-                        }}
-                        options={sites.filter(s=> {
-                          const taggedSits = getSelectedTagValue();
-                          const taggedSits2 = taggedSits.map(s => s.siteId);
-                          return !taggedSits2.includes(s.siteId)
-                        
-                        }).map((option) => {
-                          return {
-                            key: option.siteId,
-                            label: option.siteName,
-                          };
-                        })}
-                        getOptionLabel={(option) => option.label || ""}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Tag Site"
-                            placeholder="Tag Site"
-                          />
-                        )}
-                      />
-                    </div>
+                  <div className="form-group">
+    <label htmlFor="tagSite">Tag Site</label>
+    <Autocomplete
+      multiple
+      value={tagSite}
+      onChange={(event, newValue) => {
+        if (
+          newValue.length === sites.length ||
+          (newValue.length === 1 && newValue[0] === "Select All")
+        ) {
+          // Select All logic
+          setTagSite(sites.map((site) => site.siteId));
+        } else if (newValue.length === 0 || (newValue.includes("Select All") && newValue.length < sites.length)) {
+          // Deselect All logic
+          setTagSite([]);
+        } else {
+          // Normal selection logic
+          setTagSite(
+            newValue.filter((value) => value !== "Select All")
+          );
+        }
+      }}
+      options={["Select All", ...sites.map((site) => site.siteId)]}
+      getOptionLabel={(option) =>
+        option === "Select All"
+          ? "Select All"
+          : sites.find((site) => site.siteId === option)?.siteName || ""
+      }
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Tag Site"
+          placeholder="Select Sites"
+        />
+      )}
+      renderOption={(props, option, { selected }) => (
+        <li {...props}>
+          <Checkbox checked={selected} />
+          {option === "Select All"
+            ? "Select All"
+            : sites.find((site) => site.siteId === option)?.siteName}
+        </li>
+      )}
+    />
+  </div>
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-check form-switch">

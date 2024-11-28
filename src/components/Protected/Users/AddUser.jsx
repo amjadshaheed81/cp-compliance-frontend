@@ -137,6 +137,33 @@ const AddUser = ({
       setIsLoading(false);
     }
   };
+
+  const handleTagSiteChange = (event, newValue) => {
+    const isSelectAllSelected = newValue.some(
+      (option) => option.key === "select-all"
+    );
+
+    if (isSelectAllSelected) {
+      // If "Select All" is selected, include all options except "Select All"
+      const allOptions = sites.map((site) => ({
+        key: site.siteId,
+        label: site.siteName,
+      }));
+
+      setTagSite(allOptions.map((opt) => opt.key)); // Store keys
+    } else {
+      // Otherwise, update normally
+      const keys = newValue.map((item) => item.key);
+      setTagSite(keys);
+    }
+  };
+  const options = [
+    { key: "select-all", label: "Select All" },
+    ...sites.map((option) => ({
+      key: option.siteId,
+      label: option.siteName,
+    })),
+  ];
   return (
     <React.Fragment>
       {showSiteTagModal && (
@@ -315,17 +342,13 @@ const AddUser = ({
                       <label for="tagSite">Tag Site</label>
                       <Autocomplete
                         multiple
-                        onChange={(event, newValue) => {
-                          const keys = newValue
-                            ?.map((itm) => itm?.key);
-                            setTagSite(keys)
-                        }}
-                        options={sites.map((option) => {
-                          return {
-                            key: option.siteId,
-                            label: option.siteName,
-                          };
-                        })}
+                        onChange={handleTagSiteChange}
+                        // onChange={(event, newValue) => {
+                        //   const keys = newValue
+                        //     ?.map((itm) => itm?.key);
+                        //     setTagSite(keys)
+                        // }}
+                        options={options}
                         getOptionLabel={(option) => option.label || ""}
                         renderInput={(params) => (
                           <TextField
