@@ -18,6 +18,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [dataPerPage] = useState(10);
   const [selectedQuestion, setSelectedQuestion] = useState(null); // State for selected question
+  const [sortConfig, setSortConfig] = useState({ key: "", direction: "" }); // State for sorting
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastContract = currentPage * dataPerPage;
   const indexOfFirstContract = indexOfLastContract - dataPerPage;
@@ -271,10 +272,35 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     setCurrentPage(pageNumber);
   };
 
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+
+    const sortedData = [...filteredData].sort((a, b) => {
+      const aValue =
+        key === "selectedValue"
+          ? a[selectedQuestion?.main]?.[selectedQuestion?.key] || false
+          : a[key] || "";
+      const bValue =
+        key === "selectedValue"
+          ? b[selectedQuestion?.main]?.[selectedQuestion?.key] || false
+          : b[key] || "";
+
+      if (aValue > bValue) return direction === "asc" ? 1 : -1;
+      if (aValue < bValue) return direction === "asc" ? -1 : 1;
+      return 0;
+    });
+
+    setFilteredData(sortedData);
+    setSortConfig({ key, direction });
+  };
+
   return (
     <Fragment>
       <div>
-        <div className="d-flex bd-highlight">
+        <div className="bd-highlight">
           <div className="pt-2 bd-highlight">
             <div
               className="mt-2"
@@ -331,60 +357,87 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
               )}
             </div>
             <div
-              className="row"
-              style={{
-                display: currentContracts?.length === 0 ? "none" : "",
-                height: "auto",
-              }}
-            >
-              <div className="col-md-12 table-responsive">
-                <table className="table w-100">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col">ID</th>
-                      <th scope="col">SiteName</th>
-                      <th scope="col">{selectedQuestion?.key}</th>
-                      <th scope="col">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!isLoading && filteredData.length === 0 && (
-                      <tr>
-                        <td colSpan={4} align="center">
-                          No Data Found
-                        </td>
-                      </tr>
-                    )}
-                    {isLoading && (
-                      <tr>
-                        <td colSpan={4} align="center">
-                          <CircularProgress />
-                        </td>
-                      </tr>
-                    )}
-                    {currentContracts?.map((data) => (
-                      <tr key={data?.siteId}>
-                        <td>{data?.siteId}</td>
-                        <td>{data?.siteName}</td>
-                        <td>
-                          {data?.[questions?.[0]?.main]?.[questions?.[0].key]
-                            ? "Yes"
-                            : "No"?.toString()}
-                        </td>
-                        <td>{data?.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="row" style={{ height: "auto" }}>
-                <Pagination
-                  totalPages={Math.ceil(filteredData.length / dataPerPage)}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            </div>
+        className="row"
+        style={{
+          display: currentContracts?.length === 0 ? "none" : "",
+          height: "auto",
+        }}
+      >
+        <div className="col-md-12">
+          <table className="table table-responsive w-100">
+            <thead className="table-dark">
+              <tr>
+                <th scope="col">
+                  <button
+                    className="btn btn-link text-white"
+                    style={{ textDecoration: "auto"}}
+                    onClick={() => handleSort("siteName")}
+                  >
+                    SiteName {sortConfig.key === "siteName" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </button>
+                </th>
+                <th scope="col">
+                  <button
+                    className="btn btn-link text-white"
+                    style={{ textDecoration: "auto"}}
+                    onClick={() => handleSort("selectedValue")}
+                  >
+                    {selectedQuestion?.key}{" "}
+                    {sortConfig.key === "selectedValue"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </button>
+                </th>
+                <th scope="col">
+                  <button
+                    className="btn btn-link text-white"
+                    style={{ textDecoration: "auto"}}
+                    onClick={() => handleSort("status")}
+                  >
+                    Status {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {!isLoading && filteredData.length === 0 && (
+                <tr>
+                  <td colSpan={4} align="center">
+                    No Data Found
+                  </td>
+                </tr>
+              )}
+              {isLoading && (
+                <tr>
+                  <td colSpan={4} align="center">
+                    <CircularProgress />
+                  </td>
+                </tr>
+              )}
+              {currentContracts?.map((data) => (
+                <tr key={data?.siteId}>
+                  <td>{data?.siteName}</td>
+                  <td>
+                    {data[selectedQuestion?.main]?.[selectedQuestion?.key]
+                      ? "Yes"
+                      : "No"}
+                  </td>
+                  <td>{data?.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="row" style={{ height: "auto" }}>
+          <Pagination
+            totalPages={Math.ceil(filteredData.length / dataPerPage)}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      </div>
           </div>
         </div>
       </div>
