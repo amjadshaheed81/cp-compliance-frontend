@@ -1,5 +1,6 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { formatToNumber } from "../../../../utils/formatToCurrency";
 
 const TotalAction = ({ data }) => {
   // Initialize counters
@@ -21,14 +22,14 @@ const TotalAction = ({ data }) => {
   // Prepare options for the ECharts pie chart
   const options = {
     title: {
-      text: `${completedActions + reportedActions + reassessedActions} Total Actions by Status`,
+      text: `${formatToNumber(completedActions + reportedActions + reassessedActions)} Total Actions by Status`,
       left: "center",
     },
     tooltip: {
       trigger: "item",
       formatter: (params) => {
         const { name, value } = params;
-        return `${name}: ${value} actions`;
+        return `${name}: ${formatToNumber(value)} actions`;
       },
     },
     legend: {

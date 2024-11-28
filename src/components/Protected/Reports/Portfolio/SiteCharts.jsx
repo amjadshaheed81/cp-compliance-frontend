@@ -13,6 +13,7 @@ import { getUniqueSitesWithUserCount } from "../../../../utils/getUniqueSitesWit
 import BarChart from "./BarChart";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import TotalSites from "./TotalSites";
+import { formatToNumber } from "../../../../utils/formatToCurrency";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const SiteCharts = ({
@@ -168,7 +169,7 @@ const SiteCharts = ({
         Users Per Active Site &nbsp;
         <span class="badge bg-light text-primary">
           Total Users:{" "}
-          {state?.allSites ? users?.length : userschart?.[0]?.totalUsers}
+          {state?.allSites ? formatToNumber(users?.length) : formatToNumber(userschart?.[0]?.totalUsers)}
         </span>
         <div>
           <BarChart data={userschart} />

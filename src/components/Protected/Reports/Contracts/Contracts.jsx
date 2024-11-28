@@ -19,6 +19,7 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { showLoader, hideLoader } from "js-loader-fn";
 import PieChartContracts from "./PieChartContracts";
+import { formatToCurrency } from "../../../../utils/formatToCurrency";
 
 const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [state, setState] = useState({
@@ -318,7 +319,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
                         ? moment(itm?.endDate).format("DD-MM-YYYY")
                         : "-"}
                     </td>
-                    <td>{itm?.budget}</td>
+                    <td>{formatToCurrency(itm?.budget)}</td>
                     <td>
                       <ChipComponent status={itm?.status} />
                     </td>

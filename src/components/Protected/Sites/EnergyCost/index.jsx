@@ -30,6 +30,7 @@ import {
 } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import { formatToCurrency } from "../../../../utils/formatToCurrency";
 
 const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -290,14 +291,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     setbulkUploadReading([]);
     getEnergyCost();
   };
-
-  const formatToCurrency = (value) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: 2
-    }).format(value);
-  }
 
   const addEnergyCost = async (event) => {
     event.preventDefault();

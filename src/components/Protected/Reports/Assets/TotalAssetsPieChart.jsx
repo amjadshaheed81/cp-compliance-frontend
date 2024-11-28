@@ -1,12 +1,13 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { formatToNumber } from "../../../../utils/formatToCurrency";
 
 const TotalAssetsPieChart = ({ general, doors, pat, pfp }) => {
 
   // Prepare options for the ECharts pie chart
   const options = {
     title: {
-      text: `${general + doors + pat + pfp} Total Assets`,
+      text: `${formatToNumber(general + doors + pat + pfp)} Total Assets`,
       left: "center",
     },
     tooltip: {

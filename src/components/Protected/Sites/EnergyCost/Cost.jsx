@@ -17,6 +17,7 @@ import {
   Grid,
   Autocomplete,
 } from "@mui/material";
+import { formatToCurrency } from "../../../../utils/formatToCurrency";
 
 const Cost = ({
   open,
@@ -57,14 +58,6 @@ const Cost = ({
     saveData(data);
     setOpen(false);
   };
-
-  const formatToCurrency = (value) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: 2
-    }).format(value);
-  }
 
   return (
     <>

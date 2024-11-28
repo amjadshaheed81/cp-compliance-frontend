@@ -1,11 +1,12 @@
 import React from "react";
 import ReactECharts from "echarts-for-react";
+import { formatToNumber } from "../../../../utils/formatToCurrency";
 
 const TotalSites = ({ open, close, sold }) => {
   // Prepare options for the ECharts pie chart
   const options = {
     title: {
-      text: `${open + close + sold} Total Sites`,
+      text: `${formatToNumber(open + close + sold)} Total Sites`,
       left: "center",
     },
     tooltip: {

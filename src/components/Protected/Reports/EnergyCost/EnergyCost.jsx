@@ -25,6 +25,7 @@ import EnergyChart from "./EnergyChart";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import SitesEnergyChart from "./SitesEnergyChart";
 import SitesCostChart from "./SitesCostChart";
+import { formatToCurrency } from "../../../../utils/formatToCurrency";
 
 const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -279,14 +280,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     }
     setbulkUploadReading([]);
     getEnergyCost();
-  };
-
-  const formatToCurrency = (value) => {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-      minimumFractionDigits: 2,
-    }).format(value);
   };
 
   const addEnergyCost = async (event) => {

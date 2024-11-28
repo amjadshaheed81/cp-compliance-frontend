@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { formatToNumber } from "../../../../utils/formatToCurrency";
 
 // Registering the components with Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -43,7 +44,7 @@ const CostsBySite = ({ data }) => {
       tooltip: {
         callbacks: {
           label: function (context) {
-            return `Total Cost: £${context.raw}`;
+            return `Total Cost: £${formatToNumber(context.raw)}`;
           },
         },
       },

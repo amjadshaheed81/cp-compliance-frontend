@@ -26,7 +26,25 @@ const PieChartContracts = ({ data }) => {
     tooltip: {
       trigger: "item",
       confine: true,
-      formatter: "{a} <br/>{b}: £{c} ({d}%)",
+      formatter: (params) => {
+        // Access the series name, category name, value, and percentage from params
+        const seriesName = params.seriesName;
+        const categoryName = params.name;
+        const value = params.value.toLocaleString("en-GB", {
+          style: "currency",
+          maximumFractionDigits: 0,
+          currency: "GBP",
+        });
+        const percentage = params.percent;
+  
+        // Custom tooltip content
+        return `
+          <strong>${seriesName}</strong><br />
+          Category: <strong>${categoryName}</strong><br />
+          Budget: <strong>${value}</strong><br />
+          Share: <strong>${percentage}%</strong>
+        `;
+      },
     },
     color: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD", "#0A2540", "#0077B6", "#CAF0F8"],
     series: [
@@ -39,7 +57,14 @@ const PieChartContracts = ({ data }) => {
         },
         label: {
           show: true,
-          formatter: "{b}: £{c}",
+          formatter: (params) => {
+            const category = params.name;
+            const value = params.value.toLocaleString("en-GB", {
+              style: "decimal",
+              maximumFractionDigits: 0,
+            });
+            return `${category}: £${value}`;
+          },
         },
         emphasis: {
           itemStyle: {
