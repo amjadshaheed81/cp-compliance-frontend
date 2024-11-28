@@ -213,11 +213,18 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   function convertToDate(dateString) {
+    if("number" === typeof dateString) {
+      const excelEpoch = new Date(1900, 0, 1);
+       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
+      const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+      return jsDate.toISOString();
+    } else {
     const [day, month, year] = dateString.split("/").map(Number);
     const date = new Date(year, month - 1, day);
     return new Date(
       date.getTime() - date.getTimezoneOffset() * 60000
     ).toISOString();
+  }
   }
 
   const handleFileUploadCost = (event) => {
