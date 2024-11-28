@@ -25,6 +25,7 @@ const PieChartContracts = ({ data }) => {
     },
     tooltip: {
       trigger: "item",
+      confine: true,
       formatter: "{a} <br/>{b}: £{c} ({d}%)",
     },
     color: ["#1E3A8A", "#2563EB", "#60A5FA", "#93C5FD", "#0A2540", "#0077B6", "#CAF0F8"],
@@ -32,13 +33,7 @@ const PieChartContracts = ({ data }) => {
       {
         name: "Total Budget by Category",
         type: "pie",
-        radius: [30, 110],
-        roseType: "radius",
         itemStyle: {
-          borderRadius: 5,
-          borderColor: "#fff",
-          borderWidth: 2,
-          shadowBlur: 10,
           shadowOffsetX: 0,
           shadowColor: "rgba(0, 0, 0, 0.5)",
         },
