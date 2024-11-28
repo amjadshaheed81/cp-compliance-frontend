@@ -688,6 +688,19 @@ const UpdateAsset = ({
                             ))}
                           </select>
                         </div>
+                        <div className="col-md-6">
+                          <div className="form-group mt-2">
+                            <label for="model">Device Id</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="deviceId"
+                              name="deviceId"
+                              placeholder=""
+                              {...register("deviceId")}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

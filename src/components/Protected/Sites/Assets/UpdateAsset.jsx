@@ -330,6 +330,7 @@ const UpdateAsset = ({
       subCategory2: formData?.subCategory2,
       subCategory3: formData?.subCategory3,
       model: formData?.model,
+      deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
@@ -854,6 +855,19 @@ const UpdateAsset = ({
                               </option>
                             ))}
                           </select>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="form-group mt-2">
+                            <label for="model">Device Id</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="deviceId"
+                              name="deviceId"
+                              placeholder=""
+                              {...register("deviceId")}
+                            />
+                          </div>
                         </div>
                         <div className="row"></div>
                         <div className="row">
