@@ -56,9 +56,8 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
       "1st Floor": 3,
       "2nd Floor": 4,
     };
-  
     const list = siteLayout
-      ?.filter((itm) => itm?.nodeType === "floor")
+      ?.filter((itm) => itm?.nodeType === "floor" && itm?.floorPlanUrl !== "" && itm?.floorPlanUrl !== undefined && itm?.floorPlanUrl !== null)
       .sort((a, b) => {
         const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER; // Default to a high value for "rest"
         const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
