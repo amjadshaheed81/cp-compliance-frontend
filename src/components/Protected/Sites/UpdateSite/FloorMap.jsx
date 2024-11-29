@@ -50,12 +50,26 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
   };
 
   const getFloorList = () => {
-    const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
+    const orderMap = {
+      Basement: 1,
+      "Ground Floor": 2,
+      "1st Floor": 3,
+      "2nd Floor": 4,
+    };
+  
+    const list = siteLayout
+      ?.filter((itm) => itm?.nodeType === "floor")
+      .sort((a, b) => {
+        const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER; // Default to a high value for "rest"
+        const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder;
+      });
+  
     return list?.map((floor, index) => (
       <li
-        key={index}
+        key={floor?.id} // Use unique id instead of index for key
         onClick={() => {
-          handleFloorSelect(index)
+          handleFloorSelect(index);
         }}
         style={{
           cursor: "pointer",
@@ -67,6 +81,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
       </li>
     ));
   };
+  
 
   const updateMarkerPosition = (index, newLeft, newTop) => {
     if (imageRef.current) {

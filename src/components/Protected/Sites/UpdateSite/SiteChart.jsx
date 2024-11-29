@@ -10,66 +10,42 @@ import {
   getSiteLayout,
   addSiteLayoutNode,
   setLoader,
-} from "./../../../../store/thunk/site";
+} from "../../../../store/thunk/site";
 import { toast } from "react-toastify";
 import { InputError } from "../../../common/InputError";
 import UpdateSiteLayout from "./UpdateSiteLayout";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
-const InteriorExteriorStyledNode = styled.div`
-  padding: 5px;
-  border-radius: 8px;
-  display: inline-block;
-  border-left: 4px solid #f3a515;
-  background: repeating-linear-gradient(
-    +45deg,
-    #fff7de 2px,
-    #fff7de,
-    transparent 1rem
-  );
-`;
-
-const MainBuildingStyledNode = styled.div`
-  padding: 5px;
-  border-radius: 8px;
-  display: inline-block;
-  border-left: 4px solid #1dca5d;
-  background: repeating-linear-gradient(
-    +45deg,
-    #1dca5d0a 2px,
-    #1dca5d0a,
-    transparent 1rem
-  );
-`;
-
-const FloorStyledNode = styled.div`
+// Styled Components
+const StyledNode = styled.div`
   padding: 5px;
   border-radius: 8px;
   display: inline-block;
   cursor: pointer;
-  border-left: 4px solid #f34040;
-  background: repeating-linear-gradient(
-    +45deg,
-    #fff5f4 2px,
-    #fff5f4,
-    transparent 1rem
-  );
+  border-left: 4px solid ${(props) => props.borderColor || "#000"};
+  background: ${(props) => props.background || "#f5f5f5"};
 `;
 
-const OtherStyledNode = styled.div`
-  padding: 5px;
-  border-radius: 8px;
-  display: inline-block;
-  border-left: 4px solid #3b80f2;
-  cursor: pointer;
-  background: repeating-linear-gradient(
-    +45deg,
-    #f0f8ff 2px,
-    #f0f8ff,
-    transparent 1rem
-  );
-`;
+const nodeStyles = {
+  building: {
+    borderColor: "#1dca5d",
+    background: "repeating-linear-gradient(+45deg, #1dca5d0a 2px, transparent 1rem)",
+  },
+  floor: {
+    borderColor: "#f34040",
+    background: "repeating-linear-gradient(+45deg, #fff5f4 2px, transparent 1rem)",
+  },
+  type: {
+    borderColor: "#f3a515",
+    background: "repeating-linear-gradient(+45deg, #fff7de 2px, transparent 1rem)",
+  },
+  default: {
+    borderColor: "#3b80f2",
+    background: "repeating-linear-gradient(+45deg, #f0f8ff 2px, transparent 1rem)",
+  },
+};
 
+// Component
 const SiteChart = ({
   getSiteLayout,
   addSiteLayoutNode,
@@ -78,145 +54,100 @@ const SiteChart = ({
   setLoader,
   loggedInUserData,
 }) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-    watch,
-  } = useForm({});
-  const [floorOptions, setFloorOptions] = useState([]);
-  const [positionOption, setPositionOption] = useState([]);
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm({});
+  const [parentNodeTypes, setParentNodeTypes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedNode, setSelectedNode] = useState();
-  const [nodeTypes, setNodeTypes] = useState([
-    {
-      name: "Floor",
-      value: "floor",
-    },
-  ]);
-  const [parentNodeTypes, setParentNodeTypes] = useState([]);
-  useEffect(() => {
-    const floorNodes = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    if (floorNodes?.length > 0) {
-      setNodeTypes([
-        {
-          name: "Floor",
-          value: "floor",
-        },
-        {
-          name: "Room",
-          value: "room",
-        },
-      ]);
-    }
-    const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
-    setPositionOption(positions || []);
-    setFloorOptions(floorNodes || []);
-  }, [siteLayout]);
-  const formValues = watch();
-  const submitNode = (values) => {
-    const isFloorAlreadyAdded = siteLayout?.filter(
-      (itm) =>
-        itm?.parentNode == values?.parentNode &&
-        itm?.nodeName == values?.typeOfNode
-    );
-    if (isFloorAlreadyAdded?.length > 0) {
-      toast.warn(`${values?.typeOfNode} is already added in parent node.`);
-      return;
-    }
-    const data = {
-      siteId: updateSite?.siteId,
-      nodeName: values?.typeOfNode,
-      nodeType: values?.nodeType,
-      parentNode: Number(values?.parentNode),
-    };
-    setLoader(true);
-    addSiteLayoutNode(data);
-    reset({});
-  };
+
+  // Fetch site layout on component mount
   useEffect(() => {
     getSiteLayout(updateSite?.siteId);
-  }, []);
+  }, [getSiteLayout, updateSite]);
 
-  const getMainBuilding = () => {
-    const mainNode = siteLayout?.filter(
-      (itm) => itm?.nodeType === "MasterNode" || itm?.nodeType === "building"
+  // Update parent node types when site layout changes
+  useEffect(() => {
+    const floors = siteLayout?.filter((node) => node.nodeType === "floor") || [];
+    setParentNodeTypes(floors);
+  }, [siteLayout]);
+
+  // Submit new node
+  const submitNode = (values) => {
+    const { typeOfNode, nodeType, parentNode } = values;
+    const duplicateNode = siteLayout.some(
+      (node) =>
+        node.parentNode == parentNode && node.nodeName === typeOfNode
     );
-    return mainNode?.length > 0 ? (
-      <MainBuildingStyledNode>{mainNode?.[0]?.nodeName}</MainBuildingStyledNode>
-    ) : null;
+
+    if (duplicateNode) {
+      toast.warn(`${typeOfNode} is already added under this parent.`);
+      return;
+    }
+
+    const newNode = {
+      siteId: updateSite?.siteId,
+      nodeName: typeOfNode,
+      nodeType,
+      parentNode: Number(parentNode),
+    };
+
+    setLoader(true);
+    addSiteLayoutNode(newNode);
+    reset();
   };
-  const getTreeNodePosition = () => {
-    const positionNode = siteLayout?.filter(
-      (itm) => (itm?.nodeType === "position" || itm?.nodeType === "type") && itm?.nodeName === "Exterior"
-    );
-    const childs = siteLayout?.filter(
-      (itm) => itm?.parentNode === positionNode?.[0]?.id
-    );
-    return positionNode?.length > 0 ? (
-      <TreeNode
-        label={
-          <InteriorExteriorStyledNode>
-            {positionNode?.[0]?.nodeName}
-          </InteriorExteriorStyledNode>
-        }
-      >
-        {childs?.map((itm) => (
-          <TreeNode label={<FloorStyledNode><span
-            onClick={() => {
-              setSelectedNode(itm);
-              setShowModal(true);
-            }}
-          >{itm?.nodeName}</span></FloorStyledNode>}>
-            {getOtherStyleNode(itm)}
-          </TreeNode>
-        ))}
-      </TreeNode>
-    ) : null;
+
+  // Render nodes recursively
+  const renderTreeNodes = (nodes) => {
+    // Define custom order for floor names
+    const orderMap = {
+      Basement: 1,
+      "Ground Floor": 2,
+      "1st Floor": 3,
+      "2nd Floor": 4,
+    };
+  
+    // Sort nodes based on the custom order
+    const sortedNodes = nodes.sort((a, b) => {
+      const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER; // If not in orderMap, place it at the end
+      const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
+  
+    // Render sorted nodes recursively
+    return sortedNodes.map((node) => {
+      const children = siteLayout.filter(
+        (child) => child.parentNode === node.id
+      );
+  
+      const style = nodeStyles[node.nodeType] || nodeStyles.default;
+  
+      return (
+        <TreeNode
+          key={node.id}
+          label={
+            <StyledNode
+              borderColor={style.borderColor}
+              background={style.background}
+              onClick={() => {
+                setSelectedNode(node);
+                setShowModal(true);
+              }}
+            >
+              {node.nodeName}
+            </StyledNode>
+          }
+        >
+          {renderTreeNodes(children)}
+        </TreeNode>
+      );
+    });
   };
-  const getOtherStyleNode = (node) => {
-    const positionNode = siteLayout?.filter(
-      (itm) => itm?.parentNode === node?.id
-    );
-    return positionNode?.map((itm) => (
-      <TreeNode
-        label={<OtherStyledNode><span onClick={() => {
-          setSelectedNode(itm);
-          setShowModal(true);
-        }}>{itm?.nodeName}</span></OtherStyledNode>}
-      ></TreeNode>
-    ));
-  };
-  const getTreeNodePositionInterior = () => {
-    const positionNode = siteLayout?.filter(
-      (itm) => (itm?.nodeType === "position" || itm?.nodeType === "type") && itm?.nodeName === "Interior"
-    );
-    const childs = siteLayout?.filter(
-      (itm) => itm?.parentNode === positionNode?.[0]?.id
-    );
-    return positionNode?.length > 0 ? (
-      <TreeNode
-        label={
-          <InteriorExteriorStyledNode>
-            {positionNode?.[0]?.nodeName}
-          </InteriorExteriorStyledNode>
-        }
-      >
-        {childs?.map((itm) => (
-          <TreeNode label={<FloorStyledNode><span
-            onClick={() => {
-              setSelectedNode(itm);
-              setShowModal(true);
-            }}
-          >{itm?.nodeName}</span></FloorStyledNode>}>
-            {getOtherStyleNode(itm)}
-          </TreeNode>
-        ))}
-      </TreeNode>
-    ) : null;
-  };
+  
+
+  // Get root nodes
+  const rootNodes = siteLayout.filter(
+    (node) => node.parentNode === 0
+  );
+
   return (
     <>
       <SidebarNew />
@@ -231,108 +162,51 @@ const SiteChart = ({
       <div style={{ textAlign: "center" }}>
         <h5 className="text-start">Creating Building Layout</h5>
         <Tree
-          lineWidth={"2px"}
-          lineColor={"grey"}
-          lineBorderRadius={"10px"}
-          label={getMainBuilding()}
+          lineWidth="2px"
+          lineColor="grey"
+          lineBorderRadius="10px"
+          label={<strong>Site Layout</strong>}
         >
-          {getTreeNodePositionInterior()}
-          {getTreeNodePosition()}
+          {renderTreeNodes(rootNodes)}
         </Tree>
-        <div
-          style={{
-            display: (updateSite?.isViewMode || !isManagerAdminLogin(loggedInUserData)) ? "none" : "block",
-          }}
-        >
+        {!updateSite?.isViewMode && isManagerAdminLogin(loggedInUserData) && (
           <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
             <div className="col-md-3 p-2">
               <input
                 className="form-control"
                 placeholder="Enter Node Name"
-                {...register("typeOfNode", {
-                  required: {
-                    value: true,
-                    message: `Please enter node name`,
-                  },
-                })}
+                {...register("typeOfNode", { required: "Please enter node name" })}
               />
-
-              {errors?.typeOfNode && (
-                <InputError
-                  message={errors?.typeOfNode?.message}
-                  key={errors?.typeOfNode?.message}
-                />
-              )}
+              {errors.typeOfNode && <InputError message={errors.typeOfNode.message} />}
             </div>
             <div className="col-md-3 p-2">
               <select
-                name="nodeType"
                 className="form-control form-select"
-                id="nodeType"
-                {...register("nodeType", {
-                  required: {
-                    value: true,
-                    message: `Please select node type.`,
-                  },
-                })}
-                onChange={(e) => {
-                  setValue("nodeType", e.target.value, {
-                    shouldValidate: true,
-                  });
-                  if (String(e.target.value).toLowerCase() === "floor") {
-                    setParentNodeTypes(positionOption);
-                    setValue("parentNode", "", { shouldValidate: true });
-                  }
-                  if (String(e.target.value).toLowerCase() === "room") {
-                    setParentNodeTypes(floorOptions);
-                    setValue("parentNode", "", { shouldValidate: true });
-                  }
-                }}
+                {...register("nodeType", { required: "Please select node type" })}
               >
-                <option value="" disabled selected>
+                <option value="" disabled>
                   Select Node Type
                 </option>
-                {nodeTypes?.map((itm) => (
-                  <option value={itm?.value}>{itm?.name}</option>
-                ))}
+                <option value="floor">Floor</option>
+                <option value="room">Room</option>
               </select>
-              {errors?.nodeType && (
-                <InputError
-                  message={errors?.nodeType?.message}
-                  key={errors?.nodeType?.message}
-                />
-              )}
+              {errors.nodeType && <InputError message={errors.nodeType.message} />}
             </div>
             <div className="col-md-3 p-2">
               <select
-                name="parentNode"
-                className="form-control form-select w-75"
-                id="parentNode"
-                {...register("parentNode", {
-                  required: {
-                    value: true,
-                    message: `Please select parent node.`,
-                  },
-                })}
-                onChange={(e) => {
-                  setValue("parentNode", e.target.value, {
-                    shouldValidate: true,
-                  });
-                }}
+                className="form-control form-select"
+                {...register("parentNode", { required: "Please select parent node" })}
               >
-                <option value="" disabled selected>
+                <option value="" disabled>
                   Select Parent Node
                 </option>
-                {parentNodeTypes?.map((itm) => (
-                  <option value={itm?.id}>{itm?.nodeName}</option>
+                {parentNodeTypes.map((node) => (
+                  <option key={node.id} value={node.id}>
+                    {node.nodeName}
+                  </option>
                 ))}
               </select>
-              {errors?.parentNode && (
-                <InputError
-                  message={errors?.parentNode?.message}
-                  key={errors?.parentNode?.message}
-                />
-              )}
+              {errors.parentNode && <InputError message={errors.parentNode.message} />}
             </div>
             <div className="col-md-3 p-2">
               <button className="btn btn-primary" type="submit">
@@ -340,7 +214,7 @@ const SiteChart = ({
               </button>
             </div>
           </form>
-        </div>
+        )}
         <UpdateFloor />
         <FloorMap siteLayout={siteLayout} />
       </div>
@@ -348,12 +222,13 @@ const SiteChart = ({
   );
 };
 
+// Map Redux state and actions
 const mapStateToProps = (state) => ({
-  error: state.site.siteLayoutFailure,
-  updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
+  updateSite: state.site.updateSite,
   loggedInUserData: state.site.loggedInUserData,
 });
+
 export default connect(mapStateToProps, {
   getSiteLayout,
   addSiteLayoutNode,

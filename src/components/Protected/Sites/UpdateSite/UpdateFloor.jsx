@@ -65,9 +65,23 @@ const UpdateFloor = ({
     }
   };
   const getFloorPlanInputs = () => {
-    const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
+    const orderMap = {
+      Basement: 1,
+      "Ground Floor": 2,
+      "1st Floor": 3,
+      "2nd Floor": 4,
+    };
+  
+    const list = siteLayout
+      ?.filter((itm) => itm?.nodeType === "floor")
+      .sort((a, b) => {
+        const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER; // Default to a high value for "rest"
+        const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder;
+      });
+  
     return list?.map((itm) => (
-      <tr key="FloorName">
+      <tr key={itm?.id}>
         <td>
           {getParentNodeName(itm?.parentNode)}: {itm?.nodeName}
         </td>
@@ -91,18 +105,19 @@ const UpdateFloor = ({
                 marginTop: "2px",
               }}
               onClick={(e) => {
-                e?.preventDefault();
+                e.preventDefault();
                 setShowPdfModal(true);
                 setSelectedPdf(itm?.floorPlanUrl);
               }}
             >
-             {itm?.fileName ?  itm?.fileName : `${itm?.nodeName}.png`}
+              {itm?.fileName ? itm?.fileName : `${itm?.nodeName}.png`}
             </button>
           ) : null}
         </td>
       </tr>
     ));
   };
+  
   return (
     <div
       style={{
