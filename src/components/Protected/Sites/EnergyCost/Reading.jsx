@@ -221,7 +221,7 @@ const Reading = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {survey?.readingList?.length === 0 && (
+                        {survey?.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate))?.length === 0 && (
                           <tr>
                             <td colSpan={5} align="center">
                               No record
@@ -240,10 +240,10 @@ const Reading = ({
                               {d.readingValue} {d.readingUnit}
                             </td>
                             <td>
-                              {(idx === 0
+                              {(idx === (survey?.readingList?.length - 1)
                                 ? d?.readingValue
                                 : d?.readingValue -
-                                  survey?.readingList?.[idx - 1]?.readingValue)?.toFixed(2)}
+                                  survey?.readingList?.[idx + 1]?.readingValue)?.toFixed(2)}
                               {d.readingUnit}
                             </td>
                             {!isView && (
