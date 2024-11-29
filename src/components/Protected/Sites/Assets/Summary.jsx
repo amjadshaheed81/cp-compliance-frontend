@@ -284,9 +284,23 @@ const Summary = ({
                 name="location"
                 className="form-control form-select"
                 id="location"
-                onChange={handleInputChange}
+                // onChange={handleInputChange}
+                onChange={(e) => {
+                  const { name, value } = e.target;
+                  setFormData({
+                    ...formData,
+                    [name]: value,
+                  });
+                  const node = siteLayout
+                  .filter((site) => site.nodeName === value);
+                  const data = siteLayout
+                  .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                  setFloorNode(data || []);
+                }}
               >
                 <option value="">Location</option>
+                <option value="Interior">Interior</option>
+                <option value="Exterior">Exterior</option>
                 <option value="External">External</option>
                 <option value="Internal">Internal</option>
                 {/* {locationFilter.map((site) => (
@@ -299,7 +313,19 @@ const Summary = ({
                 name="floor"
                 className="form-control form-select"
                 id="floor"
-                onChange={handleInputChange}
+                // onChange={handleInputChange}
+                onChange={(e) => {
+                  const { name, value } = e.target;
+                  setFormData({
+                    ...formData,
+                    [name]: value,
+                  });
+                  const node = siteLayout
+                  .filter((site) => site.nodeName === value);
+                  const data = siteLayout
+                  .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                  setRoomNode(data || []);
+                }}
               >
                 <option value="">Floor</option>
                 {floorNode?.map((itm) => (

@@ -84,6 +84,8 @@ const UpdateAsset = ({
   const [showModal, setShowModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [floors, setFloors] = useState([]);
+  const [rooms, setRooms] = useState([]);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
@@ -354,7 +356,6 @@ const UpdateAsset = ({
   const submitSiteAssetPurchaseDetail = async (data) => {
     let form_data = new FormData();
     const { purchaseInvoice, ...formData } = data;
-    console.log("purchaseInvoice", purchaseInvoice);
     if (purchaseInvoice?.length > 0) {
       form_data.append(
         "purchaseInvoice",
@@ -388,6 +389,7 @@ const UpdateAsset = ({
   };
 
   const locationForm = useForm({});
+  const locationFormValues = locationForm.watch();
   const submitLocationForm = async (data) => {
     let form_data = new FormData();
     const submitData = {
@@ -1383,12 +1385,15 @@ const UpdateAsset = ({
                         name="position"
                         className="form-control form-select"
                         id="position"
-                        {...locationForm.register("position", {
-                          required: {
-                            value: true,
-                            message: `Please select Internal/External`,
-                          },
-                        })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          locationForm.setValue("position", value)
+                          const node = siteLayout
+                          .filter((site) => site.nodeName === value);
+                          const data = siteLayout
+                          .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                          setFloors(data || []);
+                        }}
                       >
                         <option value="">Select Internal/External</option>
                         {["Internal", "External", "Interior", "Exterior"].map(
@@ -1412,17 +1417,18 @@ const UpdateAsset = ({
                         name="floor"
                         className="form-control form-select"
                         id="floor"
-                        {...locationForm.register("floor", {
-                          required: {
-                            value: true,
-                            message: `Please select floor`,
-                          },
-                        })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          locationForm.setValue("floor", value)
+                          const node = siteLayout
+                          .filter((site) => site.nodeName === value);
+                          const data = siteLayout
+                          .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                          setRooms(data || []);
+                        }}
                       >
                         <option value="">Select Floor</option>
-                        {siteLayout
-                          .filter((site) => site.nodeType === "floor")
-                          .map((site) => (
+                        {floors?.map((site) => (
                             <option value={site.nodeName}>
                               {site.nodeName}{" "}
                             </option>
@@ -1451,9 +1457,7 @@ const UpdateAsset = ({
                         })}
                       >
                         <option value="">Select Room</option>
-                        {siteLayout
-                          .filter((site) => site.nodeType === "room")
-                          .map((site) => (
+                        {rooms?.map((site) => (
                             <option value={site.nodeName}>
                               {site.nodeName}
                             </option>
