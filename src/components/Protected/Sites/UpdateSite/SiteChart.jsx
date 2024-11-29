@@ -103,6 +103,12 @@ const SiteChart = ({
       "Ground Floor": 2,
       "1st Floor": 3,
       "2nd Floor": 4,
+      "3rd Floor": 5,
+      "4th Floor": 6,
+      "5th Floor": 7,
+      "6th Floor": 8,
+      "7th Floor": 9,
+      "Vertical": 10,
     };
   
     // Sort nodes based on the custom order
