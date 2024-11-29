@@ -215,7 +215,7 @@ const SiteChart = ({
             </div>
           </form>
         )}
-        <UpdateFloor />
+        {!updateSite?.isViewMode && isManagerAdminLogin(loggedInUserData) && <UpdateFloor /> }
         <FloorMap siteLayout={siteLayout} />
       </div>
     </>
