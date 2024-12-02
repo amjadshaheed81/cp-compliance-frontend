@@ -54,7 +54,7 @@ const AddUser = ({
   const [companies, setcompanies] = useState([]);
   const [tagSite, setTagSite] = useState([]);
   const [showSiteTagModal, setShowSiteTagModal] = useState(false);
-  const [taggedSites, setTaggedSites] = useState([]);
+  // const [taggedSites, setTaggedSites] = useState([]);
   const handleChange = (event) => {
     const {
       target: { value },
@@ -164,11 +164,21 @@ const AddUser = ({
       label: option.siteName,
     })),
   ];
+  const getSiteName = (siteId) => {
+    const filters = sites.filter(s=> s.siteId === siteId);
+    if(filters.length) {
+      return `${filters[0].siteName}`
+    }
+    return '';
+  }
   return (
     <React.Fragment>
       {showSiteTagModal && (
         <TagSites
-          taggedSites={taggedSites}
+          isUserModal={true}
+          setTagSite={setTagSite}
+          getSiteName={getSiteName}
+          taggedSites={tagSite}
           showSiteTagModal={showSiteTagModal}
           setShowSiteTagModal={setShowSiteTagModal}
         />
@@ -460,14 +470,14 @@ const AddUser = ({
                                 type="button"
                                 className="btn btn-sm btn-light text-primary"
                                 onClick={() => {
-                                  setTaggedSites(
-                                    tagSite?.map(
-                                      (itm) =>
-                                        sites?.filter(
-                                          (site) => site?.siteId == itm
-                                        )?.[0]?.siteName
-                                    )
-                                  );
+                                  // setTaggedSites(
+                                  //   tagSite?.map(
+                                  //     (itm) =>
+                                  //       sites?.filter(
+                                  //         (site) => site?.siteId == itm
+                                  //       )?.[0]?.siteName
+                                  //   )
+                                  // );
                                   setShowSiteTagModal(true);
                                 }}
                               >
