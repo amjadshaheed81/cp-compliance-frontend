@@ -17,14 +17,22 @@ export const MenuProps = {
   },
 };
 
-const TagSites = ({ showSiteTagModal, setShowSiteTagModal, taggedSites }) => {
+const TagSites = ({
+  showSiteTagModal,
+  setShowSiteTagModal,
+  taggedSites,
+  isUserModal,
+  setTagSite,
+  getSiteName,
+}) => {
   const handleOpen = () => setShowSiteTagModal(true);
   const handleClose = () => setShowSiteTagModal(false);
   const [sitesPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;
-  const currentSites = taggedSites?.slice(indexOfFirstSite, indexOfLastSite) || [];
+  const currentSites =
+    taggedSites?.slice(indexOfFirstSite, indexOfLastSite) || [];
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -44,12 +52,28 @@ const TagSites = ({ showSiteTagModal, setShowSiteTagModal, taggedSites }) => {
                 <thead className="table-dark">
                   <tr>
                     <th scope="col">Site Name</th>
+                    {isUserModal && <th scope="col">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {currentSites?.map((itm) => (
                     <tr>
-                      <td>{itm?.name ? itm?.name : itm}</td>
+                      <td>{itm?.name ? itm?.name : getSiteName(itm)}</td>
+                      {isUserModal && (
+                        <td scope="col">
+                          <button
+                            className="btn bt-sm btn-danger"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setTagSite(
+                                taggedSites.filter((value) => value !== itm)
+                              );
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
