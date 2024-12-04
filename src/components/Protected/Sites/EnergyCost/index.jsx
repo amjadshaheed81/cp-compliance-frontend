@@ -223,19 +223,18 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   };
 
   function convertToDate(dateString) {
-    if("number" === typeof dateString) {
+    if (typeof dateString === "number") {
       const excelEpoch = new Date(1900, 0, 1);
-       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
+      const daysOffset = dateString > 59 ? dateString - 1 : dateString;
       const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+      jsDate.setUTCHours(0, 0, 0, 0); 
       return jsDate.toISOString();
     } else {
-   
-     const [day, month, year] = dateString.split("/").map(Number);
-     const date = new Date(year, month - 1, day);
-    return new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
-    ).toISOString();
-  }
+      const [day, month, year] = dateString.split("/").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      date.setUTCHours(0, 0, 0, 0); 
+      return date.toISOString();
+    }
   }
 
   const handleFileUploadCost = (event) => {
@@ -264,8 +263,8 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
               rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory;
             }
           } else if (index === 1 || index === 2) {
-            console.log(rowValues[index])
             rowValues[index] = convertToDate(rowValues[index]);
+            console.log(rowValues[index])
           }
           rowData[col] = rowValues[index] || null;
         });
