@@ -320,8 +320,8 @@ const UpdateAsset = ({
         formData?.assetName
       );
     } else {
-      const blob = await fetchBlob(selectedAsset?.image);
-      form_data.append("assetImage", blob, formData?.assetName);
+      //const blob = await fetchBlob(selectedAsset?.image);
+      //form_data.append("assetImage", blob, formData?.assetName);
     }
     const formDetails = {
       assetId: formData?.assetId,
