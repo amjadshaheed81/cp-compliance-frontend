@@ -37,7 +37,7 @@ const ForgotPassword = ({ login }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const body = { email, otp, password };
+    const body = { email: email?.toLowerCase(), otp, password };
     post("/api/user/reset-password", body)
       .then((res) => {
         setotpSend(true);
