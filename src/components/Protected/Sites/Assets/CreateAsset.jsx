@@ -322,6 +322,8 @@ const CreateAsset = ({
                             (itm) => itm?.attribite1 === val
                           );
                           setSubCategoryList(subCategoryData);
+                          setSubCategory2List([]);
+                          setSubCategory3List([]);
                         }}
                       >
                         <option value="" selected disabled>
@@ -352,6 +354,7 @@ const CreateAsset = ({
                             (itm) => itm?.attribite1 === val
                           );
                           setSubCategory2List(subCategoryData);
+                          setSubCategory3List([]);
                         }}
                       >
                         <option value="">Select Sub Category</option>

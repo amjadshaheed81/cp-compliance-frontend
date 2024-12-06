@@ -473,6 +473,7 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setSubCategory2List(subCategoryData);
+    setSubCategory3List([]);
   };
   const categoryChange = (val) => {
     setValue("category", val);
@@ -480,6 +481,8 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setSubCategoryList(subCategoryData);
+    setSubCategory2List([]);
+    setSubCategory3List([]);
   };
   const getSelectedValue = () => {
     const arr = [];
