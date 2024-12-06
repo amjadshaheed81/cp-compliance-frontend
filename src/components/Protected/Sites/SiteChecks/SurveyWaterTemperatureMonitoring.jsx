@@ -620,6 +620,22 @@ const SurveyWaterTemperatureMonitoring = ({
             >
               Save
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReadingPop((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
+              }}
+              style={{
+                width: "150px",
+                marginBottom: "20px",
+                margin: "10px",
+                float: "right",
+              }}
+              className="btn btn-primary text-white pr-2"
+            >
+              Next
+            </button>
+            
           </DialogActions>
         </form>
       </Dialog>
