@@ -730,6 +730,14 @@ const SurveyWaterTemperatureMonitoring = ({
           </Fragment>
         </DialogContent>
         <DialogActions>
+        <Button
+            className="bg-primary text-white"
+            onClick={() => {
+              setShowHistory((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
+            }}
+          >
+            Next
+          </Button>
           <Button
             className="bg-primary text-white"
             onClick={() => {
