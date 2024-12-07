@@ -168,6 +168,16 @@ const Cost = ({
                     name="cost"
                     onChange={handleInputChange}
                     required
+                    onKeyPress={(e) => {
+                      if (!/^\d*$/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      if (!/^\d*$/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid sm={8}></Grid>
