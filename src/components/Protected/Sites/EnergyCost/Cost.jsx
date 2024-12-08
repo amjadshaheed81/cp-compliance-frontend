@@ -163,21 +163,12 @@ const Cost = ({
                   <input
                     style={{ maxWidth: "300px" }}
                     type="number"
+                    step="any"
                     className="form-control"
                     disabled={isView}
                     name="cost"
                     onChange={handleInputChange}
                     required
-                    onKeyPress={(e) => {
-                      if (!/^\d*$/.test(e.key)) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onPaste={(e) => {
-                      if (!/^\d*$/.test(e.key)) {
-                        e.preventDefault();
-                      }
-                    }}
                   />
                 </Grid>
                 <Grid sm={8}></Grid>
