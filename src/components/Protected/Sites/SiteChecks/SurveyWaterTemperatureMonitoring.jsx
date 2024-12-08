@@ -601,7 +601,7 @@ const SurveyWaterTemperatureMonitoring = ({
           </DialogContent>
           <DialogActions>
             <Button
-              type="cancel"
+              type="button"
               onClick={() => setReadingPop(null)}
               className="bg-light text-primary"
             >
