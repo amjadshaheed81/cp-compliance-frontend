@@ -38,6 +38,7 @@ const SurveyWaterTemperatureMonitoring = ({
   const [action2, setAction2] = useState(false);
   const [normruntime, setnormruntime] = useState([]);
   const [readingPop, setReadingPop] = useState(null);
+  const [readingPopShow, setReadingPopShow] = useState(false);
   const [showHistory, setShowHistory] = useState(null);
   const [formData, setFormData] = useState([{}]);
   const [formData2, setFormData2] = useState({});
@@ -213,6 +214,7 @@ const SurveyWaterTemperatureMonitoring = ({
       (formData?.[readingPop]?.temperature === "Cold" &&
         Number(formData[readingPop].reading3) > 20);
     if (!isReading1ok && !isReading2ok && !isReading3ok) {
+      setReadingPopShow(false)
       setReadingPop(null);
       setAction(false);
       setAction2(false);
@@ -221,6 +223,7 @@ const SurveyWaterTemperatureMonitoring = ({
     }
     if (action2) {
       setReadingPop(null);
+      setReadingPopShow(false)
       setAction(false);
       setAction2(false);
       addSiteCheckSurvey(event);
@@ -238,6 +241,7 @@ const SurveyWaterTemperatureMonitoring = ({
     put("/api/site/actions", body);
     } else if (action && !action2) {
       setReadingPop(null);
+      setReadingPopShow(false)
       setAction2(false);
       setAction(false);
       addSiteCheckSurvey(event);
@@ -269,9 +273,10 @@ const SurveyWaterTemperatureMonitoring = ({
   return (
     <>
       <Dialog
-        open={readingPop !== null}
+        open={readingPopShow}
         onClose={() => {
           setReadingPop(null);
+          setReadingPopShow(false)
         }}
         maxWidth="lg"
         fullWidth
@@ -383,6 +388,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                   type="number"
                                   className="form-control"
                                   name="reading1"
+                                  value={formData?.[readingPop]?.reading1 || ""}
                                   required
                                   style={{
                                     color:
@@ -415,6 +421,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                   className="form-control"
                                   name="reading2"
                                   required
+                                  value={formData?.[readingPop]?.reading2 || ""}
                                   style={{
                                     color:
                                       (formData?.[readingPop]?.temperature ===
@@ -446,6 +453,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                   required
                                   className="form-control"
                                   name="reading3"
+                                  value={formData?.[readingPop]?.reading3 || ""}
                                   style={{
                                     color:
                                       (formData?.[readingPop]?.temperature ===
@@ -602,7 +610,9 @@ const SurveyWaterTemperatureMonitoring = ({
           <DialogActions>
             <Button
               type="button"
-              onClick={() => setReadingPop(null)}
+              onClick={() => { setReadingPop(null);
+                setReadingPopShow(false)
+              }}
               className="bg-light text-primary"
             >
               Cancel
@@ -623,7 +633,16 @@ const SurveyWaterTemperatureMonitoring = ({
             <button
               type="button"
               onClick={() => {
-                setReadingPop((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
+                setReadingPop((prev) => {
+                  const nextIndex = prev < formData.length - 1 ? prev + 1 : prev;
+                  // Ensure the next index has default/blank values
+                  setFormData((prevData) => {
+                    const updatedData = [...prevData];
+                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: "", update: false };
+                    return updatedData;
+                  });
+                  return nextIndex;
+                });
               }}
               style={{
                 width: "150px",
@@ -1031,7 +1050,17 @@ const SurveyWaterTemperatureMonitoring = ({
                               type="button"
                               className="btn btn-sm btn-light text-dark"
                               onClick={() => {
-                                setReadingPop(idx);
+                                setReadingPopShow(true)
+                                setReadingPop(() => {
+                                  const nextIndex = idx;
+                                  // Ensure the next index has default/blank values
+                                  setFormData((prevData) => {
+                                    const updatedData = [...prevData];
+                                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: "", update: false };
+                                    return updatedData;
+                                  });
+                                  return nextIndex;
+                                });
                               }}
                             >
                               <i className="fas fa-chart-line"></i>
