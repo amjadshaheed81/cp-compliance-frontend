@@ -638,7 +638,7 @@ const SurveyWaterTemperatureMonitoring = ({
                   // Ensure the next index has default/blank values
                   setFormData((prevData) => {
                     const updatedData = [...prevData];
-                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: "", update: false };
+                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: "", update: true };
                     return updatedData;
                   });
                   return nextIndex;
@@ -1056,7 +1056,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                   // Ensure the next index has default/blank values
                                   setFormData((prevData) => {
                                     const updatedData = [...prevData];
-                                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: "", update: false };
+                                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: "", update: true };
                                     return updatedData;
                                   });
                                   return nextIndex;
