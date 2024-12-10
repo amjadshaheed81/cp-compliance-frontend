@@ -231,10 +231,18 @@ const CreateAsset = ({
                               options={siteAssets.map((option) => {
                                 return {
                                   key: option.assetId,
-                                  label: option.assetName,
+                                  label:
+                                    option.assetId +
+                                    " - " +
+                                    option.assetName +
+                                    " (" +
+                                    `${option?.position || "NA"} > ${
+                                      option?.floor || "NA"
+                                    } > ${option?.room || "NA"}` +
+                                    ")",
                                 };
                               })}
-                              getOptionLabel={(option) => option.label || ""}
+                              getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
                                 <TextField
                                   {...params}

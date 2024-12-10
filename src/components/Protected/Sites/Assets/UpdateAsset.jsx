@@ -87,6 +87,18 @@ const UpdateAsset = ({
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
 
+  useEffect(() => {
+    const setFloorsData = async () => {
+      if (siteLayout?.length > 0) {
+        const data = siteLayout.filter((site) => site.nodeType === "floor");
+        setFloors(data || []);
+        const data2 = siteLayout.filter((site) => site.nodeType === "room");
+        setRooms(data2 || []);
+      }
+    };
+    setFloorsData();
+  }, [siteLayout]);
+
   const tabChange = (event, newValue) => {
     event?.preventDefault();
     setTabValue(newValue);
@@ -130,15 +142,17 @@ const UpdateAsset = ({
   const getTester = async () => {
     const url = `/api/user/all`;
     const data = await get(url);
-    setTester(data?.users?.sort((a, b) => {
-      if (a.name < b.name) {
+    setTester(
+      data?.users?.sort((a, b) => {
+        if (a.name < b.name) {
           return -1; // a comes before b
-      }
-      if (a.name > b.name) {
-          return 1;  // b comes before a
-      }
-      return 0; // names are equal
-  }));
+        }
+        if (a.name > b.name) {
+          return 1; // b comes before a
+        }
+        return 0; // names are equal
+      })
+    );
   };
 
   const toggleEditMode = (index) => {
@@ -390,6 +404,7 @@ const UpdateAsset = ({
 
   const locationForm = useForm({});
   const locationFormValues = locationForm.watch();
+  console.log("locationFormValues", locationFormValues);
   const submitLocationForm = async (data) => {
     let form_data = new FormData();
     const submitData = {
@@ -688,12 +703,18 @@ const UpdateAsset = ({
                               options={siteAssets.map((option) => {
                                 return {
                                   key: option.assetId,
-                                  label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })}
-                              getOptionLabel={(option) => (
-                                <Fragment key={option.key}>
-                                  {option.label || ""}
-                                </Fragment>
-                              )}
+                                  label:
+                                    option.assetId +
+                                    " - " +
+                                    option.assetName +
+                                    " (" +
+                                    `${option?.position || "NA"} > ${
+                                      option?.floor || "NA"
+                                    } > ${option?.room || "NA"}` +
+                                    ")",
+                                };
+                              })}
+                              getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
                                 <TextField
                                   disabled
@@ -963,7 +984,7 @@ const UpdateAsset = ({
                 }}
               >
                 <TabList onChange={tabChange} aria-label="lab API tabs example">
-                <Tab
+                  <Tab
                     className="text-success"
                     label="Tagged Documents"
                     value="1"
@@ -1388,13 +1409,18 @@ const UpdateAsset = ({
                         name="position"
                         className="form-control form-select"
                         id="position"
+                        value={locationFormValues?.position}
                         onChange={(e) => {
                           const value = e.target.value;
-                          locationForm.setValue("position", value)
-                          const node = siteLayout
-                          .filter((site) => site.nodeName === value);
-                          const data = siteLayout
-                          .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                          locationForm.setValue("position", value);
+                          const node = siteLayout.filter(
+                            (site) => site.nodeName === value
+                          );
+                          const data = siteLayout.filter(
+                            (site) =>
+                              site.nodeType === "floor" &&
+                              site.parentNode === node?.[0]?.id
+                          );
                           setFloors(data || []);
                         }}
                       >
@@ -1420,22 +1446,27 @@ const UpdateAsset = ({
                         name="floor"
                         className="form-control form-select"
                         id="floor"
+                        value={locationFormValues?.floor}
                         onChange={(e) => {
                           const value = e.target.value;
-                          locationForm.setValue("floor", value)
-                          const node = siteLayout
-                          .filter((site) => site.nodeName === value);
-                          const data = siteLayout
-                          .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                          locationForm.setValue("floor", value);
+                          const node = siteLayout.filter(
+                            (site) => site.nodeName === value
+                          );
+                          const data = siteLayout.filter(
+                            (site) =>
+                              site.nodeType === "room" &&
+                              site.parentNode === node?.[0]?.id
+                          );
                           setRooms(data || []);
                         }}
                       >
                         <option value="">Select Floor</option>
                         {floors?.map((site) => (
-                            <option value={site.nodeName}>
-                              {site.nodeName}{" "}
-                            </option>
-                          ))}
+                          <option value={site.nodeName}>
+                            {site.nodeName}{" "}
+                          </option>
+                        ))}
                       </select>
                       {locationForm.formState.errors?.floor && (
                         <InputError
@@ -1461,10 +1492,8 @@ const UpdateAsset = ({
                       >
                         <option value="">Select Room</option>
                         {rooms?.map((site) => (
-                            <option value={site.nodeName}>
-                              {site.nodeName}
-                            </option>
-                          ))}
+                          <option value={site.nodeName}>{site.nodeName}</option>
+                        ))}
                       </select>
                       {locationForm.formState.errors?.room && (
                         <InputError
