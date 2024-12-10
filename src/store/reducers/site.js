@@ -588,6 +588,7 @@ const reducer = (state = initialState, action) => {
     case SET_SITE_LOADER:
       return {
         ...state,
+        siteAssets: [],
         isLoading: action.payload,
       };
     case SET_SIDEBAR_VIEW:
@@ -640,6 +641,7 @@ const reducer = (state = initialState, action) => {
     case GET_SITES_ASSET:
       return {
         ...state,
+        isLoading: false,
         siteAssets: action.payload,
       };
     case GET_SITES_DOOR_ASSET:

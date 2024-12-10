@@ -10,6 +10,7 @@ import {
   deleteSiteAsset,
   getSiteAssets,
   getSiteLayout,
+  setLoader,
 } from "../../../../store/thunk/site";
 import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
@@ -28,6 +29,7 @@ const Summary = ({
   loggedInUserData,
   getSiteLayout,
   siteLayout,
+  setLoader,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
@@ -59,6 +61,7 @@ const Summary = ({
     setCurrentPage(pageNumber);
   };
   useEffect(() => {
+    setLoader(true);
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getCategory();
     getSiteLayout(siteSelectedForGlobal?.siteId);
@@ -465,6 +468,7 @@ const Summary = ({
                   <td>No Result Found !!</td>
                 </tr>
               )}
+              
               {currentSiteAssets?.map((asset) => (
                 <tr key={asset?.assetId}>
                   <th>
@@ -565,4 +569,5 @@ export default connect(mapStateToProps, {
   deleteSiteAsset,
   getSiteAssets,
   getSiteLayout,
+  setLoader,
 })(Summary);
