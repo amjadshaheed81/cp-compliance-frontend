@@ -605,6 +605,7 @@ const SurveyWaterTemperatureMonitoring = ({
                   </Grid>
                 )}
               </Grid>
+              <div className="float-end"><small className="alert alert-info p-2">Please click on Save before proceeding to the next Asset</small></div>
             </Fragment>
           </DialogContent>
           <DialogActions>
