@@ -212,8 +212,8 @@ const Summary = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
-                <option value="External">External</option>
-                <option value="Internal">Internal</option>
+                <option value="Interior">Interior</option>
+                <option value="Exterior">Exterior</option>
                 {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
                 ))} */}

@@ -333,8 +333,6 @@ const Pat = ({
                 <option value="">Location</option>
                 <option value="Interior">Interior</option>
                 <option value="Exterior">Exterior</option>
-                <option value="External">External</option>
-                <option value="Internal">Internal</option>
                 {/* {locationFilter.map((site) => (
                   <option value={site.location}>{site.location}</option>
                 ))} */}

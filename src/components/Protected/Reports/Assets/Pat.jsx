@@ -206,8 +206,8 @@ const Pat = ({
                 onChange={handleInputChange}
               >
                 <option value="">Location</option>
-                <option value="External">External</option>
-                <option value="Internal">Internal</option>
+                <option value="Interior">Interior</option>
+                <option value="Exterior">Exterior</option>
               </select>
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
