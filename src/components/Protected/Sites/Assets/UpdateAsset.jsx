@@ -1404,7 +1404,7 @@ const UpdateAsset = ({
                 <form onSubmit={locationForm.handleSubmit(submitLocationForm)}>
                   <div className="row">
                     <div className="col-md-4">
-                      <label for="position">Internal/External</label>
+                      <label for="position">Interior/Exterior</label>
                       <select
                         name="position"
                         className="form-control form-select"
@@ -1424,8 +1424,8 @@ const UpdateAsset = ({
                           setFloors(data || []);
                         }}
                       >
-                        <option value="">Select Internal/External</option>
-                        {["Internal", "External", "Interior", "Exterior"].map(
+                        <option value="">Select Interior/Exterior</option>
+                        {["Interior", "Exterior"].map(
                           (num) => (
                             <option value={num}>{num} </option>
                           )
