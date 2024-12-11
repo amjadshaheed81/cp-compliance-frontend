@@ -69,6 +69,7 @@ import {
   USER_LOGIN,
   USER_LOGOUT,
   SET_SIDEBAR_VIEW,
+  SET_SITE_ASSET_LOADER,
 } from "./../actionTypes";
 
 const initialState = {
@@ -586,6 +587,11 @@ const reducer = (state = initialState, action) => {
         saveSiteLandscapesInfo: action.payload,
       };
     case SET_SITE_LOADER:
+      return {
+        ...state,
+        isLoading: action.payload,
+      };
+    case SET_SITE_ASSET_LOADER:
       return {
         ...state,
         siteAssets: [],

@@ -74,6 +74,7 @@ import {
   USER_LOGIN,
   USER_LOGOUT,
   SET_SIDEBAR_VIEW,
+  SET_SITE_ASSET_LOADER,
 } from "../actionTypes";
 import {
   ADD_SITE_ASSET,
@@ -1220,6 +1221,15 @@ export const setLoader = (value) => {
   return async (dispatch) => {
     dispatch({
       type: SET_SITE_LOADER,
+      payload: value,
+    });
+  };
+};
+
+export const setLoaderForAssetsLanding = (value) => {
+  return async (dispatch) => {
+    dispatch({
+      type: SET_SITE_ASSET_LOADER,
       payload: value,
     });
   };

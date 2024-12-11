@@ -10,7 +10,7 @@ import {
   deleteSiteAsset,
   getSiteAssets,
   getSiteLayout,
-  setLoader,
+  setLoaderForAssetsLanding,
 } from "../../../../store/thunk/site";
 import { get } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
@@ -29,7 +29,7 @@ const Summary = ({
   loggedInUserData,
   getSiteLayout,
   siteLayout,
-  setLoader,
+  setLoaderForAssetsLanding,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
@@ -94,7 +94,7 @@ const Summary = ({
   };
   useEffect(() => {
     const setLoading = () => {
-      setLoader(true);
+      setLoaderForAssetsLanding(true);
     };
     setLoading();
   }, [])
@@ -572,5 +572,5 @@ export default connect(mapStateToProps, {
   deleteSiteAsset,
   getSiteAssets,
   getSiteLayout,
-  setLoader,
+  setLoaderForAssetsLanding,
 })(Summary);
