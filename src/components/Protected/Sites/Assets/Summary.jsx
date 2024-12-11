@@ -61,7 +61,6 @@ const Summary = ({
     setCurrentPage(pageNumber);
   };
   useEffect(() => {
-    setLoader(true);
     getSiteAssets(siteSelectedForGlobal?.siteId);
     getCategory();
     getSiteLayout(siteSelectedForGlobal?.siteId);
@@ -93,6 +92,12 @@ const Summary = ({
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
   };
+  useEffect(() => {
+    const setLoading = () => {
+      setLoader(true);
+    };
+    setLoading();
+  }, [])
   useEffect(() => {
     if (siteAssets) {
       const formattedAssets = siteAssets.map((itm) => ({
