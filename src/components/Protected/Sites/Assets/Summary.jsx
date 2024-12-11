@@ -29,7 +29,6 @@ const Summary = ({
   loggedInUserData,
   getSiteLayout,
   siteLayout,
-  setLoaderForAssetsLanding,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
@@ -92,12 +91,6 @@ const Summary = ({
     const category = await get("/api/lov/ASSET_CATEGORY");
     setCategory(category);
   };
-  useEffect(() => {
-    const setLoading = () => {
-      setLoaderForAssetsLanding(true);
-    };
-    setLoading();
-  }, [])
   useEffect(() => {
     if (siteAssets) {
       const formattedAssets = siteAssets.map((itm) => ({
@@ -572,5 +565,4 @@ export default connect(mapStateToProps, {
   deleteSiteAsset,
   getSiteAssets,
   getSiteLayout,
-  setLoaderForAssetsLanding,
 })(Summary);
