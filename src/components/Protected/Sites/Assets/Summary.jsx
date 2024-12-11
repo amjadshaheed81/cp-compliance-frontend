@@ -31,6 +31,7 @@ const Summary = ({
   siteLayout,
 }) => {
   const [filteredSiteAssets, setFilteredSiteAssets] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -60,9 +61,18 @@ const Summary = ({
     setCurrentPage(pageNumber);
   };
   useEffect(() => {
-    getSiteAssets(siteSelectedForGlobal?.siteId);
-    getCategory();
-    getSiteLayout(siteSelectedForGlobal?.siteId);
+    const getDetails = async () => {
+      if(siteSelectedForGlobal?.siteId) {
+        setIsLoading(true)
+        await getSiteAssets(siteSelectedForGlobal?.siteId);
+        await getCategory();
+        await getSiteLayout(siteSelectedForGlobal?.siteId);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 3000);
+      }
+    }
+    getDetails();
   }, [siteSelectedForGlobal]);
 
   useEffect(() => {
@@ -459,13 +469,19 @@ const Summary = ({
               </tr>
             </thead>
             <tbody>
-              {currentSiteAssets?.length === 0 && (
+              {!isLoading && currentSiteAssets?.length === 0 && (
                 <tr>
                   <td>No Result Found !!</td>
                 </tr>
               )}
+
+              {isLoading && (
+                <tr>
+                  <td>Loading...</td>
+                </tr>
+              )}
               
-              {currentSiteAssets?.map((asset) => (
+              {!isLoading && currentSiteAssets?.map((asset) => (
                 <tr key={asset?.assetId}>
                   <th>
                     <input
@@ -539,7 +555,7 @@ const Summary = ({
           </table>
         </div>
       </div>
-      <div className="row">
+      <div className="row" style={{ display: isLoading ? "none" :""}}>
         <Pagination
           totalPages={Math.ceil(
             filteredSiteAssets.filter(
