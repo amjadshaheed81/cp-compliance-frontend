@@ -1265,6 +1265,7 @@ const UpdateAsset = ({
                           id="purchaseDate"
                           name="purchaseDate"
                           placeholder=""
+                          value={purchaseDetailForm.watch("purchaseDate") || ""}
                           {...purchaseDetailForm.register("purchaseDate", {
                             required: {
                               value: true,
@@ -1533,6 +1534,7 @@ const UpdateAsset = ({
                           id="valuationDate"
                           name="valuationDate"
                           placeholder=""
+                          value={valudationForm.watch("valuationDate") || ""}
                           {...valudationForm.register("valuationDate", {
                             required: {
                               value: true,
@@ -1625,6 +1627,7 @@ const UpdateAsset = ({
                           className="form-control"
                           id="disposalDate"
                           name="disposalDate"
+                          value={valudationForm.watch("disposalDate") || ""}
                           placeholder=""
                           {...valudationForm.register("disposalDate", {
                             required: {
