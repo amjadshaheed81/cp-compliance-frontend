@@ -162,7 +162,13 @@ const StatutoryRegister = ({
     getStatutoryDocuments = getStatutoryDocuments.sort(
       (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
     );
-    setStatutory(getStatutoryDocuments);
+    if (isManagerAdminLogin(loggedInUserData)) {
+      setStatutory(getStatutoryDocuments);
+    } else {
+      const updatedStatutoryRegister = getStatutoryDocuments?.filter(itm => itm?.required === true);
+      setStatutory(updatedStatutoryRegister);
+    }
+    
     // Set initial values for residence fields using setValue
     const newResponsibleTexts = {};
 
