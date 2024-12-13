@@ -34,6 +34,13 @@ const Summary = ({
   const [isLoading, setIsLoading] = useState(false);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
+  const [subCategory, setSubCategory] = useState([]);
+  const [subCategory2, setSubCategory2] = useState([]);
+  const [subCategory3, setSubCategory3] = useState([]);
+  const [subCategoryList, setSubCategoryList] = useState([]);
+  const [subCategory2List, setSubCategory2List] = useState([]);
+  const [subCategory3List, setSubCategory3List] = useState([]);
+  
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState({});
@@ -62,8 +69,8 @@ const Summary = ({
   };
   useEffect(() => {
     const getDetails = async () => {
-      if(siteSelectedForGlobal?.siteId) {
-        setIsLoading(true)
+      if (siteSelectedForGlobal?.siteId) {
+        setIsLoading(true);
         await getSiteAssets(siteSelectedForGlobal?.siteId);
         await getCategory();
         await getSiteLayout(siteSelectedForGlobal?.siteId);
@@ -71,13 +78,15 @@ const Summary = ({
           setIsLoading(false);
         }, 3000);
       }
-    }
+    };
     getDetails();
   }, [siteSelectedForGlobal]);
 
   useEffect(() => {
-    const floorNodes = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
-    const roomNodes = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+    const floorNodes =
+      siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+    const roomNodes =
+      siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
     setFloorNode(floorNodes);
     setRoomNode(roomNodes);
 
@@ -87,7 +96,9 @@ const Summary = ({
 
     if (label) {
       const roomNumber = label; // Extract the part after '-'
-      const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
+      const matchedRoom = roomNodes.find(
+        (room) => room.nodeName?.split(" ")[1] === roomNumber
+      );
       if (matchedRoom) {
         setFormData((prevFormData) => ({
           ...prevFormData,
@@ -98,16 +109,27 @@ const Summary = ({
   }, [siteLayout, location.search]);
 
   const getCategory = async () => {
-    const category = await get("/api/lov/ASSET_CATEGORY");
-    setCategory(category);
+    const categoryList = await get("/api/lov/ASSET_CATEGORY");
+    const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
+    const subCategory2List = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    const subCategory3List = await get("/api/lov/ASSET_SUB_CATEGORY_3");
+    setCategory(categoryList);
+    setSubCategory(subCategoryList)
+    setSubCategory2(subCategory2List)
+    setSubCategory3(subCategory3List)
+    setSubCategoryList(subCategoryList)
+    setSubCategory2List(subCategory2List)
+    setSubCategory3List(subCategory3List)
   };
   useEffect(() => {
     if (siteAssets) {
       const formattedAssets = siteAssets.map((itm) => ({
         ...itm,
-        location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
+        location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${
+          itm?.room || "NA"
+        }`,
       }));
-  
+
       // Use Promise.all to wait for state updates, then call searchAssets
       Promise.all([
         setFilteredSiteAssets(formattedAssets),
@@ -117,7 +139,7 @@ const Summary = ({
       });
     }
   }, [siteAssets]);
-  
+
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
@@ -126,6 +148,9 @@ const Summary = ({
     assetName: "",
     manufacturer: "",
     category: "",
+    subCategory: "",
+    subCategory2: "",
+    subCategory3: "",
     location: "",
     floor: "",
     room: "",
@@ -136,12 +161,35 @@ const Summary = ({
       ...formData,
       [name]: value,
     });
+    if (name === "category") {
+      console.log("category");
+      const subCategoryData = subCategory?.filter(
+        (itm) => itm?.attribite1 === value
+      );
+      setSubCategoryList(subCategoryData);
+      setSubCategory2List([]);
+      setSubCategory3List([]);
+    }else if (name === "subCategory") {
+      const subCategoryData = subCategory2?.filter(
+        (itm) => itm?.attribite1 === value
+      );
+      setSubCategory2List(subCategoryData);
+      setSubCategory3List([]);
+    }else if (name === "subCategory2") {
+      const subCategoryData = subCategory3?.filter(
+        (itm) => itm?.attribite1 === value
+      );
+      setSubCategory3List(subCategoryData);
+    }
   };
   useEffect(() => {
     searchAssets();
   }, [
     formData.assetName,
     formData.category,
+    formData.subCategory,
+    formData.subCategory2,
+    formData.subCategory3,
     formData.location,
     formData.manufacturer,
     formData.floor,
@@ -150,11 +198,14 @@ const Summary = ({
   const searchAssets = () => {
     const assetName = formData?.assetName;
     const category = formData?.category;
+    const subCategory = formData?.subCategory;
+    const subCategory2 = formData?.subCategory2;
+    const subCategory3 = formData?.subCategory3;
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
     const floor = formData?.floor;
     const room = formData?.room;
-    if (assetName || category || location || manufacturer || floor || room) {
+    if (assetName || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
       const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
@@ -163,6 +214,15 @@ const Summary = ({
           String(x?.category)
             .toLowerCase()
             .includes(String(category).toLowerCase()) &&
+          String(x?.subCategory)
+            .toLowerCase()
+            .includes(String(subCategory).toLowerCase()) &&
+          String(x?.subCategory2)
+            .toLowerCase()
+            .includes(String(subCategory2).toLowerCase()) &&
+          String(x?.subCategory3)
+            .toLowerCase()
+            .includes(String(subCategory3).toLowerCase()) &&
           String(x?.position)
             .toLowerCase()
             .includes(String(location).toLowerCase()) &&
@@ -292,6 +352,45 @@ const Summary = ({
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
               <select
+                name="subCategory"
+                className="form-control form-select"
+                id="subCategory"
+                onChange={handleInputChange}
+              >
+                <option value="">Sub Category</option>
+                {subCategoryList?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                name="subCategory2"
+                className="form-control form-select"
+                id="subCategory2"
+                onChange={handleInputChange}
+              >
+                <option value="">Sub Category 2</option>
+                {subCategory2List?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                name="subCategory3"
+                className="form-control form-select"
+                id="subCategory3"
+                onChange={handleInputChange}
+              >
+                <option value="">Sub Category 3</option>
+                {subCategory3List?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
                 name="location"
                 className="form-control form-select"
                 id="location"
@@ -302,10 +401,14 @@ const Summary = ({
                     ...formData,
                     [name]: value,
                   });
-                  const node = siteLayout
-                  .filter((site) => site.nodeName === value);
-                  const data = siteLayout
-                  .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                  const node = siteLayout.filter(
+                    (site) => site.nodeName === value
+                  );
+                  const data = siteLayout.filter(
+                    (site) =>
+                      site.nodeType === "floor" &&
+                      site.parentNode === node?.[0]?.id
+                  );
                   setFloorNode(data || []);
                 }}
               >
@@ -329,10 +432,14 @@ const Summary = ({
                     ...formData,
                     [name]: value,
                   });
-                  const node = siteLayout
-                  .filter((site) => site.nodeName === value);
-                  const data = siteLayout
-                  .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                  const node = siteLayout.filter(
+                    (site) => site.nodeName === value
+                  );
+                  const data = siteLayout.filter(
+                    (site) =>
+                      site.nodeType === "room" &&
+                      site.parentNode === node?.[0]?.id
+                  );
                   setRoomNode(data || []);
                 }}
               >
@@ -360,9 +467,9 @@ const Summary = ({
         </div>
 
         {isManagerAdminLogin(loggedInUserData) && (
-          <div className="ms-auto p-2 bd-highlight">
+          <div className="ms-auto p-2 bd-highlight w-100">
             <div className="row" style={{ height: "auto" }}>
-              <div className="col-md-3 col-sm-4 mt-2">
+              <div className="col-md-2 col-sm-4 mt-2">
                 <Tooltip title={`Add New Asset`} arrow>
                   <button
                     className="btn btn-primary text-white pr-2"
@@ -374,7 +481,7 @@ const Summary = ({
                   </button>
                 </Tooltip>
               </div>
-              <div className="col-md-4 col-sm-4 mt-2">
+              <div className="col-md-3 col-sm-4 mt-2">
                 <Tooltip title={`Clone`} arrow>
                   <button
                     className="btn btn-light text-primary pr-2"
@@ -386,38 +493,46 @@ const Summary = ({
                   </button>
                 </Tooltip>
               </div>
-              <div className="col-md-2 col-sm-4 mt-2"><CSVLink
-  filename={"site-assets-lists.csv"}
-  className="btn btn-light bg-white text-primary"
-  data={filteredSiteAssets
-    ?.filter(
-      (itm) => itm?.doorItem !== true && itm?.patItem !== true
-    )
-    .map((itm) => {
-      return {
-        ...itm,
-        assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
-          ? itm.assetDoorSpecifications.map(
-              (asset) =>
-                `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-            ).join("; ")
-          : '', // Provide empty string if not an array
-        assetPFPItem: Array.isArray(itm?.assetPFPItem)
-          ? itm.assetPFPItem.map(
-              (asset) =>
-                `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-            ).join("; ")
-          : '', // Provide empty string if not an array
-        assetPATItems: Array.isArray(itm?.assetPATItems)
-          ? itm.assetPATItems.map(
-              (asset) =>
-                `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-            ).join("; ")
-          : '', // Provide empty string if not an array
-      };
-    })}
->
-
+              <div className="col-md-2 col-sm-4 mt-2">
+                <CSVLink
+                  filename={"site-assets-lists.csv"}
+                  className="btn btn-light bg-white text-primary"
+                  data={filteredSiteAssets
+                    ?.filter(
+                      (itm) => itm?.doorItem !== true && itm?.patItem !== true
+                    )
+                    .map((itm) => {
+                      return {
+                        ...itm,
+                        assetDoorSpecifications: Array.isArray(
+                          itm?.assetDoorSpecifications
+                        )
+                          ? itm.assetDoorSpecifications
+                              .map(
+                                (asset) =>
+                                  `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
+                              )
+                              .join("; ")
+                          : "", // Provide empty string if not an array
+                        assetPFPItem: Array.isArray(itm?.assetPFPItem)
+                          ? itm.assetPFPItem
+                              .map(
+                                (asset) =>
+                                  `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
+                              )
+                              .join("; ")
+                          : "", // Provide empty string if not an array
+                        assetPATItems: Array.isArray(itm?.assetPATItems)
+                          ? itm.assetPATItems
+                              .map(
+                                (asset) =>
+                                  `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
+                              )
+                              .join("; ")
+                          : "", // Provide empty string if not an array
+                      };
+                    })}
+                >
                   <Tooltip title={`Export`} arrow>
                     <i className="fas fa-download"></i>
                   </Tooltip>
@@ -480,82 +595,83 @@ const Summary = ({
                   <td>Loading...</td>
                 </tr>
               )}
-              
-              {!isLoading && currentSiteAssets?.map((asset) => (
-                <tr key={asset?.assetId}>
-                  <th>
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      onChange={(e) => handleCheckboxChange(e, asset)}
-                      checked={selectedItems.some(
-                        (item) => item.assetId === asset.assetId
-                      )}
-                    />
-                  </th>
-                  <th scope="col">{asset?.assetId}</th>
-                  <th scope="col">{asset?.assetName}</th>
-                  <th scope="col">{asset?.manufacturer}</th>
-                  <th scope="col">{getCategoryLabelValue(asset)}</th>
-                  <th scope="col">{asset?.location}</th>
-                  {/* <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
+
+              {!isLoading &&
+                currentSiteAssets?.map((asset) => (
+                  <tr key={asset?.assetId}>
+                    <th>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        onChange={(e) => handleCheckboxChange(e, asset)}
+                        checked={selectedItems.some(
+                          (item) => item.assetId === asset.assetId
+                        )}
+                      />
+                    </th>
+                    <th scope="col">{asset?.assetId}</th>
+                    <th scope="col">{asset?.assetName}</th>
+                    <th scope="col">{asset?.manufacturer}</th>
+                    <th scope="col">{getCategoryLabelValue(asset)}</th>
+                    <th scope="col">{asset?.location}</th>
+                    {/* <th scope="col">{asset?.pfpItem ? "YES" : "NO"}</th>
                   <th scope="col">{asset?.patItem ? "YES" : "NO"}</th> */}
-                  <th scope="col">
-                    <Tooltip title={`View ${asset.assetName}`} arrow>
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => {
-                          goTo(`/view-asset?assetId=${asset?.assetId}`);
-                        }}
-                      >
-                        <i className="fas fa-eye"></i>
-                      </button>{" "}
-                    </Tooltip>
-                    {isManagerAdminLogin(loggedInUserData) && (
-                      <>
-                        <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                          <button
-                            className="btn btn-sm btn-light"
-                            onClick={() => {
-                              goTo(`/update-asset?assetId=${asset?.assetId}`);
-                            }}
-                          >
-                            <i className="fas fa-pen"></i>
-                          </button>{" "}
-                        </Tooltip>
-                        <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                          <QRCodeSVG
-                            onClick={() => {
-                              setShowAddModal(true);
-                              setSelectedAsset(asset);
-                            }}
-                            value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
-                            style={{
-                              height: "30px",
-                              width: "30px",
-                              margin: "0px 6px",
-                              cursor: "pointer",
-                            }}
-                          />
-                        </Tooltip>
-                        <Tooltip title={`Delete ${asset.assetName}`} arrow>
-                          <button
-                            className="btn btn-sm btn-light text-danger"
-                            onClick={() => deleteAsset(asset)}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>{" "}
-                        </Tooltip>
-                      </>
-                    )}
-                  </th>
-                </tr>
-              ))}
+                    <th scope="col">
+                      <Tooltip title={`View ${asset.assetName}`} arrow>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => {
+                            goTo(`/view-asset?assetId=${asset?.assetId}`);
+                          }}
+                        >
+                          <i className="fas fa-eye"></i>
+                        </button>{" "}
+                      </Tooltip>
+                      {isManagerAdminLogin(loggedInUserData) && (
+                        <>
+                          <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                goTo(`/update-asset?assetId=${asset?.assetId}`);
+                              }}
+                            >
+                              <i className="fas fa-pen"></i>
+                            </button>{" "}
+                          </Tooltip>
+                          <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                            <QRCodeSVG
+                              onClick={() => {
+                                setShowAddModal(true);
+                                setSelectedAsset(asset);
+                              }}
+                              value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
+                              style={{
+                                height: "30px",
+                                width: "30px",
+                                margin: "0px 6px",
+                                cursor: "pointer",
+                              }}
+                            />
+                          </Tooltip>
+                          <Tooltip title={`Delete ${asset.assetName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light text-danger"
+                              onClick={() => deleteAsset(asset)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>{" "}
+                          </Tooltip>
+                        </>
+                      )}
+                    </th>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
       </div>
-      <div className="row" style={{ display: isLoading ? "none" :""}}>
+      <div className="row" style={{ display: isLoading ? "none" : "" }}>
         <Pagination
           totalPages={Math.ceil(
             filteredSiteAssets.filter(

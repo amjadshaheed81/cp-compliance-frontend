@@ -29,6 +29,12 @@ const Door = ({
   const [filteredSiteDoorItems, setFilteredSiteDoorItems] = useState([]);
   const [siteAssetsList, setSiteAssetsList] = useState([]);
   const [category, setCategory] = useState([]);
+  const [subCategory, setSubCategory] = useState([]);
+  const [subCategory2, setSubCategory2] = useState([]);
+  const [subCategory3, setSubCategory3] = useState([]);
+  const [subCategoryList, setSubCategoryList] = useState([]);
+  const [subCategory2List, setSubCategory2List] = useState([]);
+  const [subCategory3List, setSubCategory3List] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState({});
@@ -83,6 +89,9 @@ const Door = ({
     assetName: "",
     manufacturer: "",
     category: "",
+    subCategory: "",
+    subCategory2: "",
+    subCategory3: "",
     location: "",
     floor: "",
     room: "",
@@ -94,6 +103,26 @@ const Door = ({
       ...formData,
       [name]: value,
     });
+    if (name === "category") {
+      console.log("category");
+      const subCategoryData = subCategory?.filter(
+        (itm) => itm?.attribite1 === value
+      );
+      setSubCategoryList(subCategoryData);
+      setSubCategory2List([]);
+      setSubCategory3List([]);
+    }else if (name === "subCategory") {
+      const subCategoryData = subCategory2?.filter(
+        (itm) => itm?.attribite1 === value
+      );
+      setSubCategory2List(subCategoryData);
+      setSubCategory3List([]);
+    }else if (name === "subCategory2") {
+      const subCategoryData = subCategory3?.filter(
+        (itm) => itm?.attribite1 === value
+      );
+      setSubCategory3List(subCategoryData);
+    }
   };
 
   useEffect(() => {
@@ -101,6 +130,9 @@ const Door = ({
   }, [
     formData.assetName,
     formData.category,
+    formData.subCategory,
+    formData.subCategory2,
+    formData.subCategory3,
     formData.location,
     formData.manufacturer,
     formData.floor,
@@ -110,16 +142,28 @@ const Door = ({
   const searchAssets = () => {
     const assetName = formData?.assetName;
     const category = formData?.category;
+    const subCategory = formData?.subCategory;
+    const subCategory2 = formData?.subCategory2;
+    const subCategory3 = formData?.subCategory3;
     const location = formData?.location;
     const manufacturer = formData?.manufacturer;
     const floor = formData?.floor;
     const room = formData?.room;
-    if (assetName || category || location || manufacturer || floor || room) {
+    if (assetName || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
       const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
             .toLowerCase()
             .includes(String(assetName).toLowerCase()) &&
+          String(x?.subCategory)
+            .toLowerCase()
+            .includes(String(subCategory).toLowerCase()) &&
+          String(x?.subCategory2)
+            .toLowerCase()
+            .includes(String(subCategory2).toLowerCase()) &&
+          String(x?.subCategory3)
+            .toLowerCase()
+            .includes(String(subCategory3).toLowerCase()) &&
           String(x?.category)
             .toLowerCase()
             .includes(String(category).toLowerCase()) &&
@@ -172,8 +216,17 @@ const Door = ({
   }, [siteLayout, location.search]);
 
   const getCategory = async () => {
-    const category = await get("/api/lov/ASSET_CATEGORY");
-    setCategory(category);
+    const categoryList = await get("/api/lov/ASSET_CATEGORY");
+    const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
+    const subCategory2List = await get("/api/lov/ASSET_SUB_CATEGORY_2");
+    const subCategory3List = await get("/api/lov/ASSET_SUB_CATEGORY_3");
+    setCategory(categoryList);
+    setSubCategory(subCategoryList);
+    setSubCategory2(subCategory2List);
+    setSubCategory3(subCategory3List);
+    setSubCategoryList(subCategoryList);
+    setSubCategory2List(subCategory2List);
+    setSubCategory3List(subCategory3List);
   };
 
   const deleteAsset = (itm) => {
@@ -285,6 +338,45 @@ const Door = ({
             </div>
             <div className="col-md-3 col-sm-4 mt-2">
               <select
+                name="subCategory"
+                className="form-control form-select"
+                id="subCategory"
+                onChange={handleInputChange}
+              >
+                <option value="">Sub Category</option>
+                {subCategoryList?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <select
+                name="subCategory2"
+                className="form-control form-select"
+                id="subCategory2"
+                onChange={handleInputChange}
+              >
+                <option value="">Sub Category 2</option>
+                {subCategory2List?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <select
+                name="subCategory3"
+                className="form-control form-select"
+                id="subCategory3"
+                onChange={handleInputChange}
+              >
+                <option value="">Sub Category 3</option>
+                {subCategory3List?.map((itm) => (
+                  <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <select
                 name="location"
                 className="form-control form-select"
                 id="location"
@@ -309,7 +401,7 @@ const Door = ({
                 ))} */}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="floor"
                 className="form-control form-select"
@@ -331,7 +423,7 @@ const Door = ({
                 {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="room"
                 className="form-control form-select"
@@ -345,9 +437,9 @@ const Door = ({
             </div>
           </div>
         </div>
-        <div className="ms-auto p-2 bd-highlight">
+        <div className="ms-auto p-2 bd-highlight w-100">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col-md-6 col-sm-4 mt-2 mr-2">
+            <div className="col-md-3 col-sm-4 mt-2 mr-2">
               <Tooltip title={`Clone`} arrow>
                 <button
                   className="btn btn-light text-primary"
@@ -359,7 +451,7 @@ const Door = ({
                 </button>
               </Tooltip>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2 mr-2">
+            <div className="col-md-2 col-sm-4 mt-2 mr-2">
               <CSVLink
                 filename={"site-door-assets.csv"}
                 className="btn btn-light bg-white text-primary"
@@ -392,7 +484,7 @@ const Door = ({
                 </Tooltip>
               </CSVLink>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-2 col-sm-4 mt-2">
               <Tooltip title={`Print`} arrow>
                 <button
                   className="btn btn-light text-primary"
