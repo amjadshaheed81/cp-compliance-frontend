@@ -56,7 +56,7 @@ const Cost = ({
     data.energyId = survey.energyId;
     data.budgetCategory = survey?.budgetCategory;
     saveData(data);
-    setOpen(false);
+    //setOpen(false);
   };
 
   return (

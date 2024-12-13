@@ -201,6 +201,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
               }
             } else if (index === 1) {
               rowValues[index] = convertToDate(rowValues[index]);
+              console.log('rowValues[index]', rowValues[index]);
             } else if (index === 2) {
               if (isNaN(rowValues[index])) {
                 toast(

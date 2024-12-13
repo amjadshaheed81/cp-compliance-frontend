@@ -79,7 +79,7 @@ const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
              <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-success" >{itm?.type}</span></p>
            )}
            {itm?.type?.includes("Survey") && (
-             <span class="badge bg-danger" >{itm?.type}</span>
+             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-danger" >{itm?.type}</span></p>
            )}
            {itm?.type?.includes("Asbestos") && (
              <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>

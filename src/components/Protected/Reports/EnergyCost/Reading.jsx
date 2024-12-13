@@ -46,7 +46,7 @@ const Reading = ({
     data.readingDate = new Date(data.readingDate);
     data.energyId = survey.energyId;
     saveData(data);
-    setOpen(false);
+    //setOpen(false);
   };
 
   useEffect(() => {
