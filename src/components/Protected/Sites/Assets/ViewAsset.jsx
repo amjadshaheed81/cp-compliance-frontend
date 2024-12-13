@@ -157,7 +157,7 @@ const UpdateAsset = ({
     }
     purchaseDetailForm.reset({
       invoiceFile: response?.invoiceFile,
-      purchaseDate: response?.purchaseDate?.split("T")?.[0],
+      purchaseDate: response?.purchaseDate? moment(response?.purchaseDate).format("DD-MM-YYYY") : "",
       supplier: response?.supplier,
       transactionId: response?.transactionId,
       cost: response?.cost,
@@ -1010,7 +1010,7 @@ const UpdateAsset = ({
                       <div className="form-group mt-2">
                         <label for="purchaseDate">Purchase Date</label>
                         <input
-                          type="date"
+                          type="text"
                           className="form-control"
                           id="purchaseDate"
                           name="purchaseDate"

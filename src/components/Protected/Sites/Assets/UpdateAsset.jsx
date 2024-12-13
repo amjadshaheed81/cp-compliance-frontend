@@ -365,7 +365,11 @@ const UpdateAsset = ({
     }
   };
 
-  const purchaseDetailForm = useForm({});
+  const purchaseDetailForm = useForm({
+    defaultValues: {
+      purchaseDate: "",
+    },
+  });
   const purchaseFrormValues = purchaseDetailForm.watch();
   const submitSiteAssetPurchaseDetail = async (data) => {
     let form_data = new FormData();
@@ -435,8 +439,10 @@ const UpdateAsset = ({
   };
 
   const valudationForm = useForm({
-    valuationDate: "",
-    disposalDate: "",
+    defaultValues: {
+      valuationDate: "",
+      disposalDate: "",
+    },
   });
   const submitValudationForm = async (data) => {
     let form_data = new FormData();
