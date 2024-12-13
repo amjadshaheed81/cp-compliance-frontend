@@ -37,6 +37,7 @@ import Swal from "sweetalert2";
 import TagAsset from "./TagAsset";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import PdfViewer from "../Documents/PdfViewer";
+import DatePicker from "../../../common/DatePicker";
 
 async function fetchBlob(selectedPdf) {
   try {
@@ -221,11 +222,15 @@ const UpdateAsset = ({
       room: response?.room,
     });
     valudationForm.reset({
-      valuationDate: response?.valuationDate ? response?.valuationDate?.split("T")?.[0] : "",
+      valuationDate: response?.valuationDate
+        ? response?.valuationDate?.split("T")?.[0]
+        : "",
       valuationUserId: response?.valuationUserId,
       valuationUserName: response?.valuationUserName,
       valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate ? response?.disposalDate?.split("T")?.[0] : "",
+      disposalDate: response?.disposalDate
+        ? response?.disposalDate?.split("T")?.[0]
+        : "",
       disposalTo: response?.disposalTo,
       disposalValue: response?.disposalValue,
     });
@@ -1258,21 +1263,27 @@ const UpdateAsset = ({
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="purchaseDate">Purchase Date</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          id="purchaseDate"
-                          name="purchaseDate"
-                          placeholder=""
-                          value={purchaseDetailForm.watch("purchaseDate") || ""}
-                          {...purchaseDetailForm.register("purchaseDate", {
-                            required: {
-                              value: true,
-                              message: `Please enter purchase date.`,
-                            },
-                          })}
+                        <DatePicker
+                          label="Purchase Date"
+                          required={true}
+                          value={
+                            purchaseDetailForm.watch("purchaseDate")
+                              ? new Date(
+                                  purchaseDetailForm.watch("purchaseDate")
+                                )
+                              : null
+                          }
+                          onChange={(date) => {
+                            purchaseDetailForm.setValue(
+                              "purchaseDate",
+                              date ? date.toISOString().split("T")[0] : "",
+                              {
+                                shouldValidate: true,
+                              }
+                            );
+                          }}
                         />
+
                         {purchaseDetailForm.formState.errors?.purchaseDate && (
                           <InputError
                             message={
@@ -1435,11 +1446,9 @@ const UpdateAsset = ({
                         }}
                       >
                         <option value="">Select Interior/Exterior</option>
-                        {["Interior", "Exterior"].map(
-                          (num) => (
-                            <option value={num}>{num} </option>
-                          )
-                        )}
+                        {["Interior", "Exterior"].map((num) => (
+                          <option value={num}>{num} </option>
+                        ))}
                       </select>
                       {locationForm.formState.errors?.position && (
                         <InputError
@@ -1527,20 +1536,23 @@ const UpdateAsset = ({
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="valuationDate">Valuation Date</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          id="valuationDate"
-                          name="valuationDate"
-                          placeholder=""
-                          value={valudationForm.watch("valuationDate") || ""}
-                          {...valudationForm.register("valuationDate", {
-                            required: {
-                              value: true,
-                              message: `Please enter valuation date`,
-                            },
-                          })}
+                        <DatePicker
+                          label="Valuation Date"
+                          required={true}
+                          value={
+                            valudationForm.watch("valuationDate")
+                              ? new Date(valudationForm.watch("valuationDate"))
+                              : null
+                          }
+                          onChange={(date) => {
+                            valudationForm.setValue(
+                              "valuationDate",
+                              date ? date.toISOString().split("T")[0] : "",
+                              {
+                                shouldValidate: true,
+                              }
+                            );
+                          }}
                         />
                         {valudationForm.formState.errors?.valuationDate && (
                           <InputError
@@ -1621,20 +1633,23 @@ const UpdateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="disposalDate">Disposal Date</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          id="disposalDate"
-                          name="disposalDate"
-                          value={valudationForm.watch("disposalDate") || ""}
-                          placeholder=""
-                          {...valudationForm.register("disposalDate", {
-                            required: {
-                              value: true,
-                              message: `Please enter disposal date`,
-                            },
-                          })}
+                        <DatePicker
+                          label="Disposal Date"
+                          required={true}
+                          value={
+                            valudationForm.watch("disposalDate")
+                              ? new Date(valudationForm.watch("disposalDate"))
+                              : null
+                          }
+                          onChange={(date) => {
+                            valudationForm.setValue(
+                              "disposalDate",
+                              date ? date.toISOString().split("T")[0] : "",
+                              {
+                                shouldValidate: true,
+                              }
+                            );
+                          }}
                         />
                         {valudationForm.formState.errors?.disposalDate && (
                           <InputError
