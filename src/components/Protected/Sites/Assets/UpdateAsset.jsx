@@ -221,11 +221,11 @@ const UpdateAsset = ({
       room: response?.room,
     });
     valudationForm.reset({
-      valuationDate: response?.valuationDate?.split("T")?.[0],
+      valuationDate: response?.valuationDate ? response?.valuationDate?.split("T")?.[0] : null,
       valuationUserId: response?.valuationUserId,
       valuationUserName: response?.valuationUserName,
       valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate?.split("T")?.[0],
+      disposalDate: response?.disposalDate ? response?.disposalDate?.split("T")?.[0] : null,
       disposalTo: response?.disposalTo,
       disposalValue: response?.disposalValue,
     });
