@@ -168,11 +168,11 @@ const UpdateAsset = ({
       room: response?.room,
     });
     valudationForm.reset({
-      valuationDate: response?.valuationDate ? response?.valuationDate?.split("T")?.[0] : "",
+      valuationDate: response?.valuationDate ? moment(response?.valuationDate).format("DD-MM-YYYY") : "",
       valuationUserId: response?.valuationUserId,
       valuationUserName: response?.valuationUserName,
       valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate ? response?.disposalDate?.split("T")?.[0] : "",
+      disposalDate: response?.disposalDate ? moment(response?.disposalDate).format("DD-MM-YYYY") : "",
       disposalTo: response?.disposalTo,
       disposalValue: response?.disposalValue,
     });
@@ -1246,7 +1246,7 @@ const UpdateAsset = ({
                       <div className="form-group mt-2">
                         <label for="valuationDate">Valuation Date</label>
                         <input
-                          type="date"
+                          type="text"
                           className="form-control"
                           id="valuationDate"
                           disabled
@@ -1342,7 +1342,7 @@ const UpdateAsset = ({
                       <div className="form-group mt-2">
                         <label for="disposalDate">Disposal Date</label>
                         <input
-                          type="date"
+                          type="text"
                           className="form-control"
                           id="disposalDate"
                           name="disposalDate"
