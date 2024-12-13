@@ -221,11 +221,11 @@ const UpdateAsset = ({
       room: response?.room,
     });
     valudationForm.reset({
-      valuationDate: response?.valuationDate ? response?.valuationDate?.split("T")?.[0] : null,
+      valuationDate: response?.valuationDate ? response?.valuationDate?.split("T")?.[0] : "",
       valuationUserId: response?.valuationUserId,
       valuationUserName: response?.valuationUserName,
       valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate ? response?.disposalDate?.split("T")?.[0] : null,
+      disposalDate: response?.disposalDate ? response?.disposalDate?.split("T")?.[0] : "",
       disposalTo: response?.disposalTo,
       disposalValue: response?.disposalValue,
     });
@@ -434,7 +434,10 @@ const UpdateAsset = ({
     getAssetDetails();
   };
 
-  const valudationForm = useForm({});
+  const valudationForm = useForm({
+    valuationDate: "",
+    disposalDate: "",
+  });
   const submitValudationForm = async (data) => {
     let form_data = new FormData();
     const submitData = {
