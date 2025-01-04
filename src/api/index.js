@@ -21,7 +21,7 @@ function configAxios() {
     (error) => {
       if (error.response && error.response.status === 500) {
         const errorMessage = error.response.data.message;
-        if (errorMessage.includes('JWT expired at')) {
+        if (errorMessage.includes('JWT expired at') || errorMessage.includes('JWT String argument cannot be null or empty.')) {
           localStorage.clear();
           window.location.href = '/#/login';
         }
@@ -42,7 +42,7 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 500) {
       const errorMessage = error.response.data.message;
-      if (errorMessage.includes('JWT expired at')) {
+      if (errorMessage.includes('JWT expired at') || errorMessage.includes('JWT String argument cannot be null or empty.')) {
         localStorage.clear();
         window.location.href = '/#/login';
       }
@@ -127,12 +127,12 @@ export function del(url) {
 
 export async function get(url) {
   configAxios();
-  const { data } = await axiosInstance({
+  const res = await axiosInstance({
     method: "GET",
     url,
     headers: getHeaders(),
   });
-  return data;
+  return res?.data || [];
 }
 
 export function put(url, data) {
