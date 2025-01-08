@@ -157,6 +157,7 @@ const Reading = ({
                   <input
                     style={{ maxWidth: "300px" }}
                     type="number"
+                    step={".01"}
                     disabled={isView}
                     className="form-control"
                     name="readingValue"
