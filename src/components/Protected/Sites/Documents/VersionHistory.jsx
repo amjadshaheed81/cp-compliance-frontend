@@ -76,10 +76,11 @@ const VersionHistory = ({
        
     
     try {
-      const splitted = fileVerions?.[0]?.name?.split(".");
-      const oldfileExtension = splitted.length > 1 ? splitted.pop() : "pdf";
-      
-      const fileExtension = formData?.fileUpload?.[0]?.name?.split(".")?.pop();
+      const getFileExtension = (fileName) => {
+        return fileName?.match(/\.([0-9a-z]+)$/i)?.[1]?.toLowerCase();
+      };
+      const oldfileExtension = getFileExtension(fileVerions?.[0]?.name) || "pdf";
+      const fileExtension = getFileExtension(formData?.fileUpload?.[0]?.name);
       if(oldfileExtension  !== fileExtension) {
         toast.error(
           "Please select a file with same file extension : "+ oldfileExtension
