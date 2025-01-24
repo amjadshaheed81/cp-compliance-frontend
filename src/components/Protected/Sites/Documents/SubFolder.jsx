@@ -115,8 +115,8 @@ const SubFolder = ({
     const foldersList = [];
     if (subfolderFiles) {
       foldersList.push({
-        id: subfolderFiles.document.id,
-        name: subfolderFiles.document.name,
+        id: subfolderFiles?.document?.id,
+        name: subfolderFiles?.document?.name,
         isParent: false,
       });
       let parentFolderId = subfolderFiles?.document?.parentFolderId;

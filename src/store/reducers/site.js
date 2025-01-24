@@ -538,8 +538,8 @@ const reducer = (state = initialState, action) => {
         ...state,
         isLoading: false,
         siteSelectedForGlobal: action.payload,
-        subfolderFiles: [],
-        rootFolder: [],
+        subfolderFiles: "",
+        rootFolder: "",
       };
     case CREATE_FOLDER:
       return {
