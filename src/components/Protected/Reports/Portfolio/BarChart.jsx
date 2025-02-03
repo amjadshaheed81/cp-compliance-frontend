@@ -5,8 +5,8 @@ import "chart.js/auto"; // Import required for Chart.js to work correctly
 
 const BarChart = ({ data }) => {
   // Extract site names and user counts from the data
-  const siteNames = data.map((item) => item.siteName);
-  const userCounts = data.map((item) => item.totalUsers);
+  const siteNames = data?.map((item) => item.siteName);
+  const userCounts = data?.map((item) => item.totalUsers);
 
   // Chart.js data configuration
   const chartData = {

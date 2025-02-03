@@ -145,15 +145,15 @@ const AddUser = ({
 
     if (isSelectAllSelected) {
       // If "Select All" is selected, include all options except "Select All"
-      const allOptions = sites.map((site) => ({
+      const allOptions = sites?.map((site) => ({
         key: site.siteId,
         label: site.siteName,
       }));
 
-      setTagSite(allOptions.map((opt) => opt.key)); // Store keys
+      setTagSite(allOptions?.map((opt) => opt.key)); // Store keys
     } else {
       // Otherwise, update normally
-      const keys = newValue.map((item) => item.key);
+      const keys = newValue?.map((item) => item.key);
       setTagSite(keys);
     }
   };

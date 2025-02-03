@@ -26,7 +26,7 @@ const Door = ({
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
-  const currentSiteAssets = filteredSiteDoorItems.slice(
+  const currentSiteAssets = filteredSiteDoorItems?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -244,7 +244,7 @@ const Door = ({
               <CSVLink
                 filename={"site-door-assets.csv"}
                 className="btn btn-light bg-white text-primary"
-                data={siteDoorItems.map((itm) => {
+                data={siteDoorItems?.map((itm) => {
                   return {
                     ...itm,
                     assetDoorSpecifications: Array.isArray(

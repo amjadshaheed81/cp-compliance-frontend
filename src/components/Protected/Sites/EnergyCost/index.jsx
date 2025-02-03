@@ -67,7 +67,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [bulkCategory, setBulkCategory] = useState();
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
-  const currentEnergyCost = filteredEnergyCost.slice(
+  const currentEnergyCost = filteredEnergyCost?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -182,12 +182,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      const mappedData = json.map((row) => {
+      const mappedData = json?.map((row) => {
         let rowData = {
           submittedUserId: loggedInUserData?.id,
           readingUnit: "kWh",
         };
-        const rowValues = Object.values(row).slice(0, 4);
+        const rowValues = Object.values(row)?.slice(0, 4);
 
         if (rowValues.length > 3) {
           customColumnNamesReading.forEach((col, index) => {
@@ -231,7 +231,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       jsDate.setUTCHours(0, 0, 0, 0); 
       return jsDate.toISOString();
     } else {
-      const [day, month, year] = dateString.split("/").map(Number);
+      const [day, month, year] = dateString.split("/")?.map(Number);
       const date = new Date(Date.UTC(year, month - 1, day));
       date.setUTCHours(0, 0, 0, 0); 
       return date.toISOString();
@@ -249,7 +249,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      const mappedData = json.map((row) => {
+      const mappedData = json?.map((row) => {
         let rowData = {
           submittedUserId: loggedInUserData?.id,
         };
@@ -384,7 +384,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   onChange={(e) => setBulkCategory(e.target.value)}
                 >
                   <option value="">Budget Category</option>
-                  {typeoptions.map((t) => (
+                  {typeoptions?.map((t) => (
                     <option value={t}>{t}</option>
                   ))}
                 </select>
@@ -515,7 +515,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     onChange={handleInputChange2}
                   >
                     <option value="">Budget Category</option>
-                    {typeoptions.map((t) => (
+                    {typeoptions?.map((t) => (
                       <option value={t}>{t}</option>
                     ))}
                   </select>
@@ -564,7 +564,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                           required
                         >
                           <option value="">Budget Category</option>
-                          {typeoptions.map((t) => (
+                          {typeoptions?.map((t) => (
                             <option value={t}>{t}</option>
                           ))}
                         </select>

@@ -227,7 +227,7 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
                         // }}
                         //value={siteAssets.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                        options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        options={siteAssets?.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                         getOptionLabel={(option) => option.label}
 
                         renderInput={(params) => (
@@ -315,7 +315,7 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
 
           <List >
              
-          {quest.map((q, idx) =>
+          {quest?.map((q, idx) =>
                 <ListItem 
                 sx={{ width: '100%', maxWidth: 500 }}
                 secondaryAction={

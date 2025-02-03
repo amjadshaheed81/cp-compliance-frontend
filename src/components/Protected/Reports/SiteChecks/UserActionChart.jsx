@@ -34,13 +34,13 @@ const UserActionChart = ({ data, managerList }) => {
 
   // Prepare data for the chart
   const userIds = Object.keys(userStatusCount);
-  const labels = userIds.map(userId => {
+  const labels = userIds?.map(userId => {
     const manager = managerList.find(manager => manager.id === parseInt(userId));
     return manager ? manager.name : `User ${userId}`;
   });
 
-  const openCounts = userIds.map(userId => userStatusCount[userId].open);
-  const doneCounts = userIds.map(userId => userStatusCount[userId].done);
+  const openCounts = userIds?.map(userId => userStatusCount[userId].open);
+  const doneCounts = userIds?.map(userId => userStatusCount[userId].done);
 
   const chartData = {
     labels,

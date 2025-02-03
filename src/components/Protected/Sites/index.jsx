@@ -56,7 +56,7 @@ const Sites = ({
 
   const indexOfLastSite = currentPage * sitesPerPage;
   const indexOfFirstSite = indexOfLastSite - sitesPerPage;
-  const currentSites = filterSite.slice(indexOfFirstSite, indexOfLastSite);
+  const currentSites = filterSite?.slice(indexOfFirstSite, indexOfLastSite);
   const areaOption = sites.filter(
     (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
   );

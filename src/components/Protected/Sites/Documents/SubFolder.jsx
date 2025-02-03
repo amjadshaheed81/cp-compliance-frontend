@@ -291,7 +291,7 @@ const SubFolder = ({
             <i style={{ color: "#384BD3" }} className="fas fa-folder fa-1x"></i>
             &nbsp; Documents
           </Link>
-          {previousFolderId.map((pr) => {
+          {previousFolderId?.map((pr) => {
             return (
               <Link
                 underline="hover"

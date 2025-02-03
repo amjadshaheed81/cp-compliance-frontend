@@ -66,7 +66,7 @@ const DashboardActiveProjects = (siteSelectedForGlobal) => {
               </thead>
               <tbody>
               
-                {contractList.slice(0, 5).map(i=>(
+                {contractList?.slice(0, 5).map(i=>(
                   <tr>
                   <td>{i.summary}</td>
                   <td>{dateFormat(i?.startDate?.split("T")?.[0])}</td>

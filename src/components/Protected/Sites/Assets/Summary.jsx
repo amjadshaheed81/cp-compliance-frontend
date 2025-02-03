@@ -54,10 +54,8 @@ const Summary = ({
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
   const currentSiteAssets = filteredSiteAssets
-    ?.filter((itm) => itm?.doorItem !== true && itm?.patItem !== true)
-    .slice(indexOfFirstPreAction, indexOfLastPreAction);
-  const locationFilter = siteAssetsList
-    .map((itm) => {
+    ?.filter((itm) => itm?.doorItem !== true && itm?.patItem !== true)?.slice(indexOfFirstPreAction, indexOfLastPreAction);
+  const locationFilter = siteAssetsList?.map((itm) => {
       return { location: itm.location };
     })
     .filter(

@@ -30,8 +30,8 @@ const AdminCategories = ({ }) => {
       const subTypes = lovsubtypes.filter(l => l.attribite1 === t.lovValue);
       const subTypesList = []
       subTypes.forEach(s => {
-        const cat = categories.filter(l => l.attribite1 === s.lovValue).map(l => l.lovValue);
-        const cat2 = categories.filter(l => l.attribite1 === s.lovValue).map(l => { return { category: l.lovValue, id: l.id } });
+        const cat = categories.filter(l => l.attribite1 === s.lovValue)?.map(l => l.lovValue);
+        const cat2 = categories.filter(l => l.attribite1 === s.lovValue)?.map(l => { return { category: l.lovValue, id: l.id } });
         subTypesList.push({
           subType: s.lovValue,
           id: t.id,
@@ -201,7 +201,7 @@ const AdminCategories = ({ }) => {
                   </tr>
                 )}
                
-                {convertToTableFormatWithRowspan().map((row, rowIndex) => (
+                {convertToTableFormatWithRowspan()?.map((row, rowIndex) => (
                   <tr key={rowIndex} style={{ border: "2px groove",  fontWeight: '500', fontSize: '14px' }}>
                     {row.Type && (
                       <td rowSpan={row.Type.rowspan}  style={{ border: "2px groove", verticalAlign: 'middle' }}>

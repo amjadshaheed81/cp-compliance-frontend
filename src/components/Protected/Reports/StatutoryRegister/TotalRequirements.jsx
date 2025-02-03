@@ -4,7 +4,7 @@ import ReactECharts from "echarts-for-react";
 const TotalRequirements = ({ requirement, data }) => {
   // Filter statutory registers based on "required: true" and the specific requirement
   const statutoryRegisters = data
-    .flatMap((site) => site.statutoryRegisters.map((register) => ({
+    .flatMap((site) => site?.statutoryRegisters?.map((register) => ({
       ...register,
       siteName: site.siteName
     })))

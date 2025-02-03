@@ -90,7 +90,7 @@ const Cost = ({
                   disabled
                 >
                   <option value="">Budget Category</option>
-                  {typeoptions.map((t) => (
+                  {typeoptions?.map((t) => (
                     <option value={t}>{t}</option>
                   ))}
                 </select>

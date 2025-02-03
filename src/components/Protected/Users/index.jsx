@@ -40,7 +40,7 @@ const Users = ({
 
   const indexOfLastUsers = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUsers - usersPerPage;
-  const currentUsers = filteredUser.slice(indexOfFirstUser, indexOfLastUsers);
+  const currentUsers = filteredUser?.slice(indexOfFirstUser, indexOfLastUsers);
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };

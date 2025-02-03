@@ -146,7 +146,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                     <td colSpan={6}>No Result Available!!</td>
                   </tr>
                 )}
-                {formData.map((d, idx) => {
+                {formData?.map((d, idx) => {
                   const completed =
                     formData?.[idx]?.faultId && !formData?.[idx]?.edit;
                   const assetName = siteAssets
@@ -174,7 +174,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                               uformData[idx].assetId = item?.key;
                               setFormData(uformData);
                             }}
-                            options={siteAssets.map((option) => {
+                            options={siteAssets?.map((option) => {
                               return {
                                 key: option.assetId,
                                 label:

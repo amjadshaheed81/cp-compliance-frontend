@@ -53,10 +53,10 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
       lastYear
     );
 
-    currentYearCosts = currentYearCosts.map(
+    currentYearCosts = currentYearCosts?.map(
       (cost, index) => cost + itemCurrentYearReading[index]
     );
-    lastYearCosts = lastYearCosts.map(
+    lastYearCosts = lastYearCosts?.map(
       (cost, index) => cost + itemLastYearReading[index]
     );
   });

@@ -75,12 +75,11 @@ const Pat = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentSiteAssets = filteredSitePATItems.slice(
+  const currentSiteAssets = filteredSitePATItems?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  const locationFilter = siteAssetsList
-    .map((itm) => {
+  const locationFilter = siteAssetsList?.map((itm) => {
       return { location: itm.location };
     })
     .filter(
@@ -507,7 +506,7 @@ const Pat = ({
               <CSVLink
                 filename={"site-pat-item-list.csv"}
                 className="btn btn-light bg-white text-primary"
-                data={sitePATItems.map((itm) => {
+                data={sitePATItems?.map((itm) => {
                   return {
                     ...itm,
                     assetDoorSpecifications: Array.isArray(

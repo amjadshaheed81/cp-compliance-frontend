@@ -563,7 +563,7 @@ const StatutoryRegister = ({
                   <CSVLink
                     filename={"statutory-documents.csv"}
                     className="btn btn-light bg-white text-primary"
-                    data={statutory.map((item) => {
+                    data={statutory?.map((item) => {
                       // Use destructuring to exclude the 'files' field while copying the rest
                       const { files, ...rest } = item;
                       return rest;

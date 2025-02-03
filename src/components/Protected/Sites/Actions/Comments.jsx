@@ -90,7 +90,7 @@ const Comments = ({
   return (
     <Paper elevation={3} style={{ padding: '20px', margin: '20px auto' }}>
       <List>
-        {comments.map((comment, index) => (
+        {comments?.map((comment, index) => (
           <>
           <ListItem key={index} alignItems="flex-start">
             <ListItemAvatar>

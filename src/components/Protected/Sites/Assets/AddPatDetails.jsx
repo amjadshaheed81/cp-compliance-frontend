@@ -47,7 +47,7 @@ const AddPatDetails = ({
     setShowPatModal(false);
   };
   function formatPATDates(assetPATItems) {
-    return assetPATItems.map((item) => {
+    return assetPATItems?.map((item) => {
       if (item.patDate) {
         item.patDate = item.patDate.replace("T", " ");
       }
@@ -185,7 +185,7 @@ const AddPatDetails = ({
                   onChange={(event, newValue) => {
                     setSelectedUser(newValue?.key);
                   }}
-                  options={tester.map((option) => {
+                  options={tester?.map((option) => {
                     return {
                       key: option.id,
                       label:

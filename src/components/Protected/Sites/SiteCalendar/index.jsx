@@ -40,7 +40,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     data = filterDuplicates(data);
     const todays = data.filter(e => isToday(new Date(e.endDate)));
     settodayEvents(todays);
-    const event = data.map(d => {
+    const event = data?.map(d => {
       return {
         title: JSON.stringify([
           {
@@ -97,7 +97,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setClickedDate(date?._def?.extendedProps?.getDate);
   };
   function truncateString(str, num) {
-    return str.length > num ? str.slice(0, num) + "..." : str;
+    return str.length > num ? str?.slice(0, num) + "..." : str;
   }
   
   function renderEventContent(eventInfo) {

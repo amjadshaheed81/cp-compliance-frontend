@@ -44,7 +44,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
-  const currentContracts = filteredContractList.slice(
+  const currentContracts = filteredContractList?.slice(
     indexOfFirstContract,
     indexOfLastContract
   );

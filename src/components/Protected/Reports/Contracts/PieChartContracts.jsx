@@ -12,7 +12,7 @@ const PieChartContracts = ({ data }) => {
       }
     });
 
-    return Object.entries(categoryBudget).map(([name, value]) => ({ name, value }));
+    return Object.entries(categoryBudget)?.map(([name, value]) => ({ name, value }));
   };
 
   const chartData = processChartData();

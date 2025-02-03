@@ -30,8 +30,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
   ]);
   const appendParams = (url, params) => {
     const separator = url.includes("?") ? "&" : "?";
-    const queryString = Object.keys(params)
-      .map(
+    const queryString = Object.keys(params)?.map(
         (key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
       )
       .join("&");

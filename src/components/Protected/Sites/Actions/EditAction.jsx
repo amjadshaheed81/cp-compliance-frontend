@@ -250,7 +250,7 @@ const EditAction = ({
   };
 
   const getUserName = (id) => {
-    return managerList.filter(u => u.id === id).map(u => u.name);
+    return managerList.filter(u => u.id === id)?.map(u => u.name);
   }
   const getTimeRemaining = (creationDate, riskScore) => {
 
@@ -488,8 +488,7 @@ const EditAction = ({
                           >
                             <option value="">Select Floor</option>
                             {siteLayout
-                              .filter((site) => site.nodeType === "floor")
-                              .map((site) => (
+                              .filter((site) => site.nodeType === "floor")?.map((site) => (
                                 <option value={site.nodeName}>
                                   {site.nodeName}{" "}
                                 </option>
@@ -511,8 +510,7 @@ const EditAction = ({
                           >
                             <option value="">Select Room</option>
                             {siteLayout
-                              .filter((site) => site.nodeType === "room")
-                              .map((site) => (
+                              .filter((site) => site.nodeType === "room")?.map((site) => (
                                 <option value={site.nodeName}>
                                   {site.nodeName}
                                 </option>
@@ -535,12 +533,11 @@ const EditAction = ({
                             disabled={isViewRoleForActions(loggedInUserData)}
                             onChange={(event, item) => {
                               const uformData = { ...formData }
-                              uformData.taggedAsset = item.map(i => i.key).join(",");
+                              uformData.taggedAsset = item?.map(i => i.key).join(",");
                               setFormData(uformData);
                             }}
                             value={
-                              siteAssets
-                                .map((option) => ({
+                              siteAssets?.map((option) => ({
                                   key: option.assetId, 
                                   label: option.assetName + " - " + option.category
                                 }))
@@ -551,7 +548,7 @@ const EditAction = ({
                             }
                             //value={siteAssets.filter(s => formData?.taggedAssets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                            options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                            options={siteAssets?.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                             getOptionLabel={(option) => option.label}
 
                             renderInput={(params) => (
@@ -646,7 +643,7 @@ const EditAction = ({
                             id="assignedTo"
                             value={
                               managerList
-                                .map((option) => ({
+                                ?.map((option) => ({
                                   key: option.id,
                                   label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
                                 }))

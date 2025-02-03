@@ -232,7 +232,7 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
             </Grid>
           </Grid>
 
-          {quest.map((q, idx) =>
+          {quest?.map((q, idx) =>
             <Accordion defaultExpanded={idx === openIndex} >
               <AccordionSummary expandIcon={<ExpandMore />} >
                 <Typography>Q{idx + 1}. {q.question}
@@ -355,7 +355,7 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                           const uquest = [...quest]
                           uquest[idx].response = {
                             ...uquest[idx].response,
-                            assets: item.map(i => i.key).join(",")
+                            assets: item?.map(i => i.key).join(",")
                           }
                           setquest(uquest);
                         }}

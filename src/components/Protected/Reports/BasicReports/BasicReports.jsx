@@ -22,7 +22,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastContract = currentPage * dataPerPage;
   const indexOfFirstContract = indexOfLastContract - dataPerPage;
-  const currentContracts = filteredData.slice(
+  const currentContracts = filteredData?.slice(
     indexOfFirstContract,
     indexOfLastContract
   );
@@ -339,7 +339,7 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
               {!isLoading && (
                 <Fragment>
                   <ul>
-                    {questions.map((question, index) => (
+                    {questions?.map((question, index) => (
                       <li key={index}>
                         <a
                           className="cursor"

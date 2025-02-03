@@ -84,7 +84,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
-  const currentSiteChecks = filteredSiteChecks.slice(
+  const currentSiteChecks = filteredSiteChecks?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
