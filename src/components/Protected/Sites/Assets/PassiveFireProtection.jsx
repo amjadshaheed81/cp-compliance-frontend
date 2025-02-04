@@ -48,7 +48,7 @@ const PassiveFireProtection = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentSiteAssets = filteredSitePFPItems.slice(
+  const currentSiteAssets = filteredSitePFPItems?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -65,7 +65,7 @@ const PassiveFireProtection = ({
   };
   useEffect(() => {
     if (sitePFPItems) {
-      const formattedItems = sitePFPItems.map((itm) => ({
+      const formattedItems = sitePFPItems?.map((itm) => ({
         ...itm,
         location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
       }));

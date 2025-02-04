@@ -22,8 +22,8 @@ const Contractors = ({
     setOpen(false);
   };
   const removeByIndex = (list, index) => [
-    ...list.slice(0, index),
-    ...list.slice(index + 1),
+    ...list?.slice(0, index),
+    ...list?.slice(index + 1),
   ];
   const GettableRow = ({ itm, index, setData, data }) => {
     const [row, setRowdata] = useState(itm);

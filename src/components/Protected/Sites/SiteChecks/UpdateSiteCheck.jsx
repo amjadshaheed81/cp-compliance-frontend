@@ -285,7 +285,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     value={siteCheck?.leadUserID}
                   >
                     <option value="">Select Lead</option>
-                    {externalusers.map(u => {
+                    {externalusers?.map(u => {
                       return (
                         <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )
@@ -307,7 +307,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                     value={siteCheck?.assistantUserID}
                   >
                     <option value="">Select Assistant</option>
-                    {externalusers.map(u => {
+                    {externalusers?.map(u => {
                       return (
                         <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )

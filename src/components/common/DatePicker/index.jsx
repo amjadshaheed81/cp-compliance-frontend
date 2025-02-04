@@ -22,9 +22,9 @@ const TdkDatePicker = ({
   // Format input with slashes automatically
   const formatDateWithSlashes = (input) => {
     const digits = input.replace(/\D/g, ""); // Remove non-numeric characters
-    const day = digits.slice(0, 2);
-    const month = digits.slice(2, 4);
-    const year = digits.slice(4, 8);
+    const day = digits?.slice(0, 2);
+    const month = digits?.slice(2, 4);
+    const year = digits?.slice(4, 8);
 
     let formattedDate = day;
     if (month) formattedDate += `/${month}`;

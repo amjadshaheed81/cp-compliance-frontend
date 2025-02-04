@@ -71,7 +71,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
-  const currentSiteChecks = filteredSiteChecks.slice(
+  const currentSiteChecks = filteredSiteChecks?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -81,15 +81,14 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const gettypeoptions = async () => {
     const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
-    settypeoptions(lovtypes.map((l) => l.lovValue));
+    settypeoptions(lovtypes?.map((l) => l.lovValue));
   };
   const getsubtypeoptions = async () => {
     const lovtypes = await get(
       "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData2.type
     );
     setsubtypeoptions(
-      lovtypes
-        .map((l) => l.lovValue)
+      lovtypes?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {
             return -1; // a comes before b
@@ -107,8 +106,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData.subType
     );
     setcatoptions(
-      lovtypes
-        .map((l) => l.lovValue)
+      lovtypes?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {
             return -1; // a comes before b
@@ -126,8 +124,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData.type
     );
     setsubtypeoptions2(
-      lovtypes
-        .map((l) => l.lovValue)
+      lovtypes?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {
             return -1; // a comes before b
@@ -539,7 +536,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         onChange={handleInputChange2}
                       >
                         <option value="">Type</option>
-                        {typeoptions.map((t) => (
+                        {typeoptions?.map((t) => (
                           <option value={t}>{t}</option>
                         ))}
                       </select>
@@ -554,7 +551,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         value={formData2?.subType}
                       >
                         <option value="">Sub Type</option>
-                        {subtypeoptions.map((t) => (
+                        {subtypeoptions?.map((t) => (
                           <option value={t}>{t}</option>
                         ))}
                       </select>
@@ -794,7 +791,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         onChange={handleInputChange}
                       >
                         <option value="">Select Type</option>
-                        {typeoptions.map((t) => (
+                        {typeoptions?.map((t) => (
                           <option value={t}>{t}</option>
                         ))}
                       </select>
@@ -815,7 +812,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         onChange={handleInputChange}
                       >
                         <option value="">Select Sub Type</option>
-                        {subtypeoptions2.map((t) => (
+                        {subtypeoptions2?.map((t) => (
                           <option value={t}>{t}</option>
                         ))}
                       </select>
@@ -838,7 +835,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                             onChange={handleInputChange}
                           >
                             <option value="">Select Category</option>
-                            {catoptions.map((t) => (
+                            {catoptions?.map((t) => (
                               <option value={t}>{t}</option>
                             ))}
                           </select>
@@ -1010,7 +1007,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           uformData.assistantUserID = item?.key;
                           setFormData(uformData);
                         }}
-                        options={managerList.map((option) => {
+                        options={managerList?.map((option) => {
                           return {
                             key: option.id,
                             label:

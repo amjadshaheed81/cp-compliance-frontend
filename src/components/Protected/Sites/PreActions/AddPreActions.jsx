@@ -78,7 +78,7 @@ const AddPreActions = ({
           status: "Pending",
           actionId: null,
           raisedByUserId: loggedInUserData?.id,
-          taggedAsset: value.map(v=> v.id).join(',')
+          taggedAsset: value?.map(v=> v.id).join(',')
         })
       );
       setIsLoading(true);

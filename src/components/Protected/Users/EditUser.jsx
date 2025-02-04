@@ -359,7 +359,7 @@ const ViewUsers = ({
                               newValue[0] === "Select All")
                           ) {
                             // Select All logic
-                            setTagSite(sites.map((site) => site.siteId));
+                            setTagSite(sites?.map((site) => site.siteId));
                           } else if (
                             newValue.length === 0 ||
                             (newValue.includes("Select All") &&
@@ -376,7 +376,7 @@ const ViewUsers = ({
                         }}
                         options={[
                           "Select All",
-                          ...sites.map((site) => site.siteId),
+                          ...sites?.map((site) => site.siteId),
                         ]}
                         getOptionLabel={(option) =>
                           option === "Select All"
@@ -430,7 +430,7 @@ const ViewUsers = ({
                             setSelectedCompany(item?.key);
                           }}
                           value={getSelectedValue()}
-                          options={companies.map((option) => {
+                          options={companies?.map((option) => {
                             return {
                               key: option.companyId,
                               label: option.companyName,

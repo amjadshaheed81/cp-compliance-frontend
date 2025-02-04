@@ -84,7 +84,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [bulkCategoryForCompare, setBulkCategoryForCompare] = useState();
   const indexOfLastPreAction = currentPage * itemsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
-  const currentEnergyCost = filteredEnergyCost.slice(
+  const currentEnergyCost = filteredEnergyCost?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -94,7 +94,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
 
   const gettypeoptions = async () => {
     const lovtypes = await get("/api/lov/ENERGY_COST_BUDGET_CATEGORY");
-    settypeoptions(lovtypes.map((l) => l.lovValue));
+    settypeoptions(lovtypes?.map((l) => l.lovValue));
   };
 
  
@@ -172,12 +172,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      const mappedData = json.map((row) => {
+      const mappedData = json?.map((row) => {
         let rowData = {
           submittedUserId: loggedInUserData?.id,
           readingUnit: "kWh",
         };
-        const rowValues = Object.values(row).slice(0, 4);
+        const rowValues = Object.values(row)?.slice(0, 4);
 
         if (rowValues.length > 3) {
           customColumnNamesReading.forEach((col, index) => {
@@ -482,7 +482,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     onChange={(e) => setBulkCategory(e.target.value)}
                   >
                     <option value="">Budget Category</option>
-                    {typeoptions.map((t) => (
+                    {typeoptions?.map((t) => (
                       <option value={t}>{t}</option>
                     ))}
                   </select>
@@ -585,7 +585,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     onChange={handleInputChange2}
                   >
                     <option value="">Budget Category</option>
-                    {typeoptions.map((t) => (
+                    {typeoptions?.map((t) => (
                       <option value={t}>{t}</option>
                     ))}
                   </select>
@@ -623,7 +623,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     value={state.currentYear}
                     onChange={handleYearChange}
                   >
-                    {years.map((year) => (
+                    {years?.map((year) => (
                       <option key={year} value={year}>
                         {year}
                       </option>
@@ -638,7 +638,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     className="form-control form-select"
                     onChange={handlePreviousYearChange}
                   >
-                    {years.map((year) => (
+                    {years?.map((year) => (
                       <option key={year} value={year}>
                         {year}
                       </option>
@@ -751,7 +751,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 value={state.siteComparisonYear}
                 onChange={handleComparisonYearChange}
               >
-                {years.map((year) => (
+                {years?.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
@@ -767,7 +767,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     onChange={(e) => setBulkCategoryForCompare(e.target.value)}
                   >
                     <option value="">Budget Category</option>
-                    {typeoptions.map((t) => (
+                    {typeoptions?.map((t) => (
                       <option value={t}>{t}</option>
                     ))}
                   </select>

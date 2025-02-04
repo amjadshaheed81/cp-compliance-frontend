@@ -517,7 +517,7 @@ const UpdateAsset = ({
                             onChange={(event, newValue) => {
                               setValue("relatedAssetId", newValue?.key);
                             }}
-                            options={siteAssets.map((option) => {
+                            options={siteAssets?.map((option) => {
                               return {
                                 key: option.assetId,
                                 label: option.assetName,

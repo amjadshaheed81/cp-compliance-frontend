@@ -228,7 +228,7 @@ const CreateAsset = ({
                                   ?.join(",");
                                 setValue("relatedAssetId", keys);
                               }}
-                              options={siteAssets.map((option) => {
+                              options={siteAssets?.map((option) => {
                                 return {
                                   key: option.assetId,
                                   label:

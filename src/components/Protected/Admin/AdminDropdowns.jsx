@@ -279,7 +279,7 @@ const AdminDropdowns = ({ }) => {
                 value={selectedLovType}
               >
                 <option value={null}>Select</option>
-                {lovTypes.map((o, index) => (
+                {lovTypes?.map((o, index) => (
                   <option key={index} value={o}>
                     {" "}
                     {o?.replaceAll("_", " ")}{" "}
@@ -360,7 +360,7 @@ const AdminDropdowns = ({ }) => {
                   )}
 
                   {!isLoading &&
-                    sortedData.map((d, rowIndex) => (
+                    sortedData?.map((d, rowIndex) => (
                       <tr
                         key={rowIndex}
                         style={{

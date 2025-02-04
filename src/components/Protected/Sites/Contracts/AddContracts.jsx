@@ -335,7 +335,7 @@ const AddContracts = ({
                               shouldValidate: true,
                             });
                           }}
-                          options={companies.map((option) => {
+                          options={companies?.map((option) => {
                             return {
                               key: option.companyId,
                               label: option.companyName,
@@ -413,7 +413,7 @@ const AddContracts = ({
                               shouldValidate: true,
                             });
                           }}
-                          options={managerList.map((option) => {
+                          options={managerList?.map((option) => {
                             return { key: option.id, label: option.name };
                           })}
                           getOptionLabel={(option) => option.label}

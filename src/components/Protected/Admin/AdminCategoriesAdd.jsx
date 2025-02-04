@@ -103,7 +103,7 @@ const AdminCategoriesAdd = ({ }) => {
                 Add Subtype
               </Button>
             </Grid>
-            {subtypes.map((subtype, subtypeIndex) => (
+            {subtypes?.map((subtype, subtypeIndex) => (
               <Grid item xs={6} key={subtypeIndex}>
                 <Paper elevation={24} style={{ padding: '30px', backgroundColor: '#f8f8fa' }}>
                   <Grid container spacing={2} alignItems="center">
@@ -128,7 +128,7 @@ const AdminCategoriesAdd = ({ }) => {
                         Add Category
                       </Button>
                     </Grid>
-                    {subtype.categories.map((category, categoryIndex) => (
+                    {subtype.categories?.map((category, categoryIndex) => (
                       <Grid item xs={6} key={categoryIndex}>
                         <Paper elevation={24} style={{ padding: '40px', backgroundColor: "#e5e6eb", display: 'flex' }}>
                           <TextField

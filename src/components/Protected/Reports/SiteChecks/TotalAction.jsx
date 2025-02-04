@@ -86,7 +86,7 @@ const TotalAction = ({ data, managerList }) => {
             const actionCount = context.raw;
 
             // Create an array to store all action details
-            const actionDetails = data.map(item => (
+            const actionDetails = data?.map(item => (
               `• ${item.type} (${item.subType}): ` +
               `Red ${item.riskScoreRed || 0}, Amber ${item.riskScoreAmber || 0}, ` +
               `Yellow ${item.riskScoreYellow || 0}, Green ${item.riskScoreGreen || 0}`

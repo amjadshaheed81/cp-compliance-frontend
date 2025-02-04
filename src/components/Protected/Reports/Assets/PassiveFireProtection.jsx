@@ -29,7 +29,7 @@ const PassiveFireProtection = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentSiteAssets = filteredSitePFPItems.slice(
+  const currentSiteAssets = filteredSitePFPItems?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
@@ -240,7 +240,7 @@ const PassiveFireProtection = ({
               <CSVLink
                 filename={"site-pfp-item-list.csv"}
                 className="btn btn-light bg-white text-primary"
-                data={sitePFPItems.map((itm) => {
+                data={sitePFPItems?.map((itm) => {
                   return {
                     ...itm,
                     assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)

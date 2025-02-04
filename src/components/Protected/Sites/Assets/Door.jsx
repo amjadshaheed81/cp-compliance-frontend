@@ -48,12 +48,11 @@ const Door = ({
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
   const location = useLocation();
-  const currentSiteAssets = filteredSiteDoorItems.slice(
+  const currentSiteAssets = filteredSiteDoorItems?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );
-  const locationFilter = siteAssetsList
-    .map((itm) => {
+  const locationFilter = siteAssetsList?.map((itm) => {
       return { location: itm.location };
     })
     .filter(
@@ -69,7 +68,7 @@ const Door = ({
 
   useEffect(() => {
     if (siteDoorItems) {
-      const formattedDoorItems = siteDoorItems.map((itm) => ({
+      const formattedDoorItems = siteDoorItems?.map((itm) => ({
         ...itm,
         location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
       }));

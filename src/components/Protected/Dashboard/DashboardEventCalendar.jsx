@@ -25,7 +25,7 @@ const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
   const getData = async () => {
     let data = await get("/api/user/calendar/events?userId="+loggedInUserData?.id??0);
     data = filterDuplicates(data);
-    const event = data.map(d => {
+    const event = data?.map(d => {
       return {
         title: JSON.stringify([
           {

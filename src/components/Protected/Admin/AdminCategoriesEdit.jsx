@@ -108,7 +108,7 @@ const AdminCategoriesAdd = ({ }) => {
     for (let s of lovsubtypes) {
       
      
-        const cat2 = categories.filter(l => l.attribite1 === s.lovValue).map(l => { return { category: l.lovValue, id: l.id } });
+        const cat2 = categories.filter(l => l.attribite1 === s.lovValue)?.map(l => { return { category: l.lovValue, id: l.id } });
 
         subTypesList.push({
           name: s.lovValue, categories: cat2, id: s.id
@@ -146,7 +146,7 @@ const AdminCategoriesAdd = ({ }) => {
                 Add Subtype
               </Button>
             </Grid>
-            {subtypes.map((subtype, subtypeIndex) => (
+            {subtypes?.map((subtype, subtypeIndex) => (
               <Grid item xs={6} key={subtypeIndex}>
                 <Paper elevation={24} style={{ padding: '30px', backgroundColor: '#f8f8fa' }}>
                   <Grid container spacing={2} alignItems="center">
@@ -172,7 +172,7 @@ const AdminCategoriesAdd = ({ }) => {
                         Add Category
                       </Button>
                     </Grid>
-                    {subtype.categories.map((category, categoryIndex) => (
+                    {subtype?.categories?.map((category, categoryIndex) => (
                       <Grid item xs={6} key={categoryIndex}>
                         <Paper elevation={24} style={{ padding: '40px', backgroundColor: "#e5e6eb", display: 'flex' }}>
                           <TextField

@@ -27,10 +27,10 @@ const MonthWiseCheckChart = ({ data }) => {
 
   // Prepare data for the chart
   const labels = Object.keys(monthlyCounts).sort(); // Sort by month
-  const auditCounts = labels.map(month => monthlyCounts[month].Audit);
-  const surveyCounts = labels.map(month => monthlyCounts[month].Survey);
-  const assessmentCounts = labels.map(month => monthlyCounts[month].Assessment);
-  const inspectionCounts = labels.map(month => monthlyCounts[month].Inspection);
+  const auditCounts = labels?.map(month => monthlyCounts[month].Audit);
+  const surveyCounts = labels?.map(month => monthlyCounts[month].Survey);
+  const assessmentCounts = labels?.map(month => monthlyCounts[month].Assessment);
+  const inspectionCounts = labels?.map(month => monthlyCounts[month].Inspection);
 
   const chartData = {
     labels,

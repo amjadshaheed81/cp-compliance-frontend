@@ -59,10 +59,10 @@ const CostChart = ({ energyData, currentYear, previousYear }) => {
     );
 
     // Sum across all energy items for each month
-    currentYearCosts = currentYearCosts.map(
+    currentYearCosts = currentYearCosts?.map(
       (cost, index) => cost + itemCurrentYearCosts[index]
     );
-    lastYearCosts = lastYearCosts.map(
+    lastYearCosts = lastYearCosts?.map(
       (cost, index) => cost + itemLastYearCosts[index]
     );
   });

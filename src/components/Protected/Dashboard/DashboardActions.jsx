@@ -71,7 +71,7 @@ const DashboardActions = (siteSelectedForGlobal) => {
                  
                   </tr>
                 }
-                {actionList?.slice(0, 5).map(i=> (
+                {actionList?.slice(0, 5)?.map(i=> (
                   <tr>
                      <td>{i.type}</td>
                   <td>{i.desc}</td>

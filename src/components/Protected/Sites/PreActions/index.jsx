@@ -29,7 +29,7 @@ const PreActions = ({
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
-  const currentPreActions = filteredPreActions?.filter((a) => a.status !== "Pending Action").slice(
+  const currentPreActions = filteredPreActions?.filter((a) => a.status !== "Pending Action")?.slice(
     indexOfFirstPreAction,
     indexOfLastPreAction
   );

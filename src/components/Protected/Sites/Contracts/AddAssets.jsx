@@ -25,8 +25,8 @@ const AddAssets = ({
   }, [assetData]);
 
   const removeByIndex = (list, index) => [
-    ...list.slice(0, index),
-    ...list.slice(index + 1),
+    ...list?.slice(0, index),
+    ...list?.slice(index + 1),
   ];
 
   const handleAssetChange = (index, selectedValue) => {

@@ -17,7 +17,7 @@ const DashboardTender = ({ siteSelectedForGlobal }) => {
         `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
       );
       // Show only the first 5 contracts
-      const limitedContracts = (projects?.projectContracts || []).slice(0, 5);
+      const limitedContracts = (projects?.projectContracts || [])?.slice(0, 5);
       
       setContracts(limitedContracts);
     }

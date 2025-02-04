@@ -58,15 +58,15 @@ const SurveyWaterTemperatureMonitoring = ({
   const getSurvey = async () => {
     setIsLoading(true);
     const outlettypes = await get("/api/lov/SITE_CHECK_SURVEY_OUTLET_TYPE");
-    setoutletoptions(outlettypes.map((l) => l.lovValue));
+    setoutletoptions(outlettypes?.map((l) => l.lovValue));
     const tempratureoptionstypes = await get(
       "/api/lov/SITE_CHECK_SURVEY_TEMPRATURE"
     );
-    settempratureoptions(tempratureoptionstypes.map((l) => l.lovValue));
+    settempratureoptions(tempratureoptionstypes?.map((l) => l.lovValue));
     const normruntimetypes = await get(
       "/api/lov/SITE_CHECK_SURVEY_NORM_RUN_TIME"
     );
-    setnormruntime(normruntimetypes.map((l) => l.lovValue));
+    setnormruntime(normruntimetypes?.map((l) => l.lovValue));
     let data = await get("/api/site-check/water-outlet-temp/" + checkId);
     if (data.length > 0) {
       data.forEach((_) => {
@@ -841,7 +841,7 @@ const SurveyWaterTemperatureMonitoring = ({
                 </tr>
             )}
             {!isLoading && 
-                  formData.map((d, idx) => {
+                  formData?.map((d, idx) => {
                     const isAllFilled =
                       formData[idx].assetId &&
                       formData?.[idx]?.outletType &&

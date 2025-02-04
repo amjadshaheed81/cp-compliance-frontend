@@ -232,7 +232,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
             </Grid>
           </Grid>
           <hr />
-          {riskFactor.map((q, idx) => {
+          {riskFactor?.map((q, idx) => {
 
             return (<Accordion defaultExpanded={idx === openIndex}>
               <AccordionSummary expandIcon={<ExpandMore />}>
@@ -299,9 +299,9 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                         }
                         setRiskFactor(uquest);
                       }}
-                      value={siteAssets.filter(s => riskFactor[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                      value={siteAssets?.filter(s => riskFactor[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                      options={siteAssets.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                      options={siteAssets?.map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                       getOptionLabel={(option) => option.label}
 
                       

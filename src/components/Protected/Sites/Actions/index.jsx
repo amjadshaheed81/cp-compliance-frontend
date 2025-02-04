@@ -153,7 +153,7 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
     return 0;
   });
 
-  const currentActions = sortedActions.slice(indexOfFirstPreAction, indexOfLastPreAction);
+  const currentActions = sortedActions?.slice(indexOfFirstPreAction, indexOfLastPreAction);
 
   const getTimeRemaining = (creationDate, riskScore) => {
 

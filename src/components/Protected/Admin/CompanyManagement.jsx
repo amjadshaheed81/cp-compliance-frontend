@@ -216,7 +216,7 @@ const CompanyManagement = ({ }) => {
                     <td colSpan={4} align="center">No result found!!</td>
                   </tr>
                 )}
-                {!isLoading && data.map((d, rowIndex) => (
+                {!isLoading && data?.map((d, rowIndex) => (
                   <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
                     {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.companyName}</td>}
                     {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>

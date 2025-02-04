@@ -194,7 +194,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             </Grid>
           </Grid>
 
-          {quest?.length > 0 && header.map(h => { return (<div>
+          {quest?.length > 0 && header?.map(h => { return (<div>
             <h5>{h.lovDesc} {h.lovValue}</h5>
           
 
@@ -297,7 +297,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           const uquest = [...quest]
                           uquest[idx].response = {
                             ...uquest[idx].response,
-                            faultassets: item.map(i => i.key).join(",")
+                            faultassets: item?.map(i => i.key).join(",")
                           }
                           setquest(uquest);
                         }}

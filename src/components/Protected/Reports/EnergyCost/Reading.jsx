@@ -112,7 +112,7 @@ const Reading = ({
                   disabled
                 >
                   <option value="">Budget Category</option>
-                  {typeoptions.map((t) => (
+                  {typeoptions?.map((t) => (
                     <option value={t}>{t}</option>
                   ))}
                 </select>
@@ -193,7 +193,7 @@ const Reading = ({
                           </td>
                         </tr>
                       )}
-                      {survey?.readingList.map((d, idx) => (
+                      {survey?.readingList?.map((d, idx) => (
                         <tr>
                           <td>
                             {d?.readingDate

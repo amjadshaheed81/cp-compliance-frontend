@@ -309,7 +309,7 @@ const EditProfile = ({
                           const keys = newValue?.map((itm) => itm?.key);
                           setTagSite(keys);
                         }}
-                        options={sites.map((option) => {
+                        options={sites?.map((option) => {
                           return {
                             key: option.siteId,
                             label: option.siteName,
@@ -366,7 +366,7 @@ const EditProfile = ({
                             setSelectedCompany(item?.key); // Set selected company
                           }}
                           value={getSelectedValue()}
-                          options={companies.map((option) => {
+                          options={companies?.map((option) => {
                             return {
                               key: option.companyId,
                               label: option.companyName,
