@@ -431,51 +431,7 @@ const CreateAsset = ({
                         </select>
                       </div>
                     </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="patItem"
-                        name="patItem"
-                        onClick={changePatItem}
-                        className="form-check-input"
-                        {...register("patItem")}
-                      />
-                      &nbsp;
-                      <label for="patItem">
-                        PAT item (fill PAT details below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="pfpItem"
-                        name="pfpItem"
-                        onClick={changePfpItem}
-                        className="form-check-input"
-                        {...register("pfpItem")}
-                      />
-                      &nbsp;
-                      <label for="pfpItem">
-                        Passive fire schedule required (fill PFS details below
-                        below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="doorItem"
-                        name="doorItem"
-                        onClick={changeDoorItem}
-                        className="form-check-input"
-                        {...register("doorItem")}
-                      />
-                      &nbsp;
-                      <label for="doorItem">
-                        Door Assets (fill Door assets details below below)
-                      </label>
-                    </div>
-                  </div>
-                  <div className="row">
+                     <div className="row">
                     <div className="col-md-4">
                       <label for="position">Interior/Exterior</label>
                       <select
@@ -562,12 +518,53 @@ const CreateAsset = ({
                       </select>
                       
                     </div>
-                    <div>
-                      <button type="submit" className="btn btn-primary mt-2">
-                        Save
-                      </button>
+                    
+                  </div>
+                    <div className="col-md-4 mt-2">
+                      <input
+                        type="checkbox"
+                        id="patItem"
+                        name="patItem"
+                        onClick={changePatItem}
+                        className="form-check-input"
+                        {...register("patItem")}
+                      />
+                      &nbsp;
+                      <label for="patItem">
+                        PAT item (fill PAT details below)
+                      </label>
+                    </div>
+                    <div className="col-md-4 mt-2">
+                      <input
+                        type="checkbox"
+                        id="pfpItem"
+                        name="pfpItem"
+                        onClick={changePfpItem}
+                        className="form-check-input"
+                        {...register("pfpItem")}
+                      />
+                      &nbsp;
+                      <label for="pfpItem">
+                        Passive fire schedule required (fill PFS details below
+                        below)
+                      </label>
+                    </div>
+                    <div className="col-md-4 mt-2">
+                      <input
+                        type="checkbox"
+                        id="doorItem"
+                        name="doorItem"
+                        onClick={changeDoorItem}
+                        className="form-check-input"
+                        {...register("doorItem")}
+                      />
+                      &nbsp;
+                      <label for="doorItem">
+                        Door Assets (fill Door assets details below below)
+                      </label>
                     </div>
                   </div>
+                 
                   {/* start */}
 
                   {/* end */}
