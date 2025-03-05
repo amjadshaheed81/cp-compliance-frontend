@@ -9,6 +9,7 @@ import {
   getDocumentsRootFolder,
   getSiteAssets,
   setLoader,
+  getSiteLayout
 } from "../../../../store/thunk/site";
 import { Validation } from "../../../../Constant/Validation";
 import { InputError } from "../../../common/InputError";
@@ -26,6 +27,8 @@ const CreateAsset = ({
   addSiteAsset,
   getSiteAssets,
   siteAssets,
+  getSiteLayout,
+  siteLayout,
 }) => {
   const [patRecord, setPatRecord] = useState([]);
   const [category, setCategory] = useState([]);
@@ -36,10 +39,14 @@ const CreateAsset = ({
   const [subCategory3, setSubCategory3] = useState([]);
   const [subCategory3List, setSubCategory3List] = useState([]);
 
+  const [floors, setFloors] = useState([]);
+  const [rooms, setRooms] = useState([]);
+
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteLayout(siteSelectedForGlobal?.siteId);
       getCategories();
     } else {
       toast.error("Please select site from site search to proceed....");
@@ -86,6 +93,7 @@ const CreateAsset = ({
       setValue("pfpItem", false);
     }
   };
+
 
   const addPatRecord = () => {
     setPatRecord([
@@ -467,6 +475,99 @@ const CreateAsset = ({
                       </label>
                     </div>
                   </div>
+                  <div className="row">
+                    <div className="col-md-4">
+                      <label for="position">Interior/Exterior</label>
+                      <select
+                        name="position"
+                        className="form-control form-select"
+                        id="position"
+                        {...register("position")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValue("position", val);
+                          
+                    
+                          const node = siteLayout.filter(
+                            (site) => site.nodeName === val
+                          );
+                          const data = siteLayout.filter(
+                            (site) =>
+                              site.nodeType === "floor" &&
+                              site.parentNode === node?.[0]?.id
+                          );
+                          setFloors(data || []);
+                        }}
+                      >
+                        <option value="">Select Interior/Exterior</option>
+                        {["Interior", "Exterior"].map((num) => (
+                          <option value={num}>{num} </option>
+                        ))}
+                      </select>
+                      
+                    </div>
+                    <div className="col-md-4">
+                      <label for="floor">Floor</label>
+                      <select
+                        name="floor"
+                        className="form-control form-select"
+                        id="floor"
+                        {...register("floor")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValue("floor", val);
+                          
+                          const node = siteLayout.filter(
+                            (site) => site.nodeName === val
+                          );
+                          const data = siteLayout.filter(
+                            (site) =>
+                              site.nodeType === "room" &&
+                              site.parentNode === node?.[0]?.id
+                          );
+                          setRooms(data || []);
+                        }}
+                      >
+                        <option value="">Select Floor</option>
+                        {floors?.map((site) => (
+                          <option value={site.nodeName}>
+                            {site.nodeName}{" "}
+                          </option>
+                        ))}
+                      </select>
+                     
+                    </div>
+                    <div className="col-md-4">
+                      <label for="room">Room</label>
+                      <select
+                        name="room"
+                        className="form-control form-select"
+                        id="room"
+                        {...register("room", {
+                          required: {
+                            value: true,
+                            message: `Please select room`,
+                          },
+                        })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setValue("floor", val);
+                          
+                        }}
+                      >
+                        <option value="">Select Room</option>
+                        {rooms?.map((site) => (
+                          <option value={site.nodeName}>{site.nodeName}</option>
+                        ))}
+                      </select>
+                      
+                    </div>
+                    <div>
+                      <button type="submit" className="btn btn-primary mt-2">
+                        Save
+                      </button>
+                    </div>
+                  </div>
                   {/* start */}
 
                   {/* end */}
@@ -485,10 +586,13 @@ const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteAssets: state.site.siteAssets,
+
+  siteLayout: state.site.siteLayout,
 });
 export default connect(mapStateToProps, {
   setLoader,
   getDocumentsRootFolder,
   addSiteAsset,
   getSiteAssets,
+  getSiteLayout
 })(CreateAsset);
