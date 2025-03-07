@@ -163,6 +163,7 @@ const Contractors = ({
               </label>
               <input
                 type="text"
+autoComplete="off"
                 name="projectSummary"
                 className="form-control"
                 id="projectSummary"
@@ -174,6 +175,7 @@ const Contractors = ({
               </label>
               <input
                 type="text"
+autoComplete="off"
                 name="contractor"
                 className="form-control"
                 id="contractor"
@@ -185,6 +187,7 @@ const Contractors = ({
               </label>
               <input
                 type="text"
+autoComplete="off"
                 name="projectManager"
                 className="form-control"
                 id="projectManager"
@@ -218,6 +221,7 @@ const Contractors = ({
               </label>
               <input
                 type="text"
+autoComplete="off"
                 name="budget"
                 className="form-control"
                 id="budget"
@@ -229,6 +233,7 @@ const Contractors = ({
               </label>
               <input
                 type="text"
+autoComplete="off"
                 name="officialQuote"
                 className="form-control"
                 id="officialQuote"

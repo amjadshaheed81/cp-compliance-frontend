@@ -244,6 +244,7 @@ const AddContracts = ({
                           <label for="summary">Summary</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="summary"
                             {...register("summary", {
@@ -346,6 +347,7 @@ const AddContracts = ({
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
+autoComplete="off"
                                 {...params.inputProps}
                                 className="form-control form-select"
                                 placeholder="Select Company"
@@ -421,6 +423,7 @@ const AddContracts = ({
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
+autoComplete="off"
                                 {...params.inputProps}
                                 className="form-control form-select"
                                 placeholder="Select Manager"

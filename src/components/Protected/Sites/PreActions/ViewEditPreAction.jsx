@@ -434,6 +434,7 @@ const ViewEditPreAction = ({
                           <input
                             className="form-control form-select"
                             type="text"
+autoComplete="off"
                             disabled
                             {...register("floor")}
                           />
@@ -488,6 +489,7 @@ const ViewEditPreAction = ({
                           <input
                             className="form-control form-select"
                             type="text"
+autoComplete="off"
                             disabled
                             {...register("room")}
                           />
@@ -568,6 +570,7 @@ const ViewEditPreAction = ({
                           <label for="taggedAsset">Tagged Asset</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="taggedAsset"
                             name="taggedAsset"

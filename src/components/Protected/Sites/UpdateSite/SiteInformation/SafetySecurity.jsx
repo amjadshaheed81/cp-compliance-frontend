@@ -42,6 +42,7 @@ const SafetySecurity = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="extFabric"
               id="extFabric"
               className="form-control"
@@ -248,6 +249,7 @@ const SafetySecurity = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="firePanelLocation"
               id="firePanelLocation"
               className="form-control"

@@ -234,6 +234,7 @@ const Projects = ({
             <div className="mb-2">
               <input
                 type="text"
+autoComplete="off"
                 className="form-control"
                 placeholder="Search..."
                 onChange={searchSite}
@@ -288,6 +289,7 @@ const Projects = ({
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     name="projectName"
                     className="form-control"
                     id="projectName"
@@ -340,6 +342,7 @@ const Projects = ({
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     name="shortDescription"
                     className="form-control"
                     id="shortDescription"

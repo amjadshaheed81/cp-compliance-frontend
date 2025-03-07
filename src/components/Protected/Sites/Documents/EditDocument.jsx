@@ -84,6 +84,7 @@ const EditDocument = ({
                   <label for="assetName">File Name</label>
                   <input
                     type="text"
+autoComplete="off"
                     className="form-control"
                     id="fileName"
                     name="fileName"

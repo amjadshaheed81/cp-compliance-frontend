@@ -61,6 +61,7 @@ const TdkDatePicker = ({
         <input
           required={required}
           type="text"
+autoComplete="off"
           id="datePicker"
           value={manualInput}
           placeholder="dd/mm/yyyy"

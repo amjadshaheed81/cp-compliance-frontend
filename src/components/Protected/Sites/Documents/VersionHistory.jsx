@@ -184,6 +184,7 @@ const VersionHistory = ({
                       },
                     })}
                     type="text"
+autoComplete="off"
                     name="folder"
                     className="form-control"
                   />
@@ -204,6 +205,7 @@ const VersionHistory = ({
                       },
                     })}
                     type="text"
+autoComplete="off"
                     name="name"
                     className="form-control"
                   />

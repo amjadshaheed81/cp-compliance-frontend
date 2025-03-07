@@ -202,6 +202,7 @@ const AdminDropdowns = ({ }) => {
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
+autoComplete="off"
                   className="form-control"
                   name="lovType"
                   onChange={handleInputChange2}
@@ -215,6 +216,7 @@ const AdminDropdowns = ({ }) => {
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
+autoComplete="off"
                   className="form-control"
                   name="lovValue"
                   onChange={handleInputChange2}
@@ -228,6 +230,7 @@ const AdminDropdowns = ({ }) => {
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
+autoComplete="off"
                   className="form-control"
                   name="attribite1"
                   onChange={handleInputChange2}
@@ -241,6 +244,7 @@ const AdminDropdowns = ({ }) => {
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
+autoComplete="off"
                   className="form-control"
                   name="attribite2"
                   onChange={handleInputChange2}
@@ -388,6 +392,7 @@ const AdminDropdowns = ({ }) => {
                           >
                             <input
                               type="text"
+autoComplete="off"
                               value={d.lovValue}
                               name="lovValue"
                               className="form-control"
@@ -420,6 +425,7 @@ const AdminDropdowns = ({ }) => {
                           >
                             <input
                               type="text"
+autoComplete="off"
                               value={d.lovDesc}
                               name="lovDesc"
                               className="form-control"
@@ -447,6 +453,7 @@ const AdminDropdowns = ({ }) => {
                           >
                             <input
                               type="text"
+autoComplete="off"
                               value={d.attribite1}
                               name="attribite1"
                               className="form-control"
@@ -479,6 +486,7 @@ const AdminDropdowns = ({ }) => {
                           >
                             <input
                               type="text"
+autoComplete="off"
                               value={d.attribite2}
                               name="attribite2"
                               className="form-control"
@@ -511,6 +519,7 @@ const AdminDropdowns = ({ }) => {
                           >
                             <input
                               type="text"
+autoComplete="off"
                               value={d.attribite3}
                               name="attribite3"
                               className="form-control"

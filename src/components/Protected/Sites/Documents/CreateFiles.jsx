@@ -395,6 +395,7 @@ const CreateFiles = ({
                     {isStatutory ? (
                       <input
                         type="text"
+autoComplete="off"
                         disabled
                         value={
                           folderData?.requirement
@@ -407,6 +408,7 @@ const CreateFiles = ({
                     ) : (
                       <input
                         type="text"
+autoComplete="off"
                         disabled
                         value={
                           selectedMandatoryFolder?.[0]?.folderName
@@ -424,6 +426,7 @@ const CreateFiles = ({
                     <label htmlFor="fileName">File Name</label>
                     <input
                       type="text"
+autoComplete="off"
                       className="form-control"
                       {...register("name")}
                     />
@@ -434,6 +437,7 @@ const CreateFiles = ({
                     <label htmlFor="version">Version</label>
                     <input
                       type="text"
+autoComplete="off"
                       disabled
                       value={
                         selectedMandatoryFolder?.[0]?.fileVersion

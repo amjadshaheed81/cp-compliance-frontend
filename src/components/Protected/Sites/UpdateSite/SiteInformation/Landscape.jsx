@@ -50,6 +50,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="hardLandScaping"
               id="hardLandScaping"
               className="form-control form-select"
@@ -73,6 +74,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="softLandScaping"
               id="softLandScaping"
               className="form-control form-select"
@@ -96,6 +98,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="riverPondLakes"
               id="riverPondLakes"
               className="form-control form-select"
@@ -115,6 +118,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="tallTrees"
               id="tallTrees"
               className="form-control form-select"
@@ -138,6 +142,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="drainageInterceptors"
               id="drainageInterceptors"
               className="form-control form-select"
@@ -161,6 +166,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="thirdPartyTelEquipment"
               id="thirdPartyTelEquipment"
               className="form-control form-select"
@@ -184,6 +190,7 @@ const Landscape = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="electricalOverHeadPowerLines"
               id="electricalOverHeadPowerLines"
               className="form-control form-select"

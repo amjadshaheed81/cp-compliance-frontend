@@ -91,6 +91,7 @@ const ForgotPassword = ({ login }) => {
                 {!otpSend && (
                   <input
                     type="text"
+autoComplete="off"
                     className="form-control"
                     id="email"
                     value={email}
@@ -112,6 +113,7 @@ const ForgotPassword = ({ login }) => {
                 {otpSend && (
                   <input
                     type="text"
+autoComplete="off"
                     className="form-control"
                     id="otp"
                     value={otp}

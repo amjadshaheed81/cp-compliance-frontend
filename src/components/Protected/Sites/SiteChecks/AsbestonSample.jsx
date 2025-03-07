@@ -496,6 +496,7 @@ const AsbestonSample = ({
                                         </label>
                                         <input
                                           type="text"
+autoComplete="off"
                                           value={
                                             "AS00" +
                                               (formData?.[idx]?.sampleId??"1")
@@ -624,6 +625,7 @@ const AsbestonSample = ({
                                         </label>
                                         <input
                                           type="text"
+autoComplete="off"
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -647,6 +649,7 @@ const AsbestonSample = ({
                                         </label>
                                         <input
                                           type="text"
+autoComplete="off"
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -698,6 +701,7 @@ const AsbestonSample = ({
                                         </label>
                                         <input
                                           type="text"
+autoComplete="off"
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -723,6 +727,7 @@ const AsbestonSample = ({
                                         </label>
                                         <input
                                           type="text"
+autoComplete="off"
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -1374,6 +1379,7 @@ const AsbestonSample = ({
                                                   id="totalMatScore"
                                                   //style={{ width: '100px'  }}
                                                   type="text"
+autoComplete="off"
                                                   className="form-control"
                                                   disabled
                                                   // value={
@@ -1397,6 +1403,7 @@ const AsbestonSample = ({
                                                 </label>
                                                 <input
                                                   type="text"
+autoComplete="off"
                                                   //style={{ width: '100px' }}
                                                   className="form-control"
                                                   disabled
@@ -1421,6 +1428,7 @@ const AsbestonSample = ({
                                                 <input
                                                   //style={{ width: '130px' }}
                                                   type="text"
+autoComplete="off"
                                                   className="form-control"
                                                   disabled
                                                   // value={
@@ -1527,6 +1535,7 @@ const AsbestonSample = ({
                                             </label>
                                             <input
                                               type="text"
+autoComplete="off"
                                               disabled={
                                                 formData[idx]?.completed
                                               }

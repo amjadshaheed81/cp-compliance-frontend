@@ -174,6 +174,7 @@ const Summary = ({
             <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
+autoComplete="off"
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
@@ -183,6 +184,7 @@ const Summary = ({
             <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
+autoComplete="off"
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"

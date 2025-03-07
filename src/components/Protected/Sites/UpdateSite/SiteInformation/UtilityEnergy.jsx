@@ -42,6 +42,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="utilGas"
               id="utilGas"
               className="form-control form-select"
@@ -65,6 +66,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="utilElectricity"
               id="utilElectricity"
               className="form-control form-select"
@@ -84,6 +86,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="utilWater"
               id="utilWater"
               className="form-control form-select"
@@ -103,6 +106,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="utilTelecom"
               id="utilTelecom"
               className="form-control form-select"
@@ -126,6 +130,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="utilMainsDrainage"
               id="utilMainsDrainage"
               className="form-control form-select"
@@ -149,6 +154,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="airConditioning"
               id="airConditioning"
               className="form-control form-select"
@@ -168,6 +174,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="coolingTower"
               id="coolingTower"
               className="form-control form-select"
@@ -191,6 +198,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="waterIsolationValveInternal"
               id="waterIsolationValveInternal"
               className="form-control"
@@ -210,6 +218,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="waterTanks"
               id="waterTanks"
               className="form-control form-select"
@@ -229,6 +238,7 @@ const UtilityEnergy = ({
           <div>
           <input
               type="text"
+autoComplete="off"
               name="waterTankLocation"
               id="waterTankLocation"
               className="form-control"
@@ -275,6 +285,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="hotWaterCalorifierLocation"
               id="hotWaterCalorifierLocation"
               className="form-control"
@@ -317,6 +328,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="gasBoiler"
               id="gasBoiler"
               className="form-control form-select"
@@ -340,6 +352,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="gasBoilerLocation"
               id="gasBoilerLocation"
               className="form-control"
@@ -359,6 +372,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="gasSupplyIsolation"
               id="gasSupplyIsolation"
               className="form-control"
@@ -378,6 +392,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="gasSupplyExternalIsolation"
               id="gasSupplyExternalIsolation"
               className="form-control"
@@ -397,6 +412,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="electricInstallationLocation"
               id="electricInstallationLocation"
               className="form-control"
@@ -416,6 +432,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="electricSubStationOnSite"
               id="electricSubStationOnSite"
               className="form-control form-select"
@@ -439,6 +456,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="externalLighting"
               id="externalLighting"
               className="form-control form-select"
@@ -462,6 +480,7 @@ const UtilityEnergy = ({
           <div>
             <select
               type="text"
+autoComplete="off"
               name="backupGenerator"
               id="backupGenerator"
               className="form-control form-select"
@@ -485,6 +504,7 @@ const UtilityEnergy = ({
           <div>
             <input
               type="text"
+autoComplete="off"
               name="backupGeneratorLocation"
               id="backupGeneratorLocation"
               className="form-control"

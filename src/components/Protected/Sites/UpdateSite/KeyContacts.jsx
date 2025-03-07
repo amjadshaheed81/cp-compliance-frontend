@@ -129,6 +129,7 @@ const KeyContacts = ({
                   <input
                     className="contact-input form-control"
                     type="text"
+autoComplete="off"
                     disabled={isViewMode}
                     {...register("contactName", {
                       required: {

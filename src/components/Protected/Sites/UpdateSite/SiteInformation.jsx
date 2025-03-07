@@ -185,6 +185,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="totalBuildingArea"
                   id="totalBuildingArea"
                   className="form-control"
@@ -204,6 +205,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="clientOccupiedArea"
                   id="clientOccupiedArea"
                   className="form-control"
@@ -242,6 +244,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="maxOccupancy"
                   id="maxOccupancy"
                   className="form-control"
@@ -288,6 +291,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="numberOfStaff"
                   id="numberOfStaff"
                   className="form-control"
@@ -312,6 +316,7 @@ const SiteInformation = ({
               <div>
               <select
                   type="text"
+autoComplete="off"
                   name="tenantInOccupation"
                   id="tenantInOccupation"
                   className="form-control form-select"
@@ -331,6 +336,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="tenantName"
                   id="tenantName"
                   className="form-control"
@@ -350,6 +356,7 @@ const SiteInformation = ({
               <div>
               <select
                   type="text"
+autoComplete="off"
                   name="vacantAreaInBuilding"
                   id="vacantAreaInBuilding"
                   className="form-control form-select"
@@ -369,6 +376,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="numOfFloors"
                   id="numOfFloors"
                   className="form-control"
@@ -393,6 +401,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="carParkSpaceAboveGround"
                   id="carParkSpaceAboveGround"
                   className="form-control"
@@ -417,6 +426,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="carParkSpaceBelowGround"
                   id="carParkSpaceBelowGround"
                   className="form-control"
@@ -441,6 +451,7 @@ const SiteInformation = ({
               <div>
                 <input
                   type="text"
+autoComplete="off"
                   name="numOfBasementLevels"
                   id="numOfBasementLevels"
                   className="form-control"

@@ -499,6 +499,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     ></i>
                     <input
                       type="text"
+autoComplete="off"
                       placeholder="Search"
                       name="searchField"
                       style={{ textAlign: "center", width: "250px" }}

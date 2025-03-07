@@ -206,6 +206,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     disabled
                     value={siteCheck?.type}
                     className="form-control"
@@ -220,6 +221,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     disabled
                     value={siteCheck?.subType}
                     className="form-control"
@@ -234,6 +236,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     disabled
                     value={siteCheck?.category}
                     className="form-control"
@@ -323,6 +326,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     disabled
                     value={siteCheck?.repeatFrequency}
                     className="form-control"

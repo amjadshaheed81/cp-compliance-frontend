@@ -122,6 +122,7 @@ const AddSite = ({
                         </span>
                         <input
                           type="text"
+autoComplete="off"
                           name="siteName"
                           className="form-control"
                           id="siteName"
@@ -150,6 +151,7 @@ const AddSite = ({
                         </label>
                         <input
                           type="text"
+autoComplete="off"
                           name="address1"
                           className="form-control"
                           id="address1"
@@ -175,6 +177,7 @@ const AddSite = ({
                         </label>
                         <input
                           type="text"
+autoComplete="off"
                           name="address2"
                           className="form-control"
                           id="address2"
@@ -189,6 +192,7 @@ const AddSite = ({
                         </label>
                         <input
                           type="text"
+autoComplete="off"
                           name="city"
                           className="form-control"
                           id="city"
@@ -241,6 +245,7 @@ const AddSite = ({
                         </label>
                         <input
                           type="text"
+autoComplete="off"
                           name="postCode"
                           className="form-control"
                           id="postCode"
@@ -283,6 +288,7 @@ const AddSite = ({
                         </label>
                         <input
                           type="text"
+autoComplete="off"
                           name="country"
                           className="form-control"
                           id="country"
@@ -303,6 +309,7 @@ const AddSite = ({
                     </div>
                     <input
                       type="text"
+autoComplete="off"
                       name="mapViewUrl"
                       className="form-control"
                       id="mapViewUrl"
@@ -311,6 +318,7 @@ const AddSite = ({
                     />
                     <input
                       type="text"
+autoComplete="off"
                       name="streetViewUrl"
                       className="form-control"
                       id="streetViewUrl"

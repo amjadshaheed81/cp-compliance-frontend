@@ -148,6 +148,7 @@ const AuditUnitPeriodic = ({
                       <td>
                         <input
                           type="text"
+autoComplete="off"
                           disabled={completed}
                           required
                           name="summary"
@@ -161,6 +162,7 @@ const AuditUnitPeriodic = ({
                         {completed && (
                           <input
                             type="text"
+autoComplete="off"
                             disabled={completed}
                             className="form-control"
                             value={assetName}
@@ -197,6 +199,7 @@ const AuditUnitPeriodic = ({
                                 ></i>
                                 <input
                                   type="text"
+autoComplete="off"
                                   required
                                   {...params.inputProps}
                                   disabled={completed}
@@ -273,6 +276,7 @@ const AuditUnitPeriodic = ({
                           disabled={completed}
                           value={formData?.[idx]?.action}
                           type="text"
+autoComplete="off"
                           name="action"
                           className="form-control"
                           id="action"

@@ -134,6 +134,7 @@ const CompanyManagement = ({ }) => {
                 <input
                   style={{ maxWidth: '300px' }}
                   type="text"
+autoComplete="off"
                   className="form-control"
                   name="companyName"
                   onChange={handleInputChange2}
@@ -145,6 +146,7 @@ const CompanyManagement = ({ }) => {
                 <input
                   style={{ maxWidth: '300px' }}
                   type="text"
+autoComplete="off"
                   className="form-control"
                   name="email"
                   onChange={handleInputChange2}
@@ -222,6 +224,7 @@ const CompanyManagement = ({ }) => {
                     {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
+autoComplete="off"
                         value={d.companyName}
                         name="companyName"
                         className="form-control"
@@ -235,6 +238,7 @@ const CompanyManagement = ({ }) => {
                     {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
+autoComplete="off"
                         value={d.email}
                         name="email"
                         className="form-control"
@@ -248,6 +252,7 @@ const CompanyManagement = ({ }) => {
                     {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <input
                         type="text"
+autoComplete="off"
                         value={d.phone}
                         name="phone"
                         className="form-control"

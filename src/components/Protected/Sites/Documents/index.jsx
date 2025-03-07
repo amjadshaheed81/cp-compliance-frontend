@@ -77,6 +77,7 @@ const Document = ({
             ></i>
             <input
               type="text"
+autoComplete="off"
               style={{ textAlign: "justify", paddingLeft: "2rem" }}
               className="form-control m-2"
               id="search"

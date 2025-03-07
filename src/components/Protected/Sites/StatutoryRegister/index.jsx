@@ -656,6 +656,7 @@ const StatutoryRegister = ({
                         <div style={{ display: "flex", alignItems: "center" }}>
                           <input
                             type="text"
+autoComplete="off"
                             id="chkbox"
                             style={{ width: "120px" }}
                             className="form-control"

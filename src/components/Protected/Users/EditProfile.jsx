@@ -162,6 +162,7 @@ const EditProfile = ({
                       <label for="firstName">First Name</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="firstName"
                         {...register("firstName", {
@@ -184,6 +185,7 @@ const EditProfile = ({
                       <label for="lastName">Last Name</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="lastName"
                         {...register("lastName")}
@@ -377,6 +379,7 @@ const EditProfile = ({
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
+autoComplete="off"
                                 {...params.inputProps}
                                 className="form-control"
                                 placeholder="Select Company"

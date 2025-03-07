@@ -114,6 +114,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, s
           </label>
           <input
             type="text"
+autoComplete="off"
             disabled={completed}
             name="certificateName"
             className="form-control"
@@ -153,6 +154,7 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, s
               renderInput={(params) => (
                 <div ref={params.InputProps.ref} >
                   <input type="text"
+autoComplete="off"
                     {...params.inputProps}
                     className="form-control"
                   />

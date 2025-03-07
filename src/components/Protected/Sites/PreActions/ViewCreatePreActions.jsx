@@ -84,6 +84,7 @@ const ViewCreatePreActions = ({}) => {
                     <label for="taggedAsset">Tagger Asset</label>
                     <input
                       type="text"
+autoComplete="off"
                       className="form-control"
                       id="taggedAsset"
                       name="taggedAsset"

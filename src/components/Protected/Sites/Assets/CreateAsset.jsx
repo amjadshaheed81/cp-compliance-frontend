@@ -192,6 +192,7 @@ const CreateAsset = ({
                             <label for="assetName">Asset Name</label>
                             <input
                               type="text"
+autoComplete="off"
                               className="form-control"
                               id="assetName"
                               name="assetName"
@@ -216,6 +217,7 @@ const CreateAsset = ({
                             <label for="manufacturer">Manufacturer</label>
                             <input
                               type="text"
+autoComplete="off"
                               className="form-control"
                               id="manufacturer"
                               name="manufacturer"
@@ -284,6 +286,7 @@ const CreateAsset = ({
                             <label for="model">Model</label>
                             <input
                               type="text"
+autoComplete="off"
                               className="form-control"
                               id="model"
                               name="model"
@@ -298,6 +301,7 @@ const CreateAsset = ({
                             <label for="serialNumber">Serial Number</label>
                             <input
                               type="text"
+autoComplete="off"
                               className="form-control"
                               id="serialNumber"
                               name="serialNumber"

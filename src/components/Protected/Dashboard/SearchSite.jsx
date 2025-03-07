@@ -156,6 +156,7 @@ function SearchSite({
         ></i>
         <input
           type="text"
+autoComplete="off"
           style={{ textAlign: "center" }}
           className="form-control m-2"
           id="search"

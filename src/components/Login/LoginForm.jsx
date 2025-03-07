@@ -49,6 +49,7 @@ const LoginForm = ({ login, loginUser }) => {
                 <label for="email">Email</label>
                 <input
                   type="text"
+autoComplete="off"
                   className="form-control"
                   id="email"
                   placeholder="Enter your email"

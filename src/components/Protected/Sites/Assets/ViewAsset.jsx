@@ -472,6 +472,7 @@ const UpdateAsset = ({
                           <label for="assetName">Asset Name</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="assetName"
                             name="assetName"
@@ -497,6 +498,7 @@ const UpdateAsset = ({
                           <label for="manufacturer">Manufacturer</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="manufacturer"
                             name="manufacturer"
@@ -561,6 +563,7 @@ const UpdateAsset = ({
                           <label for="model">Model</label>
                           <input
                             type="text"
+autoComplete="off"
                             disabled
                             className="form-control"
                             id="model"
@@ -576,6 +579,7 @@ const UpdateAsset = ({
                           <label for="serialNumber">Serial Number</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="serialNumber"
                             disabled
@@ -591,6 +595,7 @@ const UpdateAsset = ({
                           <label for="model">Device Id</label>
                           <input
                             type="text"
+autoComplete="off"
                             disabled
                             className="form-control"
                             id="deviceId"
@@ -1011,6 +1016,7 @@ const UpdateAsset = ({
                         <label for="purchaseDate">Purchase Date</label>
                         <input
                           type="text"
+autoComplete="off"
                           className="form-control"
                           id="purchaseDate"
                           name="purchaseDate"
@@ -1043,6 +1049,7 @@ const UpdateAsset = ({
                         <input
                           disabled
                           type="text"
+autoComplete="off"
                           className="form-control"
                           id="supplier"
                           name="supplier"
@@ -1247,6 +1254,7 @@ const UpdateAsset = ({
                         <label for="valuationDate">Valuation Date</label>
                         <input
                           type="text"
+autoComplete="off"
                           className="form-control"
                           id="valuationDate"
                           disabled
@@ -1343,6 +1351,7 @@ const UpdateAsset = ({
                         <label for="disposalDate">Disposal Date</label>
                         <input
                           type="text"
+autoComplete="off"
                           className="form-control"
                           id="disposalDate"
                           name="disposalDate"
@@ -1405,6 +1414,7 @@ const UpdateAsset = ({
                         <label for="disposalTo">Disposal To</label>
                         <input
                           type="text"
+autoComplete="off"
                           className="form-control"
                           id="disposalTo"
                           name="disposalTo"
@@ -1540,6 +1550,7 @@ const UpdateAsset = ({
                       <label for="product">Product Name</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="product"
                         name="product"
@@ -1572,6 +1583,7 @@ const UpdateAsset = ({
                       <input
                         disabled
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="access"
                         name="access"
@@ -1636,6 +1648,7 @@ const UpdateAsset = ({
                       <label for="service">Service</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="service"
                         disabled
@@ -1667,6 +1680,7 @@ const UpdateAsset = ({
                       <label for="dimension">Dimension</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="dimension"
                         disabled
@@ -1699,6 +1713,7 @@ const UpdateAsset = ({
                       <label for="quantity">Quantity</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="quantity"
                         name="quantity"
@@ -1730,6 +1745,7 @@ const UpdateAsset = ({
                       <label for="area">Area (in sq m)</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="area"
                         disabled
@@ -1765,6 +1781,7 @@ const UpdateAsset = ({
                       <label for="width">Door Width (mm)</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="width"
                         name="width"
@@ -1796,6 +1813,7 @@ const UpdateAsset = ({
                       <label for="height">Door Height (mm)</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="height"
                         disabled
@@ -1827,6 +1845,7 @@ const UpdateAsset = ({
                       <label for="depth">Door Depth (mm)</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="depth"
                         disabled
@@ -1858,6 +1877,7 @@ const UpdateAsset = ({
                       <label for="finish">Door Finish</label>
                       <input
                         type="text"
+autoComplete="off"
                         disabled
                         className="form-control"
                         id="finish"
@@ -1889,6 +1909,7 @@ const UpdateAsset = ({
                       <label for="visionPanel">Vision Panel</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="visionPanel"
                         name="visionPanel"
@@ -1920,6 +1941,7 @@ const UpdateAsset = ({
                       <label for="fireRating">Fire Rating</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="fireRating"
                         name="fireRating"
@@ -1951,6 +1973,7 @@ const UpdateAsset = ({
                       <label for="frameMaterial">Fire Material</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="frameMaterial"
                         disabled
@@ -1983,6 +2006,7 @@ const UpdateAsset = ({
                       <label for="frameFinish">Frame Finish</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="frameFinish"
                         name="frameFinish"

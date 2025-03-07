@@ -73,6 +73,7 @@ const ShowCloneModal = ({
                       <label for="assetName">Asset Name</label>
                       <input
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="assetName"
                         name="assetName"

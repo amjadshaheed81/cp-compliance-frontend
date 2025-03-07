@@ -135,6 +135,7 @@ const BulkUpload = ({
                 </label>
                 <input
                   type="text"
+autoComplete="off"
                   name="folder"
                   disabled
                   className="form-control"

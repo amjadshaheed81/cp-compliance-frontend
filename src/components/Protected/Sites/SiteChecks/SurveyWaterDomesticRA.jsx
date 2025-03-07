@@ -346,6 +346,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                           id="score1"
                           style={{ width: '100px' }}
                           type="text"
+autoComplete="off"
                           className="form-control"
                           disabled
                           value={riskFactor[idx]?.response?.score ?? 0}
@@ -358,6 +359,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                         </label>
                         <input
                           type="text"
+autoComplete="off"
                           style={{ width: '100px' }}
                           className="form-control"
                           disabled
@@ -372,6 +374,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                         <input
                           style={{ width: '130px' }}
                           type="text"
+autoComplete="off"
                           className="form-control"
                           disabled
                           value={riskFactor[idx]?.weight * Number(riskFactor[idx]?.response?.score ?? 0)}

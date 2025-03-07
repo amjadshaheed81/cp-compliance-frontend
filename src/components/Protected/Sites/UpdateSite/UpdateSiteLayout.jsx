@@ -113,6 +113,7 @@ const UpdateSiteLayout = ({
                   <label for="summary">Node Name</label>
                   <input
                     type="text"
+autoComplete="off"
                     className="form-control"
                     id="nodeNameValue"
                     name="nodeNameValue"

@@ -588,6 +588,7 @@ const EditAction = ({
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
+autoComplete="off"
                                   {...params.inputProps}
                                   required
                                   className="form-control"
@@ -624,6 +625,7 @@ const EditAction = ({
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
+autoComplete="off"
                                   {...params.inputProps}
                                   required
                                   className="form-control"
@@ -661,6 +663,7 @@ const EditAction = ({
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
+autoComplete="off"
                                   {...params.inputProps}
                                   required
                                   disabled={isViewRoleForActions(loggedInUserData)}
@@ -698,6 +701,7 @@ const EditAction = ({
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
+autoComplete="off"
                                   {...params.inputProps}
                                   disabled={isViewRoleForActions(loggedInUserData)}
                                   required

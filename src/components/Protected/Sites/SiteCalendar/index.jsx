@@ -150,6 +150,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 <div className="col">
                   <input
                     type="text"
+autoComplete="off"
                     className="form-control"
                     placeholder="Search"
                     name="searchField"

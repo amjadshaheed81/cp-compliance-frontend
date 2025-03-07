@@ -520,6 +520,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         ></i>
                         <input
                           type="text"
+autoComplete="off"
                           placeholder="Search"
                           name="searchField"
                           style={{ paddingLeft: "20%" }}
@@ -964,6 +965,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           <div ref={params.InputProps.ref}>
                             <input
                               type="text"
+autoComplete="off"
                               {...params.inputProps}
                               required
                               className="form-control"
@@ -1027,6 +1029,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           <div ref={params.InputProps.ref}>
                             <input
                               type="text"
+autoComplete="off"
                               {...params.inputProps}
                               required
                               className="form-control"

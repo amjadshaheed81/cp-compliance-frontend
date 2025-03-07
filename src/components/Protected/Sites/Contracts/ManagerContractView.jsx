@@ -563,6 +563,7 @@ const ManagerContractView = ({
                           <label for="summary">Summary</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="summary"
                             {...register("summary", {
@@ -666,6 +667,7 @@ const ManagerContractView = ({
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
+autoComplete="off"
                                 {...params.inputProps}
                                 className="form-control form-select"
                                 placeholder="Select Company"
@@ -1069,6 +1071,7 @@ const ManagerContractView = ({
                                 <input
                                   style={{ width: "130px" }}
                                   type="text"
+autoComplete="off"
                                   className="form-control"
                                   placeholder="Enter Note..."
                                   {...quoteForm.register(`managerNote-${itm.quoteId}`)}

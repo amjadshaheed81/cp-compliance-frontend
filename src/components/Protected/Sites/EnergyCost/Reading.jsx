@@ -184,6 +184,7 @@ const Reading = ({
                   {/* <label for="readingUnit"></label>
                   <input
                     type="text"
+autoComplete="off"
                     value="kWh"
                     style={{ maxWidth: '300px' }}
                     className="form-control"

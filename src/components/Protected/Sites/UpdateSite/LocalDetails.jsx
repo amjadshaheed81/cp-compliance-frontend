@@ -152,6 +152,7 @@ const LocalDetails = ({
                   </label>
                   <input
                     type="text"
+autoComplete="off"
                     name="localAuthority"
                     className="form-control"
                     id="localAuthority"

@@ -334,6 +334,7 @@ const ContractorContractView = ({
                           <label for="summary">Summary</label>
                           <input
                             type="text"
+autoComplete="off"
                             className="form-control"
                             id="summary"
                             disabled
@@ -416,6 +417,7 @@ const ContractorContractView = ({
                         <label for="company">Company</label>
                         <input
                           type="text"
+autoComplete="off"
                           className="form-control"
                           id="contractorCompanyName"
                           disabled
@@ -821,6 +823,7 @@ const ContractorContractView = ({
                             <label for="quote">Note</label>
                             <input
                               type="text"
+autoComplete="off"
                               className="form-control"
                               min="0"
                               id="quoteNote"

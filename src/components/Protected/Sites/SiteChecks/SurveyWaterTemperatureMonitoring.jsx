@@ -304,6 +304,7 @@ const SurveyWaterTemperatureMonitoring = ({
                       <input
                         style={{ maxWidth: "300px" }}
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="outletType"
                         disabled
@@ -315,6 +316,7 @@ const SurveyWaterTemperatureMonitoring = ({
                       <input
                         style={{ maxWidth: "300px" }}
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="outletType"
                         disabled
@@ -326,6 +328,7 @@ const SurveyWaterTemperatureMonitoring = ({
                       <input
                         style={{ maxWidth: "300px" }}
                         type="text"
+autoComplete="off"
                         className="form-control"
                         id="outletType"
                         disabled
@@ -861,6 +864,7 @@ const SurveyWaterTemperatureMonitoring = ({
                           {formData?.[idx]?.completed ? (
                             <input
                               type="text"
+autoComplete="off"
                               disabled={formData?.[idx]?.completed}
                               className="form-control"
                               value={assetName}
@@ -884,6 +888,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                 <div ref={params.InputProps.ref}>
                                   <input
                                     type="text"
+autoComplete="off"
                                     {...params.inputProps}
                                     required
                                     disabled={formData?.[idx]?.completed}

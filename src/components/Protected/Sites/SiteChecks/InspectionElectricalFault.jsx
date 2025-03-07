@@ -160,6 +160,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                         {completed && (
                           <input
                             type="text"
+autoComplete="off"
                             disabled={completed}
                             className="form-control"
                             value={assetName}
@@ -202,6 +203,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                                 ></i>
                                 <input
                                   type="text"
+autoComplete="off"
                                   {...params.inputProps}
                                   required
                                   disabled={completed}
@@ -215,6 +217,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                       <td>
                         <input
                           type="text"
+autoComplete="off"
                           disabled={completed}
                           required
                           name="faultDescription"
@@ -308,6 +311,7 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                           disabled={completed}
                           value={formData?.[idx]?.action}
                           type="text"
+autoComplete="off"
                           name="action"
                           className="form-control"
                           id="action"

@@ -209,6 +209,7 @@ const Users = ({
                 <div className="col-md-3 col-sm-4 mt-2">
                   <input
                     type="text"
+autoComplete="off"
                     className="form-control"
                     placeholder="Search"
                     name="searchField"

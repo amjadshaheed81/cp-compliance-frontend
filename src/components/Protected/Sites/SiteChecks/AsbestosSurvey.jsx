@@ -91,6 +91,7 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
                 </label>
                 <input
                   type="text"
+autoComplete="off"
                   required
                   disabled={completed}
                   name="surveyCompany"
@@ -107,6 +108,7 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
                 <input
                   required
                   type="text"
+autoComplete="off"
                   disabled={completed}
                   name="ukasLab"
                   className="form-control"
@@ -137,6 +139,7 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
                 <input
                   required
                   type="text"
+autoComplete="off"
                   disabled={formData.surveyReference}
                   name="surveyReference"
                   className="form-control"

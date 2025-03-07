@@ -203,6 +203,7 @@ const AddPatDetails = ({
                     <div ref={params.InputProps.ref}>
                       <input
                         type="text"
+autoComplete="off"
                         {...params.inputProps}
                         required
                         className="form-control"
