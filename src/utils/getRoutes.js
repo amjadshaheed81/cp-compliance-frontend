@@ -19,6 +19,7 @@ import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd
 import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit";
 import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns";
 import CompanyManagement from "../components/Protected/Admin/CompanyManagement";
+import OnboradClient from  "../components/Protected/Admin/OnboradClient";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
@@ -184,6 +185,14 @@ export const getRoutes = () => {
       element: <CompanyManagement />,
       allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
+
+    {
+      path: "/onboard-client",
+      element: <OnboradClient />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+    },
+
+    
     {
       path: "/admin/categories/new",
       element: <AdminCategoriesAdd />,

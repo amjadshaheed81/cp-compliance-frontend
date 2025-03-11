@@ -177,6 +177,24 @@ export async function uploadSiteCheckDoc(reqData) {
   }
 }
 
+
+export async function uploadLogo(reqData) {
+  const formData = new FormData();
+  formData.append("file", reqData.file);
+  configAxios();
+  try {
+    const { data } = await axiosInstance({
+      method: "POST",
+      url: "/api/user/clinet/logo",
+      data: formData,
+      headers: { ...getHeaders(), 'Content-Type': `multipart/form-data` },
+    });
+    return data;
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
 export async function getSasToken() {
   configAxios();
   try {

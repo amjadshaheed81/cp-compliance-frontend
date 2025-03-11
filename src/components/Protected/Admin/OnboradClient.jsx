@@ -1,0 +1,432 @@
+import React, { Fragment, useEffect, useState } from "react";
+import { connect } from "react-redux";
+import Header from "../../common/Header/Header";
+import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
+import SidebarNew from "../../common/Sidebar/SidebarNew";
+import { get, post, del, put, uploadLogo } from "../../../api";
+import CircularProgress from '@mui/material/CircularProgress';
+import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
+import { toast } from "react-toastify";
+import moment from "moment";
+
+const OnboradClient = ({ }) => {
+
+  const [data, setData] = useState([]);
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [addNewDrp, setAddNewDrp] = useState(false);
+
+  useEffect(() => {
+    getClient();
+  }, []);
+
+  const dateFormat = (date) => {
+    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  }
+
+  const getClient = async () => {
+    setIsLoading(true);
+    const clientData = await get("/api/user/clients");
+    setData(clientData);
+    setIsLoading(false);
+  };
+
+  const validateFields = (data) => {
+    let errors = {};
+    if (!data.companyName) {
+      errors.companyName = "Company Name is required";
+    }
+    if (!data.email) {
+      errors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(data.email)) {
+      errors.email = "Email is invalid";
+    }
+    if (!data.phone) {
+      errors.phone = "Phone is required";
+    } else if (!/^\d{11}$/.test(data.phone)) {
+      errors.phone = "Phone must be 11 digits";
+    }
+    return errors;
+  };
+
+  const editData = (idx) => {
+    const inProgress = data.findIndex(d => d.edit || d.add);
+    if (inProgress >= 0) {
+      toast.error("Please save existing data");
+      return;
+    }
+    const udata = [...data];
+    udata[idx].edit = true;
+    setData(udata);
+  };
+
+  const cancel = (idx) => {
+    const udata = [...data];
+    if (udata[idx].add) {
+      udata.splice(idx, 1);
+    } else {
+      udata[idx].edit = false;
+    }
+    setData(udata);
+  };
+
+  const deletData = async (idx) => {
+    setIsLoading(true);
+    const dataTSave = { ...data[idx] };
+    await del(`api/companies/${dataTSave.companyId}/delete`);
+    getClient();
+  };
+
+  // const save = async (idx) => {
+  //   const dataTSave = { ...data[idx] };
+  //   const validationErrors = validateFields(dataTSave);
+  //   if (Object.keys(validationErrors).length > 0) {
+  //     setErrors(validationErrors);
+  //     return;
+  //   }
+
+  //   setIsLoading(true);
+  //   if (dataTSave.add) {
+  //     await put("/api/companies/manage", dataTSave);
+  //   } else {
+  //     await put("/api/companies/manage", dataTSave);
+  //   }
+  //   getClient();
+  // };
+
+  const saveNew = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
+
+    setIsLoading(true);
+    console.log('formData',formData)
+    if (formData?.file?.name) {
+      formData.logo = await uploadLogo(formData);
+      delete data.file;
+    }
+    formData.status = 'Active'
+    formData.trialExpiry =new Date(formData.trialExpiry);
+    formData.creationDate =new Date();
+    await post("/api/user/onboard", formData);
+    setAddNewDrp(false);
+    getClient();
+  };
+
+  const handleInputChange = (e, idx) => {
+    const { name, value } = e.target;
+    const uAllData = [...data];
+    const udata = {
+      ...data[idx],
+      [name]: value,
+    };
+    uAllData[idx] = udata;
+    setData(uAllData);
+  };
+
+  const handleInputChange2 = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleFileChange = (e) => {
+    const udata = {
+      ...formData,
+      file: e.target.files[0],
+    };
+    setFormData(udata);
+  };
+
+  return (
+    <Fragment>
+      <SidebarNew />
+      
+      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false); }} maxWidth="lg" fullWidth>
+      <form onSubmit={saveNew}>
+        <DialogTitle>Add New Client</DialogTitle>
+        <DialogContent dividers>
+          <Fragment>
+            <Grid container>
+              <Grid sm={4}>
+                <label htmlFor="companyName">Client Name</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="text"
+                  required
+                  autoComplete="off"
+                  className="form-control"
+                  name="companyName"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label htmlFor="adminEmail">Admin Email</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="text"
+                  required
+                  autoComplete="off"
+                  className="form-control"
+                  name="adminEmail"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label htmlFor="adminPassword">Admin Password</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="password"
+                  required
+                  autoComplete="off"
+                  maxLength={11}
+                  className="form-control"
+                  name="adminPassword"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label htmlFor="allowedUser">Allowed Number of Users</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="number"
+                  required
+                  autoComplete="off"
+                  className="form-control"
+                  name="allowedUser"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label htmlFor="allowedSites">Allowed Number of Sites</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="number"
+                  required
+                  autoComplete="off"
+                  className="form-control"
+                  name="allowedSites"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label htmlFor="trialExpiry">Trial Expiry</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="date"
+                  required
+                  autoComplete="off"
+                  className="form-control"
+                  name="trialExpiry"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+
+              <Grid sm={4}>
+                <label htmlFor="modules">Modules</label>
+                <select
+                style={{ maxWidth: '300px' }}
+                          required
+                          name="modules"
+                          className="form-control form-select"
+                          id="modules"
+                          onChange={(e) => handleInputChange2}
+                        >
+                          <option value="">Select Modules</option>
+                          <option value={1}>1</option>
+                          <option value={2}>2</option>
+                          <option value={3}>3</option>
+                          <option value={4}>4</option>
+                          <option value={5}>5</option>
+                        </select>
+              </Grid>
+
+              <Grid sm={4}>
+                <label htmlFor="file">Logo</label>
+                <input
+                style={{ maxWidth: '300px' }}
+                  type="file"
+                  name="file"
+                  className="form-control"
+                            id="file"
+                            required
+                            onChange={(e) => handleFileChange(e)}
+                          />
+              </Grid>
+
+
+             
+            </Grid>
+          </Fragment>
+        </DialogContent>
+        <DialogActions>
+          <Button type="button" onClick={() => setAddNewDrp(false)} className="bg-light text-primary">
+            Cancel
+          </Button>
+          <Button type="submit" className="bg-primary text-white">
+            Save
+          </Button>
+        </DialogActions>
+        </form>
+      </Dialog>
+
+      <div className="content">
+        <Header />
+        <div className="container-fluid">
+          <BreadCrumHeader header={"Onborad Client"} page={"Manage"} />
+
+          <Grid container>
+            <Grid sm={12}>
+              <button
+                style={{ width: "250px", margin: '20px' }}
+                className="btn btn-primary"
+                onClick={() => setAddNewDrp(true)}
+              >
+                <i className="fas fa-plus" /> Add new client
+              </button>
+            </Grid>
+          </Grid>
+
+          <div className="row p-2"></div>
+          <div className="col-md-12 table-responsive">
+            <table className="table" style={{ border: "1px solid" }}>
+              <thead className="table-dark">
+                <tr>
+                  <th scope="col" style={{ border: "2px groove" }}>Client Name</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Trial Expiry</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Users</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Sites</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading && (
+                  <tr>
+                    <td colSpan={5} align="center"><CircularProgress /></td>
+                  </tr>
+                )}
+
+                {!isLoading && data?.length === 0 && (
+                  <tr>
+                    <td colSpan={4} align="center">No result found!!</td>
+                  </tr>
+                )}
+                {!isLoading && data?.map((d, rowIndex) => (
+                  <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.companyName}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <input
+                        type="text"
+autoComplete="off"
+                        value={d.companyName}
+                        name="companyName"
+                        className="form-control"
+                        id="companyName"
+                        onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                      {errors.companyName && <span className="text-danger">{errors.companyName}</span>}
+                    </td>}
+                    
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminEmail}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <input
+                        type="text"
+autoComplete="off"
+                        value={d.adminEmail}
+                        name="adminEmail"
+                        className="form-control"
+                        id="adminEmail"
+                        onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                      {errors.email && <span className="text-danger">{errors.email}</span>}
+                    </td>}
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{dateFormat(d?.trialExpiry?.split("T")?.[0])}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <input
+                        type="text"
+autoComplete="off"
+                        value={d.trialExpiry}
+                        name="trialExpiry"
+                        className="form-control"
+                        id="trialExpiry"
+                        onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
+                    </td>}
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.allowedUser}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <input
+                        type="number"
+autoComplete="off"
+                        value={d.allowedUser}
+                        name="allowedUser"
+                        className="form-control"
+                        id="allowedUser"
+                        onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
+                    </td>}
+
+                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.allowedSites}</td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <input
+                        type="number"
+autoComplete="off"
+                        value={d.allowedSites}
+                        name="allowedSites"
+                        className="form-control"
+                        id="allowedSites"
+                        onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
+                    </td>}
+
+                    {/* {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => editData(rowIndex)}
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>{" "}
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => deletData(rowIndex)}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </td>}
+                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                      <button
+                        className="btn btn-sm btn-success"
+                        //onClick={() => save(rowIndex)}
+                      >
+                        <i className="fas fa-save"></i>&nbsp; Save
+                      </button>&nbsp;
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => cancel(rowIndex)}
+                      >
+                        <i className="fas fa-save"></i>&nbsp; Cancel
+                      </button>
+                    </td>} */}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Fragment>
+  );
+};
+
+const mapStateToProps = (state) => ({});
+
+export default connect(mapStateToProps, {})(OnboradClient);

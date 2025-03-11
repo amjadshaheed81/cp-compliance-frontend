@@ -25,6 +25,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import BackupTableIcon from "@mui/icons-material/BackupTable";
 import BeenhereIcon from "@mui/icons-material/Beenhere";
 import ChecklistIcon from "@mui/icons-material/Checklist";
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -66,6 +67,11 @@ const adminIconComponents = [
   <FeaturedPlayListIcon style={{ color: "white" }} />,
   <AccountBalanceIcon style={{ color: "white" }} />,
   
+];
+
+
+const superAdminIconComponents = [
+  <AssignmentIndIcon style={{ color: "white" }} />,
 ];
 
 const openedMixin = (theme) => ({
@@ -198,6 +204,10 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
       case "Reports":
         navigate("/reports");
         break;
+
+      case "Onboard Client":
+          navigate("/onboard-client");
+          break;
       default:
         navigate("/dashboard");
     }
@@ -341,6 +351,43 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                       onClick={() => goTo(text)}
                     >
                       {adminIconComponents[index]}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={text}
+                      sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </>
+        )}
+
+{loggedInUserData?.superAdmin === true && (
+          <>
+            <p style={{ color: "white", fontSize: "smaller" }} className="bg-black m-0">
+              Super Admin
+            </p>
+            <List sx={{ backgroundColor: "black" }}>
+              {["Onboard Client"].map((text, index) => (
+                <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                  <ListItemButton
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: isSideBarOpen ? "initial" : "center",
+                      px: 2.5,
+                    }}
+                    onClick={() => goTo(text)}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: isSideBarOpen ? 3 : "auto",
+                        justifyContent: "center",
+                      }}
+                      onClick={() => goTo(text)}
+                    >
+                      {superAdminIconComponents[index]}
                     </ListItemIcon>
                     <ListItemText
                       primary={text}
