@@ -88,13 +88,14 @@ export function putMultiPartFormData(url, userData) {
   }
 }
 
-export function del(url) {
+export function del(url, payload) {
   configAxios();
   try {
     return axiosInstance({
       method: "DELETE",
       url,
       headers: getHeaders(),
+      data: payload,
     });
   } catch (error) {
     return handleError(error);

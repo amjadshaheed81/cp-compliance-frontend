@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { connect } from "react-redux";
-import { setLoader, uploadFloorPlan } from "./../../../../store/thunk/site";
+import { getSiteDetailsById, setLoader, uploadFloorPlan } from "./../../../../store/thunk/site";
 import { toast } from "react-toastify";
 import PdfViewer from "../Documents/PdfViewer";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import Swal from "sweetalert2";
+import { del } from "../../../../api";
 
 const UpdateFloor = ({
   siteLayout,
@@ -12,6 +14,7 @@ const UpdateFloor = ({
   updateSite,
   setLoader,
   loggedInUserData,
+  getSiteDetailsById,
 }) => {
   const { register, getValues } = useForm({});
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -103,6 +106,7 @@ const UpdateFloor = ({
         </td>
         <td>
           {itm?.floorPlanUrl ? (
+            <>
             <button
               style={{
                 border: "none",
@@ -117,7 +121,49 @@ const UpdateFloor = ({
               }}
             >
               {itm?.fileName ? itm?.fileName : `${itm?.nodeName}.png`}
+            </button>&nbsp;&nbsp;
+            <button
+              style={{
+                border: "none",
+                cursor: "pointer",
+                color: "red",
+                marginTop: "2px",
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                console.log("itm", itm);
+                Swal.fire({
+                      title: `Do you want to delete floor plan?`,
+                      showDenyButton: false,
+                      showCancelButton: true,
+                      confirmButtonText: "Delete",
+                    }).then(async (result) => {
+                      if (result.isConfirmed) {
+                        try{
+                          const url = "/api/site/deletefloorplanimages"
+                          const payload = {
+                            nodeIds: [itm?.id]
+                          } 
+                          const res = await del(url, payload);
+                          console.log("res", res);
+                          toast.success(
+                            `Floor plan image has been deleted successfully.`
+                          );
+                          getSiteDetailsById(updateSite?.siteId, false);
+                        }catch(e){
+                          toast.error(
+                            `Something went wrong while deleting floor plan image. Please try again!!`
+                          );
+                        }
+                        
+                      } else if (result.isDenied) {
+                      }
+                    });
+              }}
+            >
+              Delete
             </button>
+            </>
           ) : null}
         </td>
       </tr>
@@ -171,6 +217,6 @@ const mapStateToProps = (state) => ({
   siteLayout: state.site.siteLayout,
   loggedInUserData: state.site.loggedInUserData,
 });
-export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(
+export default connect(mapStateToProps, { uploadFloorPlan, setLoader, getSiteDetailsById })(
   UpdateFloor
 );
