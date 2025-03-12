@@ -7,9 +7,39 @@ import { get, post, del, put, uploadLogo } from "../../../api";
 import CircularProgress from '@mui/material/CircularProgress';
 import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
 import { toast } from "react-toastify";
+import { TextField, Autocomplete } from "@mui/material";
 import moment from "moment";
 
 const OnboradClient = ({ }) => {
+
+  const combinedMenu = [
+    {key: 1, label: "Dashboard", type: "General"},
+    {key: 2, label: "Edit Profile", type: "General"},
+    {key: 3, label: "Portfolio", type: "General"},
+    {key: 4, label: "Reports", type: "General"},
+    {key: 5, label: "Users", type: "General"},
+    {key: 6, label: "Notifications", type: "General"},
+    {key: 7, label: "Actions", type: "General"},
+    {key: 8, label: "Create Site", type: "Site"},
+    {key: 9, label: "Site Details", type: "Site"},
+    {key: 10, label: "Site Documents", type: "Site"},
+    {key: 11, label: "Statutory Register", type: "Site"},
+    {key: 12, label: "Site Assets", type: "Site"},
+    {key: 13, label: "Site Contracts", type: "Site"},
+    {key: 14, label: "Pre-Action", type: "Site"},
+    {key: 15, label: "Site Checks", type: "Site"},
+    {key: 16, label: "Energy Cost", type: "Site"},
+    {key: 17, label: "Site Calendar", type: "Site"},
+
+  ];
+
+
+  const SiteMenu = [
+    
+
+  ];
+  
+  
 
   const [data, setData] = useState([]);
   const [formData, setFormData] = useState({});
@@ -111,9 +141,10 @@ const OnboradClient = ({ }) => {
     formData.status = 'Active'
     formData.trialExpiry =new Date(formData.trialExpiry);
     formData.creationDate =new Date();
-    await post("/api/user/onboard", formData);
-    setAddNewDrp(false);
-    getClient();
+    console.log(formData);
+    //await post("/api/user/onboard", formData);
+    //setAddNewDrp(false);
+    //getClient();
   };
 
   const handleInputChange = (e, idx) => {
@@ -229,7 +260,30 @@ const OnboradClient = ({ }) => {
 
               <Grid sm={4}>
                 <label htmlFor="modules">Modules</label>
-                <select
+                <label for="relatedAssetId">Related Asset</label>
+                            <Autocomplete
+                              multiple
+                              onChange={(event, newValue) => {
+                                console.log(formData?.module?.split(","))
+                                const keys = newValue
+                                  ?.map((itm) => itm?.key)
+                                  ?.join(",");
+                                setFormData({
+                                  ...formData,
+                                  module: keys,
+                                });
+                              }}
+                              options={combinedMenu.filter(o=>!formData?.module?.split(",")?.includes(String(o.key)))}
+                              getOptionLabel={(option) => option.label}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  label="Modules"
+                                  placeholder="Select Module"
+                                />
+                              )}
+                            />
+                {/* <select
                 style={{ maxWidth: '300px' }}
                           required
                           name="modules"
@@ -238,12 +292,13 @@ const OnboradClient = ({ }) => {
                           onChange={(e) => handleInputChange2}
                         >
                           <option value="">Select Modules</option>
+                          {GeneralMenu.map(m=><option value={{value: m, type: "General"}}>{m}</option>)}
                           <option value={1}>1</option>
                           <option value={2}>2</option>
                           <option value={3}>3</option>
                           <option value={4}>4</option>
                           <option value={5}>5</option>
-                        </select>
+                        </select> */}
               </Grid>
 
               <Grid sm={4}>
