@@ -260,7 +260,6 @@ const OnboradClient = ({ }) => {
 
               <Grid sm={4}>
                 <label htmlFor="modules">Modules</label>
-                <label for="relatedAssetId">Related Asset</label>
                             <Autocomplete
                               multiple
                               onChange={(event, newValue) => {
@@ -278,8 +277,8 @@ const OnboradClient = ({ }) => {
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
-                                  label="Modules"
-                                  placeholder="Select Module"
+                                 // label="Modules"
+                                  //placeholder="Select Module"
                                 />
                               )}
                             />
