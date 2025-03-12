@@ -141,10 +141,9 @@ const OnboradClient = ({ }) => {
     formData.status = 'Active'
     formData.trialExpiry =new Date(formData.trialExpiry);
     formData.creationDate =new Date();
-    console.log(formData);
-    //await post("/api/user/onboard", formData);
-    //setAddNewDrp(false);
-    //getClient();
+    await post("/api/user/onboard", formData);
+    setAddNewDrp(false);
+    getClient();
   };
 
   const handleInputChange = (e, idx) => {
