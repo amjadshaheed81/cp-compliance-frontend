@@ -435,7 +435,58 @@ autoComplete="off"
                         </select>
                       </div>
                     </div>
-                     <div className="row">
+                    
+                     
+                    <div className="col-md-4 mt-2">
+                      <input
+                        type="checkbox"
+                        id="patItem"
+                        name="patItem"
+                        onClick={changePatItem}
+                        className="form-check-input"
+                        {...register("patItem")}
+                      />
+                      &nbsp;
+                      <label for="patItem">
+                        PAT item (fill PAT details below)
+                      </label>
+                    </div>
+                    <div className="col-md-4 mt-2">
+                      <input
+                        type="checkbox"
+                        id="pfpItem"
+                        name="pfpItem"
+                        onClick={changePfpItem}
+                        className="form-check-input"
+                        {...register("pfpItem")}
+                      />
+                      &nbsp;
+                      <label for="pfpItem">
+                        Passive fire schedule required (fill PFS details below
+                        below)
+                      </label>
+                    </div>
+                    <div className="col-md-4 mt-2">
+                      <input
+                        type="checkbox"
+                        id="doorItem"
+                        name="doorItem"
+                        onClick={changeDoorItem}
+                        className="form-check-input"
+                        {...register("doorItem")}
+                      />
+                      &nbsp;
+                      <label for="doorItem">
+                        Door Assets (fill Door assets details below below)
+                      </label>
+                    </div>
+                    
+                    <div className="row" style={{marginTop:'20px'}}>
+                      
+                      <hr />
+                      <h5>Location </h5>
+                    </div>
+                    <div className="row">
                     <div className="col-md-4">
                       <label for="position">Interior/Exterior</label>
                       <select
@@ -503,15 +554,10 @@ autoComplete="off"
                         name="room"
                         className="form-control form-select"
                         id="room"
-                        {...register("room", {
-                          required: {
-                            value: true,
-                            message: `Please select room`,
-                          },
-                        })}
+                        {...register("room")}
                         onChange={(e) => {
                           const val = e.target.value;
-                          setValue("floor", val);
+                          setValue("room", val);
                           
                         }}
                       >
@@ -524,50 +570,9 @@ autoComplete="off"
                     </div>
                     
                   </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="patItem"
-                        name="patItem"
-                        onClick={changePatItem}
-                        className="form-check-input"
-                        {...register("patItem")}
-                      />
-                      &nbsp;
-                      <label for="patItem">
-                        PAT item (fill PAT details below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="pfpItem"
-                        name="pfpItem"
-                        onClick={changePfpItem}
-                        className="form-check-input"
-                        {...register("pfpItem")}
-                      />
-                      &nbsp;
-                      <label for="pfpItem">
-                        Passive fire schedule required (fill PFS details below
-                        below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="doorItem"
-                        name="doorItem"
-                        onClick={changeDoorItem}
-                        className="form-check-input"
-                        {...register("doorItem")}
-                      />
-                      &nbsp;
-                      <label for="doorItem">
-                        Door Assets (fill Door assets details below below)
-                      </label>
-                    </div>
                   </div>
+
+                  
                  
                   {/* start */}
 
