@@ -330,7 +330,7 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.category ? "" : "none"}}>
               <select
                 name="subCategory"
                 className="form-control form-select"
@@ -343,7 +343,7 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.subCategory ? "" : "none"}}>
               <select
                 name="subCategory2"
                 className="form-control form-select"
@@ -356,7 +356,7 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.subCategory2 ? "" : "none"}}>
               <select
                 name="subCategory3"
                 className="form-control form-select"
@@ -395,7 +395,7 @@ autoComplete="off"
                 ))} */}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.location ? "" : "none"}}>
               <select
                 name="floor"
                 className="form-control form-select"
@@ -417,7 +417,7 @@ autoComplete="off"
                 {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.floor ? "" : "none"}}>
               <select
                 name="room"
                 className="form-control form-select"
