@@ -88,17 +88,17 @@ const UpdateAsset = ({
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
 
-  useEffect(() => {
-    const setFloorsData = async () => {
-      if (siteLayout?.length > 0) {
-        const data = siteLayout.filter((site) => site.nodeType === "floor");
-        setFloors(data || []);
-        const data2 = siteLayout.filter((site) => site.nodeType === "room");
-        setRooms(data2 || []);
-      }
-    };
-    setFloorsData();
-  }, [siteLayout]);
+  // useEffect(() => {
+  //   const setFloorsData = async () => {
+  //     if (siteLayout?.length > 0) {
+  //       const data = siteLayout.filter((site) => site.nodeType === "floor");
+  //       setFloors(data || []);
+  //       const data2 = siteLayout.filter((site) => site.nodeType === "room");
+  //       setRooms(data2 || []);
+  //     }
+  //   };
+  //   setFloorsData();
+  // }, [siteLayout]);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
