@@ -147,7 +147,12 @@ const Sites = ({
     if (searchTerm) {
       filteredSites = filteredSites.filter((site) =>
         site?.siteName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.address1?.toLowerCase().includes(searchTerm?.toLowerCase())
+        site?.address1?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        site?.address2?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        site?.area?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        site?.buildingCode?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        site?.city?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        site?.postCode?.toLowerCase().includes(searchTerm?.toLowerCase())
       );
     }
 
@@ -287,7 +292,13 @@ autoComplete="off"
                       <p><small>{itm?.postCode}</small></p>
                     </th>
                     <th scope="col">{itm?.buildingCode}</th>
-                    <th scope="col">{itm?.address1}</th>
+                    <th scope="col">{itm?.address1}
+                      {itm?.address2 && <br/>}{itm?.address2}
+                      
+                      {itm?.city && <br/>}{itm?.city}
+                      {itm?.postCode && <br/>}{itm?.postCode}
+                      
+                      </th>
                     <th scope="col">
                       <ListStatusBadge status={itm?.status} />
                     </th>
