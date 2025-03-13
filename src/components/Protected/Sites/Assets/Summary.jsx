@@ -503,33 +503,52 @@ autoComplete="off"
                     )
                     .map((itm) => {
                       return {
-                        ...itm,
-                        assetDoorSpecifications: Array.isArray(
-                          itm?.assetDoorSpecifications
-                        )
-                          ? itm.assetDoorSpecifications
-                              .map(
-                                (asset) =>
-                                  `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                              )
-                              .join("; ")
-                          : "", // Provide empty string if not an array
-                        assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                          ? itm.assetPFPItem
-                              .map(
-                                (asset) =>
-                                  `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                              )
-                              .join("; ")
-                          : "", // Provide empty string if not an array
-                        assetPATItems: Array.isArray(itm?.assetPATItems)
-                          ? itm.assetPATItems
-                              .map(
-                                (asset) =>
-                                  `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                              )
-                              .join("; ")
-                          : "", // Provide empty string if not an array
+                          "Asset Id": itm?.assetId,
+                          "Site Id": itm?.siteId,
+                          "Site Name": itm?.siteName,
+                          "Asset Name": itm?.assetName,
+                          "Manufacturer": itm?.manufacturer,
+                          "Category": itm?.category,
+                          "Sub Category": itm?.subCategory,
+                          "Sub Category 2": itm?.subCategory2,
+                          "Folder Name": itm?.folderName,
+                          "Is PAT Item": itm?.patItem,
+                          "Is PFP Item": itm?.pfpItem,
+                          "Is Door Item": itm?.doorItem,
+                          "Position": itm?.position,
+                          "Floor": itm?.floor,
+                          "Purchase Date": itm?.purchaseDate,
+                          "Location": itm?.location,
+                          "Model": itm?.model,
+                          "Serial Number": itm?.serialNumber
+                          
+                        // ...itm,
+                        // assetDoorSpecifications: Array.isArray(
+                        //   itm?.assetDoorSpecifications
+                        // )
+                        //   ? itm.assetDoorSpecifications
+                        //       .map(
+                        //         (asset) =>
+                        //           `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
+                        //       )
+                        //       .join("; ")
+                        //   : "", // Provide empty string if not an array
+                        // assetPFPItem: Array.isArray(itm?.assetPFPItem)
+                        //   ? itm.assetPFPItem
+                        //       .map(
+                        //         (asset) =>
+                        //           `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
+                        //       )
+                        //       .join("; ")
+                        //   : "", // Provide empty string if not an array
+                        // assetPATItems: Array.isArray(itm?.assetPATItems)
+                        //   ? itm.assetPATItems
+                        //       .map(
+                        //         (asset) =>
+                        //           `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
+                        //       )
+                        //       .join("; ")
+                        //   : "", // Provide empty string if not an array
                       };
                     })}
                 >
