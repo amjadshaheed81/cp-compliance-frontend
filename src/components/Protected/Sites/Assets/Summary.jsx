@@ -357,7 +357,6 @@ autoComplete="off"
               />
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
-              {console.log('formData', formData)}
               <select
                 name="category"
                 className="form-control form-select"

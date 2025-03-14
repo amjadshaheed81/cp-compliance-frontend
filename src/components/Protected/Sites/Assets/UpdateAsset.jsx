@@ -100,6 +100,20 @@ const UpdateAsset = ({
   //   setFloorsData();
   // }, [siteLayout]);
 
+  const setFloorsData = async () => {
+    if (siteLayout?.length > 0) {
+      const data = siteLayout.filter((site) => site.nodeType === "floor");
+      setFloors(data || []);
+    }
+  };
+
+  const setRoomsData = async () => {
+    if (siteLayout?.length > 0) {
+      const data2 = siteLayout.filter((site) => site.nodeType === "room");
+      setRooms(data2 || []);
+    }
+  };
+
   const tabChange = (event, newValue) => {
     event?.preventDefault();
     setTabValue(newValue);
@@ -221,6 +235,7 @@ const UpdateAsset = ({
       floor: response?.floor,
       room: response?.room,
     });
+    
     valudationForm.reset({
       valuationDate: response?.valuationDate
         ? response?.valuationDate?.split("T")?.[0]
@@ -234,6 +249,12 @@ const UpdateAsset = ({
       disposalTo: response?.disposalTo,
       disposalValue: response?.disposalValue,
     });
+    if(response?.position?.length > 0) {
+      setFloorsData();
+    }
+    if(response?.room?.length > 0) {
+      setRoomsData();
+    }
     passiveFireProtectionForm.reset(response?.assetPFPItem);
     doorSpecificationForm.reset(response?.assetDoorSpecifications);
     reset(response);
