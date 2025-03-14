@@ -155,29 +155,48 @@ const Summary = ({
   });
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    
     if (name === "category") {
-      console.log("category");
       const subCategoryData = subCategory?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategoryList(subCategoryData);
       setSubCategory2List([]);
       setSubCategory3List([]);
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory: "",
+        subCategory2: "",
+        subCategory3: "",
+      });
     }else if (name === "subCategory") {
       const subCategoryData = subCategory2?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategory2List(subCategoryData);
       setSubCategory3List([]);
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory2: "",
+        subCategory3: "",
+      });
     }else if (name === "subCategory2") {
       const subCategoryData = subCategory3?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategory3List(subCategoryData);
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory3: "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
     }
   };
   useEffect(() => {
@@ -338,6 +357,7 @@ autoComplete="off"
               />
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
+              {console.log('formData', formData)}
               <select
                 name="category"
                 className="form-control form-select"
@@ -350,12 +370,13 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.category ? "" : "none"}}>
+            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.category?.length > 0 ? "" : "none"}}>
               <select
                 name="subCategory"
                 className="form-control form-select"
                 id="subCategory"
                 onChange={handleInputChange}
+                value={formData?.subCategory}
               >
                 <option value="">Sub Category</option>
                 {subCategoryList?.map((itm) => (
@@ -363,11 +384,12 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.subCategory ? "" : "none"}}>
+            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.subCategory?.length > 0 ? "" : "none"}}>
               <select
                 name="subCategory2"
                 className="form-control form-select"
                 id="subCategory2"
+                value={formData?.subCategory2}
                 onChange={handleInputChange}
               >
                 <option value="">Sub Category 2</option>
@@ -376,11 +398,12 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.subCategory2 ? "" : "none"}}>
+            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.subCategory2?.length > 0 ? "" : "none"}}>
               <select
                 name="subCategory3"
                 className="form-control form-select"
                 id="subCategory3"
+                value={formData?.subCategory3}
                 onChange={handleInputChange}
               >
                 <option value="">Sub Category 3</option>
@@ -395,11 +418,14 @@ autoComplete="off"
                 className="form-control form-select"
                 id="location"
                 // onChange={handleInputChange}
+                value={formData?.location}
                 onChange={(e) => {
                   const { name, value } = e.target;
                   setFormData({
                     ...formData,
                     [name]: value,
+                    floor: "",
+                    room: ""
                   });
                   const node = siteLayout.filter(
                     (site) => site.nodeName === value
@@ -420,17 +446,19 @@ autoComplete="off"
                 ))} */}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.location ? "" : "none"}}>
+            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.location?.length > 0 ? "" : "none"}}>
               <select
                 name="floor"
                 className="form-control form-select"
                 id="floor"
                 // onChange={handleInputChange}
+                value={formData?.floor}
                 onChange={(e) => {
                   const { name, value } = e.target;
                   setFormData({
                     ...formData,
                     [name]: value,
+                    room: ""
                   });
                   const node = siteLayout.filter(
                     (site) => site.nodeName === value
@@ -449,7 +477,7 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.floor ? "" : "none"}}>
+            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.floor?.length > 0 ? "" : "none"}}>
               <select
                 name="room"
                 className="form-control form-select"
