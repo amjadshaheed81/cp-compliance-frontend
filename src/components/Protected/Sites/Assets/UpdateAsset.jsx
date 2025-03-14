@@ -100,17 +100,31 @@ const UpdateAsset = ({
   //   setFloorsData();
   // }, [siteLayout]);
 
-  const setFloorsData = async () => {
+  const setFloorsData = async (value) => {
     if (siteLayout?.length > 0) {
-      const data = siteLayout.filter((site) => site.nodeType === "floor");
+      const node = siteLayout.filter(
+        (site) => site.nodeName === value
+      );
+      const data = siteLayout.filter(
+        (site) =>
+          site.nodeType === "floor" &&
+          site.parentNode === node?.[0]?.id
+      );
       setFloors(data || []);
     }
   };
 
-  const setRoomsData = async () => {
+  const setRoomsData = async (value) => {
     if (siteLayout?.length > 0) {
-      const data2 = siteLayout.filter((site) => site.nodeType === "room");
-      setRooms(data2 || []);
+      const node = siteLayout.filter(
+        (site) => site.nodeName === value
+      );
+      const data = siteLayout.filter(
+        (site) =>
+          site.nodeType === "room" &&
+          site.parentNode === node?.[0]?.id
+      );
+      setRooms(data || []);
     }
   };
 
@@ -250,10 +264,10 @@ const UpdateAsset = ({
       disposalValue: response?.disposalValue,
     });
     if(response?.position?.length > 0) {
-      setFloorsData();
+      setFloorsData(response?.position);
     }
-    if(response?.room?.length > 0) {
-      setRoomsData();
+    if(response?.floor?.length > 0) {
+      setRoomsData(response?.floor);
     }
     passiveFireProtectionForm.reset(response?.assetPFPItem);
     doorSpecificationForm.reset(response?.assetDoorSpecifications);
