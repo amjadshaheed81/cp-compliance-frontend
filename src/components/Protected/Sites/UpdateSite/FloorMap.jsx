@@ -36,7 +36,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
 
   const handleFloorSelect = (index) => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    const selectedFloorData = list?.[index];
+    const selectedFloorData = list?.find(i=>i.id === index);
     const filteredRooms = siteLayout?.filter(
       (room) => room?.parentNode === selectedFloorData?.id
     );
@@ -69,12 +69,13 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
         const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
         return aOrder - bOrder;
       });
-  
+
+      
     return list?.map((floor, index) => (
       <li
         key={floor?.id} // Use unique id instead of index for key
         onClick={() => {
-          handleFloorSelect(index);
+          handleFloorSelect(floor?.id);
         }}
         style={{
           cursor: "pointer",
