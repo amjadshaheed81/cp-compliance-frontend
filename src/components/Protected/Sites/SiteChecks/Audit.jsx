@@ -1,6 +1,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
+import moment from 'moment';
 import { get, post, put, uploadSiteCheckDoc } from "../../../../api";
 
 import CircularProgress from '@mui/material/CircularProgress';
@@ -11,7 +12,7 @@ import {
 import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
 import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
+const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout, loggedInUserData}) => {
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [header, setheaders] = useState([]);
@@ -139,6 +140,19 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
     dataToSave.qid = quest[index].qid;
     //dataToSave.status = "Closed";
     dataToSave.totalRiskScore = Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0)
+    const actionData = {
+      type: "Audit",
+      status: "Reported",
+      observation: quest[index]?.response?.position,
+      requiredAction: quest[index]?.response?.action,
+      desc: `Audit - ${subType} - ${moment(new Date()).format("DD/MM/YYYY")}`,
+      riskScore:dataToSave.totalRiskScore,
+      dueDate: new Date(),
+      createdAt: new Date(),
+      siteId: siteSelectedForGlobal?.siteId,
+      userId: loggedInUserData?.id
+    }
+    await put("/api/site/actions", actionData);
     await post("/api/site-check/assessment/response", dataToSave);
     await getQuestions();
     toast.success("Assessment response saved")
@@ -509,6 +523,7 @@ const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { getSiteAssets, deleteUser, getSites, getSiteLayout })(
   AssessmentFireRisk

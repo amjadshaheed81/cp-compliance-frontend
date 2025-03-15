@@ -103,19 +103,19 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
       setStep("inspection-electrical")
     } else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
-    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Monthly Audit") {
+    } else if (siteCheck.type === "Audit" && siteCheck?.subType === "Monthly Audit") {
       setStep("audit-question")
-    } else if (siteCheck.type === "Audit" && siteCheck.subType === "Annual Winter Audit") {
+    } else if (siteCheck.type === "Audit" && siteCheck?.subType === "Annual Winter Audit") {
       setStep("audit-question")
     } else if (siteCheck.type === "Audit") {
       setStep("audit-unit-maintenance-periodic")
-    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Water Temperature Monitoring") {
+    } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Water" && siteCheck.category === "Water Temperature Monitoring") {
       setStep("survey-water-outlet-temperature")
-    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Water Risk Assessment") {
+    } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Water" && siteCheck.category === "Water Risk Assessment") {
       setStep("survey-water-domestic-ra")
-    } else if (siteCheck.type === "Survey" && siteCheck.subType === "Asbestos") {
+    } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Asbestos") {
       setStep("survey-asbestos")
-  } else if (siteCheck.type === "Survey" && siteCheck.subType === "Water" && siteCheck.category === "Tank") {
+  } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Water" && siteCheck.category === "Tank") {
     setStep("survey-water-tank")
   }
     setSiteCheck(siteCheck);
@@ -125,7 +125,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     const pdfBlob = await getPdf(checkId);
     const url = URL.createObjectURL(pdfBlob);
     window.open(url, '_blank');
-    // if (siteCheck.type === "Inspection" && siteCheck.subType === "Electrical") {
+    // if (siteCheck.type === "Inspection" && siteCheck?.subType === "Electrical") {
     //   const pdfBlob = await getPdf(checkId);
     //   const url = URL.createObjectURL(pdfBlob);
     //   window.open(url, '_blank');
@@ -369,9 +369,9 @@ autoComplete="off"
             </Grid></Item>
             {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
-            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck.subType}/></Item>}
+            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck?.subType}/></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
-            {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck.subType} /></Item>}
+            {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck?.subType} /></Item>}
             {step === "survey-water-outlet-temperature" && <Item><SurveyWaterTemperatureMonitoring checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
             {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
