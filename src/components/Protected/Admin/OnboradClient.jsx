@@ -246,7 +246,7 @@ const OnboradClient = ({ }) => {
                 />
               </Grid>
               <Grid sm={4}>
-                <label htmlFor="trialExpiry">Trial Expiry</label>
+                <label htmlFor="trialExpiry">License Expiry</label>
                 <input
                   style={{ maxWidth: '300px' }}
                   type="date"
@@ -353,7 +353,7 @@ const OnboradClient = ({ }) => {
                 <tr>
                   <th scope="col" style={{ border: "2px groove" }}>Client Name</th>
                   <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Trial Expiry</th>
+                  <th scope="col" style={{ border: "2px groove" }}>License Expiry</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Users</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Sites</th>
                 </tr>

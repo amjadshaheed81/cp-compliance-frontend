@@ -1376,7 +1376,7 @@ export const loginUser = (formData, goTo, setLoading) => {
       if(error?.response?.data?.message === "Bad credentials") {
         toast.error("Please enter valid email and password.");
       } else if(error?.response?.data?.message === "License trial expired") {
-          toast.error("License trial period expired ! please contact your admin");
+          toast.error("License expired ! please contact your admin");
       } else {
         toast.error("Something went wrong. Please try again.");
       }
