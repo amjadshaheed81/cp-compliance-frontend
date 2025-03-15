@@ -274,7 +274,7 @@ autoComplete="off"
                     onClick={() => {
                       const license = JSON.parse(localStorage.getItem('license'));
     if(users.length >= Number(license.allowedUser)) {
-      toast.error("You are not allowed to add user, Please upgrade your license.")
+      toast.error("You have reached your limit for adding users under your license.")
      
     } else {
       setShowAddModal(true);

@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -20,6 +20,7 @@ import { get } from "../../../../api";
 import GoogleMap from "../UpdateSite/GoogleMap";
 import BusinessIcon from "@mui/icons-material/Business";
 import { SiteArea } from "../../../../Constant/SiteArea";
+import { toast } from "react-toastify";
 
 const AddSite = ({
   updateSite,
@@ -28,7 +29,13 @@ const AddSite = ({
   handleOnPostCodeSearch,
   getAddresOnPostCodeSuccess,
   setLoader,
+  loggedInUserData,
+  sites
 }) => {
+
+  useEffect(() => {
+    getSites(loggedInUserData);
+  }, []);
   const navigate = useNavigate();
   const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const goTo = (link) => {
@@ -58,7 +65,14 @@ const AddSite = ({
   });
   const values = watch();
   const submitSite = (data) => {
+    const license = JSON.parse(localStorage.getItem('license'));
+    if(sites.length >= Number(license.allowedUser)) {
+      toast.error("You have reached your limit for adding site under your license.")
+      return;
+    }
     setLoader(true);
+
+    
     addSite(data, goTo);
     reset(defaultValues);
   };
@@ -368,6 +382,7 @@ const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
   sites: state.site.sites,
   getAddresOnPostCodeSuccess: state.site.getAddresOnPostCodeSuccess,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
   updateSite,
