@@ -8,30 +8,31 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
 import { toast } from "react-toastify";
 import { TextField, Autocomplete } from "@mui/material";
+import {combinedMenu} from "../../../Constant/Menu"
 import moment from "moment";
 
 const OnboradClient = ({ }) => {
 
-  const combinedMenu = [
-    {key: 1, label: "Dashboard", type: "General"},
-    {key: 2, label: "Edit Profile", type: "General"},
-    {key: 3, label: "Portfolio", type: "General"},
-    {key: 4, label: "Reports", type: "General"},
-    {key: 5, label: "Users", type: "General"},
-    {key: 6, label: "Notifications", type: "General"},
-    {key: 7, label: "Actions", type: "General"},
-    {key: 8, label: "Create Site", type: "Site"},
-    {key: 9, label: "Site Details", type: "Site"},
-    {key: 10, label: "Site Documents", type: "Site"},
-    {key: 11, label: "Statutory Register", type: "Site"},
-    {key: 12, label: "Site Assets", type: "Site"},
-    {key: 13, label: "Site Contracts", type: "Site"},
-    {key: 14, label: "Pre-Action", type: "Site"},
-    {key: 15, label: "Site Checks", type: "Site"},
-    {key: 16, label: "Energy Cost", type: "Site"},
-    {key: 17, label: "Site Calendar", type: "Site"},
+  // const combinedMenu = [
+  //   {key: 1, label: "Dashboard", type: "General"},
+  //   {key: 2, label: "Edit Profile", type: "General"},
+  //   {key: 3, label: "Portfolio", type: "General"},
+  //   {key: 4, label: "Reports", type: "General"},
+  //   {key: 5, label: "Users", type: "General"},
+  //   {key: 6, label: "Notifications", type: "General"},
+  //   {key: 7, label: "Actions", type: "General"},
+  //   {key: 8, label: "Create Site", type: "Site"},
+  //   {key: 9, label: "Site Details", type: "Site"},
+  //   {key: 10, label: "Site Documents", type: "Site"},
+  //   {key: 11, label: "Statutory Register", type: "Site"},
+  //   {key: 12, label: "Site Assets", type: "Site"},
+  //   {key: 13, label: "Site Contracts", type: "Site"},
+  //   {key: 14, label: "Pre-Action", type: "Site"},
+  //   {key: 15, label: "Site Checks", type: "Site"},
+  //   {key: 16, label: "Energy Cost", type: "Site"},
+  //   {key: 17, label: "Site Calendar", type: "Site"},
 
-  ];
+  // ];
 
 
   const SiteMenu = [
@@ -262,16 +263,16 @@ const OnboradClient = ({ }) => {
                             <Autocomplete
                               multiple
                               onChange={(event, newValue) => {
-                                console.log(formData?.module?.split(","))
+                                console.log(formData?.modules?.split(","))
                                 const keys = newValue
                                   ?.map((itm) => itm?.key)
                                   ?.join(",");
                                 setFormData({
                                   ...formData,
-                                  module: keys,
+                                  modules: keys,
                                 });
                               }}
-                              options={combinedMenu.filter(o=>!formData?.module?.split(",")?.includes(String(o.key)))}
+                              options={combinedMenu.filter(o=>!formData?.modules?.split(",")?.includes(String(o.key)))}
                               getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
                                 <TextField

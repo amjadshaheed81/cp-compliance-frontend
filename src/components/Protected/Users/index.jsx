@@ -272,7 +272,14 @@ autoComplete="off"
                   <button
                     className="btn btn-primary text-white pr-2"
                     onClick={() => {
-                      setShowAddModal(true);
+                      const license = JSON.parse(localStorage.getItem('license'));
+    if(users.length >= Number(license.allowedUser)) {
+      toast.error("You are not allowed to add user, Please upgrade your license.")
+     
+    } else {
+      setShowAddModal(true);
+    }
+                      
                     }}
                   >
                     Add New

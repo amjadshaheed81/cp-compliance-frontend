@@ -139,6 +139,11 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
+const getImage = () => {
+  const license = JSON.parse(localStorage.getItem('license'));
+ return license.logo;
+}
+
 const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpen, siteSelectedForGlobal }) => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -234,7 +239,7 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
         <List sx={{ backgroundColor: "black" }}>
           <li style={{ textAlign: "center" }}>
             <img
-              src={unite}
+              src={getImage()}
               height={50}
               width={140}
               className="img img-responsive"

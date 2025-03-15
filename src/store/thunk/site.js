@@ -1358,8 +1358,10 @@ export const loginUser = (formData, goTo, setLoading) => {
         password: formData?.password
       }
       const userData = await post(url, body);
-      console.log('userData', userData)
       if (userData?.data?.user?.id) {
+        const userLicenseData = await get('/api/user/clients/'+userData?.data?.user?.licenseId);
+        localStorage.setItem("license", JSON.stringify(userLicenseData));
+        
         dispatch({
           type: USER_LOGIN,
           payload: userData?.data?.user,
@@ -1387,6 +1389,7 @@ export const logoutUser = (goTo) => {
       type: USER_LOGOUT,
       payload: {},
     });
+    localStorage.clear();
     toast.success("Successfully logged out.");
     goTo("/login");
   };
