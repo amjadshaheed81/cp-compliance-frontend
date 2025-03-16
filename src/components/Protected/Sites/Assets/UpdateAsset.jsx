@@ -393,6 +393,9 @@ const UpdateAsset = ({
       patItem: formData?.patItem,
       pfpItem: formData?.pfpItem,
       doorItem: formData?.doorItem,
+      position: selectedAsset?.position,
+      floor: selectedAsset?.floor,
+      room: selectedAsset?.room,
       barcode: "code",
     };
     form_data.append("assetRequestString", JSON.stringify(formDetails));
@@ -438,6 +441,7 @@ const UpdateAsset = ({
       disposalValue: selectedAsset?.disposalValue,
       valuationUserId: selectedAsset?.valuationUserId,
       valuationValue: selectedAsset?.valuationValue,
+      deviceId: selectedAsset?.deviceId
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
@@ -448,7 +452,6 @@ const UpdateAsset = ({
 
   const locationForm = useForm({});
   const locationFormValues = locationForm.watch();
-  console.log("locationFormValues", locationFormValues);
   const submitLocationForm = async (data) => {
     let form_data = new FormData();
     const submitData = {
@@ -470,6 +473,7 @@ const UpdateAsset = ({
       disposalValue: selectedAsset?.disposalValue,
       valuationUserId: selectedAsset?.valuationUserId,
       valuationValue: selectedAsset?.valuationValue,
+      deviceId: selectedAsset?.deviceId
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
