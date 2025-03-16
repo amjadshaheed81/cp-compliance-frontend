@@ -29,7 +29,7 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 
-const SiteChecks = ({ externalusers, getExternalUsers }) => {
+const SiteChecks = ({ siteSelectedForGlobal }) => {
 
   const printRef = useRef();
 
@@ -39,10 +39,10 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
   const [step, setStep] = useState();
   const checkId = params.id;
   const [siteCheck, setSiteCheck] = useState();
+  const [managerList, setManagerList] = useState([]);
   const navigate = useNavigate();
   
   useEffect(() => { 
-    console.log("siteCheck", siteCheck);
     if (
       siteCheck?.startDate &&
       siteCheck?.repeatFrequency &&
@@ -70,7 +70,7 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
   }, [siteCheck]);
 
   useEffect(() => {
-    getExternalUsers();
+    getManagerList();
     getSiteChecks();
     getToken();
 
@@ -80,6 +80,23 @@ const SiteChecks = ({ externalusers, getExternalUsers }) => {
     const token = await getSasToken();
     setSasToken(token);
   }
+
+  const getManagerList = async () => {
+    const data = await get(
+      `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
+    );
+    setManagerList(
+      data?.users?.sort((a, b) => {
+        if (a.name < b.name) {
+          return -1; // a comes before b
+        }
+        if (a.name > b.name) {
+          return 1; // b comes before a
+        }
+        return 0; // names are equal
+      }) || []
+    );
+  };
 
   useEffect(() => { }, []);
   const [formData, setFormData] = useState({
@@ -288,7 +305,7 @@ autoComplete="off"
                     value={siteCheck?.leadUserID}
                   >
                     <option value="">Select Lead</option>
-                    {externalusers?.map(u => {
+                    {managerList?.map(u => {
                       return (
                         <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )
@@ -310,7 +327,7 @@ autoComplete="off"
                     value={siteCheck?.assistantUserID}
                   >
                     <option value="">Select Assistant</option>
-                    {externalusers?.map(u => {
+                    {managerList?.map(u => {
                       return (
                         <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )
@@ -387,6 +404,7 @@ autoComplete="off"
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   externalusers: state.site.externalusers,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, { getExternalUsers, deleteUser, getSites })(
   SiteChecks
