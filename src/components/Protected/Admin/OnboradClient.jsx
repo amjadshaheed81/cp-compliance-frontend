@@ -384,33 +384,14 @@ const OnboradClient = ({ }) => {
                 )}
                 {!isLoading && data?.map((d, rowIndex) => (
                   <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.companyName}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-autoComplete="off"
-                        value={d.companyName}
-                        name="companyName"
-                        className="form-control"
-                        id="companyName"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.companyName && <span className="text-danger">{errors.companyName}</span>}
-                    </td>}
+                   <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                    <img src={d.logo} height={50}
+              width={140} /> {d.companyName}
+                    </td>
                     
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminEmail}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-autoComplete="off"
-                        value={d.adminEmail}
-                        name="adminEmail"
-                        className="form-control"
-                        id="adminEmail"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.email && <span className="text-danger">{errors.email}</span>}
-                    </td>}
+                    
+                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminEmail}</td>
+                    
 
                     {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{dateFormat(d?.trialExpiry?.split("T")?.[0])}</td>}
                     {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
