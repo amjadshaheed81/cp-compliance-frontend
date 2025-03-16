@@ -71,7 +71,7 @@ const AddSite = ({
       return;
     }
     setLoader(true);
-
+    data.licenseId = license?.licenseId
     
     addSite(data, goTo);
     reset(defaultValues);
