@@ -141,6 +141,10 @@ const OnboradClient = ({ }) => {
     formData.status = 'Active'
     formData.trialExpiry =new Date(formData.trialExpiry);
     if(formData?.licenseId) {
+      if(formData?.logo?.includes("?sv=")){
+        formData.logo = formData?.logo?.split("?sv=")[0]
+      }
+      
       await put("/api/user/clients/"+formData?.licenseId, formData);
     } else {
       formData.creationDate =new Date();
