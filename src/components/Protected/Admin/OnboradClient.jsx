@@ -134,15 +134,20 @@ const OnboradClient = ({ }) => {
     }
 
     setIsLoading(true);
-    console.log('formData',formData)
     if (formData?.file?.name) {
       formData.logo = await uploadLogo(formData);
       delete data.file;
     }
     formData.status = 'Active'
     formData.trialExpiry =new Date(formData.trialExpiry);
-    formData.creationDate =new Date();
-    await post("/api/user/onboard", formData);
+    if(formData?.licenseId) {
+      await put("/api/user/clients/"+formData?.licenseId, formData);
+    } else {
+      formData.creationDate =new Date();
+      await post("/api/user/onboard", formData);
+    }
+    
+   
     setAddNewDrp(false);
     getClient();
   };
@@ -178,18 +183,19 @@ const OnboradClient = ({ }) => {
     <Fragment>
       <SidebarNew />
       
-      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false); }} maxWidth="lg" fullWidth>
+      <Dialog open={addNewDrp} onClose={() => { setFormData({});setAddNewDrp(false); }} maxWidth="lg" fullWidth>
       <form onSubmit={saveNew}>
-        <DialogTitle>Add New Client</DialogTitle>
+        <DialogTitle>{formData?.licenseId ? "Update Client" : "Add New Client"}</DialogTitle>
         <DialogContent dividers>
           <Fragment>
-            <Grid container>
+            <Grid container spacing={1}>
               <Grid sm={4}>
                 <label htmlFor="companyName">Client Name</label>
                 <input
                   style={{ maxWidth: '300px' }}
                   type="text"
                   required
+                  value={formData?.companyName}
                   autoComplete="off"
                   className="form-control"
                   name="companyName"
@@ -203,6 +209,7 @@ const OnboradClient = ({ }) => {
                   type="text"
                   required
                   autoComplete="off"
+                  value={formData?.adminEmail}
                   className="form-control"
                   name="adminEmail"
                   onChange={handleInputChange2}
@@ -213,7 +220,7 @@ const OnboradClient = ({ }) => {
                 <input
                   style={{ maxWidth: '300px' }}
                   type="password"
-                  required
+                  required={!formData?.licenseId}
                   autoComplete="off"
                   maxLength={11}
                   className="form-control"
@@ -227,6 +234,7 @@ const OnboradClient = ({ }) => {
                   style={{ maxWidth: '300px' }}
                   type="number"
                   required
+                  value={formData?.allowedUser}
                   autoComplete="off"
                   className="form-control"
                   name="allowedUser"
@@ -239,6 +247,7 @@ const OnboradClient = ({ }) => {
                   style={{ maxWidth: '300px' }}
                   type="number"
                   required
+                  value={formData?.allowedSites}
                   autoComplete="off"
                   className="form-control"
                   name="allowedSites"
@@ -251,6 +260,7 @@ const OnboradClient = ({ }) => {
                   style={{ maxWidth: '300px' }}
                   type="date"
                   required
+                  value={formData?.trialExpiry?.substring(0,10)}
                   autoComplete="off"
                   className="form-control"
                   name="trialExpiry"
@@ -258,12 +268,11 @@ const OnboradClient = ({ }) => {
                 />
               </Grid>
 
-              <Grid sm={4}>
+              <Grid sm={6}>
                 <label htmlFor="modules">Modules</label>
                             <Autocomplete
                               multiple
                               onChange={(event, newValue) => {
-                                console.log(formData?.modules?.split(","))
                                 const keys = newValue
                                   ?.map((itm) => itm?.key)
                                   ?.join(",");
@@ -272,6 +281,8 @@ const OnboradClient = ({ }) => {
                                   modules: keys,
                                 });
                               }}
+                              value={combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key)))}
+                              
                               options={combinedMenu.filter(o=>!formData?.modules?.split(",")?.includes(String(o.key)))}
                               getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
@@ -300,15 +311,15 @@ const OnboradClient = ({ }) => {
                         </select> */}
               </Grid>
 
-              <Grid sm={4}>
-                <label htmlFor="file">Logo</label>
+              <Grid sm={6}>
+                <label htmlFor="file" style={{ maxWidth: '300px', marginLeft: '20px' }}>Logo</label>
                 <input
-                style={{ maxWidth: '300px' }}
+                style={{ maxWidth: '300px', marginLeft: '20px' }}
                   type="file"
                   name="file"
                   className="form-control"
                             id="file"
-                            required
+                            required={!formData?.licenseId}
                             onChange={(e) => handleFileChange(e)}
                           />
               </Grid>
@@ -319,7 +330,7 @@ const OnboradClient = ({ }) => {
           </Fragment>
         </DialogContent>
         <DialogActions>
-          <Button type="button" onClick={() => setAddNewDrp(false)} className="bg-light text-primary">
+          <Button type="button" onClick={() =>  {setFormData({});setAddNewDrp(false)}} className="bg-light text-primary">
             Cancel
           </Button>
           <Button type="submit" className="bg-primary text-white">
@@ -356,6 +367,7 @@ const OnboradClient = ({ }) => {
                   <th scope="col" style={{ border: "2px groove" }}>License Expiry</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Users</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Sites</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -442,34 +454,20 @@ autoComplete="off"
                       {errors.phone && <span className="text-danger">{errors.phone}</span>}
                     </td>}
 
-                    {/* {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
+                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                       <button
                         className="btn btn-sm btn-light"
-                        onClick={() => editData(rowIndex)}
+                        onClick={() => {
+                          delete d.adminPassword;
+                          setFormData(d);
+                          setAddNewDrp(true); 
+                        }}
                       >
                         <i className="fas fa-edit"></i>
                       </button>{" "}
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => deletData(rowIndex)}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <button
-                        className="btn btn-sm btn-success"
-                        //onClick={() => save(rowIndex)}
-                      >
-                        <i className="fas fa-save"></i>&nbsp; Save
-                      </button>&nbsp;
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => cancel(rowIndex)}
-                      >
-                        <i className="fas fa-save"></i>&nbsp; Cancel
-                      </button>
-                    </td>} */}
+                     
+                    </td>
+                   
                   </tr>
                 ))}
               </tbody>
