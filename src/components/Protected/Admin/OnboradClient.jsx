@@ -260,7 +260,7 @@ const OnboradClient = ({ }) => {
                   style={{ maxWidth: '300px' }}
                   type="date"
                   required
-                  value={formData?.trialExpiry?.substring(0,10)}
+                  value={String(formData?.trialExpiry)?.substring(0, 10)}
                   autoComplete="off"
                   className="form-control"
                   name="trialExpiry"

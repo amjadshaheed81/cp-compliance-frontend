@@ -2,11 +2,15 @@ import React, { Fragment, useEffect, useState } from "react";
 import GoogleMapReact from "google-map-react";
 import logo from "../../../../images/logo-red.png";
 
-const AnyReactComponent = ({ text }) => (
+const AnyReactComponent = ({ text }) => 
+  {
+    const license = JSON.parse(localStorage.getItem('license'));
+    
+    return (
   <div>
-    <img src={logo} height={25} />
+    <img src={license?.logo} height={25} />
   </div>
-);
+)};
 
 const GoogleMap = ({ lat, long, postCode, streetViewURL }) => {
   const [defaultCenter, setdefaultCenter] = useState({
