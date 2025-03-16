@@ -101,11 +101,15 @@ export const addSite = (formData, goTo) => {
         goTo("/update-site");
       }, 1000);
     } catch (error) {
+      if(error?.response?.data?.message === "License limit reached") {
+        toast.error("You have reached your limit for adding site under your license.")
+      } else {
       toast.error("Something went wrong while adding site. Please try again.");
       dispatch({
         type: ADD_SITE_FAILURE,
         payload: "",
       });
+    }
     }
   };
 };

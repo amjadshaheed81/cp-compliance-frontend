@@ -141,7 +141,7 @@ const Drawer = styled(MuiDrawer, {
 
 const getImage = () => {
   const license = JSON.parse(localStorage.getItem('license'));
- return license.logo;
+ return license?.logo;
 }
 
 const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpen, siteSelectedForGlobal }) => {
