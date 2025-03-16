@@ -124,6 +124,7 @@ const ViewUsers = ({
       companyId: formJson?.company || "",
       trade: formJson?.userType === "External" ? formJson?.trade : "",
       status: formJson?.status || "",
+      licenseId: loggedInUserData?.licenseId
     };
     setIsLoading(true);
     try {
