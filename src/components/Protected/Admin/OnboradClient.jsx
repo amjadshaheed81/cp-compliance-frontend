@@ -207,6 +207,32 @@ const OnboradClient = ({ }) => {
                 />
               </Grid>
               <Grid sm={4}>
+                <label htmlFor="adminFirstName">Admin First Name</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="text"
+                  required
+                  value={formData?.adminFirstName}
+                  autoComplete="off"
+                  className="form-control"
+                  name="adminFirstName"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
+                <label htmlFor="adminLastName">Admin Last Name</label>
+                <input
+                  style={{ maxWidth: '300px' }}
+                  type="text"
+                  required
+                  value={formData?.adminLastName}
+                  autoComplete="off"
+                  className="form-control"
+                  name="adminLastName"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
                 <label htmlFor="adminEmail">Admin Email</label>
                 <input
                   style={{ maxWidth: '300px' }}
@@ -368,6 +394,7 @@ const OnboradClient = ({ }) => {
                 <tr>
                   <th scope="col" style={{ border: "2px groove" }}>Client Name</th>
                   <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Admin Name</th>
                   <th scope="col" style={{ border: "2px groove" }}>License Expiry</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Users</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Sites</th>
@@ -392,6 +419,7 @@ const OnboradClient = ({ }) => {
                     <img src={d.logo} height={50}
               width={140} /> {d.companyName}
                     </td>
+                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminFirstName} {d.adminLastName}</td>
                     
                     
                     <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminEmail}</td>
