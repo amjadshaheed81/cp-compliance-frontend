@@ -28,6 +28,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
       (itm) => itm?.nodeType === "position" || itm?.nodeType === "type"
     );
     setPositionOption(positions || []);
+    setFloorPlanUrl("")
   }, [siteLayout]);
 
   const getParentNodeName = (id) => {
