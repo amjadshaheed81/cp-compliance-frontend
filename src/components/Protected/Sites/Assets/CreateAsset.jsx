@@ -193,6 +193,8 @@ const CreateAsset = ({
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="assetName"
                               name="assetName"
@@ -218,6 +220,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="manufacturer"
                               name="manufacturer"
@@ -287,6 +291,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="model"
                               name="model"
@@ -302,6 +308,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="serialNumber"
                               name="serialNumber"

@@ -435,6 +435,8 @@ const ViewEditPreAction = ({
                             className="form-control form-select"
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             disabled
                             {...register("floor")}
                           />
@@ -490,6 +492,8 @@ autoComplete="off"
                             className="form-control form-select"
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             disabled
                             {...register("room")}
                           />
@@ -571,6 +575,8 @@ autoComplete="off"
                           <input
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             className="form-control"
                             id="taggedAsset"
                             name="taggedAsset"

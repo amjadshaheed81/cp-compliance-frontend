@@ -92,6 +92,8 @@ const AsbestosSurvey = ({ sasToken, checkId, siteSelectedForGlobal }) => {
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   required
                   disabled={completed}
                   name="surveyCompany"
@@ -109,6 +111,8 @@ autoComplete="off"
                   required
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   disabled={completed}
                   name="ukasLab"
                   className="form-control"
@@ -140,6 +144,8 @@ autoComplete="off"
                   required
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   disabled={formData.surveyReference}
                   name="surveyReference"
                   className="form-control"

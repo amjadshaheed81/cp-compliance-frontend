@@ -589,6 +589,8 @@ const EditAction = ({
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   required
                                   className="form-control"
@@ -626,6 +628,8 @@ autoComplete="off"
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   required
                                   className="form-control"
@@ -664,6 +668,8 @@ autoComplete="off"
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   required
                                   disabled={isViewRoleForActions(loggedInUserData)}
@@ -702,6 +708,8 @@ autoComplete="off"
                               <div ref={params.InputProps.ref} >
                                 <input type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   disabled={isViewRoleForActions(loggedInUserData)}
                                   required

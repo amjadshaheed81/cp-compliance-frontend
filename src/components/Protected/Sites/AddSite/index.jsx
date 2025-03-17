@@ -137,6 +137,8 @@ const AddSite = ({
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="siteName"
                           className="form-control"
                           id="siteName"
@@ -166,6 +168,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="address1"
                           className="form-control"
                           id="address1"
@@ -192,6 +196,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="address2"
                           className="form-control"
                           id="address2"
@@ -207,6 +213,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="city"
                           className="form-control"
                           id="city"
@@ -260,6 +268,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="postCode"
                           className="form-control"
                           id="postCode"
@@ -303,6 +313,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="country"
                           className="form-control"
                           id="country"
@@ -324,6 +336,8 @@ autoComplete="off"
                     <input
                       type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                       name="mapViewUrl"
                       className="form-control"
                       id="mapViewUrl"
@@ -333,6 +347,8 @@ autoComplete="off"
                     <input
                       type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                       name="streetViewUrl"
                       className="form-control"
                       id="streetViewUrl"

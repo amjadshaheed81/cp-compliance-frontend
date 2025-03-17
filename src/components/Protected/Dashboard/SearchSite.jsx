@@ -157,6 +157,8 @@ function SearchSite({
         <input
           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
           style={{ textAlign: "center" }}
           className="form-control m-2"
           id="search"

@@ -185,6 +185,8 @@ const VersionHistory = ({
                     })}
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="folder"
                     className="form-control"
                   />
@@ -206,6 +208,8 @@ autoComplete="off"
                     })}
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="name"
                     className="form-control"
                   />

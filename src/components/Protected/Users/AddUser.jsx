@@ -202,6 +202,8 @@ const AddUser = ({
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="firstName"
                         {...register("firstName", {
@@ -225,6 +227,8 @@ autoComplete="off"
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="lastName"
                         {...register("lastName")}
@@ -412,6 +416,8 @@ autoComplete="off"
                               <input
                                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                 {...params.inputProps}
                                 className="form-control"
                                 placeholder="Select Company"

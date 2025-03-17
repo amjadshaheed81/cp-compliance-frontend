@@ -164,6 +164,8 @@ const Contractors = ({
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="projectSummary"
                 className="form-control"
                 id="projectSummary"
@@ -176,6 +178,8 @@ autoComplete="off"
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="contractor"
                 className="form-control"
                 id="contractor"
@@ -188,6 +192,8 @@ autoComplete="off"
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="projectManager"
                 className="form-control"
                 id="projectManager"
@@ -222,6 +228,8 @@ autoComplete="off"
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="budget"
                 className="form-control"
                 id="budget"
@@ -234,6 +242,8 @@ autoComplete="off"
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="officialQuote"
                 className="form-control"
                 id="officialQuote"

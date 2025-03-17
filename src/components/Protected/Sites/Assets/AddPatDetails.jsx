@@ -204,6 +204,8 @@ const AddPatDetails = ({
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         {...params.inputProps}
                         required
                         className="form-control"

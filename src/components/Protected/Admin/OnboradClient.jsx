@@ -201,6 +201,8 @@ const OnboradClient = ({ }) => {
                   required
                   value={formData?.companyName}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="companyName"
                   onChange={handleInputChange2}
@@ -214,6 +216,8 @@ const OnboradClient = ({ }) => {
                   required
                   value={formData?.adminFirstName}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="adminFirstName"
                   onChange={handleInputChange2}
@@ -227,6 +231,8 @@ const OnboradClient = ({ }) => {
                   required
                   value={formData?.adminLastName}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="adminLastName"
                   onChange={handleInputChange2}
@@ -239,6 +245,8 @@ const OnboradClient = ({ }) => {
                   type="text"
                   required
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   value={formData?.adminEmail}
                   className="form-control"
                   name="adminEmail"
@@ -252,6 +260,8 @@ const OnboradClient = ({ }) => {
                   type="password"
                   required={!formData?.licenseId}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   maxLength={11}
                   className="form-control"
                   name="adminPassword"
@@ -266,6 +276,8 @@ const OnboradClient = ({ }) => {
                   required
                   value={formData?.allowedUser}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="allowedUser"
                   onChange={handleInputChange2}
@@ -279,6 +291,8 @@ const OnboradClient = ({ }) => {
                   required
                   value={formData?.allowedSites}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="allowedSites"
                   onChange={handleInputChange2}
@@ -292,6 +306,8 @@ const OnboradClient = ({ }) => {
                   required
                   value={String(formData?.trialExpiry)?.substring(0, 10)}
                   autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="trialExpiry"
                   onChange={handleInputChange2}
@@ -430,6 +446,8 @@ const OnboradClient = ({ }) => {
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         value={d.trialExpiry}
                         name="trialExpiry"
                         className="form-control"
@@ -444,6 +462,8 @@ autoComplete="off"
                       <input
                         type="number"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         value={d.allowedUser}
                         name="allowedUser"
                         className="form-control"
@@ -458,6 +478,8 @@ autoComplete="off"
                       <input
                         type="number"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         value={d.allowedSites}
                         name="allowedSites"
                         className="form-control"

@@ -186,6 +186,8 @@ const SiteInformation = ({
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="totalBuildingArea"
                   id="totalBuildingArea"
                   className="form-control"
@@ -206,6 +208,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="clientOccupiedArea"
                   id="clientOccupiedArea"
                   className="form-control"
@@ -245,6 +249,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="maxOccupancy"
                   id="maxOccupancy"
                   className="form-control"
@@ -292,6 +298,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="numberOfStaff"
                   id="numberOfStaff"
                   className="form-control"
@@ -317,6 +325,8 @@ autoComplete="off"
               <select
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="tenantInOccupation"
                   id="tenantInOccupation"
                   className="form-control form-select"
@@ -337,6 +347,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="tenantName"
                   id="tenantName"
                   className="form-control"
@@ -357,6 +369,8 @@ autoComplete="off"
               <select
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="vacantAreaInBuilding"
                   id="vacantAreaInBuilding"
                   className="form-control form-select"
@@ -377,6 +391,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="numOfFloors"
                   id="numOfFloors"
                   className="form-control"
@@ -402,6 +418,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="carParkSpaceAboveGround"
                   id="carParkSpaceAboveGround"
                   className="form-control"
@@ -427,6 +445,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="carParkSpaceBelowGround"
                   id="carParkSpaceBelowGround"
                   className="form-control"
@@ -452,6 +472,8 @@ autoComplete="off"
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="numOfBasementLevels"
                   id="numOfBasementLevels"
                   className="form-control"

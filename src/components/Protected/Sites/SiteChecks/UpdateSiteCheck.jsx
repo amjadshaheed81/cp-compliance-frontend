@@ -224,6 +224,8 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     disabled
                     value={siteCheck?.type}
                     className="form-control"
@@ -239,6 +241,8 @@ autoComplete="off"
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     disabled
                     value={siteCheck?.subType}
                     className="form-control"
@@ -254,6 +258,8 @@ autoComplete="off"
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     disabled
                     value={siteCheck?.category}
                     className="form-control"
@@ -344,6 +350,8 @@ autoComplete="off"
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     disabled
                     value={siteCheck?.repeatFrequency}
                     className="form-control"

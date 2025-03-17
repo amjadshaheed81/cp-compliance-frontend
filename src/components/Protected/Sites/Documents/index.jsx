@@ -78,6 +78,8 @@ const Document = ({
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               style={{ textAlign: "justify", paddingLeft: "2rem" }}
               className="form-control m-2"
               id="search"

@@ -149,6 +149,8 @@ const AuditUnitPeriodic = ({
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           disabled={completed}
                           required
                           name="summary"
@@ -163,6 +165,8 @@ autoComplete="off"
                           <input
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             disabled={completed}
                             className="form-control"
                             value={assetName}
@@ -200,6 +204,8 @@ autoComplete="off"
                                 <input
                                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   required
                                   {...params.inputProps}
                                   disabled={completed}
@@ -277,6 +283,8 @@ autoComplete="off"
                           value={formData?.[idx]?.action}
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="action"
                           className="form-control"
                           id="action"

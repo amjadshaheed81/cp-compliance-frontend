@@ -189,6 +189,8 @@ const Sites = ({
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     placeholder="Search site"
                     value={searchTerm}

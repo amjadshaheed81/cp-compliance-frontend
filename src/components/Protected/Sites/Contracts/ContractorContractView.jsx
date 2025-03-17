@@ -335,6 +335,8 @@ const ContractorContractView = ({
                           <input
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             className="form-control"
                             id="summary"
                             disabled
@@ -418,6 +420,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="contractorCompanyName"
                           disabled
@@ -824,6 +828,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               min="0"
                               id="quoteNote"

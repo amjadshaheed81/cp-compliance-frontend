@@ -521,6 +521,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           placeholder="Search"
                           name="searchField"
                           style={{ paddingLeft: "20%" }}
@@ -966,6 +968,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               {...params.inputProps}
                               required
                               className="form-control"
@@ -1030,6 +1034,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               {...params.inputProps}
                               required
                               className="form-control"

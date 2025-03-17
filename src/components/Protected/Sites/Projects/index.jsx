@@ -235,6 +235,8 @@ const Projects = ({
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 className="form-control"
                 placeholder="Search..."
                 onChange={searchSite}
@@ -290,6 +292,8 @@ autoComplete="off"
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="projectName"
                     className="form-control"
                     id="projectName"
@@ -343,6 +347,8 @@ autoComplete="off"
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="shortDescription"
                     className="form-control"
                     id="shortDescription"

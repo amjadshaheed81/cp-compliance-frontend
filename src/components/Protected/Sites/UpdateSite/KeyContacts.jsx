@@ -130,6 +130,8 @@ const KeyContacts = ({
                     className="contact-input form-control"
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     disabled={isViewMode}
                     {...register("contactName", {
                       required: {

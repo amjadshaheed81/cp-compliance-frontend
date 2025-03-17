@@ -85,6 +85,8 @@ const ViewCreatePreActions = ({}) => {
                     <input
                       type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                       className="form-control"
                       id="taggedAsset"
                       name="taggedAsset"

@@ -185,6 +185,8 @@ const Reading = ({
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     value="kWh"
                     style={{ maxWidth: '300px' }}
                     className="form-control"

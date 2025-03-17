@@ -161,6 +161,8 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                           <input
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             disabled={completed}
                             className="form-control"
                             value={assetName}
@@ -204,6 +206,8 @@ autoComplete="off"
                                 <input
                                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   required
                                   disabled={completed}
@@ -218,6 +222,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           disabled={completed}
                           required
                           name="faultDescription"
@@ -312,6 +318,8 @@ autoComplete="off"
                           value={formData?.[idx]?.action}
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="action"
                           className="form-control"
                           id="action"

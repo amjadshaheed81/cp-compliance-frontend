@@ -347,6 +347,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                           style={{ width: '100px' }}
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           disabled
                           value={riskFactor[idx]?.response?.score ?? 0}
@@ -360,6 +362,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           style={{ width: '100px' }}
                           className="form-control"
                           disabled
@@ -375,6 +379,8 @@ autoComplete="off"
                           style={{ width: '130px' }}
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           disabled
                           value={riskFactor[idx]?.weight * Number(riskFactor[idx]?.response?.score ?? 0)}

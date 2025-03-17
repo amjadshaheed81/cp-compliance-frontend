@@ -564,6 +564,8 @@ const ManagerContractView = ({
                           <input
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             className="form-control"
                             id="summary"
                             {...register("summary", {
@@ -668,6 +670,8 @@ autoComplete="off"
                               <input
                                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                 {...params.inputProps}
                                 className="form-control form-select"
                                 placeholder="Select Company"
@@ -1072,6 +1076,8 @@ autoComplete="off"
                                   style={{ width: "130px" }}
                                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                   className="form-control"
                                   placeholder="Enter Note..."
                                   {...quoteForm.register(`managerNote-${itm.quoteId}`)}

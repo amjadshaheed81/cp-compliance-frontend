@@ -43,6 +43,8 @@ const SafetySecurity = ({
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="extFabric"
               id="extFabric"
               className="form-control"
@@ -250,6 +252,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="firePanelLocation"
               id="firePanelLocation"
               className="form-control"

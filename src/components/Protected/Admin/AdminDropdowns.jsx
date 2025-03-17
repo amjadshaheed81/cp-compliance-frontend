@@ -203,6 +203,8 @@ const AdminDropdowns = ({ }) => {
                   style={{ maxWidth: "300px" }}
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="lovType"
                   onChange={handleInputChange2}
@@ -217,6 +219,8 @@ autoComplete="off"
                   style={{ maxWidth: "300px" }}
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="lovValue"
                   onChange={handleInputChange2}
@@ -231,6 +235,8 @@ autoComplete="off"
                   style={{ maxWidth: "300px" }}
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="attribite1"
                   onChange={handleInputChange2}
@@ -245,6 +251,8 @@ autoComplete="off"
                   style={{ maxWidth: "300px" }}
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="attribite2"
                   onChange={handleInputChange2}
@@ -393,6 +401,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               value={d.lovValue}
                               name="lovValue"
                               className="form-control"
@@ -426,6 +436,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               value={d.lovDesc}
                               name="lovDesc"
                               className="form-control"
@@ -454,6 +466,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               value={d.attribite1}
                               name="attribite1"
                               className="form-control"
@@ -487,6 +501,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               value={d.attribite2}
                               name="attribite2"
                               className="form-control"
@@ -520,6 +536,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               value={d.attribite3}
                               name="attribite3"
                               className="form-control"

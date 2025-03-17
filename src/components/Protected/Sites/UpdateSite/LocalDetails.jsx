@@ -153,6 +153,8 @@ const LocalDetails = ({
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="localAuthority"
                     className="form-control"
                     id="localAuthority"

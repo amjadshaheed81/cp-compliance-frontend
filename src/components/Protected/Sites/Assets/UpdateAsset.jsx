@@ -712,6 +712,8 @@ const UpdateAsset = ({
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="assetName"
                               name="assetName"
@@ -737,6 +739,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="manufacturer"
                               name="manufacturer"
@@ -807,6 +811,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="model"
                               name="model"
@@ -822,6 +828,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="serialNumber"
                               name="serialNumber"
@@ -945,6 +953,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               className="form-control"
                               id="deviceId"
                               name="deviceId"
@@ -1348,6 +1358,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="supplier"
                           name="supplier"
@@ -1746,6 +1758,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="disposalTo"
                           name="disposalTo"
@@ -1842,6 +1856,8 @@ autoComplete="off"
                                         <input
                                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                           {...params.inputProps}
                                           required
                                           className="form-control"
@@ -1963,6 +1979,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="product"
                           name="product"
@@ -1995,6 +2013,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="access"
                           name="access"
@@ -2062,6 +2082,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="service"
                           name="service"
@@ -2094,6 +2116,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="dimension"
                           name="dimension"
@@ -2126,6 +2150,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="quantity"
                           name="quantity"
@@ -2158,6 +2184,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="area"
                           name="area"
@@ -2204,6 +2232,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="width"
                           name="width"
@@ -2235,6 +2265,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="height"
                           name="height"
@@ -2266,6 +2298,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="depth"
                           name="depth"
@@ -2297,6 +2331,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="finish"
                           name="finish"
@@ -2328,6 +2364,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="visionPanel"
                           name="visionPanel"
@@ -2360,6 +2398,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="fireRating"
                           name="fireRating"
@@ -2391,6 +2431,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="frameMaterial"
                           name="frameMaterial"
@@ -2423,6 +2465,8 @@ autoComplete="off"
                         <input
                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="frameFinish"
                           name="frameFinish"

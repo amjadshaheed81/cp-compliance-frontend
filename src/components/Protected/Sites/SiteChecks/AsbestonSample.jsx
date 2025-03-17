@@ -497,6 +497,8 @@ const AsbestonSample = ({
                                         <input
                                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                           value={
                                             "AS00" +
                                               (formData?.[idx]?.sampleId??"1")
@@ -626,6 +628,8 @@ autoComplete="off"
                                         <input
                                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -650,6 +654,8 @@ autoComplete="off"
                                         <input
                                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -702,6 +708,8 @@ autoComplete="off"
                                         <input
                                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -728,6 +736,8 @@ autoComplete="off"
                                         <input
                                           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                           disabled={formData[idx]?.completed}
                                           onChange={(e) =>
                                             handleInputChange(e, idx)
@@ -1380,6 +1390,8 @@ autoComplete="off"
                                                   //style={{ width: '100px'  }}
                                                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                                   className="form-control"
                                                   disabled
                                                   // value={
@@ -1404,6 +1416,8 @@ autoComplete="off"
                                                 <input
                                                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                                   //style={{ width: '100px' }}
                                                   className="form-control"
                                                   disabled
@@ -1429,6 +1443,8 @@ autoComplete="off"
                                                   //style={{ width: '130px' }}
                                                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                                   className="form-control"
                                                   disabled
                                                   // value={
@@ -1536,6 +1552,8 @@ autoComplete="off"
                                             <input
                                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                               disabled={
                                                 formData[idx]?.completed
                                               }

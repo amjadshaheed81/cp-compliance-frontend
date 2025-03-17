@@ -657,6 +657,8 @@ const StatutoryRegister = ({
                           <input
                             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                             id="chkbox"
                             style={{ width: "120px" }}
                             className="form-control"

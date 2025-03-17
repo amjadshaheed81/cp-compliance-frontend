@@ -115,6 +115,8 @@ const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, s
           <input
             type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
             disabled={completed}
             name="certificateName"
             className="form-control"
@@ -155,6 +157,8 @@ autoComplete="off"
                 <div ref={params.InputProps.ref} >
                   <input type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     {...params.inputProps}
                     className="form-control"
                   />

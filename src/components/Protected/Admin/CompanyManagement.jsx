@@ -135,6 +135,8 @@ const CompanyManagement = ({ }) => {
                   style={{ maxWidth: '300px' }}
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="companyName"
                   onChange={handleInputChange2}
@@ -147,6 +149,8 @@ autoComplete="off"
                   style={{ maxWidth: '300px' }}
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="email"
                   onChange={handleInputChange2}
@@ -225,6 +229,8 @@ autoComplete="off"
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         value={d.companyName}
                         name="companyName"
                         className="form-control"
@@ -239,6 +245,8 @@ autoComplete="off"
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         value={d.email}
                         name="email"
                         className="form-control"
@@ -253,6 +261,8 @@ autoComplete="off"
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         value={d.phone}
                         name="phone"
                         className="form-control"

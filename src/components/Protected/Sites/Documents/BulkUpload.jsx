@@ -136,6 +136,8 @@ const BulkUpload = ({
                 <input
                   type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                   name="folder"
                   disabled
                   className="form-control"

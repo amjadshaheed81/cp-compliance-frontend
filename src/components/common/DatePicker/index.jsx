@@ -62,6 +62,8 @@ const TdkDatePicker = ({
           required={required}
           type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
           id="datePicker"
           value={manualInput}
           placeholder="dd/mm/yyyy"

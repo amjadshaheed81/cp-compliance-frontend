@@ -92,6 +92,8 @@ const ForgotPassword = ({ login }) => {
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     id="email"
                     value={email}
@@ -114,6 +116,8 @@ autoComplete="off"
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     id="otp"
                     value={otp}

@@ -337,6 +337,8 @@ const Pat = ({
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
@@ -347,6 +349,8 @@ autoComplete="off"
               <input
                 type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"

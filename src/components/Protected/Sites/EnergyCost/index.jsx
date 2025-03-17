@@ -500,6 +500,8 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     <input
                       type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                       placeholder="Search"
                       name="searchField"
                       style={{ textAlign: "center", width: "250px" }}

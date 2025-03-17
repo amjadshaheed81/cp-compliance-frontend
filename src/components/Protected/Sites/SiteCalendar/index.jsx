@@ -151,6 +151,8 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                   <input
                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     placeholder="Search"
                     name="searchField"

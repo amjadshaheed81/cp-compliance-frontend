@@ -396,6 +396,8 @@ const CreateFiles = ({
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         disabled
                         value={
                           folderData?.requirement
@@ -409,6 +411,8 @@ autoComplete="off"
                       <input
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         disabled
                         value={
                           selectedMandatoryFolder?.[0]?.folderName
@@ -427,6 +431,8 @@ autoComplete="off"
                     <input
                       type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                       className="form-control"
                       {...register("name")}
                     />
@@ -438,6 +444,8 @@ autoComplete="off"
                     <input
                       type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                       disabled
                       value={
                         selectedMandatoryFolder?.[0]?.fileVersion

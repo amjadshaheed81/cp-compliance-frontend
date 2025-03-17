@@ -305,6 +305,8 @@ const SurveyWaterTemperatureMonitoring = ({
                         style={{ maxWidth: "300px" }}
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="outletType"
                         disabled
@@ -317,6 +319,8 @@ autoComplete="off"
                         style={{ maxWidth: "300px" }}
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="outletType"
                         disabled
@@ -329,6 +333,8 @@ autoComplete="off"
                         style={{ maxWidth: "300px" }}
                         type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="outletType"
                         disabled
@@ -865,6 +871,8 @@ autoComplete="off"
                             <input
                               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                               disabled={formData?.[idx]?.completed}
                               className="form-control"
                               value={assetName}
@@ -889,6 +897,8 @@ autoComplete="off"
                                   <input
                                     type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
                                     {...params.inputProps}
                                     required
                                     disabled={formData?.[idx]?.completed}

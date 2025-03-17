@@ -51,6 +51,8 @@ const Landscape = ({
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="hardLandScaping"
               id="hardLandScaping"
               className="form-control form-select"
@@ -75,6 +77,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="softLandScaping"
               id="softLandScaping"
               className="form-control form-select"
@@ -99,6 +103,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="riverPondLakes"
               id="riverPondLakes"
               className="form-control form-select"
@@ -119,6 +125,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="tallTrees"
               id="tallTrees"
               className="form-control form-select"
@@ -143,6 +151,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="drainageInterceptors"
               id="drainageInterceptors"
               className="form-control form-select"
@@ -167,6 +177,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="thirdPartyTelEquipment"
               id="thirdPartyTelEquipment"
               className="form-control form-select"
@@ -191,6 +203,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="electricalOverHeadPowerLines"
               id="electricalOverHeadPowerLines"
               className="form-control form-select"

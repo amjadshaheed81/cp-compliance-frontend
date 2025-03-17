@@ -325,6 +325,8 @@ const SubFolder = ({
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               style={{ textAlign: "justify", paddingLeft: "2rem" }}
               className="form-control m-2"
               id="search"
@@ -487,7 +489,9 @@ autoComplete="off"
                         </Tooltip>
                           }
                           {tagindex === i && !tags[i] && <input type="text"
-autoComplete="off" 
+autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")} 
                           placeholder="Add tag"
                           onKeyDown={(e)=>{
                             if (e.key === 'Enter') {

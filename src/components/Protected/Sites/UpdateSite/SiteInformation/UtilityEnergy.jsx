@@ -43,6 +43,8 @@ const UtilityEnergy = ({
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="utilGas"
               id="utilGas"
               className="form-control form-select"
@@ -67,6 +69,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="utilElectricity"
               id="utilElectricity"
               className="form-control form-select"
@@ -87,6 +91,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="utilWater"
               id="utilWater"
               className="form-control form-select"
@@ -107,6 +113,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="utilTelecom"
               id="utilTelecom"
               className="form-control form-select"
@@ -131,6 +139,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="utilMainsDrainage"
               id="utilMainsDrainage"
               className="form-control form-select"
@@ -155,6 +165,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="airConditioning"
               id="airConditioning"
               className="form-control form-select"
@@ -175,6 +187,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="coolingTower"
               id="coolingTower"
               className="form-control form-select"
@@ -199,6 +213,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="waterIsolationValveInternal"
               id="waterIsolationValveInternal"
               className="form-control"
@@ -219,6 +235,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="waterTanks"
               id="waterTanks"
               className="form-control form-select"
@@ -239,6 +257,8 @@ autoComplete="off"
           <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="waterTankLocation"
               id="waterTankLocation"
               className="form-control"
@@ -286,6 +306,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="hotWaterCalorifierLocation"
               id="hotWaterCalorifierLocation"
               className="form-control"
@@ -329,6 +351,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="gasBoiler"
               id="gasBoiler"
               className="form-control form-select"
@@ -353,6 +377,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="gasBoilerLocation"
               id="gasBoilerLocation"
               className="form-control"
@@ -373,6 +399,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="gasSupplyIsolation"
               id="gasSupplyIsolation"
               className="form-control"
@@ -393,6 +421,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="gasSupplyExternalIsolation"
               id="gasSupplyExternalIsolation"
               className="form-control"
@@ -413,6 +443,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="electricInstallationLocation"
               id="electricInstallationLocation"
               className="form-control"
@@ -433,6 +465,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="electricSubStationOnSite"
               id="electricSubStationOnSite"
               className="form-control form-select"
@@ -457,6 +491,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="externalLighting"
               id="externalLighting"
               className="form-control form-select"
@@ -481,6 +517,8 @@ autoComplete="off"
             <select
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="backupGenerator"
               id="backupGenerator"
               className="form-control form-select"
@@ -505,6 +543,8 @@ autoComplete="off"
             <input
               type="text"
 autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
               name="backupGeneratorLocation"
               id="backupGeneratorLocation"
               className="form-control"
