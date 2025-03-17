@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connect } from "react-redux";
 import styled from "@emotion/styled";
-import * as d3 from "d3";
+import { Tree, TreeNode } from "react-organizational-chart";
 import { useForm } from "react-hook-form";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import UpdateFloor from "./UpdateFloor";
@@ -25,32 +25,22 @@ const StyledNode = styled.div`
   border-left: 4px solid ${(props) => props.borderColor || "#000"};
   background: ${(props) => props.background || "#f5f5f5"};
 `;
-const nodeColors = {
-  building: "#1dca5d", // Green
-  floor: "#f34040", // Red
-  room: "#3b80f2", // Blue
-  default: "#ccc", // Gray (fallback)
-};
 const nodeStyles = {
   building: {
     borderColor: "#1dca5d",
-    background:
-      "repeating-linear-gradient(+45deg, #1dca5d0a 2px, transparent 1rem)",
+    background: "repeating-linear-gradient(+45deg, #1dca5d0a 2px, transparent 1rem)",
   },
   floor: {
     borderColor: "#f34040",
-    background:
-      "repeating-linear-gradient(+45deg, #fff5f4 2px, transparent 1rem)",
+    background: "repeating-linear-gradient(+45deg, #fff5f4 2px, transparent 1rem)",
   },
   type: {
     borderColor: "#f3a515",
-    background:
-      "repeating-linear-gradient(+45deg, #fff7de 2px, transparent 1rem)",
+    background: "repeating-linear-gradient(+45deg, #fff7de 2px, transparent 1rem)",
   },
   default: {
     borderColor: "#3b80f2",
-    background:
-      "repeating-linear-gradient(+45deg, #f0f8ff 2px, transparent 1rem)",
+    background: "repeating-linear-gradient(+45deg, #f0f8ff 2px, transparent 1rem)",
   },
 };
 
@@ -73,147 +63,100 @@ const SiteChart = ({
   } = useForm({});
   const [parentNodeTypes, setParentNodeTypes] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const chartRef = useRef(null);
-  const [width, setWidth] = useState(0);
-  const [height, setHeight] = useState(0);
+  const [selectedNode, setSelectedNode] = useState();
+  const [expandedNodes, setExpandedNodes] = useState({});
 
-  // Fetch site layout on component mount
   useEffect(() => {
     getSiteLayout(updateSite?.siteId);
   }, [getSiteLayout, updateSite]);
 
-  // Update parent node types when site layout changes
   useEffect(() => {
-    const floors =
-      siteLayout?.filter((node) => node.nodeType === "floor") || [];
+    const floors = siteLayout?.filter((node) => node.nodeType === "floor") || [];
     setParentNodeTypes(floors);
   }, [siteLayout]);
 
-  // Initialize D3.js Tree Chart
-  const renderChart = () => {
-    if (siteLayout.length > 0 && chartRef.current) {
-      const container = chartRef.current;
-      const containerWidth = container.clientWidth;
-      const containerHeight = window.innerHeight * 0.8; // Adjust height based on screen size
-
-      d3.select(container).selectAll("*").remove();
-
-      const root = d3.hierarchy(generateTreeData(siteLayout));
-      const treeLayout = d3
-        .tree()
-        .size([containerHeight, containerWidth - 200]); // Adjust size for responsiveness
-      treeLayout(root);
-
-      const svg = d3
-        .select(container)
-        .append("svg")
-        .attr("width", "100%")
-        .attr("height", containerHeight)
-        .append("g")
-        .attr("transform", `translate(50, 0)`); // Adjust translation for better visibility
-
-      svg
-        .selectAll(".link")
-        .data(root.links())
-        .enter()
-        .append("path")
-        .attr("class", "link")
-        .attr(
-          "d",
-          d3
-            .linkHorizontal()
-            .x((d) => d.y)
-            .y((d) => d.x)
-        )
-        .attr("fill", "none")
-        .attr("stroke", "#ccc");
-
-      const nodes = svg
-        .selectAll(".node")
-        .data(root.descendants())
-        .enter()
-        .append("g")
-        .attr("class", "node")
-        .attr("transform", (d) => `translate(${d.y},${d.x})`)
-        .on("click", (event, d) => {
-          const node = siteLayout.find((node) => node.nodeName === d.data.name);
-          setSelectedNode(node);
-          setShowModal(true);
-        });
-
-      nodes
-        .append("circle")
-        .attr("r", 6)
-        .attr("fill", (d) => {
-          const node = siteLayout.find((node) => node.nodeName === d.data.name);
-          return nodeColors[node?.nodeType] || nodeColors.default;
-        })
-        .on("mouseover", function () {
-          d3.select(this).attr("r", 8);
-        })
-        .on("mouseout", function () {
-          d3.select(this).attr("r", 6);
-        });
-
-      nodes
-        .append("text")
-        .attr("dy", "0.31em")
-        .attr("x", (d) => (d.children ? -20 : 20))
-        .attr("text-anchor", (d) => (d.children ? "end" : "start"))
-        .text((d) => d.data.name)
-        .style("font-size", `9px`)
-        .style("font-weight", "bold")
-        .style("fill", "#333")
-        .style("dominant-baseline", "middle");
-    }
-  };
-
-  useEffect(() => {
-    if (chartRef.current) {
-      const container = chartRef.current;
-      renderChart();
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (let entry of entries) {
-          const { width } = entry.contentRect;
-          setWidth(width);
-          renderChart();
-        }
-      });
-      resizeObserver.observe(container);
-      return () => {
-        resizeObserver.unobserve(container);
-      };
-    }
-  }, [siteLayout, width]);
-
-  const generateTreeData = (nodes) => {
-    const mainBuildingNode = nodes.find(
-      (node) => node.nodeName === "Main Building"
-    );
-    if (!mainBuildingNode) {
-      console.error("Main Building node not found!");
-      return { name: "Root", children: [] };
-    }
-
-    return {
-      name: "Main", //mainBuildingNode.nodeName,
-      children: getChildren(mainBuildingNode.id, nodes),
-    };
-  };
-
-  const getChildren = (parentId, nodes) => {
-    const children = nodes.filter((node) => node.parentNode === parentId);
-    return children.map((node) => ({
-      name: node.nodeName,
-      children: getChildren(node.id, nodes),
+  const toggleNode = (nodeId) => {
+    setExpandedNodes((prev) => ({
+      ...prev,
+      [nodeId]: !prev[nodeId],
     }));
   };
+
+  // Helper function to check if a node is a descendant of "Interior" or "Exterior"
+  const isDescendantOfInteriorOrExterior = (nodeId) => {
+    const findParent = (id) => {
+      const node = siteLayout.find((n) => n.id === id);
+      if (!node) return false;
+      if (node.nodeName === "Interior" || node.nodeName === "Exterior") return true;
+      return findParent(node.parentNode);
+    };
+    return findParent(nodeId);
+  };
+
+  const renderTreeNodes = (nodes) => {
+    const orderMap = {
+      Basement: 1,
+      "Ground Floor": 2,
+      "1st Floor": 3,
+      "2nd Floor": 4,
+      "3rd Floor": 5,
+      "4th Floor": 6,
+      "5th Floor": 7,
+      "6th Floor": 8,
+      "7th Floor": 9,
+      Vertical: 10,
+    };
+
+    const sortedNodes = nodes.sort((a, b) => {
+      const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER;
+      const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
+
+    return sortedNodes.map((node) => {
+      const children = siteLayout.filter((child) => child.parentNode === node.id);
+      const style = nodeStyles[node.nodeType] || nodeStyles.default;
+      const isExpanded = expandedNodes[node.id];
+      const isDescendant = isDescendantOfInteriorOrExterior(node.id);
+
+      return (
+        <TreeNode
+          key={node.id}
+          label={
+            <StyledNode
+              borderColor={style.borderColor}
+              background={style.background}
+              onClick={() => toggleNode(node.id)}
+            >
+              {node.nodeName}
+              {(node.nodeName === "Interior" || node.nodeName === "Exterior" || isDescendant) && (
+                <span
+                  style={{ float: "right", cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedNode(node);
+                    setShowModal(true);
+                  }}
+                >
+                  ✏️
+                </span>
+              )}
+            </StyledNode>
+          }
+        >
+          {isExpanded && renderTreeNodes(children)}
+        </TreeNode>
+      );
+    });
+  };
+
+  const rootNodes = siteLayout.filter((node) => node.parentNode === 0);
 
   const submitNode = (values) => {
     const { typeOfNode, nodeType, parentNode } = values;
     const duplicateNode = siteLayout.some(
-      (node) => node.parentNode == parentNode && node.nodeName === typeOfNode
+      (node) =>
+        node.parentNode == parentNode && node.nodeName === typeOfNode
     );
 
     if (duplicateNode) {
@@ -246,7 +189,14 @@ const SiteChart = ({
       )}
       <div style={{ textAlign: "center" }}>
         <h5 className="text-start">Creating Building Layout</h5>
-        <div ref={chartRef} style={{ width: "100%", height: "80vh" }}></div>
+        <Tree
+          lineWidth="2px"
+          lineColor="grey"
+          lineBorderRadius="10px"
+          label={<strong>Site Layout</strong>}
+        >
+          {renderTreeNodes(rootNodes)}
+        </Tree>
         {!updateSite?.isViewMode && isManagerAdminLogin(loggedInUserData) && (
           <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
             <div className="col-md-3 p-2">
@@ -314,7 +264,6 @@ const SiteChart = ({
   );
 };
 
-// Map Redux state and actions
 const mapStateToProps = (state) => ({
   siteLayout: state.site.siteLayout,
   updateSite: state.site.updateSite,
