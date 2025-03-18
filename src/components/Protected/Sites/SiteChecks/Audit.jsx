@@ -16,7 +16,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [header, setheaders] = useState([]);
-  const [openIndex, setOpenIndex] = useState(0);
+  const [openIndex, setOpenIndex] = useState(132);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -212,8 +212,13 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             <h5>{h.lovDesc} {h.lovValue}</h5>
           
 
-          {quest?.filter(q=> !q?.question?.includes("DELETE") && q.order.startsWith(h.lovDesc+".") )?.map((q, idx) =>
+          {quest
+          //?.filter(q=> !q?.question?.includes("DELETE") && q.order.startsWith(h.lovDesc+".") )
+          ?.map((q, idx) =>
           {
+            if(q?.question?.includes("DELETE") || !q.order.startsWith(h.lovDesc+".")) {
+              return null;
+            }
             let catAsset = [];
             const assetCategory = q?.assetCategory?.split(",")??[];
             if(assetCategory.length === 3) {
@@ -228,12 +233,19 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             } else {
               catAsset = siteAssets;
             }
+            
+
+            const faultAsset = (q.response?.faultassets?.split(",")??[])?.length;
+            if('3.1.1' === q.order) {
+              console.log("=========");
+              console.log(idx, q, faultAsset);
+            }
             return (
             <Accordion defaultExpanded={idx === openIndex} >
               <AccordionSummary expandIcon={<ExpandMore />} >
                 <Typography>{q.order} {q.question}
-                  {/* <Checkbox disabled={quest[idx]?.completed} checked={quest[idx]?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
-                  <Checkbox disabled={quest[idx]?.completed} checked={quest[idx]?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
+                  {/* <Checkbox disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
+                  <Checkbox disabled={q?.completed} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
                 </Typography> 
                 &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{ margin: '5px', marginLeft: '30px'}} color={q.status === "Closed" ? "success" : "primary"} label={q.status} />
               </AccordionSummary>
@@ -268,15 +280,82 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         name="totalAsset"
                         className="form-control"
                         id="totalAsset"
-                        value={catAsset?.length - (quest[idx].response?.assets?.split(",")??[])?.length - (quest[idx].response?.faultassets?.split(",")??[])?.length}
+                        //value={catAsset?.length - (q.response?.assets?.split(",")??[])?.length - (q.response?.faultassets?.split(",")??[])?.length}
+                        value={faultAsset}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
 
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Autocomplete
-                        //disabled={quest[idx]?.completed}
+                    <Autocomplete
+                     disabled={q?.completed}
+                        multiple
+                        value={catAsset.filter(s => q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+
+                        onChange={(event, newValue) => {
+                          const assetsList = catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString()))
+                          const uquest = [...quest]
+                          if (
+                            newValue.length === assetsList.length ||
+                            (newValue.length === 1 &&
+                              newValue[0] === "Select All")
+                          ) {
+                            // Select All logic
+                            
+                          uquest[idx].response = {
+                            ...uquest[idx].response,
+                            assets: assetsList.map(i => i.key).join(",")
+                          }
+                          
+                          } else if (
+                            newValue.length === 0 ||
+                            (newValue.includes("Select All") &&
+                              newValue.length < assetsList.length)
+                          ) {
+                            uquest[idx].response = {
+                              ...uquest[idx].response,
+                              assets: ""}
+                          } else {
+                           
+                            uquest[idx].response = {
+                              ...uquest[idx].response,
+                              assets: newValue.filter((value) => value !== "Select All")
+                              .map(i => i.key).join(",")
+                            }
+                          }
+                          setquest(uquest);
+                        }}
+                        
+                        options={[ "Select All", ...catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString()))
+                          .map((option) => { return { key: option.assetId, label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })]}
+                        getOptionLabel={(option) =>
+                          option === "Select All"
+                            ? "Select All"
+                            : option.label
+                        }
+                        renderInput={(params) => (
+                        
+                          <TextField
+                            //required
+                            {...params}
+                            variant="outlined"
+                            label="Asset OK"
+                          />
+                        )}
+                        renderOption={(props, option, { selected }) => (
+                          <li {...props}>
+                            <Checkbox checked={selected} />
+                            {option === "Select All"
+                              ? "Select All"
+                              : option.label}
+                          </li>
+                        )}
+                      />
+
+
+                      {/* <Autocomplete
+                        disabled={q?.completed}
                         multiple
                         onChange={(event, item) => {
                           const uquest = [...quest]
@@ -286,9 +365,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           }
                           setquest(uquest);
                         }}
-                        value={catAsset.filter(s => quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        value={catAsset.filter(s => q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                        options={catAsset.filter(s => !quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString()))
+                        options={catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString()))
                           .map((option) => { return { key: option.assetId, label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })}
                         getOptionLabel={(option) => option.label}
 
@@ -301,11 +380,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             label="Asset OK"
                           />
                         )}
-                      />
+                      /> */}
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Autocomplete
-                        //disabled={quest[idx]?.completed}
+                        disabled={q?.completed}
                         multiple
                         onChange={(event, item) => {
                           const uquest = [...quest]
@@ -315,9 +394,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           }
                           setquest(uquest);
                         }}
-                        value={catAsset.filter(s => quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        value={catAsset.filter(s => q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
 
-                        options={catAsset.filter(s => !quest[idx]?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !quest[idx]?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
+                        options={catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
                         getOptionLabel={(option) => option.label}
 
                         renderInput={(params) => (
@@ -331,44 +410,45 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         )}
                       />
                     </Grid>
+                    {faultAsset > 0 &&
                     <Grid item xs={12}>
                       <label htmlFor="position" name="position">
                         Observation
                       </label>
                       <textarea
-                        disabled={quest[idx]?.completed}
+                        disabled={q?.completed}
                         name="position"
                         className="form-control"
                         id="position"
                         rows="4"
-                        required
+                        required={faultAsset > 0}
                         placeholder="Enter notes..."
-                        value={quest[idx]?.response?.position}
+                        value={q?.response?.position}
                         onChange={(e) => handleInputChange(e, idx)}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
-                    </Grid>
+                    </Grid>}
                     
-
+                    {faultAsset > 0 &&
                     <Grid item xs={12}>
                       <label htmlFor="action" name="action">
                         Suggested Action
                       </label>
                       <textarea
-                        disabled={quest[idx]?.completed}
+                        disabled={q?.completed}
                         name="action"
-                        required
+                        required={faultAsset > 0}
                         className="form-control"
                         id="action"
                         rows="4"
                         placeholder="Enter notes..."
-                        value={quest[idx]?.response?.action}
+                        value={q?.response?.action}
                         onChange={(e) => handleInputChange(e, idx)}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
-                      {!quest[idx]?.completed &&
+                    </Grid>}
+                    {faultAsset > 0 &&<Grid item xs={12}>
+                      {!q?.completed &&
                         <Box
                           display="flex"
                           alignItems="center"
@@ -393,11 +473,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         </Box>
                       }
 
-                    </Grid>
-                    {!quest[idx]?.completed && quest[idx]?.response?.file && (
+                    </Grid>}
+                    {!q?.completed && q?.response?.file && (
                       <Grid item xs={12} container alignItems="center" >
                         <Chip
-                          label={quest[idx]?.response?.file?.name}
+                          label={q?.response?.file?.name}
                           onDelete={() => handleFileDelete(idx)}
 
                         />
@@ -405,9 +485,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                       </Grid>
                     )}
 
-                    <Grid item xs={12}>
+                  {faultAsset > 0 && <Grid item xs={12}>
                       <Typography variant="h6" gutterBottom>
-                        Risk Score Card (<strong>Total Risk Score = {(quest[idx]?.response?.consequence ?? 0) * (quest[idx]?.response?.likelihood ?? 0)}</strong>)
+                        Risk Score Card (<strong>Total Risk Score = {(q?.response?.consequence ?? 0) * (q?.response?.likelihood ?? 0)}</strong>)
                       </Typography>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={4}>
@@ -416,11 +496,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                               Consequence
                             </label>
                             <select
-                              required
-                              disabled={quest[idx]?.completed}
+                              required={faultAsset > 0}
+                              disabled={q?.completed}
                               className="form-control form-select"
                               name="consequence"
-                              value={quest[idx]?.response?.consequence}
+                              value={q?.response?.consequence}
                               onChange={(e) => handleInputChange(e, idx)}
                             >
                               <option value="">Select </option>
@@ -436,11 +516,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                               Likelihood
                             </label>
                             <select
-                              required
-                              disabled={quest[idx]?.completed}
+                              required={faultAsset > 0}
+                              disabled={q?.completed}
                               className="form-control form-select"
                               name="likelihood"
-                              value={quest[idx]?.response?.likelihood}
+                              value={q?.response?.likelihood}
                               onChange={(e) => handleInputChange(e, idx)}
                             >
                               <option value="">Select </option>
@@ -470,8 +550,8 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           </Box>
                         </Grid> */}
                       </Grid>
-                    </Grid>
-                    {!quest[idx]?.completed &&
+                    </Grid>}
+                    {!q?.completed &&
                       <Grid item xs={12}>
 
                         <button
@@ -491,11 +571,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
 
                       </Grid>}
-                    {quest[idx]?.completed && quest[idx]?.response?.file && <Grid item xs={12}>
-                      <a href={quest[idx]?.response?.file + "?" + sasToken} target="_blank">
+                    {q?.completed && q?.response?.file && <Grid item xs={12}>
+                      <a href={q?.response?.file + "?" + sasToken} target="_blank">
                         <button
                           style={{ float: 'right' }}
-                          disabled={quest[idx]?.response?.completed}
+                          disabled={q?.response?.completed}
                           className="btn btn-sm btn-light text-dark"
                         >
                           <i className="fas fa-download" />&nbsp;Download Attachment
