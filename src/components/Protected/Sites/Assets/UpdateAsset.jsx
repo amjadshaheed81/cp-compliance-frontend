@@ -87,7 +87,64 @@ const UpdateAsset = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]); // State for multiple files
+// Function to handle file selection
+const handleFileChange = (event) => {
+  const files = event.target.files;
+  if (files.length > 0) {
+    setSelectedFiles([...selectedFiles, ...files]);
+  }
+};
 
+// Function to remove a selected file
+const removeFile = (index) => {
+  const updatedFiles = [...selectedFiles];
+  updatedFiles.splice(index, 1);
+  setSelectedFiles(updatedFiles);
+};
+
+const submitMultipleAssets = async () => {
+  if (selectedFiles.length === 0) {
+    toast.warn("Please select at least one file to upload.");
+    return;
+  }
+
+  setLoader(true);
+  try {
+    const formData = new FormData();
+    selectedFiles.forEach((file, index) => {
+      formData.append(`assetImage_${index}`, file, file.name);
+    });
+
+    // Append other asset details if needed
+    const assetDetails = {
+      assetId: selectedAsset?.assetId,
+      assetName: selectedAsset?.assetName,
+      // Add other fields as needed
+    };
+    formData.append("assetDetails", JSON.stringify(assetDetails));
+
+    // Call the API to update multiple assets
+    const url = `/${siteSelectedForGlobal?.siteId}/assets/multiples`;
+    const response = await put(url, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (response.status === 200) {
+      toast.success("Assets updated successfully.");
+      // Fetch updated details for the selected asset
+      getAssetDetails();
+    } else {
+      toast.error("Failed to update assets.");
+    }
+  } catch (error) {
+    toast.error("Something went wrong while updating assets.");
+  } finally {
+    setLoader(false);
+  }
+};
   // useEffect(() => {
   //   const setFloorsData = async () => {
   //     if (siteLayout?.length > 0) {
@@ -697,7 +754,7 @@ const UpdateAsset = ({
                       Close
                     </button>
                     &nbsp; &nbsp;
-                    <button type="submit" className="btn btn-primary mb-3 mr-4">
+                    <button onClick={submitMultipleAssets} className="btn btn-primary mb-3 mr-4">
                       Save
                     </button>
                   </div>
@@ -1022,7 +1079,8 @@ autoComplete="off"
                         <input
                           type="file"
                           className="form-control"
-                          {...register("assetImage")}
+                          multiple
+                          onChange={handleFileChange}
                         />
                         {errors?.assetImage && (
                           <InputError
@@ -1031,6 +1089,24 @@ autoComplete="off"
                           />
                         )}
                       </div>
+                      {selectedFiles.length > 0 && (
+                        <div className="mt-2">
+                          <h6>Selected Files:</h6>
+                          <ul>
+                            {selectedFiles.map((file, index) => (
+                              <li key={index}>
+                                {file.name}{" "}
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => removeFile(index)}
+                                >
+                                  Remove
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="row" style={{ height: "auto" }}></div>
