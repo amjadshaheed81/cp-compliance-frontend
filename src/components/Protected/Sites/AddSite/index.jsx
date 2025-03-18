@@ -66,7 +66,7 @@ const AddSite = ({
   const values = watch();
   const submitSite = (data) => {
     const license = JSON.parse(localStorage.getItem('license'));
-    if(sites.length >= Number(license.allowedUser)) {
+    if(sites.length >= Number(license.allowedSites)) {
       toast.error("You have reached your limit for adding site under your license.")
       return;
     }
