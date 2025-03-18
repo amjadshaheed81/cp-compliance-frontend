@@ -288,7 +288,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                    <Autocomplete
+                    {/* <Autocomplete
                      disabled={q?.completed}
                         multiple
                         value={catAsset.filter(s => q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
@@ -327,12 +327,15 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           setquest(uquest);
                         }}
                         
-                        options={[ "Select All", ...catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString()))
-                          .map((option) => { return { key: option.assetId, label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })]}
-                        getOptionLabel={(option) =>
+                        options={[ "Select All", ...catAsset
+                          .filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString()))
+                          //.filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString()))
+                          //.map((option) => { return { key: option.assetId, label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })]}
+                          .map((option) => option.assetId)]}
+                          getOptionLabel={(option) =>
                           option === "Select All"
                             ? "Select All"
-                            : option.label
+                            : catAsset.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]
                         }
                         renderInput={(params) => (
                         
@@ -348,13 +351,13 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             <Checkbox checked={selected} />
                             {option === "Select All"
                               ? "Select All"
-                              : option.label}
+                              : catAsset.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
                           </li>
                         )}
-                      />
+                      /> */}
 
 
-                      {/* <Autocomplete
+                      <Autocomplete
                         disabled={q?.completed}
                         multiple
                         onChange={(event, item) => {
@@ -380,7 +383,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             label="Asset OK"
                           />
                         )}
-                      /> */}
+                      />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Autocomplete
