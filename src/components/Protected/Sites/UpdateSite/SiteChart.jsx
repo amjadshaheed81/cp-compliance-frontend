@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import { InputError } from "../../../common/InputError";
 import UpdateSiteLayout from "./UpdateSiteLayout";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import "./SiteChart.css";
 
 // Styled Components
 const StyledNode = styled.div`
@@ -25,6 +26,7 @@ const StyledNode = styled.div`
   cursor: pointer;
   border-left: 4px solid ${(props) => props.borderColor || "#000"};
   background: ${(props) => props.background || "#f5f5f5"};
+  overflow-x: auto !important;
 `;
 const nodeStyles = {
   building: {
