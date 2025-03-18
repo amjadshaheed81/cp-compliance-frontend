@@ -19,6 +19,7 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 // Styled Components
 const StyledNode = styled.div`
   padding: 5px;
+  font-size: small;
   border-radius: 8px;
   display: inline-block;
   cursor: pointer;
@@ -275,3 +276,4 @@ export default connect(mapStateToProps, {
   addSiteLayoutNode,
   setLoader,
 })(SiteChart);
+ 
