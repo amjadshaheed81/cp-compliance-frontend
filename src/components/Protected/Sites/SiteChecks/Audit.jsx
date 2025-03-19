@@ -70,7 +70,27 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       riskScoreGreen: risksN[3],
     }
     await put("/api/site-check/" + checkId, body);
-    setquest(questionsFromDB);
+    const filtered = questionsFromDB.filter(q=>q?.order?.length > 4);
+    filtered.sort((a, b) => {
+      // Split the order strings into arrays of numbers
+      const orderA = a.order.split('.').map(Number);
+      const orderB = b.order.split('.').map(Number);
+    
+      // Compare the first part
+      if (orderA[0] !== orderB[0]) {
+        return orderA[0] - orderB[0];
+      }
+    
+      // Compare the second part
+      if (orderA[1] !== orderB[1]) {
+        return orderA[1] - orderB[1];
+      }
+    
+      // Compare the third part
+      return orderA[2] - orderB[2];
+    });
+    console.log(filtered)
+    setquest(filtered);
     setIsLoading(false);
   }
 
