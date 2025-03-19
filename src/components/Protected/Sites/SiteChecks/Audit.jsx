@@ -70,7 +70,27 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       riskScoreGreen: risksN[3],
     }
     await put("/api/site-check/" + checkId, body);
-    setquest(questionsFromDB);
+    const filtered = questionsFromDB.filter(q=>q?.order?.length > 4);
+    filtered.sort((a, b) => {
+      // Split the order strings into arrays of numbers
+      const orderA = a.order.split('.').map(Number);
+      const orderB = b.order.split('.').map(Number);
+    
+      // Compare the first part
+      if (orderA[0] !== orderB[0]) {
+        return orderA[0] - orderB[0];
+      }
+    
+      // Compare the second part
+      if (orderA[1] !== orderB[1]) {
+        return orderA[1] - orderB[1];
+      }
+    
+      // Compare the third part
+      return orderA[2] - orderB[2];
+    });
+    console.log(filtered)
+    setquest(filtered);
     setIsLoading(false);
   }
 
@@ -216,16 +236,22 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
           //?.filter(q=> !q?.question?.includes("DELETE") && q.order.startsWith(h.lovDesc+".") )
           ?.map((q, idx) =>
           {
+            
             if(q?.question?.includes("DELETE") || !q.order.startsWith(h.lovDesc+".")) {
               return null;
             }
             let catAsset = [];
             const assetCategory = q?.assetCategory?.split(",")??[];
-            if(assetCategory.length === 3) {
+            if(assetCategory.length === 4) {
+              catAsset= siteAssets?.filter(s=> 
+                s.category === assetCategory[0] 
+                && s.subCategory === assetCategory[1] && s.subCategory2 === assetCategory[2]
+                && s.subCategory3 === assetCategory[3]);
+            } else if(assetCategory.length === 3) {
               catAsset= siteAssets?.filter(s=> 
                 s.category === assetCategory[0] 
                 && s.subCategory === assetCategory[1] && s.subCategory2 === assetCategory[2]);
-               } else if(assetCategory.length === 2) {
+            } else if(assetCategory.length === 2) {
               catAsset= siteAssets?.filter(s=> s.category === assetCategory[0] 
                 && s.subCategory === assetCategory[1]);
             } else if(assetCategory.length === 1 && assetCategory[0] !== '') {
@@ -239,9 +265,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             const faultAsset = (q.response?.faultassets?.split(",")??[])?.filter(s=>s.length > 0 ).length;
             const okAsset = (q.response?.assets?.split(",")??[])?.filter(s=>s.length > 0 ).length;
             
-            if('3.1.1' === q.order) {
-              console.log("=========");
-              }
+            
             return (
             <Accordion defaultExpanded={idx === openIndex} >
               <AccordionSummary expandIcon={<ExpandMore />} >
