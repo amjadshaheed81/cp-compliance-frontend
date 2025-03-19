@@ -16,7 +16,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [header, setheaders] = useState([]);
-  const [openIndex, setOpenIndex] = useState(132);
+  const [openIndex, setOpenIndex] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
