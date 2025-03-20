@@ -145,7 +145,7 @@ autoComplete="off"
                           style={{ color: "#384BD3" }}
                           className="fas fa-folder fa-2x"
                         ></i>
-                        <span className="p-3">{folder?.name}</span>
+                        <span className="p-3">{folder?.name} <span style={{color: 'orange'}}>(Files : {folder?.fileCount})</span></span>
                       </div>
                     </td>
                     <td>--</td>
