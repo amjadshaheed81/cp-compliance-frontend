@@ -43,6 +43,7 @@ import PdfViewer from "./PdfViewer";
 import CopyModal from "./CopyModal";
 import MoveModal from "./MoveModal";
 import EditDocument from "./EditDocument";
+import { blueGrey } from "@mui/material/colors";
 
 const SubFolder = ({
   deleteFile,
@@ -466,7 +467,7 @@ autoComplete="off"
                               addStack(folder?.id, folder?.name);
                             }}
                           >
-                            {folder?.name}
+                            {folder?.name} <span style={{color: 'orange'}}>(Files : {folder?.fileCount})</span>
                           </span>
                           {/* &nbsp; &nbsp;{tags[i] && <Chip 
                             label={tags[i]}
