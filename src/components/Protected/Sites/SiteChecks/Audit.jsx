@@ -670,7 +670,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         <button
                           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                           className="btn btn-primary text-white pr-2"
-                          
+                          disabled={okAsset === 0 && faultAsset === 0}
                           type="submit"
                         >
                           Save & Continue
