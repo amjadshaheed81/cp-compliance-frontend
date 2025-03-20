@@ -675,12 +675,6 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         >
                           Save & Continue
                         </button>
-                        <button
-                          style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
-                          className="btn btn-primary btn-light"
-                        >
-                          Cancel
-                        </button>
 
 
                       </Grid>}
