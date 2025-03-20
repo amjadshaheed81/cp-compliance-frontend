@@ -240,9 +240,14 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             if(q?.question?.includes("DELETE") || !q.order.startsWith(h.lovDesc+".")) {
               return null;
             }
+           
+            
             let catAsset = [];
             let assetCategory = q?.assetCategory?.split(",")??[];
             assetCategory = assetCategory.map(item => item.trim());
+            if('7.1.2' === q.order) {
+              console.log("=========", assetCategory);
+            }
             
             if(assetCategory.length === 4) {
               catAsset= siteAssets?.filter(s=> 

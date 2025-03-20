@@ -61,7 +61,8 @@ const EditProfile = ({
     getCompanies();
   }, []);
   const getCompanies = async () => {
-    const url = `/api/companies/all`;
+    const license = JSON.parse(localStorage.getItem('license'));
+    const url = "/api/companies/all?licenseId="+license?.licenseId;
     let response = await get(url);
     response = response.filter((r) => r !== null);
     setcompanies(response);

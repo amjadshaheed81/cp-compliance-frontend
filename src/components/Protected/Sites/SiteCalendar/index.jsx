@@ -25,7 +25,10 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [todayEvents, settodayEvents] = useState([]);
   //const [data, setData] = useState([]);
   useEffect(() => {
-    getData();
+    if(siteSelectedForGlobal?.siteId) {
+      getData();
+    }
+    
   }, [])
 
   const isToday = (date) => {
@@ -36,6 +39,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
            date.getFullYear() === today.getFullYear();
   }
   const getData = async () => {
+    
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
     data = filterDuplicates(data);
     const todays = data.filter(e => isToday(new Date(e.endDate)));

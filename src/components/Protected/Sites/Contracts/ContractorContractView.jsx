@@ -93,7 +93,8 @@ const ContractorContractView = ({
     setAssetData(data?.projectContractAssets);
   };
   const getCompanies = async () => {
-    const companiesData = await get(`/api/companies/all`);
+    const license = JSON.parse(localStorage.getItem('license'));
+    const companiesData = await get("/api/companies/all?licenseId="+license?.licenseId);
     setCompanies(companiesData);
   };
   useEffect(() => {

@@ -21,7 +21,8 @@ const CompanyManagement = ({ }) => {
 
   const getCompany = async () => {
     setIsLoading(true);
-    const companyData = await get("/api/companies/all");
+    const license = JSON.parse(localStorage.getItem('license'));
+    const companyData = await get("/api/companies/all?licenseId="+license?.licenseId);
     setData(companyData);
     setIsLoading(false);
   };
@@ -81,6 +82,8 @@ const CompanyManagement = ({ }) => {
     }
 
     setIsLoading(true);
+    const license = JSON.parse(localStorage.getItem('license'));
+    dataTSave.licenseId = license?.licenseId
     if (dataTSave.add) {
       await put("/api/companies/manage", dataTSave);
     } else {
@@ -97,6 +100,8 @@ const CompanyManagement = ({ }) => {
     }
 
     setIsLoading(true);
+    const license = JSON.parse(localStorage.getItem('license'));
+    formData.licenseId = license?.licenseId
     await put("/api/companies/manage", formData);
     setAddNewDrp(false);
     getCompany();
