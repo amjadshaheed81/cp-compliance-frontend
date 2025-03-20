@@ -8,7 +8,7 @@ import { setLoader, uploadFloorPlan } from "../../../../store/thunk/site";
 import { connect } from "react-redux";
 import { scrollToElement } from "../../../../utils/scrollToElement";
 import { toast } from "react-toastify";
-import { get, put } from "../../../../api";
+import { del, get, put } from "../../../../api";
 import { useSearchParams } from "react-router-dom";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
@@ -208,7 +208,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
     );
   };
 
-  const Marker = ({ index, item, updatePosition }) => {
+  const Marker = ({ index, item, updatePosition, removeMarker }) => {
     const [{ isDragging }, drag] = useDrag({
       type: "MARKER",
       item: { index },
@@ -218,51 +218,81 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
         const imageRect = imageRef.current.getBoundingClientRect();
   
         if (offset) {
-          // Calculate new position within boundaries
           const newLeft = Math.min(
             Math.max(0, offset.x - imageRect.left),
-            imageRect.width - 20 // Marker width offset if necessary
+            imageRect.width - 20
           );
           const newTop = Math.min(
             Math.max(0, offset.y - imageRect.top),
-            imageRect.height - 20 // Marker height offset if necessary
+            imageRect.height - 20
           );
   
           updatePosition(index, newLeft, newTop);
         }
       },
     });
-
+  
     return (
       <Tooltip title={`View Assets: ${item.label}`} arrow>
-      <div
-        ref={drag}
-        style={{
-          position: "absolute",
-          left: item.left,
-          top: item.top,
-          transform: isDragging ? "scale(1.05)" : "scale(1)",
-          transition: "transform 0.1s ease-out",
-          willChange: "transform",
-          backgroundColor: "#d34053",
-          color: "white",
-          padding: "4px",
-          fontSize: "8px",
-          borderRadius: "50%",
-          cursor: "move",
-          opacity: isDragging ? 0.7 : 1,
-        }}
-      >
-        <a
-          target="_blank"
-          className="markerLink"
-          href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}
+        <div
+          ref={drag}
+          style={{
+            position: "absolute",
+            left: item.left,
+            top: item.top,
+            transform: isDragging ? "scale(1.05)" : "scale(1)",
+            transition: "transform 0.1s ease-out",
+            willChange: "transform",
+            backgroundColor: "#d34053",
+            color: "white",
+            padding: "4px",
+            fontSize: "8px",
+            borderRadius: "50%",
+            cursor: "move",
+            opacity: isDragging ? 0.7 : 1,
+          }}
         >
-          {item.label}
-        </a>
-      </div>
-    </Tooltip>
+          <span
+            style={{
+              position: "absolute",
+              top: "-10px",
+              right: "-10px",
+              backgroundColor: "black",
+              color: "white",
+              borderRadius: "50%",
+              width: "16px",
+              height: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "10px",
+              cursor: "pointer",
+            }}
+            onClick={() => removeMarker(index, item)}
+          >
+            ✖
+          </span>
+          <a
+            target="_blank"
+            className="markerLink"
+            href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}
+          >
+            {item.label}
+          </a>
+        </div>
+      </Tooltip>
     );
+  };
+  
+  const removeMarker = async (index, item) => {
+    try {
+      const url = `api/site/SaveMarker/${item.id}`;
+      await del(url);
+      toast.success("Marker deleted successfully.");
+      setDroppedItems((prevItems) => prevItems.filter((_, i) => i !== index));
+    } catch (error) {
+      toast.error("Failed to delete marker.");
+    }
   };
 
   return (
@@ -340,6 +370,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
                 index={index}
                 item={item}
                 updatePosition={updateMarkerPosition}
+                removeMarker={removeMarker}
               />
             ))}
           </div>
