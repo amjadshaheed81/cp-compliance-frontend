@@ -11,12 +11,13 @@ import {
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { get } from "../../../../api";
+import { get, put } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { useLocation } from "react-router-dom";
+import Papa from "papaparse";
 
 const PassiveFireProtection = ({
   sitePFPItems,
@@ -45,7 +46,8 @@ const PassiveFireProtection = ({
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
   const location = useLocation();
-
+  const [isLoading, setIsLoading] = useState(false);
+  
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
   const currentSiteAssets = filteredSitePFPItems?.slice(
@@ -274,7 +276,71 @@ const PassiveFireProtection = ({
       setSelectedItems([]);
     }
   };
-
+const handleFileUpload = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            const assets = results.data
+              .map((row) => {
+                const assetId = parseInt(row.assetId);
+    
+                if (isNaN(assetId) || assetId === null) {
+                  return null;
+                }
+    
+                return {
+                  assetId: assetId,
+                  assetName: row.assetName,
+                  manufacturer: row.manufacturer,
+                  category: row.category,
+                  subCategory: row.subCategory,
+                  subCategory2: row.subCategory2 || null,
+                  subCategory3: row.subCategory3 || null,
+                  model: row.model,
+                  deviceId: row.deviceId || null,
+                  serialNumber: row.serialNumber || "",
+                  relatedAssetId: row.relatedAssetId || "",
+                  folderId: row.folderId ? parseInt(row.folderId) : null,
+                  patItem: row.patItem?.toLowerCase() === "true",
+                  pfpItem: row.pfpItem?.toLowerCase() === "true",
+                  doorItem: row.doorItem?.toLowerCase() === "true",
+                  barcode: row.barcode || "",
+                };
+              })
+              .filter((asset) => asset !== null);
+    
+            if (assets.length === 0) {
+              toast.error("No valid assets found in the file.");
+              return;
+            }
+    
+            try {
+              const response = await put("/api/site/296/assets/mutiples", { assets });
+    
+              if (response.status === 200 || response.status === 201) {
+                toast.success("Assets updated successfully!");
+                setIsLoading(true);
+                await getSitePFPAssets(siteSelectedForGlobal?.siteId);
+                setTimeout(() => {
+                  setIsLoading(false);
+                }, 3000);
+              } else {
+                toast.error("Failed to update assets. Please try again.");
+              }
+            } catch (error) {
+              toast.error("An error occurred while updating assets.");
+            }
+          },
+          error: (error) => {
+            toast.error("Error parsing CSV file. Please check the file format.");
+            console.error("CSV Parsing Error:", error);
+          },
+        });
+      }
+    };
   return (
     <Fragment>
       {showAddModal && (
@@ -300,9 +366,9 @@ const PassiveFireProtection = ({
             <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                autoComplete="off"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
@@ -312,9 +378,9 @@ autoComplete="off"
             <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                autoComplete="off"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
@@ -334,7 +400,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.category ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.category ? "" : "none" }}
+            >
               <select
                 name="subCategory"
                 className="form-control form-select"
@@ -347,7 +416,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.subCategory ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.subCategory ? "" : "none" }}
+            >
               <select
                 name="subCategory2"
                 className="form-control form-select"
@@ -360,7 +432,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.subCategory2 ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.subCategory2 ? "" : "none" }}
+            >
               <select
                 name="subCategory3"
                 className="form-control form-select"
@@ -384,10 +459,14 @@ autoComplete="off"
                     ...formData,
                     [name]: value,
                   });
-                  const node = siteLayout
-                  .filter((site) => site.nodeName === value);
-                  const data = siteLayout
-                  .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                  const node = siteLayout.filter(
+                    (site) => site.nodeName === value
+                  );
+                  const data = siteLayout.filter(
+                    (site) =>
+                      site.nodeType === "floor" &&
+                      site.parentNode === node?.[0]?.id
+                  );
                   setFloorNode(data || []);
                 }}
               >
@@ -399,7 +478,10 @@ autoComplete="off"
                 ))} */}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.location ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.location ? "" : "none" }}
+            >
               <select
                 name="floor"
                 className="form-control form-select"
@@ -410,18 +492,27 @@ autoComplete="off"
                     ...formData,
                     [name]: value,
                   });
-                  const node = siteLayout
-                  .filter((site) => site.nodeName === value);
-                  const data = siteLayout
-                  .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                  const node = siteLayout.filter(
+                    (site) => site.nodeName === value
+                  );
+                  const data = siteLayout.filter(
+                    (site) =>
+                      site.nodeType === "room" &&
+                      site.parentNode === node?.[0]?.id
+                  );
                   setRoomNode(data || []);
                 }}
               >
                 <option value="">Floor</option>
-                {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+                {floorNode?.map((itm) => (
+                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.floor ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.floor ? "" : "none" }}
+            >
               <select
                 name="room"
                 className="form-control form-select"
@@ -430,7 +521,9 @@ autoComplete="off"
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>
-                {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
+                {roomNode?.map((itm) => (
+                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -449,6 +542,53 @@ autoComplete="off"
                 </button>
               </Tooltip>
             </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <CSVLink
+                filename={"selected-assets.csv"}
+                className="btn btn-light bg-white text-primary"
+                data={selectedItems.map((itm) => {
+                  return {
+                    assetId: itm?.assetId,
+                    assetName: itm?.assetName,
+                    manufacturer: itm?.manufacturer,
+                    category: itm?.category,
+                    subCategory: itm?.subCategory,
+                    subCategory2: itm?.subCategory2,
+                    subCategory3: itm?.subCategory3,
+                    model: itm?.model,
+                    deviceId: itm?.deviceId,
+                    serialNumber: itm?.serialNumber,
+                    relatedAssetId: itm?.relatedAssetId,
+                    folderId: itm?.folderId,
+                    patItem: itm?.patItem,
+                    pfpItem: itm?.pfpItem,
+                    doorItem: itm?.doorItem,
+                    barcode: itm?.barcode,
+                  };
+                })}
+              >
+                <Tooltip title={`Export Selected Assets`} arrow>
+                  <i className="fas fa-download"></i> Export Selected
+                </Tooltip>
+              </CSVLink>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <Tooltip title={`Upload CSV to Update Assets`} arrow>
+                <input
+                  type="file"
+                  id="upload-csv"
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  onChange={(e) => handleFileUpload(e)}
+                />
+                <label
+                  htmlFor="upload-csv"
+                  className="btn btn-light text-primary"
+                >
+                  <i className="fas fa-upload"></i> Upload CSV
+                </label>
+              </Tooltip>
+            </div>
             <div className="col-md-2 col-sm-4 mt-2">
               <CSVLink
                 filename={"site-pfp-item-list.csv"}
@@ -456,24 +596,32 @@ autoComplete="off"
                 data={sitePFPItems.map((itm) => {
                   return {
                     ...itm,
-                    assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
-                      ? itm.assetDoorSpecifications.map(
-                          (asset) =>
-                            `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                        ).join("; ")
-                      : '', // Provide empty string if not an array
+                    assetDoorSpecifications: Array.isArray(
+                      itm?.assetDoorSpecifications
+                    )
+                      ? itm.assetDoorSpecifications
+                          .map(
+                            (asset) =>
+                              `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
+                          )
+                          .join("; ")
+                      : "", // Provide empty string if not an array
                     assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                      ? itm.assetPFPItem.map(
-                          (asset) =>
-                            `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                        ).join("; ")
-                      : '', // Provide empty string if not an array
+                      ? itm.assetPFPItem
+                          .map(
+                            (asset) =>
+                              `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
+                          )
+                          .join("; ")
+                      : "", // Provide empty string if not an array
                     assetPATItems: Array.isArray(itm?.assetPATItems)
-                      ? itm.assetPATItems.map(
-                          (asset) =>
-                            `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                        ).join("; ")
-                      : '', // Provide empty string if not an array
+                      ? itm.assetPATItems
+                          .map(
+                            (asset) =>
+                              `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
+                          )
+                          .join("; ")
+                      : "", // Provide empty string if not an array
                   };
                 })}
               >
@@ -526,12 +674,17 @@ autoComplete="off"
               </tr>
             </thead>
             <tbody>
-              {currentSiteAssets?.length === 0 && (
+              {!isLoading && currentSiteAssets?.length === 0 && (
                 <tr>
                   <td>No Result Found !!</td>
                 </tr>
               )}
-              {currentSiteAssets?.map((asset) => (
+              {isLoading && (
+                <tr>
+                  <td>Loading...</td>
+                </tr>
+              )}
+              {!isLoading && currentSiteAssets?.map((asset) => (
                 <tr key={asset?.id}>
                   <th>
                     <input
@@ -606,7 +759,7 @@ autoComplete="off"
           </table>
         </div>
       </div>
-      <div className="row">
+      <div className="row" style={{ display: isLoading ? "none" : "" }}>
         <Pagination
           totalPages={Math.ceil(
             filteredSitePFPItems.length / preActionsPerPage

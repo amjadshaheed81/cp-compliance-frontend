@@ -343,9 +343,9 @@ const Summary = ({
                 serialNumber: row.serialNumber || "",
                 relatedAssetId: row.relatedAssetId || "",
                 folderId: row.folderId ? parseInt(row.folderId) : null,
-                patItem: row.patItem === "true",
-                pfpItem: row.pfpItem === "true",
-                doorItem: row.doorItem === "true",
+                patItem: row.patItem?.toLowerCase() === "true",
+                pfpItem: row.pfpItem?.toLowerCase() === "true",
+                doorItem: row.doorItem?.toLowerCase() === "true",
                 barcode: row.barcode || "",
               };
             })
@@ -361,7 +361,11 @@ const Summary = ({
   
             if (response.status === 200 || response.status === 201) {
               toast.success("Assets updated successfully!");
-              getSiteAssets(siteSelectedForGlobal?.siteId);
+              setIsLoading(true);
+              await getSiteAssets(siteSelectedForGlobal?.siteId);
+              setTimeout(() => {
+                setIsLoading(false);
+              }, 3000);
             } else {
               toast.error("Failed to update assets. Please try again.");
             }

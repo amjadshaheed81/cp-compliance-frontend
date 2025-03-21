@@ -11,7 +11,7 @@ import {
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { get } from "../../../../api";
+import { get, put } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
@@ -22,6 +22,7 @@ import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageN
 import AddPatDetails from "./AddPatDetails";
 import { useLocation } from "react-router-dom";
 import moment from "moment";
+import Papa from "papaparse";
 
 export const findAssetWithNearestPatNextDate = (asset) => {
   let nearestAsset = null;
@@ -71,6 +72,7 @@ const Pat = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
 
   const indexOfLastPreAction = currentPage * preActionsPerPage;
@@ -301,6 +303,71 @@ const Pat = ({
       setSelectedItems([]);
     }
   };
+  const handleFileUpload = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            const assets = results.data
+              .map((row) => {
+                const assetId = parseInt(row.assetId);
+    
+                if (isNaN(assetId) || assetId === null) {
+                  return null;
+                }
+    
+                return {
+                  assetId: assetId,
+                  assetName: row.assetName,
+                  manufacturer: row.manufacturer,
+                  category: row.category,
+                  subCategory: row.subCategory,
+                  subCategory2: row.subCategory2 || null,
+                  subCategory3: row.subCategory3 || null,
+                  model: row.model,
+                  deviceId: row.deviceId || null,
+                  serialNumber: row.serialNumber || "",
+                  relatedAssetId: row.relatedAssetId || "",
+                  folderId: row.folderId ? parseInt(row.folderId) : null,
+                  patItem: row.patItem?.toLowerCase() === "true",
+                  pfpItem: row.pfpItem?.toLowerCase() === "true",
+                  doorItem: row.doorItem?.toLowerCase() === "true",
+                  barcode: row.barcode || "",
+                };
+              })
+              .filter((asset) => asset !== null);
+    
+            if (assets.length === 0) {
+              toast.error("No valid assets found in the file.");
+              return;
+            }
+    
+            try {
+              const response = await put("/api/site/296/assets/mutiples", { assets });
+    
+              if (response.status === 200 || response.status === 201) {
+                toast.success("Assets updated successfully!");
+                setIsLoading(true);
+                await getSitePATAssets(siteSelectedForGlobal?.siteId);
+                setTimeout(() => {
+                  setIsLoading(false);
+                }, 3000);
+              } else {
+                toast.error("Failed to update assets. Please try again.");
+              }
+            } catch (error) {
+              toast.error("An error occurred while updating assets.");
+            }
+          },
+          error: (error) => {
+            toast.error("Error parsing CSV file. Please check the file format.");
+            console.error("CSV Parsing Error:", error);
+          },
+        });
+      }
+    };
   return (
     <Fragment>
       {showAddModal && (
@@ -336,9 +403,9 @@ const Pat = ({
             <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                autoComplete="off"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
@@ -348,9 +415,9 @@ autoComplete="off"
             <div className="col-md-3 col-sm-4 mt-2">
               <input
                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                autoComplete="off"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
@@ -370,7 +437,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.category ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.category ? "" : "none" }}
+            >
               <select
                 name="subCategory"
                 className="form-control form-select"
@@ -383,7 +453,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.subCategory ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.subCategory ? "" : "none" }}
+            >
               <select
                 name="subCategory2"
                 className="form-control form-select"
@@ -396,7 +469,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.subCategory2 ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.subCategory2 ? "" : "none" }}
+            >
               <select
                 name="subCategory3"
                 className="form-control form-select"
@@ -420,10 +496,14 @@ autoComplete="off"
                     ...formData,
                     [name]: value,
                   });
-                  const node = siteLayout
-                  .filter((site) => site.nodeName === value);
-                  const data = siteLayout
-                  .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                  const node = siteLayout.filter(
+                    (site) => site.nodeName === value
+                  );
+                  const data = siteLayout.filter(
+                    (site) =>
+                      site.nodeType === "floor" &&
+                      site.parentNode === node?.[0]?.id
+                  );
                   setFloorNode(data || []);
                 }}
               >
@@ -435,7 +515,10 @@ autoComplete="off"
                 ))} */}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.location ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.location ? "" : "none" }}
+            >
               <select
                 name="floor"
                 className="form-control form-select"
@@ -446,10 +529,14 @@ autoComplete="off"
                     ...formData,
                     [name]: value,
                   });
-                  const node = siteLayout
-                  .filter((site) => site.nodeName === value);
-                  const data = siteLayout
-                  .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                  const node = siteLayout.filter(
+                    (site) => site.nodeName === value
+                  );
+                  const data = siteLayout.filter(
+                    (site) =>
+                      site.nodeType === "room" &&
+                      site.parentNode === node?.[0]?.id
+                  );
                   setRoomNode(data || []);
                 }}
               >
@@ -459,7 +546,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.floor ? "" : "none"}}>
+            <div
+              className="col-md-3 col-sm-4 mt-2"
+              style={{ display: formData.floor ? "" : "none" }}
+            >
               <select
                 name="room"
                 className="form-control form-select"
@@ -489,21 +579,71 @@ autoComplete="off"
                 </button>
               </Tooltip>
             </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <CSVLink
+                filename={"selected-assets.csv"}
+                className="btn btn-light bg-white text-primary"
+                data={selectedItems.map((itm) => {
+                  return {
+                    assetId: itm?.assetId,
+                    assetName: itm?.assetName,
+                    manufacturer: itm?.manufacturer,
+                    category: itm?.category,
+                    subCategory: itm?.subCategory,
+                    subCategory2: itm?.subCategory2,
+                    subCategory3: itm?.subCategory3,
+                    model: itm?.model,
+                    deviceId: itm?.deviceId,
+                    serialNumber: itm?.serialNumber,
+                    relatedAssetId: itm?.relatedAssetId,
+                    folderId: itm?.folderId,
+                    patItem: itm?.patItem,
+                    pfpItem: itm?.pfpItem,
+                    doorItem: itm?.doorItem,
+                    barcode: itm?.barcode,
+                  };
+                })}
+              >
+                <Tooltip title={`Export Selected Assets`} arrow>
+                  <i className="fas fa-download"></i> Export Selected
+                </Tooltip>
+              </CSVLink>
+            </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+              <Tooltip title={`Upload CSV to Update Assets`} arrow>
+                <input
+                  type="file"
+                  id="upload-csv"
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  onChange={(e) => handleFileUpload(e)}
+                />
+                <label
+                  htmlFor="upload-csv"
+                  className="btn btn-light text-primary"
+                >
+                  <i className="fas fa-upload"></i> Upload CSV
+                </label>
+              </Tooltip>
+            </div>
             <div className="col-md-2 col-sm-6 mt-2">
               <Tooltip title={`Assign/Update Pat Register`} arrow>
-                <button className="btn btn-light bg-white text-primary" onClick={() => {
-                  if (selectedItems?.length === 0) {
-                    toast.warn(
-                      "Please select asset to assign/update pat record."
-                    );
-                  } else if (selectedItems?.length === 1) {
-                    toast.warn(
-                      "Please select more than 1 asset to update pat record else you can edit and update pat record for particular asset."
-                    );
-                  } else {
-                    setShowPatModal(true);
-                  }
-                  }}>
+                <button
+                  className="btn btn-light bg-white text-primary"
+                  onClick={() => {
+                    if (selectedItems?.length === 0) {
+                      toast.warn(
+                        "Please select asset to assign/update pat record."
+                      );
+                    } else if (selectedItems?.length === 1) {
+                      toast.warn(
+                        "Please select more than 1 asset to update pat record else you can edit and update pat record for particular asset."
+                      );
+                    } else {
+                      setShowPatModal(true);
+                    }
+                  }}
+                >
                   <i className="fas fa-pen"></i>
                 </button>{" "}
               </Tooltip>
@@ -592,12 +732,17 @@ autoComplete="off"
               </tr>
             </thead>
             <tbody>
-              {currentSiteAssets?.length === 0 && (
+              {!isLoading && currentSiteAssets?.length === 0 && (
                 <tr>
                   <td>No Result Found !!</td>
                 </tr>
               )}
-              {currentSiteAssets?.map((asset) => (
+              {isLoading && (
+                <tr>
+                  <td>Loading...</td>
+                </tr>
+              )}
+              {!isLoading && currentSiteAssets?.map((asset) => (
                 <tr key={asset?.id}>
                   <th>
                     <input
@@ -614,8 +759,22 @@ autoComplete="off"
                   <th scope="col">{asset?.manufacturer}</th>
                   <th scope="col">{getCategoryLabelValue(asset)}</th>
                   <th scope="col">{asset?.location}</th>
-                  <th scope="col">{findAssetWithNearestPatNextDate(asset)?.patItem?.patDate ? moment(findAssetWithNearestPatNextDate(asset)?.patItem?.patDate).format("DD-MM-YYYY") : "--"}</th>
-                  <th scope="col">{findAssetWithNearestPatNextDate(asset)?.patItem.patNextDate ? moment(findAssetWithNearestPatNextDate(asset)?.patItem.patNextDate).format("DD-MM-YYYY") : "--"}</th>
+                  <th scope="col">
+                    {findAssetWithNearestPatNextDate(asset)?.patItem?.patDate
+                      ? moment(
+                          findAssetWithNearestPatNextDate(asset)?.patItem
+                            ?.patDate
+                        ).format("DD-MM-YYYY")
+                      : "--"}
+                  </th>
+                  <th scope="col">
+                    {findAssetWithNearestPatNextDate(asset)?.patItem.patNextDate
+                      ? moment(
+                          findAssetWithNearestPatNextDate(asset)?.patItem
+                            .patNextDate
+                        ).format("DD-MM-YYYY")
+                      : "--"}
+                  </th>
                   <th scope="col">{asset?.status}</th>
                   <th scope="col">
                     <Tooltip title={`View ${asset.assetName}`} arrow>
@@ -671,7 +830,7 @@ autoComplete="off"
           </table>
         </div>
       </div>
-      <div className="row">
+      <div className="row" style={{ display: isLoading ? "none" : "" }}>
         <Pagination
           totalPages={Math.ceil(
             filteredSitePATItems.length / preActionsPerPage

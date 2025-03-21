@@ -49,6 +49,7 @@ const Door = ({
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const currentSiteAssets = filteredSiteDoorItems?.slice(
     indexOfFirstPreAction,
@@ -310,9 +311,9 @@ const Door = ({
                 serialNumber: row.serialNumber || "",
                 relatedAssetId: row.relatedAssetId || "",
                 folderId: row.folderId ? parseInt(row.folderId) : null,
-                patItem: row.patItem === "true",
-                pfpItem: row.pfpItem === "true",
-                doorItem: row.doorItem === "true",
+                patItem: row.patItem?.toLowerCase() === "true",
+                pfpItem: row.pfpItem?.toLowerCase() === "true",
+                doorItem: row.doorItem?.toLowerCase() === "true",
                 barcode: row.barcode || "",
                 assetDoorSpecifications: {
                   assetId: assetId,
@@ -339,7 +340,11 @@ const Door = ({
   
             if (response.status === 200 || response.status === 201) {
               toast.success("Assets updated successfully!");
-              getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+              setIsLoading(true);
+              await getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+              setTimeout(() => {
+                setIsLoading(false);
+              }, 3000);
             } else {
               toast.error("Failed to update assets. Please try again.");
             }
@@ -652,12 +657,17 @@ autoComplete="off"
               </tr>
             </thead>
             <tbody>
-              {currentSiteAssets?.length === 0 && (
+              {!isLoading && currentSiteAssets?.length === 0 && (
                 <tr>
                   <td>No Result Found !!</td>
                 </tr>
               )}
-              {currentSiteAssets?.map((asset) => (
+              {isLoading && (
+                <tr>
+                  <td>Loading...</td>
+                </tr>
+              )}
+              {!isLoading && currentSiteAssets?.map((asset) => (
                 <tr key={asset?.id}>
                   <th>
                     <input
@@ -742,7 +752,7 @@ autoComplete="off"
           </table>
         </div>
       </div>
-      <div className="row">
+      <div className="row" style={{ display: isLoading ? "none" : "" }}>
         <Pagination
           totalPages={Math.ceil(
             filteredSiteDoorItems.length / preActionsPerPage
