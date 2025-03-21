@@ -11,12 +11,14 @@ import {
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { get } from "../../../../api";
+import { get, put } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { useLocation } from "react-router-dom";
+import Papa from "papaparse";
+
 
 const Door = ({
   siteDoorItems,
@@ -281,7 +283,73 @@ const Door = ({
       setSelectedItems([]);
     }
   };
-
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      Papa.parse(file, {
+        header: true, // Use the first row as headers
+        skipEmptyLines: true,
+        complete: async (results) => {
+          const assets = results.data
+            .map((row) => {
+              const assetId = parseInt(row.assetId);
+                if (isNaN(assetId) || assetId === null) {
+                return null;
+              }
+  
+              return {
+                assetId: assetId,
+                assetName: row.assetName,
+                manufacturer: row.manufacturer,
+                category: row.category,
+                subCategory: row.subCategory,
+                subCategory2: row.subCategory2 || null,
+                subCategory3: row.subCategory3 || null,
+                model: row.model,
+                deviceId: row.deviceId || null,
+                serialNumber: row.serialNumber || "",
+                relatedAssetId: row.relatedAssetId || "",
+                folderId: row.folderId ? parseInt(row.folderId) : null,
+                patItem: row.patItem === "true",
+                pfpItem: row.pfpItem === "true",
+                doorItem: row.doorItem === "true",
+                barcode: row.barcode || "",
+                assetDoorSpecifications: {
+                  assetId: assetId,
+                  width: row.doorWidth || "",
+                  height: row.doorHeight || "",
+                  depth: row.doorDepth || "",
+                  fireRating: row.doorFireRating || "",
+                  finish: row.doorFinish || "",
+                  visionPanel: row.doorVisionPanel || "",
+                  frameMaterial: row.doorFrameMaterial || "",
+                  frameFinish: row.doorFrameFinish || "",
+                },
+              };
+            })
+            .filter((asset) => asset !== null);
+  
+          if (assets.length === 0) {
+            toast.error("No valid assets found in the file.");
+            return;
+          }
+  
+          try {
+            const response = await put("/api/site/296/assets/mutiples", { assets });
+  
+            if (response.status === 200 || response.status === 201) {
+              toast.success("Assets updated successfully!");
+              getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+            } else {
+              toast.error("Failed to update assets. Please try again.");
+            }
+          } catch (error) {
+            toast.error("An error occurred while updating assets.");
+          }
+        },
+      });
+    }
+  };
   return (
     <Fragment>
       {showAddModal && (
@@ -456,6 +524,58 @@ autoComplete="off"
                 </button>
               </Tooltip>
             </div>
+            <div className="col-md-3 col-sm-4 mt-2">
+                            <CSVLink
+                              filename={"selected-assets.csv"}
+                              className="btn btn-light bg-white text-primary"
+                              data={selectedItems.map((itm) => {
+                                return {
+                                  assetId: itm?.assetId,
+                                  assetName: itm?.assetName,
+                                  manufacturer: itm?.manufacturer,
+                                  category: itm?.category,
+                                  subCategory: itm?.subCategory,
+                                  subCategory2: itm?.subCategory2,
+                                  subCategory3: itm?.subCategory3,
+                                  model: itm?.model,
+                                  deviceId: itm?.deviceId,
+                                  serialNumber: itm?.serialNumber,
+                                  relatedAssetId: itm?.relatedAssetId,
+                                  folderId: itm?.folderId,
+                                  patItem: itm?.patItem,
+                                  pfpItem: itm?.pfpItem,
+                                  doorItem: itm?.doorItem,
+                                  barcode: itm?.barcode,
+                                  doorWidth: itm?.assetDoorSpecifications?.width,
+                                  doorHeight: itm?.assetDoorSpecifications?.height,
+                                  doorDepth: itm?.assetDoorSpecifications?.depth,
+                                  doorFireRating: itm?.assetDoorSpecifications?.fireRating,
+                                  doorFinish: itm?.assetDoorSpecifications?.finish,
+                                  doorVisionPanel: itm?.assetDoorSpecifications?.visionPanel,
+                                  doorFrameMaterial: itm?.assetDoorSpecifications?.frameMaterial,
+                                  doorFrameFinish: itm?.assetDoorSpecifications?.frameFinish,
+                                };
+                              })}
+                            >
+                              <Tooltip title={`Export Selected Assets`} arrow>
+                                <i className="fas fa-download"></i> Export Selected
+                              </Tooltip>
+                            </CSVLink>
+                          </div>
+                          <div className="col-md-3 col-sm-4 mt-2">
+                            <Tooltip title={`Upload CSV to Update Assets`} arrow>
+                              <input
+                                type="file"
+                                id="upload-csv"
+                                accept=".csv"
+                                style={{ display: "none" }}
+                                onChange={(e) => handleFileUpload(e)}
+                              />
+                              <label htmlFor="upload-csv" className="btn btn-light text-primary">
+                                <i className="fas fa-upload"></i> Upload CSV
+                              </label>
+                            </Tooltip>
+                          </div>
             <div className="col-md-2 col-sm-4 mt-2 mr-2">
               <CSVLink
                 filename={"site-door-assets.csv"}
