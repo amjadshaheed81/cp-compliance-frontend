@@ -384,10 +384,13 @@ const UpdateAsset = ({
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
     if (data?.assetImage?.length > 0) {
-      form_data.append(
-        "assetImage",
-        data?.assetImage,
-      );
+      data?.assetImage?.forEach(assetImage=>{
+        form_data.append(
+          "assetImage",
+          assetImage,
+        );
+      })
+      
     } else {
       //const blob = await fetchBlob(selectedAsset?.image);
       //form_data.append("assetImage", blob, formData?.assetName);

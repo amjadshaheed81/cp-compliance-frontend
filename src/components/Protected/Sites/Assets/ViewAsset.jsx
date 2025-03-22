@@ -271,10 +271,12 @@ const UpdateAsset = ({
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
     if (data?.assetImage?.length > 0) {
-      form_data.append(
-        "assetImage",
-        data?.assetImage
-      );
+      data?.assetImage?.forEach(assetImage=>{
+        form_data.append(
+          "assetImage",
+          assetImage,
+        );
+      })
     } else {
       form_data.append("assetImage", JSON.stringify(data?.image));
     }
