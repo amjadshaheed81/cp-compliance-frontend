@@ -39,6 +39,10 @@ import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import PdfViewer from "../Documents/PdfViewer";
 import DatePicker from "../../../common/DatePicker";
 
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
 async function fetchBlob(selectedPdf) {
   try {
     const response = await fetch(selectedPdf);
@@ -67,6 +71,18 @@ const UpdateAsset = ({
   getSiteLayout,
   siteLayout,
 }) => {
+  
+  const carouselSettings = {
+  dots: true,
+  infinite: true,
+  speed: 500,
+  slidesToShow: 1,
+  slidesToScroll: 1,
+  //arrows: true,
+  autoplay: true,
+  autoplaySpeed: 3000,
+  };
+  
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [tester, setTester] = useState([]);
@@ -370,8 +386,7 @@ const UpdateAsset = ({
     if (data?.assetImage?.length > 0) {
       form_data.append(
         "assetImage",
-        data?.assetImage?.[0],
-        formData?.assetName
+        data?.assetImage,
       );
     } else {
       //const blob = await fetchBlob(selectedAsset?.image);
@@ -1013,15 +1028,29 @@ const UpdateAsset = ({
                     </div>
                     <div className="col-md-4 text-center mt-2">
                       <div className="form-group">
-                        {selectedAsset?.image && (
+                        {selectedAsset?.images?.length > 1 && (
+                          <Slider {...carouselSettings}>
+                            {selectedAsset?.images?.map(i => (
+                               <div>
+                               <img
+                                 src={i?.imageUrl}
+                                 className="img img-responsive border p-2 m-2 w-100"
+                                 alt="Asset Image"
+                               />
+                             </div>
+                            ))}
+                        </Slider>
+                        )}
+                        {selectedAsset?.images?.length === 1 && (
                           <img
                             src={selectedAsset?.image}
                             className="img img-responsive border p-2 m-2 w-100"
-                          />
-                        )}
+                          />)}
                         <input
                           type="file"
+                          multiple
                           className="form-control"
+                          style={{marginTop: '30px'}}
                           {...register("assetImage")}
                         />
                         {errors?.assetImage && (

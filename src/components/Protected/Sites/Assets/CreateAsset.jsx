@@ -141,7 +141,7 @@ const CreateAsset = ({
     setLoader(true);
     let form_data = new FormData();
     if (data?.assetImage?.length > 0) {
-      form_data.append("assetImage", data?.assetImage?.[0], data?.assetName);
+      form_data.append("assetImage", data?.assetImage);
     } else {
       // form_data.append("assetImage", "", "");
     }
@@ -324,6 +324,7 @@ autoComplete="off"
                       <div className="form-group">
                         <input
                           type="file"
+                          multiple
                           className="form-control"
                           {...register("assetImage")}
                         />

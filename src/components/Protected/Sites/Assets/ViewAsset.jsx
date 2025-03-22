@@ -35,6 +35,9 @@ import "./AssetStyle.css";
 import Swal from "sweetalert2";
 import PdfViewer from "../Documents/PdfViewer";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 const UpdateAsset = ({
   setLoader,
@@ -53,6 +56,18 @@ const UpdateAsset = ({
   getSiteLayout,
   siteLayout,
 }) => {
+
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    //arrows: true,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    };
+
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [tester, setTester] = useState([]);
@@ -258,8 +273,7 @@ const UpdateAsset = ({
     if (data?.assetImage?.length > 0) {
       form_data.append(
         "assetImage",
-        data?.assetImage?.[0],
-        data?.assetImage?.[0]?.name
+        data?.assetImage
       );
     } else {
       form_data.append("assetImage", JSON.stringify(data?.image));
@@ -727,20 +741,31 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4 text-center">
                     <div className="form-group">
-                      {selectedAsset?.image && (
-                        <img
-                          src={selectedAsset?.image}
-                          style={{ width: "100%" }}
-                          className="img img-responsive border p-2 m-2"
-                        />
-                      )}
-                      {!selectedAsset?.image && (
+                    {selectedAsset?.images?.length > 1 && (
+                          <Slider {...carouselSettings}>
+                            {selectedAsset?.images?.map(i => (
+                               <div>
+                               <img
+                                 src={i?.imageUrl}
+                                 className="img img-responsive border p-2 m-2 w-100"
+                                 alt="Asset Image"
+                               />
+                             </div>
+                            ))}
+                        </Slider>
+                        )}
+                        {selectedAsset?.images?.length === 1 && (
+                          <img
+                            src={selectedAsset?.image}
+                            className="img img-responsive border p-2 m-2 w-100"
+                          />)}
+                      {selectedAsset?.images?.length === 0  && (
                         <strong>Asset Image is not available</strong>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="row" style={{ height: "auto" }}>
+                <div className="row" style={{ height: "auto", marginTop: '20px' }}>
                   <div className="col-md-4 mt-2">
                     <input
                       type="checkbox"
