@@ -614,7 +614,7 @@ autoComplete="off"
                   </Grid>
                 )}
               </Grid>
-              <div className="float-end"><small className="alert alert-info p-2">Please click on Save before proceeding to the next Asset</small></div>
+              {/* <div className="float-end"><small className="alert alert-info p-2">Please click on Save before proceeding to the next Asset</small></div> */}
             </Fragment>
           </DialogContent>
           <DialogActions>
@@ -629,7 +629,7 @@ autoComplete="off"
             </Button>
             <button
               type="submit"
-              //onClick={addReadingSave}
+              onClick={addReadingSave}
               style={{
                 width: "150px",
                 marginBottom: "20px",
@@ -638,11 +638,15 @@ autoComplete="off"
               }}
               className="btn btn-primary text-white pr-2"
             >
-              Save
+              Next
             </button>
-            <button
+            {/* <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                if(!action) {
+                  addReadingSave(e);
+                  return;
+                }
                 setReadingPop((prev) => {
                   const nextIndex = prev < formData.length - 1 ? prev + 1 : prev;
                   // Ensure the next index has default/blank values
@@ -663,7 +667,7 @@ autoComplete="off"
               className="btn btn-primary text-white pr-2"
             >
               Next
-            </button>
+            </button> */}
             
           </DialogActions>
         </form>
