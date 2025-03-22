@@ -1047,6 +1047,7 @@ const UpdateAsset = ({
                                  alt="Asset Image"
                                />
                                 <button
+                                type="button"
                       className="btn btn-sm btn-danger mb-2"
                       onClick={() => {
                         deletAssetImage(i);
