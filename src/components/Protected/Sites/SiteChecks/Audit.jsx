@@ -170,7 +170,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       dueDate: new Date(),
       createdAt: new Date(),
       siteId: siteSelectedForGlobal?.siteId,
-      userId: loggedInUserData?.id
+      userId: loggedInUserData?.id,
+      taggedAsset: quest[index]?.response?.faultassets,
+      actionImage: dataToSave.file
     }
     await put("/api/site/actions", actionData);
     await post("/api/site-check/assessment/response", dataToSave);
@@ -274,15 +276,15 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             
             
             return (
-            <Accordion defaultExpanded={idx === openIndex} >
+            <Accordion defaultExpanded={idx === openIndex} disabled={catAsset?.length === 0}>
               <AccordionSummary expandIcon={<ExpandMore />} >
                 <Typography>{q.order} {q.question}
-                  {/* <Checkbox disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
-                  <Checkbox disabled={q?.completed} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
+                  {/* <Checkbox //disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
+                  <Checkbox //disabled={q?.completed} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
                 </Typography> 
-                &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{ margin: '5px', marginLeft: '30px'}} color={q.status === "Closed" ? "success" : "primary"} label={q.status} />
+                &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{ margin: '5px', marginLeft: '30px'}} color={(catAsset?.length - okAsset- faultAsset) > 0  ? "success" : "primary"} label={(catAsset?.length - okAsset- faultAsset) > 0 ? "Open" : "Closed"} />
               </AccordionSummary>
-              { <AccordionDetails>
+              {catAsset?.length > 0 && <AccordionDetails>
                 <form onSubmit={(e) => {
                   setOpenIndex(idx + 1);
                   saveAssessmentResponse(e, idx);
@@ -321,7 +323,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
                     <Grid item xs={12} sm={6}>
                     <Autocomplete
-                     disabled={q?.completed}
+                     //disabled={q?.completed}
                         multiple
                         value={catAsset.filter(s => q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
                         // onChange={(event, newValue) => {
@@ -409,7 +411,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
 
                       {/* <Autocomplete
-                        disabled={q?.completed}
+                        //disabled={q?.completed}
                         multiple
                         onChange={(event, item) => {
                           const uquest = [...quest]
@@ -438,7 +440,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                     </Grid>
                     <Grid item xs={12} sm={6}>
                     <Autocomplete
-                     disabled={q?.completed}
+                     //disabled={q?.completed}
                         multiple
                         value={catAsset.filter(s => q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
                         
@@ -502,7 +504,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         )}
                       />
                         {/* <Autocomplete
-                          disabled={q?.completed}
+                          //disabled={q?.completed}
                           multiple
                           onChange={(event, item) => {
                             const uquest = [...quest]
@@ -534,14 +536,14 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         Observation
                       </label>
                       <textarea
-                        disabled={q?.completed}
+                        //disabled={q?.completed}
                         name="position"
                         className="form-control"
                         id="position"
                         rows="4"
-                        required={faultAsset > 0}
+                        //required={faultAsset > 0}
                         placeholder="Enter notes..."
-                        value={q?.response?.position}
+                        //value={q?.response?.position}
                         onChange={(e) => handleInputChange(e, idx)}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
@@ -553,20 +555,20 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         Suggested Action
                       </label>
                       <textarea
-                        disabled={q?.completed}
+                        //disabled={q?.completed}
                         name="action"
-                        required={faultAsset > 0}
+                        //required={faultAsset > 0}
                         className="form-control"
                         id="action"
                         rows="4"
                         placeholder="Enter notes..."
-                        value={q?.response?.action}
+                        //value={q?.response?.action}
                         onChange={(e) => handleInputChange(e, idx)}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                     </Grid>}
                     {faultAsset > 0 &&<Grid item xs={12}>
-                      {!q?.completed &&
+                     
                         <Box
                           display="flex"
                           alignItems="center"
@@ -589,10 +591,10 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             Click to upload or drag and drop PNG/JPG (max, 1MB)
                           </Typography>
                         </Box>
-                      }
+                     
 
                     </Grid>}
-                    {!q?.completed && q?.response?.file && (
+                    {/* {!q?.completed && q?.response?.file && (
                       <Grid item xs={12} container alignItems="center" >
                         <Chip
                           label={q?.response?.file?.name}
@@ -601,7 +603,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         />
 
                       </Grid>
-                    )}
+                    )} */}
 
                   {faultAsset > 0 && <Grid item xs={12}>
                       <Typography variant="h6" gutterBottom>
@@ -614,11 +616,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                               Consequence
                             </label>
                             <select
-                              required={faultAsset > 0}
-                              disabled={q?.completed}
+                              //required={faultAsset > 0}
+                              //disabled={q?.completed}
                               className="form-control form-select"
                               name="consequence"
-                              value={q?.response?.consequence}
+                              //value={q?.response?.consequence}
                               onChange={(e) => handleInputChange(e, idx)}
                             >
                               <option value="">Select </option>
@@ -634,11 +636,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                               Likelihood
                             </label>
                             <select
-                              required={faultAsset > 0}
-                              disabled={q?.completed}
+                              //required={faultAsset > 0}
+                              //disabled={q?.completed}
                               className="form-control form-select"
                               name="likelihood"
-                              value={q?.response?.likelihood}
+                              //value={q?.response?.likelihood}
                               onChange={(e) => handleInputChange(e, idx)}
                             >
                               <option value="">Select </option>
@@ -648,7 +650,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             </select>
                           </Grid>
                         </Grid>
-                        {/* <Grid item xs={12} sm={8}>
+                        <Grid item xs={12} sm={8}>
                           <Box
                             display="flex"
                             alignItems="center"
@@ -666,10 +668,10 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                               style={{ width: '100%', height: '100%' }}
                             />
                           </Box>
-                        </Grid> */}
+                        </Grid>
                       </Grid>
                     </Grid>}
-                    {!q?.completed &&
+                    {(catAsset?.length - okAsset- faultAsset) > 0 &&
                       <Grid item xs={12}>
 
                         <button
@@ -683,7 +685,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
 
                       </Grid>}
-                    {q?.completed && q?.response?.file && <Grid item xs={12}>
+                    {/* {q?.completed && q?.response?.file && <Grid item xs={12}>
                       <a href={q?.response?.file + "?" + sasToken} target="_blank">
                         <button
                           style={{ float: 'right' }}
@@ -692,7 +694,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         >
                           <i className="fas fa-download" />&nbsp;Download Attachment
                         </button>
-                      </a></Grid>}
+                      </a></Grid>} */}
                   </Grid>
                 </form>
               </AccordionDetails>}
