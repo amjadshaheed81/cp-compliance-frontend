@@ -1,4 +1,6 @@
 import React from 'react';
+import { getBrowserNameWithVersion }  from "js_utility_fns";
+
 
 const UnsupportedBrowserModal = ({ onProceed }) => {
   return (
@@ -22,6 +24,7 @@ const UnsupportedBrowserModal = ({ onProceed }) => {
         textAlign: 'center',
       }}>
         <h1>Unsupported Browser</h1>
+        <p>You're using version {getBrowserNameWithVersion()?.[1]} of {getBrowserNameWithVersion()?.[0]}. which is not supported by Core CAFM.</p>
         <p>Your browser is outdated and may not support this application. For the best experience, please upgrade to a modern browser.</p>
         <p>Recommended browsers:</p>
         <ul>
