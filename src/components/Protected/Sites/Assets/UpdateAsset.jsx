@@ -27,7 +27,7 @@ import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { get, put } from "../../../../api";
+import { del, get, put } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
 import moment from "moment";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -242,6 +242,12 @@ const UpdateAsset = ({
     }
   };
 
+  const deletAssetImage = async (image)=>{
+    await del(`/api/site/assets/image/${image.assetImageId}`);
+    toast.success("Image deleted successfully")
+    await getAssetDetails()
+    
+  }
   const getAssetDetails = async () => {
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
@@ -1040,6 +1046,14 @@ const UpdateAsset = ({
                                  className="img img-responsive border p-2 m-2 w-100"
                                  alt="Asset Image"
                                />
+                                <button
+                      className="btn btn-sm btn-danger mb-2"
+                      onClick={() => {
+                        deletAssetImage(i);
+                      }}
+                    >
+                      Delete
+                    </button>
                              </div>
                             ))}
                         </Slider>
