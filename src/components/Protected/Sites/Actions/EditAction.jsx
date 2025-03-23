@@ -557,7 +557,7 @@ const EditAction = ({
                                 //required
                                 {...params}
                                 variant="outlined"
-                                label="Search Asset"
+                                label="Asset"
                               />
                             )}
                           />
