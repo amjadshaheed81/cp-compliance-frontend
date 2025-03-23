@@ -602,7 +602,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                       <a href={q?.response?.file + "?" + sasToken} target="_blank">
                         <button
                         type={"button"}
-                          style={{ float: 'right', margin:"20px" `` }}
+                          style={{ float: 'right', margin:"20px" }}
                           className="btn btn-sm btn-light text-dark"
                         >
                           <i className="fas fa-download" />&nbsp;Download Attachment
