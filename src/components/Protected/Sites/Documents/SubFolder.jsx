@@ -467,7 +467,7 @@ autoComplete="off"
                               addStack(folder?.id, folder?.name);
                             }}
                           >
-                            {folder?.name} <span style={{color: 'orange'}}>(Files : {folder?.fileCount})</span>
+                            {folder?.name} <span style={{color: 'blue'}}>(Files : {folder?.fileCount})</span>
                           </span>
                           {/* &nbsp; &nbsp;{tags[i] && <Chip 
                             label={tags[i]}
