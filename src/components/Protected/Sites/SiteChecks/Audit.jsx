@@ -288,7 +288,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                   {/* <Checkbox disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
                   <Checkbox disabled={q?.completed} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
                 </Typography> 
-                &nbsp;&nbsp;&nbsp;&nbsp;{catAsset?.length > 0 && <Chip style={{ margin: '5px', marginLeft: '30px'}} color={(catAsset?.length - okAsset- faultAsset) > 0  ? "success" : "primary"} label={(catAsset?.length - okAsset- faultAsset) > 0 ? "Open" : "Closed"} />}
+                &nbsp;&nbsp;&nbsp;&nbsp;{catAsset?.length > 0 && <Chip style={{ margin: '5px', marginLeft: '30px'}} color={!q?.completed  ? "success" : "primary"} label={!q?.completed ? "Open" : "Closed"} />}
               </AccordionSummary>
               {catAsset?.length > 0 && <AccordionDetails>
                 <form onSubmit={(e) => {
