@@ -602,7 +602,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                       <a href={q?.response?.file + "?" + sasToken} target="_blank">
                         <button
                         type={"button"}
-                          style={{ float: 'right', margin:"20px"  }}
+                          style={{ float: 'right', margin:"20px" `` }}
                           className="btn btn-sm btn-light text-dark"
                         >
                           <i className="fas fa-download" />&nbsp;Download Attachment
@@ -676,7 +676,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         </Grid>
                       </Grid>
                     </Grid>}
-                    {(catAsset?.length - okAsset- faultAsset) > 0 &&
+                    {!q?.completed &&
                       <Grid item xs={12}>
 
                         <button
