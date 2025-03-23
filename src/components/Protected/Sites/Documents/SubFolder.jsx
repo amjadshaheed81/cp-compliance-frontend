@@ -532,7 +532,7 @@ autoComplete="off"
                               />
                             </Tooltip>
 
-                            <Tooltip title={`Buld Upload`} arrow>
+                            <Tooltip title={`Bulk Upload`} arrow>
                               <FolderCopyIcon
                                 onClick={() => {
                                   setBulkUploadModal(true);

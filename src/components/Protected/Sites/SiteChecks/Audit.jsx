@@ -590,6 +590,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
                       </Grid>
                     )}
+                    {/* {q?.response?.file && q?.response?.file?.name === undefined && 
+                      <Grid item xs={12} style={{background: 'grey'}}>
+                      <img src={q?.response?.file+"?"+sasToken} />
+                      </Grid>
+                      } */}
                     {q?.response?.file && q?.response?.file?.name === undefined && <Grid item xs={12}>
                     &nbsp;<button
                         type={"button"}
@@ -608,6 +613,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           <i className="fas fa-download" />&nbsp;Download Attachment
                         </button>&nbsp;
                       </a></Grid>}
+                      
                      
 
                   {faultAsset > 0 && <Grid item xs={12}>
