@@ -13,6 +13,8 @@ import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
 import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 
 const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout, loggedInUserData}) => {
+  
+
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [header, setheaders] = useState([]);
@@ -327,8 +329,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={12}>
                     <Autocomplete
+                    //limitTags={3}
                      disabled={q?.completed}
                         multiple
                         value={catAsset.filter(s => q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
@@ -381,6 +384,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           <TextField
                             {...params}
                            label="Asset OK"
+                           size="small"
                           />
                         )}
                         renderOption={(props, option, { selected }) => (
@@ -423,7 +427,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         )}
                       /> */}
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={12}>
                     <Autocomplete
                      disabled={q?.completed}
                         multiple
@@ -477,6 +481,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           <TextField
                             {...params}
                            label="Defective OK"
+                           size="small"
                           />
                         )}
                         renderOption={(props, option, { selected }) => (
@@ -516,7 +521,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         /> */}
                     </Grid>
                     {faultAsset > 0 &&
-                    <Grid item xs={12}>
+                    <Grid item xs={6}>
                       <label htmlFor="position" name="position">
                         Observation
                       </label>
@@ -535,7 +540,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                     </Grid>}
                     
                     {faultAsset > 0 &&
-                    <Grid item xs={12}>
+                    <Grid item xs={6}>
                       <label htmlFor="action" name="action">
                         Suggested Action
                       </label>
