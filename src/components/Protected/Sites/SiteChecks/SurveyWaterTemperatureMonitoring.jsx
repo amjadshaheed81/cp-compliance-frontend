@@ -412,7 +412,8 @@ autoComplete="off"
                             </tr>
                             <tr>
                               <td>
-                                {" "}
+                              Reading 1{" "}
+                                
                                 <b style={{ color: "red" }}> 60 seconds </b>
                               </td>
                               <td>
@@ -598,7 +599,8 @@ autoComplete="off"
             <Button
               type="button"
               onClick={() => { setReadingPop(null);
-                setReadingPopShow(false)
+                setReadingPopShow(false);
+                getSurvey();
               }}
               className="bg-light text-primary"
             >
