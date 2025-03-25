@@ -24,7 +24,7 @@ import {
   Dialog,
   Typography,
   Grid,
-  Chip,
+  Checkbox,
   TextField
 } from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
@@ -528,7 +528,57 @@ const EditAction = ({
 
                       <div className="col-md-12">
                         <div className="form-group mt-4">
-                          <Autocomplete
+                        <Autocomplete
+                          multiple
+                          disabled={isViewRoleForActions(loggedInUserData)}
+                          value={siteAssets.filter(s => formData?.taggedAsset?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
+                        
+                        //value={formData?.taggedAsset?.split(",").map(s=>Number(s))}
+                        onChange={(event, newValue) => {
+                          const uformData = { ...formData }
+                          const assetsList = siteAssets;
+                          if (
+                            newValue.length === assetsList.length ||
+                            (newValue.length === 1 &&
+                              newValue[0] === "Select All")
+                          ) {
+                            uformData.taggedAsset = assetsList.filter(s => uformData.taggedAsset?.split(",")?.includes(s.assetId.toString())).map(i => i.assetId).join(",")
+                          } else if (
+                            newValue.length === 0 ||
+                            (newValue.includes("Select All"))
+                          ) {
+                            uformData.taggedAsset = ""
+                          } else {                 
+                            uformData.taggedAsset = newValue.filter((value) => value !== "Select All").join(",")                            
+                          }
+                          setFormData(uformData);
+                        }}
+                        options={[ "Select All", ...siteAssets
+                          .map((option) => option.assetId)]}
+                       
+                        getOptionLabel={(option) =>
+                          option === "Select All"
+                            ? "Select All"
+                            : siteAssets.filter((a) => a.assetId === option)
+                            .map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                           label="Assets"
+                           size="small"
+                          />
+                        )}
+                        renderOption={(props, option, { selected }) => (
+                          <li {...props}>
+                            <Checkbox checked={selected} />
+                            {option === "Select All"
+                            ? "Select All"
+                            : siteAssets.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
+                          </li>
+                        )}
+                      />
+                          {/* <Autocomplete
                             multiple
                             disabled={isViewRoleForActions(loggedInUserData)}
                             onChange={(event, item) => {
@@ -560,7 +610,7 @@ const EditAction = ({
                                 label="Asset"
                               />
                             )}
-                          />
+                          /> */}
                         </div>
                       </div>
 
