@@ -870,7 +870,7 @@ autoComplete="off"
                                 uformData[idx].assetId = item?.key;
                                 setFormData(uformData);
                               }}
-                              options={siteAssets.map((option) => ({
+                              options={siteAssets.filter(s=> s.category === "Mechanical" && s.subCategory === "Water Services" && s.subCategory2 === "Outlet").map((option) => ({
                                 key: option.assetId,
                                 label:
                                 option.assetId + " - "+ option.assetName + " - " + option.category,
