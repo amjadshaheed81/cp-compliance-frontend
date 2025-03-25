@@ -34,8 +34,6 @@ const SurveyWaterTemperatureMonitoring = ({
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
   const [tempratureoptions, settempratureoptions] = useState([]);
-  const [action, setAction] = useState(false);
-  const [action2, setAction2] = useState(false);
   const [normruntime, setnormruntime] = useState([]);
   const [readingPop, setReadingPop] = useState(null);
   const [readingPopShow, setReadingPopShow] = useState(false);
@@ -157,11 +155,6 @@ const SurveyWaterTemperatureMonitoring = ({
     setFormData2(udata);
   };
 
-  useEffect(() => {
-    setAction(false);
-    setAction2(false);
-  }, []);
-
   const addSiteCheckSurvey = async (event) => {
     event.preventDefault();
     const form = event.target;
@@ -188,7 +181,7 @@ const SurveyWaterTemperatureMonitoring = ({
         toast.success("Water outlet temperature data saved.");
       }
     }
-    getSurvey();
+    //getSurvey();
   };
 
   const addReadingSave = (event) => {
@@ -200,32 +193,23 @@ const SurveyWaterTemperatureMonitoring = ({
     }
     const isReading1ok =
       (formData?.[readingPop]?.temperature === "Hot" &&
-        Number(formData[readingPop].reading1) < 50) ||
+        Number(formData[readingPop]?.reading1) < 50) ||
       (formData?.[readingPop]?.temperature === "Cold" &&
-        Number(formData[readingPop].reading1) > 20);
+        Number(formData[readingPop]?.reading1) > 20);
     const isReading2ok =
       (formData?.[readingPop]?.temperature === "Hot" &&
-        Number(formData[readingPop].reading2) < 50) ||
+        Number(formData[readingPop]?.reading2) < 50) ||
       (formData?.[readingPop]?.temperature === "Cold" &&
-        Number(formData[readingPop].reading2) > 20);
+        Number(formData[readingPop]?.reading2) > 20);
     const isReading3ok =
       (formData?.[readingPop]?.temperature === "Hot" &&
-        Number(formData[readingPop].reading3) < 50) ||
+        Number(formData[readingPop]?.reading3) < 50) ||
       (formData?.[readingPop]?.temperature === "Cold" &&
-        Number(formData[readingPop].reading3) > 20);
+        Number(formData[readingPop]?.reading3) > 20);
     if (!isReading1ok && !isReading2ok && !isReading3ok) {
-      setReadingPopShow(false)
-      setReadingPop(null);
-      setAction(false);
-      setAction2(false);
       addSiteCheckSurvey(event);
-      return;
-    }
-    if (action2) {
-      setReadingPop(null);
-      setReadingPopShow(false)
-      setAction(false);
-      setAction2(false);
+      
+    } else {
       addSiteCheckSurvey(event);
       const body = {
         type: "Survey",
@@ -239,16 +223,21 @@ const SurveyWaterTemperatureMonitoring = ({
         userId: loggedInUserData?.id,
       }
     put("/api/site/actions", body);
-    } else if (action && !action2) {
-      setReadingPop(null);
-      setReadingPopShow(false)
-      setAction2(false);
-      setAction(false);
-      addSiteCheckSurvey(event);
-    } else {
-      setAction2(false);
-      setAction(true);
-    }
+    } 
+    setReadingPop((prev) => {
+      const nextIndex = prev < formData.length - 1 ? prev + 1 : null;
+      if(nextIndex === null) {
+        setReadingPop(null);
+        setReadingPopShow(false);
+      }
+      // Ensure the next index has default/blank values
+      setFormData((prevData) => {
+        const updatedData = [...prevData];
+        updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: new Date().toISOString(), update: true };
+        return updatedData;
+      });
+      return nextIndex;
+    });
   };
 
   const dateFormat = (date) => {
@@ -269,6 +258,17 @@ const SurveyWaterTemperatureMonitoring = ({
     return moment(date, "YYYY-MM-DD").add('days', daysToAdd).format("DD/MM/YYYY");
   };
 
+  const isRed1 = formData[readingPop]?.reading1?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading1) <50) ||
+    (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading1) > 20);
+
+  const isRed2 = formData[readingPop]?.reading2?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading2) <50) ||
+    (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading2) > 20);
+
+  const isRed3 = formData[readingPop]?.reading3?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading3) <50) ||
+    (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading3) > 20);
+  
+    const isRed =  (isRed1 || isRed2 || isRed3) && formData[readingPop]?.reading1?.length > 0 && formData[readingPop]?.reading2?.length > 0
+      && formData[readingPop]?.reading3?.length > 0
 
   return (
     <>
@@ -287,9 +287,9 @@ const SurveyWaterTemperatureMonitoring = ({
             {formData[readingPop]?.assetId
               ? "(" +
                 siteAssets
-                  .filter((a) => a.assetId == formData[readingPop].assetId)
+                  .filter((a) => a.assetId == formData[readingPop]?.assetId)
                   .map(
-                    (option) => option.assetName + " - " + option.category
+                    (option) => option.assetId + " "+ option.assetName + " - " + option.category
                   )[0] +
                 ")"
               : ""}
@@ -297,7 +297,6 @@ const SurveyWaterTemperatureMonitoring = ({
           <DialogContent dividers>
             <Fragment>
               <Grid container>
-                {!action2 && !action && (
                   <>
                     <Grid sm={4}>
                       <label htmlFor="outletType">Outlet Type</label>
@@ -395,22 +394,14 @@ autoComplete="off"
                               <td>
                                 <input
                                   type="number"
+                                  onWheel={(e) => e.target.blur()}
                                   className="form-control"
                                   name="reading1"
                                   value={formData?.[readingPop]?.reading1 || ""}
                                   required
                                   style={{
                                     color:
-                                      (formData?.[readingPop]?.temperature ===
-                                        "Hot" &&
-                                        Number(formData[readingPop].reading1) <
-                                          50) ||
-                                      (formData?.[readingPop]?.temperature ===
-                                        "Cold" &&
-                                        Number(formData[readingPop].reading1) >
-                                          20)
-                                        ? "red"
-                                        : "green",
+                                    isRed1 ? "red" : "green",
                                     fontWeight: "600",
                                   }}
                                   onChange={(e) =>
@@ -427,22 +418,13 @@ autoComplete="off"
                               <td>
                                 <input
                                   type="number"
+                                  onWheel={(e) => e.target.blur()}
                                   className="form-control"
                                   name="reading2"
                                   required
                                   value={formData?.[readingPop]?.reading2 || ""}
                                   style={{
-                                    color:
-                                      (formData?.[readingPop]?.temperature ===
-                                        "Hot" &&
-                                        Number(formData[readingPop].reading2) <
-                                          50) ||
-                                      (formData?.[readingPop]?.temperature ===
-                                        "Cold" &&
-                                        Number(formData[readingPop].reading2) >
-                                          20)
-                                        ? "red"
-                                        : "green",
+                                    color:isRed2 ? "red" : "green",
                                     fontWeight: "600",
                                   }}
                                   onChange={(e) =>
@@ -459,22 +441,13 @@ autoComplete="off"
                               <td>
                                 <input
                                   type="number"
+                                  onWheel={(e) => e.target.blur()}
                                   required
                                   className="form-control"
                                   name="reading3"
                                   value={formData?.[readingPop]?.reading3 || ""}
                                   style={{
-                                    color:
-                                      (formData?.[readingPop]?.temperature ===
-                                        "Hot" &&
-                                        Number(formData[readingPop].reading3) <
-                                          50) ||
-                                      (formData?.[readingPop]?.temperature ===
-                                        "Cold" &&
-                                        Number(formData[readingPop].reading3) >
-                                          20)
-                                        ? "red"
-                                        : "green",
+                                    color:isRed3 ? "red" : "green",
                                     fontWeight: "600",
                                   }}
                                   onChange={(e) =>
@@ -488,8 +461,8 @@ autoComplete="off"
                       </div>
                     </Grid>
                   </>
-                )}
-                {action && (
+                
+                {/* {action && (
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
                       Action
@@ -509,8 +482,8 @@ autoComplete="off"
                       </Grid>
                     </Grid>
                   </Grid>
-                )}
-                {action2 && (
+                )} */}
+                {isRed && (
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
                       Action
@@ -524,6 +497,7 @@ autoComplete="off"
                           <select
                             required
                             className="form-control form-select"
+                            value={formData?.[readingPop]?.consequence}
                             name="consequence"
                             onChange={(e) => handleInputChange2(e)}
                           >
@@ -541,6 +515,7 @@ autoComplete="off"
                             required
                             className="form-control form-select"
                             name="likelihood"
+                            value={formData?.[readingPop]?.likelihood}
                             onChange={(e) => handleInputChange2(e)}
                           >
                             <option value="">Select </option>
@@ -575,6 +550,7 @@ autoComplete="off"
                         </label>
                         <textarea
                           //disabled={quest[idx]?.completed}
+                          value={formData?.[readingPop]?.observation}
                           name="observation"
                           className="form-control"
                           id="observation"
@@ -599,6 +575,7 @@ autoComplete="off"
                           className="form-control"
                           id="requiredAction"
                           rows="2"
+                          value={formData?.[readingPop]?.requiredAction}
                           required
                           onChange={(e) => handleInputChange2(e)}
                           style={{
@@ -629,7 +606,7 @@ autoComplete="off"
             </Button>
             <button
               type="submit"
-              onClick={addReadingSave}
+              //onClick={addReadingSave}
               style={{
                 width: "150px",
                 marginBottom: "20px",
@@ -638,7 +615,7 @@ autoComplete="off"
               }}
               className="btn btn-primary text-white pr-2"
             >
-              Next
+              {readingPop === (formData?.length -1)? 'Save & Close' : 'Next'}
             </button>
             {/* <button
               type="button"
@@ -866,21 +843,13 @@ autoComplete="off"
                     const assetName = siteAssets
                       .filter((a) => a.assetId == formData[idx].assetId)
                       .map(
-                        (option) => option.assetName + " - " + option.category
+                        (option) => option.assetId + " - "+ option.assetName + " - " + option.category
                       )?.[0];
                     return (
                       <tr key={idx}>
                         <td>
                           {formData?.[idx]?.completed ? (
-                            <input
-                              type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                              disabled={formData?.[idx]?.completed}
-                              className="form-control"
-                              value={assetName}
-                            />
+                            <p>{assetName}</p>
                           ) : (
                             <Autocomplete
                               id="assetId"
@@ -893,7 +862,7 @@ autoComplete="off"
                               options={siteAssets.map((option) => ({
                                 key: option.assetId,
                                 label:
-                                  option.assetName + " - " + option.category,
+                                option.assetId + " - "+ option.assetName + " - " + option.category,
                               }))}
                               getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
@@ -987,6 +956,9 @@ autoComplete="off"
                           </select>
                         </td>
                         <td>
+                        {formData?.[idx]?.completed ? (
+                            formData?.[idx]?.floor != 'null' ? formData?.[idx]?.floor : '--'
+                          ) : (
                           <select
                             disabled={formData?.[idx]?.completed}
                             className="form-control form-select"
@@ -1003,7 +975,7 @@ autoComplete="off"
                                   {site.nodeName}{" "}
                                 </option>
                               ))}
-                          </select>
+                          </select>)}
                         </td>
                         <td>
                           {formData?.[idx]?.completed ? (
@@ -1118,7 +1090,7 @@ autoComplete="off"
               </table>
             </div>
           </Grid>
-          <Grid sm={12}>
+          {/* <Grid sm={12}>
             <button
               style={{
                 width: "150px",
@@ -1129,9 +1101,9 @@ autoComplete="off"
               className="btn btn-primary text-white pr-2"
               type="submit"
             >
-              Save
+              Save 
             </button>
-          </Grid>
+          </Grid> */}
         </Grid>
       </form>
     </>
