@@ -542,7 +542,7 @@ const EditAction = ({
                             (newValue.length === 1 &&
                               newValue[0] === "Select All")
                           ) {
-                            uformData.taggedAsset = assetsList.filter(s => uformData.taggedAsset?.split(",")?.includes(s.assetId.toString())).map(i => i.assetId).join(",")
+                            uformData.taggedAsset = assetsList.filter(s => !uformData.taggedAsset?.split(",")?.includes(s.assetId.toString())).map(i => i.assetId).join(",")
                           } else if (
                             newValue.length === 0 ||
                             (newValue.includes("Select All"))
