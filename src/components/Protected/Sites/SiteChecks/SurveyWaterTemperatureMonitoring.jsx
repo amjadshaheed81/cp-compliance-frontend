@@ -412,7 +412,7 @@ autoComplete="off"
                             </tr>
                             <tr>
                               <td>
-                              Reading 1{" "}
+                              Reading 2{" "}
                                 
                                 <b style={{ color: "red" }}> 60 seconds </b>
                               </td>
@@ -1002,7 +1002,12 @@ autoComplete="off"
                             >
                               <option value="">Select </option>
                               {siteLayout
-                                .filter((site) => site.nodeType === "room")
+                                //.filter((site) => site.nodeType === "room")
+                                .filter(
+                                  (site) =>
+                                    site.nodeType === "room" &&
+                                    site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && site.nodeType === "floor")[0]?.id
+                                )
                                 .map((site) => (
                                   <option key={site.id} value={site.nodeName}>
                                     {site.nodeName}{" "}
@@ -1016,10 +1021,7 @@ autoComplete="off"
                             1st : {formData?.[idx]?.reading1 ?? ""}{" "}
                             {formData?.[idx]?.r1Date
                               ? "(" +
-                                String(formData?.[idx]?.r1Date)?.substring(
-                                  0,
-                                  10
-                                ) +
+                              moment(formData?.[idx]?.r3Date).format("DD-MM-YYYY")+
                                 ")"
                               : "N/A"}
                           </p>
@@ -1027,10 +1029,7 @@ autoComplete="off"
                             2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
                             {formData?.[idx]?.r2Date
                               ? "(" +
-                                String(formData?.[idx]?.r2Date)?.substring(
-                                  0,
-                                  10
-                                ) +
+                              moment(formData?.[idx]?.r3Date).format("DD-MM-YYYY")+
                                 ")"
                               : "N/A"}
                           </p>
@@ -1038,10 +1037,7 @@ autoComplete="off"
                             3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
                             {formData?.[idx]?.r3Date
                               ? "(" +
-                                String(formData?.[idx]?.r3Date)?.substring(
-                                  0,
-                                  10
-                                ) +
+                              moment(formData?.[idx]?.r3Date).format("DD-MM-YYYY")+
                                 ")"
                               : "N/A"}
                           </p>
