@@ -658,7 +658,16 @@ autoComplete="off"
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>Reading History</DialogTitle>
+        <DialogTitle>Reading History {" "}
+            {formData[showHistory]?.assetId
+              ? "(" +
+                siteAssets
+                  .filter((a) => a.assetId == formData[showHistory]?.assetId)
+                  .map(
+                    (option) => option.assetId + " "+ option.assetName + " - " + option.category
+                  )[0] +
+                ")"
+              : ""}</DialogTitle>
         <DialogContent dividers>
           <Fragment>
             <Grid container>
