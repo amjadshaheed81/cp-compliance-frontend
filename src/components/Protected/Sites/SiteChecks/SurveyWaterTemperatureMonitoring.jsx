@@ -66,10 +66,13 @@ const SurveyWaterTemperatureMonitoring = ({
     );
     setnormruntime(normruntimetypes?.map((l) => l.lovValue));
     let data = await get("/api/site-check/water-outlet-temp/" + checkId);
+    data = data.filter(d=> d.assetId);
     if (data.length > 0) {
       data.forEach((_) => {
         _.completed = true;
       });
+      //data = data.filter(d=> !d.assetId === null);
+      
       setalldata(data);
       //data = data.reverse();
       data = removeduplciate(data);
@@ -79,6 +82,20 @@ const SurveyWaterTemperatureMonitoring = ({
   };
 
   const removeduplciate = (array) => {
+    
+    const latestRecordsMap = {};
+
+    array.forEach(item => {
+  if (!latestRecordsMap[item.assetId] || new Date(item.r1Date) > new Date(latestRecordsMap[item.assetId].r1Date)) {
+    latestRecordsMap[item.assetId] = item;
+  }
+  });
+
+  const latestRecords = Object.values(latestRecordsMap);
+
+  latestRecords.sort((a, b) =>  b.sortOrder - a.sortOrder);
+   return  latestRecords;
+    
     const seen = new Map();
 
     return array.filter((item) => {
@@ -161,7 +178,9 @@ const SurveyWaterTemperatureMonitoring = ({
     if (!form.checkValidity()) {
       form.reportValidity();
     }
+    let i =0;
     for (const data of formData) {
+      i=i+1;
       if (!data.completed || data.update) {
         if (isDuplicate(data) && !data.update) {
           toast.error("Duplicate data!!!");
@@ -177,11 +196,51 @@ const SurveyWaterTemperatureMonitoring = ({
           data.r2Date = data.r1Date;
           data.r3Date = data.r1Date;
         }
-        await post("/api/site-check/water-outlet-temp", data);
-        toast.success("Water outlet temperature data saved.");
+        if(data.assetId && data.reading1 && data.reading2 && data.reading3) {
+          await post("/api/site-check/water-outlet-temp", data);
+          const uformData = [...formData]; 
+          uformData[i].update = false;
+          setFormData(uformData);
+          break;
+        }
+        
+       
       }
     }
+    toast.success("Water outlet temperature data saved.");
     //getSurvey();
+  };
+
+  const addSiteCheckSurvey2 = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
+    for (const data of formData) {
+      if (!data.completed && (data.update || data.new )) {
+        if (isDuplicate(data) && data.new) {
+          toast.error("Duplicate data!!!");
+          return;
+        }
+        data.checkId = checkId;
+        data.status = "Open";
+        if (data.update) {
+          data.id = undefined;
+        }
+        if (data.r1Date) {
+          //data.r1Date = new Date(data.r1Date.toISOString().slice(0, 10));
+          data.r2Date = data.r1Date;
+          data.r3Date = data.r1Date;
+        }
+        if(data.assetId) {
+          await post("/api/site-check/water-outlet-temp", data);
+        }
+        
+      }
+    }
+    toast.success("Water outlet temperature data saved.");
+    getSurvey();
   };
 
   const addReadingSave = (event) => {
@@ -229,6 +288,7 @@ const SurveyWaterTemperatureMonitoring = ({
       if(nextIndex === null) {
         setReadingPop(null);
         setReadingPopShow(false);
+        getSurvey();
       }
       // Ensure the next index has default/blank values
       setFormData((prevData) => {
@@ -277,6 +337,7 @@ const SurveyWaterTemperatureMonitoring = ({
         onClose={() => {
           setReadingPop(null);
           setReadingPopShow(false)
+          getSurvey()
         }}
         maxWidth="lg"
         fullWidth
@@ -689,6 +750,7 @@ autoComplete="off"
                       {alldata
                         ?.filter(
                           (a) =>
+                            a.reading1 && a.reading2 && a.reading3 &&
                             a.assetId === formData[showHistory]?.assetId &&
                             a.temperature ===
                               formData[showHistory]?.temperature &&
@@ -767,14 +829,7 @@ autoComplete="off"
           </Fragment>
         </DialogContent>
         <DialogActions>
-        <Button
-            className="bg-primary text-white"
-            onClick={() => {
-              setShowHistory((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
-            }}
-          >
-            Next
-          </Button>
+        
           <Button
             className="bg-primary text-white"
             onClick={() => {
@@ -783,10 +838,20 @@ autoComplete="off"
           >
             Close
           </Button>
+          {showHistory < (formData.length - 1) && 
+          <Button
+            className="bg-primary text-white"
+            onClick={() => {
+              setShowHistory((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
+            }}
+          >
+            Next
+          </Button>
+          }
         </DialogActions>
       </Dialog>
 
-      <form onSubmit={addSiteCheckSurvey}>
+      <form onSubmit={addSiteCheckSurvey2}>
         <Grid container>
           <Grid sm={4}>
             <Typography variant="h6" gutterBottom>
@@ -811,7 +876,7 @@ autoComplete="off"
               onClick={(e) => {
                 e.preventDefault();
                 const uformData = [...formData];
-                uformData.push({});
+                uformData.push({new: true});
                 setFormData(uformData);
               }}
             >
@@ -824,6 +889,7 @@ autoComplete="off"
               <table className="table table-bordered f-11">
                 <thead className="table-dark">
                   <tr>
+                    <th scope="col">Order</th>
                     <th scope="col">Asset</th>
                     <th scope="col">Outlet Type</th>
                     <th scope="col">Temperature</th>
@@ -856,12 +922,28 @@ autoComplete="off"
                       .map(
                         (option) => option.assetId + " - "+ option.assetName + " - " + option.category
                       )?.[0];
+                    formData[idx].completed = formData?.[idx]?.completed && isAllFilled;
                     return (
                       <tr key={idx}>
+                         <td>
+                          {formData?.[idx]?.completed ? (
+                            <p>{formData?.[idx]?.sortOrder}</p>
+                          ) : (
+                            <input
+                              value={formData?.[idx]?.sortOrder}
+                              type="number"
+                              name="sortOrder"
+                              id="sortOrder"
+                              className="form-control"
+                              onChange={(e) => handleInputChange(e, idx)}
+                              required
+                            /> )}
+                            </td>
                         <td>
                           {formData?.[idx]?.completed ? (
                             <p>{assetName}</p>
                           ) : (
+                             
                             <Autocomplete
                               id="assetId"
                               disabled={formData?.[idx]?.completed}
@@ -870,7 +952,10 @@ autoComplete="off"
                                 uformData[idx].assetId = item?.key;
                                 setFormData(uformData);
                               }}
-                              options={siteAssets.filter(s=> s.category === "Mechanical" && s.subCategory === "Water Services" && s.subCategory2 === "Outlet").map((option) => ({
+                              options={siteAssets
+                                .filter(s=> s.category === "Mechanical" && s.subCategory === "Water Services" && s.subCategory2 === "Outlet")
+                                .filter(s=> !formData?.map(a=> a.assetId).includes(s.assetId) )
+                                .map((option) => ({
                                 key: option.assetId,
                                 label:
                                 option.assetId + " - "+ option.assetName + " - " + option.category,
@@ -880,9 +965,9 @@ autoComplete="off"
                                 <div ref={params.InputProps.ref}>
                                   <input
                                     type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                                    autoComplete="off"
+                                    readOnly
+                                    onFocus={(e) => e.target.removeAttribute("readonly")}
                                     {...params.inputProps}
                                     required
                                     disabled={formData?.[idx]?.completed}
@@ -989,6 +1074,8 @@ autoComplete="off"
                           </select>)}
                         </td>
                         <td>
+                          {console.log('siteLayout',siteLayout)}
+                          {console.log('formData?.[idx]?.floor',siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && s.nodeType === "floor")[0]?.id)}
                           {formData?.[idx]?.completed ? (
                             formData?.[idx]?.room != 'null' ? formData?.[idx]?.room : '--'
                           ) : (
@@ -1006,7 +1093,7 @@ autoComplete="off"
                                 .filter(
                                   (site) =>
                                     site.nodeType === "room" &&
-                                    site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && site.nodeType === "floor")[0]?.id
+                                    site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && s.nodeType === "floor")[0]?.id
                                 )
                                 .map((site) => (
                                   <option key={site.id} value={site.nodeName}>
@@ -1021,23 +1108,23 @@ autoComplete="off"
                             1st : {formData?.[idx]?.reading1 ?? ""}{" "}
                             {formData?.[idx]?.r1Date
                               ? "(" +
-                              moment(formData?.[idx]?.r3Date).format("DD-MM-YYYY")+
+                              moment(String(formData?.[idx]?.r1Date)).format("DD-MM-YYYY")+
                                 ")"
                               : "N/A"}
                           </p>
                           <p>
                             2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
-                            {formData?.[idx]?.r2Date
+                            {formData?.[idx]?.r1Date
                               ? "(" +
-                              moment(formData?.[idx]?.r3Date).format("DD-MM-YYYY")+
+                              moment(formData?.[idx]?.r1Date).format("DD-MM-YYYY")+
                                 ")"
                               : "N/A"}
                           </p>
                           <p>
                             3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
-                            {formData?.[idx]?.r3Date
+                            {formData?.[idx]?.r1Date
                               ? "(" +
-                              moment(formData?.[idx]?.r3Date).format("DD-MM-YYYY")+
+                              moment(formData?.[idx]?.r1Date).format("DD-MM-YYYY")+
                                 ")"
                               : "N/A"}
                           </p>
@@ -1078,6 +1165,7 @@ autoComplete="off"
                             </button>
                           )}
                           &nbsp;
+                          {!formData?.[idx]?.completed &&
                           <button
                             disabled={formData?.[idx]?.completed}
                             className="btn btn-sm btn-light text-dark"
@@ -1089,6 +1177,7 @@ autoComplete="off"
                           >
                             <i className="fas fa-trash"></i>
                           </button>
+                          }
                         </td>
                       </tr>
                     );
@@ -1097,7 +1186,7 @@ autoComplete="off"
               </table>
             </div>
           </Grid>
-          {/* <Grid sm={12}>
+          <Grid sm={12}>
             <button
               style={{
                 width: "150px",
@@ -1110,7 +1199,7 @@ autoComplete="off"
             >
               Save 
             </button>
-          </Grid> */}
+          </Grid>
         </Grid>
       </form>
     </>
