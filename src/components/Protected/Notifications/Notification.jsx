@@ -9,7 +9,7 @@ import {
 } from "../../../store/thunk/contracts";
 import { get } from "../../../api";
 import { useNavigate } from "react-router-dom";
-const DashboardNotification = (siteSelectedForGlobal) => {
+const DashboardNotification = ({siteSelectedForGlobal, loggedInUserData}) => {
   const [notification, setNotification] = useState([]);
   const navigate = useNavigate();
 
@@ -18,15 +18,11 @@ const DashboardNotification = (siteSelectedForGlobal) => {
   }, [siteSelectedForGlobal]);
 
   const getNotifications = async () => {
-    if (siteSelectedForGlobal?.siteSelectedForGlobal?.siteId) {
+    if (loggedInUserData?.id) {
       const actions = await get(
-        `/api/action/${siteSelectedForGlobal?.siteSelectedForGlobal?.siteId}/summary`
+        `/api/user/notification/${loggedInUserData?.id}`
       );
-      const data =
-        actions?.preActions?.filter(
-          (a) => a.status === "Pending Action" || a.status === "Closed"
-        ) || [];
-      setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
+      setNotification(actions?.length > 10 ? actions?.slice(0, 10) : actions);
     }
   };
 
@@ -57,8 +53,9 @@ const DashboardNotification = (siteSelectedForGlobal) => {
               )}
               {notification?.map((i) => (
                 <tr>
-                  <td>{i.description}</td>
-                  <td>{dateFormat(i?.raisedDate?.split("T")?.[0])}</td>
+                   <td><b>{i.title}</b> &nbsp;
+                   {i.body}</td>
+                  <td>{dateFormat(i?.createdAt?.split("T")?.[0])}</td>
                 </tr>
               ))}
             </tbody>

@@ -53,25 +53,21 @@ function a11yProps(index) {
   };
 }
 
-const Notifications = ({ siteSelectedForGlobal }) => {
+const Notifications = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [value, setValue] = useState(0);
   const [notification, setNotification] = useState([]);
 
-  useEffect(() => {
-    getNotifications();
-  }, [siteSelectedForGlobal]);
-  const getNotifications = async () => {
-    if (siteSelectedForGlobal?.siteId) {
-      const actions = await get(
-        `/api/action/${siteSelectedForGlobal?.siteId}/summary`
-      );
-      const data =
-        actions?.preActions?.filter(
-          (a) => a.status === "Pending Action" || a.status === "Closed"
-        ) || [];
-      setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
-    }
-  };
+  // useEffect(() => {
+  //   getNotifications();
+  // }, [siteSelectedForGlobal]);
+  // const getNotifications = async () => {
+  //   if (loggedInUserData?.id) {
+  //     const actions = await get(
+  //       `/api/user/notification/${loggedInUserData?.id}`
+  //     );
+  //     setNotification(actions?.length > 10 ? actions?.slice(0, 10) : actions);
+  //   }
+  // };
 
   const handleChange = (event, newValue) => {
     setValue(newValue);

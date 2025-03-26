@@ -18,6 +18,7 @@ const Header = ({
   logoutUser,
   setSideBarView,
   isSideBarOpen,
+  loggedInUserData
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notification, setNotification] = useState([]);
@@ -28,16 +29,11 @@ const Header = ({
   }, [siteSelectedForGlobal]);
 
   const getNotifications = async () => {
-    if (siteSelectedForGlobal?.siteId) {
+    if (loggedInUserData?.id) {
       const actions = await get(
-        `/api/action/${siteSelectedForGlobal?.siteId}/summary`
+        `/api/user/notification/${loggedInUserData?.id}`
       );
-      const data =
-        actions?.preActions?.filter(
-          (a) => a.status === "Pending Action" || a.status === "Closed"
-        ) || [];
-        console.log("data",data);
-      setNotification(data?.length > 10 ? data?.slice(0, 10) : data);
+      setNotification(actions?.length > 10 ? actions?.slice(0, 10) : actions);
     }
   };
   const handlePopoverOpen = (event) => {
@@ -123,7 +119,7 @@ const Header = ({
               )}
               {notification?.map((i) => (
                 <ListItem>
-                  <ListItemText primary={i.description} />
+                  <ListItemText primary={`${i.title} : ${i.body}`} />
                 </ListItem>
               ))}
             </List>
@@ -145,5 +141,6 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   isLoading: state.site.isLoading,
   isSideBarOpen: state.site.isSideBarOpen,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { logoutUser, setSideBarView })(Header);
