@@ -9,6 +9,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import NotAuthorized from './components/NotAuthorized/NotAuthorized';
 import ProtectedRoute from './components/common/ProtectedRoute/ProtectedRoute';
+import Notification from './Notification';
 
 const routesConfig = getRoutes().map((route) => {
   if (route.allowedRoles) {
@@ -32,10 +33,12 @@ const router = createHashRouter([
 
 const App = () => {
   return (
+    <><Notification/>
     <Provider store={store}>
       <RouterProvider router={router} />
       <ToastContainer />
     </Provider>
+    </>
   );
 };
 
