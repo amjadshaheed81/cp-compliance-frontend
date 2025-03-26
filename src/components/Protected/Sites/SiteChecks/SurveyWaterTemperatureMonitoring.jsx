@@ -198,9 +198,7 @@ const SurveyWaterTemperatureMonitoring = ({
         }
         if(data.assetId && data.reading1 && data.reading2 && data.reading3) {
           await post("/api/site-check/water-outlet-temp", data);
-          const uformData = [...formData]; 
-          uformData[i].update = false;
-          setFormData(uformData);
+         
           break;
         }
         
@@ -293,6 +291,7 @@ const SurveyWaterTemperatureMonitoring = ({
       // Ensure the next index has default/blank values
       setFormData((prevData) => {
         const updatedData = [...prevData];
+        updatedData[prev].update = false;
         updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: new Date().toISOString(), update: true };
         return updatedData;
       });
@@ -329,6 +328,7 @@ const SurveyWaterTemperatureMonitoring = ({
   
     const isRed =  (isRed1 || isRed2 || isRed3) && formData[readingPop]?.reading1?.length > 0 && formData[readingPop]?.reading2?.length > 0
       && formData[readingPop]?.reading3?.length > 0
+
 
   return (
     <>
@@ -1074,8 +1074,6 @@ autoComplete="off"
                           </select>)}
                         </td>
                         <td>
-                          {console.log('siteLayout',siteLayout)}
-                          {console.log('formData?.[idx]?.floor',siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && s.nodeType === "floor")[0]?.id)}
                           {formData?.[idx]?.completed ? (
                             formData?.[idx]?.room != 'null' ? formData?.[idx]?.room : '--'
                           ) : (
