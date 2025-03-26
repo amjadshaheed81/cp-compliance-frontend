@@ -415,33 +415,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                     
 
 
-                      {/* <Autocomplete
-                        disabled={q?.completed}
-                        multiple
-                        onChange={(event, item) => {
-                          const uquest = [...quest]
-                          uquest[idx].response = {
-                            ...uquest[idx].response,
-                            assets: item.map(i => i.key).join(",")
-                          }
-                          setquest(uquest);
-                        }}
-                        value={catAsset.filter(s => q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-
-                        options={catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString()))
-                          .map((option) => { return { key: option.assetId, label: option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" } })}
-                        getOptionLabel={(option) => option.label}
-
-                        renderInput={(params) => (
-                        
-                          <TextField
-                            //required
-                            {...params}
-                            variant="outlined"
-                            label="Asset OK"
-                          />
-                        )}
-                      /> */}
+                     
                     </Grid>
                     <Grid item xs={12} sm={12}>
                     <Autocomplete
@@ -533,32 +507,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         
                         
                       />
-                        {/* <Autocomplete
-                          disabled={q?.completed}
-                          multiple
-                          onChange={(event, item) => {
-                            const uquest = [...quest]
-                            uquest[idx].response = {
-                              ...uquest[idx].response,
-                              faultassets: item?.map(i => i.key).join(",")
-                            }
-                            setquest(uquest);
-                          }}
-                          value={catAsset.filter(s => q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-
-                          options={catAsset.filter(s => !q?.response?.faultassets?.split(",")?.includes(s.assetId.toString())).filter(s => !q?.response?.assets?.split(",")?.includes(s.assetId.toString())).map((option) => { return { key: option.assetId, label: option.assetName + " - " + option.category } })}
-                          getOptionLabel={(option) => option.label}
-
-                          renderInput={(params) => (
-                          
-                            <TextField
-                              //required
-                              {...params}
-                              variant="outlined"
-                              label="Defective Asset"
-                            />
-                          )}
-                        /> */}
+                        
                     </Grid>
                     {faultAsset > 0 &&
                     <Grid item xs={6}>

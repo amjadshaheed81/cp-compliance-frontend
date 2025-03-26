@@ -577,6 +577,28 @@ const EditAction = ({
                             : siteAssets.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
                           </li>
                         )}
+                        renderTags={(value, getTagProps) => (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 0.5,
+                              maxHeight: 120, 
+                              overflowY: 'auto', 
+                              alignItems: 'flex-start',
+                              alignContent: 'flex-start', 
+                              padding: '4px 0',
+                            }}
+                          >
+                            {value.map((option, index) => (
+                              <Chip
+                                key={index}
+                                label={siteAssets.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
+                                {...getTagProps({ index })}
+                              />
+                            ))}
+                          </Box>
+                        )}
                       />
                           {/* <Autocomplete
                             multiple
