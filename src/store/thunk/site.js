@@ -86,6 +86,7 @@ import {
 import { ROLE } from "../../Constant/Role";
 import { saveState } from "../localStorage";
 import { CPCOM_STATE_STORE } from "../../Constant/Session";
+import { requestForToken } from '../../firebase';
 
 export const addSite = (formData, goTo) => {
   return async (dispatch) => {
@@ -1357,10 +1358,13 @@ export const loginUser = (formData, goTo, setLoading) => {
   return async (dispatch) => {
     try {
       const url = `/api/user/login`;
+      const fcmToken = await requestForToken();
       const body = {
         email: formData?.email,
-        password: formData?.password
+        password: formData?.password,
+        fcmToken
       }
+
       const userData = await post(url, body);
       if (userData?.data?.user?.id) {
         const userLicenseData = await get('/api/user/clients/'+userData?.data?.user?.licenseId);
