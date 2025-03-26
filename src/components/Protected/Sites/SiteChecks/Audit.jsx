@@ -93,7 +93,6 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       // Compare the third part
       return orderA[2] - orderB[2];
     });
-    console.log(filtered)
     setquest(filtered);
     setIsLoading(false);
   }
@@ -278,11 +277,6 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             const okAsset = (q.response?.assets?.split(",")??[])?.filter(s=>s.length > 0 ).length;
             
             const isCompleted = (catAsset?.length - okAsset- faultAsset) === 0;
-            if(q.order === "3.1.1") {
-              console.log("q.completed",q.completed)
-            
-            }
-            
             return (
             <Accordion defaultExpanded={idx === openIndex} disabled={catAsset?.length === 0}>
               <AccordionSummary expandIcon={<ExpandMore />} >
@@ -395,6 +389,28 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             : catAsset.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
                           </li>
                         )}
+                        renderTags={(value, getTagProps) => (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 0.5,
+                              maxHeight: 120, 
+                              overflowY: 'auto', 
+                              alignItems: 'flex-start',
+                              alignContent: 'flex-start', 
+                              padding: '4px 0',
+                            }}
+                          >
+                            {value.map((option, index) => (
+                              <Chip
+                                key={index}
+                                label={catAsset.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
+                                {...getTagProps({ index })}
+                              />
+                            ))}
+                          </Box>
+                        )}
                       />
                     
 
@@ -492,6 +508,30 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             : catAsset.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
                           </li>
                         )}
+                        renderTags={(value, getTagProps) => (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 0.5,
+                              maxHeight: 120, 
+                              overflowY: 'auto', 
+                              alignItems: 'flex-start',
+                              alignContent: 'flex-start', 
+                              padding: '4px 0',
+                            }}
+                          >
+                            {value.map((option, index) => (
+                              <Chip
+                                key={index}
+                                label={catAsset.filter((a) => a.assetId === option).map(option =>  option.assetId + " - " + option.assetName + " (" + `${option?.position || "NA"} > ${option?.floor || "NA"} > ${option?.room || "NA"}` + ")" )[0]}
+                                {...getTagProps({ index })}
+                              />
+                            ))}
+                          </Box>
+                        )}
+                        
+                        
                       />
                         {/* <Autocomplete
                           disabled={q?.completed}
