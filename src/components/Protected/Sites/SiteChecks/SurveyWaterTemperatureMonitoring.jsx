@@ -93,7 +93,7 @@ const SurveyWaterTemperatureMonitoring = ({
 
   const latestRecords = Object.values(latestRecordsMap);
 
-  latestRecords.sort((a, b) =>  b.sortOrder - a.sortOrder);
+  latestRecords.sort((a, b) =>  Number(a.sortOrder) - Number(b.sortOrder));
    return  latestRecords;
     
     const seen = new Map();
@@ -932,6 +932,7 @@ autoComplete="off"
                             <input
                               value={formData?.[idx]?.sortOrder}
                               type="number"
+                              min="1"
                               name="sortOrder"
                               id="sortOrder"
                               className="form-control"
