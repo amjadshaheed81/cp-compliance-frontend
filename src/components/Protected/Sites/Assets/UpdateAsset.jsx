@@ -73,14 +73,14 @@ const UpdateAsset = ({
 }) => {
   
   const carouselSettings = {
-  dots: true,
-  infinite: true,
-  speed: 500,
-  slidesToShow: 1,
-  slidesToScroll: 1,
-  //arrows: true,
-  //autoplay: true,
-  autoplaySpeed: 3000,
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    //arrows: true,
+    //autoplay: true,
+    autoplaySpeed: 3000,
   };
   
   const [searchParams] = useSearchParams();
@@ -1040,35 +1040,44 @@ const UpdateAsset = ({
                         {selectedAsset?.images?.length > 1 && (
                           <Slider {...carouselSettings}>
                             {selectedAsset?.images?.map(i => (
-                               <div>
-                               <img
-                                 src={i?.imageUrl}
-                                 className="img img-responsive border p-2 m-2 w-100"
-                                 alt="Asset Image"
-                               />
+                              <div>
+                                <img
+                                  src={i?.imageUrl}
+                                  className="img img-responsive border p-2 m-2 w-100"
+                                  alt="Asset Image"
+                                />
                                 <button
-                                type="button"
-                      className="btn btn-sm btn-danger mb-2"
-                      onClick={() => {
-                        deletAssetImage(i);
-                      }}
-                    >
-                      Delete
-                    </button>
-                             </div>
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deletAssetImage(i);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             ))}
-                        </Slider>
+                          </Slider>
                         )}
                         {selectedAsset?.images?.length === 1 && (
                           <img
-                            src={selectedAsset?.image}
+                            src={selectedAsset?.images[0].imageUrl}
                             className="img img-responsive border p-2 m-2 w-100"
                           />)}
+                            {selectedAsset?.images?.length === 1 && <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deletAssetImage(0);
+                                  }}
+                                >
+                                  Delete
+                                </button>}
                         <input
                           type="file"
                           multiple
                           className="form-control"
-                          style={{marginTop: '30px'}}
+                          style={{ marginTop: '30px' }}
                           {...register("assetImage")}
                         />
                         {errors?.assetImage && (

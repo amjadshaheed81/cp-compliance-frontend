@@ -2,7 +2,11 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import moment from 'moment';
-import { get, post, put, uploadSiteCheckDoc } from "../../../../api";
+import { del, get, post, put, uploadSiteCheckDoc } from "../../../../api";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
 
 import CircularProgress from '@mui/material/CircularProgress';
 import {
@@ -14,6 +18,16 @@ import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "..
 
 const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout, loggedInUserData}) => {
   
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    //arrows: true,
+    //autoplay: true,
+    autoplaySpeed: 3000,
+  };
 
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
@@ -147,6 +161,13 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
     setquest(uquest);
   };
 
+  const deleteAssessmentResponseImage = async (image)=>{
+    await del(`/api/site-check/assessment/response/image/${image.imageId}`);
+    toast.success("Image deleted successfully")
+    await getQuestions();
+    
+  }
+
   const saveAssessmentResponse = async (event, index, completed) => {
     event.preventDefault();
     const form = event.target;
@@ -163,6 +184,11 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
     dataToSave.qid = quest[index].qid;
     dataToSave.status = completed ?  "Closed" : "Open" ;
     dataToSave.totalRiskScore = Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0)
+    const saveResponse = await post("/api/site-check/assessment/response", dataToSave);
+    const images = saveResponse?.data?.images;
+    images.forEach(i=>{
+      i.imageId = undefined;
+    })
     const actionData = {
       type: "Audit",
       status: "Reported",
@@ -175,13 +201,13 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       siteId: siteSelectedForGlobal?.siteId,
       userId: loggedInUserData?.id,
       taggedAsset: quest[index]?.response?.faultassets,
-      actionImage: dataToSave.file
+      images: images
     }
     if(completed) {
       await put("/api/site/actions", actionData);
     }
    
-    await post("/api/site-check/assessment/response", dataToSave);
+    
     await getQuestions();
     toast.success("Assessment response saved")
   }
@@ -249,6 +275,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
               return null;
             }
            
+            if(q?.order === '3.3.4') {
+              console.log(q);
+            }
             
             let catAsset = [];
             let assetCategory = q?.assetCategory?.split(",")??[];
@@ -270,6 +299,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             } else {
               catAsset = siteAssets;
             }
+            
             
         
 
@@ -546,7 +576,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                     </Grid>}
-                    {faultAsset > 0 &&<Grid item xs={12}>
+                    {faultAsset > 0 &&<Grid item xs={q?.response?.images?.length === 0 ? 12 : 6}>
                      
                         <Box
                           display="flex"
@@ -570,26 +600,66 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             Click to upload or drag and drop PNG/JPG (max, 1MB)
                           </Typography>
                         </Box>
-                     
-
-                    </Grid>}
-                    
-                    {q?.response?.file?.name && (
-                      <Grid item xs={6} container alignItems="center" >
+                        {q?.response?.file?.name && (
                         <Chip
                           label={q?.response?.file?.name??"Attached Image"}
                           onDelete={() => handleFileDelete(idx)}
 
                         />
 
-                      </Grid>
-                    )}
+                      )}
+
+                    </Grid>}
+                    
+                    
+                    {q?.response?.images?.length > 1 && (
+                      <Grid item xs={6} container alignItems="center" >
+                          <Slider {...carouselSettings}>
+                            {q?.response?.images?.map(i => (
+                              <div>
+                                <img
+                                  src={i?.imageUrl+"?"+sasToken}
+                                  className="img img-responsive border p-2 m-2 w-100"
+                                  alt="ActionResponse"
+                                />
+                                {!q?.completed &&
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deleteAssessmentResponseImage(i);
+                                  }}
+                                >
+                                  Delete
+                                </button>}
+                              </div>
+                            ))}
+                          </Slider>
+                          </Grid>
+                        )}
+                         {q?.response?.images?.length === 1 && (
+                          <Grid item xs={6} container alignItems="center" >
+                          <img
+                            src={q?.response?.images[0].imageUrl + "?"+sasToken}
+                            className="img img-responsive border p-2 m-2 w-100"
+                          />
+                          {!q?.completed &&
+                           <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deleteAssessmentResponseImage(0);
+                                  }}
+                                >
+                                  Delete
+                                </button>}
+                           </Grid>)}
                     {/* {q?.response?.file && q?.response?.file?.name === undefined && 
                       <Grid item xs={12} style={{background: 'grey'}}>
                       <img src={q?.response?.file+"?"+sasToken} />
                       </Grid>
                       } */}
-                    {q?.response?.file && q?.response?.file?.name === undefined && <Grid item xs={12}>
+                    {/* {q?.response?.file && q?.response?.file?.name === undefined && <Grid item xs={12}>
                     &nbsp;<button
                         type={"button"}
                           style={{ float: 'right', margin:"20px" }}
@@ -606,7 +676,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         >
                           <i className="fas fa-download" />&nbsp;Download Attachment
                         </button>&nbsp;
-                      </a></Grid>}
+                      </a></Grid>} */}
                       
                      
 

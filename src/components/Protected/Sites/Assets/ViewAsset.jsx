@@ -758,7 +758,7 @@ autoComplete="off"
                         )}
                         {selectedAsset?.images?.length === 1 && (
                           <img
-                            src={selectedAsset?.image}
+                          src={selectedAsset?.images[0].imageUrl}
                             className="img img-responsive border p-2 m-2 w-100"
                           />)}
                       {selectedAsset?.images?.length === 0  && (

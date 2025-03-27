@@ -24,9 +24,12 @@ import {
   TextField
 } from "@mui/material";
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
-import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken } from "../../../../api";
+import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken, del } from "../../../../api";
 import { getSiteAssets, setLoader, getSiteLayout } from "../../../../store/thunk/site";
 import { isViewRoleForActions } from "../../../../utils/isManagerAdminLogin";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 const EditAction = ({
   createUpdatePreActions,
@@ -51,6 +54,17 @@ const EditAction = ({
   const goTo = (link) => {
     navigate(link);
   };
+
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    //arrows: true,
+    //autoplay: true,
+    autoplaySpeed: 3000,
+    };
 
   const [managerList, setManagerList] = useState([]);
   const [assetOptions, setAssetOptions] = useState([]);
@@ -107,6 +121,13 @@ const EditAction = ({
       actionDetail?.taggedAsset ? actionDetail?.taggedAsset?.split(",") : []
     );
   };
+
+  const deleteActionImage = async (image)=>{
+    await del(`/api/site/actions/image/${image.assetImageId}`);
+    toast.success("Image deleted successfully")
+    await getActionIdDetails()
+    
+  }
 
   
   const [isLoading, setIsLoading] = useState(false);
@@ -826,7 +847,59 @@ autoComplete="off"
 
                     </div>
                   </div>
-                  <div className="col-md-4">
+                  <div className="col-md-4 text-center mt-2">
+                      <div className="form-group">
+                        {formData?.images?.length > 1 && (
+                          <Slider {...carouselSettings}>
+                            {formData?.images?.map(i => (
+                              <div>
+                                <img
+                                  src={i?.imageUrl + "?" + sasToken}
+                                  className="img img-responsive border p-2 m-2 w-100"
+                                  alt="Asset Image"
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deleteActionImage(i);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ))}
+                          </Slider>
+                        )}
+                        {formData?.images?.length === 1 && (
+                          <img
+                            src={formData?.images[0].imageUrl+ "?" + sasToken}
+                            className="img img-responsive border p-2 m-2 w-100"
+                          />)}
+                          {formData?.images?.length === 1 &&
+                           <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deleteActionImage(0);
+                                  }}
+                                >
+                                  Delete
+                                </button>}
+                        <input
+                          type="file"
+                          multiple
+                          className="form-control"
+                          style={{ marginTop: '30px' }}
+                          name="actionImage"
+                          accept="image/*, application/pdf"
+                          id="actionImage"
+                          onChange={(e) => handleFileChange(e)}
+                        />
+                        
+                      </div>
+                      </div>
+                  {/* <div className="col-md-4">
                     {formData?.actionImage && (
                       <img
                         src={formData?.actionImage+ "?" + sasToken}
@@ -877,7 +950,7 @@ autoComplete="off"
                         
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
 
                   <div
