@@ -274,10 +274,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             if(q?.question?.includes("DELETE") || !q.order.startsWith(h.lovDesc+".")) {
               return null;
             }
-           
-            if(q?.order === '3.3.4') {
-              console.log(q);
-            }
+  
             
             let catAsset = [];
             let assetCategory = q?.assetCategory?.split(",")??[];
