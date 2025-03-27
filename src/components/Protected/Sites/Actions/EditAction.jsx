@@ -527,7 +527,13 @@ const EditAction = ({
                           >
                             <option value="">Select Room</option>
                             {siteLayout
-                              .filter((site) => site.nodeType === "room")?.map((site) => (
+                            .filter(
+                              (site) =>
+                                site.nodeType === "room" &&
+                                site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.floor && s.nodeType === "floor")[0]?.id
+                            )
+                              //.filter((site) => site.nodeType === "room")?
+                              .map((site) => (
                                 <option value={site.nodeName}>
                                   {site.nodeName}
                                 </option>
