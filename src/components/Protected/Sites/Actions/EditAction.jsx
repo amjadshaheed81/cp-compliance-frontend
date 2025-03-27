@@ -485,9 +485,9 @@ const EditAction = ({
                             onChange={handleInputChange}
                           >
                             <option value="">Select Internal/External</option>
-                            {["Internal", "External"].map((num) => (
-                              <option value={num}>{num} </option>
-                            ))}
+                            <option value="Interior">Interior</option>
+                            <option value="Exterior">Exterior</option>
+                          
                           </select>
 
                         </div>
@@ -505,7 +505,13 @@ const EditAction = ({
                           >
                             <option value="">Select Floor</option>
                             {siteLayout
-                              .filter((site) => site.nodeType === "floor")?.map((site) => (
+                              //.filter((site) => site.nodeType === "floor")?
+                              .filter(
+                                (site) =>
+                                  site.nodeType === "floor" &&
+                                  site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.internalExternal && s.nodeType === "type")[0]?.id
+                              )
+                              .map((site) => (
                                 <option value={site.nodeName}>
                                   {site.nodeName}{" "}
                                 </option>
