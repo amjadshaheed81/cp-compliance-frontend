@@ -7,7 +7,7 @@ import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { connect } from "react-redux";
 import BackDrop from "../Loader/BackDrop";
-import { logoutUser, setSideBarView } from "../../../store/thunk/site";
+import { logoutUser, setSideBarView, getSiteAssets} from "../../../store/thunk/site";
 import { useNavigate } from "react-router-dom";
 import SearchSite from "../../Protected/Dashboard/SearchSite";
 import { Popover, List, ListItem, ListItemText } from "@mui/material";
@@ -18,14 +18,20 @@ const Header = ({
   logoutUser,
   setSideBarView,
   isSideBarOpen,
-  loggedInUserData
+  loggedInUserData,
+  getSiteAssets
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notification, setNotification] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
+
     getNotifications();
+    if(siteSelectedForGlobal?.siteId) {
+      getSiteAssets(siteSelectedForGlobal?.siteId);
+    }
+    
   }, [siteSelectedForGlobal]);
 
   const getNotifications = async () => {
@@ -143,4 +149,4 @@ const mapStateToProps = (state) => ({
   isSideBarOpen: state.site.isSideBarOpen,
   loggedInUserData: state.site.loggedInUserData,
 });
-export default connect(mapStateToProps, { logoutUser, setSideBarView })(Header);
+export default connect(mapStateToProps, { logoutUser, setSideBarView, getSiteAssets })(Header);
