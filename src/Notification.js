@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { onMessageListener } from './firebase';
+import { onMessage } from "firebase/messaging";
+import {messaging} from "./firebase";
 import { Toast } from 'react-bootstrap';
 
 const Notification = () => {
@@ -12,7 +13,7 @@ const Notification = () => {
   };
 
   useEffect(() => {
-    onMessageListener().then((payload) => {
+    onMessage(messaging, (payload) => {
       console.log('notification', payload);
       setNotification({
         title: payload?.notification?.title,
@@ -31,7 +32,7 @@ const Notification = () => {
         borderLeft: '4px solid #0d6efd',
         boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
       }}
-        onClose={() => setShow(false)} 
+        onClose={() => {console.log('closed called');setShow(false)}} 
         show={show} 
         delay={5000} 
         autohide
