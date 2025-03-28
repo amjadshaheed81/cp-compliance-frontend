@@ -573,7 +573,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                     </Grid>}
-                    {faultAsset > 0 &&<Grid item xs={q?.response?.images?.length === 0 ? 12 : 6}>
+                    {faultAsset > 0 &&<Grid item xs={q?.response?.images?.length === 0 ? 12 : 8}>
                      
                         <Box
                           display="flex"
@@ -610,13 +610,17 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                     
                     
                     {q?.response?.images?.length > 1 && (
-                      <Grid item xs={6} container alignItems="center" >
+                      // <Grid item xs={6} container alignItems="center" >
+                         <div className="col-md-4 text-center mt-2" >
+                         <div className="form-group" >
                           <Slider {...carouselSettings}>
                             {q?.response?.images?.map(i => (
                               <div>
                                 <img
                                   src={i?.imageUrl+"?"+sasToken}
                                   className="img img-responsive border p-2 m-2 w-100"
+                                  height={200}
+                                  width={200}
                                   alt="ActionResponse"
                                 />
                                 {!q?.completed &&
@@ -632,13 +636,19 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                               </div>
                             ))}
                           </Slider>
-                          </Grid>
+                          </div>
+                          </div>
+                          // </Grid>
                         )}
                          {q?.response?.images?.length === 1 && (
-                          <Grid item xs={6} container alignItems="center" >
+                            <div className="col-md-4 text-center mt-2" style={{marginBottom:'10px'}}>
+                            <div className="form-group" >
                           <img
                             src={q?.response?.images[0].imageUrl + "?"+sasToken}
                             className="img img-responsive border p-2 m-2 w-100"
+                            height={200}
+                            width={200}
+                            
                           />
                           {!q?.completed &&
                            <button
@@ -647,10 +657,13 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                                   onClick={() => {
                                     deleteAssessmentResponseImage(0);
                                   }}
+                                  style={{margin:'10px'}}
                                 >
                                   Delete
                                 </button>}
-                           </Grid>)}
+                                </div>
+                          </div>
+                           )}
                     {/* {q?.response?.file && q?.response?.file?.name === undefined && 
                       <Grid item xs={12} style={{background: 'grey'}}>
                       <img src={q?.response?.file+"?"+sasToken} />
