@@ -271,6 +271,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
           ?.map((q, idx) =>
           {
             
+            
             if(q?.question?.includes("DELETE") || !q.order.startsWith(h.lovDesc+".")) {
               return null;
             }
@@ -279,20 +280,22 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             let catAsset = [];
             let assetCategory = q?.assetCategory?.split(",")??[];
             assetCategory = assetCategory.map(item => item.trim());
+            
             if(assetCategory.length === 4) {
+              console.log('q?.order ', q?.order )
               catAsset= siteAssets?.filter(s=> 
-                s.category === assetCategory[0]?.trim() 
-                && s.subCategory === assetCategory[1]?.trim() && s.subCategory2 === assetCategory[2]?.trim()
-                && s.subCategory3 === assetCategory[3]?.trim());
+                s.category?.trim() === assetCategory[0]?.trim() 
+                && s.subCategory?.trim() === assetCategory[1]?.trim() && (s.subCategory2?.trim() === assetCategory[2]?.trim()
+                || s.subCategory2?.trim() === assetCategory[3]?.trim()));
             } else if(assetCategory.length === 3) {
               catAsset= siteAssets?.filter(s=> 
-                s.category === assetCategory[0]?.trim() 
-                && s.subCategory === assetCategory[1]?.trim() && s.subCategory2 === assetCategory[2]?.trim());
+                s.category?.trim() === assetCategory[0]?.trim() 
+                && s.subCategory?.trim() === assetCategory[1]?.trim() && s.subCategory2?.trim() === assetCategory[2]?.trim());
             } else if(assetCategory.length === 2) {
               catAsset= siteAssets?.filter(s=> s.category === assetCategory[0]?.trim() 
-                && s.subCategory === assetCategory[1]?.trim());
+                && s.subCategory?.trim() === assetCategory[1]?.trim());
             } else if(assetCategory.length === 1 && assetCategory[0]?.trim() !== '') {
-              catAsset= siteAssets?.filter(s=> s.category === assetCategory[0]?.trim());
+              catAsset= siteAssets?.filter(s=> s.category?.trim() === assetCategory[0]?.trim());
             } else {
               catAsset = siteAssets;
             }
