@@ -217,8 +217,8 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
     <Box p={3}>
       <Card>
-      {isLoading && <CircularProgress />}
-          {!isLoading &&
+     
+          {true &&
         <CardContent>
           <Grid container alignItems="center" justifyContent="space-between" mb={2}>
             <Grid item>
@@ -317,7 +317,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
               </AccordionSummary>
               {catAsset?.length > 0 && <AccordionDetails>
                 <form onSubmit={(e) => {
-                  setOpenIndex(idx + 1);
+                  //setOpenIndex(idx + 1);
                   saveAssessmentResponse(e, idx, isCompleted);
                 }}>
                   <Grid container spacing={2}>
@@ -767,7 +767,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           disabled={okAsset === 0 && faultAsset === 0}
                           type="submit"
                         >
-                          Save & Continue
+                            {isLoading ? <CircularProgress sx={{ color: 'white' }} /> : 'Save & Continue'}
                         </button>
 
 
