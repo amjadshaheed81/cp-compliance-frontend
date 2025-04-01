@@ -282,7 +282,6 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
             assetCategory = assetCategory.map(item => item.trim());
             
             if(assetCategory.length === 4) {
-              console.log('q?.order ', q?.order )
               catAsset= siteAssets?.filter(s=> 
                 s.category?.trim() === assetCategory[0]?.trim() 
                 && s.subCategory?.trim() === assetCategory[1]?.trim() && (s.subCategory2?.trim() === assetCategory[2]?.trim()
