@@ -9,7 +9,7 @@ import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from 
 import { toast } from "react-toastify";
 
 
-const AdminDropdowns = ({ }) => {
+const AdminDropdowns = ({ loggedInUserData}) => {
   
   const [data, setData] = useState([]);
   const [formData, setFormData] = useState({});
@@ -109,6 +109,13 @@ const AdminDropdowns = ({ }) => {
   };
 
   const save = async (idx) => {
+    let licenseId = undefined;
+    const isadmin = loggedInUserData?.superAdmin ;
+    if(!isadmin) {
+      const license = JSON.parse(localStorage.getItem('license'));
+      licenseId = license?.licenseId
+    }
+    
     const dataTSave = { lovType: selectedLovType, ...sortedData[idx] };
     const validationErrors = validateFields(dataTSave);
     if (Object.keys(validationErrors).length > 0) {
@@ -120,6 +127,7 @@ const AdminDropdowns = ({ }) => {
     if (dataTSave.add) {
       await post("/api/lov/", dataTSave);
     } else {
+      dataTSave.licenseId = licenseId
       await put("/api/lov/id/" + dataTSave.id, dataTSave);
     }
     getLovType(selectedLovType);
@@ -133,6 +141,13 @@ const AdminDropdowns = ({ }) => {
     }
 
     setIsLoading(true);
+    let licenseId = undefined;
+    const isadmin = loggedInUserData?.superAdmin ;
+    if(!isadmin) {
+      const license = JSON.parse(localStorage.getItem('license'));
+      licenseId = license?.licenseId
+    }
+    formData.licenseId = licenseId
     await post("/api/lov/", formData);
     setselectedLovType(formData.lovType);
     setAddNewDrp(false);
@@ -601,6 +616,8 @@ autoComplete="off"
   );
 };
 
-const mapStateToProps = (state) => ({});
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+});
 
 export default connect(mapStateToProps, {})(AdminDropdowns);
