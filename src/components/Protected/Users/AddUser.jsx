@@ -92,7 +92,7 @@ const AddUser = ({
       userId: null,
       firstName: formJson?.firstName || "",
       lastName: formJson?.lastName || "",
-      email: formJson?.email || "",
+      email: formJson?.email ? String(formJson?.email).toLowerCase() : "",
       password: formJson?.password || "",
       phone: formJson?.phone || "",
       role: formJson?.role || "",

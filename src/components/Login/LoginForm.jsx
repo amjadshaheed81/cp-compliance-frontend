@@ -25,8 +25,9 @@ const LoginForm = ({ login, loginUser }) => {
     navigate(link);
   };
   const handleLoginSubmit = (data) => {
+    const payload = {...data, email: String(data?.email).toLowerCase() || ""}
     setLoading(true);
-    loginUser(data, goTo, setLoading);
+    loginUser(payload, goTo, setLoading);
   };
 
   return (

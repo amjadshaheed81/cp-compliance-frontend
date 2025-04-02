@@ -116,7 +116,7 @@ const ViewUsers = ({
       userId: selectedUser?.id,
       firstName: formJson?.firstName || "",
       lastName: formJson?.lastName || "",
-      email: formJson?.email || "",
+      email: formJson?.email ? String(formJson?.email).toLowerCase() : "",
       phone: formJson?.phone || "",
       role: formJson?.role || "",
       userType: formJson?.userType || "",
