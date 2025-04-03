@@ -598,6 +598,7 @@ autoComplete="off"
                     return {
                       assetId: itm?.assetId,
                       assetName: itm?.assetName,
+                      location: itm?.location,
                       manufacturer: itm?.manufacturer,
                       category: itm?.category,
                       subCategory: itm?.subCategory,
@@ -606,12 +607,7 @@ autoComplete="off"
                       model: itm?.model,
                       deviceId: itm?.deviceId,
                       serialNumber: itm?.serialNumber,
-                      relatedAssetId: itm?.relatedAssetId,
-                      folderId: itm?.folderId,
-                      patItem: itm?.patItem,
-                      pfpItem: itm?.pfpItem,
-                      doorItem: itm?.doorItem,
-                      barcode: itm?.barcode,
+                      
                     };
                   })}
                 >
