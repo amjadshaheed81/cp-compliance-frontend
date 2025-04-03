@@ -151,6 +151,15 @@ const SurveyWaterTemperatureMonitoring = ({
     return res;
   };
 
+  const getNodeName = (id) => {
+    let res = "";
+    const node = siteLayout.filter(
+      (s) => String(s.id) === String(id)
+    );
+    
+    return node[0].nodeName;
+  };
+
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
     const uformData = [...formData];
@@ -730,7 +739,7 @@ autoComplete="off"
                     (option) => option.assetId + " "+ option.assetName + " - " + option.category
                   )[0] +
                 ")"
-              : ""}</DialogTitle>
+              : ""} {" - "} {getName(showHistory)}</DialogTitle>
         <DialogContent dividers>
           <Fragment>
             <Grid container>
@@ -1054,7 +1063,7 @@ autoComplete="off"
                         </td>
                         <td>
                         {formData?.[idx]?.completed ? (
-                            formData?.[idx]?.floor != 'null' ? formData?.[idx]?.floor : '--'
+                            formData?.[idx]?.floor != 'null' ? getNodeName(formData?.[idx]?.floor) : '--'
                           ) : (
                           <select
                             disabled={formData?.[idx]?.completed}
@@ -1076,7 +1085,7 @@ autoComplete="off"
                         </td>
                         <td>
                           {formData?.[idx]?.completed ? (
-                            formData?.[idx]?.room != 'null' ? formData?.[idx]?.room : '--'
+                            formData?.[idx]?.room != 'null' ? getNodeName(formData?.[idx]?.room) : '--'
                           ) : (
                             <select
                               disabled={formData?.[idx]?.completed}
