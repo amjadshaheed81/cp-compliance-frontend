@@ -157,7 +157,7 @@ const SurveyWaterTemperatureMonitoring = ({
       (s) => String(s.id) === String(id)
     );
     
-    return node[0].nodeName;
+    return node?.[0]?.nodeName??id ;
   };
 
   const handleInputChange = (e, idx) => {
