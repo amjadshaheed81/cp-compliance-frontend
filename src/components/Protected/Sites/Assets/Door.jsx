@@ -101,31 +101,83 @@ const Door = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
     if (name === "category") {
-      console.log("category");
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory: "",
+        subCategory2: "",
+        subCategory3: ""
+      });
+      
       const subCategoryData = subCategory?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategoryList(subCategoryData);
       setSubCategory2List([]);
       setSubCategory3List([]);
-    }else if (name === "subCategory") {
+    } 
+    else if (name === "subCategory") {
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory2: "",
+        subCategory3: ""
+      });
+      
       const subCategoryData = subCategory2?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategory2List(subCategoryData);
       setSubCategory3List([]);
-    }else if (name === "subCategory2") {
+    }
+    else if (name === "subCategory2") {
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory3: ""
+      });
+      
       const subCategoryData = subCategory3?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategory3List(subCategoryData);
     }
+    else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
+
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData({
+  //     ...formData,
+  //     [name]: value,
+  //   });
+  //   if (name === "category") {
+  //     console.log("category");
+  //     const subCategoryData = subCategory?.filter(
+  //       (itm) => itm?.attribite1 === value
+  //     );
+  //     setSubCategoryList(subCategoryData);
+  //     setSubCategory2List([]);
+  //     setSubCategory3List([]);
+  //   }else if (name === "subCategory") {
+  //     const subCategoryData = subCategory2?.filter(
+  //       (itm) => itm?.attribite1 === value
+  //     );
+  //     setSubCategory2List(subCategoryData);
+  //     setSubCategory3List([]);
+  //   }else if (name === "subCategory2") {
+  //     const subCategoryData = subCategory3?.filter(
+  //       (itm) => itm?.attribite1 === value
+  //     );
+  //     setSubCategory3List(subCategoryData);
+  //   }
+  // };
 
   useEffect(() => {
     searchAssets();
@@ -193,6 +245,7 @@ const Door = ({
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
     getCategory();
     getSiteLayout(siteSelectedForGlobal?.siteId)
+    
   }, [siteSelectedForGlobal]);
   useEffect(() => {
     const floorNodes =
@@ -226,9 +279,29 @@ const Door = ({
     setSubCategory(subCategoryList);
     setSubCategory2(subCategory2List);
     setSubCategory3(subCategory3List);
-    setSubCategoryList(subCategoryList);
-    setSubCategory2List(subCategory2List);
-    setSubCategory3List(subCategory3List);
+    // setSubCategoryList(subCategoryList);
+    // setSubCategory2List(subCategory2List);
+    // setSubCategory3List(subCategory3List);
+
+    const defaultCategory = "Internal Finishes";
+  const defaultSubCategory = "Internal Doors";
+  
+  const filteredSubCategories = subCategoryList?.filter(
+    (itm) => itm?.attribite1 === defaultCategory
+  );
+  
+  const filteredSubCategories2 = subCategory2List?.filter(
+    (itm) => itm?.attribite1 === defaultSubCategory
+  );
+
+  setSubCategoryList(filteredSubCategories);
+  setSubCategory2List(filteredSubCategories2);
+  setSubCategory3List([]);
+  setFormData({
+    ...formData,
+    category: defaultCategory,
+    subCategory: defaultSubCategory
+  });
   };
 
   const deleteAsset = (itm) => {
@@ -404,6 +477,7 @@ autoComplete="off"
             <div className="col-md-3 col-sm-4 mt-2">
               <select
                 name="category"
+                value={formData?.category}
                 className="form-control form-select"
                 id="category"
                 onChange={handleInputChange}
@@ -420,6 +494,7 @@ autoComplete="off"
                 className="form-control form-select"
                 id="subCategory"
                 onChange={handleInputChange}
+                value={formData?.subCategory}
               >
                 <option value="">Sub Category</option>
                 {subCategoryList?.map((itm) => (
