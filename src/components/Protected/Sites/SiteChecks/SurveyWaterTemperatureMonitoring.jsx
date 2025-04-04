@@ -229,6 +229,7 @@ const SurveyWaterTemperatureMonitoring = ({
       form.reportValidity();
     }
     for (const data of formData) {
+      console.log('data',data)
       if (data.new ) {
         if (isDuplicate(data) && data.new) {
           toast.error("Duplicate data!!!");
@@ -248,7 +249,7 @@ const SurveyWaterTemperatureMonitoring = ({
           await post("/api/site-check/water-outlet-temp", data);
         }
         
-      } else if(data.updated){
+      } else if(data.update){
         await put("/api/site-check/water-outlet-temp", data);
       }
     }
