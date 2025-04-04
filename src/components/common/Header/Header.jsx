@@ -37,7 +37,7 @@ const Header = ({
   const getNotifications = async () => {
     if (loggedInUserData?.id) {
       const actions = await get(
-        `/api/user/notification/${loggedInUserData?.id}/site${siteSelectedForGlobal?.siteId}`
+        `/api/user/notification/${loggedInUserData?.id}/site/${siteSelectedForGlobal?.siteId}`
       );
       setNotification(actions?.length > 10 ? actions?.slice(0, 10) : actions);
     }
