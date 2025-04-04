@@ -591,10 +591,11 @@ autoComplete="off"
                 </Tooltip>
               </div>
               <div className="col-md-3 col-sm-4 mt-2">
-                <CSVLink
+              {selectedItems.length > 0 ? <CSVLink
+                  disabaled={selectedItems.length ===0 }
                   filename={"selected-assets.csv"}
                   className="btn btn-light bg-white text-primary"
-                  data={selectedItems.map((itm) => {
+                  data={selectedItems.sort((a, b) => a.assetId - b.assetId).map((itm) => {
                     return {
                       assetId: itm?.assetId,
                       assetName: itm?.assetName,
@@ -614,7 +615,10 @@ autoComplete="off"
                   <Tooltip title={`Export Selected Assets`} arrow>
                     <i className="fas fa-download"></i> Export Selected
                   </Tooltip>
-                </CSVLink>
+                </CSVLink> : <button disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} className="btn btn-light bg-white text-primary">
+                <i className="fas fa-download"></i> 
+                &nbsp; Export Selected
+        </button>}
               </div>
               <div className="col-md-3 col-sm-4 mt-2">
                 <Tooltip title={`Upload CSV to Update Assets`} arrow>
@@ -637,7 +641,7 @@ autoComplete="off"
                   data={filteredSiteAssets
                     ?.filter(
                       (itm) => itm?.doorItem !== true && itm?.patItem !== true
-                    )
+                    ).sort((a, b) => a.assetId - b.assetId)
                     .map((itm) => {
                       return {
                           "Asset Id": itm?.assetId,
