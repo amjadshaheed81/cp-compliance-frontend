@@ -144,9 +144,13 @@ const SurveyWaterTemperatureMonitoring = ({
     );
     if (floor.length > 0) {
       res = res + floor[0].nodeName;
+    } else {
+      res = res + formData[idx]?.floor;
     }
     if (room.length > 0) {
       res = res + " > " + room[0].nodeName;
+    } else {
+      res = res + " > " + formData[idx]?.room;
     }
     return res;
   };
