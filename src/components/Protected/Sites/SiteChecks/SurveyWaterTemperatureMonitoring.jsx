@@ -229,7 +229,7 @@ const SurveyWaterTemperatureMonitoring = ({
       form.reportValidity();
     }
     for (const data of formData) {
-      if (!data.completed && (data.update || data.new )) {
+      if (data.new ) {
         if (isDuplicate(data) && data.new) {
           toast.error("Duplicate data!!!");
           return;
@@ -248,6 +248,8 @@ const SurveyWaterTemperatureMonitoring = ({
           await post("/api/site-check/water-outlet-temp", data);
         }
         
+      } else if(data.updated){
+        await put("/api/site-check/water-outlet-temp", data);
       }
     }
     toast.success("Water outlet temperature data saved.");
@@ -939,9 +941,9 @@ autoComplete="off"
                     return (
                       <tr key={idx}>
                          <td>
-                          {formData?.[idx]?.completed ? (
+                          {/* {formData?.[idx]?.completed ? (
                             <p>{formData?.[idx]?.sortOrder}</p>
-                          ) : (
+                          ) : ( */}
                             <input
                               value={formData?.[idx]?.sortOrder}
                               type="number"
@@ -951,7 +953,8 @@ autoComplete="off"
                               className="form-control"
                               onChange={(e) => handleInputChange(e, idx)}
                               required
-                            /> )}
+                            /> 
+                            {/* )} */}
                             </td>
                         <td>
                           {formData?.[idx]?.completed ? (
