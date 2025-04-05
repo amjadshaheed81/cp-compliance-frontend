@@ -306,6 +306,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     await post("/api/energy/survey", body);
     setFormData({});
     await getEnergyCost();
+    toast.success("Energy Reference Created Successfully");
   };
 
   const getEnergyCost = async (isAll) => {
@@ -347,6 +348,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     data.siteId = siteSelectedForGlobal?.siteId;
     await post("/api/energy/cost", data);
     getEnergyCost();
+    toast.success("Energy cost added successfully");
   };
 
   const saveReading = async (data) => {
@@ -355,6 +357,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       data.siteId = siteSelectedForGlobal?.siteId;
       await post("/api/energy/reading", data);
       getEnergyCost();
+      toast.success("Energy reading added successfully");
     }
   };
   

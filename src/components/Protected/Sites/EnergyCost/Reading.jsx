@@ -53,6 +53,9 @@ const Reading = ({
     data.energyId = survey.energyId;
     saveData(data);
     setOpen(false);
+
+    toast.success("Energy reading added successfully");
+    
   };
 
   useEffect(() => {
@@ -100,7 +103,7 @@ const Reading = ({
                         ? formData?.readingValue -
                           (survey?.readingList?.length > 0
                             ? survey?.readingList?.[
-                                survey?.readingList?.length - 1
+                                0
                               ]?.readingValue
                             : 0)
                         : 0
