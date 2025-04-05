@@ -29,7 +29,7 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
       const readingDate = new Date(item.readingDate);
       if (readingDate.getFullYear() === year) {
         const monthIndex = readingDate.getMonth();
-        monthlyCosts[monthIndex] += item.readingValue;
+        monthlyCosts[monthIndex] += item.consumption;
       }
     });
 
@@ -44,6 +44,9 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
   let lastYearCosts = Array(12).fill(0);
 
   energyData?.forEach((energyItem) => {
+    energyItem.readingList.forEach((r,i)=>{
+      r.consumption = i > 0 ? r.readingValue - energyItem.readingList[i-1].readingValue : r.readingValue;
+    })
     const itemCurrentYearReading = processMonthlyReading(
       energyItem.readingList,
       currentYear
@@ -59,6 +62,7 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
     lastYearCosts = lastYearCosts?.map(
       (cost, index) => cost + itemLastYearReading[index]
     );
+   
   });
 
   // Chart data configuration
