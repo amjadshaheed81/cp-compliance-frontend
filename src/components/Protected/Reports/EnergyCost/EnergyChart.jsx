@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -22,6 +22,8 @@ ChartJS.register(
 );
 
 const EnergyChart = ({ energyData, currentYear, previousYear }) => {
+  const [chartData, setChartData] = useState(null);
+
   const processMonthlyReading = (data, year) => {
     const monthlyCosts = Array(12).fill(0);
 
@@ -29,75 +31,67 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
       const readingDate = new Date(item.readingDate);
       if (readingDate.getFullYear() === year) {
         const monthIndex = readingDate.getMonth();
-        monthlyCosts[monthIndex] += item.consumption;
+        monthlyCosts[monthIndex] += item.readingValue;
       }
     });
 
     return monthlyCosts;
   };
 
-  // Define the years for which we need data
-  const lastYear = previousYear;
+  useEffect(() => {
+    if (!energyData) return;
 
-  // Initialize cumulative rading for each year
-  let currentYearCosts = Array(12).fill(0);
-  let lastYearCosts = Array(12).fill(0);
+    const lastYear = previousYear;
+    let currentYearCosts = Array(12).fill(0);
+    let lastYearCosts = Array(12).fill(0);
 
-  energyData?.forEach((energyItem) => {
-    energyItem.readingList.forEach((r,i)=>{
-      r.consumption = i > 0 ? r.readingValue - energyItem.readingList[i-1].readingValue : r.readingValue;
-    })
-    const itemCurrentYearReading = processMonthlyReading(
-      energyItem.readingList,
-      currentYear
-    );
-    const itemLastYearReading = processMonthlyReading(
-      energyItem.readingList,
-      lastYear
-    );
+    energyData.forEach((energyItem) => {
+      const itemCurrentYearReading = processMonthlyReading(
+        energyItem.readingList,
+        currentYear
+      );
+      const itemLastYearReading = processMonthlyReading(
+        energyItem.readingList,
+        lastYear
+      );
 
-    currentYearCosts = currentYearCosts?.map(
-      (cost, index) => cost + itemCurrentYearReading[index]
-    );
-    lastYearCosts = lastYearCosts?.map(
-      (cost, index) => cost + itemLastYearReading[index]
-    );
-   
-  });
+      currentYearCosts = currentYearCosts.map(
+        (cost, index) => cost + itemCurrentYearReading[index]
+      );
+      lastYearCosts = lastYearCosts.map(
+        (cost, index) => cost + itemLastYearReading[index]
+      );
+    });
 
-  // Chart data configuration
-  const data = {
-    labels: [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ],
-    datasets: [
-      {
-        label: `Current Year Energy Reading (${currentYear})`,
-        data: currentYearCosts,
-        fill: false,
-        backgroundColor: "#1E3A8A",
-        borderColor: "#1E3A8A",
-      },
-      {
-        label: `Last Year Energy Reading (${lastYear})`,
-        data: lastYearCosts,
-        fill: false,
-        backgroundColor: "#2563EB",
-        borderColor: "#2563EB",
-      },
-    ],
-  };
+    const data = {
+      labels: [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      ],
+      datasets: [
+        {
+          label: `Current Year Energy Reading (${currentYear})`,
+          data: currentYearCosts,
+          fill: false,
+          backgroundColor: "#1E3A8A",
+          borderColor: "#1E3A8A",
+        },
+        {
+          label: `Last Year Energy Reading (${lastYear})`,
+          data: lastYearCosts,
+          fill: false,
+          backgroundColor: "#2563EB",
+          borderColor: "#2563EB",
+        },
+      ],
+    };
+
+    setChartData(data);
+  }, [energyData, currentYear, previousYear]); // Added dependencies
+
+  if (!chartData) {
+    return <div>Loading chart data...</div>; // Add loading state
+  }
 
   const options = {
     responsive: true,
@@ -107,14 +101,13 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
       },
       title: {
         display: true,
-        text: `Energy Comparison: ${currentYear} vs ${lastYear}`,
+        text: `Energy Comparison: ${currentYear} vs ${previousYear}`,
       },
     },
     scales: {
       x: {
         title: {
           display: false,
-          // text: "Month",
         },
       },
       y: {
@@ -126,7 +119,7 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
     },
   };
 
-  return <Line data={data} options={options} />;
+  return <Line data={chartData} options={options} />;
 };
 
 export default EnergyChart;
