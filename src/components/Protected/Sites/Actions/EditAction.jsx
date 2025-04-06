@@ -559,7 +559,8 @@ const EditAction = ({
                         <div className="form-group mt-4">
                         <Autocomplete
                           multiple
-                          disabled={isViewRoleForActions(loggedInUserData)}
+                          //disabled={isViewRoleForActions(loggedInUserData)}
+                          disabled
                           value={siteAssets.filter(s => formData?.taggedAsset?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
                         
                         //value={formData?.taggedAsset?.split(",").map(s=>Number(s))}
