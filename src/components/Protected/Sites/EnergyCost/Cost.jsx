@@ -111,6 +111,7 @@ const Cost = ({
                       label="From Date"
                       value={formData?.fromDate}
                       disabled={isView}
+                      required
                       onChange={(date) => {
                         setFormData({
                           ...formData,
@@ -139,6 +140,7 @@ const Cost = ({
                       label="To Date"
                       value={formData?.toDate}
                       disabled={isView}
+                      required
                       onChange={(date) => {
                         setFormData({
                           ...formData,
@@ -169,6 +171,7 @@ const Cost = ({
                     className="form-control"
                     disabled={isView}
                     name="cost"
+                    min="0"
                     onChange={handleInputChange}
                     required
                   />
