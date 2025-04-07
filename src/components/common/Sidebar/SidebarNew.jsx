@@ -21,6 +21,8 @@ import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import AddIcon from "@mui/icons-material/Add";
 import BusinessIcon from "@mui/icons-material/Business";
 import FolderIcon from "@mui/icons-material/Folder";
+import FolderSharedIcon from "@mui/icons-material/FolderShared";
+
 import BuildIcon from "@mui/icons-material/Build";
 import BackupTableIcon from "@mui/icons-material/BackupTable";
 import BeenhereIcon from "@mui/icons-material/Beenhere";
@@ -66,6 +68,7 @@ const adminIconComponents = [
   <AdminPanelSettingsIcon style={{ color: "white" }} />,
   <FeaturedPlayListIcon style={{ color: "white" }} />,
   <AccountBalanceIcon style={{ color: "white" }} />,
+  <FolderSharedIcon style={{ color: "white" }} />,
   
 ];
 
@@ -203,6 +206,9 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
       case "Company":
         navigate("/admin/company");
         break;
+      case "Folders":
+        navigate("/admin/folders");
+        break;
       case "Edit Profile":
         navigate("/edit-profile");
         break;
@@ -337,7 +343,7 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
               Admin
             </p>
             <List sx={{ backgroundColor: "black" }}>
-              {["Categories", "Dropdowns", "Company"].map((text, index) => (
+              {["Categories", "Dropdowns", "Company", "Folders"].map((text, index) => (
                 <ListItem key={text} disablePadding sx={{ display: "block" }}>
                   <ListItemButton
                     sx={{
