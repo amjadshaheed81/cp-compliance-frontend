@@ -13,6 +13,7 @@ const TdkDatePicker = ({
   label,
   width = "380px",
   disabled,
+  minDate
 }) => {
   const datePickerRef = useRef(null);
   const [manualInput, setManualInput] = useState(
@@ -95,6 +96,7 @@ autoComplete="off"
         customInput={<div />} // Avoid rendering a second input field
         popperClassName="custom-datepicker-popper"
         popperPlacement="bottom-end"
+        minDate={new Date(minDate)}
       />
     </div>
   );

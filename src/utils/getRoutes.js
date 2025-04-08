@@ -19,6 +19,8 @@ import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd
 import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit";
 import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns";
 import CompanyManagement from "../components/Protected/Admin/CompanyManagement";
+
+import AdminParentFolder from "../components/Protected/Sites/Documents/AdminParentFolder";
 import OnboradClient from "../components/Protected/Admin/OnboradClient";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
@@ -187,6 +189,12 @@ export const getRoutes = () => {
     },
 
     {
+      path: "/admin/folders",
+      element: <AdminParentFolder />,
+      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+    },
+
+    {
       path: "/onboard-client",
       element: <OnboradClient />,
       allowedRoles: [ROLE.ADMIN], // only admin can access this route
@@ -236,10 +244,6 @@ export const getRoutes = () => {
     {
       path: "/reports",
       element: <Reports />,
-    },
-    {
-      path: "*",
-      element: <PageNotFound />,
     },
   ];
 };

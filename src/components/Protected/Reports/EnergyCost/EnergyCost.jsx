@@ -315,7 +315,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       return;
     }
     setIsLoading(true);
-    const energyCost = isAll
+    let energyCost = isAll
       ? await get("/api/energy/survey/all")
       : await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
     energyCost.forEach((energy) => {
@@ -330,6 +330,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       energy.minDate = minDate;
       energy.maxDate = maxDate;
     });
+
+    if (formData2?.budgetCategory?.length > 0) {
+      energyCost = energyCost.filter(
+        (sc) => sc.budgetCategory === formData2.budgetCategory
+      );
+    }
 
     setFilteredEnergyCost(energyCost);
     setEnergyCost(energyCost);
@@ -361,15 +367,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     }
   };
   
-  const handleChange = (event) => {
+  const handleChange = async (event) => {
     setState((prevState) => ({
       ...prevState,
       isIndividual: event.target.checked,
     }));
     if (event.target.checked) {
-      getEnergyCost(false);
+      await getEnergyCost(false);
     } else {
-      getEnergyCost(true);
+      await getEnergyCost(true);
     }
   };
   const handleAreaChange = (e) => {

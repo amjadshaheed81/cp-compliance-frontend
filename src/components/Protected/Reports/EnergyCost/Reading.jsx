@@ -193,7 +193,7 @@ const Reading = ({
                           </td>
                         </tr>
                       )}
-                      {survey?.readingList?.map((d, idx) => (
+                      {survey?.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate))?.map((d, idx) => (
                         <tr>
                           <td>
                             {d?.readingDate
@@ -204,11 +204,10 @@ const Reading = ({
                             {d.readingValue} {d.readingUnit}
                           </td>
                           <td>
-                            {(idx === 0
-                              ? d?.readingValue
-                              : d?.readingValue -
-                                survey?.readingList?.[idx - 1]?.readingValue
-                            )?.toFixed(2)}
+                          {(idx === (survey?.readingList?.length - 1)
+                                ? d?.readingValue
+                                : d?.readingValue -
+                                  survey?.readingList?.[idx + 1]?.readingValue)?.toFixed(2)}
                             {d.readingUnit}
                           </td>
                         </tr>

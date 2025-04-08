@@ -131,6 +131,7 @@ const Reading = ({
                   <div>
                     <DatePicker
                       disabled={isView}
+                      required
                       label="Reading Date"
                       value={formData?.readingDate}
                       onChange={(date) => {
@@ -156,7 +157,7 @@ const Reading = ({
                 </Grid>
 
                 <Grid sm={4}>
-                  <label for="readingValue">Reading</label>
+                  <label for="readingValue">Reading 2</label>
                   <input
                     style={{ maxWidth: "300px" }}
                     type="number"
@@ -166,6 +167,7 @@ const Reading = ({
                     name="readingValue"
                     onChange={handleInputChange}
                     required
+                    min="0"
                   />
                 </Grid>
                 <Grid sm={4}>
