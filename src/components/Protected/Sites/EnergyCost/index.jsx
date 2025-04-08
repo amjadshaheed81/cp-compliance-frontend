@@ -329,6 +329,8 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     const energyCost = await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
     energyCost.forEach((energy) => {
       const dates = energy.costList.map((c) => new Date(c.fromDate));
+      energy.readingList = energy.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
+      
       const minDate =
         Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
       const dates2 = energy.costList.map((c) => new Date(c.toDate));
@@ -650,13 +652,9 @@ autoComplete="off"
                             : "-"}
                         </th>
                         <th scope="col">
-                          {action?.readingList?.[
-                            action?.readingList?.length - 1
-                          ]?.readingValue?.toFixed(2) ?? "-"}{" "}
+                          {action?.readingList?.[0]?.readingValue?.toFixed(2) ?? "-"}{" "}
                           {
-                            action?.readingList?.[
-                              action?.readingList?.length - 1
-                            ]?.readingUnit
+                            action?.readingList?.[0]?.readingUnit
                           }
                         </th>
                         <th scope="col">

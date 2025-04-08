@@ -320,6 +320,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       ? await get("/api/energy/survey/all")
       : await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
     energyCost.forEach((energy) => {
+      energy.readingList = energy.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
       const dates = energy.costList.map((c) => new Date(c.fromDate));
       const minDate =
         Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
