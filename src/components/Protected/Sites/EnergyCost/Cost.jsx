@@ -44,11 +44,19 @@ const Cost = ({
   };
 
   const save = async (event) => {
+    if (!formData.fromDate) {
+      toast.error("Please fill from date");
+      return;
+    } else if (!formData.toDate) {
+      toast.error("Please fill to date");
+      return;
+    } 
     event.preventDefault();
     const form = event.target;
     if (!form.checkValidity()) {
       form.reportValidity();
     }
+    
     const data = { ...formData };
 
     data.fromDate = new Date(data.fromDate);
@@ -109,10 +117,10 @@ const Cost = ({
                   <div>
                     <DatePicker
                       label="From Date"
-                      value={formData?.fromDate}
+                      //value={formData?.fromDate || ""}
                       disabled={isView}
                       required
-                     
+                     name="fromDate"
                       onChange={(date) => {
                         setFormData({
                           ...formData,
@@ -139,6 +147,7 @@ const Cost = ({
                   <div style={{}}>
                     <DatePicker
                       label="To Date"
+                      name="toDate"
                       value={formData?.toDate}
                       minDate={formData?.fromDate}
                       disabled={isView}
