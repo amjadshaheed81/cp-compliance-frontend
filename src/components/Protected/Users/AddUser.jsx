@@ -2,20 +2,16 @@ import React, { Fragment, useEffect, useState } from "react";
 import {
   Button,
   Box,
-  Autocomplete,
-  Select,
-  OutlinedInput,
-  MenuItem,
+  CircularProgress,
   Checkbox,
   ListItemText,
-  TextField,
+  MenuItem,
 } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import CircularProgress from "@mui/material/CircularProgress";
 import DialogTitle from "@mui/material/DialogTitle";
 import { getSites, addUser, addUserTagSite } from "../../../store/thunk/site";
 import { get } from "../../../api";
@@ -23,17 +19,85 @@ import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
 import { ROLE } from "../../../Constant/Role";
-import Tooltip from "@mui/material/Tooltip";
-import TagSites from "./TagSites";
 
-export const ITEM_HEIGHT = 48;
-export const ITEM_PADDING_TOP = 8;
-export const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-    },
-  },
+// Site Selection Dialog Component
+const SiteSelectionDialog = ({
+  open,
+  onClose,
+  sites,
+  selectedSites,
+  onSave,
+}) => {
+  const [tempSelectedSites, setTempSelectedSites] = useState([]);
+
+  useEffect(() => {
+    if (open) {
+      setTempSelectedSites(selectedSites);
+    }
+  }, [open]);
+
+  const handleToggleSite = (siteId) => {
+    setTempSelectedSites((prev) =>
+      prev.includes(siteId)
+        ? prev.filter((id) => id !== siteId)
+        : [...prev, siteId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (tempSelectedSites.length === sites.length) {
+      setTempSelectedSites([]);
+    } else {
+      setTempSelectedSites(sites.map((site) => site.siteId));
+    }
+  };
+
+  const handleSave = () => {
+    onSave(tempSelectedSites);
+    onClose();
+  };
+  // Calculate if all sites are selected
+  const allSelected =
+    sites.length > 0 && tempSelectedSites.length === sites.length;
+
+  const selectedSet = new Set(tempSelectedSites);
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle
+        sx={{ color: "black", textTransform: "none", fontWeight: "normal" }}
+      >
+        Select Sites
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ maxHeight: 400, overflow: "auto" }}>
+          <MenuItem onClick={handleSelectAll}>
+            <Checkbox checked={allSelected} />
+            <ListItemText
+              primary={`${allSelected ? "Deselect All" : "Select All"}`}
+            />
+          </MenuItem>
+
+          {sites.map((site) => (
+            <MenuItem
+              key={site.siteId}
+              onClick={() => handleToggleSite(site.siteId)}
+              sx={{ pl: 4 }}
+            >
+              <Checkbox checked={selectedSet.has(site.siteId)} />
+              <ListItemText primary={site.siteName} />
+            </MenuItem>
+          ))}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} color="primary">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 };
 
 const AddUser = ({
@@ -48,21 +112,18 @@ const AddUser = ({
   addUserTagSite,
   loggedInUserData,
 }) => {
-  const handleOpen = () => setShowAddModal(true);
-  const handleClose = () => setShowAddModal(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [companies, setcompanies] = useState([]);
-  const [tagSite, setTagSite] = useState([]);
-  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
-  // const [taggedSites, setTaggedSites] = useState([]);
-  const handleChange = (event) => {
-    const {
-      target: { value },
-    } = event;
-    event?.view?.focus();
-    setTagSite(typeof value ? value : value);
+  const handleClose = () => {
+    setShowAddModal(false);
+    reset();
+    setTagSite([]);
   };
-  const [selectedCompany, setSelectedCompany] = useState();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [tagSite, setTagSite] = useState([]);
+  const [showSiteSelection, setShowSiteSelection] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+
   const {
     register,
     reset,
@@ -71,21 +132,25 @@ const AddUser = ({
     handleSubmit,
     setValue,
   } = useForm({});
+
   const values = watch();
+
   useEffect(() => {
-    reset(selectedUser);
-    getSites(loggedInUserData);
-    getCompanies();
-  }, []);
+    if (showAddModal) {
+      reset(selectedUser || {});
+      getSites(loggedInUserData);
+      getCompanies();
+    }
+  }, [showAddModal]);
 
   const getCompanies = async () => {
-    const license = JSON.parse(localStorage.getItem('license'));
-    const url = "/api/companies/all?licenseId="+license?.licenseId;
-    
+    const license = JSON.parse(localStorage.getItem("license"));
+    const url = "/api/companies/all?licenseId=" + license?.licenseId;
     let response = await get(url);
     response = response.filter((r) => r !== null);
-    setcompanies(response);
+    setCompanies(response);
   };
+
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -98,14 +163,13 @@ const AddUser = ({
       role: formJson?.role || "",
       userType: formJson?.userType || "",
       defaultSiteId:
-        formJson?.userType === "Internal"
-          ? siteSelectedForGlobal?.siteId
-          : "",
+        formJson?.userType === "Internal" ? siteSelectedForGlobal?.siteId : "",
       companyId: formJson?.company || "",
       trade: formJson?.userType === "External" ? formJson?.trade : "",
       status: formJson?.status || "",
-      licenseId: loggedInUserData?.licenseId
+      licenseId: loggedInUserData?.licenseId,
     };
+
     setIsLoading(true);
     try {
       const res = await addUser(data);
@@ -114,123 +178,81 @@ const AddUser = ({
           addedSites: tagSite,
           removedSites: [],
         };
-        const tagRes = await addUserTagSite(res?.id, tagSiteArray);
+        await addUserTagSite(res?.id, tagSiteArray);
         toast.success(`${formJson?.firstName} has been added successfully.`);
         refresh();
-        reset({});
         handleClose();
-        setIsLoading(false);
-        return;
+      } else if (res?.includes("User Email Already Registered")) {
+        toast.error(
+          "User Email Already Registered. Please try again with new email address."
+        );
       } else {
-        if (res?.includes("User Email Already Registered")) {
-          toast.error(
-            "User Email Already Registered. Please try again with new email address."
-          );
-          setIsLoading(false);
-          return;
-        } else {
-          toast.error(
-            `Something went wrong while adding ${formJson?.firstName}.`
-          );
-          setIsLoading(false);
-        }
+        toast.error(
+          `Something went wrong while adding ${formJson?.firstName}.`
+        );
       }
-      setIsLoading(false);
     } catch (e) {
+      toast.error("An error occurred while adding the user.");
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTagSiteChange = (event, newValue) => {
-    const isSelectAllSelected = newValue.some(
-      (option) => option.key === "select-all"
-    );
-
-    if (isSelectAllSelected) {
-      // If "Select All" is selected, include all options except "Select All"
-      const allOptions = sites?.map((site) => ({
-        key: site.siteId,
-        label: site.siteName,
-      }));
-
-      setTagSite(allOptions?.map((opt) => opt.key)); // Store keys
-    } else {
-      // Otherwise, update normally
-      const keys = newValue?.map((item) => item.key);
-      setTagSite(keys);
-    }
+  const handleOpenSiteSelection = () => {
+    setShowSiteSelection(true);
   };
-  const options = [
-    { key: "select-all", label: "Select All" },
-    ...sites.map((option) => ({
-      key: option.siteId,
-      label: option.siteName,
-    })),
-  ];
+
+  const handleSaveSelectedSites = (selectedSites) => {
+    setTagSite(selectedSites);
+  };
+
   const getSiteName = (siteId) => {
-    const filters = sites.filter(s=> s.siteId === siteId);
-    if(filters.length) {
-      return `${filters[0].siteName}`
-    }
-    return '';
-  }
+    const site = sites.find((s) => s.siteId === siteId);
+    return site ? site.siteName : "";
+  };
+
   return (
-    <React.Fragment>
-      {showSiteTagModal && (
-        <TagSites
-          isUserModal={true}
-          setTagSite={setTagSite}
-          getSiteName={getSiteName}
-          taggedSites={tagSite}
-          showSiteTagModal={showSiteTagModal}
-          setShowSiteTagModal={setShowSiteTagModal}
-        />
-      )}
+    <>
+      <SiteSelectionDialog
+        open={showSiteSelection}
+        onClose={() => setShowSiteSelection(false)}
+        sites={sites}
+        selectedSites={tagSite}
+        onSave={handleSaveSelectedSites}
+      />
+
       <Dialog open={showAddModal} onClose={handleClose} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(submitUser)}>
-          <DialogTitle>Add User</DialogTitle>
+          <DialogTitle>{selectedUser ? "Edit User" : "Add User"}</DialogTitle>
           <DialogContent dividers>
-            {isLoading && (
-              <Box sx={{ display: "flex" }}>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
                 <CircularProgress />
               </Box>
-            )}
-            {!isLoading && (
+            ) : (
               <Fragment>
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="firstName">First Name</label>
+                      <label htmlFor="firstName">First Name*</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="firstName"
                         {...register("firstName", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} first name`,
-                          },
+                          required: `${Validation.REQUIRED} first name`,
                         })}
                       />
                       {errors?.firstName && (
-                        <InputError
-                          message={errors?.firstName?.message}
-                          key={errors?.firstName?.message}
-                        />
+                        <InputError message={errors?.firstName?.message} />
                       )}
                     </div>
                   </div>
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="lastName">Last Name</label>
+                      <label htmlFor="lastName">Last Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="lastName"
                         {...register("lastName")}
@@ -239,51 +261,39 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="email">Email ID</label>
+                      <label htmlFor="email">Email ID*</label>
                       <input
                         type="email"
                         className="form-control"
                         id="email"
                         {...register("email", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} email`,
-                          },
+                          required: `${Validation.REQUIRED} email`,
                         })}
                       />
                       {errors?.email && (
-                        <InputError
-                          message={errors?.email?.message}
-                          key={errors?.email?.message}
-                        />
+                        <InputError message={errors?.email?.message} />
                       )}
                     </div>
                   </div>
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="password">Password</label>
+                      <label htmlFor="password">Password*</label>
                       <input
                         type="password"
                         className="form-control"
                         id="password"
                         {...register("password", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} password`,
-                          },
+                          required: `${Validation.REQUIRED} password`,
                         })}
                       />
                       {errors?.password && (
-                        <InputError
-                          message={errors?.password?.message}
-                          key={errors?.password?.message}
-                        />
+                        <InputError message={errors?.password?.message} />
                       )}
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="phone">Phone Number</label>
+                      <label htmlFor="phone">Phone Number</label>
                       <input
                         type="tel"
                         maxLength={11}
@@ -295,19 +305,14 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="role">Role</label>
+                      <label htmlFor="role">Role*</label>
                       <select
                         {...register("role", {
-                          required: {
-                            value: true,
-                            message: `Please select role.`,
-                          },
+                          required: "Please select role",
                         })}
                         className="form-control form-select"
                       >
-                        <option value={""} disabled selected>
-                          Select Action Manager
-                        </option>
+                        <option value="">Select Role</option>
                         <option value={ROLE.ADMIN}>Admin</option>
                         <option value={ROLE.MANAGER}>Property Manager</option>
                         <option value={ROLE.SITE_ACTION_MANAGER}>
@@ -321,78 +326,78 @@ autoComplete="off"
                         <option value={ROLE.TESTER}>Tester</option>
                       </select>
                       {errors?.role && (
-                        <InputError
-                          message={errors?.role?.message}
-                          key={errors?.role?.message}
-                        />
+                        <InputError message={errors?.role?.message} />
                       )}
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="userType">Internal/External</label>
+                      <label htmlFor="userType">Internal/External*</label>
                       <select
                         id="userType"
-                        name="userType"
-                        {...register("userType", {
-                          required: {
-                            value: true,
-                            message: `Please select user type.`,
-                          },
-                        })}
                         className="form-control form-select"
+                        {...register("userType", {
+                          required: "Please select user type",
+                        })}
                       >
-                        <option value={""} selected disabled>
-                          Select Internal/External
-                        </option>
-                        <option value={"Internal"}>Internal</option>
-                        <option value={"External"}>External</option>
+                        <option value="">Select Type</option>
+                        <option value="Internal">Internal</option>
+                        <option value="External">External</option>
                       </select>
                       {errors?.userType && (
-                        <InputError
-                          message={errors?.userType?.message}
-                          key={errors?.userType?.message}
-                        />
+                        <InputError message={errors?.userType?.message} />
                       )}
                     </div>
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="tagSite">Tag Site</label>
-                      <Autocomplete
-                        multiple
-                        onChange={handleTagSiteChange}
-                        // onChange={(event, newValue) => {
-                        //   const keys = newValue
-                        //     ?.map((itm) => itm?.key);
-                        //     setTagSite(keys)
-                        // }}
-                        options={options}
-                        getOptionLabel={(option) => option.label || ""}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Tag Site"
-                            placeholder="Tag Site"
-                          />
-                        )}
-                      />
+                      <label>Tag Sites</label>
+                      <div>
+                        <Button
+                          variant="outlined"
+                          fullWidth
+                          sx={{
+                            color: "#808080",
+                            borderColor: "#d1d1d1",
+                            textTransform: "none",
+                            fontWeight: 400,
+                            fontSize: "1rem",
+                            "&:hover": {
+                              borderColor: "#d1d1d1",
+                              backgroundColor: "#f9f9f9",
+                            },
+                          }}
+                          onClick={handleOpenSiteSelection}
+                        >
+                          {tagSite.length > 0
+                            ? `${tagSite.length} Site(s) Selected`
+                            : "Select Sites"}
+                        </Button>
+                      </div>
+                      {tagSite.length > 0 && (
+                        <Box mt={1} sx={{ maxHeight: 100, overflow: "auto" }}>
+                          {tagSite.map((siteId) => (
+                            <Box
+                              key={siteId}
+                              sx={{ display: "flex", alignItems: "center" }}
+                            >
+                              <Checkbox checked disabled size="small" />
+                              <span>{getSiteName(siteId)}</span>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
                     </div>
                   </div>
-
                   <div className="col-md-4 mt-2">
                     <div className="form-check form-switch">
-                      <label
-                        className="form-check-label pt-4"
-                        for="flexSwitchCheckChecked"
-                      >
-                        Is Company ?
+                      <label className="form-check-label pt-4">
+                        Is Company?
                       </label>
                       <input
                         className="mt-4 form-check-input"
                         type="checkbox"
                         id="isCompany"
-                        name="isCompany"
                         {...register("isCompany")}
                       />
                     </div>
@@ -400,144 +405,78 @@ autoComplete="off"
                   {values?.isCompany && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
-                        <label for="company">Company Name</label>
-                        <Autocomplete
-                          id="leadUserID"
-                          onChange={(event, item) => {
-                            setSelectedCompany(item?.key);
-                          }}
-                          options={companies.map((option) => {
-                            return {
-                              key: option.companyId,
-                              label: option.companyName,
-                            };
-                          })}
-                          getOptionLabel={(option) => option.label}
-                          renderInput={(params) => (
-                            <div ref={params.InputProps.ref}>
-                              <input
-                                type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                                {...params.inputProps}
-                                className="form-control"
-                                placeholder="Select Company"
-                              />
-                            </div>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {values?.userType === "External" && (
-                    <div className="col-md-4 mt-2">
-                      <div className="form-group">
-                        <label for="trade">Trade (if external)</label>
+                        <label>Company Name</label>
                         <select
-                          id="trade"
-                          name="trade"
-                          {...register("trade")}
                           className="form-control form-select"
+                          onChange={(e) => setSelectedCompany(e.target.value)}
+                          value={selectedCompany || ""}
                         >
-                          <option value={""} selected>
-                            NA
-                          </option>
-                          <option value={"Electrician"}>Electrician</option>
-                          <option value={"Gas Engineer"}>Gas Engineer</option>
-                          <option value={"Asbestos Surveyor"}>
-                            Asbestos Surveyor
-                          </option>
-                          <option value={"AC Engineer"}>AC Engineer</option>
-                          <option value={"Fire Door Install"}>
-                            Fire Door Install
-                          </option>
-                          <option value={"General Company"}>
-                            General Company
-                          </option>
-                          <option value={"Life Maintenance"}>
-                            Life Maintenance
-                          </option>
-                          <option value={"Plumber"}>Plumber</option>
-                          <option value={"Auto Door Maintanance"}>
-                            Auto Door Maintanance
-                          </option>
-                          <option value={"Refuse Collector"}>
-                            Refuse Collector
-                          </option>
-                          <option value={"Fire Alarm"}>Fire Alarm</option>
+                          <option value="">Select Company</option>
+                          {companies.map((company) => (
+                            <option
+                              key={company.companyId}
+                              value={company.companyId}
+                            >
+                              {company.companyName}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
                   )}
-                  {tagSite?.length > 0 && (
+                  {values?.userType === "External" && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
-                        <label for="trade">Selected Sites</label>
-                        <div>
-                          {tagSite?.length > 3 && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-light text-primary"
-                                onClick={() => {
-                                  // setTaggedSites(
-                                  //   tagSite?.map(
-                                  //     (itm) =>
-                                  //       sites?.filter(
-                                  //         (site) => site?.siteId == itm
-                                  //       )?.[0]?.siteName
-                                  //   )
-                                  // );
-                                  setShowSiteTagModal(true);
-                                }}
-                              >
-                                {tagSite?.length} Site Tagged
-                              </button>
-                            </>
-                          )}
-                          {tagSite?.length < 4 &&
-                            tagSite?.map((itm) => {
-                              return (
-                                <button className="btn btn-sm btn-light text-primary">
-                                  {
-                                    sites?.filter(
-                                      (site) => site?.siteId == itm
-                                    )?.[0]?.siteName
-                                  }
-                                </button>
-                              );
-                            })}
-                        </div>
+                        <label htmlFor="trade">Trade (if external)</label>
+                        <select
+                          id="trade"
+                          className="form-control form-select"
+                          {...register("trade")}
+                        >
+                          <option value="">NA</option>
+                          <option value="Electrician">Electrician</option>
+                          <option value="Gas Engineer">Gas Engineer</option>
+                          <option value="Asbestos Surveyor">
+                            Asbestos Surveyor
+                          </option>
+                          <option value="AC Engineer">AC Engineer</option>
+                          <option value="Fire Door Install">
+                            Fire Door Install
+                          </option>
+                          <option value="General Company">
+                            General Company
+                          </option>
+                          <option value="Life Maintenance">
+                            Life Maintenance
+                          </option>
+                          <option value="Plumber">Plumber</option>
+                          <option value="Auto Door Maintanance">
+                            Auto Door Maintanance
+                          </option>
+                          <option value="Refuse Collector">
+                            Refuse Collector
+                          </option>
+                          <option value="Fire Alarm">Fire Alarm</option>
+                        </select>
                       </div>
                     </div>
                   )}
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="status">Status</label>
+                      <label htmlFor="status">Status*</label>
                       <select
                         id="status"
-                        name="status"
-                        {...register("status", {
-                          required: {
-                            value: true,
-                            message: `Please select user status.`,
-                          },
-                        })}
                         className="form-control form-select"
+                        {...register("status", {
+                          required: "Please select user status",
+                        })}
                       >
-                        <option value={""} disabled selected>
-                          Select Status
-                        </option>
-                        <option value={"Active"}>Active</option>
-                        <option value={"Inactive"}>Inactive</option>
+                        <option value="">Select Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
                       </select>
                       {errors?.status && (
-                        <InputError
-                          message={errors?.status?.message}
-                          key={errors?.status?.message}
-                        />
+                        <InputError message={errors?.status?.message} />
                       )}
                     </div>
                   </div>
@@ -547,17 +486,17 @@ autoComplete="off"
           </DialogContent>
           {!isLoading && (
             <DialogActions>
-              <Button onClick={handleClose} className="bg-light text-primary">
-                Close
+              <Button onClick={handleClose} variant="outlined">
+                Cancel
               </Button>
-              <Button type="submit" className="bg-primary text-white">
+              <Button type="submit" variant="contained" color="primary">
                 Save
               </Button>
             </DialogActions>
           )}
         </form>
       </Dialog>
-    </React.Fragment>
+    </>
   );
 };
 
@@ -566,6 +505,7 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
+
 export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(
   AddUser
 );
