@@ -25,7 +25,86 @@ import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
 import { MenuProps } from "./AddUser";
 import Tooltip from "@mui/material/Tooltip";
-import TagSites from "./TagSites";
+
+// Site Selection Dialog Component (same as in AddUser)
+const SiteSelectionDialog = ({
+  open,
+  onClose,
+  sites,
+  selectedSites,
+  onSave,
+}) => {
+  const [tempSelectedSites, setTempSelectedSites] = useState([]);
+
+  useEffect(() => {
+    if (open) {
+      setTempSelectedSites(selectedSites);
+    }
+  }, [open]);
+
+  const handleToggleSite = (siteId) => {
+    setTempSelectedSites((prev) =>
+      prev.includes(siteId)
+        ? prev.filter((id) => id !== siteId)
+        : [...prev, siteId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (tempSelectedSites.length === sites.length) {
+      setTempSelectedSites([]);
+    } else {
+      setTempSelectedSites(sites.map((site) => site.siteId));
+    }
+  };
+
+  const handleSave = () => {
+    onSave(tempSelectedSites);
+    onClose();
+  };
+
+  const allSelected =
+    sites.length > 0 && tempSelectedSites.length === sites.length;
+
+  const selectedSet = new Set(tempSelectedSites);
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle
+        sx={{ color: "black", textTransform: "none", fontWeight: "normal" }}
+      >
+        Select Sites
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ maxHeight: 400, overflow: "auto" }}>
+          <MenuItem onClick={handleSelectAll}>
+            <Checkbox checked={allSelected} />
+            <ListItemText
+              primary={`${allSelected ? "Deselect All" : "Select All"}`}
+            />
+          </MenuItem>
+
+          {sites.map((site) => (
+            <MenuItem
+              key={site.siteId}
+              onClick={() => handleToggleSite(site.siteId)}
+              sx={{ pl: 4 }}
+            >
+              <Checkbox checked={selectedSet.has(site.siteId)} />
+              <ListItemText primary={site.siteName} />
+            </MenuItem>
+          ))}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} color="primary">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const ViewUsers = ({
   showEditModal,
@@ -39,27 +118,23 @@ const ViewUsers = ({
   loggedInUserData,
 }) => {
   const handleOpen = () => setShowEditModal(true);
-  const handleClose = () => setShowEditModal(false);
+  const handleClose = () => {
+    setShowEditModal(false);
+    reset();
+    setTagSite([]);
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState();
   const [tagSite, setTagSite] = useState([]);
-  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
-  // const [taggedSites, setTaggedSites] = useState([]);
+  const [showSiteSelection, setShowSiteSelection] = useState(false);
+
   const getSiteName = (siteId) => {
-    const filters = sites.filter(s=> s.siteId === siteId);
-    if(filters.length) {
-      return `${filters[0].siteName}`
-    }
-    return '';
-  }
-  const handleChange = (event) => {
-    const {
-      target: { value },
-    } = event;
-    event?.view?.focus();
-    setTagSite(typeof value ? value : value);
+    const site = sites.find((s) => s.siteId === siteId);
+    return site ? site.siteName : "";
   };
+
   const {
     register,
     reset,
@@ -68,7 +143,9 @@ const ViewUsers = ({
     handleSubmit,
     getValues,
   } = useForm({});
+
   const values = watch();
+
   useEffect(() => {
     const name = selectedUser?.name?.split(" ");
     reset({
@@ -86,30 +163,23 @@ const ViewUsers = ({
     getSites(loggedInUserData);
     getCompanies();
   }, []);
+
   const getCompanies = async () => {
-    const license = JSON.parse(localStorage.getItem('license'));
-    const url = "/api/companies/all?licenseId="+license?.licenseId;
+    const license = JSON.parse(localStorage.getItem("license"));
+    const url = "/api/companies/all?licenseId=" + license?.licenseId;
     let response = await get(url);
     response = response.filter((r) => r !== null);
     setcompanies(response);
   };
-  const getSelectedTagValue = () => {
-    const selectedSites = tagSite;
-    const arr = [];
-    if (selectedSites) {
-      for (const iterator of selectedSites) {
-        const selectedValue =
-          sites.find((itm) => itm.siteId == iterator) || null;
-        if (selectedValue) {
-          arr.push({
-            key: selectedValue?.siteId,
-            label: selectedValue?.siteName,
-          });
-        }
-      }
-    }
-    return arr;
+
+  const handleOpenSiteSelection = () => {
+    setShowSiteSelection(true);
   };
+
+  const handleSaveSelectedSites = (selectedSites) => {
+    setTagSite(selectedSites);
+  };
+
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -125,7 +195,7 @@ const ViewUsers = ({
       companyId: formJson?.company || "",
       trade: formJson?.userType === "External" ? formJson?.trade : "",
       status: formJson?.status || "",
-      licenseId: loggedInUserData?.licenseId
+      licenseId: loggedInUserData?.licenseId,
     };
     setIsLoading(true);
     try {
@@ -159,6 +229,7 @@ const ViewUsers = ({
       setIsLoading(false);
     }
   };
+
   const getSelectedValue = () => {
     const selectedValue =
       companies.find((itm) => itm.companyId === selectedCompany) || null;
@@ -170,18 +241,17 @@ const ViewUsers = ({
     }
     return null;
   };
+
   return (
     <React.Fragment>
-      {showSiteTagModal && (
-        <TagSites
-          taggedSites={tagSite}
-          showSiteTagModal={showSiteTagModal}
-          setShowSiteTagModal={setShowSiteTagModal}
-          isUserModal={true}
-          setTagSite={setTagSite}
-          getSiteName={getSiteName}
-        />
-      )}
+      <SiteSelectionDialog
+        open={showSiteSelection}
+        onClose={() => setShowSiteSelection(false)}
+        sites={sites}
+        selectedSites={tagSite}
+        onSave={handleSaveSelectedSites}
+      />
+
       <Dialog
         open={showEditModal}
         onClose={handleClose}
@@ -191,22 +261,21 @@ const ViewUsers = ({
         <form onSubmit={handleSubmit(submitUser)}>
           <DialogTitle>Edit User</DialogTitle>
           <DialogContent dividers>
-            {isLoading && (
-              <Box sx={{ display: "flex" }}>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
                 <CircularProgress />
               </Box>
-            )}
-            {!isLoading && (
+            ) : (
               <Fragment>
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="firstName">First Name</label>
+                      <label htmlFor="firstName">First Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="firstName"
                         {...register("firstName", {
@@ -226,12 +295,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="lastName">Last Name</label>
+                      <label htmlFor="lastName">Last Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="lastName"
                         {...register("lastName")}
@@ -240,7 +309,7 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label for="email">Email ID</label>
+                      <label htmlFor="email">Email ID</label>
                       <input
                         type="email"
                         className="form-control"
@@ -260,31 +329,9 @@ autoComplete="off"
                       )}
                     </div>
                   </div>
-                  {/* <div className="col-md-4">
-                    <div className="form-group">
-                      <label for="password">Password</label>
-                      <input
-                        type="password"
-                        className="form-control"
-                        id="password"
-                        {...register("password", {
-                          required: {
-                            value: true,
-                            message: `${Validation.REQUIRED} password`,
-                          },
-                        })}
-                      />
-                      {errors?.password && (
-                        <InputError
-                          message={errors?.password?.message}
-                          key={errors?.password?.message}
-                        />
-                      )}
-                    </div>
-                  </div> */}
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="phone">Phone Number</label>
+                      <label htmlFor="phone">Phone Number</label>
                       <input
                         type="tel"
                         maxLength={11}
@@ -296,7 +343,7 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="role">Role</label>
+                      <label htmlFor="role">Role</label>
                       <select
                         {...register("role", {
                           required: {
@@ -331,17 +378,16 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="userType">Internal/External</label>
+                      <label htmlFor="userType">Internal/External</label>
                       <select
                         id="userType"
-                        name="userType"
+                        className="form-control form-select"
                         {...register("userType", {
                           required: {
                             value: true,
                             message: `Please select user type.`,
                           },
                         })}
-                        className="form-control form-select"
                       >
                         <option value={"Internal"}>Internal</option>
                         <option value={"External"}>External</option>
@@ -354,84 +400,10 @@ autoComplete="off"
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4 mt-2">
-                    <div className="form-group">
-                      <label htmlFor="tagSite">Tag Site</label>
-                      <Autocomplete
-                        multiple
-                        value={tagSite}
-                        onChange={(event, newValue) => {
-                          if (
-                            newValue.length === sites.length ||
-                            (newValue.length === 1 &&
-                              newValue[0] === "Select All")
-                          ) {
-                            // Select All logic
-                            setTagSite(sites?.map((site) => site.siteId));
-                          } else if (
-                            newValue.length === 0 ||
-                            (newValue.includes("Select All") &&
-                              newValue.length < sites.length)
-                          ) {
-                            // Deselect All logic
-                            setTagSite([]);
-                          } else {
-                            // Normal selection logic
-                            setTagSite(
-                              newValue.filter((value) => value !== "Select All")
-                            );
-                          }
-                        }}
-                        options={[
-                          "Select All",
-                          ...sites?.map((site) => site.siteId),
-                        ]}
-                        getOptionLabel={(option) =>
-                          option === "Select All"
-                            ? "Select All"
-                            : sites.find((site) => site.siteId === option)
-                                ?.siteName || ""
-                        }
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Tag Site"
-                            placeholder="Select Sites"
-                          />
-                        )}
-                        renderOption={(props, option, { selected }) => (
-                          <li {...props}>
-                            <Checkbox checked={selected} />
-                            {option === "Select All"
-                              ? "Select All"
-                              : sites.find((site) => site.siteId === option)
-                                  ?.siteName}
-                          </li>
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-2">
-                    <div className="form-check form-switch">
-                      <label
-                        className="form-check-label pt-4"
-                        for="flexSwitchCheckChecked"
-                      >
-                        Is Company ?
-                      </label>
-                      <input
-                        className="mt-4 form-check-input"
-                        type="checkbox"
-                        id="isCompany"
-                        name="isCompany"
-                        {...register("isCompany")}
-                      />
-                    </div>
-                  </div>
                   {values?.isCompany && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
-                        <label for="company">Company Name</label>
+                        <label>Company Name</label>
                         <Autocomplete
                           id="leadUserID"
                           onChange={(event, item) => {
@@ -449,9 +421,11 @@ autoComplete="off"
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                                autoComplete="off"
+                                readOnly
+                                onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                                }
                                 {...params.inputProps}
                                 className="form-control"
                                 placeholder="Select Company"
@@ -462,15 +436,68 @@ autoComplete="off"
                       </div>
                     </div>
                   )}
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label>Tag Sites</label>
+                      <div>
+                        <Button
+                          variant="outlined"
+                          fullWidth
+                          sx={{
+                            color: "#808080",
+                            borderColor: "#d1d1d1",
+                            textTransform: "none",
+                            fontWeight: 400,
+                            fontSize: "1rem",
+                            "&:hover": {
+                              borderColor: "#d1d1d1",
+                              backgroundColor: "#f9f9f9",
+                            },
+                          }}
+                          onClick={handleOpenSiteSelection}
+                        >
+                          {tagSite.length > 0
+                            ? `${tagSite.length} Site(s) Selected`
+                            : "Select Sites"}
+                        </Button>
+                      </div>
+                      {tagSite.length > 0 && (
+                        <Box mt={1} sx={{ maxHeight: 100, overflow: "auto" }}>
+                          {tagSite.map((siteId) => (
+                            <Box
+                              key={siteId}
+                              sx={{ display: "flex", alignItems: "center" }}
+                            >
+                              <Checkbox checked disabled size="small" />
+                              <span>{getSiteName(siteId)}</span>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-4 mt-2">
+                    <div className="form-check form-switch">
+                      <label className="form-check-label pt-4">
+                        Is Company?
+                      </label>
+                      <input
+                        className="mt-4 form-check-input"
+                        type="checkbox"
+                        id="isCompany"
+                        {...register("isCompany")}
+                      />
+                    </div>
+                  </div>
+
                   {values?.userType === "External" && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
-                        <label for="trade">Trade (if external)</label>
+                        <label htmlFor="trade">Trade (if external)</label>
                         <select
                           id="trade"
-                          name="trade"
-                          {...register("trade")}
                           className="form-control form-select"
+                          {...register("trade")}
                         >
                           <option value={""} selected>
                             NA
@@ -502,52 +529,18 @@ autoComplete="off"
                       </div>
                     </div>
                   )}
-                  {tagSite && (
-                    <div className="col-md-4 mt-2">
-                      <div className="form-group">
-                        <div>
-                          {tagSite?.length > 3 && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-light text-primary"
-                                onClick={() => {
-                                  setShowSiteTagModal(true);
-                                }}
-                              >
-                                {tagSite?.length} Site Tagged
-                              </button>
-                            </>
-                          )}
-                          {tagSite?.length < 4 &&
-                            tagSite?.map((itm) => {
-                              return (
-                                <button className="btn btn-sm btn-light text-primary">
-                                  {
-                                    sites?.filter(
-                                      (site) => site?.siteId == itm
-                                    )?.[0]?.siteName
-                                  }
-                                </button>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
-                      <label for="status">Status</label>
+                      <label htmlFor="status">Status</label>
                       <select
                         id="status"
-                        name="status"
+                        className="form-control form-select"
                         {...register("status", {
                           required: {
                             value: true,
                             message: `Please select user status.`,
                           },
                         })}
-                        className="form-control form-select"
                       >
                         <option value={""} disabled selected>
                           Select Status
@@ -569,10 +562,10 @@ autoComplete="off"
           </DialogContent>
           {!isLoading && (
             <DialogActions>
-              <Button onClick={handleClose} className="bg-light text-primary">
+              <Button onClick={handleClose} variant="outlined">
                 Close
               </Button>
-              <Button type="submit" className="bg-primary text-white">
+              <Button type="submit" variant="contained" color="primary">
                 Save
               </Button>
             </DialogActions>
@@ -587,6 +580,7 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
 });
+
 export default connect(mapStateToProps, { getSites, addUser, addUserTagSite })(
   ViewUsers
 );

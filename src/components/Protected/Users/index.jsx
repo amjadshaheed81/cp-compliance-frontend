@@ -125,7 +125,7 @@ const Users = ({
       if (result.isConfirmed) {
         const res = await deleteUser(user?.id);
         if (res === "Success") {
-          toast.success(`${user?.name} user has been deleted successully`);
+          toast.success(`${user?.name} user has been deleted successfully`);
           getUsers();
         } else if (res?.includes("pre_actions")) {
           toast.error(
