@@ -19,18 +19,18 @@ import AdminCategoriesAdd from "../components/Protected/Admin/AdminCategoriesAdd
 import AdminCategoriesEdit from "../components/Protected/Admin/AdminCategoriesEdit";
 import AdminDropdowns from "../components/Protected/Admin/AdminDropdowns";
 import CompanyManagement from "../components/Protected/Admin/CompanyManagement";
-import OnboradClient from  "../components/Protected/Admin/OnboradClient";
+import OnboradClient from "../components/Protected/Admin/OnboradClient";
 import Assets from "../components/Protected/Sites/Assets";
 import CreateAsset from "../components/Protected/Sites/Assets/CreateAsset";
 import PreActions from "../components/Protected/Sites/PreActions";
-import Actions from "../components/Protected/Sites/Actions"
+import Actions from "../components/Protected/Sites/Actions";
 import SiteCalendar from "../components/Protected/Sites/SiteCalendar";
 import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewCreatePreActions";
 import SiteChecks from "../components/Protected/Sites/SiteChecks";
 import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
-import EditAction from "../components/Protected/Sites/Actions/EditAction"
+import EditAction from "../components/Protected/Sites/Actions/EditAction";
 import { ROLE } from "../Constant/Role";
 import StatutoryRegister from "../components/Protected/Sites/StatutoryRegister";
 import EnergyCost from "../components/Protected/Sites/EnergyCost";
@@ -192,7 +192,6 @@ export const getRoutes = () => {
       allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
 
-    
     {
       path: "/admin/categories/new",
       element: <AdminCategoriesAdd />,
@@ -220,7 +219,7 @@ export const getRoutes = () => {
       path: "/action-detail",
       element: <EditAction />,
     },
-    
+
     {
       path: "/site-calendar",
       element: <SiteCalendar />,
@@ -237,6 +236,10 @@ export const getRoutes = () => {
     {
       path: "/reports",
       element: <Reports />,
+    },
+    {
+      path: "*",
+      element: <PageNotFound />,
     },
   ];
 };
