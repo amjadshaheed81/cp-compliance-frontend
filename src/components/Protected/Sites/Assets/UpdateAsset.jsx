@@ -549,15 +549,9 @@ const UpdateAsset = ({
   // };
   const submitValuationForm = async (data) => {
     setLoader(true);
-    if (selectedAsset?.disposalDate) {
-      toast.warn("Cannot save valuations after disposal date is set");
-      return;
-    }
-    let form_data = new FormData();
     try {
       const submitData = {
         ...data,
-
         valuations: valuations.map((v) => ({
           ...v,
           valuationDate: v.valuationDate ? `${v.valuationDate} 10:00:00` : null,
@@ -581,6 +575,7 @@ const UpdateAsset = ({
         deviceId: selectedAsset?.deviceId,
       };
 
+      const form_data = new FormData();
       form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
 
       await updatePurchaseDetails(form_data, selectedAsset?.assetId);
@@ -749,10 +744,6 @@ const UpdateAsset = ({
   };
 
   const addValuation = () => {
-    if (selectedAsset?.disposalDate) {
-      toast.warn("Cannot add valuations after disposal date is set");
-      return;
-    }
     setValuations([
       ...valuations,
       {
@@ -1756,23 +1747,13 @@ const UpdateAsset = ({
               </TabPanel>
               <TabPanel value="4">
                 <div className="mb-3">
-                  {selectedAsset?.disposalDate ? (
-                    <div
-                      className="btn btn-primary"
-                      title="Cannot add valuations after disposal date is set"
-                      style={{ pointerEvents: "none", opacity: 0.6 }}
-                    >
-                      Add Another Valuation
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={addValuation}
-                    >
-                      Add Another Valuation
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={addValuation}
+                  >
+                    Add Another Valuation
+                  </button>
                 </div>
 
                 {valuations.map((valuation, index) => (
@@ -1784,7 +1765,6 @@ const UpdateAsset = ({
                     onRemove={removeValuation}
                     onUpdate={updateValuation}
                     isRemovable={valuations.length > 1}
-                    readOnly={!!selectedAsset?.disposalDate}
                   />
                 ))}
 
@@ -1792,7 +1772,7 @@ const UpdateAsset = ({
                   <button
                     type="button"
                     className="btn btn-success"
-                    onClick={submitValuationForm}
+                    onClick={()=>submitValuationForm()}
                   >
                     Save All Valuations
                   </button>
