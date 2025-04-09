@@ -44,6 +44,7 @@ const Cost = ({
   };
 
   const save = async (event) => {
+    event.preventDefault();
     if (!formData.fromDate) {
       toast.error("Please fill from date");
       return;
@@ -51,7 +52,7 @@ const Cost = ({
       toast.error("Please fill to date");
       return;
     } 
-    event.preventDefault();
+    
     const form = event.target;
     if (!form.checkValidity()) {
       form.reportValidity();
@@ -190,6 +191,7 @@ const Cost = ({
                 <Grid sm={8}></Grid>
                 <Grid sm={4}>
                   <Button
+                  type="Button"
                     onClick={(e) => setOpen(false)}
                     className="bg-light text-primary"
                   >
