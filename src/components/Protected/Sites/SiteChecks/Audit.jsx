@@ -151,7 +151,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
   const handleFileChange = (e, idx) => {
     const uquest = [...quest]
-    uquest[idx].response.file = e.target.files[0]
+    uquest[idx].response.file = e.target.files
     setquest(uquest);
   };
 
@@ -175,10 +175,20 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       form.reportValidity();
     }
     const dataToSave = quest[index].response;
-    if (dataToSave?.file?.name) {
+    if (dataToSave?.file?.length > 0) {
       dataToSave.siteId = siteSelectedForGlobal?.siteId;
-      dataToSave.file = await uploadSiteCheckDoc(dataToSave);
+      const files = []
+      for (const f of dataToSave?.file) {
+        const temp = {...dataToSave}
+        temp.file = f
+         const url = await uploadSiteCheckDoc(temp);
+         files.push(url);
+         
+      }
+
+    dataToSave.files = files;
     }
+    dataToSave.file = null;
     dataToSave.responseDate = new Date();
     dataToSave.checkId = checkId;
     dataToSave.qid = quest[index].qid;
@@ -592,7 +602,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                           }}
                         >
                           <IconButton component="label">
-                            <input hidden type="file" onChange={(e) => handleFileChange(e, idx)} />
+                            <input hidden type="file" onChange={(e) => handleFileChange(e, idx)} 
+                            accept="image/jpeg, image/jpg, image/png" 
+                            multiple/>
                             <UploadFile />
                           </IconButton>
                           <Typography>
@@ -619,6 +631,8 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             {q?.response?.images?.map(i => (
                               <div>
                                 <img
+                                 onClick={()=> {window.open(i?.imageUrl+ "?" + sasToken, '_blank');}}
+                                 style={{ cursor: 'pointer' }}
                                   src={i?.imageUrl+"?"+sasToken}
                                   className="img img-responsive border p-2 m-2 w-100"
                                   height={200}
@@ -646,6 +660,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             <div className="col-md-4 text-center mt-2" style={{marginBottom:'10px'}}>
                             <div className="form-group" >
                           <img
+                          onClick={()=> {window.open(q?.response?.images[0]?.imageUrl + "?" + sasToken, '_blank');}}
+                          style={{ cursor: 'pointer' }}
+                          
                             src={q?.response?.images[0].imageUrl + "?"+sasToken}
                             className="img img-responsive border p-2 m-2 w-100"
                             height={200}
