@@ -31,7 +31,7 @@ const CreateParentFolder = ({
   const submitFolder = async (data) => {
     
       setIsLoading(true);
-      await post("/api/document/folder", data);
+      await post("/api/document/admin-folder", data);
       setIsLoading(false);
       handleClose();
       refresh();
