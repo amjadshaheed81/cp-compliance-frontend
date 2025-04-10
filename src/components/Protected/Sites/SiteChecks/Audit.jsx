@@ -58,6 +58,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       if (resIdx >= 0) {
         q.status = "Closed";
         q.response = questionsResponse[resIdx]
+       
         q.completed = questionsResponse[resIdx]?.status === "Closed"
 
       } else {
@@ -65,6 +66,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
         q.response = {}
         q.completed = false
       }
+      q.response.file = null
     })
 
     const risksN = [0, 0, 0, 0]
@@ -87,6 +89,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       riskScoreYellow: risksN[2],
       riskScoreGreen: risksN[3],
     }
+    //aaquib
+    //drag and drop
+    //file selection
     await put("/api/site-check/" + checkId, body);
     const filtered = questionsFromDB.filter(q=>q?.order?.length > 4);
     filtered.sort((a, b) => {
@@ -155,9 +160,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
     setquest(uquest);
   };
 
-  const handleFileDelete = (idx) => {
+  const handleFileDelete = (idx,idx2) => {
     const uquest = [...quest]
-    uquest[idx].response.file = null
+    quest[idx].response.file =  [...quest[idx].response.file].filter((_, index) => index !== idx2);
     setquest(uquest);
   };
 
@@ -585,8 +590,8 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                     </Grid>}
-                    {faultAsset > 0 &&<Grid item xs={q?.response?.images?.length === 0 ? 12 : 8}>
-                     
+                    {faultAsset > 0 &&<Grid item xs={!q?.response?.images || q?.response?.images?.length === 0 ? 12 : 8}>
+
                         <Box
                           display="flex"
                           alignItems="center"
@@ -600,25 +605,55 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             borderRadius: '4px',
                             color: '#3f51b5',
                           }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDragEnter={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const files = e.dataTransfer.files;
+                            if (files && files.length) {
+                              // Create a synthetic event to reuse your existing handler
+                              const syntheticEvent = {
+                                target: {
+                                  files: files
+                                }
+                              };
+                              handleFileChange(syntheticEvent, idx);
+                            }
+                          }}
                         >
                           <IconButton component="label">
-                            <input hidden type="file" onChange={(e) => handleFileChange(e, idx)} 
-                            accept="image/jpeg, image/jpg, image/png" 
-                            multiple/>
+                            <input
+                              hidden
+                              type="file"
+                              onChange={(e) => handleFileChange(e, idx)}
+                              accept="image/jpeg, image/jpg, image/png"
+                              multiple
+                            />
                             <UploadFile />
                           </IconButton>
                           <Typography>
                             Click to upload or drag and drop PNG/JPG (max, 1MB)
                           </Typography>
                         </Box>
-                        {q?.response?.file?.name && (
-                        <Chip
-                          label={q?.response?.file?.name??"Attached Image"}
-                          onDelete={() => handleFileDelete(idx)}
+                        {q?.response?.file && q?.response?.file?.length > 0 && [...q?.response?.file]?.map((f,idx2) => (
+                          <Chip
+                          label={f?.name??"Attached Image"}
+                          onDelete={() => handleFileDelete(idx,idx2)}
 
                         />
-
-                      )}
+                        ))}
+                        
 
                     </Grid>}
                     
@@ -674,7 +709,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                                   type="button"
                                   className="btn btn-sm btn-danger mb-2"
                                   onClick={() => {
-                                    deleteAssessmentResponseImage(0);
+                                    deleteAssessmentResponseImage(q?.response?.images[0]);
                                   }}
                                   style={{margin:'10px'}}
                                 >

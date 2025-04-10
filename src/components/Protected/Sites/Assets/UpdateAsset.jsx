@@ -1068,7 +1068,7 @@ const UpdateAsset = ({
                                   type="button"
                                   className="btn btn-sm btn-danger mb-2"
                                   onClick={() => {
-                                    deletAssetImage(0);
+                                    deletAssetImage(selectedAsset?.images[0]);
                                   }}
                                 >
                                   Delete

@@ -908,7 +908,7 @@ autoComplete="off"
                                   type="button"
                                   className="btn btn-sm btn-danger mb-2"
                                   onClick={() => {
-                                    deleteActionImage(0);
+                                    deleteActionImage(formData?.images[0]);
                                   }}
                                 >
                                   Delete
