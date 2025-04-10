@@ -268,31 +268,29 @@ const UpdateAsset = ({
     if (response?.valuations?.length > 0) {
       // If API returns multiple valuations
       setValuations(
-        response.valuations.map((v) => ({
-          ...v,
-          valuationDate: v.valuationDate?.split("T")?.[0] || "",
-        }))
+        response.valuations
       );
-    } else if (response?.valuationDate) {
-      // For backward compatibility with single valuation
-      setValuations([
-        {
-          valuationDate: response.valuationDate?.split("T")?.[0] || "",
-          valuationValue: response.valuationValue || "",
-          valuationUserId: response.valuationUserId || "",
-          valuationUserName: response.valuationUserName || "",
-        },
-      ]);
-    } else {
-      // Default empty valuation
-      setValuations([
-        {
-          valuationDate: "",
-          valuationValue: "",
-          valuationUserId: "",
-        },
-      ]);
     }
+    //  else if (response?.date) {
+    //   // For backward compatibility with single valuation
+    //   setValuations([
+    //     {
+    //       date: response.date?.split("T")?.[0] || "",
+    //       valuation: response.valuation || "",
+    //       valuationBy: response.valuationBy || "",
+    //       valuationUserName: response.valuationUserName || "",
+    //     },
+    //   ]);
+    // } else {
+    //   // Default empty valuation
+    //   setValuations([
+    //     {
+    //       date: "",
+    //       valuation: "",
+    //       valuationBy: "",
+    //     },
+    //   ]);
+    // }
 
     disposalForm.reset({
       disposalDate: response?.disposalDate?.split("T")?.[0] || "",
@@ -423,6 +421,7 @@ const UpdateAsset = ({
       model: formData?.model,
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
+      valuations: valuations,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
@@ -466,16 +465,16 @@ const UpdateAsset = ({
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-      valuationDate: selectedAsset?.valuationDate
-        ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
+      date: selectedAsset?.date
+        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
         : null,
       disposalDate: selectedAsset?.disposalDate
         ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
         : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
-      valuationUserId: selectedAsset?.valuationUserId,
-      valuationValue: selectedAsset?.valuationValue,
+      valuationBy: selectedAsset?.valuationBy,
+      valuation: selectedAsset?.valuation,
       deviceId: selectedAsset?.deviceId,
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
@@ -498,16 +497,16 @@ const UpdateAsset = ({
       supplier: selectedAsset?.supplier,
       transactionId: selectedAsset?.transactionId,
       cost: selectedAsset?.cost,
-      valuationDate: selectedAsset?.valuationDate
-        ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
+      date: selectedAsset?.date
+        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
         : null,
       disposalDate: selectedAsset?.disposalDate
         ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
         : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
-      valuationUserId: selectedAsset?.valuationUserId,
-      valuationValue: selectedAsset?.valuationValue,
+      valuationBy: selectedAsset?.valuationBy,
+      valuation: selectedAsset?.valuation,
       deviceId: selectedAsset?.deviceId,
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
@@ -529,7 +528,7 @@ const UpdateAsset = ({
   //   const submitData = {
   //     ...data,
   //     assetId: selectedAsset?.assetId,
-  //     valuationDate: data?.valuationDate + " 10:00:00",
+  //     date: data?.date + " 10:00:00",
   //     disposalDate: data?.disposalDate + " 10:00:00",
   //     position: selectedAsset?.position,
   //     floor: selectedAsset?.floor,
@@ -554,14 +553,15 @@ const UpdateAsset = ({
         ...data,
         valuations: valuations.map((v) => ({
           ...v,
-          valuationDate: v.valuationDate ? `${v.valuationDate} 10:00:00` : null,
+          date: v.date ? v.date.split("T")[0] : null,
         })),
+        //valuations: valuations,
         assetId: selectedAsset?.assetId,
 
         // Keep existing disposal fields as they are
-        disposalDate: selectedAsset?.disposalDate || null,
-        disposalTo: selectedAsset?.disposalTo || null,
-        disposalValue: selectedAsset?.disposalValue || null,
+        //disposalDate: selectedAsset?.disposalDate || null,
+        //disposalTo: selectedAsset?.disposalTo || null,
+        //disposalValue: selectedAsset?.disposalValue || null,
         // Other existing fields
         position: selectedAsset?.position,
         floor: selectedAsset?.floor,
@@ -595,9 +595,9 @@ const UpdateAsset = ({
         assetId: selectedAsset?.assetId,
         disposalDate: data.disposalDate + " 10:00:00",
         // Keep existing valuation fields as they are
-        valuationDate: selectedAsset?.valuationDate || null,
-        valuationUserId: selectedAsset?.valuationUserId || null,
-        valuationValue: selectedAsset?.valuationValue || null,
+        date: selectedAsset?.date || null,
+        valuationBy: selectedAsset?.valuationBy || null,
+        valuation: selectedAsset?.valuation || null,
         // Other existing fields
         position: selectedAsset?.position,
         floor: selectedAsset?.floor,
@@ -747,9 +747,9 @@ const UpdateAsset = ({
     setValuations([
       ...valuations,
       {
-        valuationDate: "",
-        valuationValue: "",
-        valuationUserId: "",
+        date: "",
+        valuation: "",
+        valuationBy: "",
       },
     ]);
   };
@@ -1286,9 +1286,9 @@ const UpdateAsset = ({
                   />
                   <Tab
                     className={
-                      selectedAsset?.valuationDate &&
-                      selectedAsset?.valuationUserId &&
-                      selectedAsset?.valuationValue
+                      selectedAsset?.date &&
+                      selectedAsset?.valuationBy &&
+                      selectedAsset?.valuation
                         ? "text-success"
                         : "text-warning"
                     }

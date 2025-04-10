@@ -23,6 +23,7 @@ const ValuationComponent = ({
   });
 
   const onSubmit = (data) => {
+    console.log('data',data)
     onUpdate(index, data);
   };
 
@@ -36,59 +37,59 @@ const ValuationComponent = ({
                 label="Valuation Date"
                 required={true}
                 value={
-                  watch("valuationDate")
-                    ? new Date(watch("valuationDate"))
+                  watch("date")
+                    ? new Date(watch("date"))
                     : null
                 }
                 onChange={(date) => {
                   setValue(
-                    "valuationDate",
+                    "date",
                     date ? date.toISOString().split("T")[0] : "",
                     { shouldValidate: true }
                   );
                   handleSubmit(onSubmit)();
                 }}
               />
-              {errors?.valuationDate && (
+              {errors?.date && (
                 <InputError
-                  message={errors?.valuationDate?.message}
-                  key={errors?.valuationDate?.message}
+                  message={errors?.date?.message}
+                  key={errors?.date?.message}
                 />
               )}
             </div>
           </div>
           <div className="col-md-4">
             <div className="form-group mt-2">
-              <label htmlFor={`valuationValue-${index}`}>Valuation</label>
+              <label htmlFor={`valuation-${index}`}>Valuation</label>
               <input
                 type="number"
                 step="0.01"
                 className="form-control"
-                id={`valuationValue-${index}`}
+                id={`valuation-${index}`}
                 placeholder=""
-                {...register("valuationValue", {
+                {...register("valuation", {
                   required: {
                     value: true,
                     message: `Please enter valuation value`,
                   },
                 })}
               />
-              {errors?.valuationValue && (
+              {errors?.valuation && (
                 <InputError
-                  message={errors?.valuationValue?.message}
-                  key={errors?.valuationValue?.message}
+                  message={errors?.valuation?.message}
+                  key={errors?.valuation?.message}
                 />
               )}
             </div>
           </div>
           <div className="col-md-4">
-            <label htmlFor={`valuationUserId-${index}`}>
+            <label htmlFor={`valuationBy-${index}`}>
               Valuation Done By
             </label>
             <select
               className="form-control form-select"
-              id={`valuationUserId-${index}`}
-              {...register("valuationUserId", {
+              id={`valuationBy-${index}`}
+              {...register("valuationBy", {
                 required: {
                   value: true,
                   message: `Please select valuation done by`,
@@ -102,10 +103,10 @@ const ValuationComponent = ({
                 </option>
               ))}
             </select>
-            {errors?.valuationUserId && (
+            {errors?.valuationBy && (
               <InputError
-                message={errors?.valuationUserId?.message}
-                key={errors?.valuationUserId?.message}
+                message={errors?.valuationBy?.message}
+                key={errors?.valuationBy?.message}
               />
             )}
           </div>
