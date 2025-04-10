@@ -89,9 +89,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       riskScoreYellow: risksN[2],
       riskScoreGreen: risksN[3],
     }
-    //aaquib
-    //drag and drop
-    //file selection
+   
     await put("/api/site-check/" + checkId, body);
     const filtered = questionsFromDB.filter(q=>q?.order?.length > 4);
     filtered.sort((a, b) => {

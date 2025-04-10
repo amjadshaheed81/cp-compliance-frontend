@@ -659,6 +659,7 @@ autoComplete="off"
                       <td>
                         <div>
                           &nbsp;&nbsp;
+                          <Tooltip title={file?.note} arrow>
                           <button
                             onClick={(e) => {
                               e?.preventDefault();
@@ -671,6 +672,7 @@ autoComplete="off"
                             />
                             <span className="p-3 cursor">{file?.name}</span>
                           </button>
+                          </Tooltip>
                         </div>
                       </td>
                       <td>{file?.uploaderUserName}</td>
