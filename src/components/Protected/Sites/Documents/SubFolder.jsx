@@ -5,6 +5,8 @@ import FolderCopyIcon from "@mui/icons-material/FolderCopy";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
+
 import Bookmark from "@mui/icons-material/Bookmark";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import moment from "moment";
@@ -130,6 +132,7 @@ const SubFolder = ({
             id: response?.document?.id,
             name: response?.document?.name,
             isParent: parentFolderId === null,
+            sharedFolder: response?.document?.sharedFolder,
           });
           if (parentFolderId === null) {
             break;
@@ -304,11 +307,13 @@ const SubFolder = ({
                   navigateToSubFolder(pr.id);
                 }}
               >
+       
                 <i
                   style={{ color: "#384BD3" }}
                   className="fas fa-folder fa-1x"
                 ></i>
                 &nbsp; {pr.name}
+
               </Link>
             );
           })}
@@ -394,8 +399,9 @@ autoComplete="off"
                       className="fas fa-folder fa-2x"
                     ></i>
 
+
                     <span className="p-3">
-                      {subfolderFiles?.document?.name}
+                      {subfolderFiles?.document?.name }
                     </span>
                   </div>
                 </td>
@@ -453,13 +459,20 @@ autoComplete="off"
                       <td>
                         <div>
                           &nbsp; &nbsp;
-                          <FolderOpenIcon
+                          {!folder?.sharedFolder && <FolderOpenIcon
                             style={{ color: "#384BD3" }}
                             onClick={() => {
                               navigateToSubFolder(folder?.id);
                               addStack(folder?.id, folder?.name);
                             }}
-                          />
+                          />}
+                          {folder?.sharedFolder && <FolderSharedOutlinedIcon
+                          style={{ color: "#384BD3" }}
+                          onClick={() => {
+                            navigateToSubFolder(folder?.id);
+                            addStack(folder?.id, folder?.name);
+                          }}
+                        />}
                           <span
                             className="p-3 cursor"
                             onClick={() => {
