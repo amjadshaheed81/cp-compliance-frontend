@@ -266,10 +266,13 @@ const UpdateAsset = ({
     });
     // Initialize valuations
     if (response?.valuations?.length > 0) {
-      // If API returns multiple valuations
-      setValuations(
-        response.valuations
+      const validValuations = response.valuations.filter(
+        (v) => v.date !== null && v.valuation !== null && v.valuationBy !== null
       );
+      setValuations(validValuations);
+    } else {
+      // If no valid valuations exist, initialize with empty array
+      setValuations(response.valuations);
     }
     //  else if (response?.date) {
     //   // For backward compatibility with single valuation
@@ -753,15 +756,13 @@ const UpdateAsset = ({
       },
     ]);
   };
-
-  const removeValuation = (index) => {
-    if (valuations.length <= 1) {
-      toast.warn("At least one valuation is required");
-      return;
-    }
-    const newValuations = [...valuations];
-    newValuations.splice(index, 1);
-    setValuations(newValuations);
+  // In parent component
+  const handleRemoveValuation = (index) => {
+    setValuations((prev) => {
+      const newValuations = [...prev];
+      newValuations.splice(index, 1);
+      return newValuations;
+    });
   };
 
   const updateValuation = (index, data) => {
@@ -1548,6 +1549,7 @@ const UpdateAsset = ({
                         <label for="transactionId">Transaction ID</label>
                         <input
                           type="number"
+                          min={0}
                           className="form-control"
                           id="transactionId"
                           name="transactionId"
@@ -1574,6 +1576,7 @@ const UpdateAsset = ({
                         <input
                           type="number"
                           step="0.01"
+                          min={0}
                           className="form-control"
                           id="cost"
                           name="cost"
@@ -1746,36 +1749,102 @@ const UpdateAsset = ({
                 </form>
               </TabPanel>
               <TabPanel value="4">
-                <div className="mb-3">
+                <div className="mb-4 d-flex justify-content-between align-items-center">
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-primary d-flex align-items-center"
                     onClick={addValuation}
                   >
-                    Add Another Valuation
+                    Add Valuation
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary px-4 py-2 d-flex align-items-center"
+                    onClick={() => submitValuationForm()}
+                  >
+                    Save Valuations
                   </button>
                 </div>
 
-                {valuations.map((valuation, index) => (
-                  <ValuationComponent
-                    key={index}
-                    index={index}
-                    valuation={valuation}
-                    users={users}
-                    onRemove={removeValuation}
-                    onUpdate={updateValuation}
-                    isRemovable={valuations.length > 1}
-                  />
-                ))}
-
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    className="btn btn-success"
-                    onClick={()=>submitValuationForm()}
-                  >
-                    Save All Valuations
-                  </button>
+                <div className="table-responsive row">
+                  <table className="table mb-4">
+                    <thead className="table-dark">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold"
+                          style={{
+                            width: "25%",
+                            borderLeft: "1px solid #dee2e6",
+                          }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between">
+                            Valuation Date
+                            <i className="bi bi-arrow-down-up text-muted fs-small"></i>
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold"
+                          style={{ width: "25%" }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between">
+                            Valuation
+                            <i className="bi bi-arrow-down-up text-muted fs-small"></i>
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold"
+                          style={{ width: "25%" }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between">
+                            Valuation Done By
+                            <i className="bi bi-arrow-down-up text-muted fs-small"></i>
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold text-end"
+                          style={{
+                            width: "25%",
+                            borderRight: "1px solid #dee2e6",
+                          }}
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="border-top-0">
+                      {valuations.map((valuation, index) => (
+                        <ValuationComponent
+                          key={index}
+                          index={index}
+                          valuation={valuation}
+                          users={users}
+                          onRemove={handleRemoveValuation}
+                          onUpdate={updateValuation}
+                          isRemovable={valuations.length > 1}
+                        />
+                      ))}
+                      {valuations.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan="5"
+                            className="text-center py-4 text-muted"
+                            style={{
+                              borderLeft: "1px solid #dee2e6",
+                              borderRight: "1px solid #dee2e6",
+                            }}
+                          >
+                            <i className="bi bi-info-circle me-2"></i>
+                            No valuation records found. Click "Add Valuation" to
+                            create one.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </TabPanel>
 
@@ -1822,6 +1891,7 @@ const UpdateAsset = ({
                         <input
                           type="number"
                           step="0.01"
+                          min={0}
                           className="form-control"
                           id="disposalValue"
                           name="disposalValue"

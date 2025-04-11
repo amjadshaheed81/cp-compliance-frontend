@@ -40,103 +40,6 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 // Valuation Component
-const ValuationComponent = ({
-  valuations,
-  onValuationChange,
-  onAddValuation,
-  onRemoveValuation,
-  users,
-}) => {
-  return (
-    <div className="row">
-      <div className="col-md-12">
-        <button
-          type="button"
-          className="btn btn-primary mb-3"
-          onClick={onAddValuation}
-        >
-          Add Valuation
-        </button>
-
-        {valuations.map((valuation, index) => (
-          <div key={index} className="border p-3 mb-3">
-            <div className="row">
-              <div className="col-md-4">
-                <div className="form-group mt-2">
-                  <label htmlFor={`valuationDate-${index}`}>
-                    Valuation Date
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id={`valuationDate-${index}`}
-                    name={`valuationDate-${index}`}
-                    value={valuation.valuationDate || ""}
-                    onChange={(e) =>
-                      onValuationChange(index, "valuationDate", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="form-group mt-2">
-                  <label htmlFor={`valuationValue-${index}`}>Valuation</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-control"
-                    id={`valuationValue-${index}`}
-                    name={`valuationValue-${index}`}
-                    value={valuation.valuationValue || ""}
-                    onChange={(e) =>
-                      onValuationChange(index, "valuationValue", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="form-group mt-2">
-                  <label htmlFor={`valuationUserId-${index}`}>
-                    Valuation Done By
-                  </label>
-                  <select
-                    className="form-control form-select"
-                    id={`valuationUserId-${index}`}
-                    name={`valuationUserId-${index}`}
-                    value={valuation.valuationUserId || ""}
-                    onChange={(e) =>
-                      onValuationChange(
-                        index,
-                        "valuationUserId",
-                        e.target.value
-                      )
-                    }
-                  >
-                    <option value="">Select Valuer</option>
-                    {users?.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            {valuations.length > 1 && (
-              <button
-                type="button"
-                className="btn btn-danger mt-2"
-                onClick={() => onRemoveValuation(index)}
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const UpdateAsset = ({
   setLoader,
@@ -206,6 +109,14 @@ const UpdateAsset = ({
     }
   }, []);
 
+  const disposalForm = useForm({
+    defaultValues: {
+      disposalDate: "",
+      disposalValue: "",
+      disposalTo: "",
+    },
+  });
+
   const getAssetDetails = async () => {
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
@@ -213,43 +124,21 @@ const UpdateAsset = ({
     setPatRecord(response?.assetPATItems || []);
 
     // Initialize valuations and disposals
-    if (
-      response?.valuationDate ||
-      response?.valuationUserId ||
-      response?.valuationValue
-    ) {
-      setValuations([
-        {
-          valuationDate: response?.valuationDate
-            ? moment(response?.valuationDate).format("DD-MM-YYYY")
-            : "",
-          valuationUserId: response?.valuationUserId || "",
-          valuationValue: response?.valuationValue || "",
-        },
-      ]);
+    if (response?.valuations?.length > 0) {
+      const validValuations = response.valuations.filter(
+        (v) => v.date !== null && v.valuation !== null && v.valuationBy !== null
+      );
+      setValuations(validValuations);
     } else {
-      setValuations([
-        { valuationDate: "", valuationUserId: "", valuationValue: "" },
-      ]);
+      // If no valid valuations exist, initialize with empty array
+      setValuations(response.valuations);
     }
 
-    if (
-      response?.disposalDate ||
-      response?.disposalTo ||
-      response?.disposalValue
-    ) {
-      setDisposals([
-        {
-          disposalDate: response?.disposalDate
-            ? moment(response?.valuationDate).format("DD-MM-YYYY")
-            : "",
-          disposalTo: response?.disposalTo || "",
-          disposalValue: response?.disposalValue || "",
-        },
-      ]);
-    } else {
-      setDisposals([{ disposalDate: "", disposalTo: "", disposalValue: "" }]);
-    }
+    disposalForm.reset({
+      disposalDate: response?.disposalDate?.split("T")?.[0] || "",
+      disposalTo: response?.disposalTo || "",
+      disposalValue: response?.disposalValue || "",
+    });
 
     if (response?.category) {
       categoryChange(response?.category);
@@ -260,9 +149,7 @@ const UpdateAsset = ({
 
     purchaseDetailForm.reset({
       invoiceFile: response?.invoiceFile,
-      purchaseDate: response?.purchaseDate
-        ? moment(response?.purchaseDate).format("DD-MM-YYYY")
-        : "",
+      purchaseDate: response?.purchaseDate?.split("T")?.[0],
       supplier: response?.supplier,
       transactionId: response?.transactionId,
       cost: response?.cost,
@@ -278,100 +165,6 @@ const UpdateAsset = ({
     doorSpecificationForm.reset(response?.assetDoorSpecifications);
     reset(response);
   };
-
-  // Valuation handlers
-  // const handleValuationChange = (index, field, value) => {
-  //   const updatedValuations = [...valuations];
-  //   updatedValuations[index][field] = value;
-  //   setValuations(updatedValuations);
-  // };
-
-  // const handleAddValuation = () => {
-  //   setValuations([
-  //     ...valuations,
-  //     { valuationDate: "", valuationUserId: "", valuationValue: "" },
-  //   ]);
-  // };
-
-  // const handleRemoveValuation = (index) => {
-  //   const updatedValuations = [...valuations];
-  //   updatedValuations.splice(index, 1);
-  //   setValuations(updatedValuations);
-  // };
-
-  // Disposal handlers
-  // const handleDisposalChange = (index, field, value) => {
-  //   const updatedDisposals = [...disposals];
-  //   updatedDisposals[index][field] = value;
-  //   setDisposals(updatedDisposals);
-  // };
-
-  // const submitValuationForm = async () => {
-  //   let form_data = new FormData();
-  //   const submitData = {
-  //     assetId: selectedAsset?.assetId,
-  //     position: selectedAsset?.position,
-  //     floor: selectedAsset?.floor,
-  //     room: selectedAsset?.room,
-  //     purchaseDate: selectedAsset?.purchaseDate
-  //       ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
-  //       : null,
-  //     supplier: selectedAsset?.supplier,
-  //     transactionId: selectedAsset?.transactionId,
-  //     cost: selectedAsset?.cost,
-  //     // Take the last valuation entry as current
-  //     valuationDate: valuations[valuations.length - 1]?.valuationDate
-  //       ? `${valuations[valuations.length - 1]?.valuationDate} 10:00:00`
-  //       : null,
-  //     valuationUserId:
-  //       valuations[valuations.length - 1]?.valuationUserId || null,
-  //     valuationValue: valuations[valuations.length - 1]?.valuationValue || null,
-  //     disposalDate: selectedAsset?.disposalDate
-  //       ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
-  //       : null,
-  //     disposalTo: selectedAsset?.disposalTo,
-  //     disposalValue: selectedAsset?.disposalValue,
-  //   };
-
-  //   form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-  //   setLoader(true);
-  //   await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-  //   setLoader(false);
-  //   getAssetDetails();
-  // };
-
-  // const submitDisposalForm = async () => {
-  //   let form_data = new FormData();
-  //   const submitData = {
-  //     assetId: selectedAsset?.assetId,
-  //     position: selectedAsset?.position,
-  //     floor: selectedAsset?.floor,
-  //     room: selectedAsset?.room,
-  //     purchaseDate: selectedAsset?.purchaseDate
-  //       ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
-  //       : null,
-  //     supplier: selectedAsset?.supplier,
-  //     transactionId: selectedAsset?.transactionId,
-  //     cost: selectedAsset?.cost,
-  //     valuationDate: selectedAsset?.valuationDate
-  //       ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
-  //       : null,
-  //     valuationUserId: selectedAsset?.valuationUserId,
-  //     valuationValue: selectedAsset?.valuationValue,
-  //     // Take the last disposal entry as current
-  //     disposalDate: disposals[disposals.length - 1]?.disposalDate
-  //       ? `${disposals[disposals.length - 1]?.disposalDate} 10:00:00`
-  //       : null,
-  //     disposalTo: disposals[disposals.length - 1]?.disposalTo || null,
-  //     disposalValue: disposals[disposals.length - 1]?.disposalValue || null,
-  //   };
-
-  //   form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-  //   setLoader(true);
-  //   await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-  //   setLoader(false);
-  //   getAssetDetails();
-  // };
 
   const getCategories = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
@@ -1429,57 +1222,112 @@ const UpdateAsset = ({
                 </form>
               </TabPanel>
               <TabPanel value="4">
-                <div className="row">
+                <div className="row container-fluid">
                   <div className="col-md-12">
-                    <div className="border p-3 mb-3">
-                      <div className="row">
-                        <div className="col-md-4">
-                          <div className="form-group mt-2">
-                            <label>Valuation Date</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={
-                                selectedAsset?.valuationDate
-                                  ? moment(selectedAsset?.valuationDate).format(
+                    {/* Valuation History Table */}
+                    <div className="border shadow-sm">
+                      {valuations?.length > 0 ? (
+                        <div className="table-responsive">
+                          <table className="table table-hover mb-0">
+                            <thead className="table-dark">
+                              <tr>
+                                <th
+                                  className="py-2"
+                                  scope="col"
+                                  colSpan={5}
+                                  align="center"
+                                  style={{
+                                    border: "2px groove",
+                                    height: "50px",
+                                    textAlign: "center",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  Date
+                                </th>
+                                <th
+                                  className="py-2"
+                                  scope="col"
+                                  colSpan={5}
+                                  align="center"
+                                  style={{
+                                    border: "2px groove",
+                                    height: "50px",
+                                    textAlign: "center",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  Amount
+                                </th>
+                                <th
+                                  className="py-2"
+                                  scope="col"
+                                  colSpan={5}
+                                  align="center"
+                                  style={{
+                                    border: "2px groove",
+                                    height: "50px",
+                                    textAlign: "center",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  Done By
+                                </th>{" "}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {valuations.map((valuation, index) => (
+                                <tr key={index}>
+                                  <td
+                                    className="align-middle"
+                                    colSpan={5}
+                                    align="center"
+                                    style={{
+                                      border: "2px groove",
+                                      fontSize: "16px",
+                                    }}
+                                  >
+                                    {moment(valuation.date).format(
                                       "DD-MM-YYYY"
-                                    )
-                                  : ""
-                              }
-                              disabled
-                              readOnly
-                            />
-                          </div>
+                                    )}
+                                  </td>
+                                  <td
+                                    className="align-middle"
+                                    colSpan={5}
+                                    align="center"
+                                    style={{
+                                      border: "2px groove",
+                                      fontSize: "16px",
+                                    }}
+                                  >
+                                    {Number(
+                                      valuation.valuation
+                                    ).toLocaleString()}
+                                  </td>
+                                  <td
+                                    className="align-middle"
+                                    colSpan={5}
+                                    align="center"
+                                    style={{
+                                      border: "2px groove",
+                                      fontSize: "16px",
+                                    }}
+                                  >
+                                    {users?.find(
+                                      (u) => u.id === valuation.valuationBy
+                                    )?.name || "Unknown"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                        <div className="col-md-4">
-                          <div className="form-group mt-2">
-                            <label>Valuation</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={selectedAsset?.valuationValue || ""}
-                              readOnly
-                              disabled
-                            />
-                          </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted">
+                          <i className="bi bi-info-circle me-2"></i>
+                          No valuation history available
                         </div>
-                        <div className="col-md-4">
-                          <div className="form-group mt-2">
-                            <label>Valuation Done By</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={
-                                users?.find(
-                                  (u) => u.id === selectedAsset?.valuationUserId
-                                )?.name || ""
-                              }
-                              readOnly
-                              disabled
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
