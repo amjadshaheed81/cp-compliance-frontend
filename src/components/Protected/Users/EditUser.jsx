@@ -153,6 +153,7 @@ const ViewUsers = ({
       firstName: name?.[0] || "",
       lastName: name?.[1] || "",
       isCompany: selectedUser?.companyId ? true : false,
+      gasSafetyRegNo: selectedUser?.gasSafetyRegNo || "",
     });
     setTagSite(
       selectedUser?.taggedSites
@@ -195,6 +196,8 @@ const ViewUsers = ({
       companyId: formJson?.company || "",
       trade: formJson?.userType === "External" ? formJson?.trade : "",
       status: formJson?.status || "",
+      //f gas Id
+      gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       licenseId: loggedInUserData?.licenseId,
     };
     setIsLoading(true);
@@ -400,6 +403,7 @@ const ViewUsers = ({
                       )}
                     </div>
                   </div>
+
                   {values?.isCompany && (
                     <div className="col-md-4 mt-2">
                       <div className="form-group">
@@ -529,6 +533,7 @@ const ViewUsers = ({
                       </div>
                     </div>
                   )}
+
                   <div className="col-md-4 mt-2">
                     <div className="form-group">
                       <label htmlFor="status">Status</label>
@@ -543,7 +548,7 @@ const ViewUsers = ({
                         })}
                       >
                         <option value={""} disabled selected>
-                          Select Status
+                          Select Status *
                         </option>
                         <option value={"Active"}>Active</option>
                         <option value={"Inactive"}>Inactive</option>
@@ -556,6 +561,37 @@ const ViewUsers = ({
                       )}
                     </div>
                   </div>
+                  {values?.userType === "External" &&
+                    values?.trade === "Gas Engineer" && (
+                      <div className="col-md-4 mt-2">
+                        <div className="form-group">
+                          <label htmlFor="gasSafetyRegNo">
+                            Gas Safety Reg No.*
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="form-control"
+                            id="gasSafetyRegNo"
+                            {...register("gasSafetyRegNo", {
+                              required: {
+                                value:
+                                  values?.userType === "External" &&
+                                  values?.trade === "Gas Engineer",
+                                message:
+                                  "Gas Safety Registration Number is required",
+                              },
+                            })}
+                          />
+                          {errors?.gasSafetyRegNo && (
+                            <InputError
+                              message={errors?.gasSafetyRegNo?.message}
+                              key={errors?.gasSafetyRegNo?.message}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </Fragment>
             )}
