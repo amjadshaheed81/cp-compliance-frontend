@@ -10,10 +10,10 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import StarIcon from "@mui/icons-material/Star";
-import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
+import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
 import { useNavigate } from "react-router-dom";
 import { AccountCircle } from "@mui/icons-material";
-import { get,put } from "../../../api";
+import { get, put } from "../../../api";
 import {
   getSites,
   selectGlobalSite,
@@ -47,15 +47,14 @@ function SearchSite({
 
   useEffect(() => {
     getSites(loggedInUserData);
-    
   }, []);
 
-  const setfavorite = async(id) => {
-    const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
+  const setfavorite = async (id) => {
+    const userData = await get(`/api/user/${loggedInUserData?.id}/details`);
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
     favorite.push(id?.siteId);
     favorite = removeDuplicates(favorite);
-    setfavorites(favorite)
+    setfavorites(favorite);
     userData.userId = loggedInUserData?.id;
     userData.firstName = userData?.name?.split(" ")?.[0];
     userData.lastName = userData?.name?.split(" ")?.[1];
@@ -63,18 +62,18 @@ function SearchSite({
     await put(`/api/user/manage`, userData);
     setSites([]);
     getSites(loggedInUserData);
-  }
+  };
 
-  const removefavorite = async(id) => {
-    const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
+  const removefavorite = async (id) => {
+    const userData = await get(`/api/user/${loggedInUserData?.id}/details`);
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
 
     const index = favorite.indexOf(String(id?.siteId));
-    if (index > -1) { 
-      favorite.splice(index, 1); 
+    if (index > -1) {
+      favorite.splice(index, 1);
     }
     favorite = removeDuplicates(favorite);
-    setfavorites(favorite)
+    setfavorites(favorite);
     userData.userId = loggedInUserData?.id;
     userData.firstName = userData?.name?.split(" ")?.[0];
     userData.lastName = userData?.name?.split(" ")?.[1];
@@ -82,32 +81,31 @@ function SearchSite({
     await put(`/api/user/manage`, userData);
     setSites([]);
     getSites(loggedInUserData);
-  }
+  };
 
   function removeDuplicates(arr) {
-    return arr.filter((item,
-        index) => arr.indexOf(item) === index);
-}
+    return arr.filter((item, index) => arr.indexOf(item) === index);
+  }
 
   useEffect(() => {
     setSites2(sites);
     getFav();
   }, [sites]);
 
-
-  const getFav = async() => {
-    const userData = await get(`/api/user/${loggedInUserData?.id}/details`)
+  const getFav = async () => {
+    const userData = await get(`/api/user/${loggedInUserData?.id}/details`);
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
     favorite = removeDuplicates(favorite);
     setfavorites(favorite);
-  }
+  };
 
   let initialSite = sites?.slice(0, 2);
   const searchSite = async (e) => {
-
     const value = e?.target?.value;
-    const list = sites?.filter((x) =>
-      (x?.status === "open" || x?.status === "Open") && String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
+    const list = sites?.filter(
+      (x) =>
+        (x?.status === "open" || x?.status === "Open") &&
+        String(x?.siteName).toLowerCase().includes(String(value).toLowerCase())
     );
     setSites(list);
     // const url = `/api/site/site/all?q=${value}`;
@@ -156,7 +154,7 @@ function SearchSite({
         ></i>
         <input
           type="text"
-autoComplete="off"
+          autoComplete="off"
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
           style={{ textAlign: "center" }}
@@ -177,46 +175,52 @@ autoComplete="off"
       </div>
       {/* {error && <p>{error}</p>} */}
       <List>
-        {allSites2?.filter(s=>favorites.includes(String(s?.siteId)))?.map((site) => (
-          <ListItem key={site?.id} disablePadding>
-            <ListItemButton
-              
-            >
-              <ListItemIcon>
-                <StarIcon color="primary" onClick={()=>removefavorite(site)}/>
-                
-              </ListItemIcon>
-              <ListItemText primary={site?.siteName}  
-             onClick={() => {
-              selectGlobalSite(site);
-              localStorage.setItem("site", JSON.stringify(site));
-              setState({ ...state, [anchor]: false });
-              goTo("/dashboard")
-            }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-        {allSites?.filter(s=>!favorites.includes(String(s?.siteId)))?.map((site) => (
-          <ListItem key={site?.id} disablePadding>
-            <ListItemButton
-              
-            >
-              <ListItemIcon>
-                
-               <StarBorderRoundedIcon  color="primary" onClick={()=>setfavorite(site)}/>
-              </ListItemIcon>
-              <ListItemText primary={site?.siteName}  
-             onClick={() => {
-              selectGlobalSite(site);
-              localStorage.setItem("site", JSON.stringify(site));
-              setState({ ...state, [anchor]: false });
-              goTo("/dashboard")
-            }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        {allSites2
+          ?.filter((s) => favorites.includes(String(s?.siteId)))
+          ?.map((site) => (
+            <ListItem key={site?.id} disablePadding>
+              <ListItemButton>
+                <ListItemIcon>
+                  <StarIcon
+                    color="primary"
+                    onClick={() => removefavorite(site)}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={site?.siteName}
+                  onClick={() => {
+                    selectGlobalSite(site);
+                    localStorage.setItem("site", JSON.stringify(site));
+                    setState({ ...state, [anchor]: false });
+                    goTo("/dashboard");
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        {allSites
+          ?.filter((s) => !favorites.includes(String(s?.siteId)))
+          ?.map((site) => (
+            <ListItem key={site?.id} disablePadding>
+              <ListItemButton>
+                <ListItemIcon>
+                  <StarBorderRoundedIcon
+                    color="primary"
+                    onClick={() => setfavorite(site)}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={site?.siteName}
+                  onClick={() => {
+                    selectGlobalSite(site);
+                    localStorage.setItem("site", JSON.stringify(site));
+                    setState({ ...state, [anchor]: false });
+                    goTo("/dashboard");
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
       </List>
       {/* <List>
         {allSites?.map((site) => (
@@ -243,9 +247,17 @@ autoComplete="off"
             <span onClick={toggleDrawer(anchor, true)} className="cursor">
               <img
                 src={siteSelectedForGlobal?.siteImageUrl}
-                style={{ height: "35px", borderRadius: "50%" }}
+                style={{
+                  height: "35px",
+                  width: "35px",
+                  borderRadius: "50%",
+                  aspectRatio: "auto",
+                }}
+                alt=""
               />
-              <span>{siteSelectedForGlobal?.siteName}</span>
+              <span style={{ fontWeight: "normal", marginLeft: "5px" }}>
+                {siteSelectedForGlobal?.siteName}
+              </span>
             </span>
           ) : (
             <span onClick={toggleDrawer(anchor, true)} className="cursor">
