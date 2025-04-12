@@ -517,7 +517,7 @@ const EditProfile = ({
                             Gas Safety Reg No.*
                           </label>
                           <input
-                            type="number"
+                             type="text"
                             min={0}
                             className="form-control"
                             id="gasSafetyRegNo"
