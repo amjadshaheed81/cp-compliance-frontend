@@ -760,7 +760,7 @@ const UpdateAsset = ({
   const handleRemoveValuation = (index) => {
     setValuations((prev) => {
       const newValuations = [...prev];
-      newValuations.splice(index, 1);
+      newValuations[index].delete = true;
       return newValuations;
     });
   };
@@ -1816,7 +1816,7 @@ const UpdateAsset = ({
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {valuations.map((valuation, index) => (
+                      {valuations.filter(v=> !v.delete).map((valuation, index) => (
                         <ValuationComponent
                           key={index}
                           index={index}
