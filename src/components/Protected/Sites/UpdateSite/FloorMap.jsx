@@ -19,6 +19,8 @@ const FloorMap = ({
   updateSite,
   loggedInUserData,
 }) => {
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+
   const [selectedTab, setSelectedTab] = useState(null);
   const [positionOption, setPositionOption] = useState([]);
   const [markerLabels, setMarkerLabels] = useState([]);
@@ -33,17 +35,19 @@ const FloorMap = ({
     height: 0,
   });
 
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver(() => {
-      setDroppedItems([...droppedItems]);
-    });
+ useEffect(() => {
+    const handleResize = () => {
+      if (imageRef.current) {
+        const { width, height } = imageRef.current.getBoundingClientRect();
+        setImageSize({ width, height });
+      }
+    };
 
-    if (imageRef.current) {
-      resizeObserver.observe(imageRef.current);
-    }
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
 
-    return () => resizeObserver.disconnect();
-  }, [droppedItems]);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [floorPlanUrl]);
 
   useEffect(() => {
     const positions = siteLayout?.filter(
@@ -176,11 +180,10 @@ const FloorMap = ({
       if (!clientOffset || !imageRef.current) return;
 
       const imageRect = imageRef.current.getBoundingClientRect();
-      const scaleX = naturalDimensions.width / imageRect.width;
-      const scaleY = naturalDimensions.height / imageRect.height;
-
-      const naturalX = (clientOffset.x - imageRect.left) * scaleX;
-      const naturalY = (clientOffset.y - imageRect.top) * scaleY;
+      
+      // Calculate position as percentage of natural dimensions
+      const naturalX = ((clientOffset.x - imageRect.left) / imageRect.width) * naturalDimensions.width;
+      const naturalY = ((clientOffset.y - imageRect.top) / imageRect.height) * naturalDimensions.height;
 
       setDroppedItems((prev) => [
         ...prev,
@@ -249,15 +252,9 @@ const FloorMap = ({
       },
     });
 
-    // Convert natural coordinates to current display coordinates
-    const imageRect = imageRef.current?.getBoundingClientRect() || {
-      width: 0,
-      height: 0,
-    };
-    const scaleX = naturalDimensions.width / imageRect.width;
-    const scaleY = naturalDimensions.height / imageRect.height;
-    const left = item.naturalX / scaleX;
-    const top = item.naturalY / scaleY;
+    // Calculate position based on natural dimensions and current display size
+    const left = (item.naturalX / naturalDimensions.width) * imageSize.width;
+    const top = (item.naturalY / naturalDimensions.height) * imageSize.height;
 
     return (
       <Tooltip title={`View Assets: ${item.label}`} arrow>
@@ -265,9 +262,10 @@ const FloorMap = ({
           ref={drag}
           style={{
             position: "absolute",
-            left: left,
-            top: top,
+            left: `${(item.naturalX / naturalDimensions.width) * 100}%`,
+            top: `${(item.naturalY / naturalDimensions.height) * 100}%`,
             transform: isDragging ? "scale(1.05)" : "scale(1)",
+            transformOrigin: 'center center',
             transition: "transform 0.1s ease-out",
             willChange: "transform",
             backgroundColor: "#d34053",
@@ -279,7 +277,33 @@ const FloorMap = ({
             opacity: isDragging ? 0.7 : 1,
           }}
         >
-          {/* Your marker UI remains same */}
+          <span
+            style={{
+              position: "absolute",
+              top: "-10px",
+              right: "-10px",
+              backgroundColor: "black",
+              color: "white",
+              borderRadius: "50%",
+              width: "16px",
+              height: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "10px",
+              cursor: "pointer",
+            }}
+            onClick={() => removeMarker(index, item)}
+          >
+            ✖
+          </span>
+          <a
+            target="_blank"
+            className="markerLink"
+            href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}
+          >
+            {item.label}
+          </a>
         </div>
       </Tooltip>
     );
@@ -346,45 +370,49 @@ const FloorMap = ({
             )}
           </div>
           {floorPlanUrl ? (
-    <div
-      ref={drop}
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        overflow: "hidden",
-      }}
-    >
-      <img
-        ref={imageRef}
-        src={floorPlanUrl}
-        onLoad={(e) => {
-          setNaturalDimensions({
-            width: e.target.naturalWidth,
-            height: e.target.naturalHeight,
-          });
-        }}
+      <div
+        ref={drop}
         style={{
+          position: "relative",
           width: "100%",
           height: "100%",
-          objectFit: "contain",
-          display: "block",
+          overflow: "hidden",
         }}
-        alt="Floor plan"
-      />
-      {droppedItems.map((item, index) => (
-        <Marker
-          key={index}
-          index={index}
-          item={item}
-          updatePosition={updateMarkerPosition}
-          removeMarker={removeMarker}
+      >
+        <img
+          ref={imageRef}
+          src={floorPlanUrl}
+          onLoad={(e) => {
+            setNaturalDimensions({
+              width: e.target.naturalWidth,
+              height: e.target.naturalHeight,
+            });
+            setImageSize({
+              width: e.target.getBoundingClientRect().width,
+              height: e.target.getBoundingClientRect().height
+            });
+          }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            display: "block",
+          }}
+          alt="Floor plan"
         />
-      ))}
-    </div>
-  ) : (
-    "Floor plan file is not available."
-  )}
+        {droppedItems.map((item, index) => (
+          <Marker
+            key={index}
+            index={index}
+            item={item}
+            updatePosition={updateMarkerPosition}
+            removeMarker={removeMarker}
+          />
+        ))}
+      </div>
+    ) : (
+      "Floor plan file is not available."
+    )}
 
         </div>
       </Box>
