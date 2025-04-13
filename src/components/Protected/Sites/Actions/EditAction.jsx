@@ -26,7 +26,7 @@ import {
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken, del } from "../../../../api";
 import { getSiteAssets, setLoader, getSiteLayout } from "../../../../store/thunk/site";
-import { isViewRoleForActions } from "../../../../utils/isManagerAdminLogin";
+import { isTopLevelUser } from "../../../../utils/isManagerAdminLogin";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -488,7 +488,7 @@ const EditAction = ({
                           <label for="internalExternal">Internal/External</label>
                           <select
                             name="internalExternal"
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             className="form-control form-select"
                             id="internalExternal"
                             value={formData?.internalExternal}
@@ -509,7 +509,7 @@ const EditAction = ({
                             name="floor"
                             className="form-control form-select"
                             id="floor"
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             value={formData?.floor}
                             onChange={handleInputChange}
                           >
@@ -537,7 +537,7 @@ const EditAction = ({
                             name="room"
                             className="form-control form-select"
                             id="room"
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             value={formData?.room}
                             onChange={handleInputChange}
                           >
@@ -569,7 +569,7 @@ const EditAction = ({
                         <div className="form-group mt-4">
                         <Autocomplete
                           multiple
-                          //disabled={isViewRoleForActions(loggedInUserData)}
+                          //disabled={!isTopLevelUser(loggedInUserData)}
                           disabled
                           value={siteAssets.filter(s => formData?.taggedAsset?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
                         
@@ -642,7 +642,7 @@ const EditAction = ({
                       />
                           {/* <Autocomplete
                             multiple
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.taggedAsset = item?.map(i => i.key).join(",");
@@ -758,6 +758,7 @@ autoComplete="off"
                         <div className="form-group mt-2">
                           <label htmlFor="assignedTo">Assign To</label>
                           <Autocomplete
+                          disabled={!isTopLevelUser(loggedInUserData)}
                             id="assignedTo"
                             value={
                               managerList
@@ -784,7 +785,7 @@ autoComplete="off"
           onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   required
-                                  disabled={isViewRoleForActions(loggedInUserData)}
+                                  disabled={!isTopLevelUser(loggedInUserData)}
                                   className="form-control"
                                   placeholder="Select User"
                                 />
@@ -823,7 +824,7 @@ autoComplete="off"
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
-                                  disabled={isViewRoleForActions(loggedInUserData)}
+                                  disabled={!isTopLevelUser(loggedInUserData)}
                                   required
                                   className="form-control"
                                   placeholder="Select User"
@@ -838,7 +839,7 @@ autoComplete="off"
                       <div className="col-md-4">
                         <div className="form-group mt-2">
                         <Button
-                          disabled={isViewRoleForActions(loggedInUserData)}
+                          disabled={!isTopLevelUser(loggedInUserData)}
                           onClick={() => goTo("/site-contracts")}
                           className="bg-light text-primary"
                         >
@@ -999,7 +1000,7 @@ autoComplete="off"
                         </Button>
                         &nbsp;&nbsp;
                         <Button
-                          style={{display: isViewRoleForActions(loggedInUserData) ? "none" : "" }}
+                          style={{display: !isTopLevelUser(loggedInUserData) ? "none" : "" }}
                           onClick={(e) => saveAction(e)}
                           type="button"
                           className="bg-primary text-white"
