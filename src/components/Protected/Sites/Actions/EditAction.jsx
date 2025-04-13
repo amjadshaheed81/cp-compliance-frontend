@@ -166,7 +166,9 @@ const EditAction = ({
   };
 
   const isExternal = () => {
-    const user = managerList.find((option) => String(option.key) === String(formData?.assignedTo));
+    console.log('formData',formData, managerList)
+    const user = managerList.find((option) => String(option.id) === String(formData?.assignedTo));
+    console.log('user', user)
     return (user && user.userType === "External")
   }
 
