@@ -196,7 +196,6 @@ const ViewUsers = ({
       companyId: formJson?.company || "",
       trade: formJson?.userType === "External" ? formJson?.trade : "",
       status: formJson?.status || "",
-      //f gas Id
       gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       licenseId: loggedInUserData?.licenseId,
     };
