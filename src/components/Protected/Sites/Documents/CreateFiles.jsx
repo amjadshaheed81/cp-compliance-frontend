@@ -547,7 +547,7 @@ autoComplete="off"
                     />
                   )}
                   <span>or drag and drop</span>
-                  <p>SVG, PNG, JPG or GIF</p>
+                  {/* <p>SVG, PNG, JPG or GIF</p> */}
                   <p>(max 100 MB)</p>
                 </div>
               </div>

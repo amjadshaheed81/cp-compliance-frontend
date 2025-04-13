@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Modal, Typography, Box } from "@mui/material";
+import { Button, Modal, Typography, Box, FormControlLabel, Checkbox } from "@mui/material";
 import { useForm, ErrorMessage } from "react-hook-form";
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
@@ -26,17 +26,24 @@ const CreateParentFolder = ({
   const handleOpen = () => setShowFolderModal(true);
   const handleClose = () => setShowFolderModal(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isShared, setIsShared] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const submitFolder = async (data) => {
-    
-      setIsLoading(true);
-      await post("/api/document/folder", data);
+    setIsLoading(true);
+    try {
+      await post("/api/document/admin-folder", {
+        ...data,
+        sharedFolder: isShared
+      });
       setIsLoading(false);
       handleClose();
       refresh();
       toast.success("Folder added successfully");
-    
+    } catch (error) {
+      setIsLoading(false);
+      toast.error("Failed to create folder");
+    }
   };
 
   const style = {
@@ -70,7 +77,7 @@ const CreateParentFolder = ({
             <CircularProgress />
           </Box>}
           {!isLoading && (
-            <Box component="div">
+            <Box component="div" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 fullWidth
                 label="Folder Name"
@@ -84,6 +91,16 @@ const CreateParentFolder = ({
                 })}
                 error={!!errors.folderName}
                 helperText={errors.folderName ? errors.folderName.message : ''}
+              />
+              
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={isShared}
+                    onChange={(e) => setIsShared(e.target.checked)}
+                  />
+                }
+                label="Shared Folder (Files uploaded in this folder will be visible to all sites)" 
               />
             </Box>
           )}

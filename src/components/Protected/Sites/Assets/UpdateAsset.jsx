@@ -1205,19 +1205,17 @@ const UpdateAsset = ({
                           <img
                             src={selectedAsset?.images[0].imageUrl}
                             className="img img-responsive border p-2 m-2 w-100"
-                          />
-                        )}
-                        {selectedAsset?.images?.length === 1 && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-danger mb-2"
-                            onClick={() => {
-                              deletAssetImage(0);
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
+
+                          />)}
+                            {selectedAsset?.images?.length === 1 && <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger mb-2"
+                                  onClick={() => {
+                                    deletAssetImage(selectedAsset?.images[0]);
+                                  }}
+                                >
+                                  Delete
+                                </button>}
                         <input
                           type="file"
                           multiple

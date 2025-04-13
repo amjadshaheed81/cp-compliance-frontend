@@ -166,6 +166,7 @@ const AddUser = ({
         formJson?.userType === "Internal" ? siteSelectedForGlobal?.siteId : "",
       companyId: formJson?.company || "",
       trade: formJson?.userType === "External" ? formJson?.trade : "",
+      gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       status: formJson?.status || "",
       licenseId: loggedInUserData?.licenseId,
     };
@@ -480,6 +481,38 @@ const AddUser = ({
                       )}
                     </div>
                   </div>
+                  {values?.userType === "External" &&
+                    values?.trade === "Gas Engineer" && (
+                      <div className="col-md-4 mt-2">
+                        <div className="form-group">
+                          <label htmlFor="gasSafetyRegNo">
+                            Gas Safety Reg No.*
+                          </label>
+                          <input
+                            type="text"
+                            min={0}
+                            className="form-control"
+                            id="gasSafetyRegNo"
+                            required
+                            {...register("gasSafetyRegNo", {
+                              required: {
+                                value:
+                                  values?.userType === "External" &&
+                                  values?.trade === "Gas Engineer",
+                                message:
+                                  "Gas Safety Registration Number is required",
+                              },
+                            })}
+                          />
+                          {errors?.gasSafetyRegNo && (
+                            <InputError
+                              message={errors?.gasSafetyRegNo?.message}
+                              key={errors?.gasSafetyRegNo?.message}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </Fragment>
             )}

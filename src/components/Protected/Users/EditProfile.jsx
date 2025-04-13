@@ -61,8 +61,8 @@ const EditProfile = ({
     getCompanies();
   }, []);
   const getCompanies = async () => {
-    const license = JSON.parse(localStorage.getItem('license'));
-    const url = "/api/companies/all?licenseId="+license?.licenseId;
+    const license = JSON.parse(localStorage.getItem("license"));
+    const url = "/api/companies/all?licenseId=" + license?.licenseId;
     let response = await get(url);
     response = response.filter((r) => r !== null);
     setcompanies(response);
@@ -100,6 +100,7 @@ const EditProfile = ({
           : null,
       companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
+      gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       status: formJson?.status || null,
     };
     setIsLoading(true);
@@ -163,9 +164,9 @@ const EditProfile = ({
                       <label for="firstName">First Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="firstName"
                         {...register("firstName", {
@@ -188,9 +189,9 @@ autoComplete="off"
                       <label for="lastName">Last Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="lastName"
                         {...register("lastName")}
@@ -349,10 +350,10 @@ autoComplete="off"
                         {...register("isCompany")}
                         onChange={(e) => {
                           const isChecked = e.target.checked;
-    
+
                           // Update form state immediately
-                          setValue("isCompany", isChecked); 
-                          
+                          setValue("isCompany", isChecked);
+
                           // Clear selected company if unchecked
                           if (!isChecked) {
                             setSelectedCompany(null);
@@ -384,9 +385,11 @@ autoComplete="off"
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                                autoComplete="off"
+                                readOnly
+                                onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                                }
                                 {...params.inputProps}
                                 className="form-control"
                                 placeholder="Select Company"
@@ -506,6 +509,37 @@ autoComplete="off"
                       )}
                     </div>
                   </div>
+                  {values?.userType === "External" &&
+                    values?.trade === "Gas Engineer" && (
+                      <div className="col-md-4 mt-2">
+                        <div className="form-group">
+                          <label htmlFor="gasSafetyRegNo">
+                            Gas Safety Reg No.*
+                          </label>
+                          <input
+                             type="text"
+                            min={0}
+                            className="form-control"
+                            id="gasSafetyRegNo"
+                            {...register("gasSafetyRegNo", {
+                              required: {
+                                value:
+                                  values?.userType === "External" &&
+                                  values?.trade === "Gas Engineer",
+                                message:
+                                  "Gas Safety Registration Number is required",
+                              },
+                            })}
+                          />
+                          {errors?.gasSafetyRegNo && (
+                            <InputError
+                              message={errors?.gasSafetyRegNo?.message}
+                              key={errors?.gasSafetyRegNo?.message}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </Fragment>
             )}

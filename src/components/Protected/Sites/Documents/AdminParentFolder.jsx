@@ -92,17 +92,21 @@ const AdminParentFolder = ({
                 return (
                   <tr>
                     <td>
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        //onClick={() => navigateToSubFolder(folder?.id)}
-                      >
-                        <i
-                          style={{ color: "#384BD3" }}
-                          className="fas fa-folder fa-2x"
-                        ></i>
-                        <span className="p-3">{folder?.name} </span>
-                      </div>
+                      <div role="button" tabIndex={0}>
+    <span className="fa-stack fa-2x">
+      <i 
+        className={`fas fa-folder fa-stack-2x`} 
+        style={{ color: "#384BD3" }}
+      ></i>
+      {folder?.sharedFolder && (
+        <i 
+          className="fas fa-users fa-stack-1x" 
+          style={{ color: "white", fontSize: "0.5em", left: "10px", top: "8px" }}
+        ></i>
+      )}
+    </span>
+    <span className="p-3">{folder?.name}</span>
+  </div>
                     </td>
                    
                     <td>

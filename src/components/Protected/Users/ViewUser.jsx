@@ -9,11 +9,7 @@ import { connect } from "react-redux";
 import moment from "moment";
 import TagSites from "./TagSites";
 
-const ViewUsers = ({
-  showViewModal,
-  setShowViewModal,
-  selectedUser,
-}) => {
+const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser }) => {
   const handleClose = () => setShowViewModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSiteTagModal, setShowSiteTagModal] = useState(false);
@@ -115,6 +111,15 @@ const ViewUsers = ({
                     {selectedUser?.trade || "--"}
                   </span>
                 </li>
+                {selectedUser?.userType === "External" &&
+                  selectedUser?.trade === "Gas Engineer" && (
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      Gas Safety Reg No.
+                      <span class="badge bg-primary rounded-pill">
+                        {selectedUser?.gasSafetyRegNo || "--"}
+                      </span>
+                    </li>
+                  )}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   Status
                   <span class="badge bg-primary rounded-pill">

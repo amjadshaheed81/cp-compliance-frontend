@@ -123,7 +123,8 @@ const EditAction = ({
   };
 
   const deleteActionImage = async (image)=>{
-    await del(`/api/site/actions/image/${image.assetImageId}`);
+    console.log('image',image)
+    await del(`/api/site/actions/image/${image.imageId}`);
     toast.success("Image deleted successfully")
     await getActionIdDetails()
     
@@ -177,7 +178,7 @@ const EditAction = ({
    
     const udata = {
       ...formData,
-      file: e.target.files[0],
+      file: e.target.files,
     };
     setFormData(udata);
   };
@@ -240,10 +241,19 @@ const EditAction = ({
       form.reportValidity();
     }
     const data = { ...formData }
-    if (data?.file?.name) {
+    if (data?.file?.length > 0) {
+      const files = []
       data.siteId = siteSelectedForGlobal?.siteId;
-      data.actionImage = await uploadSiteCheckDoc(data);
-      delete data.file;
+      
+      for (const f of data?.file) {
+        const temp = {...data}
+        temp.file = f
+         const url = await uploadSiteCheckDoc(temp);
+         files.push(url);
+         
+      }
+      data.files = files;
+      data.siteId = siteSelectedForGlobal?.siteId;
     }
     toast.success("Action data saved")
     await put("/api/site/actions", data);
@@ -867,9 +877,11 @@ autoComplete="off"
                             {formData?.images?.map(i => (
                               <div>
                                 <img
+                                onClick={()=> {window.open(i?.imageUrl + "?" + sasToken, '_blank');}}
                                   src={i?.imageUrl + "?" + sasToken}
                                   className="img img-responsive border p-2 m-2 w-100"
                                   alt="Asset Image"
+                                  style={{ cursor: 'pointer' }}
                                 />
                                 <button
                                   type="button"
@@ -886,6 +898,8 @@ autoComplete="off"
                         )}
                         {formData?.images?.length === 1 && (
                           <img
+                          onClick={()=> {window.open(formData?.images[0]?.imageUrl + "?" + sasToken, '_blank');}}
+                          style={{ cursor: 'pointer' }}
                             src={formData?.images[0].imageUrl+ "?" + sasToken}
                             className="img img-responsive border p-2 m-2 w-100"
                           />)}
@@ -894,7 +908,7 @@ autoComplete="off"
                                   type="button"
                                   className="btn btn-sm btn-danger mb-2"
                                   onClick={() => {
-                                    deleteActionImage(0);
+                                    deleteActionImage(formData?.images[0]);
                                   }}
                                 >
                                   Delete
@@ -905,7 +919,7 @@ autoComplete="off"
                           className="form-control"
                           style={{ marginTop: '30px' }}
                           name="actionImage"
-                          accept="image/*, application/pdf"
+                          accept="image/*"
                           id="actionImage"
                           onChange={(e) => handleFileChange(e)}
                         />

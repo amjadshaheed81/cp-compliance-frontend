@@ -136,6 +136,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   const searchEnergyCost = () => {
+    console.log(energyCost);
     let filteredEnergyCost2 = energyCost;
     if (formData2?.budgetCategory?.length > 0) {
       filteredEnergyCost2 = filteredEnergyCost2.filter(
@@ -321,6 +322,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       ? await get("/api/energy/survey/all")
       : await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
     energyCost.forEach((energy) => {
+      energy.readingList = energy.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
       const dates = energy.costList.map((c) => new Date(c.fromDate));
       const minDate =
         Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
@@ -333,6 +335,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       energy.maxDate = maxDate;
     });
 
+    setEnergyCost(energyCost);
     if (formData2?.budgetCategory?.length > 0) {
       energyCost = energyCost.filter(
         (sc) => sc.budgetCategory === formData2.budgetCategory
@@ -340,7 +343,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     }
 
     setFilteredEnergyCost(energyCost);
-    setEnergyCost(energyCost);
+    
     setIsLoading(false);
   };
 
@@ -595,7 +598,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     id="budgetCategory"
                     onChange={handleInputChange2}
                   >
-                    <option value="">Budget Category</option>
+                    <option value="">Budget Category 2</option>
                     {typeoptions?.map((t) => (
                       <option value={t}>{t}</option>
                     ))}

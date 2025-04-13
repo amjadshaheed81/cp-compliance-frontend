@@ -58,6 +58,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       if (resIdx >= 0) {
         q.status = "Closed";
         q.response = questionsResponse[resIdx]
+       
         q.completed = questionsResponse[resIdx]?.status === "Closed"
 
       } else {
@@ -65,6 +66,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
         q.response = {}
         q.completed = false
       }
+      q.response.file = null
     })
 
     const risksN = [0, 0, 0, 0]
@@ -87,6 +89,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       riskScoreYellow: risksN[2],
       riskScoreGreen: risksN[3],
     }
+   
     await put("/api/site-check/" + checkId, body);
     const filtered = questionsFromDB.filter(q=>q?.order?.length > 4);
     filtered.sort((a, b) => {
@@ -151,13 +154,13 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
 
   const handleFileChange = (e, idx) => {
     const uquest = [...quest]
-    uquest[idx].response.file = e.target.files[0]
+    uquest[idx].response.file = e.target.files
     setquest(uquest);
   };
 
-  const handleFileDelete = (idx) => {
+  const handleFileDelete = (idx,idx2) => {
     const uquest = [...quest]
-    uquest[idx].response.file = null
+    quest[idx].response.file =  [...quest[idx].response.file].filter((_, index) => index !== idx2);
     setquest(uquest);
   };
 
@@ -175,10 +178,20 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
       form.reportValidity();
     }
     const dataToSave = quest[index].response;
-    if (dataToSave?.file?.name) {
+    if (dataToSave?.file?.length > 0) {
       dataToSave.siteId = siteSelectedForGlobal?.siteId;
-      dataToSave.file = await uploadSiteCheckDoc(dataToSave);
+      const files = []
+      for (const f of dataToSave?.file) {
+        const temp = {...dataToSave}
+        temp.file = f
+         const url = await uploadSiteCheckDoc(temp);
+         files.push(url);
+         
+      }
+
+    dataToSave.files = files;
     }
+    dataToSave.file = null;
     dataToSave.responseDate = new Date();
     dataToSave.checkId = checkId;
     dataToSave.qid = quest[index].qid;
@@ -575,8 +588,8 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                     </Grid>}
-                    {faultAsset > 0 &&<Grid item xs={q?.response?.images?.length === 0 ? 12 : 8}>
-                     
+                    {faultAsset > 0 &&<Grid item xs={!q?.response?.images || q?.response?.images?.length === 0 ? 12 : 8}>
+
                         <Box
                           display="flex"
                           alignItems="center"
@@ -590,23 +603,55 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             borderRadius: '4px',
                             color: '#3f51b5',
                           }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDragEnter={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const files = e.dataTransfer.files;
+                            if (files && files.length) {
+                              // Create a synthetic event to reuse your existing handler
+                              const syntheticEvent = {
+                                target: {
+                                  files: files
+                                }
+                              };
+                              handleFileChange(syntheticEvent, idx);
+                            }
+                          }}
                         >
                           <IconButton component="label">
-                            <input hidden type="file" onChange={(e) => handleFileChange(e, idx)} />
+                            <input
+                              hidden
+                              type="file"
+                              onChange={(e) => handleFileChange(e, idx)}
+                              accept="image/jpeg, image/jpg, image/png"
+                              multiple
+                            />
                             <UploadFile />
                           </IconButton>
                           <Typography>
                             Click to upload or drag and drop PNG/JPG (max, 1MB)
                           </Typography>
                         </Box>
-                        {q?.response?.file?.name && (
-                        <Chip
-                          label={q?.response?.file?.name??"Attached Image"}
-                          onDelete={() => handleFileDelete(idx)}
+                        {q?.response?.file && q?.response?.file?.length > 0 && [...q?.response?.file]?.map((f,idx2) => (
+                          <Chip
+                          label={f?.name??"Attached Image"}
+                          onDelete={() => handleFileDelete(idx,idx2)}
 
                         />
-
-                      )}
+                        ))}
+                        
 
                     </Grid>}
                     
@@ -619,6 +664,8 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             {q?.response?.images?.map(i => (
                               <div>
                                 <img
+                                 onClick={()=> {window.open(i?.imageUrl+ "?" + sasToken, '_blank');}}
+                                 style={{ cursor: 'pointer' }}
                                   src={i?.imageUrl+"?"+sasToken}
                                   className="img img-responsive border p-2 m-2 w-100"
                                   height={200}
@@ -646,6 +693,9 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                             <div className="col-md-4 text-center mt-2" style={{marginBottom:'10px'}}>
                             <div className="form-group" >
                           <img
+                          onClick={()=> {window.open(q?.response?.images[0]?.imageUrl + "?" + sasToken, '_blank');}}
+                          style={{ cursor: 'pointer' }}
+                          
                             src={q?.response?.images[0].imageUrl + "?"+sasToken}
                             className="img img-responsive border p-2 m-2 w-100"
                             height={200}
@@ -657,7 +707,7 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
                                   type="button"
                                   className="btn btn-sm btn-danger mb-2"
                                   onClick={() => {
-                                    deleteAssessmentResponseImage(0);
+                                    deleteAssessmentResponseImage(q?.response?.images[0]);
                                   }}
                                   style={{margin:'10px'}}
                                 >

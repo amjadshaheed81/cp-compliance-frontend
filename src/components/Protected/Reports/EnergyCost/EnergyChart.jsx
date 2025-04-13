@@ -53,7 +53,6 @@ const EnergyChart = ({ energyData, currentYear, previousYear }) => {
         r.consumption = i > 0 ? r.readingValue - energyItem.readingList[i-1].readingValue : r.readingValue;
       
       })
-      console.log(' energyItem.readingList',  energyItem.readingList)
       const itemCurrentYearReading = processMonthlyReading(
         energyItem.readingList,
         currentYear
