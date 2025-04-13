@@ -38,6 +38,7 @@ import TagAsset from "./TagAsset";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import PdfViewer from "../Documents/PdfViewer";
 import DatePicker from "../../../common/DatePicker";
+import ValuationComponent from "./ValuationComponent";
 
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
@@ -71,7 +72,6 @@ const UpdateAsset = ({
   getSiteLayout,
   siteLayout,
 }) => {
-  
   const carouselSettings = {
     dots: true,
     infinite: true,
@@ -82,7 +82,7 @@ const UpdateAsset = ({
     //autoplay: true,
     autoplaySpeed: 3000,
   };
-  
+
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [tester, setTester] = useState([]);
@@ -103,6 +103,7 @@ const UpdateAsset = ({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [valuations, setValuations] = useState([]);
 
   // useEffect(() => {
   //   const setFloorsData = async () => {
@@ -118,13 +119,9 @@ const UpdateAsset = ({
 
   const setFloorsData = async (value) => {
     if (siteLayout?.length > 0) {
-      const node = siteLayout.filter(
-        (site) => site.nodeName === value
-      );
+      const node = siteLayout.filter((site) => site.nodeName === value);
       const data = siteLayout.filter(
-        (site) =>
-          site.nodeType === "floor" &&
-          site.parentNode === node?.[0]?.id
+        (site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id
       );
       setFloors(data || []);
     }
@@ -132,13 +129,9 @@ const UpdateAsset = ({
 
   const setRoomsData = async (value) => {
     if (siteLayout?.length > 0) {
-      const node = siteLayout.filter(
-        (site) => site.nodeName === value
-      );
+      const node = siteLayout.filter((site) => site.nodeName === value);
       const data = siteLayout.filter(
-        (site) =>
-          site.nodeType === "room" &&
-          site.parentNode === node?.[0]?.id
+        (site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id
       );
       setRooms(data || []);
     }
@@ -242,12 +235,12 @@ const UpdateAsset = ({
     }
   };
 
-  const deletAssetImage = async (image)=>{
+  const deletAssetImage = async (image) => {
     await del(`/api/site/assets/image/${image.assetImageId}`);
-    toast.success("Image deleted successfully")
-    await getAssetDetails()
-    
-  }
+    toast.success("Image deleted successfully");
+    await getAssetDetails();
+  };
+
   const getAssetDetails = async () => {
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
@@ -271,24 +264,42 @@ const UpdateAsset = ({
       floor: response?.floor,
       room: response?.room,
     });
-    
-    valudationForm.reset({
-      valuationDate: response?.valuationDate
-        ? response?.valuationDate?.split("T")?.[0]
-        : "",
-      valuationUserId: response?.valuationUserId,
-      valuationUserName: response?.valuationUserName,
-      valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate
-        ? response?.disposalDate?.split("T")?.[0]
-        : "",
-      disposalTo: response?.disposalTo,
-      disposalValue: response?.disposalValue,
+    // Initialize valuations
+    if (response?.valuations?.length > 0) {
+      // If no valid valuations exist, initialize with empty array
+      setValuations(response.valuations);
+    }
+    //  else if (response?.date) {
+    //   // For backward compatibility with single valuation
+    //   setValuations([
+    //     {
+    //       date: response.date?.split("T")?.[0] || "",
+    //       valuation: response.valuation || "",
+    //       valuationBy: response.valuationBy || "",
+    //       valuationUserName: response.valuationUserName || "",
+    //     },
+    //   ]);
+    // } else {
+    //   // Default empty valuation
+    //   setValuations([
+    //     {
+    //       date: "",
+    //       valuation: "",
+    //       valuationBy: "",
+    //     },
+    //   ]);
+    // }
+
+    disposalForm.reset({
+      disposalDate: response?.disposalDate?.split("T")?.[0] || "",
+      disposalTo: response?.disposalTo || "",
+      disposalValue: response?.disposalValue || "",
     });
-    if(response?.position?.length > 0) {
+
+    if (response?.position?.length > 0) {
       setFloorsData(response?.position);
     }
-    if(response?.floor?.length > 0) {
+    if (response?.floor?.length > 0) {
       setRoomsData(response?.floor);
     }
     passiveFireProtectionForm.reset(response?.assetPFPItem);
@@ -303,7 +314,7 @@ const UpdateAsset = ({
     if (selectedAssets?.length > 0) {
       for (const iterator of selectedAssets) {
         const selectedValue =
-          siteAssets.find((itm) => itm.assetId == iterator) || null;
+          siteAssets.find((itm) => itm.assetId === iterator) || null;
         if (selectedValue) {
           arr.push({
             key: selectedValue?.assetId,
@@ -390,13 +401,9 @@ const UpdateAsset = ({
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
     if (data?.assetImage?.length > 0) {
-      data?.assetImage?.forEach(assetImage=>{
-        form_data.append(
-          "assetImage",
-          assetImage,
-        );
-      })
-      
+      data?.assetImage?.forEach((assetImage) => {
+        form_data.append("assetImage", assetImage);
+      });
     } else {
       //const blob = await fetchBlob(selectedAsset?.image);
       //form_data.append("assetImage", blob, formData?.assetName);
@@ -412,6 +419,7 @@ const UpdateAsset = ({
       model: formData?.model,
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
+      valuations: valuations,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
@@ -455,17 +463,17 @@ const UpdateAsset = ({
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-      valuationDate: selectedAsset?.valuationDate
-        ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
+      date: selectedAsset?.date
+        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
         : null,
       disposalDate: selectedAsset?.disposalDate
         ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
         : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
-      valuationUserId: selectedAsset?.valuationUserId,
-      valuationValue: selectedAsset?.valuationValue,
-      deviceId: selectedAsset?.deviceId
+      valuationBy: selectedAsset?.valuationBy,
+      valuation: selectedAsset?.valuation,
+      deviceId: selectedAsset?.deviceId,
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
@@ -487,17 +495,17 @@ const UpdateAsset = ({
       supplier: selectedAsset?.supplier,
       transactionId: selectedAsset?.transactionId,
       cost: selectedAsset?.cost,
-      valuationDate: selectedAsset?.valuationDate
-        ? `${selectedAsset?.valuationDate?.split("T")?.[0]} 10:00:00`
+      date: selectedAsset?.date
+        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
         : null,
       disposalDate: selectedAsset?.disposalDate
         ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
         : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
-      valuationUserId: selectedAsset?.valuationUserId,
-      valuationValue: selectedAsset?.valuationValue,
-      deviceId: selectedAsset?.deviceId
+      valuationBy: selectedAsset?.valuationBy,
+      valuation: selectedAsset?.valuation,
+      deviceId: selectedAsset?.deviceId,
     };
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
@@ -506,34 +514,127 @@ const UpdateAsset = ({
     getAssetDetails();
   };
 
-  const valudationForm = useForm({
+  const disposalForm = useForm({
     defaultValues: {
-      valuationDate: "",
       disposalDate: "",
+      disposalValue: "",
+      disposalTo: "",
     },
   });
-  const submitValudationForm = async (data) => {
-    let form_data = new FormData();
-    const submitData = {
-      ...data,
-      assetId: selectedAsset?.assetId,
-      valuationDate: data?.valuationDate + " 10:00:00",
-      disposalDate: data?.disposalDate + " 10:00:00",
-      position: selectedAsset?.position,
-      floor: selectedAsset?.floor,
-      room: selectedAsset?.room,
-      purchaseDate: selectedAsset?.purchaseDate
-        ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
-        : null,
-      supplier: selectedAsset?.supplier,
-      transactionId: selectedAsset?.transactionId,
-      cost: selectedAsset?.cost,
-    };
-    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+  // const submitValuationForm = async (data) => {
+  //   let form_data = new FormData();
+  //   const submitData = {
+  //     ...data,
+  //     assetId: selectedAsset?.assetId,
+  //     date: data?.date + " 10:00:00",
+  //     disposalDate: data?.disposalDate + " 10:00:00",
+  //     position: selectedAsset?.position,
+  //     floor: selectedAsset?.floor,
+  //     room: selectedAsset?.room,
+  //     purchaseDate: selectedAsset?.purchaseDate
+  //       ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+  //       : null,
+  //     supplier: selectedAsset?.supplier,
+  //     transactionId: selectedAsset?.transactionId,
+  //     cost: selectedAsset?.cost,
+  //   };
+  //   form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+  //   setLoader(true);
+  //   await updatePurchaseDetails(form_data, selectedAsset?.assetId);
+  //   setLoader(false);
+  //   getAssetDetails();
+  // };
+  const submitValuationForm = async (data) => {
     setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
+    try {
+      // Filter out valuations marked for deletion
+      const valuationsToDelete = valuations
+        .filter((v) => v.delete && v.id) // Only existing valuations with delete flag
+        .map((v) => ({ id: v.id, delete: true }));
+
+      // Get valid valuations (not marked for deletion)
+      const validValuations = valuations.filter(
+        (v) => !v.delete && v.date && v.valuation && v.valuationBy
+      );
+
+      if (validValuations.length === 0 && valuationsToDelete.length === 0) {
+        toast.error("Please add at least one valid valuation");
+        setLoader(false);
+        return;
+      }
+
+      const submitData = {
+        ...data,
+        assetId: selectedAsset?.assetId,
+        valuations: [
+          ...validValuations.map((v) => ({
+            id: v.id,
+            assetId: selectedAsset?.assetId,
+            valuation: v.valuation,
+            valuationBy: v.valuationBy,
+            date: v.date ? v.date.split("T")[0] : null,
+          })),
+          ...valuationsToDelete,
+        ],
+        position: selectedAsset?.position,
+        floor: selectedAsset?.floor,
+        room: selectedAsset?.room,
+        purchaseDate: selectedAsset?.purchaseDate
+          ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+          : null,
+        supplier: selectedAsset?.supplier,
+        transactionId: selectedAsset?.transactionId,
+        cost: selectedAsset?.cost,
+        deviceId: selectedAsset?.deviceId,
+      };
+
+      const form_data = new FormData();
+      form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+
+      await updatePurchaseDetails(form_data, selectedAsset?.assetId);
+      setLoader(false);
+      getAssetDetails();
+      toast.success("Valuations saved successfully");
+    } catch (error) {
+      setLoader(false);
+      toast.error("Failed to save valuation details");
+    }
+  };
+
+  const submitDisposalForm = async (data) => {
+    setLoader(true);
+    try {
+      const submitData = {
+        ...data,
+        assetId: selectedAsset?.assetId,
+        disposalDate: data.disposalDate + " 10:00:00",
+        // Keep existing valuation fields as they are
+        //date: selectedAsset?.date || null,
+        //valuationBy: selectedAsset?.valuationBy || null,
+        //valuation: selectedAsset?.valuation || null,
+        // Other existing fields
+        position: selectedAsset?.position,
+        floor: selectedAsset?.floor,
+        room: selectedAsset?.room,
+        purchaseDate: selectedAsset?.purchaseDate
+          ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+          : null,
+        supplier: selectedAsset?.supplier,
+        transactionId: selectedAsset?.transactionId,
+        cost: selectedAsset?.cost,
+        deviceId: selectedAsset?.deviceId,
+      };
+
+      const form_data = new FormData();
+      form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
+
+      await updatePurchaseDetails(form_data, selectedAsset?.assetId);
+      setLoader(false);
+      getAssetDetails();
+    } catch (error) {
+      setLoader(false);
+      toast.error("Failed to save disposal details");
+    }
   };
 
   const passiveFireProtectionForm = useForm({});
@@ -655,6 +756,37 @@ const UpdateAsset = ({
       setSelectedAssetRows([...selectedAssetRows, file]);
     }
   };
+
+  const addValuation = () => {
+    setValuations([
+      ...valuations,
+      {
+        date: "",
+        valuation: "",
+        valuationBy: "",
+      },
+    ]);
+  };
+
+  const handleRemoveValuation = (index) => {
+    const valuationToRemove = valuations[index];
+
+    if (valuationToRemove.id) {
+      // For existing valuations, mark for deletion
+      setValuations(
+        valuations.map((v, i) => (i === index ? { ...v, delete: true } : v))
+      );
+    } else {
+      // For new valuations, just remove from array
+      setValuations(valuations.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateValuation = (index, data) => {
+    setValuations(
+      valuations.map((v, i) => (i === index ? { ...v, ...data } : v))
+    );
+  };
   // Method to get all selected rows
   const untagAsset = async () => {
     if (selectedAssetRows?.length === 0) {
@@ -737,7 +869,9 @@ const UpdateAsset = ({
                               type="text"
                               autoComplete="off"
                               readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="assetName"
                               name="assetName"
@@ -764,7 +898,9 @@ const UpdateAsset = ({
                               type="text"
                               autoComplete="off"
                               readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="manufacturer"
                               name="manufacturer"
@@ -836,7 +972,9 @@ const UpdateAsset = ({
                               type="text"
                               autoComplete="off"
                               readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="model"
                               name="model"
@@ -853,7 +991,9 @@ const UpdateAsset = ({
                               type="text"
                               autoComplete="off"
                               readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="serialNumber"
                               name="serialNumber"
@@ -978,7 +1118,9 @@ const UpdateAsset = ({
                               type="text"
                               autoComplete="off"
                               readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="deviceId"
                               name="deviceId"
@@ -1039,7 +1181,7 @@ const UpdateAsset = ({
                       <div className="form-group">
                         {selectedAsset?.images?.length > 1 && (
                           <Slider {...carouselSettings}>
-                            {selectedAsset?.images?.map(i => (
+                            {selectedAsset?.images?.map((i) => (
                               <div>
                                 <img
                                   src={i?.imageUrl}
@@ -1063,6 +1205,7 @@ const UpdateAsset = ({
                           <img
                             src={selectedAsset?.images[0].imageUrl}
                             className="img img-responsive border p-2 m-2 w-100"
+
                           />)}
                             {selectedAsset?.images?.length === 1 && <button
                                   type="button"
@@ -1077,7 +1220,7 @@ const UpdateAsset = ({
                           type="file"
                           multiple
                           className="form-control"
-                          style={{ marginTop: '30px' }}
+                          style={{ marginTop: "30px" }}
                           {...register("assetImage")}
                         />
                         {errors?.assetImage && (
@@ -1159,41 +1302,30 @@ const UpdateAsset = ({
                   />
                   <Tab
                     className={
-                      selectedAsset?.valuationDate &&
-                      selectedAsset?.disposalDate &&
-                      selectedAsset?.disposalTo &&
-                      selectedAsset?.disposalValue &&
-                      selectedAsset?.valuationUserId &&
-                      selectedAsset?.valuationValue
+                      selectedAsset?.date &&
+                      selectedAsset?.valuationBy &&
+                      selectedAsset?.valuation
                         ? "text-success"
                         : "text-warning"
                     }
-                    // icon={
-                    //   selectedAsset?.valuationDate &&
-                    //   selectedAsset?.disposalDate &&
-                    //   selectedAsset?.disposalTo &&
-                    //   selectedAsset?.disposalValue &&
-                    //   selectedAsset?.valuationUserId &&
-                    //   selectedAsset?.valuationValue ? (
-                    //     <CheckCircleOutlineIcon />
-                    //   ) : (
-                    //     <WarningAmberIcon />
-                    //   )
-                    // }
-                    label="Valuation & Disposal"
+                    label="Valuation"
                     value="4"
+                  />
+                  <Tab
+                    className={
+                      selectedAsset?.disposalDate &&
+                      selectedAsset?.disposalTo &&
+                      selectedAsset?.disposalValue
+                        ? "text-success"
+                        : "text-warning"
+                    }
+                    label="Disposal"
+                    value="5"
                   />
                   {selectedAsset?.patItem && (
                     <Tab
-                      // icon={
-                      //   selectedAsset?.assetPATItems?.length > 0 ? (
-                      //     <CheckCircleOutlineIcon />
-                      //   ) : (
-                      //     <WarningAmberIcon />
-                      //   )
-                      // }
                       label="PAT Details"
-                      value="5"
+                      value="6"
                       className={
                         selectedAsset?.assetPATItems?.length > 0
                           ? "text-success"
@@ -1203,38 +1335,24 @@ const UpdateAsset = ({
                   )}
                   {selectedAsset?.pfpItem && (
                     <Tab
-                      // icon={
-                      //   selectedAsset?.assetPFPItem ? (
-                      //     <CheckCircleOutlineIcon />
-                      //   ) : (
-                      //     <WarningAmberIcon />
-                      //   )
-                      // }
                       className={
                         selectedAsset?.assetPFPItem
                           ? "text-success"
                           : "text-warning"
                       }
                       label="Passive Fire Protection"
-                      value="6"
+                      value="7"
                     />
                   )}
                   {selectedAsset?.doorItem && (
                     <Tab
-                      // icon={
-                      //   selectedAsset?.assetDoorSpecifications ? (
-                      //     <CheckCircleOutlineIcon />
-                      //   ) : (
-                      //     <WarningAmberIcon />
-                      //   )
-                      // }
                       className={
                         selectedAsset?.assetDoorSpecifications
                           ? "text-success"
                           : "text-warning"
                       }
                       label="Door Specifications"
-                      value="7"
+                      value="8"
                     />
                   )}
                 </TabList>
@@ -1446,6 +1564,7 @@ const UpdateAsset = ({
                         <label for="transactionId">Transaction ID</label>
                         <input
                           type="number"
+                          min={0}
                           className="form-control"
                           id="transactionId"
                           name="transactionId"
@@ -1471,6 +1590,8 @@ const UpdateAsset = ({
                         <label for="cost">Cost</label>
                         <input
                           type="number"
+                          step="0.01"
+                          min={0}
                           className="form-control"
                           id="cost"
                           name="cost"
@@ -1643,119 +1764,133 @@ const UpdateAsset = ({
                 </form>
               </TabPanel>
               <TabPanel value="4">
-                <form
-                  onSubmit={valudationForm.handleSubmit(submitValudationForm)}
-                >
-                  <div className="row">
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <DatePicker
-                          label="Valuation Date"
-                          required={true}
-                          value={
-                            valudationForm.watch("valuationDate")
-                              ? new Date(valudationForm.watch("valuationDate"))
-                              : null
-                          }
-                          onChange={(date) => {
-                            valudationForm.setValue(
-                              "valuationDate",
-                              date ? date.toISOString().split("T")[0] : "",
-                              {
-                                shouldValidate: true,
-                              }
-                            );
+                <div className="mb-4 d-flex justify-content-between align-items-center">
+                  <button
+                    type="button"
+                    className="btn btn-primary d-flex align-items-center"
+                    onClick={addValuation}
+                    disabled={!!selectedAsset?.disposalDate} // Disable if disposal date exists
+                    title={
+                      selectedAsset?.disposalDate
+                        ? "Cannot add valuation after disposal"
+                        : ""
+                    }
+                  >
+                    Add Valuation
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary px-4 py-2 d-flex align-items-center"
+                    onClick={() => submitValuationForm()}
+                    disabled={!!selectedAsset?.disposalDate} // Disable if disposal date exists
+                    title={
+                      selectedAsset?.disposalDate
+                        ? "Cannot save valuations after disposal"
+                        : ""
+                    }
+                  >
+                    Save Valuations
+                  </button>
+                </div>
+
+                <div className="table-responsive row">
+                  <table className="table mb-4">
+                    <thead className="table-dark">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold"
+                          style={{
+                            width: "25%",
+                            borderLeft: "1px solid #dee2e6",
                           }}
-                        />
-                        {valudationForm.formState.errors?.valuationDate && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.valuationDate
-                                ?.message
+                        >
+                          <div className="d-flex align-items-center justify-content-between">
+                            Valuation Date
+                            <i className="bi bi-arrow-down-up text-muted fs-small"></i>
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold"
+                          style={{ width: "25%" }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between">
+                            Valuation
+                            <i className="bi bi-arrow-down-up text-muted fs-small"></i>
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold"
+                          style={{ width: "25%" }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between">
+                            Valuation Done By
+                            <i className="bi bi-arrow-down-up text-muted fs-small"></i>
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="py-3 px-4 fw-semibold text-end"
+                          style={{
+                            width: "25%",
+                            borderRight: "1px solid #dee2e6",
+                          }}
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="border-top-0">
+                      {valuations
+                        .filter((v) => !v.delete) // Only show non-deleted valuations
+                        .map((valuation, index) => (
+                          <ValuationComponent
+                            key={valuation.id || `new-${index}`}
+                            index={index}
+                            valuation={valuation}
+                            users={users}
+                            onRemove={handleRemoveValuation}
+                            onUpdate={updateValuation}
+                            isRemovable={
+                              valuations.filter((v) => !v.delete).length > 1
                             }
-                            key={
-                              valudationForm.formState.errors?.valuationDate
-                                ?.message
-                            }
+                            hasDisposalDate={!!selectedAsset?.disposalDate} // Add this prop
                           />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label for="valuationValue">Valuation</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          id="valuationValue"
-                          name="valuationValue"
-                          placeholder=""
-                          {...valudationForm.register("valuationValue", {
-                            required: {
-                              value: true,
-                              message: `Please enter valuation value`,
-                            },
-                          })}
-                        />
-                        {valudationForm.formState.errors?.valuationValue && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.valuationValue
-                                ?.message
-                            }
-                            key={
-                              valudationForm.formState.errors?.valuationValue
-                                ?.message
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <label for="valuationUserId">Valuation Done By</label>
-                      <select
-                        name="valuationUserId"
-                        className="form-control form-select"
-                        id="valuationUserId"
-                        {...valudationForm.register("valuationUserId", {
-                          required: {
-                            value: true,
-                            message: `Please select valuation done by`,
-                          },
-                        })}
-                      >
-                        <option value=""></option>
-                        {users?.map((itm) => (
-                          <option value={itm?.id} key={itm?.name}>
-                            {itm?.name}
-                          </option>
                         ))}
-                      </select>
-                      {valudationForm.formState.errors?.valuationUserId && (
-                        <InputError
-                          message={
-                            valudationForm.formState.errors?.valuationUserId
-                              ?.message
-                          }
-                          key={
-                            valudationForm.formState.errors?.valuationUserId
-                              ?.message
-                          }
-                        />
+                      {valuations.filter((v) => !v.delete).length === 0 && (
+                        <tr>
+                          <td
+                            colSpan="4"
+                            className="text-center py-4 text-muted"
+                          >
+                            <i className="bi bi-info-circle me-2"></i>
+                            No valuation records found. Click "Add Valuation" to
+                            create one.
+                          </td>
+                        </tr>
                       )}
-                    </div>
+                    </tbody>
+                  </table>
+                </div>
+              </TabPanel>
+
+              <TabPanel value="5">
+                <form onSubmit={disposalForm.handleSubmit(submitDisposalForm)}>
+                  <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
                         <DatePicker
                           label="Disposal Date"
                           required={true}
                           value={
-                            valudationForm.watch("disposalDate")
-                              ? new Date(valudationForm.watch("disposalDate"))
+                            disposalForm.watch("disposalDate")
+                              ? new Date(disposalForm.watch("disposalDate"))
                               : null
                           }
                           onChange={(date) => {
-                            valudationForm.setValue(
+                            disposalForm.setValue(
                               "disposalDate",
                               date ? date.toISOString().split("T")[0] : "",
                               {
@@ -1764,14 +1899,14 @@ const UpdateAsset = ({
                             );
                           }}
                         />
-                        {valudationForm.formState.errors?.disposalDate && (
+                        {disposalForm.formState.errors?.disposalDate && (
                           <InputError
                             message={
-                              valudationForm.formState.errors?.disposalDate
+                              disposalForm.formState.errors?.disposalDate
                                 ?.message
                             }
                             key={
-                              valudationForm.formState.errors?.disposalDate
+                              disposalForm.formState.errors?.disposalDate
                                 ?.message
                             }
                           />
@@ -1783,25 +1918,27 @@ const UpdateAsset = ({
                         <label for="disposalValue">Disposal Value</label>
                         <input
                           type="number"
+                          step="0.01"
+                          min={0}
                           className="form-control"
                           id="disposalValue"
                           name="disposalValue"
                           placeholder=""
-                          {...valudationForm.register("disposalValue", {
+                          {...disposalForm.register("disposalValue", {
                             required: {
                               value: true,
                               message: `Please enter disposal value`,
                             },
                           })}
                         />
-                        {valudationForm.formState.errors?.disposalValue && (
+                        {disposalForm.formState.errors?.disposalValue && (
                           <InputError
                             message={
-                              valudationForm.formState.errors?.disposalValue
+                              disposalForm.formState.errors?.disposalValue
                                 ?.message
                             }
                             key={
-                              valudationForm.formState.errors?.disposalValue
+                              disposalForm.formState.errors?.disposalValue
                                 ?.message
                             }
                           />
@@ -1820,22 +1957,20 @@ const UpdateAsset = ({
                           id="disposalTo"
                           name="disposalTo"
                           placeholder=""
-                          {...valudationForm.register("disposalTo", {
+                          {...disposalForm.register("disposalTo", {
                             required: {
                               value: true,
                               message: `Please enter disposal to`,
                             },
                           })}
                         />
-                        {valudationForm.formState.errors?.disposalTo && (
+                        {disposalForm.formState.errors?.disposalTo && (
                           <InputError
                             message={
-                              valudationForm.formState.errors?.disposalTo
-                                ?.message
+                              disposalForm.formState.errors?.disposalTo?.message
                             }
                             key={
-                              valudationForm.formState.errors?.disposalTo
-                                ?.message
+                              disposalForm.formState.errors?.disposalTo?.message
                             }
                           />
                         )}
@@ -1849,7 +1984,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="5">
+              <TabPanel value="6">
                 {" "}
                 <div className="row">
                   <div>
@@ -1913,7 +2048,9 @@ const UpdateAsset = ({
                                           type="text"
                                           autoComplete="off"
                                           readOnly
-                                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                                          onFocus={(e) =>
+                                            e.target.removeAttribute("readonly")
+                                          }
                                           {...params.inputProps}
                                           required
                                           className="form-control"
@@ -2022,7 +2159,7 @@ const UpdateAsset = ({
                   </div>
                 </div>
               </TabPanel>
-              <TabPanel value="6">
+              <TabPanel value="7">
                 <form
                   onSubmit={passiveFireProtectionForm.handleSubmit(
                     submitPassiveFireProtectionForm
@@ -2275,7 +2412,7 @@ const UpdateAsset = ({
                   </div>
                 </form>
               </TabPanel>
-              <TabPanel value="7">
+              <TabPanel value="8">
                 <form
                   onSubmit={doorSpecificationForm.handleSubmit(
                     submitDoorSpecificationForm

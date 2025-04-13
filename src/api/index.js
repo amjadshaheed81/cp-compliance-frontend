@@ -1,13 +1,13 @@
 import axios from "axios";
 
 let axiosInstance = axios.create({
-  baseURL: window?.location?.origin,
+  baseURL: window?.location?.origin, //window?.location?.origin,
   timeout: 2000000,
 });
 
 function configAxios() {
   axiosInstance = axios.create({
-    baseURL: window?.location?.origin,
+    baseURL: window?.location?.origin, //,
     timeout: 2000000,
   });
   axiosInstance.interceptors.response.use(
@@ -21,17 +21,20 @@ function handleError(error) {
 
   if (error.response) {
     const { status } = error.response;
-    
+
     if (status === 401 || status === 403) {
       localStorage.clear();
-      window.location.href = '/#/login';
+      window.location.href = "/#/login";
     }
-    
+
     if (status === 500) {
       const errorMessage = error.response.data.message;
-      if (errorMessage.includes('JWT expired at') || errorMessage.includes('JWT String argument cannot be null or empty.')) {
+      if (
+        errorMessage.includes("JWT expired at") ||
+        errorMessage.includes("JWT String argument cannot be null or empty.")
+      ) {
         localStorage.clear();
-        window.location.href = '/#/login';
+        window.location.href = "/#/login";
       }
     }
   }
@@ -67,7 +70,7 @@ export function postMultiPartFormData(url, userData) {
       method: "POST",
       url,
       data: userData,
-      headers: { ...getHeaders(), 'Content-Type': 'multipart/form-data' },
+      headers: { ...getHeaders(), "Content-Type": "multipart/form-data" },
     });
   } catch (error) {
     return handleError(error);
@@ -81,7 +84,7 @@ export function putMultiPartFormData(url, userData) {
       method: "PUT",
       url,
       data: userData,
-      headers: { ...getHeaders(), 'Content-Type': 'multipart/form-data' },
+      headers: { ...getHeaders(), "Content-Type": "multipart/form-data" },
     });
   } catch (error) {
     return handleError(error);
@@ -137,7 +140,7 @@ export function uploadPhoto(url, formData) {
       method: "POST",
       url,
       data: formData,
-      headers: { ...getHeaders(), 'Content-Type': `multipart/form-data` },
+      headers: { ...getHeaders(), "Content-Type": `multipart/form-data` },
     });
   } catch (error) {
     return handleError(error);
@@ -151,7 +154,7 @@ export async function uploadNewVersion(url, formData) {
       method: "PUT",
       url,
       data: formData,
-      headers: { ...getHeaders(), 'Content-Type': `multipart/form-data` },
+      headers: { ...getHeaders(), "Content-Type": `multipart/form-data` },
     });
   } catch (error) {
     return handleError(error);
@@ -163,21 +166,23 @@ export async function uploadSiteCheckDoc(reqData) {
   formData.append("siteId", reqData.siteId);
   formData.append("file", reqData.file);
   formData.append("fileName", reqData.file?.name);
-  formData.append("folderName", reqData.folderName ? reqData.folderName : "others");
+  formData.append(
+    "folderName",
+    reqData.folderName ? reqData.folderName : "others"
+  );
   configAxios();
   try {
     const { data } = await axiosInstance({
       method: "POST",
       url: "/api/site-check/file/upload",
       data: formData,
-      headers: { ...getHeaders(), 'Content-Type': `multipart/form-data` },
+      headers: { ...getHeaders(), "Content-Type": `multipart/form-data` },
     });
     return data;
   } catch (error) {
     return handleError(error);
   }
 }
-
 
 export async function uploadLogo(reqData) {
   const formData = new FormData();
@@ -188,7 +193,7 @@ export async function uploadLogo(reqData) {
       method: "POST",
       url: "/api/user/clinet/logo",
       data: formData,
-      headers: { ...getHeaders(), 'Content-Type': `multipart/form-data` },
+      headers: { ...getHeaders(), "Content-Type": `multipart/form-data` },
     });
     return data;
   } catch (error) {
@@ -217,7 +222,7 @@ export async function getPdf(id) {
       method: "GET",
       url: `/api/site-check/pdf-report/${id}`,
       headers: getHeaders(),
-      responseType: 'blob',
+      responseType: "blob",
     });
     return data;
   } catch (error) {
