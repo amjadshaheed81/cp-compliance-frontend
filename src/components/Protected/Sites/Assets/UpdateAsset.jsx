@@ -266,11 +266,6 @@ const UpdateAsset = ({
     });
     // Initialize valuations
     if (response?.valuations?.length > 0) {
-      const validValuations = response.valuations.filter(
-        (v) => v.date !== null && v.valuation !== null && v.valuationBy !== null
-      );
-      setValuations(validValuations);
-    } else {
       // If no valid valuations exist, initialize with empty array
       setValuations(response.valuations);
     }
@@ -552,20 +547,35 @@ const UpdateAsset = ({
   const submitValuationForm = async (data) => {
     setLoader(true);
     try {
+      // Filter out valuations marked for deletion
+      const valuationsToDelete = valuations
+        .filter((v) => v.delete && v.id) // Only existing valuations with delete flag
+        .map((v) => ({ id: v.id, delete: true }));
+
+      // Get valid valuations (not marked for deletion)
+      const validValuations = valuations.filter(
+        (v) => !v.delete && v.date && v.valuation && v.valuationBy
+      );
+
+      if (validValuations.length === 0 && valuationsToDelete.length === 0) {
+        toast.error("Please add at least one valid valuation");
+        setLoader(false);
+        return;
+      }
+
       const submitData = {
         ...data,
-        valuations: valuations.map((v) => ({
-          ...v,
-          date: v.date ? v.date.split("T")[0] : null,
-        })),
-        //valuations: valuations,
         assetId: selectedAsset?.assetId,
-
-        // Keep existing disposal fields as they are
-        //disposalDate: selectedAsset?.disposalDate || null,
-        //disposalTo: selectedAsset?.disposalTo || null,
-        //disposalValue: selectedAsset?.disposalValue || null,
-        // Other existing fields
+        valuations: [
+          ...validValuations.map((v) => ({
+            id: v.id,
+            assetId: selectedAsset?.assetId,
+            valuation: v.valuation,
+            valuationBy: v.valuationBy,
+            date: v.date ? v.date.split("T")[0] : null,
+          })),
+          ...valuationsToDelete,
+        ],
         position: selectedAsset?.position,
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
@@ -584,6 +594,7 @@ const UpdateAsset = ({
       await updatePurchaseDetails(form_data, selectedAsset?.assetId);
       setLoader(false);
       getAssetDetails();
+      toast.success("Valuations saved successfully");
     } catch (error) {
       setLoader(false);
       toast.error("Failed to save valuation details");
@@ -756,19 +767,25 @@ const UpdateAsset = ({
       },
     ]);
   };
-  // In parent component
+
   const handleRemoveValuation = (index) => {
-    setValuations((prev) => {
-      const newValuations = [...prev];
-      newValuations[index].delete = true;
-      return newValuations;
-    });
+    const valuationToRemove = valuations[index];
+
+    if (valuationToRemove.id) {
+      // For existing valuations, mark for deletion
+      setValuations(
+        valuations.map((v, i) => (i === index ? { ...v, delete: true } : v))
+      );
+    } else {
+      // For new valuations, just remove from array
+      setValuations(valuations.filter((_, i) => i !== index));
+    }
   };
 
   const updateValuation = (index, data) => {
-    const newValuations = [...valuations];
-    newValuations[index] = data;
-    setValuations(newValuations);
+    setValuations(
+      valuations.map((v, i) => (i === index ? { ...v, ...data } : v))
+    );
   };
   // Method to get all selected rows
   const untagAsset = async () => {
@@ -1754,6 +1771,12 @@ const UpdateAsset = ({
                     type="button"
                     className="btn btn-primary d-flex align-items-center"
                     onClick={addValuation}
+                    disabled={!!selectedAsset?.disposalDate} // Disable if disposal date exists
+                    title={
+                      selectedAsset?.disposalDate
+                        ? "Cannot add valuation after disposal"
+                        : ""
+                    }
                   >
                     Add Valuation
                   </button>
@@ -1761,6 +1784,12 @@ const UpdateAsset = ({
                     type="button"
                     className="btn btn-primary px-4 py-2 d-flex align-items-center"
                     onClick={() => submitValuationForm()}
+                    disabled={!!selectedAsset?.disposalDate} // Disable if disposal date exists
+                    title={
+                      selectedAsset?.disposalDate
+                        ? "Cannot save valuations after disposal"
+                        : ""
+                    }
                   >
                     Save Valuations
                   </button>
@@ -1816,26 +1845,27 @@ const UpdateAsset = ({
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {valuations.filter(v=> !v.delete).map((valuation, index) => (
-                        <ValuationComponent
-                          key={index}
-                          index={index}
-                          valuation={valuation}
-                          users={users}
-                          onRemove={handleRemoveValuation}
-                          onUpdate={updateValuation}
-                          isRemovable={valuations.length > 1}
-                        />
-                      ))}
-                      {valuations.length === 0 && (
+                      {valuations
+                        .filter((v) => !v.delete) // Only show non-deleted valuations
+                        .map((valuation, index) => (
+                          <ValuationComponent
+                            key={valuation.id || `new-${index}`}
+                            index={index}
+                            valuation={valuation}
+                            users={users}
+                            onRemove={handleRemoveValuation}
+                            onUpdate={updateValuation}
+                            isRemovable={
+                              valuations.filter((v) => !v.delete).length > 1
+                            }
+                            hasDisposalDate={!!selectedAsset?.disposalDate} // Add this prop
+                          />
+                        ))}
+                      {valuations.filter((v) => !v.delete).length === 0 && (
                         <tr>
                           <td
-                            colSpan="5"
+                            colSpan="4"
                             className="text-center py-4 text-muted"
-                            style={{
-                              borderLeft: "1px solid #dee2e6",
-                              borderRight: "1px solid #dee2e6",
-                            }}
                           >
                             <i className="bi bi-info-circle me-2"></i>
                             No valuation records found. Click "Add Valuation" to

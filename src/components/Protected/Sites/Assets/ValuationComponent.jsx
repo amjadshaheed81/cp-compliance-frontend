@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import DatePicker from "../../../common/DatePicker";
 import { InputError } from "../../../common/InputError";
@@ -9,18 +9,36 @@ const ValuationComponent = ({
   valuation,
   index,
   onRemove,
+  onUpdate,
   users,
   isRemovable,
+  hasDisposalDate, // Add this prop
 }) => {
   const {
     register,
-    control,
     formState: { errors },
     watch,
     setValue,
+    control,
   } = useForm({
     defaultValues: valuation,
   });
+
+  // Disable all fields if disposal date exists
+  const isDisabled = hasDisposalDate;
+
+  // Update parent whenever any field changes
+  useEffect(() => {
+    const subscription = watch((value) => {
+      if (!isDisabled) {
+        onUpdate(index, {
+          ...valuation,
+          ...value,
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, onUpdate, index, valuation, isDisabled]);
 
   return (
     <tr>
@@ -32,20 +50,29 @@ const ValuationComponent = ({
             required={true}
             value={watch("date") ? new Date(watch("date")) : null}
             onChange={(date) => {
-              setValue("date", date ? date.toISOString().split("T")[0] : "", {
-                shouldValidate: true,
-              });
+              if (!isDisabled) {
+                const dateValue = date ? date.toISOString().split("T")[0] : "";
+                setValue("date", dateValue, {
+                  shouldValidate: true,
+                });
+                onUpdate(index, {
+                  ...valuation,
+                  date: dateValue,
+                });
+              }
             }}
             fullWidth
             variant="standard"
             InputProps={{
               disableUnderline: true,
               className: "form-control p-0",
+              readOnly: isDisabled, // Disable if disposal date exists
             }}
             sx={{
               "& .MuiInputBase-root": {
                 height: "40px",
                 alignItems: "center",
+                backgroundColor: isDisabled ? "#f5f5f5" : "inherit",
               },
             }}
           />
@@ -71,10 +98,11 @@ const ValuationComponent = ({
               height: "40px",
               padding: "8px 12px",
               border: "none",
-              backgroundColor: "transparent",
+              backgroundColor: isDisabled ? "#f5f5f5" : "transparent",
               borderBottom: "1px solid #ced4da",
               width: "100%",
               boxSizing: "border-box",
+              cursor: isDisabled ? "not-allowed" : "default",
             }}
             {...register("valuation", {
               required: {
@@ -85,7 +113,19 @@ const ValuationComponent = ({
                 value: 0,
                 message: "Valuation must be positive",
               },
+              valueAsNumber: true,
             })}
+            onChange={(e) => {
+              if (!isDisabled) {
+                const value = parseFloat(e.target.value) || 0;
+                setValue("valuation", value);
+                onUpdate(index, {
+                  ...valuation,
+                  valuation: value,
+                });
+              }
+            }}
+            readOnly={isDisabled} // Disable if disposal date exists
           />
           {errors?.valuation && (
             <InputError
@@ -106,12 +146,12 @@ const ValuationComponent = ({
               height: "40px",
               padding: "8px 12px",
               border: "none",
-              backgroundColor: "transparent",
+              backgroundColor: isDisabled ? "#f5f5f5" : "transparent",
               borderBottom: "1px solid #ced4da",
               width: "100%",
               appearance: "none",
               boxSizing: "border-box",
-              cursor: "default",
+              cursor: isDisabled ? "not-allowed" : "default",
             }}
             {...register("valuationBy", {
               required: {
@@ -119,6 +159,17 @@ const ValuationComponent = ({
                 message: `Please select valuation done by`,
               },
             })}
+            onChange={(e) => {
+              if (!isDisabled) {
+                const value = Number(e.target.value);
+                setValue("valuationBy", value);
+                onUpdate(index, {
+                  ...valuation,
+                  valuationBy: value,
+                });
+              }
+            }}
+            disabled={isDisabled} // Disable if disposal date exists
           >
             <option value="">Select evaluator</option>
             {users?.map((itm) => (
@@ -139,17 +190,25 @@ const ValuationComponent = ({
       {/* Delete Action Cell */}
       <td className="align-middle" style={{ padding: "12px 16px" }}>
         <Box display="flex" gap={1} justifyContent="flex-end">
-          {isRemovable && (
-            <Tooltip title="Remove valuation">
-              <IconButton
-                color="error"
-                onClick={() => onRemove(index)}
-                size="small"
+          {isRemovable &&
+            !isDisabled && ( // Only show if not disabled
+              <Tooltip
+                title={
+                  isDisabled
+                    ? "Cannot remove after disposal"
+                    : "Remove valuation"
+                }
               >
-                <DeleteForeverIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
+                <IconButton
+                  color="error"
+                  onClick={() => !isDisabled && onRemove(index)}
+                  size="small"
+                  disabled={isDisabled}
+                >
+                  <DeleteForeverIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
         </Box>
       </td>
     </tr>

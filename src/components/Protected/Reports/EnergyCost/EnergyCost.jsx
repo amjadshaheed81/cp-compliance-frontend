@@ -75,8 +75,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   ];
 
   const getSiteName = (siteId) => {
-    return allSites?.filter(site => site?.siteId === siteId)?.[0]?.siteName || "--";
-  }
+    return (
+      allSites?.filter((site) => site?.siteId === siteId)?.[0]?.siteName || "--"
+    );
+  };
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,8 +98,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     const lovtypes = await get("/api/lov/ENERGY_COST_BUDGET_CATEGORY");
     settypeoptions(lovtypes?.map((l) => l.lovValue));
   };
-
- 
 
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
@@ -213,18 +213,20 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   function convertToDate(dateString) {
-    if("number" === typeof dateString) {
+    if ("number" === typeof dateString) {
       const excelEpoch = new Date(1900, 0, 1);
-       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
-      const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+      const daysOffset = dateString > 59 ? dateString - 1 : dateString;
+      const jsDate = new Date(
+        excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000
+      );
       return jsDate.toISOString();
     } else {
-    const [day, month, year] = dateString.split("/").map(Number);
-    const date = new Date(year, month - 1, day);
-    return new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
-    ).toISOString();
-  }
+      const [day, month, year] = dateString.split("/").map(Number);
+      const date = new Date(year, month - 1, day);
+      return new Date(
+        date.getTime() - date.getTimezoneOffset() * 60000
+      ).toISOString();
+    }
   }
 
   const handleFileUploadCost = (event) => {
@@ -366,7 +368,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       toast.success("Energy reading added successfully");
     }
   };
-  
+
   const handleChange = async (event) => {
     setState((prevState) => ({
       ...prevState,
@@ -610,13 +612,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                   >
                     <option value="">All Sites</option>
                     {SiteArea?.map((itm) => (
-                      <option value={itm.replace('&','%26')}>{itm}</option>
+                      <option value={itm.replace("&", "%26")}>{itm}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col">
-                  
-                
                   <Switch
                     checked={state.isIndividual}
                     onChange={handleChange}
@@ -743,13 +743,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 value={state.site2}
               >
                 <option value="">Select Site 2</option>
-                {sites?.filter(
+                {sites
+                  ?.filter(
                     (itm) => String(itm?.status).toLowerCase() === "open"
-                  )?.map((itm) => (
-                  <option key={itm?.siteId} value={itm?.siteId}>
-                    {itm?.siteName}
-                  </option>
-                ))}
+                  )
+                  ?.map((itm) => (
+                    <option key={itm?.siteId} value={itm?.siteId}>
+                      {itm?.siteName}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="col-md-3">
@@ -768,18 +770,18 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
               </select>
             </div>
             <div className="col-md-3">
-            <label for="budgetCategoryCompare">Select Budget Category</label>
-                  <select
-                    name="budgetCategoryCompare"
-                    className="form-control form-select"
-                    id="budgetCategoryCompare"
-                    onChange={(e) => setBulkCategoryForCompare(e.target.value)}
-                  >
-                    <option value="">Budget Category</option>
-                    {typeoptions?.map((t) => (
-                      <option value={t}>{t}</option>
-                    ))}
-                  </select>
+              <label for="budgetCategoryCompare">Select Budget Category</label>
+              <select
+                name="budgetCategoryCompare"
+                className="form-control form-select"
+                id="budgetCategoryCompare"
+                onChange={(e) => setBulkCategoryForCompare(e.target.value)}
+              >
+                <option value="">Budget Category</option>
+                {typeoptions?.map((t) => (
+                  <option value={t}>{t}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="row" style={{ height: "auto" }}>
