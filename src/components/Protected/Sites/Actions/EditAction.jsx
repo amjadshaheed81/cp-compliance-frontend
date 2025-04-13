@@ -165,6 +165,11 @@ const EditAction = ({
     }
   };
 
+  const isExternal = () => {
+    const user = managerList.find((option) => String(option.key) === String(formData?.assignedTo));
+    return (user && user.userType === "External")
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const udata = {
@@ -764,7 +769,7 @@ autoComplete="off"
                               managerList
                                 ?.map((option) => ({
                                   key: option.id,
-                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                  label: `${option.userType} - ${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
                                 }))
                                 .find((option) => String(option.key) === String(formData?.assignedTo)) || null
                             }
@@ -775,7 +780,7 @@ autoComplete="off"
                               uformData.assignedTo = item?.key;
                               setFormData(uformData);
                             }}
-                            options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+                            options={managerList.map((option) => { return { key: option.id, label: option.userType + ' - ' +option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "" ) } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
@@ -806,7 +811,7 @@ autoComplete="off"
                               managerList
                                 .map((option) => ({
                                   key: option.id,
-                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                  label: `${option.userType} - +${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
                                 }))
                                 .find((option) => String(option.key) === String(formData?.stakeholder)) || null
                             }
@@ -815,7 +820,7 @@ autoComplete="off"
                               uformData.stakeholder = item?.key;
                               setFormData(uformData);
                             }}
-                            options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+                            options={managerList.map((option) => { return { key: option.id, label: option.userType + ' - ' +option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
@@ -836,7 +841,7 @@ autoComplete="off"
                         </div>
                       </div>
 
-                      <div className="col-md-4">
+                      {isExternal() && <div className="col-md-4">
                         <div className="form-group mt-2">
                         <Button
                           disabled={!isTopLevelUser(loggedInUserData)}
@@ -847,7 +852,7 @@ autoComplete="off"
                         </Button>
 
                         </div>
-                      </div>
+                      </div>}
 
 
                       <div className="col-md-12">
