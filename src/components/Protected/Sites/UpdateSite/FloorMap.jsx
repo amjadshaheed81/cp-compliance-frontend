@@ -21,6 +21,8 @@ const FloorMap = ({
 }) => {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
 
+
+
   const [selectedTab, setSelectedTab] = useState(null);
   const [positionOption, setPositionOption] = useState([]);
   const [markerLabels, setMarkerLabels] = useState([]);
@@ -35,19 +37,45 @@ const FloorMap = ({
     height: 0,
   });
 
- useEffect(() => {
-    const handleResize = () => {
-      if (imageRef.current) {
-        const { width, height } = imageRef.current.getBoundingClientRect();
-        setImageSize({ width, height });
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef(null);
+
+  // Add this new effect to track container size
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        setContainerSize({ width, height });
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Initial call
+    const resizeObserver = new ResizeObserver(updateSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
 
-    return () => window.removeEventListener('resize', handleResize);
-  }, [floorPlanUrl]);
+    window.addEventListener('resize', updateSize);
+    updateSize(); // Initial measurement
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
+
+//  useEffect(() => {
+//     const handleResize = () => {
+//       if (imageRef.current) {
+//         const { width, height } = imageRef.current.getBoundingClientRect();
+//         setImageSize({ width, height });
+//       }
+//     };
+
+//     window.addEventListener('resize', handleResize);
+//     handleResize(); // Initial call
+
+//     return () => window.removeEventListener('resize', handleResize);
+//   }, [floorPlanUrl]);
 
   useEffect(() => {
     const positions = siteLayout?.filter(
@@ -79,6 +107,18 @@ const FloorMap = ({
     getSavedMarger(selectedFloorData);
   };
 
+  function mergeRefs(...refs) {
+    return (value) => {
+      refs.forEach((ref) => {
+        if (typeof ref === "function") {
+          ref(value);
+        } else if (ref != null) {
+          ref.current = value;
+        }
+      });
+    };
+  }
+  
   const getFloorList = () => {
     const orderMap = {
       Basement: 1,
@@ -177,13 +217,16 @@ const FloorMap = ({
     accept: "LABEL",
     drop: (item, monitor) => {
       const clientOffset = monitor.getClientOffset();
-      if (!clientOffset || !imageRef.current) return;
+      if (!clientOffset || !containerRef.current) return;
 
-      const imageRect = imageRef.current.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
       
-      // Calculate position as percentage of natural dimensions
-      const naturalX = ((clientOffset.x - imageRect.left) / imageRect.width) * naturalDimensions.width;
-      const naturalY = ((clientOffset.y - imageRect.top) / imageRect.height) * naturalDimensions.height;
+      // Calculate position as percentage of container
+      const xPercent = (clientOffset.x - containerRect.left) / containerRect.width;
+      const yPercent = (clientOffset.y - containerRect.top) / containerRect.height;
+      
+      const naturalX = xPercent * naturalDimensions.width;
+      const naturalY = yPercent * naturalDimensions.height;
 
       setDroppedItems((prev) => [
         ...prev,
@@ -239,22 +282,25 @@ const FloorMap = ({
       collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
       end: (_, monitor) => {
         const offset = monitor.getClientOffset();
-        if (!offset || !imageRef.current) return;
+        if (!offset || !containerRef.current || !imageRef.current) return;
 
+        const containerRect = containerRef.current.getBoundingClientRect();
         const imageRect = imageRef.current.getBoundingClientRect();
-        const scaleX = naturalDimensions.width / imageRect.width;
-        const scaleY = naturalDimensions.height / imageRect.height;
+        
+        // Calculate position relative to the image's natural dimensions
+        const xPercent = (offset.x - containerRect.left) / containerRect.width;
+        const yPercent = (offset.y - containerRect.top) / containerRect.height;
+        
+        const naturalX = xPercent * naturalDimensions.width;
+        const naturalY = yPercent * naturalDimensions.height;
 
-        const newLeft = (offset.x - imageRect.left) * scaleX;
-        const newTop = (offset.y - imageRect.top) * scaleY;
-
-        updatePosition(index, newLeft / scaleX, newTop / scaleY);
+        updatePosition(index, naturalX, naturalY);
       },
     });
 
-    // Calculate position based on natural dimensions and current display size
-    const left = (item.naturalX / naturalDimensions.width) * imageSize.width;
-    const top = (item.naturalY / naturalDimensions.height) * imageSize.height;
+    // Calculate position based on container size and natural dimensions
+    const left = `${(item.naturalX / naturalDimensions.width) * 100}%`;
+    const top = `${(item.naturalY / naturalDimensions.height) * 100}%`;
 
     return (
       <Tooltip title={`View Assets: ${item.label}`} arrow>
@@ -262,9 +308,9 @@ const FloorMap = ({
           ref={drag}
           style={{
             position: "absolute",
-            left: `${(item.naturalX / naturalDimensions.width) * 100}%`,
-            top: `${(item.naturalY / naturalDimensions.height) * 100}%`,
-            transform: isDragging ? "scale(1.05)" : "scale(1)",
+            left,
+            top,
+            transform: isDragging ? "scale(1.2)" : "scale(1)",
             transformOrigin: 'center center',
             transition: "transform 0.1s ease-out",
             willChange: "transform",
@@ -275,6 +321,7 @@ const FloorMap = ({
             borderRadius: "50%",
             cursor: "move",
             opacity: isDragging ? 0.7 : 1,
+            zIndex: 2,
           }}
         >
           <span
@@ -369,9 +416,9 @@ const FloorMap = ({
               </Button>
             )}
           </div>
-          {floorPlanUrl ? (
+     {floorPlanUrl ? (
       <div
-        ref={drop}
+        ref={mergeRefs(drop, containerRef)} // Combine drop and container refs
         style={{
           position: "relative",
           width: "100%",
@@ -386,10 +433,6 @@ const FloorMap = ({
             setNaturalDimensions({
               width: e.target.naturalWidth,
               height: e.target.naturalHeight,
-            });
-            setImageSize({
-              width: e.target.getBoundingClientRect().width,
-              height: e.target.getBoundingClientRect().height
             });
           }}
           style={{
@@ -425,6 +468,8 @@ const FloorMapWithDnd = (props) => (
     <FloorMap {...props} />
   </DndProvider>
 );
+
+
 
 const mapStateToProps = (state) => ({
   updateSite: state.site.updateSite,
