@@ -46,6 +46,7 @@ const ValuationComponent = ({
       <td className="align-middle" style={{ padding: "12px 16px" }}>
         <div className="form-group mb-0">
           <DatePicker
+          disabled={isDisabled}
             label=""
             required={true}
             value={watch("date") ? new Date(watch("date")) : null}
