@@ -598,9 +598,9 @@ const UpdateAsset = ({
         assetId: selectedAsset?.assetId,
         disposalDate: data.disposalDate + " 10:00:00",
         // Keep existing valuation fields as they are
-        date: selectedAsset?.date || null,
-        valuationBy: selectedAsset?.valuationBy || null,
-        valuation: selectedAsset?.valuation || null,
+        //date: selectedAsset?.date || null,
+        //valuationBy: selectedAsset?.valuationBy || null,
+        //valuation: selectedAsset?.valuation || null,
         // Other existing fields
         position: selectedAsset?.position,
         floor: selectedAsset?.floor,
