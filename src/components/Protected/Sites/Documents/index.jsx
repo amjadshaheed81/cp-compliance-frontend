@@ -597,13 +597,26 @@ const Document = ({
                     key={itm?.id}
                     onClick={() => setFileList([])}
                   >
-                    <span>
+                    <span className="fa-stack fa-2x">
+      <i 
+        className={`fas fa-folder fa-stack-2x`} 
+        style={{ color: "#384BD3" }}
+      ></i>
+      {itm?.sharedFolder && (
+        <i 
+          className="fas fa-users fa-stack-1x" 
+          style={{ color: "white", fontSize: "0.5em", left: "10px", top: "8px" }}
+        ></i>
+      )}
+      {itm?.folderName}/<b>{itm?.name}</b>
+    </span>
+                    {/* <span>
                       <i
                         style={{ color: "#384BD3" }}
                         className="fas fa-folder fa-1x"
                       ></i>{" "}
                       {itm?.folderName}/<b>{itm?.name}</b>
-                    </span>
+                    </span> */}
                   </a>
                 ))}
               </ul>
@@ -612,7 +625,7 @@ const Document = ({
           </div>
 
           {/* Action Buttons */}
-          {columns.length > 0 && isManagerAdminLogin(loggedInUserData) && (
+          {columns.length > 1 && isManagerAdminLogin(loggedInUserData) && (
             <div className="col-md-6 col-sm-12 text-end">
               <Tooltip title="Go Back" arrow>
                 <ReplyIcon
@@ -705,7 +718,7 @@ const Document = ({
                       style={{ color: "#384BD3" }}
                     ></i>
                     {column.name}
-                    {colIdx === columns.length - 1 &&
+                    {colIdx === columns.length - 1 && column.id !== 'root'  && 
                       isAdminLogin(loggedInUserData) && (
                         <Tooltip title="Edit Folder Name" arrow>
                           <Edit
@@ -745,10 +758,22 @@ const Document = ({
                           }}
                         >
                           <div className="d-flex align-items-center">
-                            <i
+                            {/* <i
                               className="fas fa-folder fa-lg"
                               style={{ color: "#384BD3", marginRight: "10px" }}
-                            ></i>
+                            ></i> */}
+                            <span className="fa-stack fa-1x">
+      <i 
+        className={`fas fa-folder fa-stack-1x`} 
+        style={{ color: "#384BD3" }}
+      ></i>
+      {folder?.sharedFolder && (
+        <i 
+          className="fas fa-users fa-stack-1x" 
+          style={{ color: "white", fontSize: "0.4em", left: "2px", top: "2px" }}
+        ></i>
+      )}
+    </span>
                             <span>
                               {folder.name}
                               <span className="ms-2 badge bg-secondary">
@@ -757,7 +782,7 @@ const Document = ({
                             </span>
                           </div>
 
-                          {isAdminLogin(loggedInUserData) && (
+                          {isAdminLogin(loggedInUserData) && column.id !== 'root' && (
                             <Tooltip title="Delete Folder" arrow>
                               <DeleteIcon
                                 onClick={(e) => {
