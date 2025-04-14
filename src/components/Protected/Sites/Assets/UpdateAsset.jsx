@@ -236,9 +236,22 @@ const UpdateAsset = ({
   };
 
   const deletAssetImage = async (image) => {
-    await del(`/api/site/assets/image/${image.assetImageId}`);
-    toast.success("Image deleted successfully");
-    await getAssetDetails();
+    Swal.fire({
+             title: `Are you sure you'd like to permanently delete this image?`,
+             showDenyButton: false,
+             showCancelButton: true,
+             confirmButtonText: "Delete",
+           }).then(async (result) => {
+             if (result.isConfirmed) {
+              await del(`/api/site/assets/image/${image.assetImageId}`);
+              toast.success("Image deleted successfully");
+              await getAssetDetails();
+              
+             } else if (result.isDenied) {
+               // Swal.fire("Changes are not saved", "", "info");
+             }
+           });
+   
   };
 
   const getAssetDetails = async () => {

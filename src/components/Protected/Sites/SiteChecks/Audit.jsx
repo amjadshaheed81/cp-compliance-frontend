@@ -7,6 +7,8 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
+import Swal from "sweetalert2";
+
 
 import CircularProgress from '@mui/material/CircularProgress';
 import {
@@ -165,9 +167,22 @@ const AssessmentFireRisk = ({ subType, sasToken, checkId, siteAssets, getSiteAss
   };
 
   const deleteAssessmentResponseImage = async (image)=>{
-    await del(`/api/site-check/assessment/response/image/${image.imageId}`);
-    toast.success("Image deleted successfully")
-    await getQuestions();
+   Swal.fire({
+         title: `Are you sure you'd like to permanently delete this image?`,
+         showDenyButton: false,
+         showCancelButton: true,
+         confirmButtonText: "Delete",
+       }).then(async (result) => {
+         if (result.isConfirmed) {
+          await del(`/api/site-check/assessment/response/image/${image.imageId}`);
+          toast.success("Image deleted successfully")
+          await getQuestions();
+          
+         } else if (result.isDenied) {
+           // Swal.fire("Changes are not saved", "", "info");
+         }
+       });
+    
     
   }
 

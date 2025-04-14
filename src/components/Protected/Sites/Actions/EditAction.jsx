@@ -123,10 +123,24 @@ const EditAction = ({
   };
 
   const deleteActionImage = async (image)=>{
-    console.log('image',image)
-    await del(`/api/site/actions/image/${image.imageId}`);
+    
+    Swal.fire({
+             title: `Are you sure you'd like to permanently delete this image?`,
+             showDenyButton: false,
+             showCancelButton: true,
+             confirmButtonText: "Delete",
+           }).then(async (result) => {
+             if (result.isConfirmed) {
+              await del(`/api/site/actions/image/${image.imageId}`);
     toast.success("Image deleted successfully")
     await getActionIdDetails()
+              
+             } else if (result.isDenied) {
+               // Swal.fire("Changes are not saved", "", "info");
+             }
+           });
+    
+    
     
   }
 
