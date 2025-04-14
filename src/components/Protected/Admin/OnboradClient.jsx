@@ -5,11 +5,16 @@ import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import { get, post, del, put, uploadLogo } from "../../../api";
 import CircularProgress from '@mui/material/CircularProgress';
-import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
+import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid,
+  Box,
+  Chip,
+  Checkbox,
+  TextField, Autocomplete, MenuItem,ListItemText
+} from "@mui/material";
 import { toast } from "react-toastify";
-import { TextField, Autocomplete } from "@mui/material";
 import {combinedMenu} from "../../../Constant/Menu"
 import moment from "moment";
+
 
 const OnboradClient = ({ }) => {
 
@@ -40,8 +45,11 @@ const OnboradClient = ({ }) => {
 
   ];
   
+
+
   
 
+  const [showSiteSelection, setShowSiteSelection] = useState(false);
   const [data, setData] = useState([]);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -126,6 +134,87 @@ const OnboradClient = ({ }) => {
   //   getClient();
   // };
 
+  const SiteSelectionDialog = ({
+    open,
+    onClose,
+    sites,
+    selectedSites,
+    onSave,
+  }) => {
+    const [tempSelectedSites, setTempSelectedSites] = useState([]);
+  
+    useEffect(() => {
+      if (open) {
+        setTempSelectedSites(selectedSites);
+      }
+    }, [open]);
+  
+    const handleToggleSite = (siteId) => {
+      console.log('tempSelectedSites', tempSelectedSites, siteId)
+      setTempSelectedSites((prev) =>
+        prev.includes(siteId)
+          ? prev.filter((id) => id !== siteId)
+          : [...prev, siteId]
+      );
+    };
+  
+    const handleSelectAll = () => {
+      if (tempSelectedSites.length === sites.length) {
+        setTempSelectedSites([]);
+      } else {
+        setTempSelectedSites(sites.map((site) => site.key));
+      }
+    };
+  
+    const handleSave = () => {
+      onSave(tempSelectedSites);
+      onClose();
+    };
+  
+    const allSelected =
+      sites.length > 0 && tempSelectedSites.length === sites.length;
+  
+    const selectedSet = new Set(tempSelectedSites);
+  
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle
+          sx={{ color: "black", textTransform: "none", fontWeight: "normal" }}
+        >
+          Select Modules
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ maxHeight: 400, overflow: "auto" }}>
+            <MenuItem onClick={handleSelectAll}>
+              <Checkbox checked={allSelected} />
+              <ListItemText
+                primary={`${allSelected ? "Deselect All" : "Select All"}`}
+              />
+            </MenuItem>
+  
+            {sites.map((site) => (
+              <MenuItem
+                key={site.key}
+                onClick={() => handleToggleSite(site.key)}
+                sx={{ pl: 4 }}
+              >
+                {/* <Checkbox checked={sites.filter(s=>s.key === site.key).length> 0} /> */}
+                <Checkbox checked={selectedSet.has(site.key)} />
+                <ListItemText primary={site.label} />
+              </MenuItem>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+
   const saveNew = async (event) => {
     event.preventDefault();
     const form = event.target;
@@ -183,8 +272,25 @@ const OnboradClient = ({ }) => {
     setFormData(udata);
   };
 
+  const selectedmodules = combinedMenu.filter(o=>formData?.modules?.split(","));
+  console.log('selectedmodules',selectedmodules)
+
+  const handleSaveSelectedSites = (data) => {
+    const uformData = { ...formData }
+
+    uformData.modules = data.join(",")
+
+    setFormData(uformData);
+  }
   return (
     <Fragment>
+      <SiteSelectionDialog
+        open={showSiteSelection}
+        onClose={() => setShowSiteSelection(false)}
+        sites={combinedMenu}
+        selectedSites={selectedmodules.map(s=>s.key)}
+        onSave={handleSaveSelectedSites}
+      />
       <SidebarNew />
       
       <Dialog open={addNewDrp} onClose={() => { setFormData({});setAddNewDrp(false); }} maxWidth="lg" fullWidth>
@@ -316,7 +422,113 @@ const OnboradClient = ({ }) => {
 
               <Grid sm={6}>
                 <label htmlFor="modules">Modules</label>
-                            <Autocomplete
+                <div>
+                                        <Button
+                                          variant="outlined"
+                                          fullWidth
+                                          sx={{
+                                            color: "#808080",
+                                            borderColor: "#d1d1d1",
+                                            textTransform: "none",
+                                            fontWeight: 400,
+                                            fontSize: "1rem",
+                                            "&:hover": {
+                                              borderColor: "#d1d1d1",
+                                              backgroundColor: "#f9f9f9",
+                                            },
+                                          }}
+                                          onClick={()=>setShowSiteSelection(true)}
+                                        >
+                                          {selectedmodules.length > 0
+                                            ? `${selectedmodules.length} Modules(s) Selected`
+                                            : "Select Modules"}
+                                        </Button>
+                                      </div>
+                                      {selectedmodules.length > 0 && (
+                                        <Box mt={1} sx={{ maxHeight: 100, overflow: "auto" }}>
+                                          {selectedmodules.map((menu) => (
+                                            <Box
+                                              key={menu.key}
+                                              sx={{ display: "flex", alignItems: "center" }}
+                                            >
+                                              <Checkbox checked disabled size="small" />
+                                              <span>{menu.label}</span>
+                                            </Box>
+                                          ))}
+                                        </Box>
+                                      )}
+                {/* <Autocomplete
+                          multiple
+                          value={combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key))).map((option) => option.key)}
+                          
+                        onChange={(event, newValue) => {
+                          const uformData = { ...formData }
+                          
+                          if (
+                            newValue.length === combinedMenu.length ||
+                            (newValue.length === 1 &&
+                              newValue[0] === "Select All")
+                          ) {
+                            
+                            uformData.modules = combinedMenu.filter(s => !uformData.modules?.split(",")?.includes(s.key.toString())).map(i => i.key).join(",")
+                          } else if (
+                            newValue.length === 0 ||
+                            (newValue.includes("Select All"))
+                          ) {
+                            uformData.modules = ""
+                          } else {                 
+                            uformData.modules = newValue.filter((value) => value !== "Select All").join(",")                            
+                          }
+                          setFormData(uformData);
+                        }}
+                        options={[ "Select All", ...combinedMenu
+                          .map((option) => option.key)]}
+                       
+                        getOptionLabel={(option) =>
+                          option === "Select All"
+                            ? "Select All"
+                            : combinedMenu.filter((a) => a.key === option)
+                            .map(option =>  option.label )[0]
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                           label="Assets"
+                           size="small"
+                          />
+                        )}
+                        renderOption={(props, option, { selected }) => (
+                          <li {...props}>
+                            <Checkbox checked={selected} />
+                            {option === "Select All"
+                            ? "Select All"
+                            : combinedMenu.filter((a) => a.key === option).map(option =>  option.label )[0]}
+                          </li>
+                        )}
+                        renderTags={(value, getTagProps) => (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 0.5,
+                              maxHeight: 120, 
+                              overflowY: 'auto', 
+                              alignItems: 'flex-start',
+                              alignContent: 'flex-start', 
+                              padding: '4px 0',
+                            }}
+                          >
+                            {value.map((option, index) => (
+                              <Chip
+                                key={index}
+                                label={combinedMenu.filter((a) => a.key === option).map(option =>  option.label)[0]}
+                                {...getTagProps({ index })}
+                              />
+                            ))}
+                          </Box>
+                        )}
+                      /> */}
+                            {/* <Autocomplete
                               multiple
                               onChange={(event, newValue) => {
                                 const keys = newValue
@@ -338,7 +550,7 @@ const OnboradClient = ({ }) => {
                                   //placeholder="Select Module"
                                 />
                               )}
-                            />
+                            /> */}
                 {/* <select
                 style={{ maxWidth: '300px' }}
                           required
