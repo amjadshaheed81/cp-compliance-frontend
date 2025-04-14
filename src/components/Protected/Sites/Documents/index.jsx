@@ -597,7 +597,7 @@ const Document = ({
                     key={itm?.id}
                     onClick={() => setFileList([])}
                   >
-                    <span className="fa-stack fa-2x">
+                    {/* <span className="fa-stack fa-2x">
       <i 
         className={`fas fa-folder fa-stack-2x`} 
         style={{ color: "#384BD3" }}
@@ -609,14 +609,14 @@ const Document = ({
         ></i>
       )}
       {itm?.folderName}/<b>{itm?.name}</b>
-    </span>
-                    {/* <span>
+    </span> */}
+                    <span>
                       <i
                         style={{ color: "#384BD3" }}
                         className="fas fa-folder fa-1x"
                       ></i>{" "}
                       {itm?.folderName}/<b>{itm?.name}</b>
-                    </span> */}
+                    </span>
                   </a>
                 ))}
               </ul>
