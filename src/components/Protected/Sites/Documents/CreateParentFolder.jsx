@@ -32,14 +32,29 @@ const CreateParentFolder = ({
   const submitFolder = async (data) => {
     setIsLoading(true);
     try {
-      await post("/api/document/admin-folder", {
+      post("/api/document/admin-folder", {
         ...data,
         sharedFolder: isShared
+      }).then((res)=>{
+        setIsLoading(false);
+        handleClose();
+        refresh();
+        toast.success("Folder added successfully");
+      }
+      ).catch(err => {
+        console.log(err?.response?.data)
+        if(err?.response?.data?.message === "Folder exists") {
+          toast.error("Folder with same name already exists");
+        } else {
+          toast.error("Failed to create folder");
+        }
+        setIsLoading(false);
+        
+        //handleClose();
+        //refresh();
+        //toast.success("Folder added successfully");
       });
-      setIsLoading(false);
-      handleClose();
-      refresh();
-      toast.success("Folder added successfully");
+     
     } catch (error) {
       setIsLoading(false);
       toast.error("Failed to create folder");
