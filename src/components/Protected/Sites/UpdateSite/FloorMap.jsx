@@ -12,13 +12,7 @@ import { del, get, put } from "../../../../api";
 import { useSearchParams } from "react-router-dom";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
-const FloorMap = ({
-  siteLayout,
-  setLoader,
-  uploadFloorPlan,
-  updateSite,
-  loggedInUserData,
-}) => {
+const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedInUserData }) => {
   const [selectedTab, setSelectedTab] = useState(null);
   const [positionOption, setPositionOption] = useState([]);
   const [markerLabels, setMarkerLabels] = useState([]);
@@ -28,29 +22,13 @@ const FloorMap = ({
   const imageRef = useRef(null);
   const [searchParams] = useSearchParams();
   const isViewMode = searchParams.get("isViewMode");
-  const [naturalDimensions, setNaturalDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
-
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver(() => {
-      setDroppedItems([...droppedItems]);
-    });
-
-    if (imageRef.current) {
-      resizeObserver.observe(imageRef.current);
-    }
-
-    return () => resizeObserver.disconnect();
-  }, [droppedItems]);
 
   useEffect(() => {
     const positions = siteLayout?.filter(
       (itm) => itm?.nodeType === "position" || itm?.nodeType === "type"
     );
     setPositionOption(positions || []);
-    setFloorPlanUrl("");
+    setFloorPlanUrl("")
   }, [siteLayout]);
 
   const getParentNodeName = (id) => {
@@ -59,20 +37,17 @@ const FloorMap = ({
 
   const handleFloorSelect = (index) => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
-    const selectedFloorData = list?.find((i) => i.id === index);
+    const selectedFloorData = list?.find(i=>i.id === index);
     const filteredRooms = siteLayout?.filter(
       (room) => room?.parentNode === selectedFloorData?.id
     );
-    setSelectedFloor(selectedFloorData);
+    setSelectedFloor(selectedFloorData)
     setMarkerLabels(filteredRooms);
     scrollToElement(".floorMapTitle");
     // setDroppedItems([]); // Clear previously dropped items when changing floors
-    setSelectedTab({
-      id: selectedFloorData?.id,
-      name: selectedFloorData?.nodeName,
-    });
+    setSelectedTab({ id: selectedFloorData?.id, name: selectedFloorData?.nodeName });
     setFloorPlanUrl(selectedFloorData?.floorPlanUrl);
-    getSavedMarger(selectedFloorData);
+    getSavedMarger(selectedFloorData)
   };
 
   const getFloorList = () => {
@@ -86,22 +61,17 @@ const FloorMap = ({
       "5th Floor": 7,
       "6th Floor": 8,
       "7th Floor": 9,
-      Vertical: 10,
+      "Vertical": 10,
     };
     const list = siteLayout
-      ?.filter(
-        (itm) =>
-          itm?.nodeType === "floor" &&
-          itm?.floorPlanUrl !== "" &&
-          itm?.floorPlanUrl !== undefined &&
-          itm?.floorPlanUrl !== null
-      )
+      ?.filter((itm) => itm?.nodeType === "floor" && itm?.floorPlanUrl !== "" && itm?.floorPlanUrl !== undefined && itm?.floorPlanUrl !== null)
       .sort((a, b) => {
         const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER; // Default to a high value for "rest"
         const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
         return aOrder - bOrder;
       });
 
+      
     return list?.map((floor, index) => (
       <li
         key={floor?.id} // Use unique id instead of index for key
@@ -114,83 +84,92 @@ const FloorMap = ({
           borderBottom: "1px solid grey",
         }}
       >
-        <div>{`${getParentNodeName(floor?.parentNode)}: ${
-          floor?.nodeName
-        }`}</div>
+        <div>{`${getParentNodeName(floor?.parentNode)}: ${floor?.nodeName}`}</div>
       </li>
     ));
   };
+  
 
   const updateMarkerPosition = (index, newLeft, newTop) => {
-    if (imageRef.current && naturalDimensions.width) {
+    if (imageRef.current) {
       const imageRect = imageRef.current.getBoundingClientRect();
-      const scaleX = naturalDimensions.width / imageRect.width;
-      const scaleY = naturalDimensions.height / imageRect.height;
-
-      const naturalX = newLeft * scaleX;
-      const naturalY = newTop * scaleY;
-
+  
+      // Enforce boundaries within the image box
+      const boundedLeft = Math.min(
+        Math.max(0, newLeft),
+        imageRect.width - 20 // Adjust marker size offset if needed
+      );
+      const boundedTop = Math.min(
+        Math.max(0, newTop),
+        imageRect.height - 20 // Adjust marker size offset if needed
+      );
+  
       setDroppedItems((prevItems) =>
         prevItems.map((item, i) =>
-          i === index ? { ...item, naturalX, naturalY } : item
+          i === index ? { ...item, left: boundedLeft, top: boundedTop } : item
         )
       );
     }
   };
 
   const saveImage = async () => {
-    const payload = droppedItems?.map((itm) => ({
-      id: itm?.id || null,
-      label: itm?.label,
-      roomId: itm?.roomId,
-      siteId: updateSite?.siteId,
-      leftPosition: itm.naturalX,
-      topPosition: itm.naturalY,
-    }));
-    
+    const payload = droppedItems?.map(itm => {
+      return {
+        id: itm?.id || null,
+        label: itm?.label,
+        roomId: itm?.roomId,
+        siteId: updateSite?.siteId,
+        leftPosition: itm?.left,
+        topPosition: itm?.top,
+      }
+    });
     for (const element of payload) {
       const res = await put("/api/site/SaveMarker", element);
     }
-    toast.success("Floor Marker updated Successfully.");
+    toast.success("Floor Marker updated Successully.");
     getSavedMarger(selectedFloor);
+    // Logic to save image along with marker positions
   };
 
   const getSavedMarger = async (selectedFloorData) => {
     const res = await get(`/api/site/SaveMarker/${updateSite?.siteId}`);
-    const filteredData = res
-      ?.map((itm) => ({
-        id: itm?.id,
+    const filteredData = res?.map(itm => {
+      return {
+        id: itm?.id || null,
         label: itm?.label,
         roomId: itm?.roomId,
-        naturalX: Number(itm.leftPosition),
-        naturalY: Number(itm.topPosition),
-      }))
-      ?.filter((itm) => itm?.roomId === selectedFloorData?.id);
+        siteId: updateSite?.siteId,
+        left: Number(itm?.leftPosition),
+        top: Number(itm?.topPosition),
+      }
+    })?.filter(itm => itm?.roomId === selectedFloorData?.id);
     setDroppedItems(filteredData || []);
-  };
+  }
 
   const [{ isOver }, drop] = useDrop({
     accept: "LABEL",
     drop: (item, monitor) => {
       const clientOffset = monitor.getClientOffset();
-      if (!clientOffset || !imageRef.current) return;
-
       const imageRect = imageRef.current.getBoundingClientRect();
-      const scaleX = naturalDimensions.width / imageRect.width;
-      const scaleY = naturalDimensions.height / imageRect.height;
+      const newLeft = clientOffset.x - imageRect.left;
+      const newTop = clientOffset.y - imageRect.top;
 
-      const naturalX = (clientOffset.x - imageRect.left) * scaleX;
-      const naturalY = (clientOffset.y - imageRect.top) * scaleY;
-
-      setDroppedItems((prev) => [
-        ...prev,
-        {
-          naturalX,
-          naturalY,
-          label: item.label,
-          roomId: item.roomId,
-        },
-      ]);
+      if (
+        newLeft >= 0 &&
+        newTop >= 0 &&
+        newLeft <= imageRect.width &&
+        newTop <= imageRect.height
+      ) {
+        setDroppedItems((prev) => [
+          ...prev,
+          {
+            left: newLeft,
+            top: newTop,
+            label: item.label,
+            roomId: item.roomId,
+          },
+        ]);
+      }
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -236,37 +215,31 @@ const FloorMap = ({
       collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
       end: (_, monitor) => {
         const offset = monitor.getClientOffset();
-        if (!offset || !imageRef.current) return;
-
         const imageRect = imageRef.current.getBoundingClientRect();
-        const scaleX = naturalDimensions.width / imageRect.width;
-        const scaleY = naturalDimensions.height / imageRect.height;
-
-        const newLeft = (offset.x - imageRect.left) * scaleX;
-        const newTop = (offset.y - imageRect.top) * scaleY;
-
-        updatePosition(index, newLeft / scaleX, newTop / scaleY);
+  
+        if (offset) {
+          const newLeft = Math.min(
+            Math.max(0, offset.x - imageRect.left),
+            imageRect.width - 20
+          );
+          const newTop = Math.min(
+            Math.max(0, offset.y - imageRect.top),
+            imageRect.height - 20
+          );
+  
+          updatePosition(index, newLeft, newTop);
+        }
       },
     });
-
-    // Convert natural coordinates to current display coordinates
-    const imageRect = imageRef.current?.getBoundingClientRect() || {
-      width: 0,
-      height: 0,
-    };
-    const scaleX = naturalDimensions.width / imageRect.width;
-    const scaleY = naturalDimensions.height / imageRect.height;
-    const left = item.naturalX / scaleX;
-    const top = item.naturalY / scaleY;
-
+  
     return (
       <Tooltip title={`View Assets: ${item.label}`} arrow>
         <div
           ref={drag}
           style={{
             position: "absolute",
-            left: left,
-            top: top,
+            left: item.left,
+            top: item.top,
             transform: isDragging ? "scale(1.05)" : "scale(1)",
             transition: "transform 0.1s ease-out",
             willChange: "transform",
@@ -279,11 +252,38 @@ const FloorMap = ({
             opacity: isDragging ? 0.7 : 1,
           }}
         >
-          {/* Your marker UI remains same */}
+          <span
+            style={{
+              position: "absolute",
+              top: "-10px",
+              right: "-10px",
+              backgroundColor: "black",
+              color: "white",
+              borderRadius: "50%",
+              width: "16px",
+              height: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "10px",
+              cursor: "pointer",
+            }}
+            onClick={() => removeMarker(index, item)}
+          >
+            ✖
+          </span>
+          <a
+            target="_blank"
+            className="markerLink"
+            href={`/#/assets?roomId=${item?.roomId}&roomLabel=${item?.label}`}
+          >
+            {item.label}
+          </a>
         </div>
       </Tooltip>
     );
   };
+  
   const removeMarker = async (index, item) => {
     try {
       const url = `api/site/SaveMarker/${item.id}`;
@@ -334,58 +334,49 @@ const FloorMap = ({
             })}
           </ul>
           <div>
-            {isViewMode === "edit" && (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={saveImage}
-                disabled={!isManagerAdminLogin(loggedInUserData)}
-              >
-                Save Markers
-              </Button>
-            )}
+          {isViewMode === "edit" && (
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={saveImage}
+          disabled={!isManagerAdminLogin(loggedInUserData)}
+        >
+          Save Markers
+        </Button>
+      )}
           </div>
           {floorPlanUrl ? (
-    <div
-      ref={drop}
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        overflow: "hidden",
-      }}
-    >
-      <img
-        ref={imageRef}
-        src={floorPlanUrl}
-        onLoad={(e) => {
-          setNaturalDimensions({
-            width: e.target.naturalWidth,
-            height: e.target.naturalHeight,
-          });
-        }}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          display: "block",
-        }}
-        alt="Floor plan"
-      />
-      {droppedItems.map((item, index) => (
-        <Marker
-          key={index}
-          index={index}
-          item={item}
-          updatePosition={updateMarkerPosition}
-          removeMarker={removeMarker}
-        />
-      ))}
-    </div>
-  ) : (
-    "Floor plan file is not available."
-  )}
-
+            <div
+            ref={imageRef}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              overflow: "hidden", // Ensures no overflow from embed or markers
+            }}
+          >
+            <embed
+              src={floorPlanUrl}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+            {droppedItems.map((item, index) => (
+              <Marker
+                key={index}
+                index={index}
+                item={item}
+                updatePosition={updateMarkerPosition}
+                removeMarker={removeMarker}
+              />
+            ))}
+          </div>
+          ) : (
+            "Floor plan file is not available."
+          )}
         </div>
       </Box>
     </div>
@@ -403,6 +394,4 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
 });
 
-export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(
-  FloorMapWithDnd
-);
+export default connect(mapStateToProps, { uploadFloorPlan, setLoader })(FloorMapWithDnd);
