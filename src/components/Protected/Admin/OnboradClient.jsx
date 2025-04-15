@@ -272,8 +272,9 @@ const OnboradClient = ({ }) => {
     setFormData(udata);
   };
 
-  const selectedmodules = combinedMenu.filter(o=>formData?.modules?.split(","));
+  const selectedmodules = combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key)));
   console.log('selectedmodules',selectedmodules)
+  console.log('selectedmodules',formData?.modules?.split(","))
 
   const handleSaveSelectedSites = (data) => {
     const uformData = { ...formData }
@@ -621,8 +622,8 @@ const OnboradClient = ({ }) => {
               <thead className="table-dark">
                 <tr>
                   <th scope="col" style={{ border: "2px groove" }}>Client Name</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
                   <th scope="col" style={{ border: "2px groove" }}>Admin Name</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
                   <th scope="col" style={{ border: "2px groove" }}>License Expiry</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Users</th>
                   <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Sites</th>
@@ -641,7 +642,7 @@ const OnboradClient = ({ }) => {
                     <td colSpan={4} align="center">No result found!!</td>
                   </tr>
                 )}
-                {!isLoading && data?.map((d, rowIndex) => (
+                {!isLoading && data?.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate))?.map((d, rowIndex) => (
                   <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                     <img src={d.logo} height={50}
