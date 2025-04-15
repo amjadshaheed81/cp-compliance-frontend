@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { CSVLink } from "react-csv";
@@ -21,6 +21,7 @@ import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 import { useLocation } from "react-router-dom";
 import Papa from "papaparse";
+import "./AssetStyle.css";
 
 const Summary = ({
   siteAssets,
@@ -41,7 +42,7 @@ const Summary = ({
   const [subCategoryList, setSubCategoryList] = useState([]);
   const [subCategory2List, setSubCategory2List] = useState([]);
   const [subCategory3List, setSubCategory3List] = useState([]);
-  
+
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState({});
@@ -51,12 +52,16 @@ const Summary = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
+  const [showMultiEditModal, setShowMultiEditModal] = useState(false);
+
   const location = useLocation();
   const indexOfLastPreAction = currentPage * preActionsPerPage;
   const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
   const currentSiteAssets = filteredSiteAssets
-    ?.filter((itm) => itm?.doorItem !== true && itm?.patItem !== true)?.slice(indexOfFirstPreAction, indexOfLastPreAction);
-  const locationFilter = siteAssetsList?.map((itm) => {
+    ?.filter((itm) => itm?.doorItem !== true && itm?.patItem !== true)
+    ?.slice(indexOfFirstPreAction, indexOfLastPreAction);
+  const locationFilter = siteAssetsList
+    ?.map((itm) => {
       return { location: itm.location };
     })
     .filter(
@@ -113,12 +118,12 @@ const Summary = ({
     const subCategory2List = await get("/api/lov/ASSET_SUB_CATEGORY_2");
     const subCategory3List = await get("/api/lov/ASSET_SUB_CATEGORY_3");
     setCategory(categoryList);
-    setSubCategory(subCategoryList)
-    setSubCategory2(subCategory2List)
-    setSubCategory3(subCategory3List)
-    setSubCategoryList(subCategoryList)
-    setSubCategory2List(subCategory2List)
-    setSubCategory3List(subCategory3List)
+    setSubCategory(subCategoryList);
+    setSubCategory2(subCategory2List);
+    setSubCategory3(subCategory3List);
+    setSubCategoryList(subCategoryList);
+    setSubCategory2List(subCategory2List);
+    setSubCategory3List(subCategory3List);
   };
   useEffect(() => {
     if (siteAssets) {
@@ -156,7 +161,7 @@ const Summary = ({
   });
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === "category") {
       const subCategoryData = subCategory?.filter(
         (itm) => itm?.attribite1 === value
@@ -171,7 +176,7 @@ const Summary = ({
         subCategory2: "",
         subCategory3: "",
       });
-    }else if (name === "subCategory") {
+    } else if (name === "subCategory") {
       const subCategoryData = subCategory2?.filter(
         (itm) => itm?.attribite1 === value
       );
@@ -183,7 +188,7 @@ const Summary = ({
         subCategory2: "",
         subCategory3: "",
       });
-    }else if (name === "subCategory2") {
+    } else if (name === "subCategory2") {
       const subCategoryData = subCategory3?.filter(
         (itm) => itm?.attribite1 === value
       );
@@ -223,7 +228,17 @@ const Summary = ({
     const manufacturer = formData?.manufacturer;
     const floor = formData?.floor;
     const room = formData?.room;
-    if (assetName || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
+    if (
+      assetName ||
+      category ||
+      subCategory ||
+      subCategory2 ||
+      subCategory3 ||
+      location ||
+      manufacturer ||
+      floor ||
+      room
+    ) {
       const list = siteAssetsList?.filter(
         (x) =>
           String(x?.assetName)
@@ -325,11 +340,11 @@ const Summary = ({
           const assets = results.data
             .map((row) => {
               const assetId = parseInt(row.assetId);
-  
+
               if (isNaN(assetId) || assetId === null) {
                 return null;
               }
-  
+
               return {
                 assetId: assetId,
                 assetName: row.assetName,
@@ -350,15 +365,17 @@ const Summary = ({
               };
             })
             .filter((asset) => asset !== null);
-  
+
           if (assets.length === 0) {
             toast.error("No valid assets found in the file.");
             return;
           }
-  
+
           try {
-            const response = await put("/api/site/296/assets/mutiples", { assets });
-  
+            const response = await put("/api/site/296/assets/mutiples", {
+              assets,
+            });
+
             if (response.status === 200 || response.status === 201) {
               toast.success("Assets updated successfully!");
               setIsLoading(true);
@@ -380,6 +397,61 @@ const Summary = ({
       });
     }
   };
+
+  //Multi Asset edit handlers
+  // Add this helper function outside your component
+  const handleFieldUpdate = (assetId, field, value) => {
+    setSelectedItems((prevItems) =>
+      prevItems.map((item) =>
+        item.assetId === assetId ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const handleSaveMultiEdit = async () => {
+    try {
+      setIsLoading(true);
+
+      const body = [];
+      // Process updates sequentially
+      for (const item of selectedItems) {
+        const payload = {
+          assetId: item.assetId,
+          assetName: item.assetName,
+          manufacturer: item.manufacturer,
+          category: item.category,
+          subCategory: item.subCategory,
+          subCategory2: item.subCategory2,
+          subCategory3: item.subCategory3,
+          position: item.position,
+          floor: item.floor,
+          room: item.room,
+        };
+        body.push(payload);
+      }
+      await put(
+        `/api/site/${siteSelectedForGlobal?.siteId}/assets/mutiples`,
+        {
+          assets: body,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Assets updated successfully!");
+      await getSiteAssets(siteSelectedForGlobal?.siteId);
+      setShowMultiEditModal(false);
+    } catch (error) {
+      toast.error("An error occurred while updating assets.");
+      console.error("Update error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Fragment>
       {showAddModal && (
@@ -399,15 +471,379 @@ const Summary = ({
           }}
         />
       )}
+
+      {showMultiEditModal && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(86, 86, 86, 0.2)" }}
+        >
+          <div
+            className="modal-dialog modal-dialog-scrollable"
+            style={{ width: "90vw", maxWidth: "90vw" }}
+          >
+            <div
+              className="modal-content"
+              style={{ minHeight: "90vh", minWidth: "90vw" }}
+            >
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Edit Multiple Assets ({selectedItems.length} selected)
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowMultiEditModal(false)}
+                  disabled={isLoading}
+                ></button>
+              </div>
+              <div className="modal-body p-0">
+                <div
+                  className="table-responsive hide-scrollbar"
+                  style={{ maxHeight: "70vh" }}
+                >
+                  <table className="table table-hover mb-0">
+                    <thead className="sticky-top bg-light">
+                      <tr>
+                        <th style={{ width: "100px", minWidth: "100px" }}>
+                          Asset ID
+                        </th>
+                        <th style={{ width: "100px", minWidth: "100px" }}>
+                          Asset Name
+                        </th>
+                        <th style={{ width: "100px", minWidth: "100px" }}>
+                          Manufacturer
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Category
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Sub Category
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Sub Cat 2
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Sub Cat 3
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Position
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Floor
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Room
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ overflowY: "auto" }}>
+                      {selectedItems.map((asset) => {
+                        const subCategoryOptions =
+                          subCategory?.filter(
+                            (itm) => itm.attribite1 === asset.category
+                          ) || [];
+                        const subCategory2Options =
+                          subCategory2?.filter(
+                            (itm) => itm.attribite1 === asset.subCategory
+                          ) || [];
+                        const subCategory3Options =
+                          subCategory3?.filter(
+                            (itm) => itm.attribite1 === asset.subCategory2
+                          ) || [];
+
+                        return (
+                          <tr key={asset.assetId}>
+                            <td style={{ width: "200px", minWidth: "200px" }}>
+                              {asset.assetId}
+                            </td>
+                            <td style={{ width: "200px", minWidth: "200px" }}>
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                value={asset.assetName || ""}
+                                onChange={(e) =>
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "assetName",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                value={asset.manufacturer || ""}
+                                onChange={(e) =>
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "manufacturer",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.category || ""}
+                                onChange={(e) => {
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "category",
+                                    e.target.value
+                                  );
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory",
+                                    ""
+                                  );
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory2",
+                                    ""
+                                  );
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory3",
+                                    ""
+                                  );
+                                }}
+                              >
+                                <option value="">Select</option>
+                                {category?.map((opt) => (
+                                  <option
+                                    key={opt.lovValue}
+                                    value={opt.lovValue}
+                                  >
+                                    {opt.lovValue}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.subCategory || ""}
+                                onChange={(e) => {
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory",
+                                    e.target.value
+                                  );
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory2",
+                                    ""
+                                  );
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory3",
+                                    ""
+                                  );
+                                }}
+                                disabled={!asset.category}
+                              >
+                                <option value="">Select</option>
+                                {subCategoryOptions.map((opt) => (
+                                  <option
+                                    key={opt.lovValue}
+                                    value={opt.lovValue}
+                                  >
+                                    {opt.lovValue}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.subCategory2 || ""}
+                                onChange={(e) => {
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory2",
+                                    e.target.value
+                                  );
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory3",
+                                    ""
+                                  );
+                                }}
+                                disabled={!asset.subCategory}
+                              >
+                                <option value="">Select</option>
+                                {subCategory2Options.map((opt) => (
+                                  <option
+                                    key={opt.lovValue}
+                                    value={opt.lovValue}
+                                  >
+                                    {opt.lovValue}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.subCategory3 || ""}
+                                onChange={(e) =>
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "subCategory3",
+                                    e.target.value
+                                  )
+                                }
+                                disabled={!asset.subCategory2}
+                              >
+                                <option value="">Select</option>
+                                {subCategory3Options.map((opt) => (
+                                  <option
+                                    key={opt.lovValue}
+                                    value={opt.lovValue}
+                                  >
+                                    {opt.lovValue}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.position || ""}
+                                onChange={(e) => {
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "position",
+                                    e.target.value
+                                  );
+                                  handleFieldUpdate(asset.assetId, "floor", "");
+                                  handleFieldUpdate(asset.assetId, "room", "");
+                                }}
+                              >
+                                <option value="">Select</option>
+                                <option value="Interior">Interior</option>
+                                <option value="Exterior">Exterior</option>
+                              </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.floor || ""}
+                                onChange={(e) => {
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "floor",
+                                    e.target.value
+                                  );
+                                  handleFieldUpdate(asset.assetId, "room", "");
+                                }}
+                                disabled={!asset.position}
+                              >
+                                <option value="">Select</option>
+                                {floorNode?.map((node) => (
+                                  <option
+                                    key={node.nodeName}
+                                    value={node.nodeName}
+                                  >
+                                    {node.nodeName}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <select
+                                className="form-select form-select-sm"
+                                value={asset.room || ""}
+                                onChange={(e) =>
+                                  handleFieldUpdate(
+                                    asset.assetId,
+                                    "room",
+                                    e.target.value
+                                  )
+                                }
+                                disabled={!asset.floor}
+                              >
+                                <option value="">Select</option>
+                                {roomNode
+                                  ?.filter(
+                                    (node) =>
+                                      node.parentNode ===
+                                      floorNode.find(
+                                        (f) => f.nodeName === asset.floor
+                                      )?.id
+                                  )
+                                  ?.map((node) => (
+                                    <option
+                                      key={node.nodeName}
+                                      value={node.nodeName}
+                                    >
+                                      {node.nodeName}
+                                    </option>
+                                  ))}
+                              </select>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer d-flex justify-content-between">
+                <div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary me-2"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to discard all changes?"
+                        )
+                      ) {
+                        setShowMultiEditModal(false);
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSaveMultiEdit}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Saving...
+                      </>
+                    ) : (
+                      `Save ${selectedItems.length} Assets`
+                    )}
+                  </button>
+                </div>
+                <div className="text-muted small">
+                  Showing {selectedItems.length} of {selectedItems.length}{" "}
+                  selected assets
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight ">
           <div className="row" style={{ height: "auto" }}>
             <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                autoComplete="off"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="assetName"
                 className="form-control"
                 placeholder="Asset Name"
@@ -417,9 +853,9 @@ autoComplete="off"
             <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                autoComplete="off"
+                readOnly
+                onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
@@ -439,7 +875,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.category?.length > 0 ? "" : "none"}}>
+            <div
+              className="col-md-4 col-sm-4 mt-2"
+              style={{ display: formData?.category?.length > 0 ? "" : "none" }}
+            >
               <select
                 name="subCategory"
                 className="form-control form-select"
@@ -453,7 +892,12 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.subCategory?.length > 0 ? "" : "none"}}>
+            <div
+              className="col-md-4 col-sm-4 mt-2"
+              style={{
+                display: formData?.subCategory?.length > 0 ? "" : "none",
+              }}
+            >
               <select
                 name="subCategory2"
                 className="form-control form-select"
@@ -467,7 +911,12 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.subCategory2?.length > 0 ? "" : "none"}}>
+            <div
+              className="col-md-4 col-sm-4 mt-2"
+              style={{
+                display: formData?.subCategory2?.length > 0 ? "" : "none",
+              }}
+            >
               <select
                 name="subCategory3"
                 className="form-control form-select"
@@ -494,7 +943,7 @@ autoComplete="off"
                     ...formData,
                     [name]: value,
                     floor: "",
-                    room: ""
+                    room: "",
                   });
                   const node = siteLayout.filter(
                     (site) => site.nodeName === value
@@ -515,7 +964,10 @@ autoComplete="off"
                 ))} */}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData?.location?.length > 0 ? "" : "none"}}>
+            <div
+              className="col-md-4 col-sm-4 mt-2"
+              style={{ display: formData?.location?.length > 0 ? "" : "none" }}
+            >
               <select
                 name="floor"
                 className="form-control form-select"
@@ -527,7 +979,7 @@ autoComplete="off"
                   setFormData({
                     ...formData,
                     [name]: value,
-                    room: ""
+                    room: "",
                   });
                   const node = siteLayout.filter(
                     (site) => site.nodeName === value
@@ -546,7 +998,10 @@ autoComplete="off"
                 ))}
               </select>
             </div>
-            <div className="col-md-4 col-sm-4 mt-2" style={{ display: formData.floor?.length > 0 ? "" : "none"}}>
+            <div
+              className="col-md-4 col-sm-4 mt-2"
+              style={{ display: formData.floor?.length > 0 ? "" : "none" }}
+            >
               <select
                 name="room"
                 className="form-control form-select"
@@ -591,34 +1046,68 @@ autoComplete="off"
                 </Tooltip>
               </div>
               <div className="col-md-3 col-sm-4 mt-2">
-              {selectedItems.length > 0 ? <CSVLink
-                  disabaled={selectedItems.length ===0 }
-                  filename={"selected-assets.csv"}
-                  className="btn btn-light bg-white text-primary"
-                  data={selectedItems.sort((a, b) => a.assetId - b.assetId).map((itm) => {
-                    return {
-                      assetId: itm?.assetId,
-                      assetName: itm?.assetName,
-                      location: itm?.location,
-                      manufacturer: itm?.manufacturer,
-                      category: itm?.category,
-                      subCategory: itm?.subCategory,
-                      subCategory2: itm?.subCategory2,
-                      subCategory3: itm?.subCategory3,
-                      model: itm?.model,
-                      deviceId: itm?.deviceId,
-                      serialNumber: itm?.serialNumber,
-                      
-                    };
-                  })}
+                <Tooltip
+                  title={
+                    selectedItems.length < 2
+                      ? "Select at least 2 assets to enable multi-edit"
+                      : "Multi-Edit"
+                  }
+                  arrow
                 >
-                  <Tooltip title={`Export Selected Assets`} arrow>
-                    <i className="fas fa-download"></i> Export Selected
-                  </Tooltip>
-                </CSVLink> : <button disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} className="btn btn-light bg-white text-primary">
-                <i className="fas fa-download"></i> 
-                &nbsp; Export Selected
-        </button>}
+                  <button
+                    className={`btn btn-light text-primary pr-2 ${
+                      selectedItems.length < 2 ? "disabled" : ""
+                    }`}
+                    onClick={() => setShowMultiEditModal(true)}
+                    disabled={selectedItems.length < 2}
+                    style={
+                      selectedItems.length < 2
+                        ? { opacity: 0.6, cursor: "not-allowed" }
+                        : {}
+                    }
+                  >
+                    Multi-Edit
+                  </button>
+                </Tooltip>
+              </div>
+              <div className="col-md-3 col-sm-4 mt-2">
+                {selectedItems.length > 0 ? (
+                  <CSVLink
+                    disabaled={selectedItems.length === 0}
+                    filename={"selected-assets.csv"}
+                    className="btn btn-light bg-white text-primary"
+                    data={selectedItems
+                      .sort((a, b) => a.assetId - b.assetId)
+                      .map((itm) => {
+                        return {
+                          assetId: itm?.assetId,
+                          assetName: itm?.assetName,
+                          location: itm?.location,
+                          manufacturer: itm?.manufacturer,
+                          category: itm?.category,
+                          subCategory: itm?.subCategory,
+                          subCategory2: itm?.subCategory2,
+                          subCategory3: itm?.subCategory3,
+                          model: itm?.model,
+                          deviceId: itm?.deviceId,
+                          serialNumber: itm?.serialNumber,
+                        };
+                      })}
+                  >
+                    <Tooltip title={`Export Selected Assets`} arrow>
+                      <i className="fas fa-download"></i> Export Selected
+                    </Tooltip>
+                  </CSVLink>
+                ) : (
+                  <button
+                    disabled
+                    style={{ opacity: 0.6, cursor: "not-allowed" }}
+                    className="btn btn-light bg-white text-primary"
+                  >
+                    <i className="fas fa-download"></i>
+                    &nbsp; Export Selected
+                  </button>
+                )}
               </div>
               <div className="col-md-3 col-sm-4 mt-2">
                 <Tooltip title={`Upload CSV to Update Assets`} arrow>
@@ -629,7 +1118,10 @@ autoComplete="off"
                     style={{ display: "none" }}
                     onChange={(e) => handleFileUpload(e)}
                   />
-                  <label htmlFor="upload-csv" className="btn btn-light text-primary">
+                  <label
+                    htmlFor="upload-csv"
+                    className="btn btn-light text-primary"
+                  >
                     <i className="fas fa-upload"></i> Upload CSV
                   </label>
                 </Tooltip>
@@ -641,28 +1133,29 @@ autoComplete="off"
                   data={filteredSiteAssets
                     ?.filter(
                       (itm) => itm?.doorItem !== true && itm?.patItem !== true
-                    ).sort((a, b) => a.assetId - b.assetId)
+                    )
+                    .sort((a, b) => a.assetId - b.assetId)
                     .map((itm) => {
                       return {
-                          "Asset Id": itm?.assetId,
-                          "Site Id": itm?.siteId,
-                          "Site Name": itm?.siteName,
-                          "Asset Name": itm?.assetName,
-                          "Manufacturer": itm?.manufacturer,
-                          "Category": itm?.category,
-                          "Sub Category": itm?.subCategory,
-                          "Sub Category 2": itm?.subCategory2,
-                          "Folder Name": itm?.folderName,
-                          "Is PAT Item": itm?.patItem,
-                          "Is PFP Item": itm?.pfpItem,
-                          "Is Door Item": itm?.doorItem,
-                          "Position": itm?.position,
-                          "Floor": itm?.floor,
-                          "Purchase Date": itm?.purchaseDate,
-                          "Location": itm?.location,
-                          "Model": itm?.model,
-                          "Serial Number": itm?.serialNumber
-                          
+                        "Asset Id": itm?.assetId,
+                        "Site Id": itm?.siteId,
+                        "Site Name": itm?.siteName,
+                        "Asset Name": itm?.assetName,
+                        Manufacturer: itm?.manufacturer,
+                        Category: itm?.category,
+                        "Sub Category": itm?.subCategory,
+                        "Sub Category 2": itm?.subCategory2,
+                        "Folder Name": itm?.folderName,
+                        "Is PAT Item": itm?.patItem,
+                        "Is PFP Item": itm?.pfpItem,
+                        "Is Door Item": itm?.doorItem,
+                        Position: itm?.position,
+                        Floor: itm?.floor,
+                        "Purchase Date": itm?.purchaseDate,
+                        Location: itm?.location,
+                        Model: itm?.model,
+                        "Serial Number": itm?.serialNumber,
+
                         // ...itm,
                         // assetDoorSpecifications: Array.isArray(
                         //   itm?.assetDoorSpecifications
