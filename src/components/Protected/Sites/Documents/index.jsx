@@ -840,7 +840,9 @@ const Document = ({
                                   }
                                 }}
                               >
+                                 <Tooltip title={file?.note} arrow>
                                 {file.name}
+                                </Tooltip>
                               </a>
                             </div>
 
