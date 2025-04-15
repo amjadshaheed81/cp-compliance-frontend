@@ -270,7 +270,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
                   key={room?.id}
                   roomId={room?.parentNode}
                   label={room?.nodeName?.split(" ")[1]}
-                  isDisabled={isDisabled}
+                  isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
                 />
               );
             })}
