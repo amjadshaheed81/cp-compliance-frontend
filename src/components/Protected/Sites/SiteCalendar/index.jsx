@@ -10,7 +10,10 @@ import interactionPlugin from "@fullcalendar/interaction";
 import Tooltip from "@mui/material/Tooltip";
 import moment from "moment";
 import "./calendar.css";
-import { get } from "../../../../api";
+import { get, post, put } from "../../../../api";
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 
 const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const navigate = useNavigate();
@@ -23,23 +26,49 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const [calendarEvent, setCalendarEvent] = useState([]);
   const [todayEvents, settodayEvents] = useState([]);
-  //const [data, setData] = useState([]);
+  // State for appointment modal
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [appointmentForm, setAppointmentForm] = useState({
+    recipient: '',
+    subject: '',
+    date: '',
+    time: ''
+  });
+
+  const [managerList, setManagerList] = useState([]);
+
+  const getManagerList = async () => {
+      const data = await get(
+        `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
+      );
+      setManagerList(
+        data?.users?.sort((a, b) => {
+          if (a.name < b.name) {
+            return -1;
+          }
+          if (a.name > b.name) {
+            return 1;
+          }
+          return 0;
+        }) || []
+      );
+    };
+
   useEffect(() => {
     if(siteSelectedForGlobal?.siteId) {
       getData();
+      getManagerList();
     }
-    
   }, [])
 
   const isToday = (date) => {
     const today = new Date();
-    
     return date.getDate() === today.getDate() &&
            date.getMonth() === today.getMonth() &&
            date.getFullYear() === today.getFullYear();
   }
+
   const getData = async () => {
-    
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
     data = filterDuplicates(data);
     const todays = data.filter(e => isToday(new Date(e.endDate)));
@@ -59,11 +88,45 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setCalendarEvent(event);
   }
 
+  // Handle appointment form changes
+  const handleAppointmentChange = (e) => {
+    const { name, value } = e.target;
+    setAppointmentForm({
+      ...appointmentForm,
+      [name]: value
+    });
+  };
+
+  // Handle appointment submission
+  const handleAppointmentSubmit = async (e) => {
+    e.preventDefault();
+    // Here you would typically send the appointment data to your backend
+    console.log("Appointment booked:", appointmentForm);
+    const calenderBody = {
+          siteId: siteSelectedForGlobal?.siteId,
+          startDate: moment(appointmentForm.date),
+          endDate: moment(appointmentForm.date),
+          shortText: appointmentForm.subject,
+          eventType: `Apointment`,
+          userId: loggedInUserData?.id,
+          includeCompanyUsers: false,
+          //section: `/site-checks/${body.checkId}/update`,
+        };
+    
+    // await put('/api/user/calendar',calenderBody)
+    // setShowAppointmentModal(false);
+    // setAppointmentForm({
+    //   recipient: '',
+    //   subject: '',
+    //   date: '',
+    //   time: ''
+    // });
+  };
+
   const filterDuplicates = (arr) => {
     const uniqueSet = new Set();
     return arr.filter(item => {
         const key = `${item.section}-${item.eventType}-${item.siteId}-${item.startDate}-${item.endDate}-${item.shortText}`;
-        
         if (uniqueSet.has(key)) {
             return false;
         } else {
@@ -71,14 +134,14 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
             return true;
         }
     });
-}
+  }
 
- 
   const [formData, setFormData] = useState({
     searchField: "",
     month: "",
     year: "",
   });
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -86,9 +149,11 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
       [name]: value,
     });
   };
+  
   useEffect(() => {
     searchSiteCalendar();
   }, [formData.searchField, formData.month, formData.year]);
+  
   const searchSiteCalendar = () => {
     const searchField = formData?.searchField;
     const month = formData?.month;
@@ -97,9 +162,11 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     } else {
     }
   };
+  
   const msg = async (date) => {
     setClickedDate(date?._def?.extendedProps?.getDate);
   };
+  
   function truncateString(str, num) {
     return str.length > num ? str?.slice(0, num) + "..." : str;
   }
@@ -127,10 +194,13 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-warning text-dark" >{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Document") && (
-                <p  ><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
+                <p><span className="badge bg-info">{truncateString(itm?.type, 15)}</span></p>
               )}
               {itm?.type?.includes("Contract") && (
                 <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-info" >{truncateString(itm?.type, 15)}</span></p>
+              )}
+              {itm?.type?.includes("Appointment") && (
+                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-secondary" >{truncateString(itm?.type, 15)}</span></p>
               )}
             </Tooltip>
           ))}
@@ -146,17 +216,97 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
         <Header />
         <div className="container-fluid">
           <BreadCrumHeader header={"Site Calendar"} page={"Calendar"} />
-          {/*  */}
-          {/*  */}
+          
+          {/* Book Appointment Button */}
+          <div className="d-flex justify-content-end mb-3">
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowAppointmentModal(true)}
+            >
+              Book Appointment
+            </button>
+          </div>
+          
+          {/* Appointment Modal */}
+          <Modal show={showAppointmentModal} onHide={() => setShowAppointmentModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Book New Appointment</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form onSubmit={handleAppointmentSubmit}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Recipient</Form.Label>
+                  <Form.Control
+                    as="select"
+                    name="recipient"
+                    value={appointmentForm.recipient}
+                    onChange={handleAppointmentChange}
+                    required
+                  >
+                    <option value="">Select Lead</option>
+                    {managerList?.map(u => {
+                      return (
+                        <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
+                      )
+                    })}
+                  </Form.Control>
+                </Form.Group>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="subject"
+                    value={appointmentForm.subject}
+                    onChange={handleAppointmentChange}
+                    required
+                  />
+                </Form.Group>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="date"
+                    value={appointmentForm.date}
+                    onChange={handleAppointmentChange}
+                    required
+                  />
+                </Form.Group>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Time</Form.Label>
+                  <Form.Control
+                    type="time"
+                    name="time"
+                    value={appointmentForm.time}
+                    onChange={handleAppointmentChange}
+                    required
+                  />
+                </Form.Group>
+                
+                <div className="d-flex justify-content-end">
+                  <Button variant="secondary" onClick={() => setShowAppointmentModal(false)} className="me-2">
+                    Cancel
+                  </Button>
+                  <Button variant="primary" type="submit">
+                    Book Appointment
+                  </Button>
+                </div>
+              </Form>
+            </Modal.Body>
+          </Modal>
+
+          {/* Search and Filter Section */}
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
                   <input
                     type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                    autoComplete="off"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     placeholder="Search"
                     name="searchField"
@@ -203,17 +353,14 @@ autoComplete="off"
               </div>
             </div>
           </div>
-          {/* row start*/}
+          
+          {/* Calendar and Sidebar Section */}
           <div className="row p-2">
             <div className="col-md-9 p-4">
               <section className="calendar__days">
                 <FullCalendar
                   plugins={[dayGridPlugin, interactionPlugin]}
                   initialView="dayGridMonth"
-                  // weekends={false}
-                  dateClick={(e) => {
-                    console.log("e", e);
-                  }}
                   events={calendarEvent}
                   eventContent={renderEventContent}
                   datesSet={(e) => {
@@ -242,7 +389,6 @@ autoComplete="off"
                   </li>
                   ))
                   }
-                  {/* <li class="list-group-item">Domestic Water RA Survey</li> */}
                 </ul>
               </div>
               <div className="mt-4">
@@ -266,7 +412,10 @@ autoComplete="off"
                     </span>
                   </li>
                   <li class="list-group-item">
-                    <span class="badge bg-info text-dark">PAT Testing</span>
+                    <span class="badge bg-info">PAT Testing</span>
+                  </li>
+                  <li class="list-group-item">
+                    <span class="badge bg-secondary text-light">Appointment</span>
                   </li>
                 </ul>
               </div>
@@ -277,8 +426,10 @@ autoComplete="off"
     </Fragment>
   );
 };
+
 const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
+
 export default connect(mapStateToProps, {})(SiteCalendar);
