@@ -557,12 +557,6 @@ const UpdateAsset = ({
         (v) => !v.delete && v.date && v.valuation && v.valuationBy
       );
 
-      if (validValuations.length === 0 && valuationsToDelete.length === 0) {
-        toast.error("Please add at least one valid valuation");
-        setLoader(false);
-        return;
-      }
-
       const submitData = {
         ...data,
         assetId: selectedAsset?.assetId,
@@ -1856,7 +1850,7 @@ const UpdateAsset = ({
                             onRemove={handleRemoveValuation}
                             onUpdate={updateValuation}
                             isRemovable={
-                              valuations.filter((v) => !v.delete).length > 1
+                              valuations.filter((v) => !v.delete).length > 0
                             }
                             hasDisposalDate={!!selectedAsset?.disposalDate} // Add this prop
                           />
