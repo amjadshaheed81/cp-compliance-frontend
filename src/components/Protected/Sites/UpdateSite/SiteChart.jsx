@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import styled from "@emotion/styled";
-import { Tree, TreeNode } from "react-organizational-chart";
 import { useForm } from "react-hook-form";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import UpdateFloor from "./UpdateFloor";
@@ -17,7 +16,6 @@ import UpdateSiteLayout from "./UpdateSiteLayout";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import "./SiteChart.css";
 
-// Styled Components
 const StyledNode = styled.div`
   padding: 5px;
   font-size: small;
@@ -26,8 +24,8 @@ const StyledNode = styled.div`
   cursor: pointer;
   border-left: 4px solid ${(props) => props.borderColor || "#000"};
   background: ${(props) => props.background || "#f5f5f5"};
-  overflow-x: auto !important;
 `;
+
 const nodeStyles = {
   building: {
     borderColor: "#1dca5d",
@@ -47,7 +45,6 @@ const nodeStyles = {
   },
 };
 
-// Component
 const SiteChart = ({
   getSiteLayout,
   addSiteLayoutNode,
@@ -61,9 +58,8 @@ const SiteChart = ({
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
-    watch,
-  } = useForm({});
+  } = useForm();
+
   const [parentNodeTypes, setParentNodeTypes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedNode, setSelectedNode] = useState();
@@ -85,7 +81,6 @@ const SiteChart = ({
     }));
   };
 
-  // Helper function to check if a node is a descendant of "Interior" or "Exterior"
   const isDescendantOfInteriorOrExterior = (nodeId) => {
     const findParent = (id) => {
       const node = siteLayout.find((n) => n.id === id);
@@ -96,70 +91,68 @@ const SiteChart = ({
     return findParent(nodeId);
   };
 
-  const renderTreeNodes = (nodes) => {
-    const orderMap = {
-      Basement: 1,
-      "Ground Floor": 2,
-      "1st Floor": 3,
-      "2nd Floor": 4,
-      "3rd Floor": 5,
-      "4th Floor": 6,
-      "5th Floor": 7,
-      "6th Floor": 8,
-      "7th Floor": 9,
-      Vertical: 10,
-    };
-
-    const sortedNodes = nodes.sort((a, b) => {
-      const aOrder = orderMap[a.nodeName] || Number.MAX_SAFE_INTEGER;
-      const bOrder = orderMap[b.nodeName] || Number.MAX_SAFE_INTEGER;
-      return aOrder - bOrder;
-    });
-
-    return sortedNodes.map((node) => {
-      const children = siteLayout.filter((child) => child.parentNode === node.id);
-      const style = nodeStyles[node.nodeType] || nodeStyles.default;
-      const isExpanded = expandedNodes[node.id];
-      const isDescendant = isDescendantOfInteriorOrExterior(node.id);
-
-      return (
-        <TreeNode
-          key={node.id}
-          label={
-            <StyledNode
-              borderColor={style.borderColor}
-              background={style.background}
-              onClick={() => toggleNode(node.id)}
-            >
-              {node.nodeName}
-              {(node.nodeName === "Interior" || node.nodeName === "Exterior" || isDescendant) && (
-                <span
-                  style={{ float: "right", cursor: "pointer" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedNode(node);
-                    setShowModal(true);
-                  }}
-                >
-                  ✏️
-                </span>
-              )}
-            </StyledNode>
-          }
+  const CustomTreeNode = ({ node }) => {
+    const children = siteLayout.filter((child) => child.parentNode === node.id);
+    const isExpanded = expandedNodes[node.id];
+    const style = nodeStyles[node.nodeType] || nodeStyles.default;
+    const isDescendant = isDescendantOfInteriorOrExterior(node.id);
+    const hasChildren = isExpanded && children.length > 0;
+  
+    return (
+      <div
+        className={`tree-node ${hasChildren ? "has-children" : ""}`}
+        style={{ position: "relative" }}
+      >
+        <div
+          className="tree-label"
+          style={{
+            borderLeftColor: style.borderColor,
+            background: style.background,
+          }}
+          onClick={() => toggleNode(node.id)}
         >
-          {isExpanded && renderTreeNodes(children)}
-        </TreeNode>
-      );
-    });
+          {node.nodeName}
+          {(node.nodeName === "Interior" ||
+            node.nodeName === "Exterior" ||
+            isDescendant) && (
+            <span
+              style={{ float: "right", cursor: "pointer", marginLeft: "10px" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedNode(node);
+                setShowModal(true);
+              }}
+            >
+              ✏️
+            </span>
+          )}
+        </div>
+  
+        {hasChildren && (
+          <div
+            className={`tree-children ${
+              children.length > 1 ? "multi-child" : "single-child"
+            }`}
+          >
+            {children.map((child) => (
+              <CustomTreeNode key={child.id} node={child} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
+  
+  
+  
+  
 
   const rootNodes = siteLayout.filter((node) => node.parentNode === 0);
 
   const submitNode = (values) => {
     const { typeOfNode, nodeType, parentNode } = values;
     const duplicateNode = siteLayout.some(
-      (node) =>
-        node.parentNode == parentNode && node.nodeName === typeOfNode
+      (node) => node.parentNode == parentNode && node.nodeName === typeOfNode
     );
 
     if (duplicateNode) {
@@ -190,16 +183,20 @@ const SiteChart = ({
           refresh={() => getSiteLayout(updateSite?.siteId)}
         />
       )}
+
       <div style={{ textAlign: "center" }}>
         <h5 className="text-start">Creating Building Layout</h5>
-        <Tree
-          lineWidth="2px"
-          lineColor="grey"
-          lineBorderRadius="10px"
-          label={<strong>Site Layout</strong>}
-        >
-          {renderTreeNodes(rootNodes)}
-        </Tree>
+
+        <div className="tree-horizontal">
+          {rootNodes.map((node) => (
+            <CustomTreeNode
+              key={node.id}
+              node={node}
+              childrenNodes={siteLayout.filter((n) => n.parentNode === node.id)}
+            />
+          ))}
+        </div>
+
         {!updateSite?.isViewMode && isManagerAdminLogin(loggedInUserData) && (
           <form className="d-flex mt-4" onSubmit={handleSubmit(submitNode)}>
             <div className="col-md-3 p-2">
@@ -258,9 +255,11 @@ const SiteChart = ({
             </div>
           </form>
         )}
+
         {!updateSite?.isViewMode && isManagerAdminLogin(loggedInUserData) && (
           <UpdateFloor />
         )}
+
         <FloorMap siteLayout={siteLayout} />
       </div>
     </>
@@ -278,4 +277,3 @@ export default connect(mapStateToProps, {
   addSiteLayoutNode,
   setLoader,
 })(SiteChart);
- 

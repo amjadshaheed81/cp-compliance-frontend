@@ -1,3 +1,69 @@
-#simple-tabpanel-1 > div > p > div:nth-child(2) > ul {
-    overflow: auto !important;
-}
+.tree-horizontal {
+    display: flex;
+    flex-direction: row;
+    padding: 40px;
+    overflow-x: auto;
+    align-items: flex-start;
+  }
+  
+  .tree-node {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  
+  /* Draw horizontal line ONLY if this node has children */
+  .tree-node.has-children::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 40px;
+    height: 2px;
+    /* background-color: #999; */
+  }
+  
+  /* Node label */
+  .tree-label {
+    padding: 10px 16px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    font-weight: bold;
+    min-width: 140px;
+    text-align: center;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  
+  /* Children group box */
+  .tree-children {
+    display: flex;
+    flex-direction: column;
+    margin-left: 40px;
+    gap: 30px;
+    position: relative;
+  }
+  
+  /* Only draw vertical line if multiple children */
+  .tree-children.multi-child::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #999;
+  }
+  
+  /* Horizontal line from vertical to child (always needed if child) */
+  .tree-children .tree-node::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background-color: #999;
+  }
+  
