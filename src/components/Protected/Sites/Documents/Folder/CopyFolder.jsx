@@ -28,8 +28,8 @@ const CopyFolder = ({
     setFilteredFolders(rootFolder?.parentFolders || []);
   }, [rootFolder]);
   useEffect(() => {
-    getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
-  }, [getDocumentsRootFolder, siteSelectedForGlobal]);
+    //getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+  }, [siteSelectedForGlobal]);
 
   const handleFolderOpen = (e) => {
     e?.preventDefault();

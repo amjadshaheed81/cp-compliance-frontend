@@ -128,7 +128,7 @@ const Document = ({
   }, [rootFolder]);
 
   // Handle folder click with proper sequencing
-  const handleFolderClick = async (folder, colIndex) => {
+  const handleFolderClick = async (folder, colIndex, isReferesh) => {
     if (isProcessing) return false;
 
     setIsProcessing(true);
@@ -149,6 +149,9 @@ const Document = ({
       };
 
       setCurrentFolderData(folderData);
+      if(!isReferesh) {
+        newColumns.pop();
+      }
       newColumns.push({
         id: folder.id,
         data: response?.document?.childFolders || [],
@@ -746,7 +749,7 @@ const Document = ({
                           className="finder-item d-flex justify-content-between align-items-center"
                           role="button"
                           onClick={() => {
-                            handleFolderClick(folder, colIdx);
+                            handleFolderClick(folder, colIdx, true);
                             setCurrentFolderData(folder);
                           }}
                           style={{
