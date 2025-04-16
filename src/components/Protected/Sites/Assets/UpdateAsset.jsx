@@ -237,21 +237,19 @@ const UpdateAsset = ({
 
   const deletAssetImage = async (image) => {
     Swal.fire({
-             title: `Are you sure you'd like to permanently delete this image?`,
-             showDenyButton: false,
-             showCancelButton: true,
-             confirmButtonText: "Delete",
-           }).then(async (result) => {
-             if (result.isConfirmed) {
-              await del(`/api/site/assets/image/${image.assetImageId}`);
-              toast.success("Image deleted successfully");
-              await getAssetDetails();
-              
-             } else if (result.isDenied) {
-               // Swal.fire("Changes are not saved", "", "info");
-             }
-           });
-   
+      title: `Are you sure you'd like to permanently delete this image?`,
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await del(`/api/site/assets/image/${image.assetImageId}`);
+        toast.success("Image deleted successfully");
+        await getAssetDetails();
+      } else if (result.isDenied) {
+        // Swal.fire("Changes are not saved", "", "info");
+      }
+    });
   };
 
   const getAssetDetails = async () => {
@@ -765,33 +763,48 @@ const UpdateAsset = ({
   };
 
   const addValuation = () => {
-    setValuations([
-      ...valuations,
+    setValuations((prevValuation) => [
+      ...prevValuation,
       {
+        tempId: Date.now(),
         date: "",
         valuation: "",
         valuationBy: "",
+        delete: false,
       },
     ]);
   };
 
   const handleRemoveValuation = (index) => {
-    const valuationToRemove = valuations[index];
-
-    if (valuationToRemove.id) {
-      // For existing valuations, mark for deletion
-      setValuations(
-        valuations.map((v, i) => (i === index ? { ...v, delete: true } : v))
-      );
-    } else {
-      // For new valuations, just remove from array
-      setValuations(valuations.filter((_, i) => i !== index));
-    }
+    setValuations(
+      (currentValuations) =>
+        currentValuations
+          .map((v) => {
+            // Check both tempId and id
+            if ((v.tempId && v.tempId === index) || (v.id && v.id === index)) {
+              if (v.id) {
+                // If it has a real ID (already saved), mark for deletion
+                return { ...v, delete: true };
+              } else {
+                // If it's a new item (only has tempId), mark it to be filtered out immediately
+                // Returning null and filtering is a clean way
+                return null;
+              }
+            }
+            return v;
+          })
+          .filter((v) => v !== null) // Remove the new items marked as null
+    );
   };
 
   const updateValuation = (index, data) => {
-    setValuations(
-      valuations.map((v, i) => (i === index ? { ...v, ...data } : v))
+    setValuations((currentValuations) =>
+      currentValuations.map((v) => {
+        if ((v.tempId && v.tempId === index) || (v.id && v.id === index)) {
+          return { ...v, ...data }; // Merge the updated fields
+        }
+        return v;
+      })
     );
   };
   // Method to get all selected rows
@@ -1212,17 +1225,19 @@ const UpdateAsset = ({
                           <img
                             src={selectedAsset?.images[0].imageUrl}
                             className="img img-responsive border p-2 m-2 w-100"
-
-                          />)}
-                            {selectedAsset?.images?.length === 1 && <button
-                                  type="button"
-                                  className="btn btn-sm btn-danger mb-2"
-                                  onClick={() => {
-                                    deletAssetImage(selectedAsset?.images[0]);
-                                  }}
-                                >
-                                  Delete
-                                </button>}
+                          />
+                        )}
+                        {selectedAsset?.images?.length === 1 && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger mb-2"
+                            onClick={() => {
+                              deletAssetImage(selectedAsset?.images[0]);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
                         <input
                           type="file"
                           multiple
@@ -1852,18 +1867,26 @@ const UpdateAsset = ({
                     <tbody className="border-top-0">
                       {valuations
                         .filter((v) => !v.delete) // Only show non-deleted valuations
-                        .map((valuation, index) => (
+                        .map((valuation) => (
                           <ValuationComponent
-                            key={valuation.id || `new-${index}`}
-                            index={index}
+                            key={valuation.tempId || valuation.id}
                             valuation={valuation}
                             users={users}
-                            onRemove={handleRemoveValuation}
-                            onUpdate={updateValuation}
+                            onRemove={() =>
+                              handleRemoveValuation(
+                                valuation.tempId || valuation.id
+                              )
+                            }
+                            onUpdate={(uv) =>
+                              updateValuation(
+                                valuation.tempId || valuation.id,
+                                uv
+                              )
+                            }
                             isRemovable={
                               valuations.filter((v) => !v.delete).length > 0
                             }
-                            hasDisposalDate={!!selectedAsset?.disposalDate} // Add this prop
+                            hasDisposalDate={!!selectedAsset?.disposalDate}
                           />
                         ))}
                       {valuations.filter((v) => !v.delete).length === 0 && (
