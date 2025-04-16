@@ -149,7 +149,7 @@ const Document = ({
       };
 
       setCurrentFolderData(folderData);
-      if(!isReferesh) {
+      if (!isReferesh) {
         newColumns.pop();
       }
       newColumns.push({
@@ -599,6 +599,7 @@ const Document = ({
                     download
                     key={itm?.id}
                     onClick={() => setFileList([])}
+                    rel="noreferrer"
                   >
                     {/* <span className="fa-stack fa-2x">
       <i 
@@ -721,7 +722,8 @@ const Document = ({
                       style={{ color: "#384BD3" }}
                     ></i>
                     {column.name}
-                    {colIdx === columns.length - 1 && column.id !== 'root'  && 
+                    {colIdx === columns.length - 1 &&
+                      column.id !== "root" &&
                       isAdminLogin(loggedInUserData) && (
                         <Tooltip title="Edit Folder Name" arrow>
                           <Edit
@@ -766,17 +768,22 @@ const Document = ({
                               style={{ color: "#384BD3", marginRight: "10px" }}
                             ></i> */}
                             <span className="fa-stack fa-1x">
-      <i 
-        className={`fas fa-folder fa-stack-1x`} 
-        style={{ color: "#384BD3" }}
-      ></i>
-      {folder?.sharedFolder && (
-        <i 
-          className="fas fa-users fa-stack-1x" 
-          style={{ color: "white", fontSize: "0.4em", left: "2px", top: "2px" }}
-        ></i>
-      )}
-    </span>
+                              <i
+                                className={`fas fa-folder fa-stack-1x`}
+                                style={{ color: "#384BD3" }}
+                              ></i>
+                              {folder?.sharedFolder && (
+                                <i
+                                  className="fas fa-users fa-stack-1x"
+                                  style={{
+                                    color: "white",
+                                    fontSize: "0.4em",
+                                    left: "2px",
+                                    top: "2px",
+                                  }}
+                                ></i>
+                              )}
+                            </span>
                             <span>
                               {folder.name}
                               <span className="ms-2 badge bg-secondary">
@@ -785,21 +792,22 @@ const Document = ({
                             </span>
                           </div>
 
-                          {isAdminLogin(loggedInUserData) && column.id !== 'root' && (
-                            <Tooltip title="Delete Folder" arrow>
-                              <DeleteIcon
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteFolderHandler(folder.id, folder.name);
-                                }}
-                                style={{
-                                  color: "#da292e",
-                                  cursor: "pointer",
-                                  fontSize: "18px",
-                                }}
-                              />
-                            </Tooltip>
-                          )}
+                          {isAdminLogin(loggedInUserData) &&
+                            column.id !== "root" && (
+                              <Tooltip title="Delete Folder" arrow>
+                                <DeleteIcon
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteFolderHandler(folder.id, folder.name);
+                                  }}
+                                  style={{
+                                    color: "#da292e",
+                                    cursor: "pointer",
+                                    fontSize: "18px",
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
                         </div>
                       ))}
                     </div>
@@ -843,8 +851,8 @@ const Document = ({
                                   }
                                 }}
                               >
-                                 <Tooltip title={file?.note} arrow>
-                                {file.name}
+                                <Tooltip title={file?.note} arrow>
+                                  {file.name}
                                 </Tooltip>
                               </a>
                             </div>
