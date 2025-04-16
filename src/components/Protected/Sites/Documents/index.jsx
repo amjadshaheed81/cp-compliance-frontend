@@ -716,6 +716,19 @@ const Document = ({
           </div>
 
           {/* Action Buttons */}
+          {columns.length > 1 && !isManagerAdminLogin(loggedInUserData) && (
+            <div className="col-md-6 col-sm-12 text-end">
+            <Tooltip title="Go Back" arrow>
+              <ReplyIcon
+                onClick={() => navigateToParent(columns.length - 1)}
+                style={{
+                  color: "#384BD3",
+                  cursor: "pointer",
+                  marginRight: "15px",
+                }}
+              />
+            </Tooltip> </div>
+          )}
           {columns.length > 1 && isManagerAdminLogin(loggedInUserData) && (
             <div className="col-md-6 col-sm-12 text-end">
               <Tooltip title="Go Back" arrow>
