@@ -28,9 +28,9 @@ const MandatoryFolders = ({
   useEffect(() => {
     setFilteredFolders(rootFolder?.parentFolders || []);
   }, [rootFolder]);
-  useEffect(() => {
-    getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
-  }, [getDocumentsRootFolder, siteSelectedForGlobal]);
+  // useEffect(() => {
+  //   getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+  // }, [getDocumentsRootFolder, siteSelectedForGlobal]);
 
   const handleFolderOpen = (e) => {
     e?.preventDefault();
