@@ -89,7 +89,7 @@ const Document = ({
     if (folderId === "root") {
       return `/api/document/site/${siteSelectedForGlobal?.siteId}/parent/folders`;
     }
-    return `/api/document/parent/${folderId}/folders`;
+    return `/api/document/parent/${folderId}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
   };
 
   // Initial root folder load
