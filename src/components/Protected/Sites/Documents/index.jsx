@@ -174,6 +174,38 @@ const Document = ({
     }
   };
 
+  const handleFolderClickSearch = async (folderId, newColumns) => {
+    if (isProcessing) return false;
+
+    setIsProcessing(true);
+    setLoader(true);
+
+    try {
+      const endpoint = getFolderEndpoint(folderId);
+      const response = await get(endpoint);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+
+      
+      newColumns.push({
+        id: folderId,
+        data: response?.document?.childFolders || [],
+        files: response?.document?.files || [],
+        name: response?.document?.name,
+        isRoot: folderId === "root",
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Failed to fetch folder data:", error);
+      toast.error("Failed to load folder. Please try again.");
+      return false;
+    } finally {
+      setLoader(false);
+      setIsProcessing(false);
+    }
+  };
+
   const navigateToParent = async (colIndex) => {
     if (isProcessing) return;
 
@@ -272,6 +304,25 @@ const Document = ({
       setLoader(false);
     }
   };
+
+  const openFolder = async (item) => {
+    setFileList([]);
+    let newColumns = []
+    newColumns.push(columns[0]);
+    const data = item.paths.reverse();
+    data.push(item.folderId)
+    for(const i of data) {
+      
+      await handleFolderClickSearch(i, newColumns);
+      
+     
+    }
+    console.log(newColumns);
+    setCurrentFolderData(newColumns[newColumns.length -1]);
+    setColumns(newColumns);
+    setCurrentFolder(newColumns[newColumns.length -1]);
+      
+  }
 
   // Enhanced deleteFolderHandler with proper sequencing
   const deleteFolderHandler = async (folderId, folderName) => {
@@ -591,36 +642,16 @@ const Document = ({
               }}
             />
             {fileList?.files?.length > 0 && (
-              <ul className="fileSearchResult fileSearchResultSite w-100">
+              <ul className="fileSearchResult fileSearchResultSite w-100 bg-secondary" style={{background:'yellow'}}>
                 {fileList?.files?.map((itm) => (
-                  <a
-                    href={itm.fileBlobUrl}
-                    target="_blank"
-                    download
-                    key={itm?.id}
-                    onClick={() => setFileList([])}
-                  >
-                    {/* <span className="fa-stack fa-2x">
-      <i 
-        className={`fas fa-folder fa-stack-2x`} 
-        style={{ color: "#384BD3" }}
-      ></i>
-      {itm?.sharedFolder && (
-        <i 
-          className="fas fa-users fa-stack-1x" 
-          style={{ color: "white", fontSize: "0.5em", left: "10px", top: "8px" }}
-        ></i>
-      )}
-      {itm?.folderName}/<b>{itm?.name}</b>
-    </span> */}
-                    <span>
+                    <span className="badge bg-secondary text-start fw-normal" onClick={()=> openFolder(itm)}>
                       <i
                         style={{ color: "#384BD3" }}
                         className="fas fa-folder fa-1x"
                       ></i>{" "}
                       {itm?.folderName}/<b>{itm?.name}</b>
                     </span>
-                  </a>
+                  
                 ))}
               </ul>
             )}
