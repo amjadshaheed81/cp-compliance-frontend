@@ -2010,6 +2010,19 @@ const UpdateAsset = ({
                       <button type="submit" className="btn btn-primary mt-2">
                         Save
                       </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary mt-2 ms-2"
+                        onClick={() => {
+                          disposalForm.reset({
+                            disposalDate: "",
+                            disposalTo: "",
+                            disposalValue: "",
+                          });
+                        }}
+                      >
+                        Clear
+                      </button>
                     </div>
                   </div>
                 </form>

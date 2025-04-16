@@ -1224,7 +1224,6 @@ const UpdateAsset = ({
               <TabPanel value="4">
                 <div className="row container-fluid">
                   <div className="col-md-12">
-                    {/* Valuation History Table */}
                     <div className="border shadow-sm">
                       {valuations?.length > 0 ? (
                         <div className="table-responsive">
@@ -1243,7 +1242,7 @@ const UpdateAsset = ({
                                     fontSize: "16px",
                                   }}
                                 >
-                                  Date
+                                  Date (Old → New)
                                 </th>
                                 <th
                                   className="py-2"
@@ -1272,53 +1271,57 @@ const UpdateAsset = ({
                                   }}
                                 >
                                   Done By
-                                </th>{" "}
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {valuations.map((valuation, index) => (
-                                <tr key={index}>
-                                  <td
-                                    className="align-middle"
-                                    colSpan={5}
-                                    align="center"
-                                    style={{
-                                      border: "2px groove",
-                                      fontSize: "16px",
-                                    }}
-                                  >
-                                    {moment(valuation.date).format(
-                                      "DD-MM-YYYY"
-                                    )}
-                                  </td>
-                                  <td
-                                    className="align-middle"
-                                    colSpan={5}
-                                    align="center"
-                                    style={{
-                                      border: "2px groove",
-                                      fontSize: "16px",
-                                    }}
-                                  >
-                                    {Number(
-                                      valuation.valuation
-                                    ).toLocaleString()}
-                                  </td>
-                                  <td
-                                    className="align-middle"
-                                    colSpan={5}
-                                    align="center"
-                                    style={{
-                                      border: "2px groove",
-                                      fontSize: "16px",
-                                    }}
-                                  >
-                                    {users?.find(
-                                      (u) => u.id === valuation.valuationBy
-                                    )?.name || "Unknown"}
-                                  </td>
-                                </tr>
-                              ))}
+                              {[...valuations]
+                                .sort(
+                                  (a, b) => new Date(a.date) - new Date(b.date)
+                                ) // Sort in ascending order
+                                .map((valuation, index) => (
+                                  <tr key={index}>
+                                    <td
+                                      className="align-middle"
+                                      colSpan={5}
+                                      align="center"
+                                      style={{
+                                        border: "2px groove",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {moment(valuation.date).format(
+                                        "DD-MM-YYYY"
+                                      )}
+                                    </td>
+                                    <td
+                                      className="align-middle"
+                                      colSpan={5}
+                                      align="center"
+                                      style={{
+                                        border: "2px groove",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {Number(
+                                        valuation.valuation
+                                      ).toLocaleString()}
+                                    </td>
+                                    <td
+                                      className="align-middle"
+                                      colSpan={5}
+                                      align="center"
+                                      style={{
+                                        border: "2px groove",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {users?.find(
+                                        (u) => u.id === valuation.valuationBy
+                                      )?.name || "Unknown"}
+                                    </td>
+                                  </tr>
+                                ))}
                             </tbody>
                           </table>
                         </div>
