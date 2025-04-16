@@ -7,11 +7,11 @@ import { IconButton, Tooltip, Box } from "@mui/material";
 
 const ValuationComponent = ({
   valuation,
-  index,
   onRemove,
   onUpdate,
   users,
   isRemovable,
+  index,
   hasDisposalDate, // Add this prop
 }) => {
   const {
@@ -19,26 +19,19 @@ const ValuationComponent = ({
     formState: { errors },
     watch,
     setValue,
-    control,
   } = useForm({
     defaultValues: valuation,
   });
 
-  // Disable all fields if disposal date exists
-  const isDisabled = hasDisposalDate;
-
   // Update parent whenever any field changes
   useEffect(() => {
     const subscription = watch((value) => {
-      if (!isDisabled) {
-        onUpdate(index, {
-          ...valuation,
-          ...value,
-        });
+      if (!hasDisposalDate) {
+        onUpdate(value);
       }
     });
     return () => subscription.unsubscribe();
-  }, [watch, onUpdate, index, valuation, isDisabled]);
+  }, [watch, onUpdate, hasDisposalDate]);
 
   return (
     <tr>
@@ -46,12 +39,12 @@ const ValuationComponent = ({
       <td className="align-middle" style={{ padding: "12px 16px" }}>
         <div className="form-group mb-0">
           <DatePicker
-          disabled={isDisabled}
+            disabled={hasDisposalDate}
             label=""
             required={true}
             value={watch("date") ? new Date(watch("date")) : null}
             onChange={(date) => {
-              if (!isDisabled) {
+              if (!hasDisposalDate) {
                 const dateValue = date ? date.toISOString().split("T")[0] : "";
                 setValue("date", dateValue, {
                   shouldValidate: true,
@@ -67,13 +60,13 @@ const ValuationComponent = ({
             InputProps={{
               disableUnderline: true,
               className: "form-control p-0",
-              readOnly: isDisabled, // Disable if disposal date exists
+              readOnly: hasDisposalDate,
             }}
             sx={{
               "& .MuiInputBase-root": {
                 height: "40px",
                 alignItems: "center",
-                backgroundColor: isDisabled ? "#f5f5f5" : "inherit",
+                backgroundColor: hasDisposalDate ? "#f5f5f5" : "inherit",
               },
             }}
           />
@@ -99,11 +92,11 @@ const ValuationComponent = ({
               height: "40px",
               padding: "8px 12px",
               border: "none",
-              backgroundColor: isDisabled ? "#f5f5f5" : "transparent",
+              backgroundColor: hasDisposalDate ? "#f5f5f5" : "transparent",
               borderBottom: "1px solid #ced4da",
               width: "100%",
               boxSizing: "border-box",
-              cursor: isDisabled ? "not-allowed" : "default",
+              cursor: hasDisposalDate ? "not-allowed" : "default",
             }}
             {...register("valuation", {
               required: {
@@ -117,7 +110,7 @@ const ValuationComponent = ({
               valueAsNumber: true,
             })}
             onChange={(e) => {
-              if (!isDisabled) {
+              if (!hasDisposalDate) {
                 const value = parseFloat(e.target.value) || 0;
                 setValue("valuation", value);
                 onUpdate(index, {
@@ -126,7 +119,7 @@ const ValuationComponent = ({
                 });
               }
             }}
-            readOnly={isDisabled} // Disable if disposal date exists
+            readOnly={hasDisposalDate} // Disable if disposal date exists // Disable if disposal date exists
           />
           {errors?.valuation && (
             <InputError
@@ -147,12 +140,12 @@ const ValuationComponent = ({
               height: "40px",
               padding: "8px 12px",
               border: "none",
-              backgroundColor: isDisabled ? "#f5f5f5" : "transparent",
+              backgroundColor: hasDisposalDate ? "#f5f5f5" : "transparent",
               borderBottom: "1px solid #ced4da",
               width: "100%",
               appearance: "none",
               boxSizing: "border-box",
-              cursor: isDisabled ? "not-allowed" : "default",
+              cursor: hasDisposalDate ? "not-allowed" : "default",
             }}
             {...register("valuationBy", {
               required: {
@@ -161,7 +154,7 @@ const ValuationComponent = ({
               },
             })}
             onChange={(e) => {
-              if (!isDisabled) {
+              if (!hasDisposalDate) {
                 const value = Number(e.target.value);
                 setValue("valuationBy", value);
                 onUpdate(index, {
@@ -170,11 +163,11 @@ const ValuationComponent = ({
                 });
               }
             }}
-            disabled={isDisabled} // Disable if disposal date exists
+            disabled={hasDisposalDate} // Disable if disposal date exists // Disable if disposal date exists
           >
             <option value="">Select evaluator</option>
             {users?.map((itm) => (
-              <option value={itm?.id} key={itm?.name}>
+              <option value={itm?.id} key={itm?.id}>
                 {itm?.name}
               </option>
             ))}
@@ -192,19 +185,19 @@ const ValuationComponent = ({
       <td className="align-middle" style={{ padding: "12px 16px" }}>
         <Box display="flex" gap={1} justifyContent="flex-end">
           {isRemovable &&
-            !isDisabled && ( // Only show if not disabled
+            !hasDisposalDate && ( // Only show if not disabled
               <Tooltip
                 title={
-                  isDisabled
+                  hasDisposalDate
                     ? "Cannot remove after disposal"
                     : "Remove valuation"
                 }
               >
                 <IconButton
                   color="error"
-                  onClick={() => !isDisabled && onRemove(index)}
+                  onClick={() => !hasDisposalDate && onRemove(index)}
                   size="small"
-                  disabled={isDisabled}
+                  disabled={hasDisposalDate}
                 >
                   <DeleteForeverIcon fontSize="small" />
                 </IconButton>
