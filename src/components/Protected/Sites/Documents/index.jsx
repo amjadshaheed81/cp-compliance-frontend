@@ -256,6 +256,51 @@ const Document = ({
     }
   };
 
+  const navigateToParent2 = async (colIndex) => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    setLoader(true);
+
+    try {
+      if (colIndex === 0) {
+        // Refresh root folder using root endpoint
+        await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+        setCurrentFolder({
+          id: "root",
+          name: "Root",
+          childFolders: rootFolder?.parentFolders || [],
+          files: [],
+        });
+      } else {
+        const newColumns = [];
+        columns.forEach((c,i)=>{
+          if(i <= colIndex) {
+            newColumns.push(c);
+          }
+        })
+        setColumns(newColumns);
+
+        // Wait for state update
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        const parentColumn = newColumns[newColumns.length - 1];
+        setCurrentFolder({
+          id: parentColumn.id,
+          name: parentColumn.name,
+          childFolders: parentColumn.data,
+          files: parentColumn.files || [],
+        });
+      }
+    } catch (error) {
+      console.error("Error navigating to parent:", error);
+      toast.error("Failed to navigate. Please try again.");
+    } finally {
+      setLoader(false);
+      setIsProcessing(false);
+    }
+  };
+
   const searchDocument = async (e) => {
     const value = e?.target?.value;
     if (value && value.length > 0) {
@@ -614,7 +659,7 @@ const Document = ({
               key={column.id}
               underline="hover"
               color={index === columns.length - 1 ? "text.primary" : "inherit"}
-              onClick={() => navigateToParent(index)}
+              onClick={() => navigateToParent2(index)}
               sx={{ cursor: "pointer", display: "flex", alignItems: "center" }}
             >
               <i
