@@ -160,8 +160,49 @@ const Document = ({
         isRoot: folder.id === "root",
       });
 
+      newColumns.forEach((c,i)=>{
+        if(i < newColumns.length - 1) {
+          c.data.forEach(d=>{
+            d.selected = newColumns[i+1].id === d.id; 
+          })
+        }
+        
+      })
+      console.log('newColumns',newColumns)
       setColumns(newColumns);
       setCurrentFolder(folderData);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to fetch folder data:", error);
+      toast.error("Failed to load folder. Please try again.");
+      return false;
+    } finally {
+      setLoader(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleFolderClickSearch = async (folderId, newColumns) => {
+    if (isProcessing) return false;
+
+    setIsProcessing(true);
+    setLoader(true);
+
+    try {
+      const endpoint = getFolderEndpoint(folderId);
+      const response = await get(endpoint);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+
+      
+      newColumns.push({
+        id: folderId,
+        data: response?.document?.childFolders || [],
+        files: response?.document?.files || [],
+        name: response?.document?.name,
+        isRoot: folderId === "root",
+      });
 
       return true;
     } catch (error) {
@@ -193,6 +234,51 @@ const Document = ({
       } else {
         // Slice columns up to the clicked column
         const newColumns = columns.slice(0, colIndex);
+        setColumns(newColumns);
+
+        // Wait for state update
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        const parentColumn = newColumns[newColumns.length - 1];
+        setCurrentFolder({
+          id: parentColumn.id,
+          name: parentColumn.name,
+          childFolders: parentColumn.data,
+          files: parentColumn.files || [],
+        });
+      }
+    } catch (error) {
+      console.error("Error navigating to parent:", error);
+      toast.error("Failed to navigate. Please try again.");
+    } finally {
+      setLoader(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const navigateToParent2 = async (colIndex) => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    setLoader(true);
+
+    try {
+      if (colIndex === 0) {
+        // Refresh root folder using root endpoint
+        await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+        setCurrentFolder({
+          id: "root",
+          name: "Root",
+          childFolders: rootFolder?.parentFolders || [],
+          files: [],
+        });
+      } else {
+        const newColumns = [];
+        columns.forEach((c,i)=>{
+          if(i <= colIndex) {
+            newColumns.push(c);
+          }
+        })
         setColumns(newColumns);
 
         // Wait for state update
@@ -272,6 +358,28 @@ const Document = ({
       setLoader(false);
     }
   };
+
+  const openFolder = async (item) => {
+    setFileList([]);
+    let newColumns = []
+    newColumns.push(columns[0]);
+    const data = item.paths.reverse();
+    data.push(item.folderId)
+    for(const i of data) {
+      await handleFolderClickSearch(i, newColumns);
+    }
+    setCurrentFolderData(newColumns[newColumns.length -1]);
+    newColumns.forEach((c,i)=>{
+      if(i < newColumns.length - 1) {
+        c.data.forEach(d=>{
+          d.selected = newColumns[i+1].id === d.id; 
+        })
+      }
+      
+    })
+    setColumns(newColumns);
+    setCurrentFolder(newColumns[newColumns.length -1]);
+  }
 
   // Enhanced deleteFolderHandler with proper sequencing
   const deleteFolderHandler = async (folderId, folderName) => {
@@ -551,7 +659,7 @@ const Document = ({
               key={column.id}
               underline="hover"
               color={index === columns.length - 1 ? "text.primary" : "inherit"}
-              onClick={() => navigateToParent(index)}
+              onClick={() => navigateToParent2(index)}
               sx={{ cursor: "pointer", display: "flex", alignItems: "center" }}
             >
               <i
@@ -591,37 +699,17 @@ const Document = ({
               }}
             />
             {fileList?.files?.length > 0 && (
-              <ul className="fileSearchResult fileSearchResultSite w-100">
+              <ul className="fileSearchResult fileSearchResultSite w-100 bg-secondary" style={{background:'yellow'}}>
                 {fileList?.files?.map((itm) => (
-                  <a
-                    href={itm.fileBlobUrl}
-                    target="_blank"
-                    download
-                    key={itm?.id}
-                    onClick={() => setFileList([])}
-                    rel="noreferrer"
-                  >
-                    {/* <span className="fa-stack fa-2x">
-      <i 
-        className={`fas fa-folder fa-stack-2x`} 
-        style={{ color: "#384BD3" }}
-      ></i>
-      {itm?.sharedFolder && (
-        <i 
-          className="fas fa-users fa-stack-1x" 
-          style={{ color: "white", fontSize: "0.5em", left: "10px", top: "8px" }}
-        ></i>
-      )}
-      {itm?.folderName}/<b>{itm?.name}</b>
-    </span> */}
-                    <span>
+
+                    <span className="badge bg-secondary text-start fw-normal" onClick={()=> openFolder(itm)}>
                       <i
                         style={{ color: "#384BD3" }}
                         className="fas fa-folder fa-1x"
                       ></i>{" "}
                       {itm?.folderName}/<b>{itm?.name}</b>
                     </span>
-                  </a>
+                  
                 ))}
               </ul>
             )}
@@ -629,6 +717,19 @@ const Document = ({
           </div>
 
           {/* Action Buttons */}
+          {columns.length > 1 && !isManagerAdminLogin(loggedInUserData) && (
+            <div className="col-md-6 col-sm-12 text-end">
+            <Tooltip title="Go Back" arrow>
+              <ReplyIcon
+                onClick={() => navigateToParent(columns.length - 1)}
+                style={{
+                  color: "#384BD3",
+                  cursor: "pointer",
+                  marginRight: "15px",
+                }}
+              />
+            </Tooltip> </div>
+          )}
           {columns.length > 1 && isManagerAdminLogin(loggedInUserData) && (
             <div className="col-md-6 col-sm-12 text-end">
               <Tooltip title="Go Back" arrow>
@@ -748,7 +849,7 @@ const Document = ({
                       {column.data.map((folder) => (
                         <div
                           key={folder.id}
-                          className="finder-item d-flex justify-content-between align-items-center"
+                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : ''}`}
                           role="button"
                           onClick={() => {
                             handleFolderClick(folder, colIdx, true);
