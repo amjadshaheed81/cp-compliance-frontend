@@ -7,23 +7,100 @@ import { useNavigate } from "react-router-dom";
 import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
 import { connect } from "react-redux";
-import { get } from "../../../api";
-const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
+import { del, get, put } from "../../../api";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box
+} from "@mui/material";
+
+const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
+  const [invites, setInvites] = useState([]);
+  const [openInvite, setOpenInvite] = useState(false);
+  const [currentInvite, setCurrentInvite] = useState(null);
+
   useEffect(() => {
     getData();
-  }, [])
+    getInviteData();
+    getManagerList();
+  }, []);
 
   const getSiteName = (siteId) => {
-    const filters = sites.filter(s=> s.siteId === siteId);
-    if(filters.length) {
+    const filters = sites.filter(s => s.siteId === siteId);
+    if (filters.length) {
       return `  (${filters[0].siteName})`
     }
     return '';
   }
+
+  const getInviteData = async () => {
+    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+    if (invitedata && invitedata.length > 0) {
+      setInvites(invitedata);
+      setCurrentInvite(invitedata[0]);
+      setOpenInvite(true);
+    }
+  }
+
+  const handleAccept = () => {
+    del(`/calendar/{currentInvite?.calendarId}/delete`);
+     const calenderBody = {
+              siteId: currentInvite?.siteId,
+              startDate: moment(currentInvite.startDate),
+              endDate: moment(currentInvite.endDate),
+              shortText: currentInvite.shortText,
+              eventType: `Apointment`,
+              userId: currentInvite?.userId,
+              includeCompanyUsers: false,
+              status:"Active",
+              startTime: currentInvite.startTime,
+              endTime: currentInvite.endTime,
+            };
+        put('/api/user/calendar',calenderBody)
+        calenderBody.userId = currentInvite.param
+        put('/api/user/calendar',calenderBody)  
+        setOpenInvite(false);
+  };
+
+  // const handleDecline = () => {
+  //   setOpenInvite(false);
+  // };
+
+  const handleProposeNewTime = () => {
+    setOpenInvite(false);
+  };
+
+
+  const [managerList, setManagerList] = useState([]);
+console.log('currentInvite', currentInvite, managerList)
+  const fromUser = managerList.find(u=> u.id === currentInvite.userId)
+  console.log('fromUser', fromUser)
+
+  const getManagerList = async () => {
+        const data = await get(
+          `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
+        );
+        setManagerList(
+          data?.users?.sort((a, b) => {
+            if (a.name < b.name) {
+              return -1;
+            }
+            if (a.name > b.name) {
+              return 1;
+            }
+            return 0;
+          }) || []
+        );
+      };
+
   const getData = async () => {
-    let data = await get("/api/user/calendar/events?userId="+loggedInUserData?.id??0);
+    let data = await get("/api/user/calendar/events?userId=" + (loggedInUserData?.id ?? 0));
     data = filterDuplicates(data);
     const event = data?.map(d => {
       return {
@@ -39,6 +116,7 @@ const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
     })
     setData(event);
   }
+
   const navigateTo = (link) => {
     navigate(link);
   };
@@ -46,52 +124,48 @@ const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
   const filterDuplicates = (arr) => {
     const uniqueSet = new Set();
     return arr.filter(item => {
-        const key = `${item.section}-${item.eventType}-${item.siteId}-${item.startDate}-${item.endDate}-${item.shortText}`;
-        
-        if (uniqueSet.has(key)) {
-            return false;
-        } else {
-            uniqueSet.add(key); 
-            return true;
-        }
+      const key = `${item.section}-${item.eventType}-${item.siteId}-${item.startDate}-${item.endDate}-${item.shortText}`;
+
+      if (uniqueSet.has(key)) {
+        return false;
+      } else {
+        uniqueSet.add(key);
+        return true;
+      }
     });
-}
-  
+  }
+
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);
     return (
       <>
-        <p
-          //onClick={() => msg(eventInfo.event)}
-        >
-           
+        <p>
           {title?.map((itm, index) => (
             <>
-           <Tooltip title={itm?.label} arrow>
-           {/* <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-primary">{itm?.label}</span></p> */}
-           {itm?.type?.includes("Audit") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-primary" >{itm?.type}</span></p>
-           )}
-           {itm?.type?.includes("Assessment") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-dark" >{itm?.type}</span></p>
-           )}
-           {itm?.type?.includes("Inspection") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-success" >{itm?.type}</span></p>
-           )}
-           {itm?.type?.includes("Survey") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-danger" >{itm?.type}</span></p>
-           )}
-           {itm?.type?.includes("Asbestos") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>
-           )}
-           {itm?.type?.includes("Document") && (
-             <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-info" >{itm?.type}</span></p>
-           )}
-           {itm?.type?.includes("Contract") && (
-                <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-info" >{itm?.type}</span></p>
-              )}
-           </Tooltip>
-         </>
+              <Tooltip title={itm?.label} arrow>
+                {itm?.type?.includes("Audit") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-primary" >{itm?.type}</span></p>
+                )}
+                {itm?.type?.includes("Assessment") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-dark" >{itm?.type}</span></p>
+                )}
+                {itm?.type?.includes("Inspection") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-success" >{itm?.type}</span></p>
+                )}
+                {itm?.type?.includes("Survey") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-danger" >{itm?.type}</span></p>
+                )}
+                {itm?.type?.includes("Asbestos") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>
+                )}
+                {itm?.type?.includes("Document") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
+                )}
+                {itm?.type?.includes("Contract") && (
+                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
+                )}
+              </Tooltip>
+            </>
           ))}
         </p>
       </>
@@ -106,7 +180,7 @@ const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
             <div className="bd-highlight">
               <h5 className="card-title">Your ({loggedInUserData?.name}) Calender</h5>
             </div>
-            </div>
+          </div>
           <FullCalendar
             plugins={[dayGridPlugin]}
             initialView="dayGridMonth"
@@ -116,13 +190,56 @@ const DashboardEventCalendar = ({loggedInUserData,sites} ) => {
           />
         </div>
       </div>
+
+      {/* Calendar Invite Popup */}
+      <Dialog 
+      maxWidth="lg"
+      fullWidth
+      open={openInvite} onClose={() => setOpenInvite(false)}>
+        <DialogTitle>Calendar Invitation</DialogTitle>
+        <DialogContent dividers>
+          {currentInvite && (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="h5" gutterBottom>
+                {currentInvite?.eventType} | {currentInvite?.shortText}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>From:</strong> {fromUser?.name}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Details:</strong> {currentInvite.shortText}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Date:</strong> {moment(currentInvite.startDate).format("MMMM Do, YYYY")}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Time:</strong> {moment(currentInvite.startDate).format("h:mm a")} - {moment(currentInvite.endDate).format("h:mm a")}
+              </Typography>
+              
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {/* <button className="btn btn-sm btn-danger" onClick={handleDecline}>
+            Decline
+          </button> */}
+          <button className="btn btn-sm btn-success" onClick={handleAccept}>
+            Accept
+          </button>
+          <button className="btn btn-sm btn-primary" onClick={handleProposeNewTime}>
+          Propose New Time
+          </button>
+         
+        </DialogActions>
+      </Dialog>
     </Fragment>
   );
 };
 
-
 const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   sites: state.site.sites,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, {})(DashboardEventCalendar);

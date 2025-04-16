@@ -32,7 +32,8 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     recipient: '',
     subject: '',
     date: '',
-    time: ''
+    startTime: '',
+    endTime: ''
   });
 
   const [managerList, setManagerList] = useState([]);
@@ -88,7 +89,6 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setCalendarEvent(event);
   }
 
-  // Handle appointment form changes
   const handleAppointmentChange = (e) => {
     const { name, value } = e.target;
     setAppointmentForm({
@@ -97,30 +97,32 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
     });
   };
 
-  // Handle appointment submission
   const handleAppointmentSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the appointment data to your backend
-    console.log("Appointment booked:", appointmentForm);
     const calenderBody = {
           siteId: siteSelectedForGlobal?.siteId,
           startDate: moment(appointmentForm.date),
           endDate: moment(appointmentForm.date),
           shortText: appointmentForm.subject,
           eventType: `Apointment`,
-          userId: loggedInUserData?.id,
+          userId: appointmentForm?.recipient,
           includeCompanyUsers: false,
-          //section: `/site-checks/${body.checkId}/update`,
+          status:"invite",
+          param: loggedInUserData?.id,
+          startTime: appointmentForm.startTime,
+          endTime: appointmentForm.endTime,
+          section: appointmentForm?.recipient,
         };
     
-    // await put('/api/user/calendar',calenderBody)
-    // setShowAppointmentModal(false);
-    // setAppointmentForm({
-    //   recipient: '',
-    //   subject: '',
-    //   date: '',
-    //   time: ''
-    // });
+    await put('/api/user/calendar',calenderBody)
+    setShowAppointmentModal(false);
+    setAppointmentForm({
+      recipient: '',
+      subject: '',
+      date: '',
+     startTime: '',
+    endTime: ''
+    });
   };
 
   const filterDuplicates = (arr) => {
@@ -270,20 +272,34 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     name="date"
                     value={appointmentForm.date}
                     onChange={handleAppointmentChange}
+                    min={new Date().toISOString().split('T')[0]}
                     required
                   />
                 </Form.Group>
                 
-                <Form.Group className="mb-3">
-                  <Form.Label>Time</Form.Label>
-                  <Form.Control
-                    type="time"
-                    name="time"
-                    value={appointmentForm.time}
-                    onChange={handleAppointmentChange}
-                    required
-                  />
-                </Form.Group>
+                <div className="row">
+                  <Form.Group className="mb-3 col-md-6">
+                    <Form.Label>Start Time</Form.Label>
+                    <Form.Control
+                      type="time"
+                      name="startTime"
+                      value={appointmentForm.startTime}
+                      onChange={handleAppointmentChange}
+                      required
+                    />
+                  </Form.Group>
+                  
+                  <Form.Group className="mb-3 col-md-6">
+                    <Form.Label>End Time</Form.Label>
+                    <Form.Control
+                      type="time"
+                      name="endTime"
+                      value={appointmentForm.endTime}
+                      onChange={handleAppointmentChange}
+                      required
+                    />
+                  </Form.Group>
+                </div>
                 
                 <div className="d-flex justify-content-end">
                   <Button variant="secondary" onClick={() => setShowAppointmentModal(false)} className="me-2">
