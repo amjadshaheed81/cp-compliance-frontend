@@ -17,6 +17,7 @@ import {
   Typography,
   Box
 } from "@mui/material";
+import Form from 'react-bootstrap/Form';
 
 const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal }) => {
   const navigate = useNavigate();
@@ -24,12 +25,28 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   const [invites, setInvites] = useState([]);
   const [openInvite, setOpenInvite] = useState(false);
   const [currentInvite, setCurrentInvite] = useState(null);
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [proposedDate, setProposedDate] = useState('');
+  const [proposedStartTime, setProposedStartTime] = useState('');
+  const [proposedEndTime, setProposedEndTime] = useState('');
 
   useEffect(() => {
     getData();
     getInviteData();
     getManagerList();
   }, []);
+
+  useEffect(() => {
+    if (currentInvite) {
+      const date = moment(currentInvite.startDate).format('YYYY-MM-DD');
+      const startTime = moment(currentInvite.startDate).format('HH:mm');
+      const endTime = moment(currentInvite.endDate).format('HH:mm');
+      
+      setProposedDate(date);
+      setProposedStartTime(startTime);
+      setProposedEndTime(endTime);
+    }
+  }, [currentInvite]);
 
   const getSiteName = (siteId) => {
     const filters = sites.filter(s => s.siteId === siteId);
@@ -49,55 +66,83 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   }
 
   const handleAccept = () => {
-    del(`/calendar/{currentInvite?.calendarId}/delete`);
-     const calenderBody = {
-              siteId: currentInvite?.siteId,
-              startDate: moment(currentInvite.startDate),
-              endDate: moment(currentInvite.endDate),
-              shortText: currentInvite.shortText,
-              eventType: `Apointment`,
-              userId: currentInvite?.userId,
-              includeCompanyUsers: false,
-              status:"Active",
-              startTime: currentInvite.startTime,
-              endTime: currentInvite.endTime,
-            };
-        put('/api/user/calendar',calenderBody)
-        calenderBody.userId = currentInvite.param
-        put('/api/user/calendar',calenderBody)  
-        setOpenInvite(false);
-  };
-
-  // const handleDecline = () => {
-  //   setOpenInvite(false);
-  // };
-
-  const handleProposeNewTime = () => {
+    del(`/calendar/${currentInvite?.calendarId}/delete`);
+    const calenderBody = {
+      siteId: currentInvite?.siteId,
+      startDate: moment(currentInvite.startDate),
+      endDate: moment(currentInvite.endDate),
+      shortText: currentInvite.shortText,
+      eventType: `Appointment`,
+      userId: currentInvite?.userId,
+      includeCompanyUsers: false,
+      status: "Active",
+      startTime: currentInvite.startTime,
+      endTime: currentInvite.endTime,
+    };
+    put('/api/user/calendar', calenderBody);
+    calenderBody.userId = currentInvite.param;
+    put('/api/user/calendar', calenderBody);
     setOpenInvite(false);
   };
 
+  const handleProposeNewTime = async () => {
+    if (!isEditingTime) {
+      setIsEditingTime(true);
+      return;
+    }
+
+    // Combine date and time to create new datetime objects
+    const newStartDate = moment(`${proposedDate}`);
+    const newEndDate = moment(`${proposedDate}`);
+
+    // Update the invite with proposed time
+    const updatedInvite = {
+      calendarId: currentInvite.calendarId,
+      startDate: newStartDate.toISOString(),
+      endDate: newEndDate.toISOString(),
+      startTime: proposedStartTime,
+      endTime: proposedEndTime,
+      userId: loggedInUserData?.id,
+      includeCompanyUsers: false,
+      param: currentInvite?.userId,
+    };
+
+      await put(`/api/user/calendar`, updatedInvite);
+      setIsEditingTime(false);
+      setOpenInvite(false);
+    
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingTime(false);
+    const date = moment(currentInvite.startDate).format('YYYY-MM-DD');
+    const startTime = moment(currentInvite.startDate).format('HH:mm');
+    const endTime = moment(currentInvite.endDate).format('HH:mm');
+    
+    setProposedDate(date);
+    setProposedStartTime(startTime);
+    setProposedEndTime(endTime);
+  };
 
   const [managerList, setManagerList] = useState([]);
-console.log('currentInvite', currentInvite, managerList)
-  const fromUser = managerList.find(u=> u.id === currentInvite.userId)
-  console.log('fromUser', fromUser)
+  const fromUser = managerList.find(u => u.id === currentInvite?.userId);
 
   const getManagerList = async () => {
-        const data = await get(
-          `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
-        );
-        setManagerList(
-          data?.users?.sort((a, b) => {
-            if (a.name < b.name) {
-              return -1;
-            }
-            if (a.name > b.name) {
-              return 1;
-            }
-            return 0;
-          }) || []
-        );
-      };
+    const data = await get(
+      `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
+    );
+    setManagerList(
+      data?.users?.sort((a, b) => {
+        if (a.name < b.name) {
+          return -1;
+        }
+        if (a.name > b.name) {
+          return 1;
+        }
+        return 0;
+      }) || []
+    );
+  };
 
   const getData = async () => {
     let data = await get("/api/user/calendar/events?userId=" + (loggedInUserData?.id ?? 0));
@@ -192,10 +237,12 @@ console.log('currentInvite', currentInvite, managerList)
       </div>
 
       {/* Calendar Invite Popup */}
-      <Dialog 
-      maxWidth="lg"
-      fullWidth
-      open={openInvite} onClose={() => setOpenInvite(false)}>
+      <Dialog
+        maxWidth="lg"
+        fullWidth
+        open={openInvite}
+        onClose={() => setOpenInvite(false)}
+      >
         <DialogTitle>Calendar Invitation</DialogTitle>
         <DialogContent dividers>
           {currentInvite && (
@@ -209,27 +256,89 @@ console.log('currentInvite', currentInvite, managerList)
               <Typography variant="body1" gutterBottom>
                 <strong>Details:</strong> {currentInvite.shortText}
               </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Date:</strong> {moment(currentInvite.startDate).format("MMMM Do, YYYY")}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Time:</strong> {moment(currentInvite.startDate).format("h:mm a")} - {moment(currentInvite.endDate).format("h:mm a")}
-              </Typography>
-              
+
+              {isEditingTime ? (
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={proposedDate}
+                      onChange={(e) => setProposedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                  </Form.Group>
+                  
+                  <div className="row">
+                    <Form.Group className="mb-3 col-md-6">
+                      <Form.Label>Start Time</Form.Label>
+                      <Form.Control
+                        type="time"
+                        value={proposedStartTime}
+                        onChange={(e) => setProposedStartTime(e.target.value)}
+                        required
+                      />
+                    </Form.Group>
+                    
+                    <Form.Group className="mb-3 col-md-6">
+                      <Form.Label>End Time</Form.Label>
+                      <Form.Control
+                        type="time"
+                        value={proposedEndTime}
+                        onChange={(e) => setProposedEndTime(e.target.value)}
+                        required
+                      />
+                    </Form.Group>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Date:</strong> {moment(currentInvite.startDate).format("MMMM Do, YYYY")}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Time:</strong> {moment(currentInvite.startDate).format("h:mm a")} - {moment(currentInvite.endDate).format("h:mm a")}
+                  </Typography>
+                </>
+              )}
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          {/* <button className="btn btn-sm btn-danger" onClick={handleDecline}>
-            Decline
-          </button> */}
-          <button className="btn btn-sm btn-success" onClick={handleAccept}>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleAccept}
+          >
             Accept
-          </button>
-          <button className="btn btn-sm btn-primary" onClick={handleProposeNewTime}>
-          Propose New Time
-          </button>
-         
+          </Button>
+          {isEditingTime ? (
+            <>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleCancelEdit}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleProposeNewTime}
+              >
+                Submit New Time
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleProposeNewTime}
+            >
+              Propose New Time
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Fragment>
