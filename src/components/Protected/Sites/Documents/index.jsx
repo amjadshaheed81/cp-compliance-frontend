@@ -160,6 +160,15 @@ const Document = ({
         isRoot: folder.id === "root",
       });
 
+      newColumns.forEach((c,i)=>{
+        if(i < newColumns.length - 1) {
+          c.data.forEach(d=>{
+            d.selected = newColumns[i+1].id === d.id; 
+          })
+        }
+        
+      })
+      console.log('newColumns',newColumns)
       setColumns(newColumns);
       setCurrentFolder(folderData);
 
@@ -312,16 +321,19 @@ const Document = ({
     const data = item.paths.reverse();
     data.push(item.folderId)
     for(const i of data) {
-      
       await handleFolderClickSearch(i, newColumns);
-      
-     
     }
-    console.log(newColumns);
     setCurrentFolderData(newColumns[newColumns.length -1]);
+    newColumns.forEach((c,i)=>{
+      if(i < newColumns.length - 1) {
+        c.data.forEach(d=>{
+          d.selected = newColumns[i+1].id === d.id; 
+        })
+      }
+      
+    })
     setColumns(newColumns);
     setCurrentFolder(newColumns[newColumns.length -1]);
-      
   }
 
   // Enhanced deleteFolderHandler with proper sequencing
@@ -777,7 +789,7 @@ const Document = ({
                       {column.data.map((folder) => (
                         <div
                           key={folder.id}
-                          className="finder-item d-flex justify-content-between align-items-center"
+                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : ''}`}
                           role="button"
                           onClick={() => {
                             handleFolderClick(folder, colIdx, true);
