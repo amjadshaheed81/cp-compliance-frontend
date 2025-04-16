@@ -97,7 +97,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
 
     // Update the invite with proposed time
     const updatedInvite = {
-      calendarId: currentInvite.calendarId,
+      ...currentInvite,
       startDate: newStartDate.toISOString(),
       endDate: newEndDate.toISOString(),
       startTime: proposedStartTime,
