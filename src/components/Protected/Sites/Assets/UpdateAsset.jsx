@@ -104,6 +104,7 @@ const UpdateAsset = ({
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [valuations, setValuations] = useState([]);
+  const [valuationModified, setValuationModified] = useState(false);
 
   // useEffect(() => {
   //   const setFloorsData = async () => {
@@ -526,6 +527,7 @@ const UpdateAsset = ({
   };
 
   const disposalForm = useForm({
+    mode: "onSubmit",
     defaultValues: {
       disposalDate: "",
       disposalValue: "",
@@ -599,6 +601,7 @@ const UpdateAsset = ({
       await updatePurchaseDetails(form_data, selectedAsset?.assetId);
       setLoader(false);
       getAssetDetails();
+      setValuationModified(false);
       toast.success("Valuations saved successfully");
     } catch (error) {
       setLoader(false);
@@ -607,17 +610,43 @@ const UpdateAsset = ({
   };
 
   const submitDisposalForm = async (data) => {
+    // First perform the conditional validation
+    const { disposalDate, disposalValue, disposalTo } = data;
+    const hasAnyField = disposalDate || disposalValue || disposalTo;
+
+    if (hasAnyField) {
+      const errors = {};
+      if (!disposalDate)
+        errors.disposalDate = {
+          message: "Disposal date is required when other fields are filled",
+        };
+      if (!disposalValue)
+        errors.disposalValue = {
+          message: "Disposal value is required when other fields are filled",
+        };
+      if (!disposalTo)
+        errors.disposalTo = {
+          message: "Disposal to is required when other fields are filled",
+        };
+
+      if (Object.keys(errors).length > 0) {
+        // Set errors for each field
+        Object.entries(errors).forEach(([field, error]) => {
+          disposalForm.setError(field, error);
+        });
+        return; // Stop submission if there are errors
+      }
+    }
+
+    // If validation passes, proceed with form submission
     setLoader(true);
     try {
       const submitData = {
         ...data,
         assetId: selectedAsset?.assetId,
-        disposalDate: data.disposalDate + " 10:00:00",
-        // Keep existing valuation fields as they are
-        //date: selectedAsset?.date || null,
-        //valuationBy: selectedAsset?.valuationBy || null,
-        //valuation: selectedAsset?.valuation || null,
-        // Other existing fields
+        disposalDate: data.disposalDate
+          ? `${data.disposalDate.trim()} 10:00:00`
+          : "",
         position: selectedAsset?.position,
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
@@ -798,6 +827,7 @@ const UpdateAsset = ({
   };
 
   const updateValuation = (index, data) => {
+    setValuationModified(true);
     setValuations((currentValuations) =>
       currentValuations.map((v) => {
         if ((v.tempId && v.tempId === index) || (v.id && v.id === index)) {
@@ -806,6 +836,36 @@ const UpdateAsset = ({
         return v;
       })
     );
+  };
+
+  // checking tab switching from valuation to another tabs
+  const handleTabChange = (event, newValue) => {
+    event?.preventDefault();
+
+    // If trying to switch away from valuation tab (value 4) with unsaved changes
+    if (value === "4" && valuationModified && newValue !== "4") {
+      Swal.fire({
+        title: "Unsaved Valuation Changes",
+        text: "You have unsaved changes in the Valuation tab. Do you want to save before switching?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Save & Switch",
+        cancelButtonText: "Discard & Switch",
+        reverseButtons: true,
+      }).then((result) => {
+        if (result.isConfirmed) {
+          submitValuationForm().then(() => {
+            setTabValue(newValue);
+            setValuationModified(false);
+          });
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          setTabValue(newValue);
+          setValuationModified(false);
+        }
+      });
+    } else {
+      setTabValue(newValue);
+    }
   };
   // Method to get all selected rows
   const untagAsset = async () => {
@@ -1272,7 +1332,10 @@ const UpdateAsset = ({
                   },
                 }}
               >
-                <TabList onChange={tabChange} aria-label="lab API tabs example">
+                <TabList
+                  onChange={handleTabChange}
+                  aria-label="lab API tabs example"
+                >
                   <Tab
                     className="text-success"
                     label="Tagged Documents"
@@ -1886,7 +1949,10 @@ const UpdateAsset = ({
                             isRemovable={
                               valuations.filter((v) => !v.delete).length > 0
                             }
-                            hasDisposalDate={!!selectedAsset?.disposalDate}
+                            disabled={
+                              !!selectedAsset?.disposalDate &&
+                              selectedAsset?.disposalDate !== ""
+                            }
                           />
                         ))}
                       {valuations.filter((v) => !v.delete).length === 0 && (
@@ -1913,7 +1979,6 @@ const UpdateAsset = ({
                       <div className="form-group mt-2">
                         <DatePicker
                           label="Disposal Date"
-                          required={true}
                           value={
                             disposalForm.watch("disposalDate")
                               ? new Date(disposalForm.watch("disposalDate"))
@@ -1922,20 +1987,17 @@ const UpdateAsset = ({
                           onChange={(date) => {
                             disposalForm.setValue(
                               "disposalDate",
-                              date ? date.toISOString().split("T")[0] : "",
+                              date ? date.toISOString().split("T")[0] : null,
                               {
                                 shouldValidate: true,
                               }
                             );
                           }}
+                          clearable={true}
                         />
                         {disposalForm.formState.errors?.disposalDate && (
                           <InputError
                             message={
-                              disposalForm.formState.errors?.disposalDate
-                                ?.message
-                            }
-                            key={
                               disposalForm.formState.errors?.disposalDate
                                 ?.message
                             }
@@ -1945,7 +2007,7 @@ const UpdateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="disposalValue">Disposal Value</label>
+                        <label htmlFor="disposalValue">Disposal Value</label>
                         <input
                           type="number"
                           step="0.01"
@@ -1954,20 +2016,11 @@ const UpdateAsset = ({
                           id="disposalValue"
                           name="disposalValue"
                           placeholder=""
-                          {...disposalForm.register("disposalValue", {
-                            required: {
-                              value: true,
-                              message: `Please enter disposal value`,
-                            },
-                          })}
+                          {...disposalForm.register("disposalValue")}
                         />
                         {disposalForm.formState.errors?.disposalValue && (
                           <InputError
                             message={
-                              disposalForm.formState.errors?.disposalValue
-                                ?.message
-                            }
-                            key={
                               disposalForm.formState.errors?.disposalValue
                                 ?.message
                             }
@@ -1977,7 +2030,7 @@ const UpdateAsset = ({
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="disposalTo">Disposal To</label>
+                        <label htmlFor="disposalTo">Disposal To</label>
                         <input
                           type="text"
                           autoComplete="off"
@@ -1987,19 +2040,11 @@ const UpdateAsset = ({
                           id="disposalTo"
                           name="disposalTo"
                           placeholder=""
-                          {...disposalForm.register("disposalTo", {
-                            required: {
-                              value: true,
-                              message: `Please enter disposal to`,
-                            },
-                          })}
+                          {...disposalForm.register("disposalTo")}
                         />
                         {disposalForm.formState.errors?.disposalTo && (
                           <InputError
                             message={
-                              disposalForm.formState.errors?.disposalTo?.message
-                            }
-                            key={
                               disposalForm.formState.errors?.disposalTo?.message
                             }
                           />
@@ -2019,6 +2064,7 @@ const UpdateAsset = ({
                             disposalTo: "",
                             disposalValue: "",
                           });
+                          disposalForm.clearErrors();
                         }}
                       >
                         Clear
