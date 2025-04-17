@@ -87,6 +87,7 @@ const ValuationComponent = ({
             type="number"
             step="0.01"
             min={0}
+            required
             className="form-control plain-input"
             style={{
               height: "40px",
@@ -136,6 +137,7 @@ const ValuationComponent = ({
           <select
             id={`valuationBy-${index}`}
             className="form-control plain-input"
+            required
             style={{
               height: "40px",
               padding: "8px 12px",
