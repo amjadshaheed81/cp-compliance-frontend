@@ -2,54 +2,60 @@ import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
-import moment from 'moment';
+import moment from "moment";
 import { Typography, Grid, Autocomplete, Chip, Divider } from "@mui/material";
 import { getSiteAssets } from "../../../../store/thunk/site";
 
-const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, siteCheck, loggedInUserData }) => {
-
+const InspectionElectricalFault = ({
+  sasToken,
+  checkId,
+  siteAssets,
+  getSiteAssets,
+  siteSelectedForGlobal,
+  siteCheck,
+  loggedInUserData,
+}) => {
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
-
     }
     getIpection();
   }, []);
 
   const getIpection = async () => {
-
     const data = await get("/api/site-check/inspection/fault/" + checkId);
     if (data.length > 0) {
       setFormData(data);
-      setCompleted(true)
+      setCompleted(true);
     }
-  }
-  const [formData, setFormData] = useState([{
-    add:true
-  }]);
+  };
+  const [formData, setFormData] = useState([
+    {
+      add: true,
+    },
+  ]);
   const [completed, setCompleted] = useState(false);
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
-    const uformData = [...formData]
+    const uformData = [...formData];
     const udata = {
       ...formData[idx],
       [name]: value,
-    }
-    uformData[idx] = udata
+    };
+    uformData[idx] = udata;
     setFormData(uformData);
   };
 
   const handleFileChange = (e, idx) => {
-    const uformData = [...formData]
+    const uformData = [...formData];
     const udata = {
       ...formData[idx],
       file: e.target.files[0],
-    }
-    uformData[idx] = udata
+    };
+    uformData[idx] = udata;
     setFormData(uformData);
   };
-
 
   const addSiteCheckFault = async (event) => {
     event.preventDefault();
@@ -68,13 +74,15 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
         data.dateRaised = new Date(data.dateRaised);
         data.checkId = checkId;
         data.status = "Open";
-        await post("/api/site-check/inspection/fault", data)
+        await post("/api/site-check/inspection/fault", data);
         getIpection();
         const actionData = {
           type: "Inspection",
           status: "Reported",
           observation: data.faultDescription,
-          desc: `${siteCheck?.type} - ${siteCheck?.subType} - ${siteCheck?.category} - ${moment(new Date()).format("DD/MM/YYYY")}`,
+          desc: `${siteCheck?.type} - ${siteCheck?.subType} - ${
+            siteCheck?.category
+          } - ${moment(new Date()).format("DD/MM/YYYY")}`,
           requiredAction: data.action,
           riskScore: Number(data.severity) * Number(data.likelihood),
           dueDate: new Date(),
@@ -82,15 +90,14 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
           siteId: siteSelectedForGlobal?.siteId,
           userId: loggedInUserData?.id,
           actionImage: data.imageUrl,
-          taggedAsset: data.assetId
-        }
+          taggedAsset: data.assetId,
+        };
         await put("/api/site/actions", actionData);
-      } 
+      }
     }
-    toast.success("Fault data saved")
+    toast.success("Fault data saved");
     setCompleted(true);
-  }
-
+  };
 
   return (
     <form onSubmit={addSiteCheckFault}>
@@ -160,9 +167,11 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
                         {completed && (
                           <input
                             type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
                             disabled={completed}
                             className="form-control"
                             value={assetName}
@@ -184,10 +193,12 @@ autoComplete="off"
                                   option.assetName + " - " + option.category,
                               };
                             })}
-                            openOnFocus 
-                            filterOptions={(options, state) => 
+                            openOnFocus
+                            filterOptions={(options, state) =>
                               options.filter((option) =>
-                                option.label.toLowerCase().includes(state.inputValue.toLowerCase())
+                                option.label
+                                  .toLowerCase()
+                                  .includes(state.inputValue.toLowerCase())
                               )
                             } // Enables filtering based on user input
                             getOptionLabel={(option) => option.label}
@@ -205,9 +216,11 @@ autoComplete="off"
                                 ></i>
                                 <input
                                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                    e.target.removeAttribute("readonly")
+                                  }
                                   {...params.inputProps}
                                   required
                                   disabled={completed}
@@ -221,9 +234,9 @@ autoComplete="off"
                       <td>
                         <input
                           type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
                           disabled={completed}
                           required
                           name="faultDescription"
@@ -317,9 +330,9 @@ autoComplete="off"
                           disabled={completed}
                           value={formData?.[idx]?.action}
                           type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
                           name="action"
                           className="form-control"
                           id="action"
@@ -395,4 +408,3 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, { getSiteAssets })(
   InspectionElectricalFault
 );
-
