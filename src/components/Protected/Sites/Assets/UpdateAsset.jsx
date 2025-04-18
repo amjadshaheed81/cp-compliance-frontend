@@ -43,6 +43,7 @@ import ValuationComponent from "./ValuationComponent";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { formatDate } from "../../../../utils/dateFormat";
 
 async function fetchBlob(selectedPdf) {
   try {
@@ -475,9 +476,7 @@ const UpdateAsset = ({
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-      date: selectedAsset?.date
-        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
-        : null,
+
       disposalDate: selectedAsset?.disposalDate
         ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
         : null,
@@ -562,7 +561,7 @@ const UpdateAsset = ({
     try {
       // Filter out valuations marked for deletion
       const valuationsToDelete = valuations
-        .filter((v) => v.delete && v.id) // Only existing valuations with delete flag
+        .filter((v) => v.delete && v.id)
         .map((v) => ({ id: v.id, delete: true }));
 
       // Get valid valuations (not marked for deletion)
@@ -579,7 +578,7 @@ const UpdateAsset = ({
             assetId: selectedAsset?.assetId,
             valuation: v.valuation,
             valuationBy: v.valuationBy,
-            date: v.date ? v.date.split("T")[0] : null,
+            date: `${formatDate(v.date)}`, // v.date is now a proper Date object
           })),
           ...valuationsToDelete,
         ],
@@ -587,7 +586,7 @@ const UpdateAsset = ({
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
         purchaseDate: selectedAsset?.purchaseDate
-          ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+          ? formatDate(selectedAsset.purchaseDate)
           : null,
         supplier: selectedAsset?.supplier,
         transactionId: selectedAsset?.transactionId,
@@ -605,6 +604,7 @@ const UpdateAsset = ({
       toast.success("Valuations saved successfully");
     } catch (error) {
       setLoader(false);
+      console.error("Valuation submission error:", error);
       toast.error("Failed to save valuation details");
     }
   };
@@ -630,28 +630,26 @@ const UpdateAsset = ({
         };
 
       if (Object.keys(errors).length > 0) {
-        // Set errors for each field
         Object.entries(errors).forEach(([field, error]) => {
           disposalForm.setError(field, error);
         });
-        return; // Stop submission if there are errors
+        return;
       }
     }
 
-    // If validation passes, proceed with form submission
     setLoader(true);
     try {
       const submitData = {
         ...data,
         assetId: selectedAsset?.assetId,
         disposalDate: data.disposalDate
-          ? `${data.disposalDate.trim()} 10:00:00`
-          : "",
+          ? `${formatDate(data.disposalDate)} 10:00:00`
+          : null,
         position: selectedAsset?.position,
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
         purchaseDate: selectedAsset?.purchaseDate
-          ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+          ? formatDate(selectedAsset.purchaseDate)
           : null,
         supplier: selectedAsset?.supplier,
         transactionId: selectedAsset?.transactionId,
@@ -665,8 +663,10 @@ const UpdateAsset = ({
       await updatePurchaseDetails(form_data, selectedAsset?.assetId);
       setLoader(false);
       getAssetDetails();
+      toast.success("Disposal details saved successfully");
     } catch (error) {
       setLoader(false);
+      console.error("Disposal submission error:", error);
       toast.error("Failed to save disposal details");
     }
   };
@@ -716,7 +716,7 @@ const UpdateAsset = ({
     if (relatedAssetOption?.length > 0) {
       for (const iterator of relatedAssetOption) {
         const selectedValue =
-          siteAssets.find((itm) => itm.assetId == iterator?.key) || null;
+          siteAssets.find((itm) => itm.assetId === iterator?.key) || null;
         if (selectedValue) {
           arr.push({
             key: selectedValue?.assetId,
@@ -1589,7 +1589,7 @@ const UpdateAsset = ({
                           onChange={(date) => {
                             purchaseDetailForm.setValue(
                               "purchaseDate",
-                              date ? date.toISOString().split("T")[0] : "",
+                              date ? formatDate(date) : "",
                               {
                                 shouldValidate: true,
                               }
@@ -1987,13 +1987,12 @@ const UpdateAsset = ({
                           onChange={(date) => {
                             disposalForm.setValue(
                               "disposalDate",
-                              date ? date.toISOString().split("T")[0] : null,
+                              date ? formatDate(date) : "",
                               {
                                 shouldValidate: true,
                               }
                             );
                           }}
-                          clearable={true}
                         />
                         {disposalForm.formState.errors?.disposalDate && (
                           <InputError

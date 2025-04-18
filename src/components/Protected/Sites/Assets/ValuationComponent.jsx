@@ -4,6 +4,7 @@ import DatePicker from "../../../common/DatePicker";
 import { InputError } from "../../../common/InputError";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { IconButton, Tooltip, Box } from "@mui/material";
+import { formatDate } from "../../../../utils/dateFormat";
 
 const ValuationComponent = ({
   valuation,
@@ -40,20 +41,21 @@ const ValuationComponent = ({
         <div className="form-group mb-0">
           <DatePicker
             disabled={hasDisposalDate}
-            label=""
             required={true}
             value={watch("date") ? new Date(watch("date")) : null}
             onChange={(date) => {
-              if (!hasDisposalDate) {
-                const dateValue = date ? date.toISOString().split("T")[0] : "";
-                setValue("date", dateValue, {
-                  shouldValidate: true,
-                });
-                onUpdate(index, {
-                  ...valuation,
-                  date: dateValue,
-                });
-              }
+              if (hasDisposalDate) return;
+
+              // Improved date handling
+              const dateValue = date ? `${formatDate(date)} 10:00:00` : "";
+
+              setValue("date", dateValue, {
+                shouldValidate: true,
+              });
+              onUpdate(index, {
+                ...valuation,
+                date: dateValue,
+              });
             }}
             fullWidth
             variant="standard"
