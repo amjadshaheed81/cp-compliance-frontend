@@ -66,7 +66,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   }
 
   const handleAccept = () => {
-    del(`/calendar/${currentInvite?.calendarId}/delete`);
+    del(`/api/user/calendar/${currentInvite?.calendarId}/delete`);
     const calenderBody = {
       siteId: currentInvite?.siteId,
       startDate: moment(currentInvite.startDate),
