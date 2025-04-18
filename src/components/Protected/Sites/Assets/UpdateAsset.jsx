@@ -476,9 +476,7 @@ const UpdateAsset = ({
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-      date: selectedAsset?.date
-        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
-        : null,
+
       disposalDate: selectedAsset?.disposalDate
         ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
         : null,
@@ -718,7 +716,7 @@ const UpdateAsset = ({
     if (relatedAssetOption?.length > 0) {
       for (const iterator of relatedAssetOption) {
         const selectedValue =
-          siteAssets.find((itm) => itm.assetId == iterator?.key) || null;
+          siteAssets.find((itm) => itm.assetId === iterator?.key) || null;
         if (selectedValue) {
           arr.push({
             key: selectedValue?.assetId,
