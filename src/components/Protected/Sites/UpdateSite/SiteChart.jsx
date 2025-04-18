@@ -58,6 +58,8 @@ const SiteChart = ({
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setValue,
   } = useForm();
 
   const [parentNodeTypes, setParentNodeTypes] = useState([]);
@@ -65,14 +67,35 @@ const SiteChart = ({
   const [selectedNode, setSelectedNode] = useState();
   const [expandedNodes, setExpandedNodes] = useState({});
 
+  const selectedNodeType = watch("nodeType");
+
   useEffect(() => {
     getSiteLayout(updateSite?.siteId);
   }, [getSiteLayout, updateSite]);
 
+  // Update parent node options based on selected node type
   useEffect(() => {
-    const floors = siteLayout?.filter((node) => node.nodeType === "floor") || [];
-    setParentNodeTypes(floors);
-  }, [siteLayout]);
+    if (selectedNodeType) {
+      let filteredNodes = [];
+      
+      if (selectedNodeType === "room") {
+        // If room is selected, only floors can be parents
+        filteredNodes = siteLayout?.filter(node => node.nodeType === "floor") || [];
+      } else if (selectedNodeType === "type") {
+        // If type is selected, only buildings can be parents
+        filteredNodes = siteLayout?.filter(node => node.nodeType === "building") || [];
+      } else if (selectedNodeType === "floor") {
+        // If floor is selected, only types or buildings can be parents
+        filteredNodes = siteLayout?.filter(node => 
+          node.nodeType === "type" || node.nodeType === "building"
+        ) || [];
+      }
+      
+      setParentNodeTypes(filteredNodes);
+      // Reset parent selection when node type changes
+      setValue("parentNode", "");
+    }
+  }, [selectedNodeType, siteLayout, setValue]);
 
   const toggleNode = (nodeId) => {
     setExpandedNodes((prev) => ({
@@ -96,7 +119,7 @@ const SiteChart = ({
     const isExpanded = expandedNodes[node.id];
     const style = nodeStyles[node.nodeType] || nodeStyles.default;
     const isDescendant = isDescendantOfInteriorOrExterior(node.id);
-    const hasChildren = isExpanded && children.length > 0;
+    const hasChildren = children.length > 0;
   
     return (
       <div
@@ -127,8 +150,7 @@ const SiteChart = ({
             </span>
           )}
         </div>
-  
-        {hasChildren && (
+        {isExpanded && hasChildren && (
           <div
             className={`tree-children ${
               children.length > 1 ? "multi-child" : "single-child"
@@ -143,11 +165,7 @@ const SiteChart = ({
     );
   };
   
-  
-  
-  
-
-  const rootNodes = siteLayout.filter((node) => node.parentNode === 0);
+  const rootNodes = siteLayout.filter((node) => node.parentNode === 0 || node.parentNode === -1);
 
   const submitNode = (values) => {
     const { typeOfNode, nodeType, parentNode } = values;
@@ -222,6 +240,7 @@ const SiteChart = ({
                   Select Node Type
                 </option>
                 <option value="floor">Floor</option>
+                <option value="type">Type</option>
                 <option value="room">Room</option>
               </select>
               {errors.nodeType && (
@@ -234,9 +253,10 @@ const SiteChart = ({
                 {...register("parentNode", {
                   required: "Please select parent node",
                 })}
+                disabled={!selectedNodeType}
               >
                 <option value="" disabled>
-                  Select Parent Node
+                  {!selectedNodeType ? "Please select node type first" : "Select Parent Node"}
                 </option>
                 {parentNodeTypes.map((node) => (
                   <option key={node.id} value={node.id}>

@@ -19,6 +19,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
   const [droppedItems, setDroppedItems] = useState([]);
   const [floorPlanUrl, setFloorPlanUrl] = useState("");
   const [selectedFloor, setSelectedFloor] = useState({});
+  const [selectedFloorId, setSelectedFloorId] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const imageRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -42,6 +43,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
     const selectedFloorData = list?.find((i) => i.id === id);
     const filteredRooms = siteLayout?.filter((room) => room?.parentNode === selectedFloorData?.id);
     setSelectedFloor(selectedFloorData);
+    setSelectedFloorId(id);
     setMarkerLabels(filteredRooms);
     scrollToElement(".floorMapTitle");
     setSelectedTab({ id: selectedFloorData?.id, name: selectedFloorData?.nodeName });
@@ -75,7 +77,14 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
         <li
           key={floor.id}
           onClick={() => handleFloorSelect(floor.id)}
-          style={{ cursor: "pointer", padding: "10px", borderBottom: "1px solid grey" }}
+          style={{ 
+            cursor: "pointer", 
+            padding: "10px", 
+            borderBottom: "1px solid grey",
+            backgroundColor: selectedFloorId === floor.id ? "#3b80f2" : "transparent",
+            color: selectedFloorId === floor.id ? "white" : "inherit",
+            transition: "background-color 0.3s ease"
+          }}
         >
           <div>{`${getParentNodeName(floor?.parentNode)}: ${floor?.nodeName}`}</div>
         </li>
@@ -262,19 +271,23 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
       <Box sx={{ flexGrow: 1, bgcolor: "background.paper", display: "flex", height: 600 }}>
         <ul style={{ borderRight: "1px solid grey", padding: 0, margin: 0, width: "200px" }}>{getFloorList()}</ul>
         <div ref={drop} style={{ position: "relative", width: "100%" }}>
-          <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
-            {markerLabels.map((room) => {
-              const isDisabled = droppedItems.some((item) => item.label === room?.nodeName.split(" ")[1]);
-              return (
-                <DraggableLabel
-                  key={room?.id}
-                  roomId={room?.parentNode}
-                  label={room?.nodeName?.split(" ")[1]}
-                  isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
-                />
-              );
-            })}
-          </ul>
+        <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+  {markerLabels.map((room) => {
+    const hasSpace = room?.nodeName?.includes(' ');
+    const label = hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName;
+    const isDisabled = droppedItems.some((item) => 
+      item.label === (hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName)
+    );
+    return (
+      <DraggableLabel
+        key={room?.id}
+        roomId={room?.parentNode}
+        label={label}
+        isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
+      />
+    );
+  })}
+</ul>
           {isViewMode === "edit" && (
         <Button
           variant="contained"
