@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import "./datepicker.css";
 import { connect } from "react-redux";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import BackspaceIcon from "@mui/icons-material/Backspace";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
@@ -15,14 +14,24 @@ const TdkDatePicker = ({
   width = "380px",
   disabled,
   minDate,
-  clearable = true, // Add this prop
 }) => {
   const datePickerRef = useRef(null);
-  const [manualInput, setManualInput] = useState(
+  // Store the actual Date object in state
+  const [dateValue, setDateValue] = useState(value ? new Date(value) : null);
+  // Store the display string separately
+  const [displayValue, setDisplayValue] = useState(
     value ? moment(value).format("DD/MM/YYYY") : ""
   );
   const [isTyping, setIsTyping] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+
+  // Update display value when dateValue changes
+  useEffect(() => {
+    if (dateValue) {
+      setDisplayValue(moment(dateValue).format("DD/MM/YYYY"));
+    } else {
+      setDisplayValue("");
+    }
+  }, [dateValue]);
 
   // Format input with slashes automatically
   const formatDateWithSlashes = (input) => {
@@ -41,53 +50,39 @@ const TdkDatePicker = ({
   // Handle manual date input
   const handleInputChange = (e) => {
     let inputValue = e.target.value;
-
-    // If input is empty, clear the date
-    if (inputValue === "") {
-      handleClear();
-      return;
-    }
-
     inputValue = formatDateWithSlashes(inputValue);
-    setManualInput(inputValue);
+    setDisplayValue(inputValue);
     setIsTyping(true);
 
+    // Parse the input as a valid date
     const parsedDate = moment(inputValue, "DD/MM/YYYY", true);
     if (parsedDate.isValid()) {
-      onChange(parsedDate.toDate());
+      const jsDate = new Date(
+        parsedDate.year(),
+        parsedDate.month(),
+        parsedDate.date(),
+        10,
+        0,
+        0 // Force local date and time
+      );
+      setDateValue(jsDate);
+      onChange(jsDate); // Pass Date object to parent
+    } else if (inputValue === "") {
+      setDateValue(null);
+      onChange(null);
     }
   };
 
-  // Clear the date
-  const handleClear = () => {
-    onChange(null);
-    setManualInput("");
-    setIsTyping(false);
-    if (datePickerRef.current) {
-      datePickerRef.current.setOpen(false);
-    }
-  };
-
-  // Open date picker only when not typing and the input is clicked
   const handleInputClick = () => {
-    if (!isTyping && !disabled) {
+    if (!isTyping) {
       datePickerRef.current.setOpen(true);
     }
   };
 
-  // Sync manualInput when value prop changes
-  useEffect(() => {
-    if (!isTyping) {
-      setManualInput(value ? moment(value).format("DD/MM/YYYY") : "");
-    }
-  }, [value, isTyping]);
-
   return (
     <div>
       {label && <label htmlFor="datePicker">{label}</label>}
-      <div
-        style={{ display: "flex", alignItems: "center", position: "relative" }}
-      >
+      <div style={{ display: "flex", alignItems: "center" }}>
         <input
           required={required}
           type="text"
@@ -95,55 +90,26 @@ const TdkDatePicker = ({
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
           id="datePicker"
-          value={manualInput}
+          value={displayValue}
           placeholder="dd/mm/yyyy"
           className="form-control"
-          disabled={disabled}
-          style={{
-            width: width,
-            paddingRight: clearable ? "60px" : "40px", // Make space for icons
-          }}
+          disabled={disabled ? true : false}
+          style={{ width: width }}
           onChange={handleInputChange}
           onClick={handleInputClick}
           onBlur={() => setIsTyping(false)}
         />
-        <div
-          style={{
-            position: "absolute",
-            right: "10px",
-            display: "flex",
-            gap: "5px",
-          }}
-        >
-          {clearable && manualInput && (
-            <BackspaceIcon
-              style={{
-                cursor: "pointer",
-                color: isHovered ? "#d42e38" : "#aaa",
-                fontSize: "18px",
-                transition: "color 0.3s ease",
-              }}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              onClick={handleClear}
-            />
-          )}
-          <CalendarTodayIcon
-            style={{
-              cursor: disabled ? "default" : "pointer",
-              color: "#aaa",
-              fontSize: "18px",
-            }}
-            onClick={() => !disabled && datePickerRef.current.setOpen(true)}
-          />
-        </div>
+        <CalendarTodayIcon
+          style={{ cursor: "pointer", color: "#aaa" }}
+          onClick={() => datePickerRef.current.setOpen(true)}
+        />
       </div>
       <DatePicker
         ref={datePickerRef}
-        selected={value ? new Date(value) : null}
+        selected={dateValue}
         onChange={(date) => {
-          onChange(date);
-          setManualInput(date ? moment(date).format("DD/MM/YYYY") : "");
+          setDateValue(date);
+          onChange(date); // Pass Date object to parent
         }}
         dateFormat="dd/MM/yyyy"
         customInput={<div />}
@@ -155,5 +121,4 @@ const TdkDatePicker = ({
   );
 };
 
-const mapStateToProps = (state) => ({});
-export default connect(mapStateToProps, {})(TdkDatePicker);
+export default connect(null, {})(TdkDatePicker);
