@@ -253,7 +253,12 @@ const UpdateAsset = ({
       }
     });
   };
-
+  const sortValuations = (valuations) => {
+    return [...valuations].sort((a, b) => {
+      if (!a.date || !b.date) return 0;
+      return new Date(a.date) - new Date(b.date);
+    });
+  };
   const getAssetDetails = async () => {
     const url = `/api/site/assets/${assetId}/details`;
     const response = await get(url);
@@ -280,7 +285,7 @@ const UpdateAsset = ({
     // Initialize valuations
     if (response?.valuations?.length > 0) {
       // If no valid valuations exist, initialize with empty array
-      setValuations(response.valuations);
+      setValuations(sortValuations(response.valuations));
     }
     //  else if (response?.date) {
     //   // For backward compatibility with single valuation
@@ -478,7 +483,7 @@ const UpdateAsset = ({
       room: selectedAsset?.room,
 
       disposalDate: selectedAsset?.disposalDate
-        ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
+        ? `${formatDate(selectedAsset.disposalDate)} 10:00:00`
         : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
@@ -501,7 +506,7 @@ const UpdateAsset = ({
       ...data,
       assetId: selectedAsset?.assetId,
       purchaseDate: selectedAsset?.purchaseDate
-        ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
+        ? `${formatDate(selectedAsset.purchaseDate)} 10:00:00`
         : null,
       supplier: selectedAsset?.supplier,
       transactionId: selectedAsset?.transactionId,
@@ -510,7 +515,7 @@ const UpdateAsset = ({
         ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
         : null,
       disposalDate: selectedAsset?.disposalDate
-        ? `${selectedAsset?.disposalDate?.split("T")?.[0]} 10:00:00`
+        ? `${formatDate(selectedAsset.disposalDate)} 10:00:00`
         : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
@@ -586,7 +591,7 @@ const UpdateAsset = ({
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
         purchaseDate: selectedAsset?.purchaseDate
-          ? formatDate(selectedAsset.purchaseDate)
+          ? `${formatDate(selectedAsset.purchaseDate)} 10:00:00`
           : null,
         supplier: selectedAsset?.supplier,
         transactionId: selectedAsset?.transactionId,
@@ -649,7 +654,7 @@ const UpdateAsset = ({
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
         purchaseDate: selectedAsset?.purchaseDate
-          ? formatDate(selectedAsset.purchaseDate)
+          ? `${formatDate(selectedAsset.purchaseDate)} 10:00:00`
           : null,
         supplier: selectedAsset?.supplier,
         transactionId: selectedAsset?.transactionId,
