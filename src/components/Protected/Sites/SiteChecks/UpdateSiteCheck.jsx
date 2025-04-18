@@ -27,8 +27,6 @@ import html2pdf from "html2pdf.js";
 import "./Print.css";
 import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
-import { dummyInspectionData } from "./dummydata";
-import EmergencyLightingInspection from "./EmergencyLighting";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -65,10 +63,10 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       }
 
       // Update dueDate state with the formatted date (YYYY-MM-DD)
-      setDueDate(moment(nextDueDate).format("YYYY-MM-DD"));
+      setDueDate(moment(nextDueDate).format("DD-MM-YYYY"));
     } else {
       setDueDate(
-        siteCheck?.dueDate ? moment(siteCheck.dueDate).format("YYYY-MM-DD") : ""
+        siteCheck?.dueDate ? moment(siteCheck.dueDate).format("DD-MM-YYYY") : ""
       );
     }
   }, [siteCheck]);

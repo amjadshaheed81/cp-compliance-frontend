@@ -649,7 +649,7 @@ const UpdateAsset = ({
         floor: selectedAsset?.floor,
         room: selectedAsset?.room,
         purchaseDate: selectedAsset?.purchaseDate
-          ? formatDate(selectedAsset.purchaseDate)
+          ? `${formatDate(selectedAsset.purchaseDate)} 10:00:00`
           : null,
         supplier: selectedAsset?.supplier,
         transactionId: selectedAsset?.transactionId,

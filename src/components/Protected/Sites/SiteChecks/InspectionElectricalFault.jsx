@@ -32,6 +32,8 @@ const InspectionElectricalFault = ({
 
   const [formData, setFormData] = useState([{ add: true }]);
   const [completed, setCompleted] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState("select");
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
@@ -92,22 +94,127 @@ const InspectionElectricalFault = ({
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h2 style={{ textAlign: "center" }}>Electrical Fault Report</h2>
-      <h3 style={{ textAlign: "center" }}>
-        Site: {siteSelectedForGlobal?.siteName || "N/A"}
-      </h3>
-
-      <div
-        style={{ margin: "20px 0", border: "1px solid #ccc", padding: "10px" }}
-      >
-        <strong>NOTE:</strong> Please record all electrical faults identified
-        during the inspection. Include clear descriptions, photos where
-        possible, and recommended actions.
-      </div>
-
       <form onSubmit={addSiteCheckFault}>
         {/* Fault Details Section */}
-        <h3>Fault Details</h3>
+        <div
+          className="form-control d-flex flex-row mb-2 justify-content-start align-items-center p-2"
+          style={{ border: "1px solid #989898", padding: "8px" }}
+        >
+          <td style={{ border: "1px solid #000", padding: "12px" }}>
+            <h6 className="mb-0" style={{ marginRight: "70px" }}>
+              BSI Installation Category
+            </h6>
+          </td>
+
+          <div
+            className="vr mx-3"
+            style={{
+              opacity: 1,
+              color: "#989898",
+              alignSelf: "stretch",
+            }}
+          />
+          <div
+            className="d-flex flex-row justify-content-between"
+            style={{ marginLeft: "50px", gap: "120px" }}
+          >
+            <div className="form-group mb-0">
+              <label htmlFor="Type" className="form-label">
+                Type
+              </label>
+              <input
+                type="text"
+                className="form-control form-control-md"
+                id="Type"
+                name="Type"
+                style={{ width: "120px" }}
+              />
+            </div>
+
+            <div className="form-group mb-0">
+              <label htmlFor="Mode" className="form-label">
+                Mode
+              </label>
+              <input
+                type="text"
+                className="form-control form-control-md"
+                id="Mode"
+                name="Mode"
+                style={{ width: "120px" }}
+              />
+            </div>
+
+            <div className="form-group mb-0">
+              <label htmlFor="Facilities" className="form-label">
+                Facilities
+              </label>
+              <input
+                type="text"
+                className="form-control form-control-md"
+                id="Facilities"
+                name="Facilities"
+                style={{ width: "120px" }}
+              />
+            </div>
+
+            <div className="form-group mb-0">
+              <label htmlFor="Duration" className="form-label">
+                Duration
+              </label>
+              <div className="d-flex align-items-center">
+                <div className="dropdown">
+                  <button
+                    className="btn btn-md btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                  >
+                    {selectedDuration}
+                  </button>
+                  {isOpen && (
+                    <ul className="dropdown-menu show">
+                      <li>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => {
+                            setSelectedDuration("30");
+                            setIsOpen(false);
+                          }}
+                        >
+                          30
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => {
+                            setSelectedDuration("60");
+                            setIsOpen(false);
+                          }}
+                        >
+                          60
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => {
+                            setSelectedDuration("120");
+                            setIsOpen(false);
+                          }}
+                        >
+                          120
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+                <small className="text-muted ms-2">
+                  (In minutes, for self-contained systems)
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
         <table
           style={{
             width: "100%",
