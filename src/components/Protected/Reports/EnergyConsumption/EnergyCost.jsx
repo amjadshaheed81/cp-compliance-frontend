@@ -54,7 +54,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     getAllSites();
   }, []);
   const getAllSites = async () => {
-    const res = await get("/api/site/site/all?sort=asc&sortName=siteName");
+    const res = await get("/api/site/site/all?sort=asc&sortName=siteName&withDetails=true");
     setAllSites(res);
   };
   const customColumnNamesCost = ["reference", "fromDate", "toDate", "cost"];
@@ -152,6 +152,19 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   useEffect(() => {
     getEnergyCost(true);
   }, [siteSelectedForGlobal]);
+
+  const getFloorArea = () => {
+    if (state.isIndividual) {
+      // Individual site mode - get area from selected site
+      return siteSelectedForGlobal?.siteAreaOccupancyData?.totalBuildingArea || 100;
+    } else {
+      // Area mode - calculate total area for all sites in the selected area
+      
+      return allSites.reduce((total, site) => 
+        total + (site.siteAreaOccupancyData?.totalBuildingArea || 0), 0
+      );
+    }
+  };
 
   const handleFileUploadReading = (event) => {
     setbulkUploadReading([]);
@@ -690,7 +703,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
               <CostChart
                 energyData={filteredEnergyCost}
                 currentYear={state.currentYear}
-                previousYear={state.previousYear}
+                floorArea={getFloorArea()}
               />
             </div>
             {/* <div className="col-md-6 mt-2 mb-4">
