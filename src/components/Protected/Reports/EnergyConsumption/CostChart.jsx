@@ -55,7 +55,7 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
 
     // Calculate carbon footprint (kg CO2e)
     const carbonFootprint = totalElectricityKwh * 0.35 + totalGasKwh * 0.19;
-    
+
     return {
       totalCost,
       totalElectricityKwh,
@@ -97,7 +97,10 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
     datasets: [
       {
         label: `Current Year (${currentYear})`,
-        data: [currentYearData.totalElectricityKwh, currentYearData.totalGasKwh],
+        data: [
+          currentYearData.totalElectricityKwh,
+          currentYearData.totalGasKwh,
+        ],
         backgroundColor: ["#6366F1", "#F59E0B"],
       },
     ],
@@ -122,41 +125,55 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6">
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">Energy Cost per m²</h2>
-        <Bar data={costComparisonData} options={options} />
-        <div className="mt-4 text-sm text-gray-600">
-          <p>
-            Total Cost: £{currentYearData.totalCost.toLocaleString()} | Cost per m²: £
-            {currentYearData.costPerM2.toFixed(2)}
-          </p>
+    <div className="container">
+      <div className="row">
+        <div className="col-md-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">Energy Cost per m²</h2>
+            <Bar data={costComparisonData} options={options} />
+            <div className="mt-4 text-sm text-gray-600">
+              <p>
+                Total Cost: £{currentYearData.totalCost.toLocaleString()} | Cost
+                per m²: £{currentYearData.costPerM2.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">
+              Carbon Footprint per m²
+            </h2>
+            <Bar data={carbonFootprintData} options={options} />
+            <div className="mt-4 text-sm text-gray-600">
+              <p>
+                Total Carbon Footprint:{" "}
+                {currentYearData.carbonFootprint.toFixed(2)} kg CO2e | Per m²:{" "}
+                {currentYearData.carbonPerM2.toFixed(2)} kg CO2e
+              </p>
+              <p className="mt-1">
+                (Electricity: {currentYearData.totalElectricityKwh.toFixed(2)}{" "}
+                kWh × 0.35 + Gas: {currentYearData.totalGasKwh.toFixed(2)} kWh ×
+                0.19)
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">Carbon Footprint per m²</h2>
-        <Bar data={carbonFootprintData} options={options} />
-        <div className="mt-4 text-sm text-gray-600">
-          <p>
-            Total Carbon Footprint: {currentYearData.carbonFootprint.toFixed(2)} kg CO2e | 
-            Per m²: {currentYearData.carbonPerM2.toFixed(2)} kg CO2e
-          </p>
-          <p className="mt-1">
-            (Electricity: {currentYearData.totalElectricityKwh.toFixed(2)} kWh × 0.35 + 
-            Gas: {currentYearData.totalGasKwh.toFixed(2)} kWh × 0.19)
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">Energy Consumption</h2>
-        <Bar data={consumptionData} options={options} />
-        <div className="mt-4 text-sm text-gray-600">
-          <p>
-            Total Electricity: {currentYearData.totalElectricityKwh.toFixed(2)} kWh | 
-            Total Gas: {currentYearData.totalGasKwh.toFixed(2)} kWh
-          </p>
+      <div className="row">
+        <div className="col-md-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">Energy Consumption</h2>
+            <Bar data={consumptionData} options={options} />
+            <div className="mt-4 text-sm text-gray-600">
+              <p>
+                Total Electricity:{" "}
+                {currentYearData.totalElectricityKwh.toFixed(2)} kWh | Total
+                Gas: {currentYearData.totalGasKwh.toFixed(2)} kWh
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

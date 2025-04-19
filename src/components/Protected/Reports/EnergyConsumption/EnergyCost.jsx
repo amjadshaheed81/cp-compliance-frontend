@@ -648,7 +648,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     ))}
                   </select>
                 </div>
-                
               </div>
             </div>
             {/* {isManagerAdminLogin(loggedInUserData) && (
@@ -684,7 +683,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
             )} */}
           </div>
           <div className="row" style={{ height: "auto" }}>
-            <div className="col-md-6 mt-2 mb-4">
+            <div className="col-md-12 mt-2 mb-4">
               <h5>Energy Cost</h5>
               <CostChart
                 energyData={filteredEnergyCost}
