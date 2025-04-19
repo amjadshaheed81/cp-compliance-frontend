@@ -88,7 +88,7 @@ function SearchSite({
   }
 
   useEffect(() => {
-    setSites2(sites);
+    setSites2(sites || []);
     getFav();
   }, [sites]);
 
@@ -175,9 +175,9 @@ function SearchSite({
       </div>
       {/* {error && <p>{error}</p>} */}
       <List>
-        {allSites2
-          ?.filter((s) => favorites.includes(String(s?.siteId)))
-          ?.map((site) => (
+        {Array.isArray(allSites2) && allSites2
+          .filter((s) => favorites.includes(String(s?.siteId)))
+          .map((site) => (
             <ListItem key={site?.id} disablePadding>
               <ListItemButton>
                 <ListItemIcon>
@@ -198,9 +198,9 @@ function SearchSite({
               </ListItemButton>
             </ListItem>
           ))}
-        {allSites
-          ?.filter((s) => !favorites.includes(String(s?.siteId)))
-          ?.map((site) => (
+        {Array.isArray(allSites) && allSites
+          .filter((s) => !favorites.includes(String(s?.siteId)))
+          .map((site) => (
             <ListItem key={site?.id} disablePadding>
               <ListItemButton>
                 <ListItemIcon>
