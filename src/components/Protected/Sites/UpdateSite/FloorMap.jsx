@@ -282,16 +282,7 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
       <Box sx={{ flexGrow: 1, bgcolor: "background.paper", display: "flex", height: 600 }}>
         <ul style={{ borderRight: "1px solid grey", padding: 0, margin: 0, width: "200px" }}>{getFloorList()}</ul>
         <div ref={drop} style={{ position: "relative", width: "100%", padding: "0 20px" }}>
-          <div style={{ textAlign: "center", marginBottom: "10px" }}>
-            <span style={{ 
-              border: "1px solid #ccc", 
-              borderRadius: "20px", 
-              padding: "2px 10px",
-              display: "inline-block"
-            }}>
-              1:01
-            </span>
-          </div>
+          
           
           <ul style={{ paddingLeft: "0", marginTop: "10px"}}>
             {markerLabels.map((room) => {
