@@ -16,43 +16,113 @@ const UpdateFloor = ({
   loggedInUserData,
   getSiteDetailsById,
 }) => {
-  const { register, getValues } = useForm({});
+  const { register, getValues, setValue } = useForm({});
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
   const [positionOption, setPositionOption] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState({});
+  
   useEffect(() => {
     const positions = siteLayout?.filter((itm) => itm?.nodeType === "position");
     setPositionOption(positions || []);
+    
+    // Initialize uploadedFiles state with existing floor plan data
+    const filesObj = {};
+    siteLayout?.filter(itm => itm?.nodeType === "floor")?.forEach(floor => {
+      if (floor.floorPlanUrl) {
+        filesObj[floor.id] = { 
+          url: floor.floorPlanUrl, 
+          name: floor.fileName || `${floor.nodeName}.png` 
+        };
+      }
+    });
+    setUploadedFiles(filesObj);
   }, [siteLayout]);
+  
+  // Handle successful uploads - only reset the file input elements
+  useEffect(() => {
+    // Reset just the file input elements after successful upload
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+      input.value = "";
+    });
+    
+    // Update the uploadedFiles state to reflect server data
+    // but don't clear the displayed filenames
+    const updatedFiles = {};
+    Object.entries(uploadedFiles).forEach(([floorId, fileInfo]) => {
+      // Keep existing URL and name for previously uploaded files
+      if (fileInfo.url) {
+        updatedFiles[floorId] = {
+          url: fileInfo.url,
+          name: fileInfo.name
+        };
+      }
+    });
+    
+    // Add any newly uploaded files from the server
+    siteLayout?.filter(itm => itm?.nodeType === "floor")?.forEach(floor => {
+      if (floor.floorPlanUrl && (!updatedFiles[floor.id] || updatedFiles[floor.id].url !== floor.floorPlanUrl)) {
+        updatedFiles[floor.id] = { 
+          url: floor.floorPlanUrl, 
+          name: floor.fileName || `${floor.nodeName}.png` 
+        };
+      }
+    });
+    
+    setUploadedFiles(updatedFiles);
+  }, [siteLayout?.filter(itm => itm?.nodeType === "floor")?.map(f => f.floorPlanUrl).join(',')]);
+  
   const getParentNodeName = (id) => {
     return siteLayout?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
   };
 
+  const handleFileChange = (floorId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const fileType = file.type;
+      const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+      
+      if (validTypes.includes(fileType)) {
+        // Store file information in the state
+        // Preserve any existing url if there was a previously uploaded file
+        const existingData = uploadedFiles[floorId] || {};
+        setUploadedFiles({
+          ...uploadedFiles,
+          [floorId]: { 
+            ...existingData,
+            file,
+            name: file.name, 
+            displayUrl: URL.createObjectURL(file),
+            // Track that this is a new file to be uploaded
+            isNewFile: true
+          }
+        });
+      } else {
+        toast.warn(`Unsupported file type: ${fileType}. Only JPG, JPEG, and PNG are allowed.`);
+        // Clear the file input
+        e.target.value = "";
+      }
+    }
+  };
+
   const sendFloorPlan = () => {
-    const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     let form_data = new FormData();
     const files = [];
     const data = [];
     let isValidForm = true;
 
-    list.forEach((itm) => {
-      const file = getValues(`floorImage-${itm?.id}`);
-      if (file?.length) {
-        const fileType = file[0].type;
-        const validTypes = ["image/jpeg", "image/jpg", "image/png"];
-        
-        if (validTypes.includes(fileType)) {
-          files.push(file[0]);
-          data.push({
-            nodeId: itm?.id,
-            fileName: file[0].name,
-          });
-        } else {
-          toast.warn(`Unsupported file type: ${fileType}. Only JPG, JPEG, and PNG are allowed.`);
-          isValidForm = false;
-        }
+    // Only use files that are marked as new (not previously uploaded)
+    Object.entries(uploadedFiles).forEach(([floorId, fileInfo]) => {
+      if (fileInfo.file && fileInfo.isNewFile) {
+        files.push(fileInfo.file);
+        data.push({
+          nodeId: floorId,
+          fileName: fileInfo.name,
+        });
       }
     });
+    
     if(isValidForm) {
       if (files.length > 0) {
         files.forEach((file) => {
@@ -67,6 +137,41 @@ const UpdateFloor = ({
       }
     }
   };
+  
+  const deleteFloorPlan = async (floorId) => {
+    try {
+      Swal.fire({
+        title: `Do you want to delete floor plan?`,
+        showDenyButton: false,
+        showCancelButton: true,
+        confirmButtonText: "Delete",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const url = "/api/site/deletefloorplanimages";
+            const payload = {
+              nodeIds: [floorId]
+            };
+            await del(url, payload);
+            toast.success(`Floor plan image has been deleted successfully.`);
+            
+            // Update local state
+            const newUploadedFiles = {...uploadedFiles};
+            delete newUploadedFiles[floorId];
+            setUploadedFiles(newUploadedFiles);
+            
+            // Refresh data from server
+            getSiteDetailsById(updateSite?.siteId, false);
+          } catch(e) {
+            toast.error(`Something went wrong while deleting floor plan image. Please try again!!`);
+          }
+        }
+      });
+    } catch(e) {
+      console.error(e);
+    }
+  };
+  
   const getFloorPlanInputs = () => {
     const orderMap = {
       Basement: 1,
@@ -95,76 +200,50 @@ const UpdateFloor = ({
           {getParentNodeName(itm?.parentNode)}: {itm?.nodeName}
         </td>
         <td>
-          <input
-            {...register(`floorImage-${itm?.id}`)}
-            className="form-control"
-            type="file"
-            name={`floorImage-${itm?.id}`}
-            accept="image/*, application/pdf"
-            id={`floorImage-${itm?.id}`}
-          />
-        </td>
-        <td>
-          {itm?.floorPlanUrl ? (
-            <>
-            <button
-              style={{
-                border: "none",
-                cursor: "pointer",
-                color: "blue",
-                marginTop: "2px",
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                setShowPdfModal(true);
-                setSelectedPdf(itm?.floorPlanUrl);
-              }}
-            >
-              {itm?.fileName ? itm?.fileName : `${itm?.nodeName}.png`}
-            </button>&nbsp;&nbsp;
-            <button
-              style={{
-                border: "none",
-                cursor: "pointer",
-                color: "red",
-                marginTop: "2px",
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                console.log("itm", itm);
-                Swal.fire({
-                      title: `Do you want to delete floor plan?`,
-                      showDenyButton: false,
-                      showCancelButton: true,
-                      confirmButtonText: "Delete",
-                    }).then(async (result) => {
-                      if (result.isConfirmed) {
-                        try{
-                          const url = "/api/site/deletefloorplanimages"
-                          const payload = {
-                            nodeIds: [itm?.id]
-                          } 
-                          const res = await del(url, payload);
-                          console.log("res", res);
-                          toast.success(
-                            `Floor plan image has been deleted successfully.`
-                          );
-                          getSiteDetailsById(updateSite?.siteId, false);
-                        }catch(e){
-                          toast.error(
-                            `Something went wrong while deleting floor plan image. Please try again!!`
-                          );
-                        }
-                        
-                      } else if (result.isDenied) {
-                      }
-                    });
-              }}
-            >
-              Delete
-            </button>
-            </>
-          ) : null}
+          <div className="d-flex align-items-center gap-3">
+            <div className="file-input-container" style={{ maxWidth: "400px" }}>
+              <input
+                className="form-control"
+                type="file"
+                name={`floorImage-${itm?.id}`}
+                accept="image/*, application/pdf"
+                id={`floorImage-${itm?.id}`}
+                onChange={(e) => handleFileChange(itm?.id, e)}
+              />
+            </div>
+            
+            {uploadedFiles[itm?.id]?.name && (
+              <div style={{ display: "flex", alignItems: "center", marginLeft: "20px" }}>
+                <button
+                  className="btn text-primary px-3 py-1"
+                  style={{
+                    border: "none",
+                    cursor: "pointer",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "4px",
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (uploadedFiles[itm?.id]?.url) {
+                      setShowPdfModal(true);
+                      setSelectedPdf(uploadedFiles[itm?.id].url);
+                    }
+                  }}
+                >
+                  {uploadedFiles[itm?.id].name}
+                </button>
+                <button
+                  className="btn btn-danger px-3 py-1 ms-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    deleteFloorPlan(itm?.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </td>
       </tr>
     ));
@@ -211,12 +290,14 @@ const UpdateFloor = ({
     </div>
   );
 };
+
 const mapStateToProps = (state) => ({
   error: state.site.siteLayoutFailure,
   updateSite: state.site.updateSite,
   siteLayout: state.site.siteLayout,
   loggedInUserData: state.site.loggedInUserData,
 });
+
 export default connect(mapStateToProps, { uploadFloorPlan, setLoader, getSiteDetailsById })(
   UpdateFloor
 );

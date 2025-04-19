@@ -41,14 +41,25 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
   const handleFloorSelect = (id) => {
     const list = siteLayout?.filter((itm) => itm?.nodeType === "floor");
     const selectedFloorData = list?.find((i) => i.id === id);
-    const filteredRooms = siteLayout?.filter((room) => room?.parentNode === selectedFloorData?.id);
-    setSelectedFloor(selectedFloorData);
-    setSelectedFloorId(id);
-    setMarkerLabels(filteredRooms);
-    scrollToElement(".floorMapTitle");
-    setSelectedTab({ id: selectedFloorData?.id, name: selectedFloorData?.nodeName });
-    setFloorPlanUrl(selectedFloorData?.floorPlanUrl);
-    getSavedMarger(selectedFloorData);
+    
+    if (selectedFloorData) {
+      const filteredRooms = siteLayout?.filter((room) => room?.parentNode === selectedFloorData?.id);
+      setSelectedFloor(selectedFloorData);
+      setSelectedFloorId(id);
+      setMarkerLabels(filteredRooms);
+      scrollToElement(".floorMapTitle");
+      setSelectedTab({ id: selectedFloorData?.id, name: selectedFloorData?.nodeName });
+      
+      // Ensure the floor plan URL is set correctly
+      if (selectedFloorData?.floorPlanUrl && selectedFloorData.floorPlanUrl !== "") {
+        setFloorPlanUrl(selectedFloorData?.floorPlanUrl);
+        getSavedMarger(selectedFloorData);
+      } else {
+        setFloorPlanUrl("");
+        setDroppedItems([]);
+        toast.warn("No floor plan available for this floor.");
+      }
+    }
   };
 
   const getFloorList = () => {
@@ -270,56 +281,70 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
       <h5 className="pt-5 text-start floorMapTitle">Floor Map</h5>
       <Box sx={{ flexGrow: 1, bgcolor: "background.paper", display: "flex", height: 600 }}>
         <ul style={{ borderRight: "1px solid grey", padding: 0, margin: 0, width: "200px" }}>{getFloorList()}</ul>
-        <div ref={drop} style={{ position: "relative", width: "100%" }}>
-        <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
-  {markerLabels.map((room) => {
-    const hasSpace = room?.nodeName?.includes(' ');
-    const label = hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName;
-    const isDisabled = droppedItems.some((item) => 
-      item.label === (hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName)
-    );
-    return (
-      <DraggableLabel
-        key={room?.id}
-        roomId={room?.parentNode}
-        label={label}
-        isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
-      />
-    );
-  })}
-</ul>
-          {isViewMode === "edit" && (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={saveImage}
-          disabled={!isManagerAdminLogin(loggedInUserData)}
-        >
-          Save Markers
-        </Button>
-      )}
-      <br />
+        <div ref={drop} style={{ position: "relative", width: "100%", padding: "0 20px" }}>
+          <div style={{ textAlign: "center", marginBottom: "10px" }}>
+            <span style={{ 
+              border: "1px solid #ccc", 
+              borderRadius: "20px", 
+              padding: "2px 10px",
+              display: "inline-block"
+            }}>
+              1:01
+            </span>
+          </div>
+          
+          <ul style={{ paddingLeft: "0", marginTop: "10px"}}>
+            {markerLabels.map((room) => {
+              const hasSpace = room?.nodeName?.includes(' ');
+              const label = hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName;
+              const isDisabled = droppedItems.some((item) => 
+                item.label === (hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName)
+              );
+              return (
+                <DraggableLabel
+                  key={room?.id}
+                  roomId={room?.parentNode}
+                  label={label}
+                  isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
+                />
+              );
+            })}
+          </ul>
+          {!isViewMode && selectedFloorId && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={saveImage}
+              style={{ margin: "10px 0" }}
+              disabled={!isManagerAdminLogin(loggedInUserData)}
+            >
+              SAVE MARKERS
+            </Button>
+          )}
+          
           {floorPlanUrl && (
-            <div style={{ margin: "10px"}}>
+            <div style={{ margin: "10px 0" }}>
               <Button variant="outlined" onClick={handleZoomIn}>
-                Zoom In
+                ZOOM IN
               </Button>
               &nbsp;
               <Button variant="outlined" onClick={handleZoomOut}>
-                Zoom Out
+                ZOOM OUT
               </Button>
-              
             </div>
           )}
-          <br />
+          
           {floorPlanUrl ? (
             <div
               ref={imageRef}
               style={{
                 position: "relative",
                 width: "100%",
-                height: "100%",
+                height: "calc(100% - 120px)",
                 overflow: "auto",
+                border: "1px solid #eee",
+                borderRadius: "4px",
+                backgroundColor: "#f9f9f9"
               }}
             >
               <div
@@ -338,7 +363,9 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
               </div>
             </div>
           ) : (
-            "Floor plan file is not available."
+            <div className="mt-4 p-4 text-center bg-light" style={{ borderRadius: "4px" }}>
+              Floor plan file is not available.
+            </div>
           )}
         </div>
       </Box>
