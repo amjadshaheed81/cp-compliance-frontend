@@ -648,21 +648,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     ))}
                   </select>
                 </div>
-                <div className="col">
-                  <label htmlFor="year-select">Select previous year:</label>
-                  <select
-                    id="year-select"
-                    value={state.previousYear}
-                    className="form-control form-select"
-                    onChange={handlePreviousYearChange}
-                  >
-                    {years?.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                
               </div>
             </div>
             {/* {isManagerAdminLogin(loggedInUserData) && (
