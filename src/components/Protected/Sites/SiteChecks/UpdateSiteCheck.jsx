@@ -4,7 +4,7 @@ import Header from "../../../common/Header/Header";
 import { toast } from "react-toastify";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import InspectionElectricalFault from "./InspectionElectricalFault";
+import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AsbestosSurvey from "./AsbestosSurvey";
@@ -27,6 +27,7 @@ import html2pdf from "html2pdf.js";
 import "./Print.css";
 import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
+import SounderAudibilty from "./SounderAudibility";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -119,6 +120,11 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
     if (siteCheck.type === "Inspection") {
       setStep("inspection-electrical");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Fire Alarm to meet BS5839"
+    ) {
+      setStep("inspection-sounder-audibilty");
     } else if (siteCheck.type === "Assessment") {
       setStep("assessment-fire-risk");
     } else if (
@@ -405,56 +411,20 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <hr />
                 <Grid sm={4}></Grid>
                 <Grid sm={4}></Grid>
-                <Grid sm={12}>
-                  <button
-                    style={{
-                      width: "200px",
-                      marginBottom: "20px",
-                      margin: "10px",
-                      float: "right",
-                    }}
-                    className="btn btn-primary btn-light"
-                    onClick={() => {
-                      handlePrint();
-                    }}
-                    id="lklkl1"
-                  >
-                    <PrintIcon /> Print PDF Report
-                  </button>
-                  <button
-                    style={{
-                      width: "150px",
-                      marginBottom: "20px",
-                      margin: "10px",
-                      float: "right",
-                    }}
-                    className="btn btn-primary btn-light"
-                    onClick={() => {
-                      navigate("/site-checks");
-                    }}
-                    id="lklkl2"
-                  >
-                    Back
-                  </button>
-                </Grid>
               </Grid>
             </Item>
             {step === "inspection-electrical" && (
               <Item>
-                <InspectionElectricalFault
+                <EmergencyLightingInspectionForm
                   checkId={checkId}
                   sasToken={sasToken}
                   siteCheck={siteCheck}
                 />
               </Item>
             )}
-            {step === "inspection-electrical" && (
+            {step === "inspection-sounder-audibilty" && (
               <Item>
-                <InspectionElectricalCertificate
-                  checkId={checkId}
-                  sasToken={sasToken}
-                  siteCheck={siteCheck}
-                />
+                <SounderAudibilty />
               </Item>
             )}
             {step === "assessment-fire-risk" && (
@@ -509,6 +479,38 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <TankSurvey checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
+            <Grid sm={12}>
+              <button
+                style={{
+                  width: "200px",
+                  marginBottom: "20px",
+                  margin: "10px",
+                  float: "right",
+                }}
+                className="btn btn-primary btn-light"
+                onClick={() => {
+                  handlePrint();
+                }}
+                id="lklkl1"
+              >
+                <PrintIcon /> Print PDF Report
+              </button>
+              <button
+                style={{
+                  width: "150px",
+                  marginBottom: "20px",
+                  margin: "10px",
+                  float: "right",
+                }}
+                className="btn btn-primary btn-light"
+                onClick={() => {
+                  navigate("/site-checks");
+                }}
+                id="lklkl2"
+              >
+                Back
+              </button>
+            </Grid>
           </Stack>
         </div>
       </div>

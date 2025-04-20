@@ -100,11 +100,9 @@ const InspectionElectricalFault = ({
           className="form-control d-flex flex-row mb-2 justify-content-start align-items-center p-2"
           style={{ border: "1px solid #989898", padding: "8px" }}
         >
-          <td style={{ border: "1px solid #000", padding: "12px" }}>
-            <h6 className="mb-0" style={{ marginRight: "70px" }}>
-              BSI Installation Category
-            </h6>
-          </td>
+          <h6 className="mb-0" style={{ marginRight: "70px" }}>
+            BSI Installation Category
+          </h6>
 
           <div
             className="vr mx-3"
@@ -215,6 +213,16 @@ const InspectionElectricalFault = ({
             </div>
           </div>
         </div>
+        <div
+          className="form-control p-2 mb-3"
+          style={{
+            width: "50%",
+            backgroundColor: "#1f497d",
+            color: "white",
+          }}
+        >
+          <h6 style={{ fontWeight: "bold" }}>Summary of Inspection</h6>
+        </div>
         <table
           style={{
             width: "100%",
@@ -231,7 +239,7 @@ const InspectionElectricalFault = ({
                   width: "20%",
                 }}
               >
-                Asset
+                Summary of Inspection
               </th>
               <th
                 style={{
@@ -242,71 +250,9 @@ const InspectionElectricalFault = ({
               >
                 Fault Description
               </th>
-              <th
-                style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  width: "15%",
-                }}
-              >
-                Date Raised
-              </th>
-              <th
-                style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  width: "10%",
-                }}
-              >
-                Likelihood
-              </th>
-              <th
-                style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  width: "10%",
-                }}
-              >
-                Severity
-              </th>
-              <th
-                style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  width: "10%",
-                }}
-              >
-                Image
-              </th>
-              <th
-                style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  width: "25%",
-                }}
-              >
-                Suggested Action
-              </th>
-              <th
-                style={{
-                  border: "1px solid #000",
-                  padding: "8px",
-                  width: "5%",
-                }}
-              ></th>
             </tr>
           </thead>
           <tbody>
-            {formData?.length === 0 && (
-              <tr>
-                <td
-                  colSpan={8}
-                  style={{ textAlign: "center", padding: "10px" }}
-                >
-                  No faults recorded yet
-                </td>
-              </tr>
-            )}
             {formData?.map((d, idx) => {
               const completed =
                 formData?.[idx]?.faultId && !formData?.[idx]?.edit;
