@@ -437,7 +437,7 @@ const UpdateAsset = ({
       model: formData?.model,
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
-      valuations: valuations,
+      //valuations: valuations,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
