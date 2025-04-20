@@ -39,12 +39,10 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   useEffect(() => {
     if (currentInvite) {
       const date = moment(currentInvite.startDate).format('YYYY-MM-DD');
-      const startTime = moment(currentInvite.startDate).format('HH:mm');
-      const endTime = moment(currentInvite.endDate).format('HH:mm');
       
       setProposedDate(date);
-      setProposedStartTime(startTime);
-      setProposedEndTime(endTime);
+      setProposedStartTime(currentInvite?.startTime);
+      setProposedEndTime(currentInvite?.endTime);
     }
   }, [currentInvite]);
 
@@ -298,7 +296,11 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                     <strong>Date:</strong> {moment(currentInvite.startDate).format("MMMM Do, YYYY")}
                   </Typography>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Time:</strong> {moment(currentInvite.startDate).format("h:mm a")} - {moment(currentInvite.endDate).format("h:mm a")}
+                    <strong>Time:</strong> 
+                    &nbsp;
+                    <input type='time' value={currentInvite.startTime} disabled/>
+                    &nbsp; -&nbsp;
+                    <input type='time' value={currentInvite.endTime} disabled/>
                   </Typography>
                 </>
               )}
