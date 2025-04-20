@@ -235,6 +235,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       </div>
 
       {/* Calendar Invite Popup */}
+      {fromUser?.name && 
       <Dialog
         maxWidth="lg"
         fullWidth
@@ -342,7 +343,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
             </Button>
           )}
         </DialogActions>
-      </Dialog>
+      </Dialog>}
     </Fragment>
   );
 };
