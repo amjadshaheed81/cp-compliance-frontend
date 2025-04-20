@@ -257,7 +257,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
           {currentInvite && (
             <Box sx={{ p: 2 }}>
               <Typography variant="h5" gutterBottom>
-                {currentInvite?.eventType} | {currentInvite?.shortText}
+              Appointment | {currentInvite?.shortText}
               </Typography>
               <Typography variant="body1" gutterBottom>
                 <strong>Site:</strong> {siteSelectedForGlobal?.siteName}
