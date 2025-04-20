@@ -250,6 +250,9 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                 {currentInvite?.eventType} | {currentInvite?.shortText}
               </Typography>
               <Typography variant="body1" gutterBottom>
+                <strong>Site:</strong> {siteSelectedForGlobal?.siteName}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
                 <strong>From:</strong> {fromUser?.name}
               </Typography>
               <Typography variant="body1" gutterBottom>
