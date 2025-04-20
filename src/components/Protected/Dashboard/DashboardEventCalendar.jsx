@@ -83,6 +83,16 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
     setOpenInvite(false);
   };
 
+  const dismiss = async () => {
+    const updatedInvite = {
+      ...currentInvite,
+      
+      section: "dismissed",
+    };
+      await put(`/api/user/calendar`, updatedInvite);
+      setOpenInvite(false);
+  }
+
   const handleProposeNewTime = async () => {
     if (!isEditingTime) {
       setIsEditingTime(true);
@@ -345,6 +355,14 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
               Propose New Time
             </Button>
           )}
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={dismiss}
+            >
+              Dismiss
+            </Button>
         </DialogActions>
       </Dialog>}
     </Fragment>
