@@ -280,50 +280,76 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
     <div>
       <h5 className="pt-5 text-start floorMapTitle">Floor Map</h5>
       <Box sx={{ flexGrow: 1, bgcolor: "background.paper", display: "flex", height: 600 }}>
-        <ul style={{ borderRight: "1px solid grey", padding: 0, margin: 0, width: "200px" }}>{getFloorList()}</ul>
+        <ul style={{ borderRight: "1px solid grey", padding: 0, margin: 0, width: "200px", listStyle: "none" }}>{getFloorList()}</ul>
         <div ref={drop} style={{ position: "relative", width: "100%", padding: "0 20px" }}>
-          
-          
-          <ul style={{ paddingLeft: "0", marginTop: "10px"}}>
-            {markerLabels.map((room) => {
-              const hasSpace = room?.nodeName?.includes(' ');
-              const label = hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName;
-              const isDisabled = droppedItems.some((item) => 
-                item.label === (hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName)
-              );
-              return (
-                <DraggableLabel
-                  key={room?.id}
-                  roomId={room?.parentNode}
-                  label={label}
-                  isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
-                />
-              );
-            })}
-          </ul>
-          {!isViewMode && selectedFloorId && (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={saveImage}
-              style={{ margin: "10px 0" }}
-              disabled={!isManagerAdminLogin(loggedInUserData)}
-            >
-              SAVE MARKERS
-            </Button>
-          )}
-          
-          {floorPlanUrl && (
-            <div style={{ margin: "10px 0" }}>
-              <Button variant="outlined" onClick={handleZoomIn}>
-                ZOOM IN
-              </Button>
-              &nbsp;
-              <Button variant="outlined" onClick={handleZoomOut}>
-                ZOOM OUT
-              </Button>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            width: "100%",
+            marginBottom: "15px"
+          }}>
+            
+            <div className="marker-labels-container" style={{ width: "100%" }}>
+              <ul style={{ 
+                paddingLeft: "0", 
+                margin: "10px 0",
+                listStyle: "none", 
+                display: "flex", 
+                flexWrap: "wrap", 
+                justifyContent: "center"
+              }}>
+                {markerLabels.map((room) => {
+                  const hasSpace = room?.nodeName?.includes(' ');
+                  const label = hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName;
+                  const isDisabled = droppedItems.some((item) => 
+                    item.label === (hasSpace ? room?.nodeName?.split(" ")[1] : room?.nodeName)
+                  );
+                  return (
+                    <DraggableLabel
+                      key={room?.id}
+                      roomId={room?.parentNode}
+                      label={label}
+                      isDisabled={isDisabled || !isManagerAdminLogin(loggedInUserData)}
+                    />
+                  );
+                })}
+              </ul>
             </div>
-          )}
+            
+            {selectedFloorId && (
+              <div className="save-markers-container" style={{ marginBottom: "10px" }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={saveImage}
+                  style={{ fontWeight: "normal", textTransform: "uppercase" }}
+                  disabled={!isManagerAdminLogin(loggedInUserData)}
+                >
+                  Save Markers
+                </Button>
+              </div>
+            )}
+            
+            {floorPlanUrl && (
+              <div className="button-container" style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                <Button 
+                  variant="outlined" 
+                  onClick={handleZoomIn}
+                  style={{ fontWeight: "normal", textTransform: "uppercase" }}
+                >
+                  Zoom In
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={handleZoomOut}
+                  style={{ fontWeight: "normal", textTransform: "uppercase" }}
+                >
+                  Zoom Out
+                </Button>
+              </div>
+            )}
+          </div>
           
           {floorPlanUrl ? (
             <div
@@ -331,11 +357,11 @@ const FloorMap = ({ siteLayout, setLoader, uploadFloorPlan, updateSite, loggedIn
               style={{
                 position: "relative",
                 width: "100%",
-                height: "calc(100% - 120px)",
+                height: "calc(100% - 150px)",
                 overflow: "auto",
                 border: "1px solid #eee",
                 borderRadius: "4px",
-                backgroundColor: "#f9f9f9"
+                backgroundColor: "#f9f9fa"
               }}
             >
               <div
