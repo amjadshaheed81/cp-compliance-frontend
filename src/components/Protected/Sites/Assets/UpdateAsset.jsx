@@ -332,7 +332,7 @@ const UpdateAsset = ({
     if (selectedAssets?.length > 0) {
       for (const iterator of selectedAssets) {
         const selectedValue =
-          siteAssets.find((itm) => itm.assetId === iterator) || null;
+          siteAssets.find((itm) => itm.assetId == iterator) || null;
         if (selectedValue) {
           arr.push({
             key: selectedValue?.assetId,
