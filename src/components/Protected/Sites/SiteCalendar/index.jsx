@@ -71,6 +71,8 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const getData = async () => {
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
+    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+        data = [...data, ...invitedata]
     data = filterDuplicates(data);
     const todays = data.filter(e => isToday(new Date(e.endDate)));
     settodayEvents(todays);
@@ -104,7 +106,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
           startDate: moment(appointmentForm.date),
           endDate: moment(appointmentForm.date),
           shortText: appointmentForm.subject,
-          eventType: `Apointment`,
+          eventType: `Appointment`,
           userId: loggedInUserData?.id,
           includeCompanyUsers: false,
           status:"invite",

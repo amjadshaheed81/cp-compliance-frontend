@@ -56,6 +56,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
 
   const getInviteData = async () => {
     let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+    invitedata = invitedata.filter(i => i.section !== "dismissed");
     if (invitedata && invitedata.length > 0) {
       setInvites(invitedata);
       setCurrentInvite(invitedata[0]);
@@ -154,6 +155,8 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
 
   const getData = async () => {
     let data = await get("/api/user/calendar/events?userId=" + (loggedInUserData?.id ?? 0));
+    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+    data = [...data,...invitedata]
     data = filterDuplicates(data);
     const event = data?.map(d => {
       return {
@@ -161,7 +164,8 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
           {
             label: d.shortText + getSiteName(d.siteId),
             type: d.eventType + getSiteName(d.siteId),
-            section: d.section
+            section: d.section,
+            data: d,
           }]),
         date: moment(d.endDate).format("YYYY-MM-DD"),
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
@@ -217,6 +221,17 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                 {itm?.type?.includes("Contract") && (
                   <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
+
+{itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment") &&  !itm?.data?.param && (
+                  <p><span class="badge bg-info" >{itm?.type}</span></p>
+                )}
+
+{itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment") && itm?.data?.param && (
+                  <p onClick={() => { setCurrentInvite(itm?.data);
+                    setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
+                )}
+
+
               </Tooltip>
             </>
           ))}
@@ -260,7 +275,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
               Appointment | {currentInvite?.shortText}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>Site:</strong> {siteSelectedForGlobal?.siteName}
+                <strong>Site:</strong> {getSiteName(currentInvite?.siteId)}
               </Typography>
               <Typography variant="body1" gutterBottom>
                 <strong>From:</strong> {fromUser?.name}
