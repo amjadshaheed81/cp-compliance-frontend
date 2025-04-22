@@ -407,7 +407,7 @@ const Document = ({
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Refresh parent folder using appropriate endpoint
-        const parentColumnIndex = columns.length - 2;
+        const parentColumnIndex = columns.length - 1;
         if (parentColumnIndex >= 0) {
           const parentColumn = columns[parentColumnIndex];
           await handleFolderClick(
@@ -416,7 +416,7 @@ const Document = ({
           );
         } else {
           // If it was a root folder, refresh root using root endpoint
-          await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+         // await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
         }
 
         toast.success(`${folderName} has been deleted successfully`);
