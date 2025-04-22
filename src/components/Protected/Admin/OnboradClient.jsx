@@ -619,7 +619,7 @@ const OnboradClient = ({ }) => {
       <div className="content">
         <Header />
         <div className="container-fluid">
-          <BreadCrumHeader header={"Onborad Client"} page={"Manage"} />
+          <BreadCrumHeader header={"Onboard Client"} page={"Manage"} />
 
           <Grid container>
             <Grid sm={12}>
