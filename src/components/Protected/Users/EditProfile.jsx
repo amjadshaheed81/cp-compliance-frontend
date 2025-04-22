@@ -47,6 +47,7 @@ const EditProfile = ({
   } = useForm({});
   const values = watch();
   useEffect(() => {
+    getToken();
     const name = loggedInUserData?.name?.split(" ");
     reset({
       ...loggedInUserData,
