@@ -28,7 +28,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   const [actionSurvey, setActionSurvey] = useState();
   const [openReading, setOpenReading] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
-  // const site = JSON.parse(localStorage.getItem("site"));
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
   const [checked, setChecked] = useState(true);
@@ -43,6 +42,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     siteComparisonYear: new Date().getFullYear(),
     currentYear: new Date().getFullYear(),
     previousYear: new Date().getFullYear() - 1,
+    isIndividual: false,
   });
   const years = Array.from(
     { length: 16 },
@@ -52,11 +52,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   useEffect(() => {
     gettypeoptions();
     getAllSites();
+    getEnergyCost(true);
   }, []);
+
   const getAllSites = async () => {
     const res = await get("/api/site/site/all?sort=asc&sortName=siteName&withDetails=true");
     setAllSites(res);
   };
+
   const customColumnNamesCost = ["reference", "fromDate", "toDate", "cost"];
   const customColumnNamesReading = [
     "reference",
@@ -90,7 +93,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     settypeoptions(lovtypes?.map((l) => l.lovValue));
   };
 
-  useEffect(() => {}, []);
   const [formData, setFormData] = useState({
     searchField: "",
   });
@@ -127,7 +129,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   const searchEnergyCost = () => {
-    console.log(energyCost);
     let filteredEnergyCost2 = energyCost;
     if (formData2?.budgetCategory?.length > 0) {
       filteredEnergyCost2 = filteredEnergyCost2.filter(
@@ -150,19 +151,114 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   useEffect(() => {
-    getEnergyCost(true);
-  }, [siteSelectedForGlobal]);
+    getEnergyCost(state.isIndividual);
+  }, [siteSelectedForGlobal, state.isIndividual]);
 
   const getFloorArea = () => {
     if (state.isIndividual) {
-      // Individual site mode - get area from selected site
-      return siteSelectedForGlobal?.siteAreaOccupancyData?.totalBuildingArea || 100;
+      const siteInd = allSites.filter(site => site?.siteId == siteSelectedForGlobal?.siteId)?.[0] || {};
+      return siteInd?.siteAreaOccupancyData?.totalBuildingArea || 100;
     } else {
-      // Area mode - calculate total area for all sites in the selected area
-      
       return allSites.reduce((total, site) => 
         total + (site.siteAreaOccupancyData?.totalBuildingArea || 0), 0
       );
+    }
+  };
+  const convertGasToKWh = (volumeInM3) => {
+    // Conversion factors (these can be adjusted based on your specific gas properties)
+    const calorificValue = 39.5; // Typical value in MJ/m³ (may vary)
+    const conversionFactor = 3.6; // MJ to kWh conversion
+    return (volumeInM3 * calorificValue) / conversionFactor;
+  };
+  const calculateActualConsumption = (readingList) => {
+    if (!readingList || readingList.length === 0) return [];
+    
+    // Sort readings by date
+    const sortedReadings = [...readingList].sort(
+      (a, b) => new Date(a.readingDate) - new Date(b.readingDate)
+    );
+  
+    // Calculate actual consumption
+    return sortedReadings.map((reading, index) => {
+      if (index === 0) {
+        return {
+          ...reading,
+          actualConsumption: null, // No previous reading to compare with
+          isEstimated: false,
+          convertedValue: reading.readingUnit === 'M3' 
+            ? convertGasToKWh(reading.readingValue)
+            : reading.readingValue
+        };
+      }
+      
+      const prevReading = sortedReadings[index - 1].readingValue;
+      const currentReading = reading.readingValue;
+      const consumption = currentReading - prevReading;
+      
+      return {
+        ...reading,
+        actualConsumption: reading.readingUnit === 'M3'
+          ? convertGasToKWh(consumption)
+          : consumption,
+        isEstimated: false,
+        convertedValue: reading.readingUnit === 'M3'
+          ? convertGasToKWh(reading.readingValue)
+          : reading.readingValue
+      };
+    });
+  };
+
+  const getEnergyCost = async (isIndividual) => {
+    if (!siteSelectedForGlobal?.siteId && isIndividual) {
+      toast.error("Please select site from site search to proceed....");
+      return;
+    }
+    setIsLoading(true);
+    
+    try {
+      let energyCostData;
+      if (isIndividual) {
+        energyCostData = await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
+      } else if (state.selectedArea) {
+        energyCostData = await get(`/api/energy/survey/all?area=${state.selectedArea}`);
+      } else {
+        energyCostData = await get("/api/energy/survey/all");
+      }
+
+      // Process each energy record to calculate actual consumption
+      const processedEnergyCost = energyCostData.map((energy) => {
+        const processedReadings = calculateActualConsumption(energy.readingList || []);
+        
+        // Process cost dates
+        const dates = energy.costList?.map((c) => new Date(c.fromDate)) || [];
+        const minDate = dates.length > 0 ? new Date(Math.min(...dates)) : null;
+        
+        const dates2 = energy.costList?.map((c) => new Date(c.toDate)) || [];
+        const maxDate = dates2.length > 0 ? new Date(Math.max(...dates2)) : null;
+
+        return {
+          ...energy,
+          readingList: processedReadings,
+          minDate,
+          maxDate
+        };
+      });
+
+      setEnergyCost(processedEnergyCost);
+      
+      // Apply filters if any
+      let filteredData = processedEnergyCost;
+      if (formData2?.budgetCategory?.length > 0) {
+        filteredData = filteredData.filter(
+          (sc) => sc.budgetCategory === formData2.budgetCategory
+        );
+      }
+
+      setFilteredEnergyCost(filteredData);
+    } catch (error) {
+      toast.error("Failed to fetch energy data: " + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,7 +273,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      const mappedData = json?.map((row) => {
+      
+      // Sort by date to ensure chronological order
+      const sortedJson = json.sort((a, b) => {
+        const dateA = convertToDate(Object.values(a)[1]);
+        const dateB = convertToDate(Object.values(b)[1]);
+        return new Date(dateA) - new Date(dateB);
+      });
+
+      const mappedData = sortedJson?.map((row, index) => {
         let rowData = {
           submittedUserId: loggedInUserData?.id,
           readingUnit: "kWh",
@@ -185,32 +289,33 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
         const rowValues = Object.values(row)?.slice(0, 4);
 
         if (rowValues.length > 3) {
-          customColumnNamesReading.forEach((col, index) => {
-            if (index === 0) {
+          customColumnNamesReading.forEach((col, colIndex) => {
+            if (colIndex === 0) {
               const dupIdx = energyCost.findIndex(
-                (e) => e.reference === rowValues[index]
+                (e) => e.reference === rowValues[colIndex]
               );
               if (dupIdx >= 0) {
                 rowData.energyId = energyCost[dupIdx]?.energyId;
                 rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory;
               }
-            } else if (index === 1) {
-              rowValues[index] = convertToDate(rowValues[index]);
-            } else if (index === 2) {
-              if (isNaN(rowValues[index])) {
-                toast(
-                  "Invalid reading present in attached file at row no " + index
+            } else if (colIndex === 1) {
+              rowValues[colIndex] = convertToDate(rowValues[colIndex]);
+            } else if (colIndex === 2) {
+              if (isNaN(rowValues[colIndex])) {
+                toast.error(
+                  `Invalid reading value in row ${index + 1}: ${rowValues[colIndex]}`
                 );
                 return;
               }
-            } else {
             }
-            rowData[col] = rowValues[index] || null;
+            rowData[col] = rowValues[colIndex] || null;
           });
 
           return rowData;
         }
-      });
+        return null;
+      }).filter(Boolean);
+
       setbulkUploadReading(mappedData);
     };
 
@@ -218,20 +323,25 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   function convertToDate(dateString) {
-    if ("number" === typeof dateString) {
+    if (typeof dateString === "number") {
+      // Excel date format
       const excelEpoch = new Date(1900, 0, 1);
       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
       const jsDate = new Date(
         excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000
       );
       return jsDate.toISOString();
-    } else {
-      const [day, month, year] = dateString.split("/").map(Number);
-      const date = new Date(year, month - 1, day);
-      return new Date(
-        date.getTime() - date.getTimezoneOffset() * 60000
-      ).toISOString();
+    } else if (typeof dateString === "string") {
+      // Try different date string formats
+      if (dateString.includes("/")) {
+        const [day, month, year] = dateString.split("/").map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.toISOString();
+      } else if (dateString.includes("-")) {
+        return new Date(dateString).toISOString();
+      }
     }
+    return dateString;
   }
 
   const handleFileUploadCost = (event) => {
@@ -274,167 +384,134 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
 
   const callbulkUploadCost = async () => {
     setopenBulk(false);
-    for (const data of bulkUploadCost) {
-      if (data) {
-        data.budgetCategory = bulkCategory;
-        await saveCost(data);
+    try {
+      for (const data of bulkUploadCost) {
+        if (data) {
+          data.budgetCategory = bulkCategory;
+          await saveCost(data);
+        }
       }
+      toast.success("Bulk upload of energy costs completed successfully");
+      setbulkUploadCost([]);
+      getEnergyCost(state.isIndividual);
+    } catch (error) {
+      toast.error("Error during bulk upload: " + error.message);
     }
-    setbulkUploadCost([]);
-    getEnergyCost();
   };
 
   const callbulkUploadReading = async () => {
     setopenBulk(false);
-    for (const data of bulkUploadReading) {
-      if (data) {
-        data.budgetCategory = bulkCategory;
-        await saveReading(data);
+    try {
+      for (const data of bulkUploadReading) {
+        if (data) {
+          data.budgetCategory = bulkCategory;
+          await saveReading(data);
+        }
       }
+      toast.success("Bulk upload of energy readings completed successfully");
+      setbulkUploadReading([]);
+      getEnergyCost(state.isIndividual);
+    } catch (error) {
+      toast.error("Error during bulk upload: " + error.message);
     }
-    setbulkUploadReading([]);
-    getEnergyCost();
-  };
-
-  const addEnergyCost = async (event) => {
-    event.preventDefault();
-    const form = event.target;
-    if (!form.checkValidity()) {
-      form.reportValidity();
-    }
-    const body = formData;
-    body.siteId = siteSelectedForGlobal?.siteId;
-    const dupIdx = energyCost.findIndex((e) => e.reference === body.reference);
-    if (dupIdx >= 0) {
-      toast.error("Meter Reference already exist");
-      return;
-    }
-
-    await post("/api/energy/survey", body);
-    setFormData({});
-    await getEnergyCost();
-    toast.success("Energy Reference Created Successfully");
-  };
-
-  const getEnergyCost = async (isAll) => {
-    if (!siteSelectedForGlobal?.siteId) {
-      toast.error("Please select site from site search to proceed....");
-      return;
-    }
-    setIsLoading(true);
-    let energyCost = isAll
-      ? await get("/api/energy/survey/all")
-      : await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
-    energyCost.forEach((energy) => {
-      energy.readingList = energy.readingList?.sort(
-        (a, b) => new Date(b.readingDate) - new Date(a.readingDate)
-      );
-      const dates = energy.costList.map((c) => new Date(c.fromDate));
-      const minDate =
-        Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
-      const dates2 = energy.costList.map((c) => new Date(c.toDate));
-      const maxDate =
-        Math.max(...dates2) !== -Infinity
-          ? new Date(Math.max(...dates2))
-          : null;
-      energy.minDate = minDate;
-      energy.maxDate = maxDate;
-    });
-
-    setEnergyCost(energyCost);
-    if (formData2?.budgetCategory?.length > 0) {
-      energyCost = energyCost.filter(
-        (sc) => sc.budgetCategory === formData2.budgetCategory
-      );
-    }
-
-    setFilteredEnergyCost(energyCost);
-
-    setIsLoading(false);
-  };
-
-  const handleAllSitesToggle = () => {
-    setState((prevState) => ({
-      ...prevState,
-      isIndividual: !prevState.isIndividual,
-    }));
   };
 
   const saveCost = async (data) => {
-    data.submittedUserId = loggedInUserData?.id;
-    data.siteId = siteSelectedForGlobal?.siteId;
-    await post("/api/energy/cost", data);
-    getEnergyCost();
-    toast.success("Energy cost added successfully");
+    try {
+      data.submittedUserId = loggedInUserData?.id;
+      data.siteId = siteSelectedForGlobal?.siteId;
+      await post("/api/energy/cost", data);
+      getEnergyCost(state.isIndividual);
+      toast.success("Energy cost added successfully");
+    } catch (error) {
+      toast.error("Failed to save energy cost: " + error.message);
+    }
   };
 
   const saveReading = async (data) => {
-    if (data) {
-      data.submittedUserId = loggedInUserData?.id;
-      data.siteId = siteSelectedForGlobal?.siteId;
-      await post("/api/energy/reading", data);
-      getEnergyCost();
-      toast.success("Energy reading added successfully");
+    try {
+      if (data) {
+        data.submittedUserId = loggedInUserData?.id;
+        data.siteId = siteSelectedForGlobal?.siteId;
+        await post("/api/energy/reading", data);
+        getEnergyCost(state.isIndividual);
+        toast.success("Energy reading added successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to save energy reading: " + error.message);
     }
   };
 
   const handleChange = async (event) => {
+    console.log("event", event);
     setState((prevState) => ({
       ...prevState,
       isIndividual: event.target.checked,
     }));
-    if (event.target.checked) {
-      await getEnergyCost(false);
+    await getEnergyCost(event.target.checked);
+  };
+
+  const handleAreaChange = (e) => {
+    const area = e.target.value;
+    setState((prevState) => ({
+      ...prevState,
+      selectedArea: area,
+    }));
+    getEnergyCost(false);
+  };
+
+  const handleSite1Change = async (e) => {
+    const siteId = e.target.value;
+    setState((prevState) => ({
+      ...prevState,
+      site1: siteId,
+    }));
+    if (siteId) {
+      const energyCost = await get("/api/energy/site/survey/" + siteId);
+      const processedEnergyCost = energyCost.map((energy) => {
+        const processedReadings = calculateActualConsumption(energy.readingList || []);
+        const dates = energy.costList?.map((c) => new Date(c.fromDate)) || [];
+        const minDate = dates.length > 0 ? new Date(Math.min(...dates)) : null;
+        const dates2 = energy.costList?.map((c) => new Date(c.toDate)) || [];
+        const maxDate = dates2.length > 0 ? new Date(Math.max(...dates2)) : null;
+        return {
+          ...energy,
+          readingList: processedReadings,
+          minDate,
+          maxDate
+        };
+      });
+      setSite1EnergyCostData(processedEnergyCost);
     } else {
-      await getEnergyCost(true);
+      setSite1EnergyCostData([]);
     }
   };
-  const handleAreaChange = (e) => {
-    setState((prevState) => ({
-      ...prevState,
-      selectedArea: e.target.value,
-    }));
-    getActionsByArea(e.target.value);
-  };
-  const handleSite1Change = async (e) => {
-    setState((prevState) => ({
-      ...prevState,
-      site1: e.target.value,
-    }));
-    const energyCost = await get("/api/energy/site/survey/" + e.target.value);
-    energyCost.forEach((energy) => {
-      const dates = energy.costList.map((c) => new Date(c.fromDate));
-      const minDate =
-        Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
-      const dates2 = energy.costList.map((c) => new Date(c.toDate));
-      const maxDate =
-        Math.max(...dates2) !== -Infinity
-          ? new Date(Math.max(...dates2))
-          : null;
-      energy.minDate = minDate;
-      energy.maxDate = maxDate;
-    });
-    setSite1EnergyCostData(energyCost);
-  };
+
   const handleSite2Change = async (e) => {
+    const siteId = e.target.value;
     setState((prevState) => ({
       ...prevState,
-      site2: e.target.value,
+      site2: siteId,
     }));
-    const energyCost = await get("/api/energy/site/survey/" + e.target.value);
-    energyCost.forEach((energy) => {
-      const dates = energy.costList.map((c) => new Date(c.fromDate));
-      const minDate =
-        Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
-      const dates2 = energy.costList.map((c) => new Date(c.toDate));
-      const maxDate =
-        Math.max(...dates2) !== -Infinity
-          ? new Date(Math.max(...dates2))
-          : null;
-      energy.minDate = minDate;
-      energy.maxDate = maxDate;
-    });
-    setSite2EnergyCostData(energyCost);
+    if (siteId) {
+      const energyCost = await get("/api/energy/site/survey/" + siteId);
+      const processedEnergyCost = energyCost.map((energy) => {
+        const processedReadings = calculateActualConsumption(energy.readingList || []);
+        const dates = energy.costList?.map((c) => new Date(c.fromDate)) || [];
+        const minDate = dates.length > 0 ? new Date(Math.min(...dates)) : null;
+        const dates2 = energy.costList?.map((c) => new Date(c.toDate)) || [];
+        const maxDate = dates2.length > 0 ? new Date(Math.max(...dates2)) : null;
+        return {
+          ...energy,
+          readingList: processedReadings,
+          minDate,
+          maxDate
+        };
+      });
+      setSite2EnergyCostData(processedEnergyCost);
+    } else {
+      setSite2EnergyCostData([]);
+    }
   };
 
   const handleComparisonYearChange = (e) => {
@@ -443,12 +520,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       siteComparisonYear: Number(e.target.value),
     }));
   };
+
   const handleYearChange = (e) => {
     setState((prevState) => ({
       ...prevState,
       currentYear: Number(e.target.value),
     }));
   };
+
   const handlePreviousYearChange = (e) => {
     setState((prevState) => ({
       ...prevState,
@@ -456,28 +535,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     }));
   };
 
-  const getActionsByArea = async (area) => {
-    if (area) {
-      const energyCost = await get(`/api/energy/survey/all?area=${area}`);
-      energyCost.forEach((energy) => {
-        const dates = energy.costList.map((c) => new Date(c.fromDate));
-        const minDate =
-          Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
-        const dates2 = energy.costList.map((c) => new Date(c.toDate));
-        const maxDate =
-          Math.max(...dates2) !== -Infinity
-            ? new Date(Math.max(...dates2))
-            : null;
-        energy.minDate = minDate;
-        energy.maxDate = maxDate;
-      });
-
-      setFilteredEnergyCost(energyCost);
-      setEnergyCost(energyCost);
-    } else {
-      getEnergyCost(checked);
-    }
-  };
   return (
     <Fragment>
       <Dialog
@@ -494,7 +551,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
             {!bulkCategory && (
               <>
                 <div className="col">
-                  <label for="budgetCategory">Select Budget Category</label>
+                  <label htmlFor="budgetCategory">Select Budget Category</label>
                   <select
                     name="budgetCategory"
                     className="form-control form-select"
@@ -503,7 +560,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                   >
                     <option value="">Budget Category</option>
                     {typeoptions?.map((t) => (
-                      <option value={t}>{t}</option>
+                      <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 </div>
@@ -529,7 +586,8 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 <button
                   style={{ marginTop: "10px" }}
                   className="btn btn-primary text-white pr-2"
-                  onClick={(e) => callbulkUploadCost()}
+                  onClick={callbulkUploadCost}
+                  disabled={!bulkUploadCost.length}
                 >
                   Upload Energy Cost
                 </button>
@@ -561,7 +619,8 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 <button
                   style={{ marginTop: "10px" }}
                   className="btn btn-primary text-white pr-2"
-                  onClick={(e) => callbulkUploadReading()}
+                  onClick={callbulkUploadReading}
+                  disabled={!bulkUploadReading.length}
                 >
                   Upload Energy Reading
                 </button>
@@ -573,6 +632,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
           </Fragment>
         </DialogContent>
       </Dialog>
+      
       <Cost
         open={openCost}
         setOpen={setOpenCost}
@@ -582,6 +642,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
         deleteEnergyCost={deleteEnergyCost}
         isViewMode={isViewMode}
       />
+      
       <Reading
         open={openReading}
         setOpen={setOpenReading}
@@ -603,10 +664,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     className="form-control form-select"
                     id="budgetCategory"
                     onChange={handleInputChange2}
+                    value={formData2.budgetCategory || ""}
                   >
-                    <option value="">Budget Category 2</option>
+                    <option value="">All Budget Categories</option>
                     {typeoptions?.map((t) => (
-                      <option value={t}>{t}</option>
+                      <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 </div>
@@ -619,9 +681,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     onChange={handleAreaChange}
                     value={state.selectedArea}
                   >
-                    <option value="">All Sites</option>
+                    <option value="">All Areas</option>
                     {SiteArea?.map((itm) => (
-                      <option value={itm.replace("&", "%26")}>{itm}</option>
+                      <option key={itm} value={itm.replace("&", "%26")}>{itm}</option>
                     ))}
                   </select>
                 </div>
@@ -650,55 +712,24 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 </div>
               </div>
             </div>
-            {/* {isManagerAdminLogin(loggedInUserData) && (
-              <>
-                <div className="ms-auto p-2 bd-highlight">
-                  <div className="row" style={{ height: "auto" }}>
-                    <div className="col">
-                      <button
-                        style={{ width: "150px" }}
-                        className="btn btn-primary btn-light"
-                        onClick={() => {
-                          setBulkCategory();
-                          setopenBulk(true);
-                        }}
-                      >
-                        <i className="fas fa-upload" /> &nbsp; Bulk Upload
-                      </button>
-                    </div>
-                    <div className="col">
-                      <CSVLink
-                        filename={"site-energy-costs.csv"}
-                        className="btn btn-light bg-white text-primary"
-                        data={filteredEnergyCost || []}
-                      >
-                        <Tooltip title={`Export`} arrow>
-                          <i className="fas fa-download"></i>
-                        </Tooltip>
-                      </CSVLink>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )} */}
           </div>
+          
           <div className="row" style={{ height: "auto" }}>
             <div className="col-md-12 mt-2 mb-4">
               <h5>Energy Cost</h5>
-              <CostChart
-                energyData={filteredEnergyCost}
-                currentYear={state.currentYear}
-                floorArea={getFloorArea()}
-              />
+              {isLoading ? (
+                <div className="text-center">
+                  <CircularProgress />
+                </div>
+              ) : (
+                <CostChart
+                  energyData={filteredEnergyCost}
+                  currentYear={state.currentYear}
+                  floorArea={getFloorArea()}
+                  useConvertedValues={true}
+                />
+              )}
             </div>
-            {/* <div className="col-md-6 mt-2 mb-4">
-              <h5>Energy Reading</h5>
-              <EnergyChart
-                energyData={filteredEnergyCost}
-                currentYear={state.currentYear}
-                previousYear={state.previousYear}
-              />
-            </div> */}
           </div>
         </div>
       </div>
@@ -711,4 +742,5 @@ const mapStateToProps = (state) => ({
   loggedInUserData: state.site.loggedInUserData,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, { getSites })(EnergyCost);
