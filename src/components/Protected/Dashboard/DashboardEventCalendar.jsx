@@ -18,6 +18,7 @@ import {
   Box
 } from "@mui/material";
 import Form from 'react-bootstrap/Form';
+import { toast } from "react-toastify";
 
 const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal }) => {
   const navigate = useNavigate();
@@ -95,10 +96,16 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   }
 
   const handleProposeNewTime = async () => {
+    
     if (!isEditingTime) {
       setIsEditingTime(true);
       return;
     }
+    if(!proposedStartTime || !proposedEndTime) {
+      toast.error("Please select start and end time");
+      return;
+    }
+
 
     // Combine date and time to create new datetime objects
     const newStartDate = moment(`${proposedDate}`);
@@ -272,7 +279,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
           {currentInvite && (
             <Box sx={{ p: 2 }}>
               <Typography variant="h5" gutterBottom>
-              Appointment | {currentInvite?.shortText}
+              Appointment 
               </Typography>
               <Typography variant="body1" gutterBottom>
                 <strong>Site:</strong> {getSiteName(currentInvite?.siteId)}
@@ -281,7 +288,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                 <strong>From:</strong> {fromUser?.name}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>Details:</strong> {currentInvite.shortText}
+                <strong>Subject:</strong> {currentInvite.shortText}
               </Typography>
 
               {isEditingTime ? (
