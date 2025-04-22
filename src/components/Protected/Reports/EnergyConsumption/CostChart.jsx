@@ -22,9 +22,9 @@ ChartJS.register(
 const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
   // Conversion factor for gas (M³ to kWh)
   const convertGasToKWh = (volumeInM3) => {
-    const calorificValue = 39.5; // MJ/m³ (adjust based on your gas supply)
-    const conversionFactor = 3.6; // MJ to kWh conversion
-    return (volumeInM3 * calorificValue) / conversionFactor;
+    const calorificValue = 11.1; // MJ/m³ (adjust based on your gas supply)
+    // const conversionFactor = 3.6; // MJ to kWh conversion
+    return (volumeInM3 * calorificValue);
   };
 
   // Process data for the selected year
@@ -64,17 +64,28 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
 
         if (readingDate.getFullYear() === year) {
           const month = readingDate.getMonth();
-          const consumption = current.readingValue - previous.readingValue;
+          console.log("current", current);
+          console.log("previous", previous);
+          let consumption = 0;
+          // if (current.readingValue < previous.readingValue) {
+          //   consumption = current.readingValue + previous.readingValue;
+          // } else {
+          //   consumption = current.readingValue - previous.readingValue;
+          // }
+          
           let consumptionKwh = consumption;
 
-          if (current.readingUnit === 'M3') {
-            consumptionKwh = convertGasToKWh(consumption);
-          }
+          
 
           if (energyItem.budgetCategory === "Electricity") {
+            consumptionKwh = current.readingValue;
             metrics.totalElectricityKwh += consumptionKwh;
             metrics.monthlyData[month].electricity += consumptionKwh;
           } else if (energyItem.budgetCategory === "Gas") {
+            consumptionKwh = current.readingValue - previous.readingValue;
+            if (current.readingUnit === 'M3') {
+              consumptionKwh = convertGasToKWh(consumptionKwh);
+            }
             metrics.totalGasKwh += consumptionKwh;
             metrics.monthlyData[month].gas += consumptionKwh;
           }
@@ -250,7 +261,7 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
           </div>
         </div>
 
-        <div className="col-md-6">
+        <div className="col-md-6" style={{ display: "none"}}>
           <div className="bg-white p-4 rounded-lg shadow mb-4">
             <h2 className="text-lg font-semibold mb-4">Monthly Trends per m²</h2>
             <Bar 
