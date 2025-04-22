@@ -498,7 +498,7 @@ const Summary = ({
               </div>
               <div className="modal-body p-0">
                 <div
-                  className="table-responsive hide-scrollbar"
+                  className="table-responsive"
                   style={{ maxHeight: "70vh" }}
                 >
                   <table className="table table-hover mb-0">
