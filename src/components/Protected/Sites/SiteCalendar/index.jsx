@@ -14,6 +14,7 @@ import { get, post, put } from "../../../../api";
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import Appointment from "../../Dashboard/Appointment";
 
 const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const navigate = useNavigate();
@@ -26,6 +27,9 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const [calendarEvent, setCalendarEvent] = useState([]);
   const [todayEvents, settodayEvents] = useState([]);
+   const [openInvite, setOpenInvite] = useState(false);
+    const [currentInvite, setCurrentInvite] = useState(null);
+    
   // State for appointment modal
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [appointmentForm, setAppointmentForm] = useState({
@@ -82,7 +86,8 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
           {
             label: d.shortText,
             type: d.eventType,
-            section: d.section
+            section: d.section,
+            data: d
           }]),
         date: moment(d.endDate).format("YYYY-MM-DD"),
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
@@ -203,9 +208,14 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
               {itm?.type?.includes("Contract") && (
                 <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-info" >{truncateString(itm?.type, 15)}</span></p>
               )}
-              {itm?.type?.includes("Appointment") && (
-                <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-secondary" >{truncateString(itm?.type, 15)}</span></p>
-              )}
+              {itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment") &&  !itm?.data?.param && (
+                  <p><span class="badge bg-info" >{itm?.type}</span></p>
+                )}
+
+{itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment") && itm?.data?.param && (
+                  <p onClick={() => { setCurrentInvite(itm?.data);
+                    setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
+                )}
             </Tooltip>
           ))}
         </p>
@@ -433,7 +443,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     <span class="badge bg-info">PAT Testing</span>
                   </li>
                   <li class="list-group-item">
-                    <span class="badge bg-secondary text-light">Appointment</span>
+                    <span class="badge bg-info">Appointment</span>
                   </li>
                 </ul>
               </div>

@@ -59,6 +59,7 @@ const Document = ({
   setLoader,
   subfolderFiles,
 }) => {
+  
   const [searchParams] = useSearchParams();
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isCreateFileModalOpen, setIsCreateFileModalOpen] = useState(false);
