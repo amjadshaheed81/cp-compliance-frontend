@@ -57,6 +57,8 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
       siteId: currentInvite?.siteId,
       startDate: moment(currentInvite.startDate),
       endDate: moment(currentInvite.endDate),
+      startTime: currentInvite.startTime,
+      endTime: currentInvite.endTime,
       shortText: currentInvite.shortText,
       eventType: `Appointment`,
       userId: currentInvite?.userId,

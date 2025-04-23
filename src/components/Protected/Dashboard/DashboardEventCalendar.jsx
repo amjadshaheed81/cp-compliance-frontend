@@ -71,6 +71,8 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       siteId: currentInvite?.siteId,
       startDate: moment(currentInvite.startDate),
       endDate: moment(currentInvite.endDate),
+      startTime: currentInvite.startTime,
+      endTime: currentInvite.endTime,
       shortText: currentInvite.shortText,
       eventType: `Appointment`,
       userId: currentInvite?.userId,

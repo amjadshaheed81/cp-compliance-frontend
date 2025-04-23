@@ -182,11 +182,12 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   
   function renderEventContent(eventInfo) {
     const title = JSON.parse(eventInfo.event.title);
+    console.log('title',title)
     return (
       <>
         <p onClick={() => msg(eventInfo.event)} style={{ overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
           {title?.map((itm, index) => (
-            <Tooltip title={itm?.label} arrow key={index}>
+            <Tooltip title={(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) ? `${itm?.label} Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow key={index}>
               {itm?.type?.includes("Audit") && (
                 <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-primary"  >{truncateString(itm?.type, 15)}</span></p>
               )}
