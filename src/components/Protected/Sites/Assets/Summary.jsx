@@ -442,8 +442,12 @@ const Summary = ({
       );
 
       toast.success("Assets updated successfully!");
+      setTimeout(() => {
+        window.location.reload(); // Full page reload
+      }, 200);
       await getSiteAssets(siteSelectedForGlobal?.siteId);
       setShowMultiEditModal(false);
+      setSelectedItems([]);
     } catch (error) {
       toast.error("An error occurred while updating assets.");
       console.error("Update error:", error);
@@ -497,10 +501,7 @@ const Summary = ({
                 ></button>
               </div>
               <div className="modal-body p-0">
-                <div
-                  className="table-responsive"
-                  style={{ maxHeight: "70vh" }}
-                >
+                <div className="table-responsive" style={{ maxHeight: "70vh" }}>
                   <table className="table table-hover mb-0">
                     <thead className="sticky-top bg-light">
                       <tr>
@@ -1070,7 +1071,7 @@ const Summary = ({
                   </button>
                 </Tooltip>
               </div>
-              <div className="col-md-3 col-sm-4 mt-2">
+              {/* <div className="col-md-3 col-sm-4 mt-2">
                 {selectedItems.length > 0 ? (
                   <CSVLink
                     disabaled={selectedItems.length === 0}
@@ -1108,8 +1109,8 @@ const Summary = ({
                     &nbsp; Export Selected
                   </button>
                 )}
-              </div>
-              <div className="col-md-3 col-sm-4 mt-2">
+              </div> */}
+              {/* <div className="col-md-3 col-sm-4 mt-2">
                 <Tooltip title={`Upload CSV to Update Assets`} arrow>
                   <input
                     type="file"
@@ -1125,7 +1126,7 @@ const Summary = ({
                     <i className="fas fa-upload"></i> Upload CSV
                   </label>
                 </Tooltip>
-              </div>
+              </div> */}
               <div className="col-md-2 col-sm-4 mt-2">
                 <CSVLink
                   filename={"site-assets-lists.csv"}
