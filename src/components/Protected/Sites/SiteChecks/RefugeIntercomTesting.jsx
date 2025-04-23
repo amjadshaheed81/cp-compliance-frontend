@@ -10,10 +10,9 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { DeleteForever } from "@mui/icons-material";
 import { formatDate } from "../../../../utils/dateFormat";
 
-const SounderAudibilityForm = ({
+const RefugeIntercomTesting = ({
   sasToken,
   checkId,
   subType,
@@ -38,14 +37,12 @@ const SounderAudibilityForm = ({
     position: "",
     floor: "",
     room: "",
-    locations: Array(8).fill({
-      description: "",
-      spl: "",
-      backgroundNoise: "",
-      notes: "",
-    }),
+    engineersComments: "",
+    outstationOperational: "",
+    intercomSoundTest: "",
+    sounderTest: "",
     clientName: "",
-    engineerName: loggedInUserData?.name || "", // Pre-fill with logged in user's name
+    engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
     clientDate: new Date().toISOString().split("T")[0],
     engineerDate: new Date().toISOString().split("T")[0],
@@ -54,7 +51,6 @@ const SounderAudibilityForm = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if user is internal and tagged with selected site
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
@@ -81,13 +77,11 @@ const SounderAudibilityForm = ({
               siteSelectedForGlobal.postCode,
               siteSelectedForGlobal.country,
             ].filter((part) => part);
-            console.log(siteSelectedForGlobal);
 
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
           }
 
-          // Set site contact information from selected site
           if (siteSelectedForGlobal.siteContact) {
             setFormData((prev) => ({
               ...prev,
@@ -113,13 +107,12 @@ const SounderAudibilityForm = ({
     getUsers,
   ]);
 
-  // Filter assets by category: Electrical > Fire Alarm > Sounder
   const filteredAssets =
     siteAssets?.filter(
       (asset) =>
         asset.category === "Electrical" &&
         asset.subCategory === "Fire Alarm" &&
-        asset.subCategory2 === "Sounder"
+        asset.subCategory2 === "Disabled Refuge Outstation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -154,45 +147,6 @@ const SounderAudibilityForm = ({
     }));
   };
 
-  const handleLocationChange = (index, field, value) => {
-    const updatedLocations = [...formData.locations];
-    updatedLocations[index] = {
-      ...updatedLocations[index],
-      [field]: value,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
-  };
-
-  const addLocation = () => {
-    setFormData((prev) => ({
-      ...prev,
-      locations: [
-        ...prev.locations,
-        {
-          description: "",
-          spl: "",
-          backgroundNoise: "",
-          sounderType: "Electronic",
-          compliant: false,
-          notes: "",
-        },
-      ],
-    }));
-  };
-
-  const removeLocation = (index) => {
-    if (formData.locations.length <= 1) return;
-    const updatedLocations = [...formData.locations];
-    updatedLocations.splice(index, 1);
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -208,10 +162,11 @@ const SounderAudibilityForm = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
+        engineersComments: formData.engineersComments,
       };
 
-      await post("/api/site-check/audibility-report", dataToSave);
-      toast.success("Sounder audibility report saved successfully");
+      await post("/api/site-check/fire-refuge-report", dataToSave);
+      toast.success("Fire refuge report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Failed to save report");
@@ -245,7 +200,6 @@ const SounderAudibilityForm = ({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Client"
               variant="outlined"
               required
               style={{
@@ -303,13 +257,12 @@ const SounderAudibilityForm = ({
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.name || "",
-              siteContactNo: newValue?.phone || "", // Automatically update contact number
+              siteContactNo: newValue?.phone || "",
             }));
           }}
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Site Contact"
               variant="outlined"
               required
               style={{
@@ -349,7 +302,7 @@ const SounderAudibilityForm = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">BS5839 Sounder Audibility Report</h4>
+        <h4 className="mb-0">Fire Refuge Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -430,10 +383,9 @@ const SounderAudibilityForm = ({
           </div>
         </div>
 
-        {/* Rest of the form remains the same */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Select Sounder Device</h5>
+            <h5 className="mb-0">Device Information</h5>
           </div>
           <div className="card-body">
             <div className="row mb-4">
@@ -451,9 +403,9 @@ const SounderAudibilityForm = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Sounder Device"
+                      label="Select a Refuge Intercom Device"
                       variant="outlined"
-                      placeholder="Search sounders..."
+                      placeholder="Search devices..."
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -491,22 +443,6 @@ const SounderAudibilityForm = ({
                     />
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Asset ID</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData.selectedAsset.assetId}
-                      disabled
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {formData.selectedAsset && (
-              <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
                     <label className="form-label">Position</label>
@@ -554,123 +490,106 @@ const SounderAudibilityForm = ({
           </div>
         </div>
 
-        {/* Sound Pressure Level Measurements Section */}
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5>Sound Pressure Level Measurements</h5>
-            {!isSubmitted && (
-              <button
-                type="button"
-                className="btn btn-outline-primary print-hide"
-                onClick={addLocation}
-              >
-                <span style={{ marginRight: "5px" }}>+</span>
-                Add Location
-              </button>
-            )}
+        {/*  Engineers Comments Section */}
+        <div className="card mb-4">
+          <div className="card-header">
+            <h5 className="mb-0">Engineers Comments</h5>
           </div>
-          <hr className="mb-3" />
-
-          <div className="table-responsive mb-4">
-            <table className="table table-bordered">
-              <thead>
-                <tr style={{ textAlign: "center" }}>
-                  <th width="10%">Location No#</th>
-                  <th width="25%">Location Description</th>
-                  <th width="15%">SPL (dB(A))</th>
-                  <th width="15%">Background (dB(A))</th>
-                  <th width="20%">Notes</th>
-                  {!isSubmitted && (
-                    <th width="5%" className="print-hide">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {formData.locations.map((location, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.description}
-                        onChange={(e) =>
-                          handleLocationChange(
-                            index,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.spl}
-                          onChange={(e) =>
-                            handleLocationChange(index, "spl", e.target.value)
-                          }
-                          disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.backgroundNoise}
-                          onChange={(e) =>
-                            handleLocationChange(
-                              index,
-                              "backgroundNoise",
-                              e.target.value
-                            )
-                          }
-                          disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
-                      </div>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.notes}
-                        onChange={(e) =>
-                          handleLocationChange(index, "notes", e.target.value)
-                        }
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    {!isSubmitted && (
-                      <td className="text-center print-hide">
-                        <button
-                          type="button"
-                          onClick={() => removeLocation(index)}
-                          disabled={formData.locations.length <= 1}
-                          className="btn btn-link p-0 border-0"
-                          style={{ color: "red" }}
-                        >
-                          <span style={{ fontSize: "1.2rem" }}>
-                            <DeleteForever />
-                          </span>
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="card-body">
+            <div className="mb-3">
+              <TextField
+                multiline
+                rows={16}
+                fullWidth
+                variant="outlined"
+                value={formData.engineersComments || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    engineersComments: e.target.value,
+                  })
+                }
+                style={{ height: "400px" }}
+                disabled={isSubmitted}
+              />
+            </div>
           </div>
         </div>
 
+        <div className="mb-4">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Outstation Operational
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Intercom Sound Test
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Sounder Test
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.outstationOperational}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            outstationOperational: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Pass</option>
+                        <option value="Fail">Fail</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.intercomSoundTest}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            intercomSoundTest: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Pass</option>
+                        <option value="Fail">Fail</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.sounderTest}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sounderTest: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Pass</option>
+                        <option value="Fail">Fail</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
         <div className="row mt-4">
           <div className="col-md-6">
             <div className="mb-3">
@@ -718,12 +637,12 @@ const SounderAudibilityForm = ({
                 value={formatDate(formData.engineerDate)}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitted}
                 style={{
                   height: "40px",
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -785,4 +704,4 @@ export default connect(mapStateToProps, {
   getSiteAssets,
   getSites,
   getUsers,
-})(SounderAudibilityForm);
+})(RefugeIntercomTesting);
