@@ -178,6 +178,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
       }
     })
+    console.log('event', event)
     setData(event);
   }
 
@@ -201,6 +202,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
 
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);
+    console.log('title',title)
     return (
       <>
         <p>
@@ -229,11 +231,11 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                   <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
-{itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment") &&  !itm?.data?.param && (
+{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) &&  !itm?.data?.param && (
                   <p><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
-{itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment") && itm?.data?.param && (
+{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) && itm?.data?.param && (
                   <p onClick={() => { setCurrentInvite(itm?.data);
                     setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
                 )}
