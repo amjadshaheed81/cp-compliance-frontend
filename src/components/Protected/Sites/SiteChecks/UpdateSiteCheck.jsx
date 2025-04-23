@@ -6,7 +6,6 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
-import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
@@ -28,6 +27,7 @@ import "./Print.css";
 import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
 import SounderAudibilty from "./SounderAudibility";
+import RefugeIntercomTesting from "./RefugeIntercomTesting";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -118,13 +118,23 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
   const getSiteChecks = async () => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
-    if (siteCheck.type === "Inspection") {
+    if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Emergency Lighting to meet BS5266"
+    ) {
       setStep("inspection-electrical");
     } else if (
       siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Fire Alarm to meet BS5839"
+      siteCheck.subType === "Fire Alarm to meet BS5839" &&
+      siteCheck.category === "Fire Alarm Sounder Audibilty"
     ) {
       setStep("inspection-sounder-audibilty");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Fire Alarm to meet BS5839" &&
+      siteCheck.category === "Refuge Intercom Testing & Inspection"
+    ) {
+      setStep("inspection-refuge-intercom-testing");
     } else if (siteCheck.type === "Assessment") {
       setStep("assessment-fire-risk");
     } else if (
@@ -320,7 +330,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                     />
                   </div>
                 </Grid>
-                <Grid sm={4}>
+                {/* <Grid sm={4}>
                   <div style={{ margin: "10px" }}>
                     <label htmlFor="folder" name="folder">
                       Due Date
@@ -334,7 +344,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                       onChange={handleInputChange}
                     />
                   </div>
-                </Grid>
+                </Grid> */}
                 <Grid sm={4}>
                   <div style={{ margin: "10px" }}>
                     <label htmlFor="folder" name="folder">
@@ -424,7 +434,22 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             )}
             {step === "inspection-sounder-audibilty" && (
               <Item>
-                <SounderAudibilty />
+                <SounderAudibilty
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-refuge-intercom-testing" && (
+              <Item>
+                <RefugeIntercomTesting
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                />
               </Item>
             )}
             {step === "assessment-fire-risk" && (
@@ -433,6 +458,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
+                  category={siteCheck.category}
                 />
               </Item>
             )}
