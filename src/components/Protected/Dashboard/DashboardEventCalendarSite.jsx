@@ -5,10 +5,17 @@ import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
 import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
+import Appointment from "./Appointment";
 import { useNavigate } from "react-router-dom";
 import { connect } from "react-redux";
+
 import { get } from "../../../api";
 const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
+
+  const [openInvite, setOpenInvite] = useState(false);
+  const [currentInvite, setCurrentInvite] = useState(null);
+    
+  
   const navigate = useNavigate();
   const navigateTo = (link) => {
     navigate(link);
@@ -22,6 +29,8 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
   }, [])
   const getData = async () => {
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId??0);
+    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+        data = [...data, ...invitedata]
     data = filterDuplicates(data);
     const event = data?.map(d => {
       return {
@@ -29,7 +38,8 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
           {
             label: d.shortText,
             type: d.eventType,
-            section: d.section
+            section: d.section,
+            data: d,
           }]),
         date: moment(d.endDate).format("YYYY-MM-DD"),
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
@@ -85,6 +95,14 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
            {itm?.type?.includes("Contract") && (
               <p onClick={()=>{navigateTo(itm?.section)}}> <span class="badge bg-info" >{itm?.type}</span></p> 
               )}
+           {(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) &&  !itm?.data?.param && (
+                  <p><span class="badge bg-info" >{itm?.type}</span></p>
+                )}
+
+{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) && itm?.data?.param && (
+                  <p onClick={() => { setCurrentInvite(itm?.data);
+                    setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
+                )}
            </Tooltip>
          </>
           ))}
@@ -111,6 +129,12 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
           />
         </div>
       </div>
+      <Appointment 
+        openInvite={openInvite} 
+        setOpenInvite={setOpenInvite}
+        currentInvite={currentInvite}
+        setCurrentInvite={setCurrentInvite}
+      />
     </Fragment>
   );
 };

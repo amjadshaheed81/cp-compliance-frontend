@@ -20,22 +20,18 @@ import {
 import Form from 'react-bootstrap/Form';
 import { toast } from "react-toastify";
 
-const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal }) => {
-  const navigate = useNavigate();
-  const [data, setData] = useState([]);
-  const [invites, setInvites] = useState([]);
-  const [openInvite, setOpenInvite] = useState(false);
-  const [currentInvite, setCurrentInvite] = useState(null);
+const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite, loggedInUserData, sites, siteSelectedForGlobal }) => {
+  // const [openInvite, setOpenInvite] = useState(false);
+  // const [currentInvite, setCurrentInvite] = useState(null);
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [proposedDate, setProposedDate] = useState('');
   const [proposedStartTime, setProposedStartTime] = useState('');
   const [proposedEndTime, setProposedEndTime] = useState('');
 
   useEffect(() => {
-    getData();
-    getInviteData();
     getManagerList();
   }, []);
+
 
   useEffect(() => {
     if (currentInvite) {
@@ -53,16 +49,6 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       return `  (${filters[0].siteName})`
     }
     return '';
-  }
-
-  const getInviteData = async () => {
-    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
-    invitedata = invitedata.filter(i => i.section !== "dismissed");
-    if (invitedata && invitedata.length > 0) {
-      setInvites(invitedata);
-      setCurrentInvite(invitedata[0]);
-      setOpenInvite(true);
-    }
   }
 
   const handleAccept = () => {
@@ -162,115 +148,9 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
     );
   };
 
-  const getData = async () => {
-    let data = await get("/api/user/calendar/events?userId=" + (loggedInUserData?.id ?? 0));
-    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
-    data = [...data,...invitedata]
-    data = filterDuplicates(data);
-    const event = data?.map(d => {
-      return {
-        title: JSON.stringify([
-          {
-            label: d.shortText + getSiteName(d.siteId),
-            type: d.eventType + getSiteName(d.siteId),
-            section: d.section,
-            data: d,
-          }]),
-        date: moment(d.endDate).format("YYYY-MM-DD"),
-        getDate: moment(d.endDate).format("YYYY-MM-DD"),
-      }
-    })
-    console.log('event', event)
-    setData(event);
-  }
-
-  const navigateTo = (link) => {
-    navigate(link);
-  };
-
-  const filterDuplicates = (arr) => {
-    const uniqueSet = new Set();
-    return arr.filter(item => {
-      const key = `${item.section}-${item.eventType}-${item.siteId}-${item.startDate}-${item.endDate}-${item.shortText}`;
-
-      if (uniqueSet.has(key)) {
-        return false;
-      } else {
-        uniqueSet.add(key);
-        return true;
-      }
-    });
-  }
-
-  const renderEventContent = (eventInfo) => {
-    const title = JSON.parse(eventInfo.event.title);
-    console.log('title',title)
-    return (
-      <>
-        <p>
-          {title?.map((itm, index) => (
-            <>
-              <Tooltip title={itm?.label} arrow>
-                {itm?.type?.includes("Audit") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-primary" >{itm?.type}</span></p>
-                )}
-                {itm?.type?.includes("Assessment") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-dark" >{itm?.type}</span></p>
-                )}
-                {itm?.type?.includes("Inspection") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-success" >{itm?.type}</span></p>
-                )}
-                {itm?.type?.includes("Survey") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-danger" >{itm?.type}</span></p>
-                )}
-                {itm?.type?.includes("Asbestos") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>
-                )}
-                {itm?.type?.includes("Document") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
-                )}
-                {itm?.type?.includes("Contract") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
-                )}
-
-{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) &&  !itm?.data?.param && (
-                  <p><span class="badge bg-info" >{itm?.type}</span></p>
-                )}
-
-{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) && itm?.data?.param && (
-                  <p onClick={() => { setCurrentInvite(itm?.data);
-                    setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
-                )}
-
-
-              </Tooltip>
-            </>
-          ))}
-        </p>
-      </>
-    );
-  }
 
   return (
     <Fragment>
-      <div className="card">
-        <div className="card-body p-2">
-          <div className="d-flex bd-highlight p-0">
-            <div className="bd-highlight">
-              <h5 className="card-title">Your ({loggedInUserData?.name}) Calender</h5>
-            </div>
-          </div>
-          <FullCalendar
-            plugins={[dayGridPlugin]}
-            initialView="dayGridMonth"
-            weekends={true}
-            events={data}
-            eventContent={renderEventContent}
-          />
-        </div>
-      </div>
-
-      {/* Calendar Invite Popup */}
       {fromUser?.name && 
       <Dialog
         maxWidth="lg"
@@ -401,4 +281,4 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 
-export default connect(mapStateToProps, {})(DashboardEventCalendar);
+export default connect(mapStateToProps, {})(Appointment);

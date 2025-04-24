@@ -996,6 +996,13 @@ const UpdateAsset = ({
                           className="form-control"
                           id="purchaseDate"
                           name="purchaseDate"
+                          value={
+                            purchaseDetailForm.watch("purchaseDate")
+                              ? moment(
+                                  purchaseDetailForm.watch("purchaseDate")
+                                ).format("DD-MM-YYYY")
+                              : ""
+                          }
                           disabled
                           placeholder=""
                           {...purchaseDetailForm.register("purchaseDate", {

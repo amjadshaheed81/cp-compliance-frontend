@@ -20,6 +20,7 @@ import AssetChart from "./Assets/AssetChart";
 import Contracts from "./Contracts/Contracts";
 import SiteChecks from "./SiteChecks/SiteChecks";
 import EnergyCost from "./EnergyCost/EnergyCost";
+import EnergyConsumption from "./EnergyConsumption/EnergyCost";
 import StatutoryRegister from "./StatutoryRegister/StatutoryRegister";
 import Actions from "./Actions/Actions";
 import BasicReports from "./BasicReports/BasicReports";
@@ -99,6 +100,7 @@ const Reports = ({}) => {
               <Tab label="Statutory Register" {...a11yProps(5)} />
               <Tab label="Actions" {...a11yProps(6)} />
               <Tab label="Basic Reports" {...a11yProps(7)} />
+              <Tab label="Energy Consumption" {...a11yProps(8)} />
             </Tabs>
             <TabPanel value={value} index={0}>
               <SiteCharts siteChart={siteChart} setSiteChart={setSiteChart} />
@@ -136,6 +138,11 @@ const Reports = ({}) => {
             <TabPanel value={value} index={6}>
               <div className="row">
                 <BasicReports />
+              </div>
+            </TabPanel>
+            <TabPanel value={value} index={7}>
+              <div className="row">
+                <EnergyConsumption />
               </div>
             </TabPanel>
           </Box>

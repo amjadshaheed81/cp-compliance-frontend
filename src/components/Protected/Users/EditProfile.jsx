@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
-import { get } from "../../../api";
+import { get,getSasToken,uploadSiteCheckDoc } from "../../../api";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
@@ -26,7 +26,10 @@ const EditProfile = ({
   addUserTagSite,
   loggedInUserData,
   setLoggedInUser,
+  siteSelectedForGlobal
 }) => {
+
+    const [sasToken, setSasToken] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState();
@@ -44,6 +47,7 @@ const EditProfile = ({
   } = useForm({});
   const values = watch();
   useEffect(() => {
+    getToken();
     const name = loggedInUserData?.name?.split(" ");
     reset({
       ...loggedInUserData,
@@ -67,6 +71,14 @@ const EditProfile = ({
     response = response.filter((r) => r !== null);
     setcompanies(response);
   };
+
+  
+
+   const getToken = async () => {
+      const token = await getSasToken();
+      setSasToken(token);
+    }
+
   const getSelectedTagValue = () => {
     const selectedSites = tagSite;
     const arr = [];
@@ -86,6 +98,7 @@ const EditProfile = ({
   };
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
+   
     const data = {
       userId: loggedInUserData?.id,
       firstName: formJson?.firstName || null,
@@ -102,8 +115,17 @@ const EditProfile = ({
       trade: formJson?.userType === "External" ? formJson?.trade : null,
       gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       status: formJson?.status || null,
+
+      licenseId: loggedInUserData?.licenseId,
+      siteId: siteSelectedForGlobal?.siteId
     };
+    
     setIsLoading(true);
+    const temp = { ...data }
+    temp.file = formJson.file[0]
+    const url = await uploadSiteCheckDoc(temp);
+    data.signature = url
+             
     try {
       const res = await addUser(data);
       if (res.id) {
@@ -123,6 +145,7 @@ const EditProfile = ({
           `${formJson?.firstName} user has been updated successfully.`
         );
         const res = await get(`/api/user/${data?.userId}/details`);
+        
         setLoggedInUser(res);
       } else {
         toast.error(
@@ -509,6 +532,29 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
+                  <div className="col-md-4 text-center mt-2">
+                      <div className="form-group">
+                        
+                        {loggedInUserData?.signature && (
+                          <img
+                          onClick={()=> {window.open(loggedInUserData?.signature + "?" + sasToken, '_blank');}}
+                          style={{ cursor: 'pointer' }}
+                            src={loggedInUserData?.signature+ "?" + sasToken}
+                            className="img img-responsive border p-2 m-2 w-100"
+                          />)}
+                          
+                        <input
+                          type="file"
+                          {...register("file")}
+                          className="form-control"
+                          style={{ marginTop: '30px' }}
+                          name="file"
+                          accept="image/*"
+                          id="file"
+                        />
+                        
+                      </div>
+                      </div>
                   {values?.userType === "External" &&
                     values?.trade === "Gas Engineer" && (
                       <div className="col-md-4 mt-2">
@@ -565,6 +611,8 @@ const EditProfile = ({
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
+
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getSites,

@@ -315,6 +315,7 @@ const OnboradClient = ({ }) => {
                   onChange={handleInputChange2}
                 />
               </Grid>
+              
               <Grid sm={4}>
                 <label htmlFor="adminFirstName">Admin First Name</label>
                 <input
@@ -421,7 +422,22 @@ const OnboradClient = ({ }) => {
                 />
               </Grid>
 
-              <Grid sm={6}>
+              <Grid sm={4}>
+                <label htmlFor="companyAddress">Client Address</label>
+                <textarea
+                  rows="3"
+                  style={{ maxWidth: '300px' }}
+                  required
+                  value={formData?.companyAddress}
+                  autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  className="form-control"
+                  name="companyAddress"
+                  onChange={handleInputChange2}
+                />
+              </Grid>
+              <Grid sm={4}>
                 <label htmlFor="modules">Modules</label>
                 <div>
                                         <Button
@@ -570,7 +586,7 @@ const OnboradClient = ({ }) => {
                         </select> */}
               </Grid>
 
-              <Grid sm={6}>
+              <Grid sm={4}>
                 <label htmlFor="file" style={{ maxWidth: '300px', marginLeft: '20px' }}>Logo</label>
                 <input
                 style={{ maxWidth: '300px', marginLeft: '20px' }}
@@ -582,6 +598,7 @@ const OnboradClient = ({ }) => {
                             onChange={(e) => handleFileChange(e)}
                           />
               </Grid>
+              
 
 
              
@@ -602,7 +619,7 @@ const OnboradClient = ({ }) => {
       <div className="content">
         <Header />
         <div className="container-fluid">
-          <BreadCrumHeader header={"Onborad Client"} page={"Manage"} />
+          <BreadCrumHeader header={"Onboard Client"} page={"Manage"} />
 
           <Grid container>
             <Grid sm={12}>
@@ -622,6 +639,7 @@ const OnboradClient = ({ }) => {
               <thead className="table-dark">
                 <tr>
                   <th scope="col" style={{ border: "2px groove" }}>Client Name</th>
+                  <th scope="col" style={{ border: "2px groove" }}>Address</th>
                   <th scope="col" style={{ border: "2px groove" }}>Admin Name</th>
                   <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
                   <th scope="col" style={{ border: "2px groove" }}>License Expiry</th>
@@ -646,8 +664,10 @@ const OnboradClient = ({ }) => {
                   <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
                     <img src={d.logo} height={50}
-              width={140} /> {d.companyName}
+              width={140} /> {d.companyName} 
                     </td>
+                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.companyAddress}</td>
+                    
                     <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminFirstName} {d.adminLastName}</td>
                     
                     
