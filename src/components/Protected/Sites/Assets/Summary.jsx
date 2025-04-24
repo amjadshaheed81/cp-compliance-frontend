@@ -402,9 +402,31 @@ const Summary = ({
   // Add this helper function outside your component
   const handleFieldUpdate = (assetId, field, value) => {
     setSelectedItems((prevItems) =>
-      prevItems.map((item) =>
-        item.assetId === assetId ? { ...item, [field]: value } : item
-      )
+      prevItems.map((item) => {
+        if (item.assetId === assetId) {
+          const updatedItem = { ...item, [field]: value };
+
+          // Reset dependent fields when parent changes
+          if (field === "category") {
+            updatedItem.subCategory = "";
+            updatedItem.subCategory2 = "";
+            updatedItem.subCategory3 = "";
+          } else if (field === "subCategory") {
+            updatedItem.subCategory2 = "";
+            updatedItem.subCategory3 = "";
+          } else if (field === "subCategory2") {
+            updatedItem.subCategory3 = "";
+          } else if (field === "position") {
+            updatedItem.floor = "";
+            updatedItem.room = "";
+          } else if (field === "floor") {
+            updatedItem.room = "";
+          }
+
+          return updatedItem;
+        }
+        return item;
+      })
     );
   };
 
@@ -412,10 +434,9 @@ const Summary = ({
     try {
       setIsLoading(true);
 
-      const body = [];
-      // Process updates sequentially
-      for (const item of selectedItems) {
-        const payload = {
+      // Prepare the update payload
+      const updatePayload = {
+        assets: selectedItems.map((item) => ({
           assetId: item.assetId,
           assetName: item.assetName,
           manufacturer: item.manufacturer,
@@ -426,35 +447,46 @@ const Summary = ({
           position: item.position,
           floor: item.floor,
           room: item.room,
-        };
-        body.push(payload);
-      }
-      await put(
+        })),
+      };
+
+      // Send the bulk update request
+      const response = await put(
         `/api/site/${siteSelectedForGlobal?.siteId}/assets/mutiples`,
-        {
-          assets: body,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        updatePayload,
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      toast.success("Assets updated successfully!");
-      setTimeout(() => {
-        window.location.reload(); // Full page reload
-      }, 200);
-      await getSiteAssets(siteSelectedForGlobal?.siteId);
-      setShowMultiEditModal(false);
-      setSelectedItems([]);
+      if (response.status === 200 || response.status === 201) {
+        toast.success(`Successfully updated ${selectedItems.length} assets`);
+
+        // Safari-specific reload logic
+        const isSafari = /^((?!chrome|android).)*safari/i.test(
+          navigator.userAgent
+        );
+
+        if (isSafari) {
+          // For Safari - preserves session
+          window.location.href = window.location.href;
+        } else {
+          // For other browsers - force reload
+          window.location.reload(true);
+        }
+
+        // Reset selection and close modal
+        setSelectedItems([]);
+        setShowMultiEditModal(false);
+      } else {
+        throw new Error("Failed to update assets");
+      }
     } catch (error) {
-      toast.error("An error occurred while updating assets.");
-      console.error("Update error:", error);
+      console.error("Asset update error:", error);
+      toast.error(`Error updating assets: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <Fragment>
