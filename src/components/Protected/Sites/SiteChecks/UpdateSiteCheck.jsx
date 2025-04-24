@@ -7,6 +7,8 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import InspectionElectricalFault from "./InspectionElectricalFault";
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
+import InspectionFireCertificate from "./InspectionFireCertificate";
+import InspectionFireFault from "./InspectionFireFault";
 import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample"
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
@@ -116,8 +118,10 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
   const getSiteChecks = async () => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
-    if (siteCheck.type === "Inspection") {
+    if (siteCheck.type === "Inspection" && siteCheck?.subType === "Electrical") {
       setStep("inspection-electrical")
+    } else if (siteCheck.type === "Inspection" && siteCheck?.subType === "Fire Alarm to meet BS5839") {
+      setStep("inspection-fire-alarm")
     } else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck?.subType === "Monthly Audit") {
@@ -132,9 +136,10 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       setStep("survey-water-domestic-ra")
     } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Asbestos") {
       setStep("survey-asbestos")
-  } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Water" && siteCheck.category === "Tank") {
-    setStep("survey-water-tank")
-  }
+    } else if (siteCheck.type === "Survey" && siteCheck?.subType === "Water" && siteCheck.category === "Tank") {
+      setStep("survey-water-tank")
+    }
+   
     setSiteCheck(siteCheck);
   }
 
@@ -394,6 +399,8 @@ autoComplete="off"
             </Grid></Item>
             {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-fire-alarm" && <Item><InspectionFireFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-fire-alarm" && <Item><InspectionFireCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck?.subType}/></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck?.subType} /></Item>}
