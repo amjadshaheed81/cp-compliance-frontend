@@ -28,6 +28,9 @@ import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
 import SounderAudibilty from "./SounderAudibility";
 import RefugeIntercomTesting from "./RefugeIntercomTesting";
+import ExternalLightningCertificate from "./ExternalLightningCertificate";
+import MicroWaveOvenCertificate from "./MicroWaveOvenCertificate";
+import DisabledWCAlarmCertificate from "./DisabledWCAlarmCertificate";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -123,6 +126,24 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.subType === "Emergency Lighting to meet BS5266"
     ) {
       setStep("inspection-electrical");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Electrical" &&
+      siteCheck.category === "External Lighting Testing"
+    ) {
+      setStep("inspection-electrical-lightning");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Electrical" &&
+      siteCheck.category === "Microwave Oven Testing"
+    ) {
+      setStep("inspection-electrical-microwave-oven");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Electrical" &&
+      siteCheck.category === "WC Alarm Testing"
+    ) {
+      setStep("inspection-electrical-wc-alarm");
     } else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Fire Alarm to meet BS5839" &&
@@ -432,6 +453,16 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 />
               </Item>
             )}
+            {step === "inspection-electrical-lightning" && (
+              <Item>
+                <ExternalLightningCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                />
+              </Item>
+            )}
             {step === "inspection-sounder-audibilty" && (
               <Item>
                 <SounderAudibilty
@@ -451,6 +482,24 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   category={siteCheck?.category}
                 />
               </Item>
+            )}
+            {step === "inspection-electrical-microwave-oven" && (
+              <Item>
+                <MicroWaveOvenCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-electrical-wc-alarm" && (
+              <DisabledWCAlarmCertificate
+                checkId={checkId}
+                sasToken={sasToken}
+                subType={siteCheck?.subType}
+                category={siteCheck.category}
+              />
             )}
             {step === "assessment-fire-risk" && (
               <Item>
