@@ -123,7 +123,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
           />
         </div>
       </div>
-      <div className="col-md-6 fs-5 mt-2">
+      {/* <div className="col-md-6 fs-5 mt-2">
         <div style={{ height: "250px" }}>
           <TotalAssetsPieChart
             general={chartResponse?.genral || 0}
@@ -132,7 +132,7 @@ const AssetChart = ({ siteSelectedForGlobal }) => {
             pfp={chartResponse?.pfp || 0}
           />
         </div>
-      </div>
+      </div> */}
       <div className="col-md-6 mt-2">
         <div className="col-md-12">
           <DateRangeChart data={chartResponse?.cost} />

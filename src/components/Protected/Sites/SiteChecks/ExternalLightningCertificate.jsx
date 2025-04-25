@@ -25,7 +25,7 @@ const ExternalLightningCertificate = ({
   siteSelectedForGlobal,
   loggedInUserData,
 }) => {
-  const license = JSON.parse(localStorage.getItem("license"));
+  //const license = JSON.parse(localStorage.getItem("license"));
 
   const [formData, setFormData] = useState({
     address: "",
@@ -280,7 +280,7 @@ const ExternalLightningCertificate = ({
                 className="form-control"
                 rows={3}
                 name="address"
-                value={formData.address || "" || license.companyAddress}
+                value={formData.address || ""}
                 disabled
                 style={{
                   width: "300px",

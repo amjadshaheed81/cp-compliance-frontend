@@ -24,6 +24,7 @@ import EnergyConsumption from "./EnergyConsumption/EnergyCost";
 import StatutoryRegister from "./StatutoryRegister/StatutoryRegister";
 import Actions from "./Actions/Actions";
 import BasicReports from "./BasicReports/BasicReports";
+import NewAssets from "./Assets/NewAssets";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -93,6 +94,7 @@ const Reports = ({}) => {
             >
               <Tab label="Portfolio Report" {...a11yProps(0)} />
               <Tab label="Asset Report" {...a11yProps(1)} />
+              <Tab label="New Asset Report" {...a11yProps(3)} />
               <Tab label="Contract Report" {...a11yProps(2)} />
               {/* <Tab label="Worksheet" {...a11yProps(3)} /> */}
               <Tab label="Energy Report" {...a11yProps(4)} />
@@ -112,10 +114,15 @@ const Reports = ({}) => {
             </TabPanel>
             <TabPanel value={value} index={2}>
               <div className="row">
-                <Contracts />
+                <NewAssets />
               </div>
             </TabPanel>
             <TabPanel value={value} index={3}>
+              <div className="row">
+                <Contracts />
+              </div>
+            </TabPanel>
+            <TabPanel value={value} index={4}>
               <div className="row">
                 <EnergyCost />
               </div>
@@ -125,22 +132,22 @@ const Reports = ({}) => {
                 <SiteChecks />
               </div>
             </TabPanel> */}
-            <TabPanel value={value} index={4}>
+            <TabPanel value={value} index={5}>
               <div className="row">
                 <StatutoryRegister />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={5}>
+            <TabPanel value={value} index={6}>
               <div className="row">
                 <Actions />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={6}>
+            <TabPanel value={value} index={7}>
               <div className="row">
                 <BasicReports />
               </div>
             </TabPanel>
-            <TabPanel value={value} index={7}>
+            <TabPanel value={value} index={8}>
               <div className="row">
                 <EnergyConsumption />
               </div>

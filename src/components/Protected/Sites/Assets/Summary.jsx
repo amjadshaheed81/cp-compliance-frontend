@@ -459,21 +459,7 @@ const Summary = ({
 
       if (response.status === 200 || response.status === 201) {
         toast.success(`Successfully updated ${selectedItems.length} assets`);
-
-        // Safari-specific reload logic
-        const isSafari = /^((?!chrome|android).)*safari/i.test(
-          navigator.userAgent
-        );
-
-        if (isSafari) {
-          // For Safari - preserves session
-          window.location.href = window.location.href;
-        } else {
-          // For other browsers - force reload
-          window.location.reload(true);
-        }
-
-        // Reset selection and close modal
+        
         setSelectedItems([]);
         setShowMultiEditModal(false);
       } else {
