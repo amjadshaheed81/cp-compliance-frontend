@@ -6,6 +6,9 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
+import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
+import InspectionFireCertificate from "./InspectionFireCertificate";
+import InspectionFireFault from "./InspectionFireFault";
 import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
@@ -118,17 +121,15 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
   const getSiteChecks = async () => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
+
+ 
     if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Emergency Lighting to meet BS5266"
     ) {
       setStep("inspection-electrical");
-    } else if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Fire Alarm to meet BS5839" &&
-      siteCheck.category === "Fire Alarm Sounder Audibilty"
-    ) {
-      setStep("inspection-sounder-audibilty");
+    }else if (siteCheck.type === "Inspection" && siteCheck?.subType === "Fire Alarm to meet BS5839") {
+      setStep("inspection-fire-alarm")
     } else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Fire Alarm to meet BS5839" &&
@@ -507,6 +508,30 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             )}
             <Grid sm={12}>
               <button
+
+                  style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right',  }}
+                  className="btn btn-primary btn-light"
+                  onClick={() => { navigate("/site-checks") }}
+                  id="lklkl2"
+                >
+                  Back
+                </button>
+
+              </Grid>
+
+            </Grid></Item>
+            {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-fire-alarm" && <Item><InspectionFireFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-fire-alarm" && <Item><InspectionFireCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck?.subType}/></Item>}
+            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck?.subType} /></Item>}
+            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterTemperatureMonitoring checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
+            {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-asbestos" && <Item><AsbestonSample checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-water-tank" && <Item><TankSurvey checkId={checkId} sasToken={sasToken} /></Item>}
                 style={{
                   width: "200px",
                   marginBottom: "20px",
