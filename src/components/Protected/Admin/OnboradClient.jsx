@@ -273,9 +273,7 @@ const OnboradClient = ({ }) => {
   };
 
   const selectedmodules = combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key)));
-  console.log('selectedmodules',selectedmodules)
-  console.log('selectedmodules',formData?.modules?.split(","))
-
+  
   const handleSaveSelectedSites = (data) => {
     const uformData = { ...formData }
 

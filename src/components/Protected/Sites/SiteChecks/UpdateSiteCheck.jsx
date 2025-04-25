@@ -5,7 +5,11 @@ import { toast } from "react-toastify";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
+import InspectionElectricalFault from "./InspectionElectricalFault"
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
+import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
+import InspectionFireCertificate from "./InspectionFireCertificate";
+import InspectionFireFault from "./InspectionFireFault";
 import AsbestosSurvey from "./AsbestosSurvey";
 import AsbestonSample from "./AsbestonSample";
 import AuditUnitPeriodic from "./AuditUnitPeriodic";
@@ -14,7 +18,7 @@ import Audit from "./Audit";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, getSasToken, getPdf } from "../../../../api";
+import { get, getSasToken, getPdf, getPdfFromUrl } from "../../../../api";
 import { Grid, Stack, Paper, styled } from "@mui/material";
 import {
   deleteUser,
@@ -120,87 +124,100 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
   };
 
   const getSiteChecks = async () => {
-    const siteCheck = await get("/api/site-check/check-id/" + checkId);
-    if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Emergency Lighting to meet BS5266"
-    ) {
-      setStep("inspection-electrical");
-    } else if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Electrical" &&
-      siteCheck.category === "External Lighting Testing"
-    ) {
-      setStep("inspection-electrical-lightning");
-    } else if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Electrical" &&
-      siteCheck.category === "Microwave Oven Testing"
-    ) {
-      setStep("inspection-electrical-microwave-oven");
-    } else if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Electrical" &&
-      siteCheck.category === "WC Alarm Testing"
-    ) {
-      setStep("inspection-electrical-wc-alarm");
-    } else if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Fire Alarm to meet BS5839" &&
-      siteCheck.category === "Fire Alarm Sounder Audibilty"
-    ) {
-      setStep("inspection-sounder-audibilty");
-    } else if (
-      siteCheck.type === "Inspection" &&
-      siteCheck.subType === "Fire Alarm to meet BS5839" &&
-      siteCheck.category === "Refuge Intercom Testing & Inspection"
-    ) {
-      setStep("inspection-refuge-intercom-testing");
-    } else if (siteCheck.type === "Assessment") {
-      setStep("assessment-fire-risk");
-    } else if (
-      siteCheck.type === "Audit" &&
-      siteCheck?.subType === "Monthly Audit"
-    ) {
-      setStep("audit-question");
-    } else if (
-      siteCheck.type === "Audit" &&
-      siteCheck?.subType === "Annual Winter Audit"
-    ) {
-      setStep("audit-question");
-    } else if (siteCheck.type === "Audit") {
-      setStep("audit-unit-maintenance-periodic");
-    } else if (
-      siteCheck.type === "Survey" &&
-      siteCheck?.subType === "Water" &&
-      siteCheck.category === "Water Temperature Monitoring"
-    ) {
-      setStep("survey-water-outlet-temperature");
-    } else if (
-      siteCheck.type === "Survey" &&
-      siteCheck?.subType === "Water" &&
-      siteCheck.category === "Water Risk Assessment"
-    ) {
-      setStep("survey-water-domestic-ra");
-    } else if (
-      siteCheck.type === "Survey" &&
-      siteCheck?.subType === "Asbestos"
-    ) {
-      setStep("survey-asbestos");
-    } else if (
-      siteCheck.type === "Survey" &&
-      siteCheck?.subType === "Water" &&
-      siteCheck.category === "Tank"
-    ) {
-      setStep("survey-water-tank");
-    }
-    setSiteCheck(siteCheck);
-  };
+  const siteCheck = await get("/api/site-check/check-id/" + checkId);
+
+  if (
+    siteCheck.type === "Inspection" &&
+    siteCheck.subType === "Emergency Lighting to meet BS5266"
+  ) {
+    setStep("inspection-electrical-emergency");
+  } else if (
+    siteCheck.type === "Inspection" &&
+    siteCheck.subType === "Electrical" &&
+    siteCheck.category === "External Lighting Testing"
+  ) {
+    setStep("inspection-electrical-lightning");
+  } else if (
+    siteCheck.type === "Inspection" &&
+    siteCheck.subType === "Electrical" &&
+    siteCheck.category === "Microwave Oven Testing"
+  ) {
+    setStep("inspection-electrical-microwave-oven");
+  } else if (
+    siteCheck.type === "Inspection" &&
+    siteCheck.subType === "Electrical" &&
+    siteCheck.category === "WC Alarm Testing"
+  ) {
+    setStep("inspection-electrical-wc-alarm");
+  } else if (
+    siteCheck.type === "Inspection" &&
+    siteCheck.subType === "Fire Alarm to meet BS5839" &&
+    siteCheck.category === "Fire Alarm Sounder Audibilty"
+  ) {
+    setStep("inspection-sounder-audibilty");
+  } else if (
+    siteCheck.type === "Inspection" &&
+    siteCheck.subType === "Fire Alarm to meet BS5839" &&
+    siteCheck.category === "Refuge Intercom Testing & Inspection"
+  ) {
+    setStep("inspection-refuge-intercom-testing");
+  } else if (
+    siteCheck.type === "Inspection" && 
+    siteCheck.subType === "Fire Alarm to meet BS5839"
+  ) {
+    setStep("inspection-fire-alarm");
+  } else if (siteCheck.type === "Assessment") {
+    setStep("assessment-fire-risk");
+  } else if (
+    siteCheck.type === "Audit" &&
+    siteCheck?.subType === "Monthly Audit"
+  ) {
+    setStep("audit-question");
+  } else if (
+    siteCheck.type === "Audit" &&
+    siteCheck?.subType === "Annual Winter Audit"
+  ) {
+    setStep("audit-question");
+  } else if (siteCheck.type === "Audit") {
+    setStep("audit-unit-maintenance-periodic");
+  } else if (
+    siteCheck.type === "Survey" &&
+    siteCheck?.subType === "Water" &&
+    siteCheck.category === "Water Temperature Monitoring"
+  ) {
+    setStep("survey-water-outlet-temperature");
+  } else if (
+    siteCheck.type === "Survey" &&
+    siteCheck?.subType === "Water" &&
+    siteCheck.category === "Water Risk Assessment"
+  ) {
+    setStep("survey-water-domestic-ra");
+  } else if (
+    siteCheck.type === "Survey" &&
+    siteCheck?.subType === "Asbestos"
+  ) {
+    setStep("survey-asbestos");
+  } else if (
+    siteCheck.type === "Survey" &&
+    siteCheck?.subType === "Water" &&
+    siteCheck.category === "Tank"
+  ) {
+    setStep("survey-water-tank");
+  }
+  setSiteCheck(siteCheck);
+};
 
   const handlePrint = async () => {
+    if(step === "inspection-electrical-emergency") {
+      
+      const pdfBlob = await getPdfFromUrl(`/api/site-check/emergency-lighting/pdf-report/${checkId}`);
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, "_blank");
+    } else {
     const pdfBlob = await getPdf(checkId);
     const url = URL.createObjectURL(pdfBlob);
     window.open(url, "_blank");
+    }
     // if (siteCheck.type === "Inspection" && siteCheck?.subType === "Electrical") {
     //   const pdfBlob = await getPdf(checkId);
     //   const url = URL.createObjectURL(pdfBlob);
@@ -444,7 +461,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <Grid sm={4}></Grid>
               </Grid>
             </Item>
-            {step === "inspection-electrical" && (
+            {step === "inspection-electrical-emergency" && (
               <Item>
                 <EmergencyLightingInspectionForm
                   checkId={checkId}
@@ -554,8 +571,21 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <TankSurvey checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
+           
+            {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-fire-alarm" && <Item><InspectionFireFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "inspection-fire-alarm" && <Item><InspectionFireCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
+            {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck?.subType}/></Item>}
+            {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck?.subType} /></Item>}
+            {step === "survey-water-outlet-temperature" && <Item><SurveyWaterTemperatureMonitoring checkId={checkId} sasToken={sasToken} repeatFrequency={siteCheck?.repeatFrequency}/></Item>}
+            {step === "survey-water-domestic-ra" && <Item><SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-asbestos" && <Item><AsbestonSample checkId={checkId} sasToken={sasToken} /></Item>}
+            {step === "survey-water-tank" && <Item><TankSurvey checkId={checkId} sasToken={sasToken} /></Item>}
             <Grid sm={12}>
-              <button
+            <button
                 style={{
                   width: "200px",
                   marginBottom: "20px",
