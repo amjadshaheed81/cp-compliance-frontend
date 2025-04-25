@@ -330,73 +330,7 @@ const Summary = ({
       setSelectedItems([]);
     }
   };
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          const assets = results.data
-            .map((row) => {
-              const assetId = parseInt(row.assetId);
-
-              if (isNaN(assetId) || assetId === null) {
-                return null;
-              }
-
-              return {
-                assetId: assetId,
-                assetName: row.assetName,
-                manufacturer: row.manufacturer,
-                category: row.category,
-                subCategory: row.subCategory,
-                subCategory2: row.subCategory2 || null,
-                subCategory3: row.subCategory3 || null,
-                model: row.model,
-                deviceId: row.deviceId || null,
-                serialNumber: row.serialNumber || "",
-                relatedAssetId: row.relatedAssetId || "",
-                folderId: row.folderId ? parseInt(row.folderId) : null,
-                patItem: row.patItem?.toLowerCase() === "true",
-                pfpItem: row.pfpItem?.toLowerCase() === "true",
-                doorItem: row.doorItem?.toLowerCase() === "true",
-                barcode: row.barcode || "",
-              };
-            })
-            .filter((asset) => asset !== null);
-
-          if (assets.length === 0) {
-            toast.error("No valid assets found in the file.");
-            return;
-          }
-
-          try {
-            const response = await put("/api/site/296/assets/mutiples", {
-              assets,
-            });
-
-            if (response.status === 200 || response.status === 201) {
-              toast.success("Assets updated successfully!");
-              setIsLoading(true);
-              await getSiteAssets(siteSelectedForGlobal?.siteId);
-              setTimeout(() => {
-                setIsLoading(false);
-              }, 3000);
-            } else {
-              toast.error("Failed to update assets. Please try again.");
-            }
-          } catch (error) {
-            toast.error("An error occurred while updating assets.");
-          }
-        },
-        error: (error) => {
-          toast.error("Error parsing CSV file. Please check the file format.");
-          console.error("CSV Parsing Error:", error);
-        },
-      });
-    }
-  };
+ 
 
   //Multi Asset edit handlers
   // Add this helper function outside your component
@@ -465,13 +399,7 @@ const Summary = ({
           navigator.userAgent
         );
 
-        if (isSafari) {
-          // For Safari - preserves session
-          window.location.href = window.location.href;
-        } else {
-          // For other browsers - force reload
-          window.location.reload(true);
-        }
+        getSiteAssets(siteSelectedForGlobal?.siteId);
 
         // Reset selection and close modal
         setSelectedItems([]);
