@@ -64,6 +64,7 @@ const EmergencyLightingInspectionForm = ({
     
     siteAssetId: "",
     files: [],
+    user: loggedInUserData
   });
   const [hoveredRemarksIndex, setHoveredRemarksIndex] = useState(null);
   const [completed, setCompleted] = useState(false);
@@ -71,20 +72,20 @@ const EmergencyLightingInspectionForm = ({
 
   const getInspection = async () => {
     try {
-      const data = await get("/api/site-check/inspection/" + checkId);
-      if (data && data.length > 0) {
-        const apiData = data[0];
-
+      const apiData = await get("/api/site-check/emergency-lighting/" + checkId);
+     // if (data && data.length > 0) {
+      //  const apiData = data[0];
+      if(apiData) {
         setFormData((prev) => ({
           ...prev,
-
+          id : apiData?.id  || prev.id,
           installationName: apiData?.installationName || prev.installationName,
           installationAddress: apiData?.installationAddress|| prev.installationAddress,
           bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
           bsiCategoryMode: apiData?.bsiCategoryMode || prev.bsiCategoryMode,
           bsiCategoryFacilities: apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
           bsiCategoryDuration: apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
-          
+          inspectionDate:apiData?.inspectionDate || prev.inspectionDate,
           inspectionChecks: apiData?.inspectionChecks?.length
             ? prev.inspectionChecks.map((defaultCheck, index) => ({
                 ...defaultCheck,
@@ -100,10 +101,12 @@ const EmergencyLightingInspectionForm = ({
             apiData?.allFittingsPassed || prev.allFittingsPassed,
           siteAssetId: apiData?.siteAssetId || prev.siteAssetId,
           file: apiData?.file || prev.file,
+          user:apiData?.inspectionByUser || prev.user,
         }));
 
         setCompleted(true);
-      }
+        }
+      
     } catch (error) {
       toast.error("Failed to load inspection data");
       console.error("Inspection load error:", error);
@@ -264,6 +267,7 @@ const EmergencyLightingInspectionForm = ({
         ...formData,
         siteId: siteSelectedForGlobal?.siteId || "",
         checkId,
+        inspectionBy: loggedInUserData?.id
       };
 
       // Upload file if exists
@@ -288,7 +292,6 @@ const EmergencyLightingInspectionForm = ({
         }
       }
 
-      console.log('payload',payload)
 
       // Submit inspection data
       await post("/api/site-check/emergency-lighting", payload);
@@ -317,6 +320,7 @@ const EmergencyLightingInspectionForm = ({
 
       toast.success("Inspection submitted successfully");
       setCompleted(true);
+     
     } catch (error) {
       console.error("Submission error:", error);
       toast.error("Failed to submit inspection");
@@ -674,7 +678,7 @@ const EmergencyLightingInspectionForm = ({
                 disabled
                   type="text"
                   className="form-control"
-                  value={loggedInUserData?.name || ""}
+                  value={formData.user?.name || ""}
                  
                 />
               </div>
@@ -687,7 +691,7 @@ const EmergencyLightingInspectionForm = ({
                 <input
                   type="text"
                   className="form-control"
-                  value={loggedInUserData?.role || ""}
+                  value={formData.user?.role || ""}
                   disabled
                 />
               </div>
@@ -702,7 +706,7 @@ const EmergencyLightingInspectionForm = ({
                 width="200"
                 height="50"
                 style={{border: '1px solid'}}
-                src={loggedInUserData?.signature+ "?" + sasToken} />
+                src={formData.user?.signature+ "?" + sasToken} />
                 
               </div>
             </div>
@@ -712,7 +716,8 @@ const EmergencyLightingInspectionForm = ({
                   Date
                 </label>
                 <DatePicker
-                  selected={formData?.inspectionDate || ""}
+                
+                  selected={formData.inspectionDate || ""}
                   onChange={handleDateChange}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"

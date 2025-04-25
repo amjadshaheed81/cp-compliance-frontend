@@ -18,7 +18,7 @@ import Audit from "./Audit";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, getSasToken, getPdf } from "../../../../api";
+import { get, getSasToken, getPdf, getPdfFromUrl } from "../../../../api";
 import { Grid, Stack, Paper, styled } from "@mui/material";
 import {
   deleteUser,
@@ -179,9 +179,16 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
   };
 
   const handlePrint = async () => {
+    if(step === "inspection-electrical-emergency") {
+      
+      const pdfBlob = await getPdfFromUrl(`/api/site-check/emergency-lighting/pdf-report/${checkId}`);
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, "_blank");
+    } else {
     const pdfBlob = await getPdf(checkId);
     const url = URL.createObjectURL(pdfBlob);
     window.open(url, "_blank");
+    }
     // if (siteCheck.type === "Inspection" && siteCheck?.subType === "Electrical") {
     //   const pdfBlob = await getPdf(checkId);
     //   const url = URL.createObjectURL(pdfBlob);
