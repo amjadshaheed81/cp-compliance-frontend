@@ -16,49 +16,43 @@ const EmergencyLightingInspectionForm = ({
   loggedInUserData = {},
   siteCheck = {},
 }) => {
+  const license = JSON.parse(localStorage.getItem('license'));
+  
   const [formData, setFormData] = useState({
-    client: {
-      name: "",
-      address: "",
-    },
-    installation: {
-      name: "",
-      address: "",
-    },
-    bsiCategory: {
-      type: "",
-      mode: "",
-      facilities: "",
-      duration: "",
-    },
+    
     inspectionChecks: [
       {
-        check: "All luminaires and signs are present",
+        check: 1,
+        checkQ: "All luminaires and signs are present",
         checkSelected: false,
         satisfactory: false,
         remarks: "",
       },
       {
-        check: "Test switches present, suitably sited and keys available",
+        check: 2,
+        checkQ: "Test switches present, suitably sited and keys available",
         satisfactory: false,
         checkSelected: false,
         remarks: "",
       },
       {
-        check: "Lenses and legends are clean, unpainted & undamaged",
+        check: 3,
+        checkQ: "Lenses and legends are clean, unpainted & undamaged",
         satisfactory: false,
         checkSelected: false,
         remarks: "",
       },
       {
-        check:
+        check: 4,
+        checkQ:
           "Luminaires functioning correctly & have lasted the duration of the test",
         satisfactory: false,
         checkSelected: false,
         remarks: "",
       },
       {
-        check:
+        check: 5,
+        checkQ:
           "All luminaires switched over & charging LED's lit on completion of test",
         satisfactory: false,
         checkSelected: false,
@@ -67,12 +61,7 @@ const EmergencyLightingInspectionForm = ({
     ],
     additionalComments: "",
     allFittingsPassed: false,
-    inspector: {
-      name: (loggedInUserData && loggedInUserData?.name) || "",
-      position: "",
-      signature: "",
-      date: new Date(),
-    },
+    
     siteAssetId: "",
     files: [],
   });
@@ -87,33 +76,15 @@ const EmergencyLightingInspectionForm = ({
         const apiData = data[0];
 
         setFormData((prev) => ({
-          // Start with the previous state
           ...prev,
 
-          // Merge client data safely
-          client: {
-            name: apiData?.client?.name || prev.client.name,
-            address: apiData?.client?.address || prev.client.address,
-          },
-
-          // Merge installation data safely
-          installation: {
-            name: apiData?.installation?.name || prev.installation.name,
-            address:
-              apiData?.installation?.address || prev.installation.address,
-          },
-
-          // Merge BSI category data safely
-          bsiCategory: {
-            type: apiData?.bsiCategory?.type || prev.bsiCategory.type,
-            mode: apiData?.bsiCategory?.mode || prev.bsiCategory.mode,
-            facilities:
-              apiData?.bsiCategory?.facilities || prev.bsiCategory.facilities,
-            duration:
-              apiData?.bsiCategory?.duration || prev.bsiCategory.duration,
-          },
-
-          // Merge inspection checks safely - ensure we always have all checks
+          installationName: apiData?.installationName || prev.installationName,
+          installationAddress: apiData?.installationAddress|| prev.installationAddress,
+          bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
+          bsiCategoryMode: apiData?.bsiCategoryMode || prev.bsiCategoryMode,
+          bsiCategoryFacilities: apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
+          bsiCategoryDuration: apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
+          
           inspectionChecks: apiData?.inspectionChecks?.length
             ? prev.inspectionChecks.map((defaultCheck, index) => ({
                 ...defaultCheck,
@@ -129,17 +100,6 @@ const EmergencyLightingInspectionForm = ({
             apiData?.allFittingsPassed || prev.allFittingsPassed,
           siteAssetId: apiData?.siteAssetId || prev.siteAssetId,
           file: apiData?.file || prev.file,
-
-          // Merge inspector data safely
-          inspector: {
-            name: apiData?.inspector?.name || prev.inspector.name,
-            position: apiData?.inspector?.position || prev.inspector.position,
-            signature:
-              apiData?.inspector?.signature || prev.inspector.signature,
-            date: apiData?.inspector?.date
-              ? new Date(apiData.inspector.date)
-              : prev.inspector.date,
-          },
         }));
 
         setCompleted(true);
@@ -157,24 +117,16 @@ const EmergencyLightingInspectionForm = ({
     }
   }, []);
 
-  const handleInputChange = (e, section, field) => {
+  const handleInputChange = (e, field) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
 
-    if (section) {
-      setFormData((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value,
-        },
-      }));
-    } else {
+   
       setFormData((prev) => ({
         ...prev,
         [field]: value,
       }));
-    }
+    
   };
 
   const handleCheckChange = (index, field, value) => {
@@ -282,10 +234,7 @@ const EmergencyLightingInspectionForm = ({
   const handleDateChange = (date) => {
     setFormData((prev) => ({
       ...prev,
-      inspector: {
-        ...prev.inspector,
-        date: date || new Date(),
-      },
+      inspectionDate: date || new Date()
     }));
   };
 
@@ -339,30 +288,32 @@ const EmergencyLightingInspectionForm = ({
         }
       }
 
+      console.log('payload',payload)
+
       // Submit inspection data
-      await post("/api/site-check/inspection/fault", payload);
+      await post("/api/site-check/emergency-lighting", payload);
 
       // Create action item
-      if (siteSelectedForGlobal?.siteId && loggedInUserData?.id) {
-        const actionData = {
-          type: "Inspection",
-          status: "Reported",
-          observation: "Emergency Lighting Inspection",
-          desc: `${siteCheck?.type || "Emergency Lighting"} - ${moment().format(
-            "DD/MM/YYYY"
-          )}`,
-          requiredAction: "Review inspection results",
-          riskScore: calculateRiskScore(),
-          dueDate: new Date(),
-          createdAt: new Date(),
-          siteId: siteSelectedForGlobal.siteId,
-          userId: loggedInUserData.id,
-          actionImage: certificateUrls,
-          taggedAsset: formData.siteAssetId,
-        };
+      // if (siteSelectedForGlobal?.siteId && \oggedInUserData?.id) {
+      //   const actionData = {
+      //     type: "Inspection",
+      //     status: "Reported",
+      //     observation: "Emergency Lighting Inspection",
+      //     desc: `${siteCheck?.type || "Emergency Lighting"} - ${moment().format(
+      //       "DD/MM/YYYY"
+      //     )}`,
+      //     requiredAction: "Review inspection results",
+      //     riskScore: calculateRiskScore(),
+      //     dueDate: new Date(),
+      //     createdAt: new Date(),
+      //     siteId: siteSelectedForGlobal.siteId,
+      //     userId: loggedInUserData.id,
+      //     actionImage: certificateUrls,
+      //     taggedAsset: formData.siteAssetId,
+      //   };
 
-        await put("/api/site/actions", actionData);
-      }
+      //   await put("/api/site/actions", actionData);
+      // }
 
       toast.success("Inspection submitted successfully");
       setCompleted(true);
@@ -407,11 +358,11 @@ const EmergencyLightingInspectionForm = ({
               <div className="mb-3">
                 <label className="form-label">Name</label>
                 <input
+                disabled
                   type="text"
                   className="form-control"
-                  value={formData?.client?.name || ""}
-                  onChange={(e) => handleInputChange(e, "client", "name")}
-                  required
+                  value={license?.companyName}
+                  
                 />
               </div>
             </div>
@@ -419,11 +370,11 @@ const EmergencyLightingInspectionForm = ({
               <div className="mb-3">
                 <label className="form-label">Address</label>
                 <textarea
-                  rows={2}
+                disabled
+                  rows={4}
                   className="form-control"
-                  value={formData?.client?.address || ""}
-                  onChange={(e) => handleInputChange(e, "client", "address")}
-                  required
+                  value={license?.companyAddress}
+                  
                 />
               </div>
             </div>
@@ -434,29 +385,29 @@ const EmergencyLightingInspectionForm = ({
           <div className="row mb-3">
             <div className="col-md-6">
               <div className="mb-3">
-                <label htmlFor="installation.name" className="form-label">
+                <label htmlFor="installationName" className="form-label">
                   Name
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  value={formData?.installation?.name || ""}
-                  onChange={(e) => handleInputChange(e, "installation", "name")}
+                  value={formData?.installationName || ""}
+                  onChange={(e) => handleInputChange(e, "installationName")}
                   required
                 />
               </div>
             </div>
             <div className="col-md-6">
               <div className="mb-3">
-                <label htmlFor="installation.address" className="form-label">
+                <label htmlFor="installationAddress" className="form-label">
                   Address
                 </label>
                 <textarea
                   rows={2}
                   className="form-control"
-                  value={formData?.installation?.address || ""}
+                  value={formData?.installationAddress || ""}
                   onChange={(e) =>
-                    handleInputChange(e, "installation", "address")
+                    handleInputChange(e, "installationAddress")
                   }
                   required
                 />
@@ -469,55 +420,55 @@ const EmergencyLightingInspectionForm = ({
           <div className="row mb-3">
             <div className="col-md-3">
               <div className="mb-3">
-                <label htmlFor="bsiCategory.type" className="form-label">
+                <label htmlFor="bsiCategoryType" className="form-label">
                   Type
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  value={formData?.bsiCategory?.type || ""}
-                  onChange={(e) => handleInputChange(e, "bsiCategory", "type")}
+                  value={formData?.bsiCategoryType || ""}
+                  onChange={(e) => handleInputChange(e, "bsiCategoryType")}
                 />
               </div>
             </div>
             <div className="col-md-3">
               <div className="mb-3">
-                <label htmlFor="bsiCategory.mode" className="form-label">
+                <label htmlFor="bsiCategoryMode" className="form-label">
                   Mode
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  value={formData?.bsiCategory?.mode || ""}
-                  onChange={(e) => handleInputChange(e, "bsiCategory", "mode")}
+                  value={formData?.bsiCategoryMode || ""}
+                  onChange={(e) => handleInputChange(e, "bsiCategoryMode")}
                 />
               </div>
             </div>
             <div className="col-md-3">
               <div className="mb-3">
-                <label htmlFor="bsiCategory.facilities" className="form-label">
+                <label htmlFor="bsiCategoryFacilities" className="form-label">
                   Facilities
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  value={formData?.bsiCategory?.facilities || ""}
+                  value={formData?.bsiCategoryFacilities || ""}
                   onChange={(e) =>
-                    handleInputChange(e, "bsiCategory", "facilities")
+                    handleInputChange(e, "bsiCategoryFacilities")
                   }
                 />
               </div>
             </div>
             <div className="col-md-3">
               <div className="mb-3">
-                <label htmlFor="bsiCategory.duration" className="form-label">
+                <label htmlFor="bsiCategoryDuration" className="form-label">
                   Duration
                 </label>
                 <select
                   className="form-select"
-                  value={formData?.bsiCategory?.duration || ""}
+                  value={formData?.bsiCategoryDuration || ""}
                   onChange={(e) =>
-                    handleInputChange(e, "bsiCategory", "duration")
+                    handleInputChange(e, "bsiCategoryDuration")
                   }
                 >
                   <option value="">Select</option>
@@ -557,7 +508,7 @@ const EmergencyLightingInspectionForm = ({
                         }
                       />
                       <label className="form-check-label">
-                        {check?.check || ""}
+                        {check?.checkQ || ""}
                       </label>
                     </div>
                   </td>
@@ -630,7 +581,7 @@ const EmergencyLightingInspectionForm = ({
               rows={4}
               className="form-control"
               value={formData?.additionalComments || ""}
-              onChange={(e) => handleInputChange(e, null, "additionalComments")}
+              onChange={(e) => handleInputChange(e, "additionalComments")}
               placeholder="Please provide Information"
             />
           </div>
@@ -713,18 +664,18 @@ const EmergencyLightingInspectionForm = ({
 
           {/* Inspector Details Section */}
           <h5 className="mb-3">For the Inspection & Test of the system:</h5>
-          <div className="row mb-4">
+          <div className="row mb-3">
             <div className="col-md-4">
               <div className="mb-3">
                 <label htmlFor="inspector.name" className="form-label">
                   Name
                 </label>
                 <input
+                disabled
                   type="text"
                   className="form-control"
-                  value={formData?.inspector?.name || ""}
-                  onChange={(e) => handleInputChange(e, "inspector", "name")}
-                  required
+                  value={loggedInUserData?.name || ""}
+                 
                 />
               </div>
             </div>
@@ -736,11 +687,8 @@ const EmergencyLightingInspectionForm = ({
                 <input
                   type="text"
                   className="form-control"
-                  value={formData?.inspector?.position || ""}
-                  onChange={(e) =>
-                    handleInputChange(e, "inspector", "position")
-                  }
-                  required
+                  value={loggedInUserData?.role || ""}
+                  disabled
                 />
               </div>
             </div>
@@ -749,15 +697,13 @@ const EmergencyLightingInspectionForm = ({
                 <label htmlFor="inspector.signature" className="form-label">
                   Signature
                 </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData?.inspector?.signature || ""}
-                  onChange={(e) =>
-                    handleInputChange(e, "inspector", "signature")
-                  }
-                  required
-                />
+                <br />
+                <img 
+                width="200"
+                height="50"
+                style={{border: '1px solid'}}
+                src={loggedInUserData?.signature+ "?" + sasToken} />
+                
               </div>
             </div>
             <div className="col-md-2">
@@ -766,7 +712,7 @@ const EmergencyLightingInspectionForm = ({
                   Date
                 </label>
                 <DatePicker
-                  selected={formData?.inspector?.date || ""}
+                  selected={formData?.inspectionDate || ""}
                   onChange={handleDateChange}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
@@ -794,7 +740,6 @@ const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets || [],
   siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
   loggedInUserData: state.site.loggedInUserData || {},
-  sasToken: state.site.sasToken,
   siteCheck: state.site.siteCheck || {},
 });
 

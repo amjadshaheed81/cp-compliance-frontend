@@ -182,7 +182,6 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   
   function renderEventContent(eventInfo) {
     const title = JSON.parse(eventInfo.event.title);
-    console.log('title',title)
     return (
       <>
         <p onClick={() => msg(eventInfo.event)} style={{ overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>

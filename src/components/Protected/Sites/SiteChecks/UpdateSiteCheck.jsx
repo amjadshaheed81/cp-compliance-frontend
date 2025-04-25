@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
+import InspectionElectricalFault from "./InspectionElectricalFault"
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import InspectionFireCertificate from "./InspectionFireCertificate";
@@ -127,7 +128,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Emergency Lighting to meet BS5266"
     ) {
-      setStep("inspection-electrical");
+      setStep("inspection-electrical-emergency");
     }else if (siteCheck.type === "Inspection" && siteCheck?.subType === "Fire Alarm to meet BS5839") {
       setStep("inspection-fire-alarm")
     } else if (
@@ -424,7 +425,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <Grid sm={4}></Grid>
               </Grid>
             </Item>
-            {step === "inspection-electrical" && (
+            {step === "inspection-electrical-emergency" && (
               <Item>
                 <EmergencyLightingInspectionForm
                   checkId={checkId}
@@ -506,20 +507,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <TankSurvey checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
-            <Grid sm={12}>
-              <button
-
-                  style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right',  }}
-                  className="btn btn-primary btn-light"
-                  onClick={() => { navigate("/site-checks") }}
-                  id="lklkl2"
-                >
-                  Back
-                </button>
-
-              </Grid>
-
-            </Grid></Item>
+           
             {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
             {step === "inspection-fire-alarm" && <Item><InspectionFireFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck}/></Item>}
@@ -532,6 +520,8 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "survey-asbestos" && <Item><AsbestosSurvey checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-asbestos" && <Item><AsbestonSample checkId={checkId} sasToken={sasToken} /></Item>}
             {step === "survey-water-tank" && <Item><TankSurvey checkId={checkId} sasToken={sasToken} /></Item>}
+            <Grid sm={12}>
+            <button
                 style={{
                   width: "200px",
                   marginBottom: "20px",

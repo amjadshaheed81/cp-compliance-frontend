@@ -208,7 +208,6 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
 
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);
-    console.log('title',title)
     return (
       <>
         <p>
