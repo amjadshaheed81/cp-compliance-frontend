@@ -229,3 +229,18 @@ export async function getPdf(id) {
     return handleError(error);
   }
 }
+
+export async function getPdfFromUrl(url) {
+  configAxios();
+  try {
+    const { data } = await axiosInstance({
+      method: "GET",
+      url: url,
+      headers: getHeaders(),
+      responseType: "blob",
+    });
+    return data;
+  } catch (error) {
+    return handleError(error);
+  }
+}

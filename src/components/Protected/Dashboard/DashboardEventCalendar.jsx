@@ -66,7 +66,8 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   }
 
   const handleAccept = () => {
-    del(`/api/user/calendar/${currentInvite?.calendarId}/delete`);
+    
+   del(`/api/user/calendar/${currentInvite?.calendarId}/delete`);
     const calenderBody = {
       siteId: currentInvite?.siteId,
       startDate: moment(currentInvite.startDate),
@@ -81,10 +82,12 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       startTime: currentInvite.startTime,
       endTime: currentInvite.endTime,
     };
+    console.log('currentInvite',currentInvite,calenderBody)
     put('/api/user/calendar', calenderBody);
     calenderBody.userId = currentInvite.param;
     put('/api/user/calendar', calenderBody);
-    setOpenInvite(false);
+   setOpenInvite(false);
+   getData();
   };
 
   const dismiss = async () => {
@@ -128,6 +131,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       await put(`/api/user/calendar`, updatedInvite);
       setIsEditingTime(false);
       setOpenInvite(false);
+      getData();
     
   };
 
@@ -204,13 +208,12 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
 
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);
-    console.log('title',title)
     return (
       <>
         <p>
           {title?.map((itm, index) => (
             <>
-              <Tooltip title={itm?.label} arrow>
+              <Tooltip title={(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) ? `${itm?.label} Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
                 {itm?.type?.includes("Audit") && (
                   <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-primary" >{itm?.type}</span></p>
                 )}
