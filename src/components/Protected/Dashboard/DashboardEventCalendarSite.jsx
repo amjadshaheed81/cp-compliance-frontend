@@ -72,7 +72,7 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
            
           {title?.map((itm, index) => (
             <>
-           <Tooltip title={itm?.label} arrow>
+           <Tooltip title={(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) ? `${itm?.label} Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
            {/* <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-primary">{itm?.label}</span></p> */}
            {itm?.type?.includes("Audit") && (
              <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-primary" >{itm?.type}</span></p>
