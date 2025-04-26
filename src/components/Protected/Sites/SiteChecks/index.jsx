@@ -708,7 +708,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                     );
                                   }}
                                 >
-                                  <i className="fas fa-eye"></i>
+                                  <i className="fas fa-eye" />|
+                                  <i className="fas fa-pen" />
                                 </button>{" "}
                               </Tooltip>
                               <Tooltip title={`${action?.type} Copy As`} arrow>
