@@ -5,6 +5,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getSiteAssets, getUsers } from "../../../../store/thunk/site";
 import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
+import { Grid } from "@mui/material";
 
 const InspectionFireCertificate = ({
   checkId,
@@ -51,6 +52,32 @@ const InspectionFireCertificate = ({
         check: 5,
         checkQ:
           "Printers have been checked, text is legible and supplies available",
+        checkSelected: false,
+        remarks: "",
+      },
+      {
+        check: 6,
+        checkQ: "CIE functions checked for correct operation",
+        checkSelected: false,
+        remarks: "",
+      },
+      {
+        check: 7,
+        checkQ: "The control equipment is in overall good condition",
+        checkSelected: false,
+        remarks: "",
+      },
+      {
+        check: 8,
+        checkQ:
+          "The buildings structure, occupancy and layout have not changed",
+        checkSelected: false,
+        remarks: "",
+      },
+      {
+        check: 9,
+        checkQ:
+          "System log book examined & faults recorded have been attended to",
         checkSelected: false,
         remarks: "",
       },
@@ -458,6 +485,7 @@ const InspectionFireCertificate = ({
                             e.target.checked
                           )
                         }
+                        style={{ marginRight: "20px" }}
                       />
                       <label className="form-check-label">
                         {check?.checkQ || ""}
@@ -500,9 +528,296 @@ const InspectionFireCertificate = ({
               ))}
             </tbody>
           </table>
+          <div className="card mb-4">
+            <div
+              className="card-header bg-primary text-white"
+              style={{ fontSize: "18px" }}
+            >
+              Battery Information
+            </div>
+            <div className="card-body">
+              <table className="table">
+                <tbody>
+                  <tr>
+                    <td style={{ width: "40%", verticalAlign: "top" }}>
+                      <table className="table table-borderless">
+                        <tr>
+                          <td>
+                            <div className="form-group mb-3">
+                              <label htmlFor="batteryCount">
+                                Number of Batteries
+                              </label>
+                              <input
+                                type="number"
+                                className="form-control"
+                                id="batteryCount"
+                                min="0"
+                                max="2"
+                                value={formData?.batteryCount || ""}
+                                onChange={(e) =>
+                                  handleInputChange(e, "batteryCount")
+                                }
+                              />
+                              <small>
+                                (for more than 2, record results on a separate
+                                numbered page)
+                              </small>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <div className="form-group mb-3">
+                              <label htmlFor="batteryVoltage">
+                                Battery Voltage
+                              </label>
+                              <div className="input-group">
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  id="batteryVoltage"
+                                  step="0.1"
+                                  value={formData?.batteryVoltage || ""}
+                                  onChange={(e) =>
+                                    handleInputChange(e, "batteryVoltage")
+                                  }
+                                />
+                                <span className="input-group-text">V</span>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <div className="form-group mb-3">
+                              <label htmlFor="batteryCapacity">
+                                Battery Capacity
+                              </label>
+                              <div className="row g-2">
+                                <div className="col-12">
+                                  <div className="input-group">
+                                    <input
+                                      type="number"
+                                      className="form-control"
+                                      id="batteryCapacity"
+                                      min="0"
+                                      value={formData?.batteryCapacity || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryCapacity")
+                                      }
+                                    />
+                                    <span className="input-group-text">Ah</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <small>
+                                (if batteries are vented, make a note in the
+                                observations section)
+                              </small>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+
+                    <td style={{ width: "60%", verticalAlign: "top" }}>
+                      <table className="table table-borderless">
+                        <tr>
+                          <td>
+                            <div className="form-group mb-3">
+                              <label>Battery A</label>
+                              <div className="row g-2">
+                                <div className="col-4">
+                                  <div className="input-group">
+                                    <span className="input-group-text">
+                                      Voltage
+                                    </span>
+                                    <input
+                                      type="text"
+                                      className="form-control"
+                                      value={formData?.batteryAVoltage || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryAVoltage")
+                                      }
+                                    />
+                                    <span className="input-group-text">V</span>
+                                  </div>
+                                </div>
+                                <div className="col-4">
+                                  <div className="input-group">
+                                    <span className="input-group-text">
+                                      Charge
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      className="form-control"
+                                      value={formData?.batteryACharge || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryACharge")
+                                      }
+                                    />
+                                    <span className="input-group-text">Ah</span>
+                                  </div>
+                                </div>
+                                <div className="col-4">
+                                  <div className="input-group">
+                                    <span className="input-group-text">
+                                      Date
+                                    </span>
+                                    <input
+                                      type="date"
+                                      className="form-control"
+                                      value={formData?.batteryADate || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryADate")
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <div className="form-group mb-3">
+                              <label>Battery B</label>
+                              <div className="row g-2">
+                                <div className="col-4">
+                                  <div className="input-group">
+                                    <span className="input-group-text">
+                                      Voltage
+                                    </span>
+                                    <input
+                                      type="text"
+                                      className="form-control"
+                                      value={formData?.batteryBVoltage || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryBVoltage")
+                                      }
+                                    />
+                                    <span className="input-group-text">V</span>
+                                  </div>
+                                </div>
+                                <div className="col-4">
+                                  <div className="input-group">
+                                    <span className="input-group-text">
+                                      Charge
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      className="form-control"
+                                      value={formData?.batteryBCharge || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryBCharge")
+                                      }
+                                    />
+                                    <span className="input-group-text">Ah</span>
+                                  </div>
+                                </div>
+                                <div className="col-4">
+                                  <div className="input-group">
+                                    <span className="input-group-text">
+                                      Date
+                                    </span>
+                                    <input
+                                      type="date"
+                                      className="form-control"
+                                      value={formData?.batteryBDate || ""}
+                                      onChange={(e) =>
+                                        handleInputChange(e, "batteryBDate")
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td colspan="2">
+                      <small className="mb-3">
+                        (For category M systems, enter not applicable “N/A”)
+                      </small>
+                      <div className="form-group">
+                        <label style={{ display: "block", lineHeight: "2" }}>
+                          During the past 12 months,{" "}
+                          <input
+                            type="number"
+                            className="form-control d-inline-block"
+                            style={{
+                              width: "60px",
+                              display: "inline",
+                              // Hide spin buttons in all browsers
+                              MozAppearance: "textfield",
+                              "&::-webkit-outer-spin-button, &::-webkit-inner-spin-button":
+                                {
+                                  WebkitAppearance: "none",
+                                  margin: 0,
+                                },
+                              appearance: "textfield",
+                              margin: "0 5px",
+                              padding: "6px 12px",
+                            }}
+                            value={formData?.falseAlarmsCount || 0}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              handleInputChange(e, "falseAlarmsCount");
+                              setFormData((prev) => ({
+                                ...prev,
+                                falseAlarmsPer100: value,
+                              }));
+                            }}
+                          />{" "}
+                          false alarms have occurred. The number of false alarms
+                          equates to{" "}
+                          <input
+                            type="number"
+                            className="form-control d-inline-block"
+                            style={{
+                              width: "60px",
+                              display: "inline",
+                              // Hide spin buttons in all browsers
+                              MozAppearance: "textfield",
+                              "&::-webkit-outer-spin-button, &::-webkit-inner-spin-button":
+                                {
+                                  WebkitAppearance: "none",
+                                  margin: 0,
+                                },
+                              appearance: "textfield",
+                              margin: "0 5px",
+                              padding: "6px 12px",
+                            }}
+                            value={formData?.falseAlarmsPer100 || 0}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              handleInputChange(e, "falseAlarmsPer100");
+                              setFormData((prev) => ({
+                                ...prev,
+                                falseAlarmsCount: value,
+                              }));
+                            }}
+                          />{" "}
+                          false alarms per 100 AFD's per annum.
+                        </label>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           {/* Additional Comments Section */}
-          <h5 className="mb-1">Additional Comments & Deviations</h5>
+          <h5 className="mb-1">
+            The following work/action is considered necessary:
+          </h5>
           <p
             className="mb-2"
             style={{
@@ -517,7 +832,7 @@ const InspectionFireCertificate = ({
           </p>
           <div className="mb-4">
             <textarea
-              rows={4}
+              rows={8}
               className="form-control"
               value={formData?.additionalComments || ""}
               onChange={(e) => handleInputChange(e, "additionalComments")}
@@ -527,77 +842,23 @@ const InspectionFireCertificate = ({
 
           {/* File Upload Section */}
           {/* File Upload Section */}
-          <div className="mb-4">
-            <label htmlFor="files" className="form-label">
-              Upload Supporting Documents (Max{" "}
-              {FILE_VALIDATION_CONFIG.MAX_FILE_COUNT} files,{" "}
-              {FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024}MB total)
-            </label>
-            <input
-              type="file"
-              className="form-control"
-              onChange={handleFileChange}
-              multiple
-              accept={FILE_VALIDATION_CONFIG.ALLOWED_TYPES.join(",")}
-              id="files"
-            />
-
-            {/* Display file size information */}
-            <small className="text-muted">
-              Accepted formats: JPG, PNG, PDF, DOC, DOCX. Max{" "}
-              {FILE_VALIDATION_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB per file.
-            </small>
-
-            {/* Display uploaded files with size information */}
-            {formData.files.length > 0 && (
-              <div className="mt-3">
-                <h6>Selected Files:</h6>
-                <ul className="list-group">
-                  {formData.files.map((file, index) => (
-                    <li
-                      key={index}
-                      className="list-group-item d-flex justify-content-between align-items-center"
-                    >
-                      <div>
-                        <span className="d-block">{file.name}</span>
-                        <small className="text-muted">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleFileDelete(index)}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-2 text-end">
-                  <small>
-                    Total:{" "}
-                    {formData.files.reduce((sum, file) => sum + file.size, 0) /
-                      1024 /
-                      1024}{" "}
-                    MB /{FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024} MB
-                  </small>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Certification Statement */}
           <div className="border p-3 mb-4 bg-light">
             <p>
-              We hereby certify that the emergency lighting system installation
-              at the above premises has been inspected and tested by us in
-              accordance with BS 5266-1: 2011, and to the best of our knowledge
-              and belief, the installation complies at the time of inspection
-              and testing with the recommendations given in BS 5266. Emergency
-              lighting Part 1:2011. Code of practice for the Emergency lighting
-              of premises, published by the BSI for a category (stated above)
-              except as stated in the deviations above.
+              I/We being the competent person(s) responsible (as indicated by
+              my/our signature(s) below) for the inspection and servicing of the
+              fire alarm system, particulars of which are set out above, CERTIFY
+              that the said work for which I/we have been responsible complies
+              to the best of my/our knowledge and belief with the
+              recommendations of Clause 45 of BS 5839–1: 2013 quarterly
+              inspection of vented batteries/periodic inspection and test over a
+              12 month period except for the variations, if any, stated in this
+              certificate. I/We further declare that in my/our judgement, the
+              said system was overall in (tick appropriate box) a satisfactory
+              an unsatisfactory condition at the time the inspection and
+              servicing was carried out, and that it should be further inspected
+              as recommended.
             </p>
           </div>
 
