@@ -50,6 +50,8 @@ const Reading = ({
     const data = { ...formData };
 
     data.readingDate = new Date(data.readingDate);
+    data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh"
+
     data.energyId = survey.energyId;
     saveData(data);
     setOpen(false);
@@ -173,12 +175,13 @@ const Reading = ({
                 <Grid sm={4}>
                   <label for="readingUnit">Unit</label>
                   <select
-                    disabled={isView}
+                    //disabled={isView}
                     name="readingUnit"
                     className="form-control form-select"
                     id="readingUnit"
-                    value={survey?.readingUnit}
-                    onChange={handleInputChange}
+                    value={survey?.budgetCategory === "Gas" ?  "M3" : "Kwh"}
+                    //onChange={handleInputChange}
+                    disabled
                     required
                   >
                     <option value="">Reading Unit</option>

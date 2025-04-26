@@ -83,11 +83,7 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
             metrics.monthlyData[month].electricity += consumptionKwh;
           } else if (energyItem.budgetCategory === "Gas") {
             consumptionKwh = current.readingValue - previous.readingValue;
-            if (current.readingUnit === 'M3') {
-              consumptionKwh = convertGasToKWh(consumptionKwh) *  0.19;
-            } else {
-              consumptionKwh = consumptionKwh *  0.19;
-            }
+            consumptionKwh = convertGasToKWh(consumptionKwh);
             metrics.totalGasKwh += consumptionKwh;
             metrics.monthlyData[month].gas += consumptionKwh;
           }
