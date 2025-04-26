@@ -5,7 +5,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getSiteAssets, getUsers } from "../../../../store/thunk/site";
 import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
-import moment from "moment";
 
 const EmergencyLightingInspectionForm = ({
   checkId,

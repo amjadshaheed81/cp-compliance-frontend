@@ -41,7 +41,7 @@ const NewAssetChart = ({ siteSelectedForGlobal }) => {
       showLoader({
         title: "Please wait. We are collecting data for assets...",
       });
-      let url = `/api/site/assets/all/v2`;
+      let url = `/api/site/assets-valuation/all/v2`;
       let params = {};
       if (state.isIndividualSite) {
         params = { ...params, siteId: siteSelectedForGlobal?.siteId };
@@ -100,26 +100,6 @@ const NewAssetChart = ({ siteSelectedForGlobal }) => {
             inputProps={{ "aria-label": "controlled" }}
           />
           <label>Individual Site</label>
-        </div>
-        <div className="col-md-3 col-sm-4 mt-2">
-          <label>Start Date Range</label>
-          <input
-            type="date"
-            className="form-control"
-            value={startDate}
-            onChange={handleDateChange(setStartDate)}
-            placeholder="Start Date"
-          />
-        </div>
-        <div className="col-md-3 col-sm-4 mt-2">
-          <label>End Date Range</label>
-          <input
-            type="date"
-            className="form-control"
-            value={endDate}
-            onChange={handleDateChange(setEndDate)}
-            placeholder="End Date"
-          />
         </div>
       </div>
       {/* <div className="col-md-6 fs-5 mt-2">
