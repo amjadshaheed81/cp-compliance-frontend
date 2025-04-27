@@ -125,7 +125,7 @@ const SounderAudibilityForm = ({
         ...prev,
         selectedAsset: newValue,
         manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.modelNumber || "",
+        modelNumber: newValue.model || "",
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
