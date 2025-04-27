@@ -196,9 +196,9 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
                 <div className="col-md-4 col-sm-4 mt-2">
                   <input
                     type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                    autoComplete="off"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     placeholder="Search"
                     name="searchField"
@@ -251,16 +251,32 @@ autoComplete="off"
                   <th scope="col">Description</th>
                   <th scope="col">Observation</th>
                   <th scope="col">Required Action</th>
-                  <th scope="col" onClick={() => requestSort("dueDate")} style={{ cursor: 'pointer' }}>
+                  <th
+                    scope="col"
+                    onClick={() => requestSort("dueDate")}
+                    style={{ cursor: "pointer" }}
+                  >
                     Due Date{" "}
                     {sortConfig.key === "dueDate" && (
-                      <i className={`fas fa-sort-${sortConfig.direction === "asc" ? "up" : "down"}`}></i>
+                      <i
+                        className={`fas fa-sort-${
+                          sortConfig.direction === "asc" ? "up" : "down"
+                        }`}
+                      ></i>
                     )}
                   </th>
-                  <th scope="col" onClick={() => requestSort("riskScore")} style={{ cursor: 'pointer' }}>
+                  <th
+                    scope="col"
+                    onClick={() => requestSort("riskScore")}
+                    style={{ cursor: "pointer" }}
+                  >
                     Risk Score{" "}
                     {sortConfig.key === "riskScore" && (
-                      <i className={`fas fa-sort-${sortConfig.direction === "asc" ? "up" : "down"}`}></i>
+                      <i
+                        className={`fas fa-sort-${
+                          sortConfig.direction === "asc" ? "up" : "down"
+                        }`}
+                      ></i>
                     )}
                   </th>
                   <th scope="col">Status</th>
@@ -274,13 +290,18 @@ autoComplete="off"
                   </tr>
                 )}
                 {currentActions?.map((action) => (
-                  <tr key={action?.id}>
+                  <tr key={action?.actionId}>
                     <th scope="col">{action?.type}</th>
                     <th scope="col">{action?.actionId}</th>
                     <th scope="col">{action?.desc}</th>
                     <th scope="col">{action?.observation}</th>
                     <th scope="col">{action?.requiredAction}</th>
-                    <th scope="col" style={{ width: "120px" }}>{ getTimeRemaining(action?.createdAt ? action?.createdAt : action?.dueDate, action?.riskScore) }</th>
+                    <th scope="col" style={{ width: "120px" }}>
+                      {getTimeRemaining(
+                        action?.createdAt ? action?.createdAt : action?.dueDate,
+                        action?.riskScore
+                      )}
+                    </th>
                     <th scope="col">
                       {" "}
                       <span
