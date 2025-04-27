@@ -4,9 +4,10 @@ import { showLoader, hideLoader } from "js-loader-fn";
 import { get } from "../../../../api";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { Switch } from "@mui/material";
-import DateRangeChart from "./DateRangeChart";
-import DateRangeChartQuantity from "./DateRangeChartQuantity";
-import CostsBySite from "./CostsBySite";
+
+
+import ValuationBySite from "./ValuationBySite";
+
 
 const NewAssetChart = ({ siteSelectedForGlobal }) => {
   const [chartResponse, setChartResponse] = useState();
@@ -102,26 +103,10 @@ const NewAssetChart = ({ siteSelectedForGlobal }) => {
           <label>Individual Site</label>
         </div>
       </div>
-      {/* <div className="col-md-6 fs-5 mt-2">
-        <div style={{ height: "250px" }}>
-          <TotalAssetsPieChart
-            general={chartResponse?.genral || 0}
-            doors={chartResponse?.door || 0}
-            pat={chartResponse?.pat || 0}
-            pfp={chartResponse?.pfp || 0}
-          />
-        </div>
-      </div> */}
-      <div className="col-md-6 mt-2">
-        <div className="col-md-12">
-          <DateRangeChart data={chartResponse?.cost} />
-        </div>
-        <div className="col-md-12">
-          <DateRangeChartQuantity data={chartResponse?.quantity} />
-        </div>
-      </div>
+
+
       <div className="col-md-6 mt-4">
-        <CostsBySite data={chartResponse?.costSite} />
+        <ValuationBySite data={chartResponse?.valuation} />
       </div>
     </div>
   );
