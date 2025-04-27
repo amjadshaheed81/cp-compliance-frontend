@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import Swal from "sweetalert2";
-import AssetChart from "./AssetChart";
+import NewAssetChart from "./NewAssetChart";
 
 const NewAssets = ({ siteSelectedForGlobal }) => {
   // tab value
@@ -18,7 +18,7 @@ const NewAssets = ({ siteSelectedForGlobal }) => {
 
   return (
     <Fragment>
-      <AssetChart />
+      <NewAssetChart />
     </Fragment>
   );
 };
