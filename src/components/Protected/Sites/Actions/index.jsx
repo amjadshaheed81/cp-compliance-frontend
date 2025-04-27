@@ -247,6 +247,7 @@ autoComplete="off"
               <thead className="table-dark">
                 <tr>
                   <th scope="col">Action Type</th>
+                  <th scope="col">Action Id</th>
                   <th scope="col">Description</th>
                   <th scope="col">Observation</th>
                   <th scope="col">Required Action</th>
@@ -275,6 +276,7 @@ autoComplete="off"
                 {currentActions?.map((action) => (
                   <tr key={action?.id}>
                     <th scope="col">{action?.type}</th>
+                    <th scope="col">{action?.actionId}</th>
                     <th scope="col">{action?.desc}</th>
                     <th scope="col">{action?.observation}</th>
                     <th scope="col">{action?.requiredAction}</th>
