@@ -37,6 +37,11 @@ import MicroWaveOvenCertificate from "./MicroWaveOvenCertificate";
 import DisabledWCAlarmCertificate from "./DisabledWCAlarmCertificate";
 import CctvAlarmCertificate from "./CctvAlarmCertificate";
 import IntruderAlarmCertificate from "./IntruderAlarmCertificate";
+import StorageTankService from "./StorageTankService";
+import WaterHeaterCertificate from "./WaterHeaterCertificate";
+import FanExtract from "./FanExtract";
+import AirConditioning from "./AirConditioning";
+import VentilationReport from "./VentilationReport";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -180,6 +185,36 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Intruder Alarm Servicing & Inspection"
     ) {
       setStep("inspection-intruder-alarm");
+
+      siteCheck.subType === "Legionella" &&
+      siteCheck.category === "Water - Visual Inspection of Storage Tank"
+    ) {
+      setStep("inspection-storage-tank");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Legionella" &&
+      siteCheck.category === "Water Heater Inspection & Service"
+    ) {
+      setStep("inspection-water-heater");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Plant and Equipment Inspection" &&
+      siteCheck.category === "Extract Fan Cleaning"
+    ) {
+      setStep("inspection-fan-extract");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Plant and Equipment Inspection" &&
+      siteCheck.category === "Air Conditioning Service"
+    ) {
+      setStep("inspection-air-conditioning");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Plant and Equipment Inspection" &&
+      siteCheck.category === "Ventilation System(s) Servicing"
+    ) {
+      setStep("inspection-ventilation-report");
+
     } else if (siteCheck.type === "Assessment") {
       setStep("assessment-fire-risk");
     } else if (
@@ -546,6 +581,16 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "inspection-cctv-intruder-alarm" && (
               <Item>
                 <CctvAlarmCertificate
+                checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-storage-tank" && (
+              <Item>
+                <StorageTankService
                   checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
@@ -556,10 +601,140 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "inspection-intruder-alarm" && (
               <Item>
                 <IntruderAlarmCertificate
+                checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-water-heater" && (
+              <Item>
+                <WaterHeaterCertificate
                   checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-fan-extract" && (
+              <Item>
+                <FanExtract
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-air-conditioning" && (
+              <Item>
+                <AirConditioning
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-ventilation-report" && (
+              <Item>
+                <VentilationReport
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "audit-unit-maintenance-periodic" && (
+              <Item>
+                <AuditUnitPeriodic checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "audit-question" && (
+              <Item>
+                <Audit
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                />
+              </Item>
+            )}
+            {step === "survey-water-outlet-temperature" && (
+              <Item>
+                <SurveyWaterTemperatureMonitoring
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  repeatFrequency={siteCheck?.repeatFrequency}
+                />
+              </Item>
+            )}
+            {step === "survey-water-domestic-ra" && (
+              <Item>
+                <SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "survey-asbestos" && (
+              <Item>
+                <AsbestosSurvey checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "survey-asbestos" && (
+              <Item>
+                <AsbestonSample checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "survey-water-tank" && (
+              <Item>
+                <TankSurvey checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+
+            {step === "inspection-electrical" && (
+              <Item>
+                <InspectionElectricalFault
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+            {step === "inspection-electrical" && (
+              <Item>
+                <InspectionElectricalCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+            {step === "inspection-fire-alarm" && (
+              <Item>
+                <InspectionFireFault
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+            {step === "inspection-fire-alarm" && (
+              <Item>
+                <InspectionFireCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+
+            {step === "assessment-fire-risk" && (
+              <Item>
+                <AssessmentFireRisk
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
                 />
               </Item>
             )}
@@ -688,6 +863,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <TankSurvey checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
+
             <Grid sm={12}>
               <button
                 style={{

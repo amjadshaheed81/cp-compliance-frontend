@@ -10,16 +10,14 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { DeleteForever } from "@mui/icons-material";
 import { formatDate } from "../../../../utils/dateFormat";
 
-const SounderAudibilityForm = ({
+const VentilationReport = ({
   sasToken,
   checkId,
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,
@@ -36,16 +34,17 @@ const SounderAudibilityForm = ({
     manufacturer: "",
     modelNumber: "",
     position: "",
+    assetId: "",
     floor: "",
     room: "",
-    locations: Array(8).fill({
-      description: "",
-      spl: "",
-      backgroundNoise: "",
-      notes: "",
-    }),
+    serialNo: "",
+    engineersReport: "",
+    jobComplete: "",
+    partsRequired: "",
+    filtersCleaned: "",
+    electricalConnectionsCheck: "",
     clientName: "",
-    engineerName: loggedInUserData?.name || "", // Pre-fill with logged in user's name
+    engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
     clientDate: new Date().toISOString().split("T")[0],
     engineerDate: new Date().toISOString().split("T")[0],
@@ -54,7 +53,6 @@ const SounderAudibilityForm = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if user is internal and tagged with selected site
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
@@ -101,6 +99,7 @@ const SounderAudibilityForm = ({
         setIsLoading(false);
       }
     };
+
     fetchData();
   }, [
     siteSelectedForGlobal,
@@ -110,13 +109,10 @@ const SounderAudibilityForm = ({
     getUsers,
   ]);
 
-  // Filter assets by category: Electrical > Fire Alarm > Sounder
   const filteredAssets =
     siteAssets?.filter(
       (asset) =>
-        asset.category === "Electrical" &&
-        asset.subCategory === "Fire Alarm" &&
-        asset.subCategory2 === "Sounder"
+        asset.category === "Mechanical" && asset.subCategory === "Ventilation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -126,9 +122,11 @@ const SounderAudibilityForm = ({
         selectedAsset: newValue,
         manufacturer: newValue.manufacturer || "",
         modelNumber: newValue.model || "",
+        serialNo: newValue.serialNumber || "",
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
+        assetId: newValue.assetId || "",
       }));
     } else {
       setFormData((prev) => ({
@@ -136,9 +134,11 @@ const SounderAudibilityForm = ({
         selectedAsset: null,
         manufacturer: "",
         modelNumber: "",
+        serialNo: "",
         position: "",
         floor: "",
         room: "",
+        assetId: "",
       }));
     }
   };
@@ -151,44 +151,79 @@ const SounderAudibilityForm = ({
     }));
   };
 
-  const handleLocationChange = (index, field, value) => {
-    const updatedLocations = [...formData.locations];
-    updatedLocations[index] = {
-      ...updatedLocations[index],
-      [field]: value,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
-  };
+  //   const handlePhotoUpload = async (e) => {
+  //     const files = Array.from(e.target.files);
+  //     if (files.length === 0) return;
 
-  const addLocation = () => {
-    setFormData((prev) => ({
-      ...prev,
-      locations: [
-        ...prev.locations,
-        {
-          description: "",
-          spl: "",
-          backgroundNoise: "",
-          sounderType: "Electronic",
-          compliant: false,
-          notes: "",
-        },
-      ],
-    }));
-  };
+  //     setUploadingPhotos(true);
 
-  const removeLocation = (index) => {
-    if (formData.locations.length <= 1) return;
-    const updatedLocations = [...formData.locations];
-    updatedLocations.splice(index, 1);
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
-  };
+  //     try {
+  //       const uploadPromises = files.map(async (file) => {
+  //         // Create preview URL
+  //         const previewUrl = URL.createObjectURL(file);
+
+  //         // Upload the file
+  //         const reqData = {
+  //           siteId: siteSelectedForGlobal?.siteId,
+  //           file,
+  //           folderName: "storage-tank-photos",
+  //         };
+
+  //         const uploadResponse = await uploadSiteCheckDoc(reqData);
+
+  //         return {
+  //           url: uploadResponse.url,
+  //           previewUrl,
+  //           fileName: file.name,
+  //         };
+  //       });
+
+  //       const uploadedFiles = await Promise.all(uploadPromises);
+
+  //       // Update state with new photos
+  //       setUploadedPhotos((prev) => [...prev, ...uploadedFiles]);
+  //       setPhotoPreviews((prev) => [
+  //         ...prev,
+  //         ...uploadedFiles.map((f) => f.previewUrl),
+  //       ]);
+
+  //       // Add image references to comments
+  //       const imageTags = uploadedFiles
+  //         .map((file) => `\n[img:${file.fileName}](${file.url})`)
+  //         .join("");
+
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         engineersReport: prev.engineersReport + imageTags,
+  //       }));
+
+  //       toast.success("Photos uploaded successfully");
+  //     } catch (error) {
+  //       console.error("Error uploading photos:", error);
+  //       toast.error("Failed to upload some photos");
+  //     } finally {
+  //       setUploadingPhotos(false);
+  //     }
+  //   };
+
+  //   const handleRemovePhoto = (index) => {
+  //     const updatedPhotos = [...uploadedPhotos];
+  //     const removedPhoto = updatedPhotos.splice(index, 1)[0];
+
+  //     // Remove the photo reference from comments
+  //     const photoRef = `[img:${removedPhoto.fileName}](${removedPhoto.url})`;
+  //     const updatedComments = formData.engineersReport.replace(photoRef, "");
+
+  //     setUploadedPhotos(updatedPhotos);
+  //     setPhotoPreviews(updatedPhotos.map((p) => p.previewUrl));
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       engineersReport: updatedComments,
+  //     }));
+
+  //     // Revoke the object URL to free memory
+  //     URL.revokeObjectURL(removedPhoto.previewUrl);
+  //   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -205,10 +240,15 @@ const SounderAudibilityForm = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
+        engineersReport: formData.engineersReport,
+        // uploadedPhotos: uploadedPhotos.map((photo) => ({
+        //   url: photo.url,
+        //   fileName: photo.fileName,
+        // })),
       };
 
-      await post("/api/site-check/audibility-report", dataToSave);
-      toast.success("Sounder audibility report saved successfully");
+      await post("/api/site-check/ventilation-report", dataToSave);
+      toast.success("Storage tank report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Failed to save report");
@@ -242,7 +282,6 @@ const SounderAudibilityForm = ({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Client"
               variant="outlined"
               required
               style={{
@@ -300,13 +339,12 @@ const SounderAudibilityForm = ({
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.name || "",
-              siteContactNo: newValue?.phone || "", // Automatically update contact number
+              siteContactNo: newValue?.phone || "",
             }));
           }}
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Site Contact"
               variant="outlined"
               required
               style={{
@@ -346,7 +384,7 @@ const SounderAudibilityForm = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">BS5839 Sounder Audibility Report</h4>
+        <h4 className="mb-0">Water Heater Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -427,10 +465,9 @@ const SounderAudibilityForm = ({
           </div>
         </div>
 
-        {/* Rest of the form remains the same */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Select Sounder Device</h5>
+            <h5 className="mb-0">Device Information</h5>
           </div>
           <div className="card-body">
             <div className="row mb-4">
@@ -448,9 +485,9 @@ const SounderAudibilityForm = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Sounder Device"
+                      label="Select a Refuge Intercom Device"
                       variant="outlined"
-                      placeholder="Search sounders..."
+                      placeholder="Search devices..."
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -490,20 +527,32 @@ const SounderAudibilityForm = ({
                 </div>
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Asset ID</label>
+                    <label className="form-label">Serial Number</label>
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.selectedAsset.assetId}
+                      name="serialNo"
+                      value={formData.serialNo}
+                      onChange={handleInputChange}
+                      required
                       disabled
                     />
                   </div>
                 </div>
-              </div>
-            )}
-
-            {formData.selectedAsset && (
-              <div className="row">
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Asset No</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="assetId"
+                      value={`Asset No - ${formData.assetId}`}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                    />
+                  </div>
+                </div>
                 <div className="col-md-4">
                   <div className="mb-3">
                     <label className="form-label">Position</label>
@@ -548,123 +597,153 @@ const SounderAudibilityForm = ({
                 </div>
               </div>
             )}
+            {/* <div className="col-md-4">
+              <div className="mb-3">
+                <label className="form-label">Storage(ltrs)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="tankSize"
+                  value={formData.tankSize}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div> */}
           </div>
         </div>
 
-        {/* Sound Pressure Level Measurements Section */}
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5>Sound Pressure Level Measurements</h5>
-            {!isSubmitted && (
-              <button
-                type="button"
-                className="btn btn-outline-primary print-hide"
-                onClick={addLocation}
-              >
-                <span style={{ marginRight: "5px" }}>+</span>
-                Add Location
-              </button>
-            )}
+        {/*  Engineers Report Section */}
+        <div className="card mb-4">
+          <div className="card-header">
+            <h5 className="mb-0">Engineers Report</h5>
           </div>
-          <hr className="mb-3" />
+          <div className="card-body">
+            <div className="mb-3">
+              <TextField
+                multiline
+                rows={16}
+                fullWidth
+                variant="outlined"
+                value={formData.engineersReport || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    engineersComments: e.target.value,
+                  })
+                }
+                style={{ height: "400px" }}
+                disabled={isSubmitted}
+              />
+            </div>
+          </div>
+        </div>
 
-          <div className="table-responsive mb-4">
-            <table className="table table-bordered">
-              <thead>
-                <tr style={{ textAlign: "center" }}>
-                  <th width="10%">Location No#</th>
-                  <th width="25%">Location Description</th>
-                  <th width="15%">SPL (dB(A))</th>
-                  <th width="15%">Background (dB(A))</th>
-                  <th width="20%">Notes</th>
-                  {!isSubmitted && (
-                    <th width="5%" className="print-hide">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {formData.locations.map((location, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.description}
-                        onChange={(e) =>
-                          handleLocationChange(
-                            index,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        disabled={isSubmitted}
-                      />
+        <div className="mb-4">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Job Complete
                     </td>
-                    <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.spl}
-                          onChange={(e) =>
-                            handleLocationChange(index, "spl", e.target.value)
-                          }
-                          disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
-                      </div>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Parts Required{" "}
                     </td>
-                    <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.backgroundNoise}
-                          onChange={(e) =>
-                            handleLocationChange(
-                              index,
-                              "backgroundNoise",
-                              e.target.value
-                            )
-                          }
-                          disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
-                      </div>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.notes}
-                        onChange={(e) =>
-                          handleLocationChange(index, "notes", e.target.value)
-                        }
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    {!isSubmitted && (
-                      <td className="text-center print-hide">
-                        <button
-                          type="button"
-                          onClick={() => removeLocation(index)}
-                          disabled={formData.locations.length <= 1}
-                          className="btn btn-link p-0 border-0"
-                          style={{ color: "red" }}
-                        >
-                          <span style={{ fontSize: "1.2rem" }}>
-                            <DeleteForever />
-                          </span>
-                        </button>
-                      </td>
-                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  <tr>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.jobComplete}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            jobComplete: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">NO</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.partsRequired}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            partsRequired: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 card">
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6">
+                <h5>Service Items Undertaken</h5>
+                <div className="d-flex flex-column gap-3 mt-3">
+                  <div>
+                    <label className="form-label fw-bold">
+                      Filters Cleaned
+                    </label>
+                    <select
+                      className="form-select"
+                      value={formData.filtersCleaned}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          filtersCleaned: e.target.value,
+                        })
+                      }
+                      disabled={isSubmitted}
+                    >
+                      <option value="">Select</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="form-label fw-bold">
+                      Electrical Connection Check
+                    </label>
+                    <select
+                      className="form-select"
+                      value={formData.electricalConnectionsCheck}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          electricalConnectionsCheck: e.target.value,
+                        })
+                      }
+                      disabled={isSubmitted}
+                    >
+                      <option value="">Select</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -716,12 +795,12 @@ const SounderAudibilityForm = ({
                 value={formatDate(formData.engineerDate)}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitted}
                 style={{
                   height: "40px",
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -783,4 +862,4 @@ export default connect(mapStateToProps, {
   getSiteAssets,
   getSites,
   getUsers,
-})(SounderAudibilityForm);
+})(VentilationReport);

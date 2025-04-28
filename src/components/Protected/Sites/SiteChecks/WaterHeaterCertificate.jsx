@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { post, uploadSiteCheckDoc } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -10,16 +10,15 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { DeleteForever } from "@mui/icons-material";
 import { formatDate } from "../../../../utils/dateFormat";
+import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 
-const SounderAudibilityForm = ({
+const WaterHeaterCertificate = ({
   sasToken,
   checkId,
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,
@@ -35,17 +34,20 @@ const SounderAudibilityForm = ({
     jobNo: "",
     manufacturer: "",
     modelNumber: "",
+    tankSize: "",
     position: "",
+    serialNo: "",
     floor: "",
     room: "",
-    locations: Array(8).fill({
-      description: "",
-      spl: "",
-      backgroundNoise: "",
-      notes: "",
-    }),
+    engineersReport: "",
+    jobComplete: "",
+    partsRequired: "",
+    ifYes: "",
+    unitOperational: "",
+    limescaleEvident: "",
+    tempAfter60: "",
     clientName: "",
-    engineerName: loggedInUserData?.name || "", // Pre-fill with logged in user's name
+    engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
     clientDate: new Date().toISOString().split("T")[0],
     engineerDate: new Date().toISOString().split("T")[0],
@@ -53,8 +55,10 @@ const SounderAudibilityForm = ({
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
 
-  // Check if user is internal and tagged with selected site
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
@@ -101,6 +105,7 @@ const SounderAudibilityForm = ({
         setIsLoading(false);
       }
     };
+
     fetchData();
   }, [
     siteSelectedForGlobal,
@@ -110,13 +115,12 @@ const SounderAudibilityForm = ({
     getUsers,
   ]);
 
-  // Filter assets by category: Electrical > Fire Alarm > Sounder
   const filteredAssets =
     siteAssets?.filter(
       (asset) =>
-        asset.category === "Electrical" &&
-        asset.subCategory === "Fire Alarm" &&
-        asset.subCategory2 === "Sounder"
+        asset.category === "Mechanical" &&
+        asset.subCategory === "Water Services" &&
+        asset.subCategory2 === "Calorifier"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -129,6 +133,7 @@ const SounderAudibilityForm = ({
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
+        serialNo: newValue.serialNumber || "",
       }));
     } else {
       setFormData((prev) => ({
@@ -139,6 +144,7 @@ const SounderAudibilityForm = ({
         position: "",
         floor: "",
         room: "",
+        serialNo: "",
       }));
     }
   };
@@ -151,43 +157,78 @@ const SounderAudibilityForm = ({
     }));
   };
 
-  const handleLocationChange = (index, field, value) => {
-    const updatedLocations = [...formData.locations];
-    updatedLocations[index] = {
-      ...updatedLocations[index],
-      [field]: value,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingPhotos(true);
+
+    try {
+      const uploadPromises = files.map(async (file) => {
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(file);
+
+        // Upload the file
+        const reqData = {
+          siteId: siteSelectedForGlobal?.siteId,
+          file,
+          folderName: "storage-tank-photos",
+        };
+
+        const uploadResponse = await uploadSiteCheckDoc(reqData);
+
+        return {
+          url: uploadResponse.url,
+          previewUrl,
+          fileName: file.name,
+        };
+      });
+
+      const uploadedFiles = await Promise.all(uploadPromises);
+
+      // Update state with new photos
+      setUploadedPhotos((prev) => [...prev, ...uploadedFiles]);
+      setPhotoPreviews((prev) => [
+        ...prev,
+        ...uploadedFiles.map((f) => f.previewUrl),
+      ]);
+
+      // Add image references to comments
+      const imageTags = uploadedFiles
+        .map((file) => `\n[img:${file.fileName}](${file.url})`)
+        .join("");
+
+      setFormData((prev) => ({
+        ...prev,
+        engineersReport: prev.engineersReport + imageTags,
+      }));
+
+      toast.success("Photos uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      toast.error("Failed to upload some photos");
+    } finally {
+      setUploadingPhotos(false);
+    }
   };
 
-  const addLocation = () => {
-    setFormData((prev) => ({
-      ...prev,
-      locations: [
-        ...prev.locations,
-        {
-          description: "",
-          spl: "",
-          backgroundNoise: "",
-          sounderType: "Electronic",
-          compliant: false,
-          notes: "",
-        },
-      ],
-    }));
-  };
+  const handleRemovePhoto = (index) => {
+    const updatedPhotos = [...uploadedPhotos];
+    const removedPhoto = updatedPhotos.splice(index, 1)[0];
 
-  const removeLocation = (index) => {
-    if (formData.locations.length <= 1) return;
-    const updatedLocations = [...formData.locations];
-    updatedLocations.splice(index, 1);
+    // Remove the photo reference from comments
+    const photoRef = `[img:${removedPhoto.fileName}](${removedPhoto.url})`;
+    const updatedComments = formData.engineersReport.replace(photoRef, "");
+
+    setUploadedPhotos(updatedPhotos);
+    setPhotoPreviews(updatedPhotos.map((p) => p.previewUrl));
     setFormData((prev) => ({
       ...prev,
-      locations: updatedLocations,
+      engineersReport: updatedComments,
     }));
+
+    // Revoke the object URL to free memory
+    URL.revokeObjectURL(removedPhoto.previewUrl);
   };
 
   const handleSubmit = async (e) => {
@@ -205,10 +246,16 @@ const SounderAudibilityForm = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
+        engineersReport: formData.engineersReport,
+        tankSize: formData.tankSize,
+        uploadedPhotos: uploadedPhotos.map((photo) => ({
+          url: photo.url,
+          fileName: photo.fileName,
+        })),
       };
 
-      await post("/api/site-check/audibility-report", dataToSave);
-      toast.success("Sounder audibility report saved successfully");
+      await post("/api/site-check/storage-tank-report", dataToSave);
+      toast.success("Storage tank report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Failed to save report");
@@ -242,7 +289,6 @@ const SounderAudibilityForm = ({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Client"
               variant="outlined"
               required
               style={{
@@ -300,13 +346,12 @@ const SounderAudibilityForm = ({
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.name || "",
-              siteContactNo: newValue?.phone || "", // Automatically update contact number
+              siteContactNo: newValue?.phone || "",
             }));
           }}
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Site Contact"
               variant="outlined"
               required
               style={{
@@ -346,7 +391,7 @@ const SounderAudibilityForm = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">BS5839 Sounder Audibility Report</h4>
+        <h4 className="mb-0">Water Heater Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -427,10 +472,9 @@ const SounderAudibilityForm = ({
           </div>
         </div>
 
-        {/* Rest of the form remains the same */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Select Sounder Device</h5>
+            <h5 className="mb-0">Device Information</h5>
           </div>
           <div className="card-body">
             <div className="row mb-4">
@@ -448,9 +492,9 @@ const SounderAudibilityForm = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Sounder Device"
+                      label="Select a Refuge Intercom Device"
                       variant="outlined"
-                      placeholder="Search sounders..."
+                      placeholder="Search devices..."
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -490,20 +534,18 @@ const SounderAudibilityForm = ({
                 </div>
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Asset ID</label>
+                    <label className="form-label">Serial Number</label>
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.selectedAsset.assetId}
+                      name="serialNo"
+                      value={formData.serialNo}
+                      onChange={handleInputChange}
+                      required
                       disabled
                     />
                   </div>
                 </div>
-              </div>
-            )}
-
-            {formData.selectedAsset && (
-              <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
                     <label className="form-label">Position</label>
@@ -548,126 +590,240 @@ const SounderAudibilityForm = ({
                 </div>
               </div>
             )}
+            <div className="col-md-4">
+              <div className="mb-3">
+                <label className="form-label">Storage(ltrs)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="tankSize"
+                  value={formData.tankSize}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Sound Pressure Level Measurements Section */}
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5>Sound Pressure Level Measurements</h5>
-            {!isSubmitted && (
-              <button
-                type="button"
-                className="btn btn-outline-primary print-hide"
-                onClick={addLocation}
-              >
-                <span style={{ marginRight: "5px" }}>+</span>
-                Add Location
-              </button>
-            )}
+        {/*  Engineers Comments Section */}
+        <div className="card mb-4">
+          <div className="card-header d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Engineers Reports</h5>
+            <div>
+              <input
+                type="file"
+                id="photo-upload"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                style={{ display: "none" }}
+                disabled={isSubmitted || uploadingPhotos}
+              />
+              <label htmlFor="photo-upload" className="btn btn-sm btn-primary">
+                {uploadingPhotos ? (
+                  <span>Uploading...</span>
+                ) : (
+                  <>
+                    <InsertPhotoIcon fontSize="small" /> Add Photos
+                  </>
+                )}
+              </label>
+            </div>
           </div>
-          <hr className="mb-3" />
+          <div className="card-body">
+            <div className="mb-3">
+              <TextField
+                multiline
+                rows={16}
+                fullWidth
+                variant="outlined"
+                placeholder="---------------------------------------- Write your report below this line ----------------------------------------"
+                value={formData.engineersReport || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    engineersReport: e.target.value,
+                  })
+                }
+                style={{ height: "400px" }}
+                disabled={isSubmitted}
+              />
+            </div>
 
-          <div className="table-responsive mb-4">
-            <table className="table table-bordered">
-              <thead>
-                <tr style={{ textAlign: "center" }}>
-                  <th width="10%">Location No#</th>
-                  <th width="25%">Location Description</th>
-                  <th width="15%">SPL (dB(A))</th>
-                  <th width="15%">Background (dB(A))</th>
-                  <th width="20%">Notes</th>
-                  {!isSubmitted && (
-                    <th width="5%" className="print-hide">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {formData.locations.map((location, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.description}
-                        onChange={(e) =>
-                          handleLocationChange(
-                            index,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        disabled={isSubmitted}
+            {/* Photo Previews */}
+            {photoPreviews.length > 0 && (
+              <div className="mt-3">
+                <h6>Uploaded Photos:</h6>
+                <div className="d-flex flex-wrap gap-2">
+                  {photoPreviews.map((preview, index) => (
+                    <div
+                      key={index}
+                      className="position-relative"
+                      style={{ width: "100px", height: "100px" }}
+                    >
+                      <img
+                        src={preview}
+                        alt={`Preview ${index}`}
+                        className="img-thumbnail"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
-                    </td>
-                    <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.spl}
-                          onChange={(e) =>
-                            handleLocationChange(index, "spl", e.target.value)
-                          }
-                          disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.backgroundNoise}
-                          onChange={(e) =>
-                            handleLocationChange(
-                              index,
-                              "backgroundNoise",
-                              e.target.value
-                            )
-                          }
-                          disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
-                      </div>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.notes}
-                        onChange={(e) =>
-                          handleLocationChange(index, "notes", e.target.value)
-                        }
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    {!isSubmitted && (
-                      <td className="text-center print-hide">
+                      {!isSubmitted && (
                         <button
                           type="button"
-                          onClick={() => removeLocation(index)}
-                          disabled={formData.locations.length <= 1}
-                          className="btn btn-link p-0 border-0"
-                          style={{ color: "red" }}
+                          className="position-absolute top-0 end-0 btn btn-sm btn-danger"
+                          onClick={() => handleRemovePhoto(index)}
+                          style={{ padding: "0.1rem 0.3rem" }}
                         >
-                          <span style={{ fontSize: "1.2rem" }}>
-                            <DeleteForever />
-                          </span>
+                          ×
                         </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
+        <div className="mb-4">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Unit Operational
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Limescale Evident
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Temperature after 60 secs
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.unitOperational}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            unitOperational: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">NO</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.limescaleEvident}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            limescaleEvident: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="tankSize"
+                        value={formData.tempAfter60}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="mb-4">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Job Complete
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Parts Required{" "}
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      If yes Please Specify
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.jobComplete}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            jobComplete: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">NO</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.partsRequired}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            partsRequired: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="tankSize"
+                        value={formData.ifYes}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
         <div className="row mt-4">
           <div className="col-md-6">
             <div className="mb-3">
@@ -716,12 +872,12 @@ const SounderAudibilityForm = ({
                 value={formatDate(formData.engineerDate)}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitted}
                 style={{
                   height: "40px",
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -783,4 +939,4 @@ export default connect(mapStateToProps, {
   getSiteAssets,
   getSites,
   getUsers,
-})(SounderAudibilityForm);
+})(WaterHeaterCertificate);
