@@ -94,7 +94,7 @@ const Reports = ({}) => {
             >
               <Tab label="Portfolio Report" {...a11yProps(0)} />
               <Tab label="Asset Report" {...a11yProps(1)} />
-              <Tab label="New Asset Report" {...a11yProps(3)} />
+              <Tab label="Current Asset-Valuation Report" {...a11yProps(3)} />
               <Tab label="Contract Report" {...a11yProps(2)} />
               {/* <Tab label="Worksheet" {...a11yProps(3)} /> */}
               <Tab label="Energy Report" {...a11yProps(4)} />

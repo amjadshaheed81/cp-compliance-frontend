@@ -64,8 +64,8 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
 
         if (readingDate.getFullYear() === year) {
           const month = readingDate.getMonth();
-          console.log("current", current);
-          console.log("previous", previous);
+          //console.log("current", current);
+          //console.log("previous", previous);
           let consumption = 0;
           // if (current.readingValue < previous.readingValue) {
           //   consumption = current.readingValue + previous.readingValue;
@@ -83,11 +83,8 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
             metrics.monthlyData[month].electricity += consumptionKwh;
           } else if (energyItem.budgetCategory === "Gas") {
             consumptionKwh = current.readingValue - previous.readingValue;
-            if (current.readingUnit === 'M3') {
-              consumptionKwh = convertGasToKWh(consumptionKwh) *  0.19;
-            } else {
-              consumptionKwh = consumptionKwh *  0.19;
-            }
+            //console.log('consumptionKwh', consumptionKwh)
+            consumptionKwh = convertGasToKWh(consumptionKwh);
             metrics.totalGasKwh += consumptionKwh;
             metrics.monthlyData[month].gas += consumptionKwh;
           }
