@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { post, uploadSiteCheckDoc } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -11,14 +11,14 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
+import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 
-const DisabledWCAlarmCertificate = ({
+const WaterHeaterCertificate = ({
   sasToken,
   checkId,
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,
@@ -34,16 +34,18 @@ const DisabledWCAlarmCertificate = ({
     jobNo: "",
     manufacturer: "",
     modelNumber: "",
+    tankSize: "",
     position: "",
+    serialNo: "",
     floor: "",
     room: "",
-    engineersComments: "",
-    pullSwitchCheck: "",
-    resetPointCheck: "",
-    overDoorLightCheck: "",
-    overDoorSounderCheck: "",
-    controlPointOrIntercomCheck: "",
-    passOrFail: "",
+    engineersReport: "",
+    jobComplete: "",
+    partsRequired: "",
+    ifYes: "",
+    unitOperational: "",
+    limescaleEvident: "",
+    tempAfter60: "",
     clientName: "",
     engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
@@ -53,6 +55,9 @@ const DisabledWCAlarmCertificate = ({
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
@@ -112,9 +117,10 @@ const DisabledWCAlarmCertificate = ({
 
   const filteredAssets =
     siteAssets?.filter(
-      (asset) => asset.category === "Electrical" //&&
-      // asset.subCategory === "Fire Alarm" &&
-      // asset.subCategory2 === "Disabled Refuge Outstation"
+      (asset) =>
+        asset.category === "Mechanical" &&
+        asset.subCategory === "Water Services" &&
+        asset.subCategory2 === "Calorifier"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -123,10 +129,11 @@ const DisabledWCAlarmCertificate = ({
         ...prev,
         selectedAsset: newValue,
         manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.modelNumber || "",
+        modelNumber: newValue.model || "",
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
+        serialNo: newValue.serialNumber || "",
       }));
     } else {
       setFormData((prev) => ({
@@ -137,6 +144,7 @@ const DisabledWCAlarmCertificate = ({
         position: "",
         floor: "",
         room: "",
+        serialNo: "",
       }));
     }
   };
@@ -147,6 +155,80 @@ const DisabledWCAlarmCertificate = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingPhotos(true);
+
+    try {
+      const uploadPromises = files.map(async (file) => {
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(file);
+
+        // Upload the file
+        const reqData = {
+          siteId: siteSelectedForGlobal?.siteId,
+          file,
+          folderName: "storage-tank-photos",
+        };
+
+        const uploadResponse = await uploadSiteCheckDoc(reqData);
+
+        return {
+          url: uploadResponse.url,
+          previewUrl,
+          fileName: file.name,
+        };
+      });
+
+      const uploadedFiles = await Promise.all(uploadPromises);
+
+      // Update state with new photos
+      setUploadedPhotos((prev) => [...prev, ...uploadedFiles]);
+      setPhotoPreviews((prev) => [
+        ...prev,
+        ...uploadedFiles.map((f) => f.previewUrl),
+      ]);
+
+      // Add image references to comments
+      const imageTags = uploadedFiles
+        .map((file) => `\n[img:${file.fileName}](${file.url})`)
+        .join("");
+
+      setFormData((prev) => ({
+        ...prev,
+        engineersReport: prev.engineersReport + imageTags,
+      }));
+
+      toast.success("Photos uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      toast.error("Failed to upload some photos");
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const handleRemovePhoto = (index) => {
+    const updatedPhotos = [...uploadedPhotos];
+    const removedPhoto = updatedPhotos.splice(index, 1)[0];
+
+    // Remove the photo reference from comments
+    const photoRef = `[img:${removedPhoto.fileName}](${removedPhoto.url})`;
+    const updatedComments = formData.engineersReport.replace(photoRef, "");
+
+    setUploadedPhotos(updatedPhotos);
+    setPhotoPreviews(updatedPhotos.map((p) => p.previewUrl));
+    setFormData((prev) => ({
+      ...prev,
+      engineersReport: updatedComments,
+    }));
+
+    // Revoke the object URL to free memory
+    URL.revokeObjectURL(removedPhoto.previewUrl);
   };
 
   const handleSubmit = async (e) => {
@@ -164,11 +246,16 @@ const DisabledWCAlarmCertificate = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
-        engineersComments: formData.engineersComments,
+        engineersReport: formData.engineersReport,
+        tankSize: formData.tankSize,
+        uploadedPhotos: uploadedPhotos.map((photo) => ({
+          url: photo.url,
+          fileName: photo.fileName,
+        })),
       };
 
-      await post("/api/site-check/fire-refuge-report", dataToSave);
-      toast.success("Fire refuge report saved successfully");
+      await post("/api/site-check/storage-tank-report", dataToSave);
+      toast.success("Storage tank report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Failed to save report");
@@ -304,7 +391,7 @@ const DisabledWCAlarmCertificate = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">Disabled WC Alarm Certificate</h4>
+        <h4 className="mb-0">Water Heater Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -405,7 +492,7 @@ const DisabledWCAlarmCertificate = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Microwave Oven Testing Device"
+                      label="Select a Refuge Intercom Device"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -439,6 +526,20 @@ const DisabledWCAlarmCertificate = ({
                       className="form-control"
                       name="modelNumber"
                       value={formData.modelNumber}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Serial Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="serialNo"
+                      value={formData.serialNo}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -489,13 +590,46 @@ const DisabledWCAlarmCertificate = ({
                 </div>
               </div>
             )}
+            <div className="col-md-4">
+              <div className="mb-3">
+                <label className="form-label">Storage(ltrs)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="tankSize"
+                  value={formData.tankSize}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {/*  Engineers Comments Section */}
         <div className="card mb-4">
-          <div className="card-header">
-            <h5 className="mb-0">Engineers Comments</h5>
+          <div className="card-header d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Engineers Reports</h5>
+            <div>
+              <input
+                type="file"
+                id="photo-upload"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                style={{ display: "none" }}
+                disabled={isSubmitted || uploadingPhotos}
+              />
+              <label htmlFor="photo-upload" className="btn btn-sm btn-primary">
+                {uploadingPhotos ? (
+                  <span>Uploading...</span>
+                ) : (
+                  <>
+                    <InsertPhotoIcon fontSize="small" /> Add Photos
+                  </>
+                )}
+              </label>
+            </div>
           </div>
           <div className="card-body">
             <div className="mb-3">
@@ -504,17 +638,55 @@ const DisabledWCAlarmCertificate = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersComments || ""}
+                placeholder="---------------------------------------- Write your report below this line ----------------------------------------"
+                value={formData.engineersReport || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersComments: e.target.value,
+                    engineersReport: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
                 disabled={isSubmitted}
               />
             </div>
+
+            {/* Photo Previews */}
+            {photoPreviews.length > 0 && (
+              <div className="mt-3">
+                <h6>Uploaded Photos:</h6>
+                <div className="d-flex flex-wrap gap-2">
+                  {photoPreviews.map((preview, index) => (
+                    <div
+                      key={index}
+                      className="position-relative"
+                      style={{ width: "100px", height: "100px" }}
+                    >
+                      <img
+                        src={preview}
+                        alt={`Preview ${index}`}
+                        className="img-thumbnail"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                      {!isSubmitted && (
+                        <button
+                          type="button"
+                          className="position-absolute top-0 end-0 btn btn-sm btn-danger"
+                          onClick={() => handleRemovePhoto(index)}
+                          style={{ padding: "0.1rem 0.3rem" }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -524,43 +696,42 @@ const DisabledWCAlarmCertificate = ({
               <table className="table table-bordered">
                 <tbody>
                   <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Pull Switch Check
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Unit Operational
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Reset Point Check
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Limescale Evident
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Over Door Light Check
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Temperature after 60 secs
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <select
                         className="form-select"
-                        value={formData.pullSwitchCheck}
+                        value={formData.unitOperational}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            pullSwitchCheck: e.target.value,
+                            unitOperational: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">NO</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.limescaleEvident}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            limescaleEvident: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -571,38 +742,14 @@ const DisabledWCAlarmCertificate = ({
                       </select>
                     </td>
                     <td>
-                      <select
-                        className="form-select"
-                        value={formData.resetPointCheck}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            resetPointCheck: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.overDoorLightCheck}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            overDoorLightCheck: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="tankSize"
+                        value={formData.tempAfter60}
+                        onChange={handleInputChange}
+                        required
+                      />
                     </td>
                   </tr>
                 </tbody>
@@ -616,43 +763,42 @@ const DisabledWCAlarmCertificate = ({
               <table className="table table-bordered">
                 <tbody>
                   <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Over Door Sounder Check{" "}
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Job Complete
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Control Point / Intercom Check{" "}
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Parts Required{" "}
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Pass/Fail
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      If yes Please Specify
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <select
                         className="form-select"
-                        value={formData.overDoorSounderCheck}
+                        value={formData.jobComplete}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            overDoorSounderCheck: e.target.value,
+                            jobComplete: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">NO</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        value={formData.partsRequired}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            partsRequired: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -663,38 +809,14 @@ const DisabledWCAlarmCertificate = ({
                       </select>
                     </td>
                     <td>
-                      <select
-                        className="form-select"
-                        value={formData.controlPointOrIntercomCheck}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            controlPointOrIntercomCheck: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.passOrFail}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            passOrFail: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Pass</option>
-                        <option value="Fail">Fail</option>
-                      </select>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="tankSize"
+                        value={formData.ifYes}
+                        onChange={handleInputChange}
+                        required
+                      />
                     </td>
                   </tr>
                 </tbody>
@@ -817,4 +939,4 @@ export default connect(mapStateToProps, {
   getSiteAssets,
   getSites,
   getUsers,
-})(DisabledWCAlarmCertificate);
+})(WaterHeaterCertificate);

@@ -642,6 +642,7 @@ const MicroWaveOvenCertificate = ({
                 value={formData.engineerName}
                 onChange={handleInputChange}
                 required
+                readOnly
                 disabled={isSubmitted}
               />
             </div>
