@@ -5,7 +5,9 @@ import { get } from "../../../../api";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { Switch } from "@mui/material";
 
+
 import ValuationBySite from "./ValuationBySite";
+
 
 const NewAssetChart = ({ siteSelectedForGlobal }) => {
   const [chartResponse, setChartResponse] = useState();
@@ -101,6 +103,7 @@ const NewAssetChart = ({ siteSelectedForGlobal }) => {
           <label>Individual Site</label>
         </div>
       </div>
+
 
       <div className="col-md-6 mt-4">
         <ValuationBySite data={chartResponse?.valuation} />

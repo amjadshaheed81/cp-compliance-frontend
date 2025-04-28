@@ -50,14 +50,13 @@ const Reading = ({
     const data = { ...formData };
 
     data.readingDate = new Date(data.readingDate);
-    data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh"
+    data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh";
 
     data.energyId = survey.energyId;
     saveData(data);
     setOpen(false);
 
     toast.success("Energy reading added successfully");
-    
   };
 
   useEffect(() => {
@@ -104,9 +103,7 @@ const Reading = ({
                       formData?.readingValue
                         ? formData?.readingValue -
                           (survey?.readingList?.length > 0
-                            ? survey?.readingList?.[
-                                0
-                              ]?.readingValue
+                            ? survey?.readingList?.[0]?.readingValue
                             : 0)
                         : 0
                     }
@@ -179,7 +176,7 @@ const Reading = ({
                     name="readingUnit"
                     className="form-control form-select"
                     id="readingUnit"
-                    value={survey?.budgetCategory === "Gas" ?  "M3" : "Kwh"}
+                    value={survey?.budgetCategory === "Gas" ? "M3" : "Kwh"}
                     //onChange={handleInputChange}
                     disabled
                     required
@@ -233,7 +230,10 @@ autoComplete="off"
                         </tr>
                       </thead>
                       <tbody>
-                        {survey?.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate))?.length === 0 && (
+                        {survey?.readingList?.sort(
+                          (a, b) =>
+                            new Date(b.readingDate) - new Date(a.readingDate)
+                        )?.length === 0 && (
                           <tr>
                             <td colSpan={5} align="center">
                               No record
@@ -252,10 +252,11 @@ autoComplete="off"
                               {d.readingValue} {d.readingUnit}
                             </td>
                             <td>
-                              {(idx === (survey?.readingList?.length - 1)
+                              {(idx === survey?.readingList?.length - 1
                                 ? d?.readingValue
                                 : d?.readingValue -
-                                  survey?.readingList?.[idx + 1]?.readingValue)?.toFixed(2)}
+                                  survey?.readingList?.[idx + 1]?.readingValue
+                              )?.toFixed(2)}
                               {d.readingUnit}
                             </td>
                             {!isView && (

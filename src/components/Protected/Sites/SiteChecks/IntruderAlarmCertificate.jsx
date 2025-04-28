@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import { post } from "../../../../api";
 import {
   getSiteAssets,
-  getSiteById,
   getSiteDetailsById,
   getSites,
   getUsers,
@@ -12,18 +11,17 @@ import {
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
 
-const RefugeIntercomTesting = ({
+const IntruderAlarmCertificate = ({
   sasToken,
   checkId,
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,
   getUsers,
-  siteSelectedForGlobal,
+  siteSelectedForGlobal = {},
   loggedInUserData,
 }) => {
   const [formData, setFormData] = useState({
@@ -32,15 +30,26 @@ const RefugeIntercomTesting = ({
     date: new Date().toISOString().split("T")[0],
     siteContactNo: "",
     jobNo: "",
-    manufacturer: "",
-    modelNumber: "",
+    panelManufacturer: "",
+    panelModelNumber: "",
     position: "",
     floor: "",
     room: "",
-    engineersComments: "",
-    outstationOperational: "",
-    intercomSoundTest: "",
-    sounderTest: "",
+    engineersReport: "",
+    jobComplete: "",
+    partsRequired: "",
+    walkTestComplete: "",
+    walkTestRemarks: "",
+    pirsCleaned: "",
+    pirsCleanedRemarks: "",
+    remoteSignallingCheck: "",
+    remoteSignallingRemarks: "",
+    systemOperationCheck: "",
+    systemOperationRemarks: "",
+    audibleWarningCheck: "",
+    audibleWarningRemarks: "",
+    electricalConnectionsCheck: "",
+    electricalConnectionsRemarks: "",
     clientName: "",
     engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
@@ -50,6 +59,29 @@ const RefugeIntercomTesting = ({
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [popup, setPopup] = useState({
+    show: false,
+    content: "",
+    position: { x: 0, y: 0 },
+  });
+
+  const handleMouseEnter = (e, content) => {
+    if (!content) return;
+
+    setPopup({
+      show: true,
+      content,
+      position: {
+        x: e.target.getBoundingClientRect().left,
+        y: e.target.getBoundingClientRect().top - 10,
+      },
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setPopup((prev) => ({ ...prev, show: false }));
+  };
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
@@ -65,22 +97,23 @@ const RefugeIntercomTesting = ({
       setIsLoading(true);
       try {
         if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+          await Promise.all([
+            getSiteAssets(siteSelectedForGlobal.siteId),
+            getSiteDetailsById(siteSelectedForGlobal.siteId),
+          ]);
 
-          if (siteSelectedForGlobal) {
-            const addressParts = [
-              siteSelectedForGlobal.address1,
-              siteSelectedForGlobal.address2,
-              siteSelectedForGlobal.city,
-              siteSelectedForGlobal.area,
-              siteSelectedForGlobal.postCode,
-              siteSelectedForGlobal.country,
-            ].filter((part) => part);
+          // Use basic info if details aren't available
+          const addressParts = [
+            siteSelectedForGlobal.siteName || "Address not available",
+            siteSelectedForGlobal.address2,
+            siteSelectedForGlobal.city,
+            siteSelectedForGlobal.area,
+            siteSelectedForGlobal.postCode,
+            siteSelectedForGlobal.country,
+          ];
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({ ...prev, address: fullAddress }));
 
           if (siteSelectedForGlobal.siteContact) {
             setFormData((prev) => ({
@@ -105,14 +138,15 @@ const RefugeIntercomTesting = ({
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
+    getSiteDetailsById,
   ]);
 
   const filteredAssets =
     siteAssets?.filter(
       (asset) =>
         asset.category === "Electrical" &&
-        asset.subCategory === "Fire Alarm" &&
-        asset.subCategory2 === "Disabled Refuge Outstation"
+        asset.subCategory === "Intruder Alarm Installation"
+      // asset.subCategory2 === "Disabled Refuge Outstation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -120,8 +154,8 @@ const RefugeIntercomTesting = ({
       setFormData((prev) => ({
         ...prev,
         selectedAsset: newValue,
-        manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.model || "",
+        panelManufacturer: newValue.manufacturer || "",
+        panelModelNumber: newValue.model || "",
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
@@ -130,8 +164,8 @@ const RefugeIntercomTesting = ({
       setFormData((prev) => ({
         ...prev,
         selectedAsset: null,
-        manufacturer: "",
-        modelNumber: "",
+        panelManufacturer: "",
+        panelModelNumber: "",
         position: "",
         floor: "",
         room: "",
@@ -162,10 +196,22 @@ const RefugeIntercomTesting = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
-        engineersComments: formData.engineersComments,
+        engineersReport: formData.engineersReport,
+        walkTestComplete: formData.walkTestComplete,
+        walkTestRemarks: formData.walkTestRemarks,
+        pirsCleaned: formData.pirsCleaned,
+        pirsCleanedRemarks: formData.pirsCleanedRemarks,
+        remoteSignallingCheck: formData.remoteSignallingCheck,
+        remoteSignallingRemarks: formData.remoteSignallingRemarks,
+        systemOperationCheck: formData.systemOperationCheck,
+        systemOperationRemarks: formData.systemOperationRemarks,
+        audibleWarningCheck: formData.audibleWarningCheck,
+        audibleWarningRemarks: formData.audibleWarningRemarks,
+        electricalConnectionsCheck: formData.electricalConnectionsCheck,
+        electricalConnectionsRemarks: formData.electricalConnectionsRemarks,
       };
 
-      await post("/api/site-check/fire-refuge-report", dataToSave);
+      await post("/api/site-check/intruder-report", dataToSave);
       toast.success("Fire refuge report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
@@ -302,7 +348,7 @@ const RefugeIntercomTesting = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">Fire Refuge Service Report</h4>
+        <h4 className="mb-0">Intruder Alarm Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -403,7 +449,7 @@ const RefugeIntercomTesting = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Refuge Intercom Device"
+                      label="Select a Microwave Oven Testing Device"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -417,12 +463,12 @@ const RefugeIntercomTesting = ({
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Manufacturer</label>
+                    <label className="form-label">Panel Manufacturer</label>
                     <input
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={formData.manufacturer}
+                      value={formData.panelManufacturer}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -431,12 +477,12 @@ const RefugeIntercomTesting = ({
                 </div>
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Model Number</label>
+                    <label className="form-label">Panel Model Number</label>
                     <input
                       type="text"
                       className="form-control"
                       name="modelNumber"
-                      value={formData.modelNumber}
+                      value={formData.panelModelNumber}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -493,7 +539,7 @@ const RefugeIntercomTesting = ({
         {/*  Engineers Comments Section */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Engineers Comments</h5>
+            <h5 className="mb-0">Engineers Report</h5>
           </div>
           <div className="card-body">
             <div className="mb-3">
@@ -502,11 +548,11 @@ const RefugeIntercomTesting = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersComments || ""}
+                value={formData.engineersReport || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersComments: e.target.value,
+                    engineersReport: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
@@ -522,66 +568,58 @@ const RefugeIntercomTesting = ({
               <table className="table table-bordered">
                 <tbody>
                   <tr>
-                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                      Outstation Operational
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Job Complete
                     </td>
-                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                      Intercom Sound Test
-                    </td>
-                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                      Sounder Test
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Parts Required
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <select
                         className="form-select"
-                        value={formData.outstationOperational}
+                        value={formData.jobComplete}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            outstationOperational: e.target.value,
+                            jobComplete: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
-                        <option value="Pass">Pass</option>
-                        <option value="Fail">Fail</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
                       </select>
                     </td>
                     <td>
                       <select
                         className="form-select"
-                        value={formData.intercomSoundTest}
+                        value={formData.partsRequired}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            intercomSoundTest: e.target.value,
+                            partsRequired: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
-                        <option value="Pass">Pass</option>
-                        <option value="Fail">Fail</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.sounderTest}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            sounderTest: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Pass</option>
-                        <option value="Fail">Fail</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
                       </select>
                     </td>
                   </tr>
@@ -590,6 +628,302 @@ const RefugeIntercomTesting = ({
             </div>
           </div>
         </div>
+
+        <div className="mb-4">
+          {popup.show && (
+            <div
+              className="remark-popup"
+              style={{
+                position: "fixed",
+                left: `${popup.position.x}px`,
+                top: `${popup.position.y}px`,
+                transform: "translateY(-100%)",
+                zIndex: 1000,
+                maxWidth: "400px",
+                padding: "10px",
+                backgroundColor: "#fff",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                wordBreak: "break-word",
+              }}
+            >
+              {popup.content}
+            </div>
+          )}
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  {/* Your table headers */}
+                  <tr style={{ fontSize: "18px" }}>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Service Items Undertaken
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Remarks
+                    </td>
+                  </tr>
+
+                  <tr style={{ fontSize: "22px" }}>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Walk Test Complete</label>
+                        <select
+                          className="form-select"
+                          name="walkTestComplete"
+                          value={formData.walkTestComplete}
+                          onChange={handleInputChange}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="walkTestRemarks"
+                          value={formData.walkTestRemarks}
+                          onChange={handleInputChange}
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.walkTestRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* PIR's Cleaned */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">PIR's Cleaned</label>
+                        <select
+                          className="form-select"
+                          name="pirsCleaned"
+                          value={formData.pirsCleaned}
+                          onChange={handleInputChange}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="pirsCleanedRemarks"
+                          value={formData.pirsCleanedRemarks}
+                          onChange={handleInputChange}
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.pirsCleanedRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Remote signalling equipment check */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Remote signalling equipment check
+                        </label>
+                        <select
+                          className="form-select"
+                          name="remoteSignallingCheck"
+                          value={formData.remoteSignallingCheck}
+                          onChange={handleInputChange}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="remoteSignallingRemarks"
+                          value={formData.remoteSignallingRemarks}
+                          onChange={handleInputChange}
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(
+                              e,
+                              formData.remoteSignallingRemarks
+                            )
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Continue with the same pattern for other rows */}
+                  {/* System Operation Check */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          System Operation Check
+                        </label>
+                        <select
+                          className="form-select"
+                          name="systemOperationCheck"
+                          value={formData.systemOperationCheck}
+                          onChange={handleInputChange}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="systemOperationRemarks"
+                          value={formData.systemOperationRemarks}
+                          onChange={handleInputChange}
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.systemOperationRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Audible warning and alarm devices Check */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Audible warning and alarm devices Check
+                        </label>
+                        <select
+                          className="form-select"
+                          name="audibleWarningCheck"
+                          value={formData.audibleWarningCheck}
+                          onChange={handleInputChange}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="audibleWarningRemarks"
+                          value={formData.audibleWarningRemarks}
+                          onChange={handleInputChange}
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.audibleWarningRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Electrical Connections Check */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Electrical Connections Check
+                        </label>
+                        <select
+                          className="form-select"
+                          name="electricalConnectionsCheck"
+                          value={formData.electricalConnectionsCheck}
+                          onChange={handleInputChange}
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="electricalConnectionsRemarks"
+                          value={formData.electricalConnectionsRemarks}
+                          onChange={handleInputChange}
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(
+                              e,
+                              formData.electricalConnectionsRemarks
+                            )
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div className="row mt-4">
           <div className="col-md-6">
             <div className="mb-3">
@@ -623,7 +957,6 @@ const RefugeIntercomTesting = ({
                 className="form-control"
                 name="engineerName"
                 value={formData.engineerName}
-                onChange={handleInputChange}
                 required
                 readOnly
                 disabled={isSubmitted}
@@ -695,14 +1028,13 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
   siteAssets: state.site.siteAssets,
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
   loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
   getSiteDetailsById,
-  getSiteById,
   getSiteAssets,
   getSites,
   getUsers,
-})(RefugeIntercomTesting);
+})(IntruderAlarmCertificate);

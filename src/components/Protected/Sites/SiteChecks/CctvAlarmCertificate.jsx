@@ -4,27 +4,24 @@ import { toast } from "react-toastify";
 import { post } from "../../../../api";
 import {
   getSiteAssets,
-  getSiteById,
   getSiteDetailsById,
   getSites,
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { DeleteForever } from "@mui/icons-material";
 import { formatDate } from "../../../../utils/dateFormat";
 
-const SounderAudibilityForm = ({
+const CctvAlarmCertificate = ({
   sasToken,
   checkId,
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,
   getUsers,
-  siteSelectedForGlobal,
+  siteSelectedForGlobal = {},
   loggedInUserData,
 }) => {
   const [formData, setFormData] = useState({
@@ -38,14 +35,19 @@ const SounderAudibilityForm = ({
     position: "",
     floor: "",
     room: "",
-    locations: Array(8).fill({
-      description: "",
-      spl: "",
-      backgroundNoise: "",
-      notes: "",
-    }),
+    engineersReport: "",
+    jobComplete: "",
+    partsRequired: "",
+    imageQualityCheck: "",
+    imageQualityRemarks: "",
+    lensesCleaned: "",
+    lensesCleanedRemarks: "",
+    dvrRecordingCheck: "",
+    dvrRecordingRemarks: "",
+    electricalConnectionCheck: "",
+    electricalConnectionRemarks: "",
     clientName: "",
-    engineerName: loggedInUserData?.name || "", // Pre-fill with logged in user's name
+    engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
     clientDate: new Date().toISOString().split("T")[0],
     engineerDate: new Date().toISOString().split("T")[0],
@@ -54,7 +56,29 @@ const SounderAudibilityForm = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if user is internal and tagged with selected site
+  const [popup, setPopup] = useState({
+    show: false,
+    content: "",
+    position: { x: 0, y: 0 },
+  });
+
+  const handleMouseEnter = (e, content) => {
+    if (!content) return;
+
+    setPopup({
+      show: true,
+      content,
+      position: {
+        x: e.target.getBoundingClientRect().left,
+        y: e.target.getBoundingClientRect().top - 10,
+      },
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setPopup((prev) => ({ ...prev, show: false }));
+  };
+
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
@@ -69,22 +93,23 @@ const SounderAudibilityForm = ({
       setIsLoading(true);
       try {
         if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+          await Promise.all([
+            getSiteAssets(siteSelectedForGlobal.siteId),
+            getSiteDetailsById(siteSelectedForGlobal.siteId),
+          ]);
 
-          if (siteSelectedForGlobal) {
-            const addressParts = [
-              siteSelectedForGlobal.address1,
-              siteSelectedForGlobal.address2,
-              siteSelectedForGlobal.city,
-              siteSelectedForGlobal.area,
-              siteSelectedForGlobal.postCode,
-              siteSelectedForGlobal.country,
-            ].filter((part) => part);
+          // Use basic info if details aren't available
+          const addressParts = [
+            siteSelectedForGlobal.siteName || "Address not available",
+            siteSelectedForGlobal.address2,
+            siteSelectedForGlobal.city,
+            siteSelectedForGlobal.area,
+            siteSelectedForGlobal.postCode,
+            siteSelectedForGlobal.country,
+          ];
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({ ...prev, address: fullAddress }));
 
           if (siteSelectedForGlobal.siteContact) {
             setFormData((prev) => ({
@@ -101,6 +126,7 @@ const SounderAudibilityForm = ({
         setIsLoading(false);
       }
     };
+
     fetchData();
   }, [
     siteSelectedForGlobal,
@@ -108,15 +134,13 @@ const SounderAudibilityForm = ({
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
+    getSiteDetailsById,
   ]);
 
-  // Filter assets by category: Electrical > Fire Alarm > Sounder
   const filteredAssets =
     siteAssets?.filter(
-      (asset) =>
-        asset.category === "Electrical" &&
-        asset.subCategory === "Fire Alarm" &&
-        asset.subCategory2 === "Sounder"
+      (asset) => asset.category === "Electrical" && asset.subCategory === "CCTV"
+      // asset.subCategory2 === "Disabled Refuge Outstation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -151,45 +175,6 @@ const SounderAudibilityForm = ({
     }));
   };
 
-  const handleLocationChange = (index, field, value) => {
-    const updatedLocations = [...formData.locations];
-    updatedLocations[index] = {
-      ...updatedLocations[index],
-      [field]: value,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
-  };
-
-  const addLocation = () => {
-    setFormData((prev) => ({
-      ...prev,
-      locations: [
-        ...prev.locations,
-        {
-          description: "",
-          spl: "",
-          backgroundNoise: "",
-          sounderType: "Electronic",
-          compliant: false,
-          notes: "",
-        },
-      ],
-    }));
-  };
-
-  const removeLocation = (index) => {
-    if (formData.locations.length <= 1) return;
-    const updatedLocations = [...formData.locations];
-    updatedLocations.splice(index, 1);
-    setFormData((prev) => ({
-      ...prev,
-      locations: updatedLocations,
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -205,10 +190,19 @@ const SounderAudibilityForm = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
+        engineersReport: formData.engineersReport,
+        imageQualityCheck: formData.imageQualityCheck,
+        imageQualityRemarks: formData.imageQualityRemarks,
+        lensesCleaned: formData.lensesCleaned,
+        lensesCleanedRemarks: formData.lensesCleanedRemarks,
+        dvrRecordingCheck: formData.dvrRecordingCheck,
+        dvrRecordingRemarks: formData.dvrRecordingRemarks,
+        electricalConnectionCheck: formData.electricalConnectionCheck,
+        electricalConnectionRemarks: formData.electricalConnectionRemarks,
       };
 
-      await post("/api/site-check/audibility-report", dataToSave);
-      toast.success("Sounder audibility report saved successfully");
+      await post("/api/site-check/fire-refuge-report", dataToSave);
+      toast.success("Fire refuge report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Failed to save report");
@@ -242,7 +236,6 @@ const SounderAudibilityForm = ({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Client"
               variant="outlined"
               required
               style={{
@@ -300,13 +293,12 @@ const SounderAudibilityForm = ({
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.name || "",
-              siteContactNo: newValue?.phone || "", // Automatically update contact number
+              siteContactNo: newValue?.phone || "",
             }));
           }}
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Select Site Contact"
               variant="outlined"
               required
               style={{
@@ -346,7 +338,7 @@ const SounderAudibilityForm = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">BS5839 Sounder Audibility Report</h4>
+        <h4 className="mb-0">CCTV Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -427,10 +419,9 @@ const SounderAudibilityForm = ({
           </div>
         </div>
 
-        {/* Rest of the form remains the same */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Select Sounder Device</h5>
+            <h5 className="mb-0">Device Information</h5>
           </div>
           <div className="card-body">
             <div className="row mb-4">
@@ -448,9 +439,9 @@ const SounderAudibilityForm = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Sounder Device"
+                      label="Select a Microwave Oven Testing Device"
                       variant="outlined"
-                      placeholder="Search sounders..."
+                      placeholder="Search devices..."
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -462,7 +453,7 @@ const SounderAudibilityForm = ({
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Manufacturer</label>
+                    <label className="form-label">DVR Manufacturer</label>
                     <input
                       type="text"
                       className="form-control"
@@ -476,7 +467,7 @@ const SounderAudibilityForm = ({
                 </div>
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Model Number</label>
+                    <label className="form-label">DVR Model Number</label>
                     <input
                       type="text"
                       className="form-control"
@@ -488,22 +479,6 @@ const SounderAudibilityForm = ({
                     />
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Asset ID</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={formData.selectedAsset.assetId}
-                      disabled
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {formData.selectedAsset && (
-              <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
                     <label className="form-label">Position</label>
@@ -551,120 +526,342 @@ const SounderAudibilityForm = ({
           </div>
         </div>
 
-        {/* Sound Pressure Level Measurements Section */}
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5>Sound Pressure Level Measurements</h5>
-            {!isSubmitted && (
-              <button
-                type="button"
-                className="btn btn-outline-primary print-hide"
-                onClick={addLocation}
-              >
-                <span style={{ marginRight: "5px" }}>+</span>
-                Add Location
-              </button>
-            )}
+        {/*  Engineers Comments Section */}
+        <div className="card mb-4">
+          <div className="card-header">
+            <h5 className="mb-0">Engineers Report</h5>
           </div>
-          <hr className="mb-3" />
+          <div className="card-body">
+            <div className="mb-3">
+              <TextField
+                multiline
+                rows={16}
+                fullWidth
+                variant="outlined"
+                value={formData.engineersReport || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    engineersReport: e.target.value,
+                  })
+                }
+                style={{ height: "400px" }}
+                disabled={isSubmitted}
+              />
+            </div>
+          </div>
+        </div>
 
-          <div className="table-responsive mb-4">
-            <table className="table table-bordered">
-              <thead>
-                <tr style={{ textAlign: "center" }}>
-                  <th width="10%">Location No#</th>
-                  <th width="25%">Location Description</th>
-                  <th width="15%">SPL (dB(A))</th>
-                  <th width="15%">Background (dB(A))</th>
-                  <th width="20%">Notes</th>
-                  {!isSubmitted && (
-                    <th width="5%" className="print-hide">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {formData.locations.map((location, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
+        <div className="mb-4">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  <tr>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Job Complete
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Parts Required
+                    </td>
+                  </tr>
+                  <tr>
                     <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.description}
+                      <select
+                        className="form-select"
+                        value={formData.jobComplete}
                         onChange={(e) =>
-                          handleLocationChange(
-                            index,
-                            "description",
-                            e.target.value
-                          )
+                          setFormData({
+                            ...formData,
+                            jobComplete: e.target.value,
+                          })
                         }
                         disabled={isSubmitted}
-                      />
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
+                      </select>
                     </td>
                     <td>
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={location.spl}
+                      <select
+                        className="form-select"
+                        value={formData.partsRequired}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            partsRequired: e.target.value,
+                          })
+                        }
+                        disabled={isSubmitted}
+                      >
+                        <option value="">Select</option>
+                        <option value="Pass">Yes</option>
+                        <option value="Fail">No</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          {popup.show && (
+            <div
+              className="remark-popup"
+              style={{
+                position: "fixed",
+                left: `${popup.position.x}px`,
+                top: `${popup.position.y}px`,
+                transform: "translateY(-100%)",
+                zIndex: 1000,
+                maxWidth: "400px",
+                padding: "10px",
+                backgroundColor: "#fff",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                wordBreak: "break-word",
+              }}
+            >
+              {popup.content}
+            </div>
+          )}
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
+                  {/* Your table headers */}
+                  <tr style={{ fontSize: "18px" }}>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Service Items Undertaken
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
+                      Remarks
+                    </td>
+                  </tr>
+
+                  {/* Image Quality Check Row */}
+                  <tr style={{ fontSize: "22px" }}>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Image Quality Check
+                        </label>
+                        <select
+                          className="form-select"
+                          value={formData.imageQualityCheck}
                           onChange={(e) =>
-                            handleLocationChange(index, "spl", e.target.value)
+                            setFormData({
+                              ...formData,
+                              imageQualityCheck: e.target.value,
+                            })
                           }
                           disabled={isSubmitted}
-                        />
-                        <span className="input-group-text">dB(A)</span>
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
                       </div>
                     </td>
                     <td>
-                      <div className="input-group">
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
                         <input
                           type="text"
                           className="form-control"
-                          value={location.backgroundNoise}
+                          value={formData.imageQualityRemarks}
                           onChange={(e) =>
-                            handleLocationChange(
-                              index,
-                              "backgroundNoise",
-                              e.target.value
+                            setFormData({
+                              ...formData,
+                              imageQualityRemarks: e.target.value,
+                            })
+                          }
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.imageQualityRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Lenses Cleaned Row */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Lenses Cleaned</label>
+                        <select
+                          className="form-select"
+                          value={formData.lensesCleaned}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              lensesCleaned: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData.lensesCleanedRemarks}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              lensesCleanedRemarks: e.target.value,
+                            })
+                          }
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.lensesCleanedRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* DVR Recording Check Row */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          DVR Recording Check
+                        </label>
+                        <select
+                          className="form-select"
+                          value={formData.dvrRecordingCheck}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              dvrRecordingCheck: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData.dvrRecordingRemarks}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              dvrRecordingRemarks: e.target.value,
+                            })
+                          }
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(e, formData.dvrRecordingRemarks)
+                          }
+                          onMouseLeave={handleMouseLeave}
+                          disabled={isSubmitted}
+                          placeholder="Enter remarks"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Electrical Connection Check Row */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Electrical Connection Check
+                        </label>
+                        <select
+                          className="form-select"
+                          value={formData.electricalConnectionCheck}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              electricalConnectionCheck: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Remarks</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={formData.electricalConnectionRemarks}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              electricalConnectionRemarks: e.target.value,
+                            })
+                          }
+                          onMouseEnter={(e) =>
+                            handleMouseEnter(
+                              e,
+                              formData.electricalConnectionRemarks
                             )
                           }
+                          onMouseLeave={handleMouseLeave}
                           disabled={isSubmitted}
+                          placeholder="Enter remarks"
                         />
-                        <span className="input-group-text">dB(A)</span>
                       </div>
                     </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={location.notes}
-                        onChange={(e) =>
-                          handleLocationChange(index, "notes", e.target.value)
-                        }
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    {!isSubmitted && (
-                      <td className="text-center print-hide">
-                        <button
-                          type="button"
-                          onClick={() => removeLocation(index)}
-                          disabled={formData.locations.length <= 1}
-                          className="btn btn-link p-0 border-0"
-                          style={{ color: "red" }}
-                        >
-                          <span style={{ fontSize: "1.2rem" }}>
-                            <DeleteForever />
-                          </span>
-                        </button>
-                      </td>
-                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -703,7 +900,6 @@ const SounderAudibilityForm = ({
                 value={formData.engineerName}
                 onChange={handleInputChange}
                 required
-                readOnly
                 disabled={isSubmitted}
               />
             </div>
@@ -716,12 +912,12 @@ const SounderAudibilityForm = ({
                 value={formatDate(formData.engineerDate)}
                 onChange={handleInputChange}
                 required
+                disabled={isSubmitted}
                 style={{
                   height: "40px",
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -773,14 +969,13 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
   siteAssets: state.site.siteAssets,
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
   loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
   getSiteDetailsById,
-  getSiteById,
   getSiteAssets,
   getSites,
   getUsers,
-})(SounderAudibilityForm);
+})(CctvAlarmCertificate);

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
-import InspectionElectricalFault from "./InspectionElectricalFault"
+import InspectionElectricalFault from "./InspectionElectricalFault";
 import SurveyWaterTemperatureMonitoring from "./SurveyWaterTemperatureMonitoring";
 import InspectionElectricalCertificate from "./InspectionElectricalCertificate";
 import InspectionFireCertificate from "./InspectionFireCertificate";
@@ -35,6 +35,8 @@ import RefugeIntercomTesting from "./RefugeIntercomTesting";
 import ExternalLightningCertificate from "./ExternalLightningCertificate";
 import MicroWaveOvenCertificate from "./MicroWaveOvenCertificate";
 import DisabledWCAlarmCertificate from "./DisabledWCAlarmCertificate";
+import CctvAlarmCertificate from "./CctvAlarmCertificate";
+import IntruderAlarmCertificate from "./IntruderAlarmCertificate";
 import StorageTankService from "./StorageTankService";
 import WaterHeaterCertificate from "./WaterHeaterCertificate";
 import FanExtract from "./FanExtract";
@@ -173,6 +175,17 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       setStep("inspection-fire-alarm");
     } else if (
       siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Intruder Alarm" &&
+      siteCheck.category === "CCTV Servicing & Inspection"
+    ) {
+      setStep("inspection-cctv-intruder-alarm");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Intruder Alarm" &&
+      siteCheck.category === "Intruder Alarm Servicing & Inspection"
+    ) {
+      setStep("inspection-intruder-alarm");
+
       siteCheck.subType === "Legionella" &&
       siteCheck.category === "Water - Visual Inspection of Storage Tank"
     ) {
@@ -201,6 +214,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Ventilation System(s) Servicing"
     ) {
       setStep("inspection-ventilation-report");
+
     } else if (siteCheck.type === "Assessment") {
       setStep("assessment-fire-risk");
     } else if (
@@ -564,10 +578,30 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 />
               </Item>
             )}
+            {step === "inspection-cctv-intruder-alarm" && (
+              <Item>
+                <CctvAlarmCertificate
+                checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
             {step === "inspection-storage-tank" && (
               <Item>
                 <StorageTankService
                   checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                />
+              </Item>
+            )}
+            {step === "inspection-intruder-alarm" && (
+              <Item>
+                <IntruderAlarmCertificate
+                checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
@@ -694,6 +728,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 />
               </Item>
             )}
+
             {step === "assessment-fire-risk" && (
               <Item>
                 <AssessmentFireRisk
