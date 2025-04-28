@@ -746,6 +746,89 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <TankSurvey checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
+
+            {step === "inspection-electrical" && (
+              <Item>
+                <InspectionElectricalFault
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+            {step === "inspection-electrical" && (
+              <Item>
+                <InspectionElectricalCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+
+            {step === "inspection-fire-alarm" && (
+              <Item>
+                <InspectionFireCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  siteCheck={siteCheck}
+                />
+              </Item>
+            )}
+
+            {step === "assessment-fire-risk" && (
+              <Item>
+                <AssessmentFireRisk
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                />
+              </Item>
+            )}
+            {step === "audit-unit-maintenance-periodic" && (
+              <Item>
+                <AuditUnitPeriodic checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "audit-question" && (
+              <Item>
+                <Audit
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                />
+              </Item>
+            )}
+            {step === "survey-water-outlet-temperature" && (
+              <Item>
+                <SurveyWaterTemperatureMonitoring
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  repeatFrequency={siteCheck?.repeatFrequency}
+                />
+              </Item>
+            )}
+            {step === "survey-water-domestic-ra" && (
+              <Item>
+                <SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "survey-asbestos" && (
+              <Item>
+                <AsbestosSurvey checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "survey-asbestos" && (
+              <Item>
+                <AsbestonSample checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+            {step === "survey-water-tank" && (
+              <Item>
+                <TankSurvey checkId={checkId} sasToken={sasToken} />
+              </Item>
+            )}
+
             <Grid sm={12}>
               <button
                 style={{
