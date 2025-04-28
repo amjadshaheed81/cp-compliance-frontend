@@ -12,13 +12,12 @@ import {
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
 
-const DisabledWCAlarmCertificate = ({
+const VentilationReport = ({
   sasToken,
   checkId,
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,
@@ -35,15 +34,15 @@ const DisabledWCAlarmCertificate = ({
     manufacturer: "",
     modelNumber: "",
     position: "",
+    assetId: "",
     floor: "",
     room: "",
-    engineersComments: "",
-    pullSwitchCheck: "",
-    resetPointCheck: "",
-    overDoorLightCheck: "",
-    overDoorSounderCheck: "",
-    controlPointOrIntercomCheck: "",
-    passOrFail: "",
+    serialNo: "",
+    engineersReport: "",
+    jobComplete: "",
+    partsRequired: "",
+    filtersCleaned: "",
+    electricalConnectionsCheck: "",
     clientName: "",
     engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
@@ -112,9 +111,8 @@ const DisabledWCAlarmCertificate = ({
 
   const filteredAssets =
     siteAssets?.filter(
-      (asset) => asset.category === "Electrical" //&&
-      // asset.subCategory === "Fire Alarm" &&
-      // asset.subCategory2 === "Disabled Refuge Outstation"
+      (asset) =>
+        asset.category === "Mechanical" && asset.subCategory === "Ventilation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
@@ -123,10 +121,12 @@ const DisabledWCAlarmCertificate = ({
         ...prev,
         selectedAsset: newValue,
         manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.modelNumber || "",
+        modelNumber: newValue.model || "",
+        serialNo: newValue.serialNumber || "",
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
+        assetId: newValue.assetId || "",
       }));
     } else {
       setFormData((prev) => ({
@@ -134,9 +134,11 @@ const DisabledWCAlarmCertificate = ({
         selectedAsset: null,
         manufacturer: "",
         modelNumber: "",
+        serialNo: "",
         position: "",
         floor: "",
         room: "",
+        assetId: "",
       }));
     }
   };
@@ -148,6 +150,80 @@ const DisabledWCAlarmCertificate = ({
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+
+  //   const handlePhotoUpload = async (e) => {
+  //     const files = Array.from(e.target.files);
+  //     if (files.length === 0) return;
+
+  //     setUploadingPhotos(true);
+
+  //     try {
+  //       const uploadPromises = files.map(async (file) => {
+  //         // Create preview URL
+  //         const previewUrl = URL.createObjectURL(file);
+
+  //         // Upload the file
+  //         const reqData = {
+  //           siteId: siteSelectedForGlobal?.siteId,
+  //           file,
+  //           folderName: "storage-tank-photos",
+  //         };
+
+  //         const uploadResponse = await uploadSiteCheckDoc(reqData);
+
+  //         return {
+  //           url: uploadResponse.url,
+  //           previewUrl,
+  //           fileName: file.name,
+  //         };
+  //       });
+
+  //       const uploadedFiles = await Promise.all(uploadPromises);
+
+  //       // Update state with new photos
+  //       setUploadedPhotos((prev) => [...prev, ...uploadedFiles]);
+  //       setPhotoPreviews((prev) => [
+  //         ...prev,
+  //         ...uploadedFiles.map((f) => f.previewUrl),
+  //       ]);
+
+  //       // Add image references to comments
+  //       const imageTags = uploadedFiles
+  //         .map((file) => `\n[img:${file.fileName}](${file.url})`)
+  //         .join("");
+
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         engineersReport: prev.engineersReport + imageTags,
+  //       }));
+
+  //       toast.success("Photos uploaded successfully");
+  //     } catch (error) {
+  //       console.error("Error uploading photos:", error);
+  //       toast.error("Failed to upload some photos");
+  //     } finally {
+  //       setUploadingPhotos(false);
+  //     }
+  //   };
+
+  //   const handleRemovePhoto = (index) => {
+  //     const updatedPhotos = [...uploadedPhotos];
+  //     const removedPhoto = updatedPhotos.splice(index, 1)[0];
+
+  //     // Remove the photo reference from comments
+  //     const photoRef = `[img:${removedPhoto.fileName}](${removedPhoto.url})`;
+  //     const updatedComments = formData.engineersReport.replace(photoRef, "");
+
+  //     setUploadedPhotos(updatedPhotos);
+  //     setPhotoPreviews(updatedPhotos.map((p) => p.previewUrl));
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       engineersReport: updatedComments,
+  //     }));
+
+  //     // Revoke the object URL to free memory
+  //     URL.revokeObjectURL(removedPhoto.previewUrl);
+  //   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -164,11 +240,15 @@ const DisabledWCAlarmCertificate = ({
         checkId,
         subType,
         submittedDate: new Date().toISOString(),
-        engineersComments: formData.engineersComments,
+        engineersReport: formData.engineersReport,
+        // uploadedPhotos: uploadedPhotos.map((photo) => ({
+        //   url: photo.url,
+        //   fileName: photo.fileName,
+        // })),
       };
 
-      await post("/api/site-check/fire-refuge-report", dataToSave);
-      toast.success("Fire refuge report saved successfully");
+      await post("/api/site-check/ventilation-report", dataToSave);
+      toast.success("Storage tank report saved successfully");
       setIsSubmitted(true);
     } catch (error) {
       toast.error("Failed to save report");
@@ -304,7 +384,7 @@ const DisabledWCAlarmCertificate = ({
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">Disabled WC Alarm Certificate</h4>
+        <h4 className="mb-0">Water Heater Service Report</h4>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -405,7 +485,7 @@ const DisabledWCAlarmCertificate = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Microwave Oven Testing Device"
+                      label="Select a Refuge Intercom Device"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -439,6 +519,34 @@ const DisabledWCAlarmCertificate = ({
                       className="form-control"
                       name="modelNumber"
                       value={formData.modelNumber}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Serial Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="serialNo"
+                      value={formData.serialNo}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Asset No</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="assetId"
+                      value={`Asset No - ${formData.assetId}`}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -489,13 +597,26 @@ const DisabledWCAlarmCertificate = ({
                 </div>
               </div>
             )}
+            {/* <div className="col-md-4">
+              <div className="mb-3">
+                <label className="form-label">Storage(ltrs)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="tankSize"
+                  value={formData.tankSize}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div> */}
           </div>
         </div>
 
-        {/*  Engineers Comments Section */}
+        {/*  Engineers Report Section */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Engineers Comments</h5>
+            <h5 className="mb-0">Engineers Report</h5>
           </div>
           <div className="card-body">
             <div className="mb-3">
@@ -504,7 +625,7 @@ const DisabledWCAlarmCertificate = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersComments || ""}
+                value={formData.engineersReport || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -524,77 +645,39 @@ const DisabledWCAlarmCertificate = ({
               <table className="table table-bordered">
                 <tbody>
                   <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Pull Switch Check
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Job Complete
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Reset Point Check
-                    </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Over Door Light Check
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Parts Required{" "}
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <select
                         className="form-select"
-                        value={formData.pullSwitchCheck}
+                        value={formData.jobComplete}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            pullSwitchCheck: e.target.value,
+                            jobComplete: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
+                        <option value="Fail">NO</option>
                       </select>
                     </td>
                     <td>
                       <select
                         className="form-select"
-                        value={formData.resetPointCheck}
+                        value={formData.partsRequired}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            resetPointCheck: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.overDoorLightCheck}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            overDoorLightCheck: e.target.value,
+                            partsRequired: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -610,98 +693,60 @@ const DisabledWCAlarmCertificate = ({
             </div>
           </div>
         </div>
-        <div className="mb-4">
+
+        <div className="mb-4 card">
           <div className="card-body">
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <tbody>
-                  <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
+            <div className="row">
+              <div className="col-md-6">
+                <h5>Service Items Undertaken</h5>
+                <div className="d-flex flex-column gap-3 mt-3">
+                  <div>
+                    <label className="form-label fw-bold">
+                      Filters Cleaned
+                    </label>
+                    <select
+                      className="form-select"
+                      value={formData.filtersCleaned}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          filtersCleaned: e.target.value,
+                        })
+                      }
+                      disabled={isSubmitted}
                     >
-                      Over Door Sounder Check{" "}
-                    </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
+                      <option value="">Select</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="form-label fw-bold">
+                      Electrical Connection Check
+                    </label>
+                    <select
+                      className="form-select"
+                      value={formData.electricalConnectionsCheck}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          electricalConnectionsCheck: e.target.value,
+                        })
+                      }
+                      disabled={isSubmitted}
                     >
-                      Control Point / Intercom Check{" "}
-                    </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Pass/Fail
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.overDoorSounderCheck}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            overDoorSounderCheck: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.controlPointOrIntercomCheck}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            controlPointOrIntercomCheck: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={formData.passOrFail}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            passOrFail: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Pass</option>
-                        <option value="Fail">Fail</option>
-                      </select>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      <option value="">Select</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
         <div className="row mt-4">
           <div className="col-md-6">
             <div className="mb-3">
@@ -817,4 +862,4 @@ export default connect(mapStateToProps, {
   getSiteAssets,
   getSites,
   getUsers,
-})(DisabledWCAlarmCertificate);
+})(VentilationReport);
