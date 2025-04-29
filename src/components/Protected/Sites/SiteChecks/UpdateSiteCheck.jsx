@@ -185,7 +185,8 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Intruder Alarm Servicing & Inspection"
     ) {
       setStep("inspection-intruder-alarm");
-
+    } else if (
+      siteCheck.type === "Inspection" &&
       siteCheck.subType === "Legionella" &&
       siteCheck.category === "Water - Visual Inspection of Storage Tank"
     ) {
