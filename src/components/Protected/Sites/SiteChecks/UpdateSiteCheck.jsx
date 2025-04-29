@@ -582,7 +582,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "inspection-cctv-intruder-alarm" && (
               <Item>
                 <CctvAlarmCertificate
-                checkId={checkId}
+                  checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
@@ -602,7 +602,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "inspection-intruder-alarm" && (
               <Item>
                 <IntruderAlarmCertificate
-                checkId={checkId}
+                  checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
@@ -744,15 +744,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <AuditUnitPeriodic checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
-            {step === "audit-question" && (
-              <Item>
-                <Audit
-                  checkId={checkId}
-                  sasToken={sasToken}
-                  subType={siteCheck?.subType}
-                />
-              </Item>
-            )}
+
             {step === "survey-water-outlet-temperature" && (
               <Item>
                 <SurveyWaterTemperatureMonitoring
@@ -826,15 +818,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <AuditUnitPeriodic checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
-            {step === "audit-question" && (
-              <Item>
-                <Audit
-                  checkId={checkId}
-                  sasToken={sasToken}
-                  subType={siteCheck?.subType}
-                />
-              </Item>
-            )}
+
             {step === "survey-water-outlet-temperature" && (
               <Item>
                 <SurveyWaterTemperatureMonitoring
