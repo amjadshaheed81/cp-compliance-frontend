@@ -1305,6 +1305,7 @@ const UpdateAsset = ({
                         )}
                         <input
                           type="file"
+                          accept="image/jpeg, image/jpg, image/png"
                           multiple
                           className="form-control"
                           style={{ marginTop: "30px" }}
