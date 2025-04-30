@@ -5,10 +5,8 @@ import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment";
 import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
-import Appointment from "./Appointment";
 import { useNavigate } from "react-router-dom";
 import { connect } from "react-redux";
-
 import { get } from "../../../api";
 const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
 
@@ -22,15 +20,48 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
   };
 
   const [data, setData] = useState([]);
+ 
+
+   const [managerList, setManagerList] = useState([]);
+  
+    const getManagerList = async () => {
+        const data = await get(
+          `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
+        );
+        setManagerList(
+          data?.users?.sort((a, b) => {
+            if (a.name < b.name) {
+              return -1;
+            }
+            if (a.name > b.name) {
+              return 1;
+            }
+            return 0;
+          }) || []
+        );
+      };
+
+  const getUserName = (user) => {  
+    if(String(user?.data?.param) === String(loggedInUserData?.id)) {
+      return managerList.find(u => String(u.id) === String(user?.data?.userId))?.name;
+    } else {
+      return managerList.find(u => String(u.id) === String(user?.data?.param))?.name;
+    }
+  }
+
   useEffect(() => {
+   
     if(siteSelectedForGlobal?.siteId) {
       getData();
+      getManagerList();
     }
-  }, [])
+  }, [siteSelectedForGlobal])
+
   const getData = async () => {
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId??0);
-    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
-        data = [...data, ...invitedata]
+    //let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+    // data = [...data, ...invitedata]
+    data = data.filter(d=> d.eventType !== 'Appointment' && d.section !== 'proposed'  && d.section !== 'dismissed' )
     data = filterDuplicates(data);
     const event = data?.map(d => {
       return {
@@ -72,7 +103,7 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
            
           {title?.map((itm, index) => (
             <>
-           <Tooltip title={(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) ? `${itm?.label} Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
+           <Tooltip title={itm?.type?.includes("Appointment")? `${itm?.label} - ${getUserName(itm)} - Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
            {/* <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-primary">{itm?.label}</span></p> */}
            {itm?.type?.includes("Audit") && (
              <p onClick={()=>{navigateTo(itm?.section)}}><span class="badge bg-primary" >{itm?.type}</span></p>
@@ -95,14 +126,11 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
            {itm?.type?.includes("Contract") && (
               <p onClick={()=>{navigateTo(itm?.section)}}> <span class="badge bg-info" >{itm?.type}</span></p> 
               )}
-           {(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) &&  !itm?.data?.param && (
+           {itm?.type?.includes("Appointment") && (
                   <p><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
-{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) && itm?.data?.param && (
-                  <p onClick={() => { setCurrentInvite(itm?.data);
-                    setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
-                )}
+
            </Tooltip>
          </>
           ))}
@@ -129,12 +157,12 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
           />
         </div>
       </div>
-      <Appointment 
+      {/* <Appointment 
         openInvite={openInvite} 
         setOpenInvite={setOpenInvite}
         currentInvite={currentInvite}
         setCurrentInvite={setCurrentInvite}
-      />
+      /> */}
     </Fragment>
   );
 };

@@ -20,7 +20,7 @@ import {
 import Form from 'react-bootstrap/Form';
 import { toast } from "react-toastify";
 
-const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite, loggedInUserData, sites, siteSelectedForGlobal }) => {
+const Appointment = ({ getData, openInvite, setOpenInvite,currentInvite, setCurrentInvite, loggedInUserData, sites, siteSelectedForGlobal }) => {
   // const [openInvite, setOpenInvite] = useState(false);
   // const [currentInvite, setCurrentInvite] = useState(null);
   const [isEditingTime, setIsEditingTime] = useState(false);
@@ -53,6 +53,8 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
 
   const handleAccept = () => {
     del(`/api/user/calendar/${currentInvite?.calendarId}/delete`);
+    const u1 = currentInvite?.userId;
+    const u2 = currentInvite?.param;
     const calenderBody = {
       siteId: currentInvite?.siteId,
       startDate: moment(currentInvite.startDate),
@@ -61,16 +63,20 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
       endTime: currentInvite.endTime,
       shortText: currentInvite.shortText,
       eventType: `Appointment`,
-      userId: currentInvite?.userId,
+      userId: u1,
+      param: u2,
       includeCompanyUsers: false,
       status: "Active",
       startTime: currentInvite.startTime,
       endTime: currentInvite.endTime,
+      section: "accepted"
     };
     put('/api/user/calendar', calenderBody);
-    calenderBody.userId = currentInvite.param;
+    calenderBody.userId = u2;
+    calenderBody.param = u1;
     put('/api/user/calendar', calenderBody);
     setOpenInvite(false);
+    getData();
   };
 
   const dismiss = async () => {
@@ -79,7 +85,11 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
       
       section: "dismissed",
     };
+    if(fromUser?.id !== loggedInUserData?.id) {
+
       await put(`/api/user/calendar`, updatedInvite);
+      getData();
+    }
       setOpenInvite(false);
   }
 
@@ -109,11 +119,13 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
       userId: loggedInUserData?.id,
       includeCompanyUsers: false,
       param: currentInvite?.userId,
+      section: 'proposed'
     };
 
       await put(`/api/user/calendar`, updatedInvite);
       setIsEditingTime(false);
       setOpenInvite(false);
+      getData();
     
   };
 
@@ -129,7 +141,7 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
   };
 
   const [managerList, setManagerList] = useState([]);
-  const fromUser = managerList.find(u => u.id === currentInvite?.userId);
+  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId));
 
   const getManagerList = async () => {
     const data = await get(
@@ -228,13 +240,13 @@ const Appointment = ({ openInvite, setOpenInvite,currentInvite, setCurrentInvite
           )}
         </DialogContent>
         <DialogActions>
-          <Button
+        {fromUser?.id !== loggedInUserData?.id && <Button
             variant="contained"
             color="success"
             onClick={handleAccept}
           >
             Accept
-          </Button>
+          </Button>}
           {isEditingTime ? (
             <>
               <Button

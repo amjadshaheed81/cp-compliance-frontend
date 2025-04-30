@@ -15,6 +15,9 @@ import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Appointment from "../../Dashboard/Appointment";
+import {
+  Autocomplete,
+} from "@mui/material";
 
 const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const navigate = useNavigate();
@@ -73,6 +76,15 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
            date.getFullYear() === today.getFullYear();
   }
 
+  const getUserName = (user) => {  
+    if(String(user?.data?.param) === String(loggedInUserData?.id)) {
+      return managerList.find(u => String(u.id) === String(user?.data?.userId))?.name;
+    } else {
+      return managerList.find(u => String(u.id) === String(user?.data?.param))?.name;
+    }
+    
+  }
+
   const getData = async () => {
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
     let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
@@ -102,6 +114,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
       ...appointmentForm,
       [name]: value
     });
+    getData();
   };
 
   const handleAppointmentSubmit = async (e) => {
@@ -118,7 +131,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
           param: appointmentForm?.recipient,
           startTime: appointmentForm.startTime,
           endTime: appointmentForm.endTime,
-          section: appointmentForm?.recipient,
+          section: "proposed",
         };
     
     await put('/api/user/calendar',calenderBody)
@@ -186,7 +199,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
       <>
         <p onClick={() => msg(eventInfo.event)} style={{ overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
           {title?.map((itm, index) => (
-            <Tooltip title={(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) ? `${itm?.label} Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow key={index}>
+            <Tooltip title={itm?.type?.includes("Appointment") ? `${itm?.label} - ${getUserName(itm)}- Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow key={index}>
               {itm?.type?.includes("Audit") && (
                 <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-primary"  >{truncateString(itm?.type, 15)}</span></p>
               )}
@@ -208,11 +221,11 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
               {itm?.type?.includes("Contract") && (
                 <p onClick={()=>{navigateTo(itm?.section)}}><span className="badge bg-info" >{truncateString(itm?.type, 15)}</span></p>
               )}
-              {(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) &&  !itm?.data?.param && (
+             {itm?.type?.includes("Appointment") &&  itm?.data?.section === "accepted" && (
                   <p><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
-{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) && itm?.data?.param && (
+{itm?.type?.includes("Appointment") &&  (itm?.data?.section === "proposed" || itm?.data?.section === "dismissed") && (
                   <p onClick={() => { setCurrentInvite(itm?.data);
                     setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
                 )}
@@ -226,6 +239,13 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
   return (
     <Fragment>
       <SidebarNew />
+      <Appointment 
+      getData={getData}
+        openInvite={openInvite} 
+        setOpenInvite={setOpenInvite}
+        currentInvite={currentInvite}
+        setCurrentInvite={setCurrentInvite}
+      />
       <div className="content">
         <Header />
         <div className="container-fluid">
@@ -250,7 +270,71 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
               <Form onSubmit={handleAppointmentSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Recipient</Form.Label>
-                  <Form.Control
+                                       <Autocomplete
+                                          id="recipient"
+                                          onChange={(event, item) => {
+
+                                            setAppointmentForm({
+                                              ...appointmentForm,
+                                              recipient: item?.key
+                                            });
+                                          }}
+                                          value={
+                                            managerList
+                                              .filter(
+                                                (o) =>
+                                                  String(o.id) === String(appointmentForm.recipient)
+                                              )
+                                              .map((option) => {
+                                                return {
+                                                  key: option.id,
+                                                  label:
+                                                    option.role +
+                                                    " - " +
+                                                    option.name +
+                                                    " (" +
+                                                    option.email +
+                                                    ")" +
+                                                    (option.companyName
+                                                      ? " - " + option.companyName
+                                                      : ""),
+                                                };
+                                              })[0]
+                                          }
+                                          options={managerList.map((option) => {
+                                            return {
+                                              key: option.id,
+                                              label:
+                                                option.role +
+                                                " - " +
+                                                option.name +
+                                                " (" +
+                                                option.email +
+                                                ")" +
+                                                (option.companyName
+                                                  ? " - " + option.companyName
+                                                  : ""),
+                                            };
+                                          })}
+                                          getOptionLabel={(option) => option.label}
+                                          renderInput={(params) => (
+                                            <div ref={params.InputProps.ref}>
+                                              <input
+                                                type="text"
+                                                autoComplete="off"
+                                                readOnly
+                                                onFocus={(e) =>
+                                                  e.target.removeAttribute("readonly")
+                                                }
+                                                {...params.inputProps}
+                                                required
+                                                className="form-control"
+                                                placeholder="Select Lead"
+                                              />
+                                            </div>
+                                          )}
+                                        />
+                  {/* <Form.Control
                     as="select"
                     name="recipient"
                     value={appointmentForm.recipient}
@@ -263,7 +347,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
                       )
                     })}
-                  </Form.Control>
+                  </Form.Control> */}
                 </Form.Group>
                 
                 <Form.Group className="mb-3">

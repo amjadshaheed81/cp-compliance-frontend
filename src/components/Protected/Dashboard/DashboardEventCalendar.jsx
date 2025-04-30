@@ -32,10 +32,20 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   const [proposedEndTime, setProposedEndTime] = useState('');
 
   useEffect(() => {
-    getData();
+    if(sites?.length > 0) {
+      getData();
+    }
+  }, [sites]);
+
+  useEffect(() => {
     getInviteData();
     getManagerList();
+
   }, []);
+
+
+
+  
 
   useEffect(() => {
     if (currentInvite) {
@@ -65,30 +75,33 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
     }
   }
 
-  const handleAccept = () => {
-    
-   del(`/api/user/calendar/${currentInvite?.calendarId}/delete`);
-    const calenderBody = {
-      siteId: currentInvite?.siteId,
-      startDate: moment(currentInvite.startDate),
-      endDate: moment(currentInvite.endDate),
-      startTime: currentInvite.startTime,
-      endTime: currentInvite.endTime,
-      shortText: currentInvite.shortText,
-      eventType: `Appointment`,
-      userId: currentInvite?.userId,
-      includeCompanyUsers: false,
-      status: "Active",
-      startTime: currentInvite.startTime,
-      endTime: currentInvite.endTime,
+   const handleAccept = () => {
+      del(`/api/user/calendar/${currentInvite?.calendarId}/delete`);
+      const u1 = currentInvite?.userId;
+      const u2 = currentInvite?.param;
+      const calenderBody = {
+        siteId: currentInvite?.siteId,
+        startDate: moment(currentInvite.startDate),
+        endDate: moment(currentInvite.endDate),
+        startTime: currentInvite.startTime,
+        endTime: currentInvite.endTime,
+        shortText: currentInvite.shortText,
+        eventType: `Appointment`,
+        userId: u1,
+        param: u2,
+        includeCompanyUsers: false,
+        status: "Active",
+        startTime: currentInvite.startTime,
+        endTime: currentInvite.endTime,
+        section: "accepted"
+      };
+      put('/api/user/calendar', calenderBody);
+      calenderBody.userId = u2;
+      calenderBody.param = u1;
+      put('/api/user/calendar', calenderBody);
+      setOpenInvite(false);
+      getData();
     };
-    console.log('currentInvite',currentInvite,calenderBody)
-    put('/api/user/calendar', calenderBody);
-    calenderBody.userId = currentInvite.param;
-    put('/api/user/calendar', calenderBody);
-   setOpenInvite(false);
-   getData();
-  };
 
   const dismiss = async () => {
     const updatedInvite = {
@@ -96,7 +109,10 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       
       section: "dismissed",
     };
+    if(fromUser?.id !== loggedInUserData?.id) {
+
       await put(`/api/user/calendar`, updatedInvite);
+    }
       setOpenInvite(false);
   }
 
@@ -126,6 +142,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
       userId: loggedInUserData?.id,
       includeCompanyUsers: false,
       param: currentInvite?.userId,
+      section: 'proposed'
     };
 
       await put(`/api/user/calendar`, updatedInvite);
@@ -147,7 +164,16 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   };
 
   const [managerList, setManagerList] = useState([]);
-  const fromUser = managerList.find(u => u.id === currentInvite?.userId);
+  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId));
+  
+  const getUserName = (user) => {  
+    if(String(user?.data?.param) === String(loggedInUserData?.id)) {
+      return managerList.find(u => String(u.id) === String(user?.data?.userId))?.name;
+    } else {
+      return managerList.find(u => String(u.id) === String(user?.data?.param))?.name;
+    }
+    
+  }
 
   const getManagerList = async () => {
     const data = await get(
@@ -169,7 +195,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   const getData = async () => {
     let data = await get("/api/user/calendar/events?userId=" + (loggedInUserData?.id ?? 0));
     let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
-    data = [...data,...invitedata]
+    data = [...data, ...invitedata]
     data = filterDuplicates(data);
     const event = data?.map(d => {
       return {
@@ -184,7 +210,6 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
       }
     })
-    console.log('event', event)
     setData(event);
   }
 
@@ -213,7 +238,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
         <p>
           {title?.map((itm, index) => (
             <>
-              <Tooltip title={(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) ? `${itm?.label} Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
+              <Tooltip title={itm?.type?.includes("Appointment") ? `${itm?.label} - ${getUserName(itm)} - Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
                 {itm?.type?.includes("Audit") && (
                   <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-primary" >{itm?.type}</span></p>
                 )}
@@ -236,11 +261,11 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                   <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
-{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) &&  !itm?.data?.param && (
+{itm?.type?.includes("Appointment") &&  itm?.data?.section === "accepted" && (
                   <p><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
-{(itm?.type?.includes("Appointment") || itm?.type?.includes("Apointment")) && itm?.data?.param && (
+{itm?.type?.includes("Appointment") &&  (itm?.data?.section === "proposed" || itm?.data?.section === "dismissed") && (
                   <p onClick={() => { setCurrentInvite(itm?.data);
                     setOpenInvite(true); }}><span class="badge bg-danger" >{itm?.type}</span></p>
                 )}
@@ -351,13 +376,14 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
           )}
         </DialogContent>
         <DialogActions>
-          <Button
+          
+          {fromUser?.id !== loggedInUserData?.id && <Button
             variant="contained"
             color="success"
             onClick={handleAccept}
           >
             Accept
-          </Button>
+          </Button>}
           {isEditingTime ? (
             <>
               <Button
