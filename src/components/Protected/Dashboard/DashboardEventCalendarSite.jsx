@@ -117,7 +117,7 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
         <div className="card-body p-2">
         <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
-              <h5 className="card-title">Site Calender - {siteSelectedForGlobal?.siteName}</h5>
+              <h5 className="card-title">Site Calendar - {siteSelectedForGlobal?.siteName}</h5>
             </div>
             </div>
           <FullCalendar
