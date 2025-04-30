@@ -77,14 +77,17 @@ const EmergencyLightingInspectionForm = ({
       if(apiData) {
         setFormData((prev) => ({
           ...prev,
-          id : apiData?.id  || prev.id,
+          id: apiData?.id || prev.id,
           installationName: apiData?.installationName || prev.installationName,
-          installationAddress: apiData?.installationAddress|| prev.installationAddress,
+          installationAddress:
+            apiData?.installationAddress || prev.installationAddress,
           bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
           bsiCategoryMode: apiData?.bsiCategoryMode || prev.bsiCategoryMode,
-          bsiCategoryFacilities: apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
-          bsiCategoryDuration: apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
-          inspectionDate:apiData?.inspectionDate || prev.inspectionDate,
+          bsiCategoryFacilities:
+            apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
+          bsiCategoryDuration:
+            apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
+          inspectionDate: apiData?.inspectionDate || prev.inspectionDate,
           inspectionChecks: apiData?.inspectionChecks?.length
             ? prev.inspectionChecks.map((defaultCheck, index) => ({
                 ...defaultCheck,
@@ -99,8 +102,8 @@ const EmergencyLightingInspectionForm = ({
           allFittingsPassed:
             apiData?.allFittingsPassed || prev.allFittingsPassed,
           siteAssetId: apiData?.siteAssetId || prev.siteAssetId,
-          file: apiData?.file || prev.file,
-          user:apiData?.inspectionByUser || prev.user,
+          file: apiData?.file || prev.files,
+          user: apiData?.inspectionByUser || prev.user,
         }));
 
         setCompleted(true);

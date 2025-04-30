@@ -188,11 +188,23 @@ const AssessmentFireRisk = ({
   };
 
   const handleFileChange = (e, idx) => {
+    const files = Array.from(e.target.files || []);
+    const validImageFiles = files.filter((file) =>
+      ["image/jpeg", "image/jpg", "image/png"].includes(file.type)
+    );
+
+    if (files.length > 0 && validImageFiles.length === 0) {
+      toast.error("Please select only image files (JPEG, JPG, PNG)");
+      return;
+    }
+
     const uquest = [...quest];
-    uquest[idx].response.file = e.target.files;
+    uquest[idx].response.file = [
+      ...(uquest[idx].response.file || []),
+      ...validImageFiles,
+    ];
     setquest(uquest);
   };
-
   const handleFileDelete = (idx, idx2) => {
     const uquest = [...quest];
     quest[idx].response.file = [...quest[idx].response.file].filter(
@@ -937,6 +949,7 @@ const AssessmentFireRisk = ({
                                           onDragOver={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
+                                            e.dataTransfer.dropEffect = "copy";
                                           }}
                                           onDragEnter={(e) => {
                                             e.preventDefault();
@@ -949,18 +962,36 @@ const AssessmentFireRisk = ({
                                           onDrop={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            const files = e.dataTransfer.files;
-                                            if (files && files.length) {
-                                              // Create a synthetic event to reuse your existing handler
-                                              const syntheticEvent = {
-                                                target: {
-                                                  files: files,
-                                                },
-                                              };
-                                              handleFileChange(
-                                                syntheticEvent,
-                                                idx
+                                            const files = Array.from(
+                                              e.dataTransfer.files || []
+                                            );
+                                            const validImageFiles =
+                                              files.filter((file) =>
+                                                [
+                                                  "image/jpeg",
+                                                  "image/jpg",
+                                                  "image/png",
+                                                ].includes(file.type)
                                               );
+
+                                            if (
+                                              files.length > 0 &&
+                                              validImageFiles.length === 0
+                                            ) {
+                                              toast.error(
+                                                "Please drop only image files (JPEG, JPG, PNG)"
+                                              );
+                                              return;
+                                            }
+
+                                            if (validImageFiles.length > 0) {
+                                              const uquest = [...quest];
+                                              uquest[idx].response.file = [
+                                                ...(uquest[idx].response.file ||
+                                                  []),
+                                                ...validImageFiles,
+                                              ];
+                                              setquest(uquest);
                                             }
                                           }}
                                         >
