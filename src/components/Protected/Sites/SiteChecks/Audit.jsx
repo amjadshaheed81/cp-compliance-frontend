@@ -205,7 +205,6 @@ const AssessmentFireRisk = ({
     ];
     setquest(uquest);
   };
-
   const handleFileDelete = (idx, idx2) => {
     const uquest = [...quest];
     quest[idx].response.file = [...quest[idx].response.file].filter(
