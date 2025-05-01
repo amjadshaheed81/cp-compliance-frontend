@@ -87,8 +87,9 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const getData = async () => {
     let data = await get("/api/user/calendar/events?siteId="+siteSelectedForGlobal?.siteId);
-    let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
-        data = [...data, ...invitedata]
+    // let invitedata = await get("/api/user/calendar/invites?userId=" + (loggedInUserData?.id ?? 0));
+    //     data = [...data, ...invitedata]
+    data = data.filter(d=> d.eventType !== 'Appointment' && d.section !== 'proposed'  && d.section !== 'dismissed' )
     data = filterDuplicates(data);
     const todays = data.filter(e => isToday(new Date(e.endDate)));
     settodayEvents(todays);
