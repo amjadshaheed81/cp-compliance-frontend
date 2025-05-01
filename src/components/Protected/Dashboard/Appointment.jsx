@@ -116,11 +116,13 @@ const Appointment = ({ getData, openInvite, setOpenInvite,currentInvite, setCurr
       endDate: newEndDate.toISOString(),
       startTime: proposedStartTime,
       endTime: proposedEndTime,
-      userId: loggedInUserData?.id,
       includeCompanyUsers: false,
-      param: currentInvite?.userId,
       section: 'proposed'
     };
+    if(loggedInUserData?.id !== currentInvite.userId) {
+      updatedInvite.userId = loggedInUserData?.id;
+      updatedInvite.param = currentInvite?.userId;
+    }
 
       await put(`/api/user/calendar`, updatedInvite);
       setIsEditingTime(false);

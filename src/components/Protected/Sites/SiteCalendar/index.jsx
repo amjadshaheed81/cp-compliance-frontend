@@ -282,6 +282,8 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                           }}
                                           value={
                                             managerList
+                                            .filter((o) =>
+                                              o.id !== loggedInUserData?.id)
                                               .filter(
                                                 (o) =>
                                                   String(o.id) === String(appointmentForm.recipient)
