@@ -170,7 +170,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   };
 
   const [managerList, setManagerList] = useState([]);
-  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId));
+  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId === loggedInUserData?.id ? currentInvite?.userId : currentInvite?.param));
   
   const getUserName = (user) => {  
     if(String(user?.data?.param) === String(loggedInUserData?.id)) {
@@ -323,7 +323,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                 <strong>Site:</strong> {getSiteName(currentInvite?.siteId)}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>From:</strong> {fromUser?.name}
+                <strong>{currentInvite?.userId === loggedInUserData?.id  ? 'From:' : 'To:'}</strong> {fromUser?.name}
               </Typography>
               <Typography variant="body1" gutterBottom>
                 <strong>Subject:</strong> {currentInvite.shortText}
@@ -383,7 +383,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
         </DialogContent>
         <DialogActions>
           
-          {fromUser?.id !== loggedInUserData?.id && <Button
+          {String(currentInvite?.userId) !== String(loggedInUserData?.id) && <Button
             variant="contained"
             color="success"
             onClick={handleAccept}
