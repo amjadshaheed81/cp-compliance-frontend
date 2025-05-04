@@ -37,6 +37,22 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
   useEffect(() => {
     getActions({status: "Reported"});
   }, [siteSelectedForGlobal]);
+
+  const getTimeRemainingValue = (creationDate, riskScore) => {
+
+    const data = riskScore > 16
+    ? {badgeColor : "danger", days : 5}
+    : riskScore > 9
+      ? {badgeColor : "warning", days : 30}
+      : riskScore > 4
+        ? {badgeColor : "info", days : 90}
+        : {badgeColor : "success", days : 365}
+    const dueDate = new Date(creationDate);
+    dueDate.setDate(dueDate.getDate() + data.days);
+    const today = new Date();
+    const timeRemaining = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+    return timeRemaining;
+  };
   
   const getActions = async ({ status }) => {
     if (!siteSelectedForGlobal?.siteId) {
@@ -134,17 +150,21 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
 
   const sortedActions = [...filteredActions].sort((a, b) => {
     if (sortConfig.key === "dueDate") {
-      const dateA = a?.dueDate ? moment(a?.dueDate, "YYYY-MM-DD") :  null;
-      const dateB = b?.dueDate ? moment(b?.dueDate, "YYYY-MM-DD") : null;
 
-      if(!dateA && dateB) return sortConfig.direction === "asc" ? -1 : 1;
-      if(dateA && !dateB) return sortConfig.direction === "asc" ? 1 : -1;
+      const dateA = getTimeRemainingValue(a?.dueDate, a?.riskScore);
+      const dateB = getTimeRemainingValue(b?.dueDate, b?.riskScore);
+      // const dateA = a?.dueDate ? moment(a?.dueDate, "YYYY-MM-DD") :  null;
+      // const dateB = b?.dueDate ? moment(b?.dueDate, "YYYY-MM-DD") : null;
 
-      if(dateA && dateB) {
-        if (dateA.isBefore(dateB)) return sortConfig.direction === "asc" ? -1 : 1;
-        if (dateA.isAfter(dateB)) return sortConfig.direction === "asc" ? 1 : -1;
-      }
-      return 0;
+      // if(!dateA && dateB) return sortConfig.direction === "asc" ? -1 : 1;
+      // if(dateA && !dateB) return sortConfig.direction === "asc" ? 1 : -1;
+
+      // if(dateA && dateB) {
+      //   if (dateA.isBefore(dateB)) return sortConfig.direction === "asc" ? -1 : 1;
+      //   if (dateA.isAfter(dateB)) return sortConfig.direction === "asc" ? 1 : -1;
+      // }
+      // return 0;
+      return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
     } else if (sortConfig.key === "riskScore") {
       const riskA = a?.riskScore || 0;
       const riskB = b?.riskScore || 0;
@@ -182,6 +202,8 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
       </span>
     );
   };
+
+ 
 
   return (
     <Fragment>
