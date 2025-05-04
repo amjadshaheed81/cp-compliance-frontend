@@ -26,6 +26,19 @@ const StyledNode = styled.div`
   background: ${(props) => props.background || "#f5f5f5"};
 `;
 
+const orderMap = {
+      Basement: 1,
+      "Ground Floor": 2,
+      "1st Floor": 3,
+      "2nd Floor": 4,
+      "3rd Floor": 5,
+      "4th Floor": 6,
+      "5th Floor": 7,
+      "6th Floor": 8,
+      "7th Floor": 9,
+      Vertical: 10,
+    };
+
 const nodeStyles = {
   building: {
     borderColor: "#1dca5d",
@@ -80,15 +93,15 @@ const SiteChart = ({
       
       if (selectedNodeType === "room") {
         // If room is selected, only floors can be parents
-        filteredNodes = siteLayout?.filter(node => node.nodeType === "floor") || [];
+        filteredNodes = siteLayout?.filter(node => node.nodeType === "floor")?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999)) || [];
       } else if (selectedNodeType === "type") {
         // If type is selected, only buildings can be parents
-        filteredNodes = siteLayout?.filter(node => node.nodeType === "building") || [];
+        filteredNodes = siteLayout?.filter(node => node.nodeType === "building")?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999)) || [];
       } else if (selectedNodeType === "floor") {
         // If floor is selected, only types or buildings can be parents
         filteredNodes = siteLayout?.filter(node => 
           node.nodeType === "type" || node.nodeType === "building"
-        ) || [];
+        ).sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999)) || [];
       }
       
       setParentNodeTypes(filteredNodes);
@@ -115,7 +128,7 @@ const SiteChart = ({
   };
 
   const CustomTreeNode = ({ node }) => {
-    const children = siteLayout.filter((child) => child.parentNode === node.id);
+    const children = siteLayout.filter((child) => child.parentNode === node.id)?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999));
     const isExpanded = expandedNodes[node.id];
     const style = nodeStyles[node.nodeType] || nodeStyles.default;
     const isDescendant = isDescendantOfInteriorOrExterior(node.id);
@@ -165,7 +178,7 @@ const SiteChart = ({
     );
   };
   
-  const rootNodes = siteLayout.filter((node) => node.parentNode === 0 || node.parentNode === -1);
+  const rootNodes = siteLayout.filter((node) => node.parentNode === 0 || node.parentNode === -1).sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999));
 
   const submitNode = (values) => {
     const { typeOfNode, nodeType, parentNode } = values;
@@ -206,11 +219,13 @@ const SiteChart = ({
         <h5 className="text-start">Creating Building Layout</h5>
 
         <div className="tree-horizontal">
-          {rootNodes.map((node) => (
+          {rootNodes
+          
+          .map((node) => (
             <CustomTreeNode
               key={node.id}
               node={node}
-              childrenNodes={siteLayout.filter((n) => n.parentNode === node.id)}
+              childrenNodes={siteLayout.filter((n) => n.parentNode === node.id).sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999))}
             />
           ))}
         </div>
