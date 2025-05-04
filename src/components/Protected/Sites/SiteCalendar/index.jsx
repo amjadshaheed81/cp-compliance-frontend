@@ -283,7 +283,7 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                           value={
                                             managerList
                                             .filter((o) =>
-                                              o.id !== loggedInUserData?.id)
+                                             String(o.id) !== String(loggedInUserData?.id))
                                               .filter(
                                                 (o) =>
                                                   String(o.id) === String(appointmentForm.recipient)
@@ -304,7 +304,9 @@ const SiteCalendar = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                                 };
                                               })[0]
                                           }
-                                          options={managerList.map((option) => {
+                                          options={managerList
+                                            .filter((o) =>
+                                              String(o.id) !== String(loggedInUserData?.id)).map((option) => {
                                             return {
                                               key: option.id,
                                               label:
