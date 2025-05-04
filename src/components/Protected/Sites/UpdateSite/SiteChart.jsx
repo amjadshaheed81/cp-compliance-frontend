@@ -45,6 +45,19 @@ const nodeStyles = {
   },
 };
 
+const orderMap = {
+  Basement: 1,
+  "Ground Floor": 2,
+  "1st Floor": 3,
+  "2nd Floor": 4,
+  "3rd Floor": 5,
+  "4th Floor": 6,
+  "5th Floor": 7,
+  "6th Floor": 8,
+  "7th Floor": 9,
+  "Vertical": 10,
+};
+
 const SiteChart = ({
   getSiteLayout,
   addSiteLayoutNode,
@@ -70,7 +83,7 @@ const SiteChart = ({
   }, [getSiteLayout, updateSite]);
 
   useEffect(() => {
-    const floors = siteLayout?.filter((node) => node.nodeType === "floor") || [];
+    const floors = siteLayout?.filter((node) => node.nodeType === "floor")?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999)) || [];
     setParentNodeTypes(floors);
   }, [siteLayout]);
 
@@ -92,7 +105,7 @@ const SiteChart = ({
   };
 
   const CustomTreeNode = ({ node }) => {
-    const children = siteLayout.filter((child) => child.parentNode === node.id);
+    const children = siteLayout.filter((child) => child.parentNode === node.id)?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999));
     const isExpanded = expandedNodes[node.id];
     const style = nodeStyles[node.nodeType] || nodeStyles.default;
     const isDescendant = isDescendantOfInteriorOrExterior(node.id);
@@ -147,7 +160,7 @@ const SiteChart = ({
   
   
 
-  const rootNodes = siteLayout.filter((node) => node.parentNode === 0);
+  const rootNodes = siteLayout.filter((node) => node.parentNode === 0)?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999));
 
   const submitNode = (values) => {
     const { typeOfNode, nodeType, parentNode } = values;
@@ -192,7 +205,7 @@ const SiteChart = ({
             <CustomTreeNode
               key={node.id}
               node={node}
-              childrenNodes={siteLayout.filter((n) => n.parentNode === node.id)}
+              childrenNodes={siteLayout.filter((n) => n.parentNode === node.id)?.sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999))}
             />
           ))}
         </div>
