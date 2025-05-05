@@ -143,8 +143,9 @@ const Appointment = ({ getData, openInvite, setOpenInvite,currentInvite, setCurr
   };
 
   const [managerList, setManagerList] = useState([]);
-  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId === loggedInUserData?.id ? currentInvite?.userId : currentInvite?.param));
-
+  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId));
+  const toUser = managerList.find(u => String(u.id) === String(currentInvite?.param));
+  
   const getManagerList = async () => {
     const data = await get(
       `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
@@ -182,9 +183,12 @@ const Appointment = ({ getData, openInvite, setOpenInvite,currentInvite, setCurr
               <Typography variant="body1" gutterBottom>
                 <strong>Site:</strong> {getSiteName(currentInvite?.siteId)}
               </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>{currentInvite?.userId === loggedInUserData?.id  ? 'From:' : 'To:'}</strong> {fromUser?.name}
-              </Typography>
+             <Typography variant="body1" gutterBottom>
+                             <strong>To:</strong> {toUser?.name}
+                           </Typography>
+                           <Typography variant="body1" gutterBottom>
+                             <strong>From:</strong> {fromUser?.name}
+                           </Typography>
               <Typography variant="body1" gutterBottom>
                 <strong>Subject:</strong> {currentInvite.shortText}
               </Typography>

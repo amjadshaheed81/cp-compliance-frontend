@@ -170,7 +170,10 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   };
 
   const [managerList, setManagerList] = useState([]);
-  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId === loggedInUserData?.id ? currentInvite?.userId : currentInvite?.param));
+  //const fromUser = managerList.find(u => String(u.id) === String(String(currentInvite?.userId) === String(loggedInUserData?.id) ? currentInvite?.userId : currentInvite?.param));
+  
+  const fromUser = managerList.find(u => String(u.id) === String(currentInvite?.userId));
+  const toUser = managerList.find(u => String(u.id) === String(currentInvite?.param));
   
   const getUserName = (user) => {  
     if(String(user?.data?.param) === String(loggedInUserData?.id)) {
@@ -285,6 +288,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
     );
   }
 
+  console.log('currentInvite',currentInvite, loggedInUserData?.id)
   return (
     <Fragment>
       <div className="card">
@@ -323,8 +327,12 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
                 <strong>Site:</strong> {getSiteName(currentInvite?.siteId)}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>{currentInvite?.userId === loggedInUserData?.id  ? 'From:' : 'To:'}</strong> {fromUser?.name}
+                <strong>To:</strong> {toUser?.name}
               </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>From:</strong> {fromUser?.name}
+              </Typography>
+             
               <Typography variant="body1" gutterBottom>
                 <strong>Subject:</strong> {currentInvite.shortText}
               </Typography>
