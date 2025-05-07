@@ -50,7 +50,7 @@ const Reading = ({
     const data = { ...formData };
 
     data.readingDate = new Date(data.readingDate);
-    data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh";
+    //data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh";
 
     data.energyId = survey.energyId;
     saveData(data);
@@ -176,9 +176,8 @@ const Reading = ({
                     name="readingUnit"
                     className="form-control form-select"
                     id="readingUnit"
-                    value={survey?.budgetCategory === "Gas" ? "M3" : "Kwh"}
-                    //onChange={handleInputChange}
-                    disabled
+                    value={formData?.readingUnit}
+                    onChange={handleInputChange}
                     required
                   >
                     <option value="">Reading Unit</option>
