@@ -26,7 +26,7 @@ import {
 import { createUpdatePreActions } from "../../../../store/thunk/preActions";
 import { get, put, putMultiPartFormData,uploadSiteCheckDoc, getSasToken, del } from "../../../../api";
 import { getSiteAssets, setLoader, getSiteLayout } from "../../../../store/thunk/site";
-import { isViewRoleForActions } from "../../../../utils/isManagerAdminLogin";
+import { isTopLevelUser } from "../../../../utils/isManagerAdminLogin";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -123,9 +123,24 @@ const EditAction = ({
   };
 
   const deleteActionImage = async (image)=>{
-    await del(`/api/site/actions/image/${image.assetImageId}`);
+    
+    Swal.fire({
+             title: `Are you sure you'd like to permanently delete this image?`,
+             showDenyButton: false,
+             showCancelButton: true,
+             confirmButtonText: "Delete",
+           }).then(async (result) => {
+             if (result.isConfirmed) {
+              await del(`/api/site/actions/image/${image.imageId}`);
     toast.success("Image deleted successfully")
     await getActionIdDetails()
+              
+             } else if (result.isDenied) {
+               // Swal.fire("Changes are not saved", "", "info");
+             }
+           });
+    
+    
     
   }
 
@@ -164,6 +179,13 @@ const EditAction = ({
     }
   };
 
+  const isExternal = () => {
+    console.log('formData',formData, managerList)
+    const user = managerList.find((option) => String(option.id) === String(formData?.assignedTo));
+    console.log('user', user)
+    return (user && user.userType === "External")
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const udata = {
@@ -177,7 +199,7 @@ const EditAction = ({
    
     const udata = {
       ...formData,
-      file: e.target.files[0],
+      file: e.target.files,
     };
     setFormData(udata);
   };
@@ -240,10 +262,19 @@ const EditAction = ({
       form.reportValidity();
     }
     const data = { ...formData }
-    if (data?.file?.name) {
+    if (data?.file?.length > 0) {
+      const files = []
       data.siteId = siteSelectedForGlobal?.siteId;
-      data.actionImage = await uploadSiteCheckDoc(data);
-      delete data.file;
+      
+      for (const f of data?.file) {
+        const temp = {...data}
+        temp.file = f
+         const url = await uploadSiteCheckDoc(temp);
+         files.push(url);
+         
+      }
+      data.files = files;
+      data.siteId = siteSelectedForGlobal?.siteId;
     }
     toast.success("Action data saved")
     await put("/api/site/actions", data);
@@ -478,7 +509,7 @@ const EditAction = ({
                           <label for="internalExternal">Internal/External</label>
                           <select
                             name="internalExternal"
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             className="form-control form-select"
                             id="internalExternal"
                             value={formData?.internalExternal}
@@ -499,7 +530,7 @@ const EditAction = ({
                             name="floor"
                             className="form-control form-select"
                             id="floor"
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             value={formData?.floor}
                             onChange={handleInputChange}
                           >
@@ -527,7 +558,7 @@ const EditAction = ({
                             name="room"
                             className="form-control form-select"
                             id="room"
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             value={formData?.room}
                             onChange={handleInputChange}
                           >
@@ -559,7 +590,7 @@ const EditAction = ({
                         <div className="form-group mt-4">
                         <Autocomplete
                           multiple
-                          //disabled={isViewRoleForActions(loggedInUserData)}
+                          //disabled={!isTopLevelUser(loggedInUserData)}
                           disabled
                           value={siteAssets.filter(s => formData?.taggedAsset?.split(",")?.includes(s.assetId.toString())).map((option) => option.assetId)}
                         
@@ -632,7 +663,7 @@ const EditAction = ({
                       />
                           {/* <Autocomplete
                             multiple
-                            disabled={isViewRoleForActions(loggedInUserData)}
+                            disabled={!isTopLevelUser(loggedInUserData)}
                             onChange={(event, item) => {
                               const uformData = { ...formData }
                               uformData.taggedAsset = item?.map(i => i.key).join(",");
@@ -748,12 +779,13 @@ autoComplete="off"
                         <div className="form-group mt-2">
                           <label htmlFor="assignedTo">Assign To</label>
                           <Autocomplete
+                          disabled={!isTopLevelUser(loggedInUserData)}
                             id="assignedTo"
                             value={
                               managerList
                                 ?.map((option) => ({
                                   key: option.id,
-                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                  label: `${option.userType} - ${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
                                 }))
                                 .find((option) => String(option.key) === String(formData?.assignedTo)) || null
                             }
@@ -764,7 +796,7 @@ autoComplete="off"
                               uformData.assignedTo = item?.key;
                               setFormData(uformData);
                             }}
-                            options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+                            options={managerList.map((option) => { return { key: option.id, label: option.userType + ' - ' +option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "" ) } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
@@ -774,7 +806,7 @@ autoComplete="off"
           onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
                                   required
-                                  disabled={isViewRoleForActions(loggedInUserData)}
+                                  disabled={!isTopLevelUser(loggedInUserData)}
                                   className="form-control"
                                   placeholder="Select User"
                                 />
@@ -795,7 +827,7 @@ autoComplete="off"
                               managerList
                                 .map((option) => ({
                                   key: option.id,
-                                  label: `${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
+                                  label: `${option.userType} - +${option.role} - ${option.name} (${option.email})${option.companyName ? " - " + option.companyName : ""}`,
                                 }))
                                 .find((option) => String(option.key) === String(formData?.stakeholder)) || null
                             }
@@ -804,7 +836,7 @@ autoComplete="off"
                               uformData.stakeholder = item?.key;
                               setFormData(uformData);
                             }}
-                            options={managerList.map((option) => { return { key: option.id, label: option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
+                            options={managerList.map((option) => { return { key: option.id, label: option.userType + ' - ' +option.role + ' - ' + option.name + ' (' + option.email + ')' + (option.companyName ? " - " + option.companyName : "") } })}
                             getOptionLabel={(option) => option.label}
                             renderInput={(params) => (
                               <div ref={params.InputProps.ref} >
@@ -813,7 +845,7 @@ autoComplete="off"
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
                                   {...params.inputProps}
-                                  disabled={isViewRoleForActions(loggedInUserData)}
+                                  disabled={!isTopLevelUser(loggedInUserData)}
                                   required
                                   className="form-control"
                                   placeholder="Select User"
@@ -825,10 +857,10 @@ autoComplete="off"
                         </div>
                       </div>
 
-                      <div className="col-md-4">
+                      {isExternal() && <div className="col-md-4">
                         <div className="form-group mt-2">
                         <Button
-                          disabled={isViewRoleForActions(loggedInUserData)}
+                          disabled={!isTopLevelUser(loggedInUserData)}
                           onClick={() => goTo("/site-contracts")}
                           className="bg-light text-primary"
                         >
@@ -836,7 +868,7 @@ autoComplete="off"
                         </Button>
 
                         </div>
-                      </div>
+                      </div>}
 
 
                       <div className="col-md-12">
@@ -867,9 +899,11 @@ autoComplete="off"
                             {formData?.images?.map(i => (
                               <div>
                                 <img
+                                onClick={()=> {window.open(i?.imageUrl + "?" + sasToken, '_blank');}}
                                   src={i?.imageUrl + "?" + sasToken}
                                   className="img img-responsive border p-2 m-2 w-100"
                                   alt="Asset Image"
+                                  style={{ cursor: 'pointer' }}
                                 />
                                 <button
                                   type="button"
@@ -886,6 +920,8 @@ autoComplete="off"
                         )}
                         {formData?.images?.length === 1 && (
                           <img
+                          onClick={()=> {window.open(formData?.images[0]?.imageUrl + "?" + sasToken, '_blank');}}
+                          style={{ cursor: 'pointer' }}
                             src={formData?.images[0].imageUrl+ "?" + sasToken}
                             className="img img-responsive border p-2 m-2 w-100"
                           />)}
@@ -894,7 +930,7 @@ autoComplete="off"
                                   type="button"
                                   className="btn btn-sm btn-danger mb-2"
                                   onClick={() => {
-                                    deleteActionImage(0);
+                                    deleteActionImage(formData?.images[0]);
                                   }}
                                 >
                                   Delete
@@ -905,7 +941,7 @@ autoComplete="off"
                           className="form-control"
                           style={{ marginTop: '30px' }}
                           name="actionImage"
-                          accept="image/*, application/pdf"
+                          accept="image/*"
                           id="actionImage"
                           onChange={(e) => handleFileChange(e)}
                         />
@@ -985,7 +1021,7 @@ autoComplete="off"
                         </Button>
                         &nbsp;&nbsp;
                         <Button
-                          style={{display: isViewRoleForActions(loggedInUserData) ? "none" : "" }}
+                          style={{display: !isTopLevelUser(loggedInUserData) ? "none" : "" }}
                           onClick={(e) => saveAction(e)}
                           type="button"
                           className="bg-primary text-white"

@@ -39,6 +39,8 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
+// Valuation Component
+
 const UpdateAsset = ({
   setLoader,
   siteSelectedForGlobal,
@@ -56,17 +58,13 @@ const UpdateAsset = ({
   getSiteLayout,
   siteLayout,
 }) => {
-
   const carouselSettings = {
     dots: true,
     infinite: true,
     speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
-    //arrows: true,
-    //autoplay: true,
-    autoplaySpeed: 3000,
-    };
+  };
 
   const [searchParams] = useSearchParams();
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -83,12 +81,15 @@ const UpdateAsset = ({
   const [passiveFireMaterial, setPassiveFireMaterial] = useState([]);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
+  const [patRecord, setPatRecord] = useState([]);
+  const [valuations, setValuations] = useState([]);
+  const [disposals, setDisposals] = useState([]);
 
   const tabChange = (event, newValue) => {
     event?.preventDefault();
     setTabValue(newValue);
   };
-  const [patRecord, setPatRecord] = useState([]);
+
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
@@ -107,6 +108,63 @@ const UpdateAsset = ({
       return;
     }
   }, []);
+
+  const disposalForm = useForm({
+    defaultValues: {
+      disposalDate: "",
+      disposalValue: "",
+      disposalTo: "",
+    },
+  });
+
+  const getAssetDetails = async () => {
+    const url = `/api/site/assets/${assetId}/details`;
+    const response = await get(url);
+    setSelectedAsset(response);
+    setPatRecord(response?.assetPATItems || []);
+
+    // Initialize valuations and disposals
+    if (response?.valuations?.length > 0) {
+      const validValuations = response.valuations.filter(
+        (v) => v.date !== null && v.valuation !== null && v.valuationBy !== null
+      );
+      setValuations(validValuations);
+    } else {
+      // If no valid valuations exist, initialize with empty array
+      setValuations(response.valuations);
+    }
+
+    disposalForm.reset({
+      disposalDate: response?.disposalDate?.split("T")?.[0] || "",
+      disposalTo: response?.disposalTo || "",
+      disposalValue: response?.disposalValue || "",
+    });
+
+    if (response?.category) {
+      categoryChange(response?.category);
+    }
+    if (response?.subCategory) {
+      subCategoryChange(response?.subCategory);
+    }
+
+    purchaseDetailForm.reset({
+      invoiceFile: response?.invoiceFile,
+      purchaseDate: response?.purchaseDate?.split("T")?.[0],
+      supplier: response?.supplier,
+      transactionId: response?.transactionId,
+      cost: response?.cost,
+    });
+
+    locationForm.reset({
+      position: response?.position,
+      floor: response?.floor,
+      room: response?.room,
+    });
+
+    passiveFireProtectionForm.reset(response?.assetPFPItem);
+    doorSpecificationForm.reset(response?.assetDoorSpecifications);
+    reset(response);
+  };
 
   const getCategories = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
@@ -130,12 +188,12 @@ const UpdateAsset = ({
     setTester(
       data?.users?.sort((a, b) => {
         if (a.name < b.name) {
-          return -1; // a comes before b
+          return -1;
         }
         if (a.name > b.name) {
-          return 1; // b comes before a
+          return 1;
         }
-        return 0; // names are equal
+        return 0;
       })
     );
   };
@@ -159,43 +217,6 @@ const UpdateAsset = ({
     }
   };
 
-  const getAssetDetails = async () => {
-    const url = `/api/site/assets/${assetId}/details`;
-    const response = await get(url);
-    setSelectedAsset(response);
-    setPatRecord(response?.assetPATItems || []);
-    if (response?.category) {
-      categoryChange(response?.category);
-    }
-    if (response?.subCategory) {
-      subCategoryChange(response?.subCategory);
-    }
-    purchaseDetailForm.reset({
-      invoiceFile: response?.invoiceFile,
-      purchaseDate: response?.purchaseDate? moment(response?.purchaseDate).format("DD-MM-YYYY") : "",
-      supplier: response?.supplier,
-      transactionId: response?.transactionId,
-      cost: response?.cost,
-    });
-    locationForm.reset({
-      position: response?.position,
-      floor: response?.floor,
-      room: response?.room,
-    });
-    valudationForm.reset({
-      valuationDate: response?.valuationDate ? moment(response?.valuationDate).format("DD-MM-YYYY") : "",
-      valuationUserId: response?.valuationUserId,
-      valuationUserName: response?.valuationUserName,
-      valuationValue: response?.valuationValue,
-      disposalDate: response?.disposalDate ? moment(response?.disposalDate).format("DD-MM-YYYY") : "",
-      disposalTo: response?.disposalTo,
-      disposalValue: response?.disposalValue,
-    });
-    passiveFireProtectionForm.reset(response?.assetPFPItem);
-    doorSpecificationForm.reset(response?.assetDoorSpecifications);
-    reset(response);
-  };
-
   const addPatRecord = () => {
     const d = [...patRecord];
     d.push({
@@ -208,6 +229,7 @@ const UpdateAsset = ({
     });
     setPatRecord(d);
   };
+
   const [deleteSavedPatItems, setDeleteSavedPatItems] = useState([]);
   const deletePatRecord = (index, item) => {
     if (item?.patId) {
@@ -232,9 +254,11 @@ const UpdateAsset = ({
     };
     setPatRecord(updatedData);
   };
+
   const getTesterName = (id) => {
     return tester?.filter((itm) => itm.id === id)?.[0]?.name;
   };
+
   const defaultValues = {
     assetId: null,
     assetName: "",
@@ -251,6 +275,7 @@ const UpdateAsset = ({
     doorItem: false,
     barcode: "",
   };
+
   const {
     register,
     handleSubmit,
@@ -262,21 +287,20 @@ const UpdateAsset = ({
   } = useForm({
     defaultValues,
   });
+
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
   };
+
   const submitSiteAsset = (data) => {
     setLoader(true);
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
     if (data?.assetImage?.length > 0) {
-      data?.assetImage?.forEach(assetImage=>{
-        form_data.append(
-          "assetImage",
-          assetImage,
-        );
-      })
+      data?.assetImage?.forEach((assetImage) => {
+        form_data.append("assetImage", assetImage);
+      });
     } else {
       form_data.append("assetImage", JSON.stringify(data?.image));
     }
@@ -373,34 +397,6 @@ const UpdateAsset = ({
     getAssetDetails();
   };
 
-  const valudationForm = useForm({
-    valuationDate: "",
-    disposalDate: "",
-  });
-  const submitValudationForm = async (data) => {
-    let form_data = new FormData();
-    const submitData = {
-      ...data,
-      assetId: selectedAsset?.assetId,
-      valuationDate: data?.valuationDate + " 10:00:00",
-      disposalDate: data?.disposalDate + " 10:00:00",
-      position: selectedAsset?.position,
-      floor: selectedAsset?.floor,
-      room: selectedAsset?.room,
-      purchaseDate: selectedAsset?.purchaseDate
-        ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
-        : null,
-      supplier: selectedAsset?.supplier,
-      transactionId: selectedAsset?.transactionId,
-      cost: selectedAsset?.cost,
-    };
-    form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-    setLoader(true);
-    await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
-  };
-
   const passiveFireProtectionForm = useForm({});
   const submitPassiveFireProtectionForm = async (data) => {
     const submitData = {
@@ -424,6 +420,7 @@ const UpdateAsset = ({
     setLoader(false);
     getAssetDetails();
   };
+
   const subCategoryChange = (val) => {
     setValue("subCategory", val);
     const subCategoryData = subCategory2?.filter(
@@ -431,6 +428,7 @@ const UpdateAsset = ({
     );
     setSubCategory2List(subCategoryData);
   };
+
   const categoryChange = (val) => {
     setValue("category", val);
     const subCategoryData = subCategory?.filter(
@@ -438,13 +436,14 @@ const UpdateAsset = ({
     );
     setSubCategoryList(subCategoryData);
   };
+
   const getSelectedValue = () => {
     const selectedAssets = getValues("relatedAssetId")?.split(",");
     const arr = [];
     if (selectedAssets) {
       for (const iterator of selectedAssets) {
         const selectedValue =
-          siteAssets.find((itm) => itm.assetId == iterator) || null;
+          siteAssets.find((itm) => itm.assetId === iterator) || null;
         if (selectedValue) {
           arr.push({
             key: selectedValue?.assetId,
@@ -455,6 +454,7 @@ const UpdateAsset = ({
     }
     return arr;
   };
+
   return (
     <Fragment>
       <SidebarNew />
@@ -485,12 +485,14 @@ const UpdateAsset = ({
                     <div className="row">
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="assetName">Asset Name</label>
+                          <label htmlFor="assetName">Asset Name</label>
                           <input
                             type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
                             className="form-control"
                             id="assetName"
                             name="assetName"
@@ -513,12 +515,14 @@ autoComplete="off"
                       </div>
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="manufacturer">Manufacturer</label>
+                          <label htmlFor="manufacturer">Manufacturer</label>
                           <input
                             type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
                             className="form-control"
                             id="manufacturer"
                             name="manufacturer"
@@ -531,7 +535,7 @@ autoComplete="off"
 
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="relatedAssetId">Related Asset</label>
+                          <label htmlFor="relatedAssetId">Related Asset</label>
                           <Autocomplete
                             multiple
                             value={getSelectedValue()}
@@ -546,46 +550,21 @@ autoComplete="off"
                               };
                             })}
                             getOptionLabel={(option) => option.label || ""}
-                            renderInput={(params) => (
-                              <TextField
-                                //disabled
-                                {...params}
-                                //label="Tag Asset"
-                                //placeholder="Tag Asset"
-                              />
-                            )}
+                            renderInput={(params) => <TextField {...params} />}
                           />
                         </div>
                       </div>
 
-                      {/* <div className="col-md-6">
-                        <label for="folder">Folder</label>
-                        <select
-                          name="folderId"
-                          disabled
-                          className="form-control form-select"
-                          id="folderId"
-                          {...register("folderId")}
-                        >
-                          <option value="" selected disabled>
-                            New Document Location
-                          </option>
-                          {rootFolder?.parentFolders?.map((folder) => (
-                            <option value={folder?.id} key={folder?.id}>
-                              {folder?.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div> */}
-
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="model">Model</label>
+                          <label htmlFor="model">Model</label>
                           <input
                             type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
                             disabled
                             className="form-control"
                             id="model"
@@ -598,12 +577,14 @@ autoComplete="off"
 
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="serialNumber">Serial Number</label>
+                          <label htmlFor="serialNumber">Serial Number</label>
                           <input
                             type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
                             className="form-control"
                             id="serialNumber"
                             disabled
@@ -616,12 +597,14 @@ autoComplete="off"
 
                       <div className="col-md-6">
                         <div className="form-group mt-2">
-                          <label for="model">Device Id</label>
+                          <label htmlFor="model">Device Id</label>
                           <input
                             type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
                             disabled
                             className="form-control"
                             id="deviceId"
@@ -632,7 +615,7 @@ autoComplete="off"
                         </div>
                       </div>
                       <div className="col-md-6">
-                        <label for="category">Category</label>
+                        <label htmlFor="category">Category</label>
                         <select
                           name="category"
                           className="form-control form-select"
@@ -668,7 +651,7 @@ autoComplete="off"
                         )}
                       </div>
                       <div className="col-md-6">
-                        <label for="subCategory">Sub Category 1</label>
+                        <label htmlFor="subCategory">Sub Category 1</label>
                         <select
                           name="subCategory"
                           className="form-control form-select"
@@ -693,7 +676,7 @@ autoComplete="off"
                         </select>
                       </div>
                       <div className="col-md-6">
-                        <label for="subCategory2">Sub Category 2</label>
+                        <label htmlFor="subCategory2">Sub Category 2</label>
                         <select
                           name="subCategory2"
                           disabled
@@ -716,7 +699,7 @@ autoComplete="off"
                       </div>
                       <div>
                         <div className="col-md-6">
-                          <label for="subCategory3">Sub Category 3</label>
+                          <label htmlFor="subCategory3">Sub Category 3</label>
                           <select
                             name="subCategory3"
                             disabled
@@ -737,37 +720,40 @@ autoComplete="off"
                             ))}
                           </select>
                         </div>
-                        
                       </div>
                     </div>
                   </div>
                   <div className="col-md-4 text-center">
                     <div className="form-group">
-                    {selectedAsset?.images?.length > 1 && (
-                          <Slider {...carouselSettings}>
-                            {selectedAsset?.images?.map(i => (
-                               <div>
-                               <img
-                                 src={i?.imageUrl}
-                                 className="img img-responsive border p-2 m-2 w-100"
-                                 alt="Asset Image"
-                               />
-                             </div>
-                            ))}
+                      {selectedAsset?.images?.length > 1 && (
+                        <Slider {...carouselSettings}>
+                          {selectedAsset?.images?.map((i) => (
+                            <div>
+                              <img
+                                src={i?.imageUrl}
+                                className="img img-responsive border p-2 m-2 w-100"
+                                alt="Asset Image"
+                              />
+                            </div>
+                          ))}
                         </Slider>
-                        )}
-                        {selectedAsset?.images?.length === 1 && (
-                          <img
+                      )}
+                      {selectedAsset?.images?.length === 1 && (
+                        <img
                           src={selectedAsset?.images[0].imageUrl}
-                            className="img img-responsive border p-2 m-2 w-100"
-                          />)}
-                      {selectedAsset?.images?.length === 0  && (
+                          className="img img-responsive border p-2 m-2 w-100"
+                        />
+                      )}
+                      {selectedAsset?.images?.length === 0 && (
                         <strong>Asset Image is not available</strong>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="row" style={{ height: "auto", marginTop: '20px' }}>
+                <div
+                  className="row"
+                  style={{ height: "auto", marginTop: "20px" }}
+                >
                   <div className="col-md-4 mt-2">
                     <input
                       type="checkbox"
@@ -778,7 +764,7 @@ autoComplete="off"
                       {...register("patItem")}
                     />
                     &nbsp;&nbsp;
-                    <label for="patItem">
+                    <label htmlFor="patItem">
                       PAT item (fill PAT details below)
                     </label>
                   </div>
@@ -792,9 +778,8 @@ autoComplete="off"
                       {...register("pfpItem")}
                     />
                     &nbsp;&nbsp;
-                    <label for="pfpItem">
-                      Passive fire schedule required (fill PFS details below
-                      below)
+                    <label htmlFor="pfpItem">
+                      Passive fire schedule required (fill PFS details below)
                     </label>
                   </div>
                   <div className="col-md-4 mt-2">
@@ -807,18 +792,15 @@ autoComplete="off"
                       {...register("doorItem")}
                     />
                     &nbsp;&nbsp;
-                    <label for="doorItem">
-                      Door Assets (fill Door assets details below below)
+                    <label htmlFor="doorItem">
+                      Door Assets (fill Door assets details below)
                     </label>
                   </div>
                 </div>
-                {/* start */}
-
-                {/* end */}
               </div>
             </div>
           </Box>
-          {/*  */}
+
           <Box sx={{ width: "100%", typography: "body1" }}>
             <TabContext value={value}>
               <Box
@@ -844,30 +826,10 @@ autoComplete="off"
                         ? "text-success"
                         : "text-warning"
                     }
-                    // icon={
-                    //   selectedAsset?.purchaseDate &&
-                    //   selectedAsset?.supplier &&
-                    //   selectedAsset?.transactionId &&
-                    //   selectedAsset?.cost &&
-                    //   selectedAsset?.invoiceFile ? (
-                    //     <CheckCircleOutlineIcon />
-                    //   ) : (
-                    //     <WarningAmberIcon />
-                    //   )
-                    // }
                     label="Purchase Details"
                     value="2"
                   />
                   <Tab
-                    // icon={
-                    //   selectedAsset?.position &&
-                    //   selectedAsset?.floor &&
-                    //   selectedAsset?.room ? (
-                    //     <CheckCircleOutlineIcon />
-                    //   ) : (
-                    //     <WarningAmberIcon />
-                    //   )
-                    // }
                     className={
                       selectedAsset?.position &&
                       selectedAsset?.floor &&
@@ -881,40 +843,29 @@ autoComplete="off"
                   <Tab
                     className={
                       selectedAsset?.valuationDate &&
-                      selectedAsset?.disposalDate &&
-                      selectedAsset?.disposalTo &&
-                      selectedAsset?.disposalValue &&
                       selectedAsset?.valuationUserId &&
                       selectedAsset?.valuationValue
                         ? "text-success"
                         : "text-warning"
                     }
-                    // icon={
-                    //   selectedAsset?.valuationDate &&
-                    //   selectedAsset?.disposalDate &&
-                    //   selectedAsset?.disposalTo &&
-                    //   selectedAsset?.disposalValue &&
-                    //   selectedAsset?.valuationUserId &&
-                    //   selectedAsset?.valuationValue ? (
-                    //     <CheckCircleOutlineIcon />
-                    //   ) : (
-                    //     <WarningAmberIcon />
-                    //   )
-                    // }
-                    label="Valuation & Disposal"
+                    label="Valuation"
                     value="4"
+                  />
+                  <Tab
+                    className={
+                      selectedAsset?.disposalDate &&
+                      selectedAsset?.disposalTo &&
+                      selectedAsset?.disposalValue
+                        ? "text-success"
+                        : "text-warning"
+                    }
+                    label="Disposal"
+                    value="5"
                   />
                   {selectedAsset?.patItem && (
                     <Tab
-                      // icon={
-                      //   selectedAsset?.assetPATItems?.length > 0 ? (
-                      //     <CheckCircleOutlineIcon />
-                      //   ) : (
-                      //     <WarningAmberIcon />
-                      //   )
-                      // }
                       label="PAT Details"
-                      value="5"
+                      value="6"
                       className={
                         selectedAsset?.assetPATItems?.length > 0
                           ? "text-success"
@@ -924,38 +875,24 @@ autoComplete="off"
                   )}
                   {selectedAsset?.pfpItem && (
                     <Tab
-                      // icon={
-                      //   selectedAsset?.assetPFPItem ? (
-                      //     <CheckCircleOutlineIcon />
-                      //   ) : (
-                      //     <WarningAmberIcon />
-                      //   )
-                      // }
                       className={
                         selectedAsset?.assetPFPItem
                           ? "text-success"
                           : "text-warning"
                       }
                       label="Passive Fire Protection"
-                      value="6"
+                      value="7"
                     />
                   )}
                   {selectedAsset?.patItem && (
                     <Tab
-                      // icon={
-                      //   selectedAsset?.assetDoorSpecifications ? (
-                      //     <CheckCircleOutlineIcon />
-                      //   ) : (
-                      //     <WarningAmberIcon />
-                      //   )
-                      // }
                       className={
                         selectedAsset?.assetDoorSpecifications
                           ? "text-success"
                           : "text-warning"
                       }
                       label="Door Specifications"
-                      value="7"
+                      value="8"
                     />
                   )}
                 </TabList>
@@ -1050,15 +987,22 @@ autoComplete="off"
                   <div className="row">
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="purchaseDate">Purchase Date</label>
+                        <label htmlFor="purchaseDate">Purchase Date</label>
                         <input
                           type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="purchaseDate"
                           name="purchaseDate"
+                          value={
+                            purchaseDetailForm.watch("purchaseDate")
+                              ? moment(
+                                  purchaseDetailForm.watch("purchaseDate")
+                                ).format("DD-MM-YYYY")
+                              : ""
+                          }
                           disabled
                           placeholder=""
                           {...purchaseDetailForm.register("purchaseDate", {
@@ -1084,13 +1028,13 @@ autoComplete="off"
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="supplier">Supplier</label>
+                        <label htmlFor="supplier">Supplier</label>
                         <input
                           disabled
                           type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
                           className="form-control"
                           id="supplier"
                           name="supplier"
@@ -1118,7 +1062,7 @@ autoComplete="off"
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="transactionId">Transaction ID</label>
+                        <label htmlFor="transactionId">Transaction ID</label>
                         <input
                           type="number"
                           className="form-control"
@@ -1149,9 +1093,10 @@ autoComplete="off"
                     </div>
                     <div className="col-md-4">
                       <div className="form-group mt-2">
-                        <label for="cost">Cost</label>
+                        <label htmlFor="cost">Cost</label>
                         <input
                           type="number"
+                          step="0.01"
                           className="form-control"
                           id="cost"
                           name="cost"
@@ -1191,7 +1136,7 @@ autoComplete="off"
                 <form onSubmit={locationForm.handleSubmit(submitLocationForm)}>
                   <div className="row">
                     <div className="col-md-4">
-                      <label for="position">Interior/Exterior</label>
+                      <label htmlFor="position">Interior/Exterior</label>
                       <select
                         name="position"
                         className="form-control form-select"
@@ -1205,11 +1150,9 @@ autoComplete="off"
                         })}
                       >
                         <option value="">Select Interior/Exterior</option>
-                        {["Interior", "Exterior"].map(
-                          (num) => (
-                            <option value={num}>{num} </option>
-                          )
-                        )}
+                        {["Interior", "Exterior"].map((num) => (
+                          <option value={num}>{num} </option>
+                        ))}
                       </select>
                       {locationForm.formState.errors?.position && (
                         <InputError
@@ -1221,7 +1164,7 @@ autoComplete="off"
                       )}
                     </div>
                     <div className="col-md-4">
-                      <label for="floor">Floor</label>
+                      <label htmlFor="floor">Floor</label>
                       <select
                         name="floor"
                         className="form-control form-select"
@@ -1253,7 +1196,7 @@ autoComplete="off"
                       )}
                     </div>
                     <div className="col-md-4">
-                      <label for="room">Room</label>
+                      <label htmlFor="room">Room</label>
                       <select
                         name="room"
                         disabled
@@ -1286,213 +1229,173 @@ autoComplete="off"
                 </form>
               </TabPanel>
               <TabPanel value="4">
-                <form
-                  onSubmit={valudationForm.handleSubmit(submitValudationForm)}
-                >
-                  <div className="row">
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label for="valuationDate">Valuation Date</label>
-                        <input
-                          type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          className="form-control"
-                          id="valuationDate"
-                          disabled
-                          name="valuationDate"
-                          placeholder=""
-                          {...valudationForm.register("valuationDate", {
-                            required: {
-                              value: true,
-                              message: `Please enter valuation date`,
-                            },
-                          })}
-                        />
-                        {valudationForm.formState.errors?.valuationDate && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.valuationDate
-                                ?.message
-                            }
-                            key={
-                              valudationForm.formState.errors?.valuationDate
-                                ?.message
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label for="valuationValue">Valuation</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          disabled
-                          id="valuationValue"
-                          name="valuationValue"
-                          placeholder=""
-                          {...valudationForm.register("valuationValue", {
-                            required: {
-                              value: true,
-                              message: `Please enter valuation value`,
-                            },
-                          })}
-                        />
-                        {valudationForm.formState.errors?.valuationValue && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.valuationValue
-                                ?.message
-                            }
-                            key={
-                              valudationForm.formState.errors?.valuationValue
-                                ?.message
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <label for="valuationUserId">Valuation Done By</label>
-                      <select
-                        name="valuationUserId"
-                        className="form-control form-select"
-                        id="valuationUserId"
-                        disabled
-                        {...valudationForm.register("valuationUserId", {
-                          required: {
-                            value: true,
-                            message: `Please select valuation done by`,
-                          },
-                        })}
-                      >
-                        <option value=""></option>
-                        {users?.map((itm) => (
-                          <option value={itm?.id} key={itm?.name}>
-                            {itm?.name}
-                          </option>
-                        ))}
-                      </select>
-                      {valudationForm.formState.errors?.valuationUserId && (
-                        <InputError
-                          message={
-                            valudationForm.formState.errors?.valuationUserId
-                              ?.message
-                          }
-                          key={
-                            valudationForm.formState.errors?.valuationUserId
-                              ?.message
-                          }
-                        />
+                <div className="row container-fluid">
+                  <div className="col-md-12">
+                    <div className="border shadow-sm">
+                      {valuations?.length > 0 ? (
+                        <div className="table-responsive">
+                          <table className="table table-hover mb-0">
+                            <thead className="table-dark">
+                              <tr>
+                                <th
+                                  className="py-2"
+                                  scope="col"
+                                  colSpan={5}
+                                  align="center"
+                                  style={{
+                                    border: "2px groove",
+                                    height: "50px",
+                                    textAlign: "center",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  Date (Old → New)
+                                </th>
+                                <th
+                                  className="py-2"
+                                  scope="col"
+                                  colSpan={5}
+                                  align="center"
+                                  style={{
+                                    border: "2px groove",
+                                    height: "50px",
+                                    textAlign: "center",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  Amount
+                                </th>
+                                <th
+                                  className="py-2"
+                                  scope="col"
+                                  colSpan={5}
+                                  align="center"
+                                  style={{
+                                    border: "2px groove",
+                                    height: "50px",
+                                    textAlign: "center",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  Done By
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[...valuations]
+                                .sort(
+                                  (a, b) => new Date(a.date) - new Date(b.date)
+                                ) // Sort in ascending order
+                                .map((valuation, index) => (
+                                  <tr key={index}>
+                                    <td
+                                      className="align-middle"
+                                      colSpan={5}
+                                      align="center"
+                                      style={{
+                                        border: "2px groove",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {moment(valuation.date).format(
+                                        "DD-MM-YYYY"
+                                      )}
+                                    </td>
+                                    <td
+                                      className="align-middle"
+                                      colSpan={5}
+                                      align="center"
+                                      style={{
+                                        border: "2px groove",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {Number(
+                                        valuation.valuation
+                                      ).toLocaleString()}
+                                    </td>
+                                    <td
+                                      className="align-middle"
+                                      colSpan={5}
+                                      align="center"
+                                      style={{
+                                        border: "2px groove",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {users?.find(
+                                        (u) => u.id === valuation.valuationBy
+                                      )?.name || "Unknown"}
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted">
+                          <i className="bi bi-info-circle me-2"></i>
+                          No valuation history available
+                        </div>
                       )}
                     </div>
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label for="disposalDate">Disposal Date</label>
-                        <input
-                          type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          className="form-control"
-                          id="disposalDate"
-                          name="disposalDate"
-                          disabled
-                          placeholder=""
-                          {...valudationForm.register("disposalDate", {
-                            required: {
-                              value: true,
-                              message: `Please enter disposal date`,
-                            },
-                          })}
-                        />
-                        {valudationForm.formState.errors?.disposalDate && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.disposalDate
-                                ?.message
-                            }
-                            key={
-                              valudationForm.formState.errors?.disposalDate
-                                ?.message
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label for="disposalValue">Disposal Value</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          id="disposalValue"
-                          disabled
-                          name="disposalValue"
-                          placeholder=""
-                          {...valudationForm.register("disposalValue", {
-                            required: {
-                              value: true,
-                              message: `Please enter disposal value`,
-                            },
-                          })}
-                        />
-                        {valudationForm.formState.errors?.disposalValue && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.disposalValue
-                                ?.message
-                            }
-                            key={
-                              valudationForm.formState.errors?.disposalValue
-                                ?.message
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label for="disposalTo">Disposal To</label>
-                        <input
-                          type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          className="form-control"
-                          id="disposalTo"
-                          name="disposalTo"
-                          disabled
-                          placeholder=""
-                          {...valudationForm.register("disposalTo", {
-                            required: {
-                              value: true,
-                              message: `Please enter disposal to`,
-                            },
-                          })}
-                        />
-                        {valudationForm.formState.errors?.disposalTo && (
-                          <InputError
-                            message={
-                              valudationForm.formState.errors?.disposalTo
-                                ?.message
-                            }
-                            key={
-                              valudationForm.formState.errors?.disposalTo
-                                ?.message
-                            }
-                          />
-                        )}
+                  </div>
+                </div>
+              </TabPanel>
+              <TabPanel value="5">
+                <div className="row">
+                  <div className="col-md-12">
+                    <div className="border p-3 mb-3">
+                      <div className="row">
+                        <div className="col-md-4">
+                          <div className="form-group mt-2">
+                            <label>Disposal Date</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={
+                                selectedAsset?.disposalDate
+                                  ? moment(selectedAsset?.disposalDate).format(
+                                      "DD-MM-YYYY"
+                                    )
+                                  : ""
+                              }
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-md-4">
+                          <div className="form-group mt-2">
+                            <label>Disposal Value</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedAsset?.disposalValue || ""}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="form-group mt-2">
+                            <label>Disposal To</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedAsset?.disposalTo || ""}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </form>
+                </div>
               </TabPanel>
-              <TabPanel value="5">
-                {" "}
+              <TabPanel value="6">
                 <div className="row">
                   <div className="col-md-12 mt-2">
                     <div className="table-responsive">
@@ -1512,7 +1415,7 @@ autoComplete="off"
                             </tr>
                           )}
                           {patRecord?.map((itm, index) => (
-                            <tr>
+                            <tr key={index}>
                               <td>
                                 {itm?.patId ? (
                                   getTesterName(itm?.patUserId)
@@ -1580,26 +1483,50 @@ autoComplete="off"
                                   />
                                 )}
                               </td>
-                              <td></td>
+                              <td>
+                                {!itm?.patId && (
+                                  <button
+                                    className="btn btn-danger"
+                                    onClick={() => deletePatRecord(index, itm)}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
+                    <div className="text-end mt-3">
+                      <button
+                        type="button"
+                        className="btn btn-primary me-2"
+                        onClick={addPatRecord}
+                      >
+                        Add PAT Record
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-success"
+                        onClick={savePatDetails}
+                      >
+                        Save PAT Details
+                      </button>
+                    </div>
                   </div>
-                  <div></div>
                 </div>
               </TabPanel>
-              <TabPanel value="6">
+              <TabPanel value="7">
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="product">Product Name</label>
+                      <label htmlFor="product">Product Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="product"
                         name="product"
@@ -1628,13 +1555,13 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="access">Access/Position</label>
+                      <label htmlFor="access">Access/Position</label>
                       <input
                         disabled
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="access"
                         name="access"
@@ -1662,7 +1589,7 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="material">Material</label>
+                      <label htmlFor="material">Material</label>
                       <select
                         name="material"
                         disabled
@@ -1696,12 +1623,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="service">Service</label>
+                      <label htmlFor="service">Service</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="service"
                         disabled
@@ -1730,12 +1657,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="dimension">Dimension</label>
+                      <label htmlFor="dimension">Dimension</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="dimension"
                         disabled
@@ -1765,12 +1692,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="quantity">Quantity</label>
+                      <label htmlFor="quantity">Quantity</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="quantity"
                         name="quantity"
@@ -1799,12 +1726,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="area">Area (in sq m)</label>
+                      <label htmlFor="area">Area (in sq m)</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="area"
                         disabled
@@ -1833,16 +1760,16 @@ autoComplete="off"
                   </div>
                 </div>
               </TabPanel>
-              <TabPanel value="7">
+              <TabPanel value="8">
                 <div className="row">
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="width">Door Width (mm)</label>
+                      <label htmlFor="width">Door Width (mm)</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="width"
                         name="width"
@@ -1871,12 +1798,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="height">Door Height (mm)</label>
+                      <label htmlFor="height">Door Height (mm)</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="height"
                         disabled
@@ -1905,12 +1832,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="depth">Door Depth (mm)</label>
+                      <label htmlFor="depth">Door Depth (mm)</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="depth"
                         disabled
@@ -1939,12 +1866,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="finish">Door Finish</label>
+                      <label htmlFor="finish">Door Finish</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         disabled
                         className="form-control"
                         id="finish"
@@ -1973,12 +1900,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="visionPanel">Vision Panel</label>
+                      <label htmlFor="visionPanel">Vision Panel</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="visionPanel"
                         name="visionPanel"
@@ -2007,12 +1934,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="fireRating">Fire Rating</label>
+                      <label htmlFor="fireRating">Fire Rating</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="fireRating"
                         name="fireRating"
@@ -2041,12 +1968,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="frameMaterial">Fire Material</label>
+                      <label htmlFor="frameMaterial">Fire Material</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="frameMaterial"
                         disabled
@@ -2076,12 +2003,12 @@ autoComplete="off"
                   </div>
                   <div className="col-md-4">
                     <div className="form-group mt-2">
-                      <label for="frameFinish">Frame Finish</label>
+                      <label htmlFor="frameFinish">Frame Finish</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="frameFinish"
                         name="frameFinish"
@@ -2112,12 +2039,12 @@ autoComplete="off"
               </TabPanel>
             </TabContext>
           </Box>
-          {/*  */}
         </div>
       </div>
     </Fragment>
   );
 };
+
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
@@ -2125,6 +2052,7 @@ const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteLayout: state.site.siteLayout,
 });
+
 export default connect(mapStateToProps, {
   setLoader,
   getDocumentsRootFolder,

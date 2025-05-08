@@ -11,7 +11,7 @@ import { get, post, del } from "../../../api";
 import { useNavigate } from "react-router-dom";
 
 
-const AdminCategoriesAdd = ({ }) => {
+const AdminCategoriesAdd = ({loggedInUserData }) => {
   
   const navigate = useNavigate();
   const [type, setType] = useState('');
@@ -52,24 +52,34 @@ const AdminCategoriesAdd = ({ }) => {
   };
 
   const handleSubmit = async (event) => {
+    let licenseId = undefined;
+    const isadmin = loggedInUserData?.superAdmin ;
+    if(!isadmin) {
+      const license = JSON.parse(localStorage.getItem('license'));
+      licenseId = license?.licenseId
+    }
+    
     event.preventDefault();
     const typeBody = {
       lovType: "SITE_CHECK_TYPE",
-      lovValue: type
+      lovValue: type,
+      licenseId
     }
     await post("/api/lov/", typeBody);
     for (let subtype of subtypes) {
       const subtypeBody = {
         lovType: "SITE_CHECK_SUB_TYPE",
         lovValue: subtype.name,
-        attribite1: type
+        attribite1: type,
+        licenseId
       }
       await post("/api/lov/", subtypeBody);
       for (let category of subtype.categories) { 
         const categoryBody = {
           lovType: "SITE_CHECK_CATEGORY",
           lovValue: category,
-          attribite1: subtype.name
+          attribite1: subtype.name,
+          licenseId
         }
         await post("/api/lov/", categoryBody);
       }
@@ -174,6 +184,7 @@ const AdminCategoriesAdd = ({ }) => {
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
+  loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, { getUsers, deleteUser, getSites })(
   AdminCategoriesAdd

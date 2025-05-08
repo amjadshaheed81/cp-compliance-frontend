@@ -75,8 +75,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   ];
 
   const getSiteName = (siteId) => {
-    return allSites?.filter(site => site?.siteId === siteId)?.[0]?.siteName || "--";
-  }
+    return (
+      allSites?.filter((site) => site?.siteId === siteId)?.[0]?.siteName || "--"
+    );
+  };
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,8 +98,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     const lovtypes = await get("/api/lov/ENERGY_COST_BUDGET_CATEGORY");
     settypeoptions(lovtypes?.map((l) => l.lovValue));
   };
-
- 
 
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
@@ -136,6 +136,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   const searchEnergyCost = () => {
+    console.log(energyCost);
     let filteredEnergyCost2 = energyCost;
     if (formData2?.budgetCategory?.length > 0) {
       filteredEnergyCost2 = filteredEnergyCost2.filter(
@@ -213,18 +214,20 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
   };
 
   function convertToDate(dateString) {
-    if("number" === typeof dateString) {
+    if ("number" === typeof dateString) {
       const excelEpoch = new Date(1900, 0, 1);
-       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
-      const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+      const daysOffset = dateString > 59 ? dateString - 1 : dateString;
+      const jsDate = new Date(
+        excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000
+      );
       return jsDate.toISOString();
     } else {
-    const [day, month, year] = dateString.split("/").map(Number);
-    const date = new Date(year, month - 1, day);
-    return new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
-    ).toISOString();
-  }
+      const [day, month, year] = dateString.split("/").map(Number);
+      const date = new Date(year, month - 1, day);
+      return new Date(
+        date.getTime() - date.getTimezoneOffset() * 60000
+      ).toISOString();
+    }
   }
 
   const handleFileUploadCost = (event) => {
@@ -306,6 +309,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     await post("/api/energy/survey", body);
     setFormData({});
     await getEnergyCost();
+    toast.success("Energy Reference Created Successfully");
   };
 
   const getEnergyCost = async (isAll) => {
@@ -314,10 +318,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       return;
     }
     setIsLoading(true);
-    const energyCost = isAll
+    let energyCost = isAll
       ? await get("/api/energy/survey/all")
       : await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
     energyCost.forEach((energy) => {
+      energy.readingList = energy.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
       const dates = energy.costList.map((c) => new Date(c.fromDate));
       const minDate =
         Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
@@ -330,8 +335,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       energy.maxDate = maxDate;
     });
 
-    setFilteredEnergyCost(energyCost);
     setEnergyCost(energyCost);
+    if (formData2?.budgetCategory?.length > 0) {
+      energyCost = energyCost.filter(
+        (sc) => sc.budgetCategory === formData2.budgetCategory
+      );
+    }
+
+    setFilteredEnergyCost(energyCost);
+    
     setIsLoading(false);
   };
 
@@ -347,6 +359,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
     data.siteId = siteSelectedForGlobal?.siteId;
     await post("/api/energy/cost", data);
     getEnergyCost();
+    toast.success("Energy cost added successfully");
   };
 
   const saveReading = async (data) => {
@@ -355,18 +368,19 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
       data.siteId = siteSelectedForGlobal?.siteId;
       await post("/api/energy/reading", data);
       getEnergyCost();
+      toast.success("Energy reading added successfully");
     }
   };
-  
-  const handleChange = (event) => {
+
+  const handleChange = async (event) => {
     setState((prevState) => ({
       ...prevState,
       isIndividual: event.target.checked,
     }));
     if (event.target.checked) {
-      getEnergyCost(false);
+      await getEnergyCost(false);
     } else {
-      getEnergyCost(true);
+      await getEnergyCost(true);
     }
   };
   const handleAreaChange = (e) => {
@@ -584,7 +598,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                     id="budgetCategory"
                     onChange={handleInputChange2}
                   >
-                    <option value="">Budget Category</option>
+                    <option value="">Budget Category 2</option>
                     {typeoptions?.map((t) => (
                       <option value={t}>{t}</option>
                     ))}
@@ -601,13 +615,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                   >
                     <option value="">All Sites</option>
                     {SiteArea?.map((itm) => (
-                      <option value={itm.replace('&','%26')}>{itm}</option>
+                      <option value={itm.replace("&", "%26")}>{itm}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col">
-                  
-                
                   <Switch
                     checked={state.isIndividual}
                     onChange={handleChange}
@@ -734,13 +746,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                 value={state.site2}
               >
                 <option value="">Select Site 2</option>
-                {sites?.filter(
+                {sites
+                  ?.filter(
                     (itm) => String(itm?.status).toLowerCase() === "open"
-                  )?.map((itm) => (
-                  <option key={itm?.siteId} value={itm?.siteId}>
-                    {itm?.siteName}
-                  </option>
-                ))}
+                  )
+                  ?.map((itm) => (
+                    <option key={itm?.siteId} value={itm?.siteId}>
+                      {itm?.siteName}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="col-md-3">
@@ -759,18 +773,18 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
               </select>
             </div>
             <div className="col-md-3">
-            <label for="budgetCategoryCompare">Select Budget Category</label>
-                  <select
-                    name="budgetCategoryCompare"
-                    className="form-control form-select"
-                    id="budgetCategoryCompare"
-                    onChange={(e) => setBulkCategoryForCompare(e.target.value)}
-                  >
-                    <option value="">Budget Category</option>
-                    {typeoptions?.map((t) => (
-                      <option value={t}>{t}</option>
-                    ))}
-                  </select>
+              <label for="budgetCategoryCompare">Select Budget Category</label>
+              <select
+                name="budgetCategoryCompare"
+                className="form-control form-select"
+                id="budgetCategoryCompare"
+                onChange={(e) => setBulkCategoryForCompare(e.target.value)}
+              >
+                <option value="">Budget Category</option>
+                {typeoptions?.map((t) => (
+                  <option value={t}>{t}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="row" style={{ height: "auto" }}>

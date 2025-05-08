@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
-import { get } from "../../../api";
+import { get,getSasToken,uploadSiteCheckDoc } from "../../../api";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
@@ -26,7 +26,10 @@ const EditProfile = ({
   addUserTagSite,
   loggedInUserData,
   setLoggedInUser,
+  siteSelectedForGlobal
 }) => {
+
+    const [sasToken, setSasToken] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState();
@@ -44,6 +47,7 @@ const EditProfile = ({
   } = useForm({});
   const values = watch();
   useEffect(() => {
+    getToken();
     const name = loggedInUserData?.name?.split(" ");
     reset({
       ...loggedInUserData,
@@ -61,12 +65,20 @@ const EditProfile = ({
     getCompanies();
   }, []);
   const getCompanies = async () => {
-    const license = JSON.parse(localStorage.getItem('license'));
-    const url = "/api/companies/all?licenseId="+license?.licenseId;
+    const license = JSON.parse(localStorage.getItem("license"));
+    const url = "/api/companies/all?licenseId=" + license?.licenseId;
     let response = await get(url);
     response = response.filter((r) => r !== null);
     setcompanies(response);
   };
+
+  
+
+   const getToken = async () => {
+      const token = await getSasToken();
+      setSasToken(token);
+    }
+
   const getSelectedTagValue = () => {
     const selectedSites = tagSite;
     const arr = [];
@@ -86,6 +98,7 @@ const EditProfile = ({
   };
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
+   
     const data = {
       userId: loggedInUserData?.id,
       firstName: formJson?.firstName || null,
@@ -100,9 +113,19 @@ const EditProfile = ({
           : null,
       companyId: formJson?.company || null,
       trade: formJson?.userType === "External" ? formJson?.trade : null,
+      gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       status: formJson?.status || null,
+
+      licenseId: loggedInUserData?.licenseId,
+      siteId: siteSelectedForGlobal?.siteId
     };
+    
     setIsLoading(true);
+    const temp = { ...data }
+    temp.file = formJson.file[0]
+    const url = await uploadSiteCheckDoc(temp);
+    data.signature = url
+             
     try {
       const res = await addUser(data);
       if (res.id) {
@@ -122,6 +145,7 @@ const EditProfile = ({
           `${formJson?.firstName} user has been updated successfully.`
         );
         const res = await get(`/api/user/${data?.userId}/details`);
+        
         setLoggedInUser(res);
       } else {
         toast.error(
@@ -163,9 +187,9 @@ const EditProfile = ({
                       <label for="firstName">First Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="firstName"
                         {...register("firstName", {
@@ -188,9 +212,9 @@ autoComplete="off"
                       <label for="lastName">Last Name</label>
                       <input
                         type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
                         className="form-control"
                         id="lastName"
                         {...register("lastName")}
@@ -349,10 +373,10 @@ autoComplete="off"
                         {...register("isCompany")}
                         onChange={(e) => {
                           const isChecked = e.target.checked;
-    
+
                           // Update form state immediately
-                          setValue("isCompany", isChecked); 
-                          
+                          setValue("isCompany", isChecked);
+
                           // Clear selected company if unchecked
                           if (!isChecked) {
                             setSelectedCompany(null);
@@ -384,9 +408,11 @@ autoComplete="off"
                             <div ref={params.InputProps.ref}>
                               <input
                                 type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                                autoComplete="off"
+                                readOnly
+                                onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                                }
                                 {...params.inputProps}
                                 className="form-control"
                                 placeholder="Select Company"
@@ -506,6 +532,60 @@ autoComplete="off"
                       )}
                     </div>
                   </div>
+                  <div className="col-md-4 text-center mt-2">
+                      <div className="form-group">
+                        
+                        {loggedInUserData?.signature && (
+                          <img
+                          onClick={()=> {window.open(loggedInUserData?.signature + "?" + sasToken, '_blank');}}
+                          style={{ cursor: 'pointer' }}
+                            src={loggedInUserData?.signature+ "?" + sasToken}
+                            className="img img-responsive border p-2 m-2 w-100"
+                          />)}
+                          
+                        <input
+                          type="file"
+                          {...register("file")}
+                          className="form-control"
+                          style={{ marginTop: '30px' }}
+                          name="file"
+                          accept="image/*"
+                          id="file"
+                        />
+                        
+                      </div>
+                      </div>
+                  {values?.userType === "External" &&
+                    values?.trade === "Gas Engineer" && (
+                      <div className="col-md-4 mt-2">
+                        <div className="form-group">
+                          <label htmlFor="gasSafetyRegNo">
+                            Gas Safety Reg No.*
+                          </label>
+                          <input
+                             type="text"
+                            min={0}
+                            className="form-control"
+                            id="gasSafetyRegNo"
+                            {...register("gasSafetyRegNo", {
+                              required: {
+                                value:
+                                  values?.userType === "External" &&
+                                  values?.trade === "Gas Engineer",
+                                message:
+                                  "Gas Safety Registration Number is required",
+                              },
+                            })}
+                          />
+                          {errors?.gasSafetyRegNo && (
+                            <InputError
+                              message={errors?.gasSafetyRegNo?.message}
+                              key={errors?.gasSafetyRegNo?.message}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </Fragment>
             )}
@@ -531,6 +611,8 @@ autoComplete="off"
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   loggedInUserData: state.site.loggedInUserData,
+
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
   getSites,

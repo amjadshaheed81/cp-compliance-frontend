@@ -25,8 +25,9 @@ const LoginForm = ({ login, loginUser }) => {
     navigate(link);
   };
   const handleLoginSubmit = (data) => {
+    const payload = { ...data, email: String(data?.email).toLowerCase() || "" };
     setLoading(true);
-    loginUser(data, goTo, setLoading);
+    loginUser(payload, goTo, setLoading);
   };
 
   return (
@@ -49,9 +50,9 @@ const LoginForm = ({ login, loginUser }) => {
                 <label for="email">Email</label>
                 <input
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   id="email"
                   placeholder="Enter your email"
@@ -104,14 +105,18 @@ autoComplete="off"
                 </Box>
               )} */}
               {/* {!isLoading && ( */}
-                <div className="form-group mt-2">
-                  <button
-                    type="submit"
-                    className="btn btn-primary rounded w-100 login-submit"
-                  >
-                    {isLoading ? <CircularProgress sx={{ color: 'white' }}/>  : "Login"}
-                  </button>
-                </div>
+              <div className="form-group mt-2">
+                <button
+                  type="submit"
+                  className="btn btn-primary rounded w-100 login-submit"
+                >
+                  {isLoading ? (
+                    <CircularProgress sx={{ color: "white" }} />
+                  ) : (
+                    "Login"
+                  )}
+                </button>
+              </div>
               {/* )} */}
 
               <div className="mt-2 text-center">

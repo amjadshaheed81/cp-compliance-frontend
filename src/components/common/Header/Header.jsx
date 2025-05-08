@@ -27,9 +27,9 @@ const Header = ({
 
   useEffect(() => {
 
-    getNotifications();
     if(siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
+      getNotifications();
     }
     
   }, [siteSelectedForGlobal]);

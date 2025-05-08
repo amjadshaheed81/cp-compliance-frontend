@@ -34,7 +34,7 @@ const Notification = () => {
       }}
         onClose={() => {console.log('closed called');setShow(false)}} 
         show={show} 
-        delay={5000} 
+        delay={20000} 
         autohide
       >
         <Toast.Header>

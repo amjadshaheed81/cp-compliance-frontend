@@ -68,8 +68,12 @@ const CreateFiles = ({
       toast.error("File size cannot exceed 100MB");
       return;
     }
+    const originalFileName = formData.fileUpload[0].name;
+    const fileNameParts = originalFileName.split('.');
+    const fileExtension = fileNameParts.pop().toLowerCase();
+    const normalizedFileName = fileNameParts.join('.') + '.' + fileExtension;
     const existingFile = folderfiles?.filter(
-      (f) => f.name === formData.fileUpload[0].name
+      (f) => f.name.toLowerCase() === normalizedFileName.toLowerCase()
     );
 
     const reqData = {
@@ -360,11 +364,16 @@ const CreateFiles = ({
                 }
                 const fileExtension = isStatutory
                   ? fileExtensionValue
-                  : formData.fileUpload[0].name?.split(".")?.pop();
+                  : formData.fileUpload[0].name?.split(".")?.pop()?.toLowerCase();
+                const originalFileName = formData.fileUpload[0].name;
+                const lastDotIndex = originalFileName.lastIndexOf('.');
+                const fileNameWithoutExt = lastDotIndex >= 0 
+                   ? originalFileName.substring(0, lastDotIndex) 
+                   : originalFileName;
                 data.files[0].name =
                   formData?.name?.length > 0
                     ? `${formData?.name}.${fileExtension}`
-                    : formData.fileUpload[0].name;
+                    : `${fileNameWithoutExt}`;
                 await submitFile(data, formData.fileUpload[0], formData);
                 if (!isStatutory) {
                   checkAndAddExpiryCalenderEvent(data.files[0], data.folderId);
@@ -547,7 +556,7 @@ autoComplete="off"
                     />
                   )}
                   <span>or drag and drop</span>
-                  <p>SVG, PNG, JPG or GIF</p>
+                  {/* <p>SVG, PNG, JPG or GIF</p> */}
                   <p>(max 100 MB)</p>
                 </div>
               </div>

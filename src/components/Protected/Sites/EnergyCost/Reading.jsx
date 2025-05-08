@@ -50,9 +50,13 @@ const Reading = ({
     const data = { ...formData };
 
     data.readingDate = new Date(data.readingDate);
+    //data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh";
+
     data.energyId = survey.energyId;
     saveData(data);
     setOpen(false);
+
+    toast.success("Energy reading added successfully");
   };
 
   useEffect(() => {
@@ -99,9 +103,7 @@ const Reading = ({
                       formData?.readingValue
                         ? formData?.readingValue -
                           (survey?.readingList?.length > 0
-                            ? survey?.readingList?.[
-                                survey?.readingList?.length - 1
-                              ]?.readingValue
+                            ? survey?.readingList?.[0]?.readingValue
                             : 0)
                         : 0
                     }
@@ -128,6 +130,7 @@ const Reading = ({
                   <div>
                     <DatePicker
                       disabled={isView}
+                      required
                       label="Reading Date"
                       value={formData?.readingDate}
                       onChange={(date) => {
@@ -153,7 +156,7 @@ const Reading = ({
                 </Grid>
 
                 <Grid sm={4}>
-                  <label for="readingValue">Reading</label>
+                  <label for="readingValue">Reading 2</label>
                   <input
                     style={{ maxWidth: "300px" }}
                     type="number"
@@ -163,16 +166,17 @@ const Reading = ({
                     name="readingValue"
                     onChange={handleInputChange}
                     required
+                    min="0"
                   />
                 </Grid>
                 <Grid sm={4}>
                   <label for="readingUnit">Unit</label>
                   <select
-                    disabled={isView}
+                    //disabled={isView}
                     name="readingUnit"
                     className="form-control form-select"
                     id="readingUnit"
-                    value={survey?.readingUnit}
+                    value={formData?.readingUnit}
                     onChange={handleInputChange}
                     required
                   >
@@ -225,7 +229,10 @@ autoComplete="off"
                         </tr>
                       </thead>
                       <tbody>
-                        {survey?.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate))?.length === 0 && (
+                        {survey?.readingList?.sort(
+                          (a, b) =>
+                            new Date(b.readingDate) - new Date(a.readingDate)
+                        )?.length === 0 && (
                           <tr>
                             <td colSpan={5} align="center">
                               No record
@@ -244,10 +251,11 @@ autoComplete="off"
                               {d.readingValue} {d.readingUnit}
                             </td>
                             <td>
-                              {(idx === (survey?.readingList?.length - 1)
+                              {(idx === survey?.readingList?.length - 1
                                 ? d?.readingValue
                                 : d?.readingValue -
-                                  survey?.readingList?.[idx + 1]?.readingValue)?.toFixed(2)}
+                                  survey?.readingList?.[idx + 1]?.readingValue
+                              )?.toFixed(2)}
                               {d.readingUnit}
                             </td>
                             {!isView && (

@@ -4,13 +4,18 @@ import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import { get, post, del, put } from "../../../api";
-import CircularProgress from '@mui/material/CircularProgress';
-import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid } from "@mui/material";
+import CircularProgress from "@mui/material/CircularProgress";
+import {
+  Button,
+  DialogContent,
+  DialogTitle,
+  DialogActions,
+  Dialog,
+  Grid,
+} from "@mui/material";
 import { toast } from "react-toastify";
 
-
-const AdminDropdowns = ({ }) => {
-  
+const AdminDropdowns = ({ loggedInUserData }) => {
   const [data, setData] = useState([]);
   const [formData, setFormData] = useState({});
   const [lovTypes, setLovTypes] = useState([]);
@@ -21,8 +26,8 @@ const AdminDropdowns = ({ }) => {
 
   useEffect(() => {
     getLovTypes();
-  }, [])
-  
+  }, []);
+
   useEffect(() => {
     if (selectedLovType) {
       getLovType(selectedLovType);
@@ -32,27 +37,33 @@ const AdminDropdowns = ({ }) => {
   const getLovTypes = async () => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/lov-types");
-    setLovTypes(lovtypesData?.sort((a, b) => {
-      if (a < b) {
-        return -1;
-      }
-      if (a > b) {
-        return 1;
-      }
-      return 0;
-    }));
+    setLovTypes(
+      lovtypesData?.sort((a, b) => {
+        if (a < b) {
+          return -1;
+        }
+        if (a > b) {
+          return 1;
+        }
+        return 0;
+      })
+    );
     setIsLoading(false);
   };
 
   const getLovType = async (type) => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/" + type);
-    if(type === "STATUARY_CATEGORY") {
-      setData(lovtypesData.sort((a, b) => parseInt(a.attribite3) - parseInt(b.attribite3)));
-    }else{
+    if (type === "STATUARY_CATEGORY") {
+      setData(
+        lovtypesData.sort(
+          (a, b) => parseInt(a.attribite3) - parseInt(b.attribite3)
+        )
+      );
+    } else {
       setData(lovtypesData);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -71,7 +82,7 @@ const AdminDropdowns = ({ }) => {
   };
 
   const addNew = () => {
-    const inProgress = sortedData.findIndex(d => d.edit || d.add);
+    const inProgress = sortedData.findIndex((d) => d.edit || d.add);
     if (inProgress >= 0) {
       toast.error("Please save or cancel existing data");
       return;
@@ -81,7 +92,7 @@ const AdminDropdowns = ({ }) => {
   };
 
   const editData = (idx) => {
-    const inProgress = sortedData.findIndex(d => d.edit || d.add);
+    const inProgress = sortedData.findIndex((d) => d.edit || d.add);
     if (inProgress >= 0) {
       toast.error("Please save existing data");
       return;
@@ -109,6 +120,13 @@ const AdminDropdowns = ({ }) => {
   };
 
   const save = async (idx) => {
+    let licenseId = undefined;
+    const isadmin = loggedInUserData?.superAdmin;
+    if (!isadmin) {
+      const license = JSON.parse(localStorage.getItem("license"));
+      licenseId = license?.licenseId;
+    }
+
     const dataTSave = { lovType: selectedLovType, ...sortedData[idx] };
     const validationErrors = validateFields(dataTSave);
     if (Object.keys(validationErrors).length > 0) {
@@ -120,6 +138,7 @@ const AdminDropdowns = ({ }) => {
     if (dataTSave.add) {
       await post("/api/lov/", dataTSave);
     } else {
+      dataTSave.licenseId = licenseId;
       await put("/api/lov/id/" + dataTSave.id, dataTSave);
     }
     getLovType(selectedLovType);
@@ -133,6 +152,13 @@ const AdminDropdowns = ({ }) => {
     }
 
     setIsLoading(true);
+    let licenseId = undefined;
+    const isadmin = loggedInUserData?.superAdmin;
+    if (!isadmin) {
+      const license = JSON.parse(localStorage.getItem("license"));
+      licenseId = license?.licenseId;
+    }
+    formData.licenseId = licenseId;
     await post("/api/lov/", formData);
     setselectedLovType(formData.lovType);
     setAddNewDrp(false);
@@ -156,31 +182,31 @@ const AdminDropdowns = ({ }) => {
       [name]: value,
     });
   };
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const sortData = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
 
   const sortedData = [...data].sort((a, b) => {
     if (!sortConfig.key) return 0;
-    
+
     if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
+      return sortConfig.direction === "asc" ? -1 : 1;
     }
     if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
+      return sortConfig.direction === "asc" ? 1 : -1;
     }
     return 0;
   });
 
   const getSortIcon = (key) => {
-    if (sortConfig.key !== key) return '⬆️';
-    return sortConfig.direction === 'asc' ? '⬆️' : '⬇️';
+    if (sortConfig.key !== key) return "⬆️";
+    return sortConfig.direction === "asc" ? "⬆️" : "⬇️";
   };
   return (
     <Fragment>
@@ -202,9 +228,9 @@ const AdminDropdowns = ({ }) => {
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="lovType"
                   onChange={handleInputChange2}
@@ -218,9 +244,9 @@ autoComplete="off"
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="lovValue"
                   onChange={handleInputChange2}
@@ -234,9 +260,9 @@ autoComplete="off"
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="attribite1"
                   onChange={handleInputChange2}
@@ -250,9 +276,9 @@ autoComplete="off"
                 <input
                   style={{ maxWidth: "300px" }}
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="attribite2"
                   onChange={handleInputChange2}
@@ -286,7 +312,7 @@ autoComplete="off"
                 name="score"
                 onChange={(e) => {
                   setSortConfig({ key: sortConfig?.key, direction: "asc" });
-                  setselectedLovType(e.target.value)
+                  setselectedLovType(e.target.value);
                 }}
                 value={selectedLovType}
               >
@@ -400,9 +426,11 @@ autoComplete="off"
                           >
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               value={d.lovValue}
                               name="lovValue"
                               className="form-control"
@@ -435,9 +463,11 @@ autoComplete="off"
                           >
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               value={d.lovDesc}
                               name="lovDesc"
                               className="form-control"
@@ -465,9 +495,11 @@ autoComplete="off"
                           >
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               value={d.attribite1}
                               name="attribite1"
                               className="form-control"
@@ -500,9 +532,11 @@ autoComplete="off"
                           >
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               value={d.attribite2}
                               name="attribite2"
                               className="form-control"
@@ -535,9 +569,11 @@ autoComplete="off"
                           >
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               value={d.attribite3}
                               name="attribite3"
                               className="form-control"
@@ -601,6 +637,8 @@ autoComplete="off"
   );
 };
 
-const mapStateToProps = (state) => ({});
+const mapStateToProps = (state) => ({
+  loggedInUserData: state.site.loggedInUserData,
+});
 
 export default connect(mapStateToProps, {})(AdminDropdowns);

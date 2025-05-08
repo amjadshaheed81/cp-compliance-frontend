@@ -45,10 +45,19 @@ const Cost = ({
 
   const save = async (event) => {
     event.preventDefault();
+    if (!formData.fromDate) {
+      toast.error("Please fill from date");
+      return;
+    } else if (!formData.toDate) {
+      toast.error("Please fill to date");
+      return;
+    } 
+    
     const form = event.target;
     if (!form.checkValidity()) {
       form.reportValidity();
     }
+    
     const data = { ...formData };
 
     data.fromDate = new Date(data.fromDate);
@@ -56,7 +65,9 @@ const Cost = ({
     data.energyId = survey.energyId;
     data.budgetCategory = survey?.budgetCategory;
     saveData(data);
-    //setOpen(false);
+    setOpen(false);
+
+    toast.success("Energy cost added successfully");
   };
 
   return (
@@ -107,8 +118,10 @@ const Cost = ({
                   <div>
                     <DatePicker
                       label="From Date"
-                      value={formData?.fromDate}
+                      //value={formData?.fromDate || ""}
                       disabled={isView}
+                      required
+                     name="fromDate"
                       onChange={(date) => {
                         setFormData({
                           ...formData,
@@ -135,8 +148,11 @@ const Cost = ({
                   <div style={{}}>
                     <DatePicker
                       label="To Date"
+                      name="toDate"
                       value={formData?.toDate}
+                      minDate={formData?.fromDate}
                       disabled={isView}
+                      required
                       onChange={(date) => {
                         setFormData({
                           ...formData,
@@ -167,6 +183,7 @@ const Cost = ({
                     className="form-control"
                     disabled={isView}
                     name="cost"
+                    min="0"
                     onChange={handleInputChange}
                     required
                   />
@@ -174,6 +191,7 @@ const Cost = ({
                 <Grid sm={8}></Grid>
                 <Grid sm={4}>
                   <Button
+                  type="Button"
                     onClick={(e) => setOpen(false)}
                     className="bg-light text-primary"
                   >

@@ -28,9 +28,9 @@ const MandatoryFolders = ({
   useEffect(() => {
     setFilteredFolders(rootFolder?.parentFolders || []);
   }, [rootFolder]);
-  useEffect(() => {
-    getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
-  }, [getDocumentsRootFolder, siteSelectedForGlobal]);
+  // useEffect(() => {
+  //   getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+  // }, [getDocumentsRootFolder, siteSelectedForGlobal]);
 
   const handleFolderOpen = (e) => {
     e?.preventDefault();
@@ -85,7 +85,7 @@ const MandatoryFolders = ({
           <Button
             className="btn btn-sm btn-light text-primary w-100"
             onClick={handleFolderOpen}
-            style={{fontSize: '12px'}}
+            style={{ fontSize: "12px" }}
           >
             <i className="fas fa-plus"></i>&nbsp; New Document Location
           </Button>
@@ -115,7 +115,11 @@ const MandatoryFolders = ({
           <form className="row border-top">
             <div className="col-md-12 p-2 border-top">
               <div className="float-end">
-                <Button type="button" className="btn btn-light text-primary" onClick={() => goToRootFolder()}>
+                <Button
+                  type="button"
+                  className="btn btn-light text-primary"
+                  onClick={() => goToRootFolder()}
+                >
                   <i className="fas fa-home"></i> Root
                 </Button>
               </div>
@@ -129,26 +133,59 @@ const MandatoryFolders = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {
-                    filteredFolders?.length === 0 && <tr>
+                  {filteredFolders?.length === 0 && (
+                    <tr>
                       <td colSpan={2}>No Result Found</td>
                     </tr>
-                  }
+                  )}
                   {filteredFolders?.map((folder) => (
                     <tr key={folder.id}>
                       <td>
-                        <i
-                          style={{ color: "#384BD3" }}
-                          className="fas fa-folder fa-2x"
-                        ></i>
-                        <span className="p-3 text-primary cursor" onClick={() => checkSubFolder(folder.id)}>{folder.name}</span>
+                        <div
+                          className="d-flex align-items-center cursor text-primary"
+                          onClick={() => checkSubFolder(folder.id)}
+                        >
+                          <span
+                            className="fa-stack fa-1x me-2"
+                            style={{ fontSize: "28px" }}
+                          >
+                            <i
+                              className="fas fa-folder fa-stack-1x"
+                              style={{ color: "#384BD3" }}
+                            ></i>
+                            {folder?.sharedFolder && (
+                              <i
+                                className="fas fa-users fa-stack-1x"
+                                style={{
+                                  color: "white",
+                                  fontSize: "0.4em",
+                                  left: "2px",
+                                  top: "2px",
+                                }}
+                              ></i>
+                            )}
+                          </span>
+                          <span>
+                            {folder.name}
+                            <span
+                              className="ms-2 badge"
+                              style={{
+                                backgroundColor: "#cacaca",
+                                color: "#101010",
+                                fontSize: "12px",
+                              }}
+                            >
+                              {folder.fileCount}
+                            </span>
+                          </span>
+                        </div>
                       </td>
                       <td>
                         <span
                           className="text-primary cursor"
                           onClick={() => handleAddFolder(folder)}
                         >
-                          <i className="fas fa-plus" size="sm"></i>
+                          <i className="fas fa-plus"></i>
                         </span>
                       </td>
                     </tr>

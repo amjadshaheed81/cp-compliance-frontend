@@ -72,41 +72,48 @@ const Users = ({
     searchUser();
   }, [formData.role, formData.searchField, formData.site, formData.status]);
   const searchUser = () => {
-    const searchField = formData?.searchField || '';
-    const role = formData?.role || '';
-    const site = formData?.site || '';
-    const status = formData?.status || '';
+    const searchField = formData?.searchField || "";
+    const role = formData?.role || "";
+    const site = formData?.site || "";
+    const status = formData?.status || "";
 
     if (searchField || role || site || status) {
-        const list = users?.filter((user) => {
-            const lowerCaseSearchField = String(searchField).toLowerCase();
-            
-            const matchesNameOrEmail = !searchField || 
-                String(user?.name).toLowerCase().includes(lowerCaseSearchField) ||
-                String(user?.email).toLowerCase().includes(lowerCaseSearchField);
+      const list = users?.filter((user) => {
+        const lowerCaseSearchField = String(searchField).toLowerCase();
 
-            const matchesRole = !role || String(user?.role)
-                .toLowerCase()
-                .includes(String(role).toLowerCase());
+        const matchesNameOrEmail =
+          !searchField ||
+          String(user?.name).toLowerCase().includes(lowerCaseSearchField) ||
+          String(user?.email).toLowerCase().includes(lowerCaseSearchField);
 
-            const matchesSite = !site || user?.taggedSites?.some(taggedSite =>
-                String(taggedSite?.id) === String(site)
-            );
+        const matchesRole =
+          !role ||
+          String(user?.role).toLowerCase().includes(String(role).toLowerCase());
 
-            const matchesStatus = !status || String(user?.status)
-                .toLowerCase()
-                .includes(String(status).toLowerCase());
+        const matchesSite =
+          !site ||
+          user?.taggedSites?.some(
+            (taggedSite) => String(taggedSite?.id) === String(site)
+          );
 
-            // Returns true if all provided conditions match
-            return matchesNameOrEmail && matchesRole && matchesSite && matchesStatus;
-        });
+        const matchesStatus =
+          !status ||
+          String(user?.status)
+            .toLowerCase()
+            .includes(String(status).toLowerCase());
 
-        setCurrentPage(1); //calculateLastPageIndex(list?.length, usersPerPage)
-        setFilteredUser(list);
+        // Returns true if all provided conditions match
+        return (
+          matchesNameOrEmail && matchesRole && matchesSite && matchesStatus
+        );
+      });
+
+      setCurrentPage(1); //calculateLastPageIndex(list?.length, usersPerPage)
+      setFilteredUser(list);
     } else {
-        setFilteredUser(users);
+      setFilteredUser(users);
     }
-};
+  };
 
   const deleteUserCall = (user) => {
     Swal.fire({
@@ -118,7 +125,7 @@ const Users = ({
       if (result.isConfirmed) {
         const res = await deleteUser(user?.id);
         if (res === "Success") {
-          toast.success(`${user?.name} user has been deleted successully`);
+          toast.success(`${user?.name} user has been deleted successfully`);
           getUsers();
         } else if (res?.includes("pre_actions")) {
           toast.error(
@@ -209,9 +216,9 @@ const Users = ({
                 <div className="col-md-3 col-sm-4 mt-2">
                   <input
                     type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                    autoComplete="off"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     placeholder="Search"
                     name="searchField"
@@ -274,14 +281,16 @@ autoComplete="off"
                   <button
                     className="btn btn-primary text-white pr-2"
                     onClick={() => {
-                      const license = JSON.parse(localStorage.getItem('license'));
-    if(users.length >= Number(license.allowedUser)) {
-      toast.error("You have reached your limit for adding users under your license.")
-     
-    } else {
-      setShowAddModal(true);
-    }
-                      
+                      const license = JSON.parse(
+                        localStorage.getItem("license")
+                      );
+                      if (users.length >= Number(license.allowedUser)) {
+                        toast.error(
+                          "You have reached your limit for adding users under your license."
+                        );
+                      } else {
+                        setShowAddModal(true);
+                      }
                     }}
                   >
                     Add New
@@ -357,17 +366,23 @@ autoComplete="off"
                           <span className="badge bg-primary">{itm?.name}</span>
                         ))}
                     </th>
-                    <th scope="col">{user?.role === "Manager" ? "Property Manager": user?.role}</th>
+                    <th scope="col">
+                      {user?.role === "Manager"
+                        ? "Property Manager"
+                        : user?.role}
+                    </th>
                     <th scope="col">
                       {moment(user?.creationDate).format("DD-MM-YYYY")}
                     </th>
                     <th scope="col">{user?.userType}</th>
                     <th scope="col">{user?.companyName}</th>
                     <th scope="col">
-                      {user?.lastLogin ? moment(user?.lastLogin).format("DD-MM-YYYY hh:mm:ss") : '-'}
+                      {user?.lastLogin
+                        ? moment(user?.lastLogin).format("DD-MM-YYYY hh:mm:ss")
+                        : "-"}
                     </th>
-                    <th scope="col"> 
-                    {/* <Chip
+                    <th scope="col">
+                      {/* <Chip
                label={ user?.status}
             color={
             user?.status === "Active" 
@@ -375,11 +390,11 @@ autoComplete="off"
               : "danger"
           }
         /> */}
-        
-         <ChipComponent status={user?.status} />
-                  </th>  
+
+                      <ChipComponent status={user?.status} />
+                    </th>
                     <th scope="col" width="200px">
-                    <Tooltip title={`Reset password`} arrow>
+                      <Tooltip title={`Reset password`} arrow>
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {

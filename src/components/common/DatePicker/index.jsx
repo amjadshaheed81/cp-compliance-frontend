@@ -13,15 +13,29 @@ const TdkDatePicker = ({
   label,
   width = "380px",
   disabled,
+  minDate,
 }) => {
   const datePickerRef = useRef(null);
-  const [manualInput, setManualInput] = useState(
+  // Store the actual Date object in state
+  const [dateValue, setDateValue] = useState(value ? new Date(value) : null);
+  // Store the display string separately
+  const [displayValue, setDisplayValue] = useState(
     value ? moment(value).format("DD/MM/YYYY") : ""
   );
-  const [isTyping, setIsTyping] = useState(false); // Track if user is typing
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Update display value when dateValue changes
+  useEffect(() => {
+    if (dateValue) {
+      setDisplayValue(moment(dateValue).format("DD/MM/YYYY"));
+    } else {
+      setDisplayValue("");
+    }
+  }, [dateValue]);
+
   // Format input with slashes automatically
   const formatDateWithSlashes = (input) => {
-    const digits = input.replace(/\D/g, ""); // Remove non-numeric characters
+    const digits = input.replace(/\D/g, "");
     const day = digits?.slice(0, 2);
     const month = digits?.slice(2, 4);
     const year = digits?.slice(4, 8);
@@ -32,25 +46,36 @@ const TdkDatePicker = ({
 
     return formattedDate;
   };
+
   // Handle manual date input
   const handleInputChange = (e) => {
     let inputValue = e.target.value;
     inputValue = formatDateWithSlashes(inputValue);
+    setDisplayValue(inputValue);
+    setIsTyping(true);
 
-    setManualInput(inputValue);
-    setIsTyping(true); // Set typing to true when user types manually
-
-    // Validate and parse the input as a valid date
-    const parsedDate = moment(inputValue, "DD/MM/YYYY", true); // strict parsing
+    // Parse the input as a valid date
+    const parsedDate = moment(inputValue, "DD/MM/YYYY", true);
     if (parsedDate.isValid()) {
-      onChange(parsedDate.toDate());
+      const jsDate = new Date(
+        parsedDate.year(),
+        parsedDate.month(),
+        parsedDate.date(),
+        10,
+        0,
+        0 // Force local date and time
+      );
+      setDateValue(jsDate);
+      onChange(jsDate); // Pass Date object to parent
+    } else if (inputValue === "") {
+      setDateValue(null);
+      onChange(null);
     }
   };
 
-  // Open date picker only when not typing and the input is clicked
   const handleInputClick = () => {
     if (!isTyping) {
-      datePickerRef.current.setOpen(true); // Open only if user is not typing
+      datePickerRef.current.setOpen(true);
     }
   };
 
@@ -61,44 +86,39 @@ const TdkDatePicker = ({
         <input
           required={required}
           type="text"
-autoComplete="off"
+          autoComplete="off"
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
           id="datePicker"
-          value={manualInput}
+          value={displayValue}
           placeholder="dd/mm/yyyy"
           className="form-control"
           disabled={disabled ? true : false}
-          style={{
-            width: width,
-          }}
-          onChange={handleInputChange} // Handle manual input
-          onClick={handleInputClick} // Open date picker on click (if not typing)
-          onBlur={() => setIsTyping(false)} // Reset typing state when input loses focus
+          style={{ width: width }}
+          onChange={handleInputChange}
+          onClick={handleInputClick}
+          onBlur={() => setIsTyping(false)}
         />
         <CalendarTodayIcon
-          style={{
-            cursor: "pointer",
-            color: "#aaa",
-          }}
-          onClick={() => datePickerRef.current.setOpen(true)} // Open date picker on icon click
+          style={{ cursor: "pointer", color: "#aaa" }}
+          onClick={() => datePickerRef.current.setOpen(true)}
         />
       </div>
       <DatePicker
         ref={datePickerRef}
-        selected={value ? new Date(value) : null}
+        selected={dateValue}
         onChange={(date) => {
-          onChange(date);
-          setManualInput(moment(date).format("DD/MM/YYYY")); // Update the input when date is selected
+          setDateValue(date);
+          onChange(date); // Pass Date object to parent
         }}
         dateFormat="dd/MM/yyyy"
-        customInput={<div />} // Avoid rendering a second input field
+        customInput={<div />}
         popperClassName="custom-datepicker-popper"
         popperPlacement="bottom-end"
+        minDate={minDate ? new Date(minDate) : null}
       />
     </div>
   );
 };
 
-const mapStateToProps = (state) => ({});
-export default connect(mapStateToProps, {})(TdkDatePicker);
+export default connect(null, {})(TdkDatePicker);
