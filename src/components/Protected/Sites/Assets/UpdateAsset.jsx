@@ -511,9 +511,9 @@ const UpdateAsset = ({
       supplier: selectedAsset?.supplier,
       transactionId: selectedAsset?.transactionId,
       cost: selectedAsset?.cost,
-      date: selectedAsset?.date
-        ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
-        : null,
+      // date: selectedAsset?.date
+      //   ? `${selectedAsset?.date?.split("T")?.[0]} 10:00:00`
+      //   : null,
       disposalDate: selectedAsset?.disposalDate
         ? `${formatDate(selectedAsset.disposalDate)} 10:00:00`
         : null,
