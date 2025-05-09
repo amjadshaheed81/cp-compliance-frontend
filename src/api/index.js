@@ -43,7 +43,7 @@ function handleError(error) {
 }
 
 function getHeaders() {
-  const token = localStorage.getItem("mployr-token");
+  //const token = localStorage.getItem("mployr-token");
   return {
     "Access-Control-Allow-Origin": "*",
   };
