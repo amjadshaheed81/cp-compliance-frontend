@@ -22,7 +22,7 @@ ChartJS.register(
 const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
   // Conversion factor for gas (M³ to kWh)
   const convertGasToKWh = (volumeInM3) => {
-    const calorificValue = 11.1; // MJ/m³ (adjust based on your gas supply)
+    const calorificValue = 11.1868; // MJ/m³ (adjust based on your gas supply)
     // const conversionFactor = 3.6; // MJ to kWh conversion
     return (volumeInM3 * calorificValue);
   };
@@ -84,7 +84,10 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
           } else if (energyItem.budgetCategory === "Gas") {
             consumptionKwh = current.readingValue - previous.readingValue;
             //console.log('consumptionKwh', consumptionKwh)
-            consumptionKwh = convertGasToKWh(consumptionKwh);
+            if(current.readingType === "M3") {
+              consumptionKwh = convertGasToKWh(consumptionKwh);
+            }
+            
             metrics.totalGasKwh += consumptionKwh;
             metrics.monthlyData[month].gas += consumptionKwh;
           }
