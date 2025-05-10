@@ -422,9 +422,6 @@ const UpdateAsset = ({
       data?.assetImage?.forEach((assetImage) => {
         form_data.append("assetImage", assetImage);
       });
-    } else {
-      //const blob = await fetchBlob(selectedAsset?.image);
-      //form_data.append("assetImage", blob, formData?.assetName);
     }
     const formDetails = {
       assetId: formData?.assetId,
@@ -437,17 +434,17 @@ const UpdateAsset = ({
       model: formData?.model,
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
-      //valuations: valuations,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
       pfpItem: formData?.pfpItem,
       doorItem: formData?.doorItem,
-      position: selectedAsset?.position,
-      floor: selectedAsset?.floor,
-      room: selectedAsset?.room,
       barcode: "code",
+      position: selectedAsset?.position || null,
+      floor: selectedAsset?.floor || null,
+      room: selectedAsset?.room || null,
     };
+
     form_data.append("assetRequestString", JSON.stringify(formDetails));
     try {
       await addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
@@ -464,6 +461,7 @@ const UpdateAsset = ({
     },
   });
   const purchaseFrormValues = purchaseDetailForm.watch();
+
   const submitSiteAssetPurchaseDetail = async (data) => {
     let form_data = new FormData();
     const { purchaseInvoice, ...formData } = data;
@@ -1955,10 +1953,9 @@ const UpdateAsset = ({
                             isRemovable={
                               valuations.filter((v) => !v.delete).length > 0
                             }
-                            disabled={
-                              !!selectedAsset?.disposalDate &&
-                              selectedAsset?.disposalDate !== ""
-                            }
+                            readOnly={!!selectedAsset?.disposalDate}
+                            disabled={!!selectedAsset?.disposalDate}
+                            hasDisposalDate={!!selectedAsset?.disposalDate}
                           />
                         ))}
                       {valuations.filter((v) => !v.delete).length === 0 && (

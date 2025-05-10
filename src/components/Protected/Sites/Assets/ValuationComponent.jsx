@@ -122,7 +122,8 @@ const ValuationComponent = ({
                 });
               }
             }}
-            readOnly={hasDisposalDate} // Disable if disposal date exists // Disable if disposal date exists
+            readOnly={hasDisposalDate}
+            disabled={hasDisposalDate}
           />
           {errors?.valuation && (
             <InputError
@@ -167,7 +168,8 @@ const ValuationComponent = ({
                 });
               }
             }}
-            disabled={hasDisposalDate} // Disable if disposal date exists // Disable if disposal date exists
+            readOnly={hasDisposalDate}
+            disabled={hasDisposalDate}
           >
             <option value="">Select evaluator</option>
             {users?.map((itm) => (
@@ -187,26 +189,38 @@ const ValuationComponent = ({
 
       {/* Delete Action Cell */}
       <td className="align-middle" style={{ padding: "12px 16px" }}>
-        <Box display="flex" gap={1} justifyContent="flex-end">
-          {isRemovable &&
-            !hasDisposalDate && ( // Only show if not disabled
-              <Tooltip
-                title={
-                  hasDisposalDate
-                    ? "Cannot remove after disposal"
-                    : "Remove valuation"
-                }
-              >
+        <Box
+          display="flex"
+          gap={1}
+          justifyContent="flex-end"
+          sx={{ visibility: hasDisposalDate ? "hidden" : "visible" }}
+        >
+          {isRemovable && !hasDisposalDate && (
+            <Tooltip
+              title={
+                hasDisposalDate
+                  ? "Cannot remove after disposal"
+                  : "Remove valuation"
+              }
+            >
+              <span>
                 <IconButton
                   color="error"
                   onClick={() => !hasDisposalDate && onRemove(index)}
                   size="small"
+                  readOnly={hasDisposalDate}
                   disabled={hasDisposalDate}
+                  sx={{
+                    display: hasDisposalDate ? "none" : "inline-flex",
+                    opacity: hasDisposalDate ? 0 : 1,
+                    pointerEvents: hasDisposalDate ? "none" : "auto",
+                  }}
                 >
                   <DeleteForeverIcon fontSize="small" />
                 </IconButton>
-              </Tooltip>
-            )}
+              </span>
+            </Tooltip>
+          )}
         </Box>
       </td>
     </tr>
