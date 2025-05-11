@@ -78,7 +78,7 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
           let consumptionKwh = consumption;
 
           if (energyItem.budgetCategory === "Electricity") {
-            consumptionKwh = current.readingValue;
+            consumptionKwh = current.readingValue - previous.readingValue;
             metrics.totalElectricityKwh += consumptionKwh;
             metrics.monthlyData[month].electricity += consumptionKwh;
           } else if (energyItem.budgetCategory === "Gas") {
