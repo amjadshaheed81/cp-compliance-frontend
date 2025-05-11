@@ -859,7 +859,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                         </th>
                         <th scope="col">
                           {action?.readingList?.[
-                            action?.readingList?.length - 1
+                           0
                           ]?.readingValue?.toFixed(2) ?? "-"}{" "}
                           {
                             action?.readingList?.[
