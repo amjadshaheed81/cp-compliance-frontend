@@ -156,7 +156,7 @@ const Reading = ({
                 </Grid>
 
                 <Grid sm={4}>
-                  <label for="readingValue">Reading 2</label>
+                  <label for="readingValue">Reading</label>
                   <input
                     style={{ maxWidth: "300px" }}
                     type="number"
