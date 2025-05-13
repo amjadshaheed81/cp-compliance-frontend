@@ -28,9 +28,24 @@ const Reading = ({
 }) => {
   const [formData, setFormData] = useState({});
   const [isView, setIsView] = useState(false);
+
   useEffect(() => {
     setIsView(isViewMode);
   }, [isViewMode]);
+
+  useEffect(() => {
+    if (survey?.budgetCategory === "Electricity") {
+      setFormData((prev) => ({
+        ...prev,
+        readingUnit: "Kwh",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        readingUnit: prev.readingUnit || "",
+      }));
+    }
+  }, [survey]);
 
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
@@ -50,7 +65,10 @@ const Reading = ({
     const data = { ...formData };
 
     data.readingDate = new Date(data.readingDate);
-    //data.readingUnit = survey?.budgetCategory === "Gas" ? "M3" : "Kwh";
+
+    if (survey?.budgetCategory === "Electricity") {
+      data.readingUnit = "Kwh";
+    }
 
     data.energyId = survey.energyId;
     saveData(data);
@@ -82,7 +100,6 @@ const Reading = ({
                   <label for="reference">Meter Reference</label>
                   <input
                     style={{ maxWidth: "300px" }}
-                    //style={{ maxWidth: '600px' }}
                     type="reference"
                     className="form-control"
                     id="reference"
@@ -94,7 +111,6 @@ const Reading = ({
                   <label for="reference">Usage</label>
                   <input
                     style={{ maxWidth: "300px" }}
-                    //style={{ maxWidth: '600px' }}
                     type="reference"
                     className="form-control"
                     id="reference"
@@ -143,16 +159,6 @@ const Reading = ({
                       }}
                     />
                   </div>
-                  {/* <label for="readingDate">Reading Date</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="date"
-                  className="form-control"
-                    name="readingDate"
-                    onChange={handleInputChange}
-                    required
-
-                /> */}
                 </Grid>
 
                 <Grid sm={4}>
@@ -171,34 +177,30 @@ const Reading = ({
                 </Grid>
                 <Grid sm={4}>
                   <label for="readingUnit">Unit</label>
-                  <select
-                    //disabled={isView}
-                    name="readingUnit"
-                    className="form-control form-select"
-                    id="readingUnit"
-                    value={formData?.readingUnit}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Reading Unit</option>
-                    <option value="Kwh">Kwh</option>
-                    <option value="M3">M³</option>
-                    <option value="ltrs">ltrs</option>
-                  </select>
-                  {/* <label for="readingUnit"></label>
-                  <input
-                    type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                    value="kWh"
-                    style={{ maxWidth: '300px' }}
-                    className="form-control"
-                    name="readingUnit"
-                    onChange={handleInputChange}
-                    disabled
-
-                  /> */}
+                  {survey?.budgetCategory === "Electricity" ? (
+                    <input
+                      style={{ maxWidth: "300px" }}
+                      type="text"
+                      className="form-control"
+                      value="Kwh"
+                      disabled
+                    />
+                  ) : (
+                    <select
+                      disabled={isView}
+                      name="readingUnit"
+                      className="form-control form-select"
+                      id="readingUnit"
+                      value={formData?.readingUnit}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Reading Unit</option>
+                      <option value="Kwh">Kwh</option>
+                      <option value="M3">M³</option>
+                      <option value="ltrs">ltrs</option>
+                    </select>
+                  )}
                 </Grid>
                 <Grid sm={8}></Grid>
                 <Grid sm={4}>
@@ -245,7 +247,6 @@ autoComplete="off"
                               {d?.readingDate
                                 ? moment(d?.readingDate).format("DD/MM/YYYY")
                                 : "-"}
-                              {/* {String(d?.readingDate)?.substring(0, 10)} */}
                             </td>
                             <td>
                               {d.readingValue} {d.readingUnit}
