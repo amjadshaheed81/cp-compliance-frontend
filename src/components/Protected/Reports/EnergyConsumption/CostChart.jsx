@@ -54,31 +54,65 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
         }
       });
 
+      // Skip if no readings
+      if (!energyItem.readingList || energyItem.readingList.length === 0) {
+        return;
+      }
+
       // Process readings - using actual consumption
-      const sortedReadings = [...(energyItem.readingList || [])].sort(
+      const sortedReadings = [...energyItem.readingList].sort(
         (a, b) => new Date(a.readingDate) - new Date(b.readingDate)
       );
 
-      
+      // Find all readings for the year and the last reading before the year
+      const yearReadings = sortedReadings.filter(
+        (r) => new Date(r.readingDate).getFullYear() === year
+      );
 
-      for (let i = 1; i < sortedReadings.length; i++) {
-        const current = sortedReadings[i];
-        const previous = sortedReadings[i - 1];
+      // Find the last reading before the year starts
+      let previousReading = null;
+      for (let i = sortedReadings.length - 1; i >= 0; i--) {
+        if (new Date(sortedReadings[i].readingDate).getFullYear() < year) {
+          previousReading = sortedReadings[i];
+          break;
+        }
+      }
+
+      // Special case: Only one reading in the year and no previous reading
+      if (yearReadings.length === 1 && !previousReading) {
+        const current = yearReadings[0];
         const readingDate = new Date(current.readingDate);
+        const month = readingDate.getMonth();
 
-        if (readingDate.getFullYear() === year) {
-          const month = readingDate.getMonth();
+        if (energyItem.budgetCategory === "Electricity") {
+          metrics.totalElectricityKwh += current.readingValue;
+          metrics.monthlyData[month].electricity += current.readingValue;
+        } else if (energyItem.budgetCategory === "Gas") {
+          const consumptionKwh =
+            current.readingUnit && current.readingUnit.toUpperCase() === "M3"
+              ? convertGasToKWh(current.readingValue)
+              : current.readingValue;
+          metrics.totalGasKwh += consumptionKwh;
+          metrics.monthlyData[month].gas += consumptionKwh;
+        }
+        return;
+      }
 
-          let consumption = 0;
-          let consumptionKwh = consumption;
+      // Process all readings for the year
+      let lastProcessedReading = previousReading;
+      for (let i = 0; i < yearReadings.length; i++) {
+        const current = yearReadings[i];
+        const readingDate = new Date(current.readingDate);
+        const month = readingDate.getMonth();
+
+        if (lastProcessedReading) {
+          let consumptionKwh =
+            current.readingValue - lastProcessedReading.readingValue;
 
           if (energyItem.budgetCategory === "Electricity") {
-            consumptionKwh = current.readingValue - previous.readingValue;
             metrics.totalElectricityKwh += consumptionKwh;
             metrics.monthlyData[month].electricity += consumptionKwh;
           } else if (energyItem.budgetCategory === "Gas") {
-            consumptionKwh = current.readingValue - previous.readingValue;
-            //console.log('consumptionKwh', consumptionKwh)
             consumptionKwh =
               current.readingUnit && current.readingUnit.toUpperCase() === "M3"
                 ? convertGasToKWh(consumptionKwh)
@@ -87,6 +121,7 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
             metrics.monthlyData[month].gas += consumptionKwh;
           }
         }
+        lastProcessedReading = current;
       }
     });
 
