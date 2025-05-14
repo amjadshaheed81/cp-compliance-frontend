@@ -201,7 +201,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
               }
             } else if (index === 1) {
               rowValues[index] = convertToDate(rowValues[index]);
-              console.log('rowValues[index]', rowValues[index]);
+              console.log("rowValues[index]", rowValues[index]);
             } else if (index === 2) {
               if (isNaN(rowValues[index])) {
                 toast(
@@ -227,13 +227,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     if (typeof dateString === "number") {
       const excelEpoch = new Date(1900, 0, 1);
       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
-      const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
-      jsDate.setUTCHours(0, 0, 0, 0); 
+      const jsDate = new Date(
+        excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000
+      );
+      jsDate.setUTCHours(0, 0, 0, 0);
       return jsDate.toISOString();
     } else {
       const [day, month, year] = dateString.split("/")?.map(Number);
       const date = new Date(Date.UTC(year, month - 1, day));
-      date.setUTCHours(0, 0, 0, 0); 
+      date.setUTCHours(0, 0, 0, 0);
       return date.toISOString();
     }
   }
@@ -265,7 +267,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             }
           } else if (index === 1 || index === 2) {
             rowValues[index] = convertToDate(rowValues[index]);
-            console.log(rowValues[index])
+            console.log(rowValues[index]);
           }
           rowData[col] = rowValues[index] || null;
         });
@@ -326,11 +328,15 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       return;
     }
     setIsLoading(true);
-    const energyCost = await get("/api/energy/site/survey/" + siteSelectedForGlobal?.siteId);
+    const energyCost = await get(
+      "/api/energy/site/survey/" + siteSelectedForGlobal?.siteId
+    );
     energyCost.forEach((energy) => {
       const dates = energy.costList.map((c) => new Date(c.fromDate));
-      energy.readingList = energy.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
-      
+      energy.readingList = energy.readingList?.sort(
+        (a, b) => new Date(b.readingDate) - new Date(a.readingDate)
+      );
+
       const minDate =
         Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
       const dates2 = energy.costList.map((c) => new Date(c.toDate));
@@ -485,7 +491,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             page={"Energy"}
           />
 
-          <div className="d-flex bd-highlight" style={{flexWrap: 'wrap'}}>
+          <div className="d-flex bd-highlight" style={{ flexWrap: "wrap" }}>
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
@@ -501,9 +507,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     ></i>
                     <input
                       type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                      autoComplete="off"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute("readonly")}
                       placeholder="Search"
                       name="searchField"
                       style={{ textAlign: "center", width: "250px" }}
@@ -652,18 +658,19 @@ autoComplete="off"
                             : "-"}
                         </th>
                         <th scope="col">
-                          {action?.readingList?.[0]?.readingValue?.toFixed(2) ?? "-"}{" "}
-                          {
-                            action?.readingList?.[0]?.readingUnit
-                          }
+                          {action?.readingList?.[0]?.readingValue?.toFixed(2) ??
+                            "-"}{" "}
+                          {action?.readingList?.[0]?.readingUnit}
                         </th>
                         <th scope="col">
-                          
-                          {formatToCurrency(action?.costList
-                            ?.map((c) => c.cost)
-                            .reduce((a, b) => {
-                              return a + b;
-                            }, 0)?.toFixed(2))}
+                          {formatToCurrency(
+                            action?.costList
+                              ?.map((c) => c.cost)
+                              .reduce((a, b) => {
+                                return a + b;
+                              }, 0)
+                              ?.toFixed(2)
+                          )}
                         </th>
 
                         <th scope="col" style={{ width: "250px" }}>

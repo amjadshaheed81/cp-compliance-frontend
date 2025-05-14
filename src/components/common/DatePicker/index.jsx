@@ -94,7 +94,7 @@ const TdkDatePicker = ({
           placeholder="dd/mm/yyyy"
           className="form-control"
           disabled={disabled ? true : false}
-          style={{ width: width }}
+          style={{ width }}
           onChange={handleInputChange}
           onClick={handleInputClick}
           onBlur={() => setIsTyping(false)}
@@ -114,7 +114,7 @@ const TdkDatePicker = ({
         dateFormat="dd/MM/yyyy"
         customInput={<div />}
         popperClassName="custom-datepicker-popper"
-        popperPlacement="bottom-end"
+        popperPlacement="left-ends"
         minDate={minDate ? new Date(minDate) : null}
       />
     </div>
