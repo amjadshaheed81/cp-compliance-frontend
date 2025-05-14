@@ -1,46 +1,54 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { connect } from "react-redux";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import moment from "moment";
+
+// Components
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import { toast } from "react-toastify";
 import CreateFiles from "./CreateFiles";
 import CreateParentFolder from "./CreateParentFolder";
 import CreateFolder from "./CreateFolder";
 import BulkUpload from "./BulkUpload";
-import {
-  CreateNewFolder as CreateNewFolderIcon,
-  FolderCopy as FolderCopyIcon,
-  NoteAdd as NoteAddIcon,
-  TextSnippetOutlined as TextSnippetOutlinedIcon,
-  Reply as ReplyIcon,
-  CopyAll,
-  MoveDown,
-  History as HistoryIcon,
-  RestorePage as RestorePageIcon,
-} from "@mui/icons-material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import { Chip, Tooltip, Button } from "@mui/material";
-import {
-  isAdminLogin,
-  isManagerAdminLogin,
-} from "../../../../utils/isManagerAdminLogin";
-import { useNavigate } from "react-router-dom";
-import { get, del, put } from "../../../../api";
-import "./Documents.css";
-import Swal from "sweetalert2";
-import { connect } from "react-redux";
-import {
-  getDocumentsRootFolder,
-  getSubFilesAndFolder,
-  setLoader,
-} from "../../../../store/thunk/site";
 import PdfViewer from "./PdfViewer";
 import VersionHistory from "./VersionHistory";
 import CopyModal from "./CopyModal";
 import MoveModal from "./MoveModal";
 import EditDocument from "./EditDocument";
-import moment from "moment";
+
+// Icons
+import {
+  CreateNewFolder as CreateNewFolderIcon,
+  FolderCopy as FolderCopyIcon,
+  NoteAdd as NoteAddIcon,
+  Reply as ReplyIcon,
+  CopyAll,
+  MoveDown,
+  History as HistoryIcon,
+  RestorePage as RestorePageIcon,
+  NavigateNext as NavigateNextIcon,
+} from "@mui/icons-material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+
+// MUI Components
+import { Chip, Tooltip, Button, Breadcrumbs, Link } from "@mui/material";
+
+// Utils & API
+import { get, del, put } from "../../../../api";
+import {
+  isAdminLogin,
+  isManagerAdminLogin,
+} from "../../../../utils/isManagerAdminLogin";
+import {
+  getDocumentsRootFolder,
+  getSubFilesAndFolder,
+  setLoader,
+} from "../../../../store/thunk/site";
 
 const AdminParentFolder = ({
   rootFolder,
@@ -51,10 +59,13 @@ const AdminParentFolder = ({
   setLoader,
   subfolderFiles,
 }) => {
-  const [showFolderModal, setShowFolderModal] = useState(false);
+  const navigate = useNavigate();
+
+  // State Management
+  const [showRootFolderModal, setShowRootFolderModal] = useState(false);
+  const [showSubFolderModal, setShowSubFolderModal] = useState(false);
   const [isCreateFileModalOpen, setIsCreateFileModalOpen] = useState(false);
   const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
-  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
   const [isVersionModeEdit, setIsVersionModeEdit] = useState(false);
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
@@ -64,13 +75,26 @@ const AdminParentFolder = ({
   const [selectedPdf, setSelectedPdf] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileId, setFileId] = useState(null);
-  const [currentFolder, setCurrentFolder] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [error, setError] = useState("");
+  const [columns, setColumns] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentFolder, setCurrentFolder] = useState({
+    id: null,
+    name: "Root",
+    childFolders: [],
+    files: [],
+  });
+  const [currentFolderData, setCurrentFolderData] = useState(null);
+  // Helper Functions
+  const getFolderEndpoint = (folderId) => {
+    if (folderId === "root") {
+      return `/api/document/site/${siteSelectedForGlobal?.siteId}/parent/folders`;
+    }
+    return `/api/document/parent/${folderId}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
+  };
 
-  const navigate = useNavigate();
-
+  // Initial Load
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       setLoader(true);
@@ -84,41 +108,145 @@ const AdminParentFolder = ({
     }
   }, [siteSelectedForGlobal]);
 
-  const handleFolderClick = async (folder) => {
+  // Initialize Columns
+  useEffect(() => {
+    if (rootFolder?.parentFolders?.length > 0) {
+      setColumns([
+        {
+          id: "root",
+          data: rootFolder.parentFolders,
+          name: "Root",
+          isParent: true,
+        },
+      ]);
+    }
+  }, [rootFolder]);
+
+  // Core Folder Navigation
+  const handleFolderClick = async (folder, colIndex, isReferesh) => {
+    if (isProcessing) return false;
+
+    setIsProcessing(true);
+    setLoader(true);
+
+    try {
+      const endpoint = getFolderEndpoint(folder.id);
+      const response = await get(endpoint);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const newColumns = [...columns.slice(0, colIndex + 1)];
+      const folderData = {
+        ...response?.document,
+        id: folder.id,
+        name: folder.name,
+        isRoot: folder.id === "root",
+      };
+
+      setCurrentFolderData(folderData);
+      if (!isReferesh) {
+        newColumns.pop();
+      }
+      newColumns.push({
+        id: folder.id,
+        data: response?.document?.childFolders || [],
+        files: response?.document?.files || [],
+        name: response?.document?.name,
+        isRoot: folder.id === "root",
+      });
+
+      newColumns.forEach((c, i) => {
+        if (i < newColumns.length - 1) {
+          c.data.forEach((d) => {
+            d.selected = newColumns[i + 1].id === d.id;
+          });
+        }
+      });
+      console.log("newColumns", newColumns);
+      setColumns(newColumns);
+      setCurrentFolder(folderData);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to fetch folder data:", error);
+      toast.error("Failed to load folder. Please try again.");
+      return false;
+    } finally {
+      setLoader(false);
+      setIsProcessing(false);
+    }
+  };
+  const handleFolderClickSearch = async (folderId, newColumns) => {
+    if (isProcessing) return false;
+
+    setIsProcessing(true);
+    setLoader(true);
+
+    try {
+      const endpoint = getFolderEndpoint(folderId);
+      const response = await get(endpoint);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      newColumns.push({
+        id: folderId,
+        data: response?.document?.childFolders || [],
+        files: response?.document?.files || [],
+        name: response?.document?.name,
+        isRoot: folderId === "root",
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Failed to fetch folder data:", error);
+      toast.error("Failed to load folder. Please try again.");
+      return false;
+    } finally {
+      setLoader(false);
+      setIsProcessing(false);
+    }
+  };
+
+  // Navigation Functions
+  const navigateToParent = async (colIndex) => {
     if (isProcessing) return;
 
     setIsProcessing(true);
     setLoader(true);
 
     try {
-      const response = await getSubFilesAndFolder(
-        folder.id,
-        siteSelectedForGlobal?.siteId
-      );
-      setCurrentFolder({
-        ...folder,
-        childFolders: response?.document?.childFolders || [],
-        files: response?.document?.files || [],
-      });
+      if (colIndex === 0) {
+        await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+      } else {
+        const newColumns = columns.slice(0, colIndex);
+        setColumns(newColumns);
+
+        const parentColumn = newColumns[newColumns.length - 1];
+        setCurrentFolder({
+          id: parentColumn.id,
+          name: parentColumn.name,
+          childFolders: parentColumn.data,
+          files: parentColumn.files || [],
+        });
+      }
     } catch (error) {
-      toast.error("Failed to load folder contents");
+      console.error("Error navigating to parent:", error);
+      toast.error("Failed to navigate. Please try again.");
     } finally {
-      setIsProcessing(false);
       setLoader(false);
+      setIsProcessing(false);
     }
   };
 
-  const navigateToParent = () => {
-    setCurrentFolder(null);
-  };
-
+  // File Operations
   const deleteFileHandler = async (fileId, fileName) => {
     const result = await Swal.fire({
-      title: `Do you want to delete ${fileName}?`,
-      showDenyButton: false,
+      title: `Delete ${fileName}?`,
+      text: "You won't be able to revert this!",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      confirmButtonColor: "#da292e",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
     });
 
     if (!result.isConfirmed) return;
@@ -129,31 +257,38 @@ const AdminParentFolder = ({
     try {
       const url = `/api/document/file/${fileId}/delete`;
       const res = await del(url);
+
       if (res?.status === 200) {
-        if (currentFolder) {
-          await handleFolderClick(currentFolder);
-        } else {
-          getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+        const lastColumn = columns[columns.length - 1];
+        if (lastColumn) {
+          await handleFolderClick(
+            { id: lastColumn.id, name: lastColumn.name },
+            columns.length - 1
+          );
         }
-        toast.success(`${fileName} has been deleted successfully`);
+        toast.success(`${fileName} deleted successfully`);
       } else {
         throw new Error("Failed to delete file");
       }
-    } catch (e) {
-      toast.error("Failed to delete file. Please try again!");
+    } catch (error) {
+      console.error("Delete file error:", error);
+      toast.error("Failed to delete file. Please try again.");
     } finally {
       setIsProcessing(false);
       setLoader(false);
     }
   };
 
+  // Folder Operations
   const deleteFolderHandler = async (folderId, folderName) => {
     const result = await Swal.fire({
-      title: `Do you want to delete folder "${folderName}"?`,
-      showDenyButton: false,
+      title: `Delete folder "${folderName}"?`,
+      text: "All contents will be permanently removed!",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      confirmButtonColor: "#da292e",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
     });
 
     if (!result.isConfirmed) return;
@@ -164,18 +299,23 @@ const AdminParentFolder = ({
     try {
       const url = `/api/document/parent-folder/${folderId}/delete`;
       const res = await del(url);
+
       if (res?.status === 200) {
-        if (currentFolder) {
-          await handleFolderClick(currentFolder);
-        } else {
-          getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+        const parentColumnIndex = columns.length - 1;
+        if (parentColumnIndex >= 0) {
+          const parentColumn = columns[parentColumnIndex];
+          await handleFolderClick(
+            { id: parentColumn.id, name: parentColumn.name },
+            parentColumnIndex
+          );
         }
-        toast.success(`${folderName} has been deleted successfully`);
+        toast.success(`Folder "${folderName}" deleted successfully`);
       } else {
         throw new Error("Failed to delete folder");
       }
-    } catch (e) {
-      toast.error("Failed to delete folder. Please try again!");
+    } catch (error) {
+      console.error("Delete folder error:", error);
+      toast.error("Failed to delete folder. Please try again.");
     } finally {
       setIsProcessing(false);
       setLoader(false);
@@ -186,58 +326,52 @@ const AdminParentFolder = ({
     const { value: newName } = await Swal.fire({
       title: "Update Folder Name",
       input: "text",
-      inputAttributes: {
-        autocapitalize: "off",
-      },
-      inputValue: currentName || "",
+      inputValue: currentName,
       showCancelButton: true,
-      confirmButtonText: "Update",
-      showLoaderOnConfirm: true,
-      preConfirm: async (newName) => {
-        if (!newName) {
-          Swal.showValidationMessage("Folder name is required");
-          return false;
-        }
-
-        try {
-          const url = `/api/document/parent-folder/${folderId}/manage`;
-          const response = await put(url, {
-            folderName: newName,
-          });
-
-          if (response?.status === 200) {
-            if (currentFolder) {
-              await handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
-            }
-            return newName;
-          } else {
-            throw new Error("Failed to update folder name");
-          }
-        } catch (error) {
-          Swal.showValidationMessage(`Request failed: ${error}`);
-          return false;
+      inputValidator: (value) => {
+        if (!value) {
+          return "Folder name cannot be empty!";
         }
       },
-      allowOutsideClick: () => !Swal.isLoading(),
     });
 
     if (newName) {
-      toast.success(`Folder renamed to ${newName}`);
+      setIsProcessing(true);
+      setLoader(true);
+
+      try {
+        const url = `/api/document/parent-folder/${folderId}/manage`;
+        await put(url, { folderName: newName });
+
+        const lastColumn = columns[columns.length - 1];
+        if (lastColumn) {
+          await handleFolderClick(
+            { id: lastColumn.id, name: newName },
+            columns.length - 1
+          );
+        }
+        toast.success(`Folder renamed to "${newName}"`);
+      } catch (error) {
+        console.error("Update folder name error:", error);
+        toast.error("Failed to update folder name. Please try again.");
+      } finally {
+        setIsProcessing(false);
+        setLoader(false);
+      }
     }
   };
 
+  // Search Functionality
   const searchDocument = async (e) => {
     const value = e?.target?.value;
-    if (value && value.length > 0) {
-      const url = `/api/document/file/search?q=${value}&siteId=${siteSelectedForGlobal?.siteId}`;
+    if (value?.length > 0) {
       try {
+        const url = `/api/document/file/search?q=${value}&siteId=${siteSelectedForGlobal?.siteId}`;
         const response = await get(url);
         setFileList(response);
         setError("");
-      } catch (e) {
-        setError("No Documents found. Please check the input");
+      } catch (error) {
+        setError("No documents found. Please check your search term.");
         setFileList([]);
       }
     } else {
@@ -246,38 +380,79 @@ const AdminParentFolder = ({
     }
   };
 
+  const openFolder = async (item) => {
+    setFileList([]);
+    let newColumns = [columns[0]];
+    const data = [...item.paths.reverse(), item.folderId];
+
+    for (const folderId of data) {
+      await handleFolderClickSearch(folderId, newColumns);
+    }
+    setCurrentFolderData(newColumns[newColumns.length - 1]);
+    newColumns.forEach((col, idx) => {
+      if (idx < newColumns.length - 1) {
+        col.data.forEach((item) => {
+          item.selected = newColumns[idx + 1].id === item.id;
+        });
+      }
+    });
+
+    setColumns(newColumns);
+    setCurrentFolder(newColumns[newColumns.length - 1]);
+  };
+
   return (
     <>
       <Header />
       <SidebarNew />
 
       {/* Modals */}
-      {showFolderModal && (
+      {showRootFolderModal && (
         <CreateParentFolder
-          showFolderModal={showFolderModal}
-          setShowFolderModal={setShowFolderModal}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
+          showFolderModal={showRootFolderModal}
+          setShowFolderModal={setShowRootFolderModal}
+          refresh={() => getDocumentsRootFolder(siteSelectedForGlobal?.siteId)}
+        />
+      )}
+
+      {showSubFolderModal && (
+        <CreateFolder
+          showFolderModal={showSubFolderModal}
+          setShowFolderModal={setShowSubFolderModal}
+          folderId={columns[columns.length - 1]?.id}
+          siteId={siteSelectedForGlobal?.siteId}
+          folder2={currentFolderData}
+          refresh={async () => {
+            if (columns.length > 0) {
+              const lastColumn = columns[columns.length - 1];
+              if (lastColumn) {
+                await handleFolderClick(
+                  { id: lastColumn.id, name: lastColumn.name },
+                  columns.length - 1
+                );
+              }
             } else {
+              setLoader(true);
               getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
             }
           }}
         />
       )}
-
       {isCreateFileModalOpen && (
         <CreateFiles
           showModal={isCreateFileModalOpen}
           setShowModal={setIsCreateFileModalOpen}
-          folderData={currentFolder || { id: null, name: "Root" }}
+          folderData={currentFolder}
           uploaderUserId={loggedInUserData?.id}
           reviewerUserId={loggedInUserData?.id}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          refresh={async () => {
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            const lastColumn = columns[columns.length - 1];
+            if (lastColumn) {
+              await handleFolderClick(
+                { id: lastColumn.id, name: lastColumn.name },
+                columns.length - 1
+              );
             }
           }}
         />
@@ -287,13 +462,16 @@ const AdminParentFolder = ({
         <BulkUpload
           bulkUploadModal={isBulkUploadModalOpen}
           setBulkUploadModal={setIsBulkUploadModalOpen}
-          folder={currentFolder || { id: null, name: "Root" }}
-          folderfiles={currentFolder?.files || []}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          folder={currentFolder}
+          folderfiles={currentFolder.files || []}
+          refresh={async () => {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            const lastColumn = columns[columns.length - 1];
+            if (lastColumn) {
+              await handleFolderClick(
+                { id: lastColumn.id, name: lastColumn.name },
+                columns.length - 1
+              );
             }
           }}
         />
@@ -305,11 +483,13 @@ const AdminParentFolder = ({
           setVersionHistory={setIsVersionHistoryOpen}
           isVersionModeEdit={isVersionModeEdit}
           fileId={fileId}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          refresh={async () => {
+            const lastColumn = columns[columns.length - 1];
+            if (lastColumn) {
+              await handleFolderClick(
+                { id: lastColumn.id, name: lastColumn.name },
+                columns.length - 1
+              );
             }
           }}
         />
@@ -328,11 +508,13 @@ const AdminParentFolder = ({
           showCopyModal={isCopyModalOpen}
           setShowCopyModal={setIsCopyModalOpen}
           selectedFileForCopy={selectedFile}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          refresh={async () => {
+            const lastColumn = columns[columns.length - 1];
+            if (lastColumn) {
+              await handleFolderClick(
+                { id: lastColumn.id, name: lastColumn.name },
+                columns.length - 1
+              );
             }
           }}
         />
@@ -343,11 +525,13 @@ const AdminParentFolder = ({
           showMoveModal={isMoveModalOpen}
           setShowMoveModal={setIsMoveModalOpen}
           selectedFileForCopy={selectedFile}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          refresh={async () => {
+            const lastColumn = columns[columns.length - 1];
+            if (lastColumn) {
+              await handleFolderClick(
+                { id: lastColumn.id, name: lastColumn.name },
+                columns.length - 1
+              );
             }
           }}
         />
@@ -358,452 +542,450 @@ const AdminParentFolder = ({
           showEditDocumentModal={isEditDocumentModalOpen}
           setEditDocumentModal={setIsEditDocumentModalOpen}
           selectedFile={selectedFile}
-          refresh={() => {
-            if (currentFolder) {
-              handleFolderClick(currentFolder);
-            } else {
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          refresh={async () => {
+            const lastColumn = columns[columns.length - 1];
+            if (lastColumn) {
+              await handleFolderClick(
+                { id: lastColumn.id, name: lastColumn.name },
+                columns.length - 1
+              );
             }
           }}
         />
       )}
 
       <div className="container-fluid pad-side">
-        <BreadCrumHeader
-          header={"Shared Folder Management"}
-          page={currentFolder ? currentFolder.name : "Folders"}
-        />
+        <BreadCrumHeader header={"Shared Folder Management"} page={"Folders"} />
 
-        {/* Breadcrumb navigation */}
-        <div className="d-flex align-items-center mb-3">
-          {currentFolder && (
-            <Tooltip title="Go Back" arrow>
-              <ReplyIcon
-                onClick={navigateToParent}
-                style={{
-                  color: "#384BD3",
-                  cursor: "pointer",
-                  marginRight: "15px",
-                }}
+        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
+          {columns.map((column, index) => (
+            <Link
+              key={column.id}
+              underline="hover"
+              color={index === columns.length - 1 ? "text.primary" : "inherit"}
+              onClick={() => navigateToParent(index)}
+              sx={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              <i
+                className={column.isParent ? "fas fa-home" : "fas fa-folder"}
+                style={{ color: "#384BD3", marginRight: "5px" }}
               />
-            </Tooltip>
-          )}
-          <span className="text-muted">
-            {currentFolder ? currentFolder.name : "Root Folder"}
-          </span>
-        </div>
+              {column.name}
+            </Link>
+          ))}
+        </Breadcrumbs>
 
-        {/* Search and Action Buttons */}
         <div className="row mt-4 mb-4">
           <div className="col-md-6 col-sm-12">
-            <i
-              style={{
-                position: "absolute",
-                color: "lightgrey",
-                paddingLeft: "1.5rem",
-              }}
-              className="fas fa-search p-3"
-            ></i>
-            <input
-              type="text"
-              autoComplete="off"
-              readOnly
-              onFocus={(e) => e.target.removeAttribute("readonly")}
-              style={{ textAlign: "justify", paddingLeft: "2rem" }}
-              className="form-control m-2"
-              id="search"
-              name="search"
-              placeholder="Search for Document"
-              onChange={searchDocument}
-              onKeyDown={(event) => {
-                if (event.key === "Tab") {
-                  setFileList([]);
-                }
-              }}
-            />
-            {fileList?.files?.length > 0 && (
-              <ul className="fileSearchResult fileSearchResultSite w-100 bg-secondary">
-                {fileList?.files?.map((itm) => (
-                  <li key={itm.id}>
-                    <span className="badge bg-secondary text-start fw-normal">
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-1x"
-                      ></i>{" "}
-                      {itm?.folderName}/<b>{itm?.name}</b>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {error && <p className="text-danger">{error}</p>}
+            <div className="position-relative">
+              <i className="fas fa-search position-absolute top-50 start-0 translate-middle-y ps-3 text-muted" />
+              <input
+                type="text"
+                className="form-control ps-5"
+                placeholder="Search documents..."
+                onChange={searchDocument}
+              />
+              {fileList?.files?.length > 0 && (
+                <div className="file-search-results mt-2">
+                  {fileList.files.map((file) => (
+                    <div
+                      key={file.id}
+                      className="search-result-item p-2 mb-1 bg-light rounded"
+                      onClick={() => openFolder(file)}
+                    >
+                      <i className="fas fa-folder text-primary me-2" />
+                      {file.folderPath}/{file.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {error && <div className="text-danger mt-2">{error}</div>}
+            </div>
           </div>
 
           <div className="col-md-6 col-sm-12 text-end">
             {isManagerAdminLogin(loggedInUserData) && (
               <>
-                <button
-                  onClick={() => setShowFolderModal(true)}
-                  className="btn btn-primary rounded login-submit me-2"
-                >
-                  Add new Folder <CreateNewFolderIcon />
-                </button>
+                {isAdminLogin(loggedInUserData) && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<CreateNewFolderIcon />}
+                    onClick={() => setShowRootFolderModal(true)}
+                    className="me-2"
+                  >
+                    Root Folder
+                  </Button>
+                )}
 
-                {currentFolder && (
+                {columns.length > 0 && (
                   <>
-                    <Tooltip title="Create Subfolder" arrow>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => {
-                          setIsCreateFolderModalOpen(true);
-                        }}
-                        className="me-2"
-                      >
-                        <CreateNewFolderIcon />
-                      </Button>
-                    </Tooltip>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<CreateNewFolderIcon />}
+                      onClick={() => setShowSubFolderModal(true)}
+                      className="me-2"
+                    >
+                      Subfolder
+                    </Button>
 
-                    <Tooltip title="Upload File" arrow>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => setIsCreateFileModalOpen(true)}
-                        className="me-2"
-                      >
-                        <NoteAddIcon />
-                      </Button>
-                    </Tooltip>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<NoteAddIcon />}
+                      onClick={() => setIsCreateFileModalOpen(true)}
+                      className="me-2"
+                    >
+                      Upload
+                    </Button>
 
-                    <Tooltip title="Bulk Upload" arrow>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => setIsBulkUploadModalOpen(true)}
-                      >
-                        <FolderCopyIcon />
-                      </Button>
-                    </Tooltip>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<FolderCopyIcon />}
+                      onClick={() => setIsBulkUploadModalOpen(true)}
+                    >
+                      Bulk Upload
+                    </Button>
                   </>
+                )}
+
+                {columns.length > 1 && (
+                  <Tooltip title="Go Back">
+                    <ReplyIcon
+                      className="ms-3 cursor-pointer"
+                      style={{ color: "#384BD3" }}
+                      onClick={() => navigateToParent(columns.length - 1)}
+                    />
+                  </Tooltip>
                 )}
               </>
             )}
           </div>
         </div>
 
-        {/* Folder and File Listing */}
-        <div className="table-responsive w-100">
-          <table className="table f-11">
-            <thead className="table-dark">
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Type</th>
-                <th scope="col">Last Modified</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Parent folders (when not viewing a specific folder) */}
-              {!currentFolder &&
-                rootFolder?.parentFolders?.map((folder) => (
-                  <tr key={folder.id}>
-                    <td>
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleFolderClick(folder)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <span className="fa-stack fa-2x">
-                          <i
-                            className={`fas fa-folder fa-stack-2x`}
-                            style={{ color: "#384BD3" }}
-                          ></i>
-                          {folder?.sharedFolder && (
-                            <i
-                              className="fas fa-users fa-stack-1x"
-                              style={{
-                                color: "white",
-                                fontSize: "0.5em",
-                                left: "10px",
-                                top: "8px",
-                              }}
-                            ></i>
-                          )}
-                        </span>
-                        <span className="p-3">{folder?.name}</span>
-                        <Chip
-                          label={`${folder.fileCount} files`}
-                          size="small"
-                          className="ms-2"
-                        />
-                      </div>
-                    </td>
-                    <td>Folder</td>
-                    <td>
-                      {folder.updatedAt
-                        ? moment(folder.updatedAt).format("MMM DD, YYYY")
-                        : "-"}
-                    </td>
-                    <td>
-                      {isManagerAdminLogin(loggedInUserData) && (
-                        <>
-                          {isAdminLogin(loggedInUserData) && (
-                            <>
-                              <Tooltip title={`Delete Folder`} arrow>
-                                <DeleteIcon
-                                  onClick={() =>
-                                    deleteFolderHandler(
-                                      folder?.id,
-                                      folder?.name
-                                    )
-                                  }
-                                  style={{ color: "red", cursor: "pointer" }}
-                                  className="me-2"
-                                />
-                              </Tooltip>
-                              <Tooltip title={`Edit Folder Name`} arrow>
-                                <EditIcon
-                                  onClick={() =>
-                                    updateFolderName(folder?.id, folder?.name)
-                                  }
-                                  style={{
-                                    color: "#384BD3",
-                                    cursor: "pointer",
-                                  }}
-                                  className="me-2"
-                                />
-                              </Tooltip>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+        <div className="row">
+          <div className="col-md-12">
+            <div className="finder-container">
+              {columns.map((column, colIdx) => (
+                <div key={column.id} className="finder-column">
+                  <div className="finder-column-header">
+                    <i
+                      className={
+                        column.isParent ? "fas fa-home" : "fas fa-folder-open"
+                      }
+                      style={{ color: "#384BD3" }}
+                    />
+                    <span className="ms-2">{column.name}</span>
 
-              {/* Child folders (when viewing a specific folder) */}
-              {currentFolder?.childFolders?.map((folder) => (
-                <tr key={folder.id}>
-                  <td>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleFolderClick(folder)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <span className="fa-stack fa-2x">
-                        <i
-                          className={`fas fa-folder fa-stack-2x`}
-                          style={{ color: "#384BD3" }}
-                        ></i>
-                        {folder?.sharedFolder && (
-                          <i
-                            className="fas fa-users fa-stack-1x"
-                            style={{
-                              color: "white",
-                              fontSize: "0.5em",
-                              left: "10px",
-                              top: "8px",
-                            }}
-                          ></i>
-                        )}
-                      </span>
-                      <span className="p-3">{folder?.name}</span>
-                      <Chip
-                        label={`${folder.fileCount} files`}
-                        size="small"
-                        className="ms-2"
-                      />
-                    </div>
-                  </td>
-                  <td>Folder</td>
-                  <td>
-                    {folder.updatedAt
-                      ? moment(folder.updatedAt).format("MMM DD, YYYY")
-                      : "-"}
-                  </td>
-                  <td>
-                    {isManagerAdminLogin(loggedInUserData) && (
-                      <>
-                        {isAdminLogin(loggedInUserData) && (
-                          <>
-                            <Tooltip title={`Delete Folder`} arrow>
-                              <DeleteIcon
-                                onClick={() =>
-                                  deleteFolderHandler(folder?.id, folder?.name)
-                                }
-                                style={{ color: "red", cursor: "pointer" }}
-                                className="me-2"
-                              />
-                            </Tooltip>
-                            <Tooltip title={`Edit Folder Name`} arrow>
-                              <EditIcon
-                                onClick={() =>
-                                  updateFolderName(folder?.id, folder?.name)
-                                }
-                                style={{
-                                  color: "#384BD3",
-                                  cursor: "pointer",
-                                }}
-                                className="me-2"
-                              />
-                            </Tooltip>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-
-              {/* Files (when viewing a specific folder) */}
-              {currentFolder?.files?.map((file) => (
-                <tr key={file.id}>
-                  <td>
-                    <div className="d-flex align-items-center">
-                      <i
-                        className="fas fa-file-alt fa-lg me-3"
-                        style={{ color: "#666" }}
-                      ></i>
-                      <a
-                        href={file.fileBlobUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          textDecoration: "none",
-                          color: "#333",
-                          cursor: "pointer",
-                        }}
-                        onClick={(e) => {
-                          if (file.fileBlobUrl.endsWith(".pdf")) {
-                            e.preventDefault();
-                            setSelectedPdf(file.fileBlobUrl);
-                            setIsPdfViewerOpen(true);
-                          }
-                        }}
-                      >
-                        <Tooltip title={file?.note} arrow>
-                          {file.name}
-                        </Tooltip>
-                      </a>
-                    </div>
-                  </td>
-                  <td>
-                    {file.fileType || file.name.split(".").pop().toUpperCase()}
-                  </td>
-                  <td>
-                    {file.updatedAt
-                      ? moment(file.updatedAt).format("MMM DD, YYYY")
-                      : "-"}
-                  </td>
-                  <td>
-                    {isManagerAdminLogin(loggedInUserData) && (
-                      <div className="d-flex">
-                        <Tooltip title="Version History" arrow>
-                          <HistoryIcon
-                            onClick={() => {
-                              setIsVersionModeEdit(false);
-                              setIsVersionHistoryOpen(true);
-                              setFileId(file.id);
-                            }}
-                            style={{
-                              color: "#384BD3",
-                              cursor: "pointer",
-                              marginRight: "10px",
-                            }}
-                          />
-                        </Tooltip>
-
-                        <Tooltip title="Replace with new version" arrow>
-                          <RestorePageIcon
-                            onClick={() => {
-                              setIsVersionModeEdit(true);
-                              setIsVersionHistoryOpen(true);
-                              setFileId(file.id);
-                            }}
-                            style={{
-                              color: "#384BD3",
-                              cursor: "pointer",
-                              marginRight: "10px",
-                            }}
-                          />
-                        </Tooltip>
-
-                        <Tooltip title="Copy" arrow>
-                          <CopyAll
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setIsCopyModalOpen(true);
-                            }}
-                            style={{
-                              color: "#384BD3",
-                              cursor: "pointer",
-                              marginRight: "10px",
-                            }}
-                          />
-                        </Tooltip>
-
-                        <Tooltip title="Move" arrow>
-                          <MoveDown
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setIsMoveModalOpen(true);
-                            }}
-                            style={{
-                              color: "#384BD3",
-                              cursor: "pointer",
-                              marginRight: "10px",
-                            }}
-                          />
-                        </Tooltip>
-
-                        <Tooltip title="Edit" arrow>
+                    {isAdminLogin(loggedInUserData) && (
+                      <div className="finder-column-actions">
+                        <Tooltip title="Edit Folder Name">
                           <EditIcon
-                            onClick={() => {
-                              setSelectedFile(file);
-                              setIsEditDocumentModalOpen(true);
-                            }}
-                            style={{
-                              color: "#384BD3",
-                              cursor: "pointer",
-                              marginRight: "10px",
-                            }}
+                            onClick={() =>
+                              updateFolderName(column.id, column.name)
+                            }
+                            className="text-primary"
                           />
                         </Tooltip>
-
-                        <Tooltip title="Delete" arrow>
+                        <Tooltip title="Delete Folder">
                           <DeleteIcon
                             onClick={() =>
-                              deleteFileHandler(file.id, file.name)
+                              deleteFolderHandler(column.id, column.name)
                             }
-                            style={{
-                              color: "#da292e",
-                              cursor: "pointer",
-                            }}
+                            className="text-danger"
                           />
                         </Tooltip>
                       </div>
                     )}
-                  </td>
-                </tr>
-              ))}
+                  </div>
 
-              {/* Empty state */}
-              {((!currentFolder && rootFolder?.parentFolders?.length === 0) ||
-                (currentFolder &&
-                  currentFolder.childFolders?.length === 0 &&
-                  currentFolder.files?.length === 0)) && (
-                <tr>
-                  <td colSpan="4" className="text-center text-muted py-4">
-                    This folder is empty
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  {column.data.length > 0 && (
+                    <div className="finder-section">
+                      <h6 className="finder-section-title">Folders</h6>
+                      {column.data.map((folder) => (
+                        <div
+                          key={folder.id}
+                          className={`finder-item ${
+                            folder.selected ? "selected" : ""
+                          }`}
+                          onClick={() => {
+                            handleFolderClick(folder, colIdx, true);
+                            setCurrentFolderData(folder);
+                          }}
+                        >
+                          <div className="finder-item-icon">
+                            <i
+                              className="fas fa-folder"
+                              style={{ color: "#384BD3", fontSize: "32px" }}
+                            />
+                            {folder.sharedFolder && (
+                              <i className="fas fa-users shared-badge" />
+                            )}
+                          </div>
+                          <div className="finder-item-name">{folder.name}</div>
+
+                          {/* Moved actions here to be always visible */}
+                          {isManagerAdminLogin(loggedInUserData) && (
+                            <div className="finder-item-actions">
+                              <Tooltip title="Edit Folder Name">
+                                <EditIcon
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateFolderName(folder.id, folder.name);
+                                  }}
+                                  className="text-primary"
+                                />
+                              </Tooltip>
+                              <Tooltip title="Delete Folder">
+                                <DeleteIcon
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteFolderHandler(folder.id, folder.name);
+                                  }}
+                                  className="text-danger"
+                                />
+                              </Tooltip>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {colIdx === columns.length - 1 &&
+                    column.files?.length > 0 && (
+                      <div className="finder-section">
+                        <h6 className="finder-section-title">Files</h6>
+                        {column.files.map((file) => (
+                          <div key={file.id} className="finder-item">
+                            <i className="fas fa-file-alt finder-file-icon" />
+                            <div className="finder-item-name">
+                              <a
+                                href={file.fileBlobUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  if (file.fileBlobUrl.endsWith(".pdf")) {
+                                    e.preventDefault();
+                                    setSelectedPdf(file.fileBlobUrl);
+                                    setIsPdfViewerOpen(true);
+                                  }
+                                }}
+                              >
+                                {file.name}
+                              </a>
+                            </div>
+
+                            {isManagerAdminLogin(loggedInUserData) && (
+                              <div className="finder-item-actions">
+                                <Tooltip title="Version History">
+                                  <HistoryIcon
+                                    onClick={() => {
+                                      setIsVersionModeEdit(false);
+                                      setIsVersionHistoryOpen(true);
+                                      setFileId(file.id);
+                                    }}
+                                  />
+                                </Tooltip>
+
+                                <Tooltip title="Replace with new version">
+                                  <RestorePageIcon
+                                    onClick={() => {
+                                      setIsVersionModeEdit(true);
+                                      setIsVersionHistoryOpen(true);
+                                      setFileId(file.id);
+                                    }}
+                                  />
+                                </Tooltip>
+
+                                <Tooltip title="Copy">
+                                  <CopyAll
+                                    onClick={() => {
+                                      setSelectedFile(file);
+                                      setIsCopyModalOpen(true);
+                                    }}
+                                  />
+                                </Tooltip>
+
+                                <Tooltip title="Move">
+                                  <MoveDown
+                                    onClick={() => {
+                                      setSelectedFile(file);
+                                      setIsMoveModalOpen(true);
+                                    }}
+                                  />
+                                </Tooltip>
+
+                                <Tooltip title="Edit">
+                                  <EditIcon
+                                    onClick={() => {
+                                      setSelectedFile(file);
+                                      setIsEditDocumentModalOpen(true);
+                                    }}
+                                  />
+                                </Tooltip>
+
+                                <Tooltip title="Delete">
+                                  <DeleteIcon
+                                    onClick={() =>
+                                      deleteFileHandler(file.id, file.name)
+                                    }
+                                  />
+                                </Tooltip>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                  {column.data.length === 0 && column.files?.length === 0 && (
+                    <div className="finder-empty-state">
+                      This folder is empty
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .finder-container {
+          display: flex;
+          overflow-x: auto;
+          background: #f8f8f8;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          height: 60vh;
+          padding: 10px;
+        }
+
+        .finder-column {
+          min-width: 300px;
+          margin-right: 10px;
+          background: #fff;
+          border-right: 1px solid #eee;
+          padding: 15px;
+          overflow-y: auto;
+        }
+
+        .finder-column-header {
+          display: flex;
+          align-items: center;
+          padding: 8px 0;
+          margin-bottom: 10px;
+          border-bottom: 1px solid #eee;
+          font-weight: 600;
+        }
+
+        .finder-column-actions {
+          cursor: pointer;
+          margin-left: auto;
+          display: flex;
+          gap: 8px;
+        }
+
+        .finder-section {
+          margin-bottom: 15px;
+        }
+
+        .finder-section-title {
+          color: #6c757d;
+          font-size: 0.8rem;
+          margin-bottom: 8px;
+          text-transform: uppercase;
+        }
+
+        .finder-item {
+          display: flex;
+          align-items: center;
+          padding: 10px 8px;
+          border-radius: 4px;
+          margin-bottom: 5px;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          min-height: 40px;
+        }
+
+        .finder-item:hover {
+          background-color: #f1f1f1;
+        }
+
+        .finder-item.selected {
+          background-color: #fff3cd;
+        }
+
+        .finder-item-icon {
+          position: relative;
+          margin-right: 10px;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .shared-badge {
+          position: absolute;
+          bottom: 3px;
+          right: 3px;
+          color: white;
+          background: #384bd3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+        }
+
+        .finder-item-name {
+          flex-grow: 1;
+          display: flex;
+          align-items: center;
+        }
+
+        .finder-item-actions {
+          display: flex;
+          gap: 8px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .finder-item:hover .finder-item-actions {
+          opacity: 1;
+        }
+
+        .finder-empty-state {
+          color: #6c757d;
+          font-style: italic;
+          padding: 10px 0;
+          text-align: center;
+        }
+
+        .file-search-results {
+          position: absolute;
+          width: 100%;
+          z-index: 1000;
+          max-height: 300px;
+          overflow-y: auto;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          background: white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-result-item {
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+          background-color: #f8f9fa;
+        }
+      `}</style>
     </>
   );
 };
