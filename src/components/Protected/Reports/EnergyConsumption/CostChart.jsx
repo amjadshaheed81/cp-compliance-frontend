@@ -59,6 +59,8 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
         (a, b) => new Date(a.readingDate) - new Date(b.readingDate)
       );
 
+      
+
       for (let i = 1; i < sortedReadings.length; i++) {
         const current = sortedReadings[i];
         const previous = sortedReadings[i - 1];
@@ -66,15 +68,8 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
 
         if (readingDate.getFullYear() === year) {
           const month = readingDate.getMonth();
-          //console.log("current", current);
-          //console.log("previous", previous);
-          let consumption = 0;
-          // if (current.readingValue < previous.readingValue) {
-          //   consumption = current.readingValue + previous.readingValue;
-          // } else {
-          //   consumption = current.readingValue - previous.readingValue;
-          // }
 
+          let consumption = 0;
           let consumptionKwh = consumption;
 
           if (energyItem.budgetCategory === "Electricity") {
