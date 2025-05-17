@@ -202,6 +202,9 @@ const SiteChart = ({
     addSiteLayoutNode(newNode);
     reset();
   };
+  const getParentNodeName = (id) => {
+    return siteLayout?.filter((itm) => itm?.id === id)?.[0]?.nodeName;
+  };
 
   return (
     <>
@@ -219,13 +222,17 @@ const SiteChart = ({
         <h5 className="text-start">Creating Building Layout</h5>
 
         <div className="tree-horizontal">
-          {rootNodes
-          
-          .map((node) => (
+          {rootNodes.map((node) => (
             <CustomTreeNode
               key={node.id}
               node={node}
-              childrenNodes={siteLayout.filter((n) => n.parentNode === node.id).sort((a, b) => (orderMap[a.nodeName] || 999) - (orderMap[b.nodeName] || 999))}
+              childrenNodes={siteLayout
+                .filter((n) => n.parentNode === node.id)
+                .sort(
+                  (a, b) =>
+                    (orderMap[a.nodeName] || 999) -
+                    (orderMap[b.nodeName] || 999)
+                )}
             />
           ))}
         </div>
@@ -271,11 +278,17 @@ const SiteChart = ({
                 disabled={!selectedNodeType}
               >
                 <option value="" disabled>
-                  {!selectedNodeType ? "Please select node type first" : "Select Parent Node"}
+                  {!selectedNodeType
+                    ? "Please select node type first"
+                    : "Select Parent Node"}
                 </option>
                 {parentNodeTypes.map((node) => (
                   <option key={node.id} value={node.id}>
-                    {node.nodeName}
+                    {selectedNodeType === "room"
+                      ? `${getParentNodeName(node?.parentNode)} : ${
+                          node?.nodeName
+                        }`
+                      : node?.nodeName}
                   </option>
                 ))}
               </select>
