@@ -89,16 +89,16 @@ const AdminParentFolder = ({
   // Helper Functions
   const getFolderEndpoint = (folderId) => {
     if (folderId === "root") {
-      return `/api/document/site/${siteSelectedForGlobal?.siteId}/parent/folders`;
+      return `/api/document/site/${473}/parent/folders`;
     }
-    return `/api/document/parent/${folderId}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
+    return `/api/document/parent/${folderId}/folders?siteId=${473}`;
   };
 
   // Initial Load
   useEffect(() => {
-    if (siteSelectedForGlobal?.siteId) {
+    if (473) {
       setLoader(true);
-      getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+      getDocumentsRootFolder(473);
     } else {
       Swal.fire({
         icon: "error",
@@ -215,7 +215,7 @@ const AdminParentFolder = ({
 
     try {
       if (colIndex === 0) {
-        await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+        await getDocumentsRootFolder(473);
       } else {
         const newColumns = columns.slice(0, colIndex);
         setColumns(newColumns);
@@ -366,7 +366,7 @@ const AdminParentFolder = ({
     const value = e?.target?.value;
     if (value?.length > 0) {
       try {
-        const url = `/api/document/file/search?q=${value}&siteId=${siteSelectedForGlobal?.siteId}`;
+        const url = `/api/document/file/search?q=${value}&siteId=${473}`;
         const response = await get(url);
         setFileList(response);
         setError("");
@@ -411,7 +411,7 @@ const AdminParentFolder = ({
         <CreateParentFolder
           showFolderModal={showRootFolderModal}
           setShowFolderModal={setShowRootFolderModal}
-          refresh={() => getDocumentsRootFolder(siteSelectedForGlobal?.siteId)}
+          refresh={() => getDocumentsRootFolder(473)}
         />
       )}
 
@@ -420,7 +420,7 @@ const AdminParentFolder = ({
           showFolderModal={showSubFolderModal}
           setShowFolderModal={setShowSubFolderModal}
           folderId={columns[columns.length - 1]?.id}
-          siteId={siteSelectedForGlobal?.siteId}
+          siteId={473}
           folder2={currentFolderData}
           refresh={async () => {
             if (columns.length > 0) {
@@ -433,7 +433,7 @@ const AdminParentFolder = ({
               }
             } else {
               setLoader(true);
-              getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+              getDocumentsRootFolder(473);
             }
           }}
         />
