@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { post, get } from "../../../../api";
 import {
   getSiteAssets,
   getSiteDetailsById,
@@ -26,39 +26,41 @@ const IntruderAlarmCertificate = ({
 }) => {
   const [formData, setFormData] = useState({
     address: "",
+    assetId: "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    inspectionDate: new Date().toISOString().split("T")[0],
     siteContactNo: "",
-    jobNo: "",
-    panelManufacturer: "",
-    panelModelNumber: "",
-    position: "",
-    floor: "",
-    room: "",
-    engineersReport: "",
-    jobComplete: "",
-    partsRequired: "",
-    walkTestComplete: "",
-    walkTestRemarks: "",
-    pirsCleaned: "",
-    pirsCleanedRemarks: "",
-    remoteSignallingCheck: "",
-    remoteSignallingRemarks: "",
-    systemOperationCheck: "",
-    systemOperationRemarks: "",
-    audibleWarningCheck: "",
-    audibleWarningRemarks: "",
-    electricalConnectionsCheck: "",
-    electricalConnectionsRemarks: "",
-    clientName: "",
-    engineerName: loggedInUserData?.name || "",
+    job: "",
+    report: "",
+    // Using generic parameters for yes/no fields
+    param1: "", // jobComplete
+    param2: "", // partsRequired
+    param3: "", // walkTestComplete
+    param4: "", // pirsCleaned
+    param5: "", // remoteSignallingCheck
+    param6: "", // systemOperationCheck
+    param7: "", // audibleWarningCheck
+    param8: "", // electricalConnectionsCheck
+    // Using generic parameters for remarks
+    param1Remark: "", // walkTestRemarks
+    param2Remark: "", // pirsCleanedRemarks
+    param3Remark: "", // remoteSignallingRemarks
+    param4Remark: "", // systemOperationRemarks
+    param5Remark: "", // audibleWarningRemarks
+    param6Remark: "", // electricalConnectionsRemarks
+    client: "",
+    user: loggedInUserData || {},
+    engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    signedDate: new Date().toISOString().split("T")[0],
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
 
   const [popup, setPopup] = useState({
     show: false,
@@ -89,7 +91,61 @@ const IntruderAlarmCertificate = ({
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
 
+  const fetchInspectionData = async () => {
+    try {
+      if (!checkId) return;
+
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+      if (apiData && apiData.length > 0) {
+        const mostRecentItem = apiData[apiData.length - 1];
+        const selectedAsset = siteAssets.find(
+          (asset) => asset.assetId === mostRecentItem.assetId
+        );
+
+        const engineerUser =
+          users.find((user) => user.id === mostRecentItem.engineer) ||
+          loggedInUserData;
+        setFormData((prev) => ({
+          ...prev,
+          address: prev.address,
+          assetId: mostRecentItem.assetId || prev.assetId,
+          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || prev.report,
+          param1: mostRecentItem.param1 || prev.param1, // jobComplete
+          param2: mostRecentItem.param2 || prev.param2, // partsRequired
+          param3: mostRecentItem.param3 || prev.param3, // walkTestComplete
+          param4: mostRecentItem.param4 || prev.param4, // pirsCleaned
+          param5: mostRecentItem.param5 || prev.param5, // remoteSignallingCheck
+          param6: mostRecentItem.param6 || prev.param6, // systemOperationCheck
+          param7: mostRecentItem.param7 || prev.param7, // audibleWarningCheck
+          param8: mostRecentItem.param8 || prev.param8, // electricalConnectionsCheck
+          param1Remark: mostRecentItem.param1Remark || prev.param1Remark, // walkTestRemarks
+          param2Remark: mostRecentItem.param2Remark || prev.param2Remark, // pirsCleanedRemarks
+          param3Remark: mostRecentItem.param3Remark || prev.param3Remark, // remoteSignallingRemarks
+          param4Remark: mostRecentItem.param4Remark || prev.param4Remark, // systemOperationRemarks
+          param5Remark: mostRecentItem.param5Remark || prev.param5Remark, // audibleWarningRemarks
+          param6Remark: mostRecentItem.param6Remark || prev.param6Remark, // electricalConnectionsRemarks
+          client: mostRecentItem.client || "",
+          engineer:
+            mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          user: engineerUser,
+          selectedAsset: selectedAsset || prev.selectedAsset,
+          signedDate: mostRecentItem.signedDate || prev.signedDate,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      toast.error("Failed to load inspection data");
+    }
+  };
+
   useEffect(() => {
+    fetchInspectionData();
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
     }
@@ -101,19 +157,20 @@ const IntruderAlarmCertificate = ({
             getSiteAssets(siteSelectedForGlobal.siteId),
             getSiteDetailsById(siteSelectedForGlobal.siteId),
           ]);
+          await fetchInspectionData();
+          if (siteSelectedForGlobal) {
+            const addressParts = [
+              siteSelectedForGlobal.address1,
+              siteSelectedForGlobal.address2,
+              siteSelectedForGlobal.city,
+              siteSelectedForGlobal.area,
+              siteSelectedForGlobal.postCode,
+              siteSelectedForGlobal.country,
+            ].filter((part) => part);
 
-          // Use basic info if details aren't available
-          const addressParts = [
-            siteSelectedForGlobal.siteName || "Address not available",
-            siteSelectedForGlobal.address2,
-            siteSelectedForGlobal.city,
-            siteSelectedForGlobal.area,
-            siteSelectedForGlobal.postCode,
-            siteSelectedForGlobal.country,
-          ];
-
-          const fullAddress = addressParts.join(", ");
-          setFormData((prev) => ({ ...prev, address: fullAddress }));
+            const fullAddress = addressParts.join(", ");
+            setFormData((prev) => ({ ...prev, address: fullAddress }));
+          }
 
           if (siteSelectedForGlobal.siteContact) {
             setFormData((prev) => ({
@@ -132,45 +189,21 @@ const IntruderAlarmCertificate = ({
     };
 
     fetchData();
-  }, [
-    siteSelectedForGlobal,
-    getSiteAssets,
-    users.length,
-    isInternalUserTaggedWithSite,
-    getUsers,
-    getSiteDetailsById,
-  ]);
+  }, [isInternalUserTaggedWithSite, users.length, getUsers]);
 
   const filteredAssets =
     siteAssets?.filter(
       (asset) =>
         asset.category === "Electrical" &&
         asset.subCategory === "Intruder Alarm Installation"
-      // asset.subCategory2 === "Disabled Refuge Outstation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
-    if (newValue) {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: newValue,
-        panelManufacturer: newValue.manufacturer || "",
-        panelModelNumber: newValue.model || "",
-        position: newValue.position || "",
-        floor: newValue.floor || "",
-        room: newValue.room || "",
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: null,
-        panelManufacturer: "",
-        panelModelNumber: "",
-        position: "",
-        floor: "",
-        room: "",
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue,
+    }));
   };
 
   const handleInputChange = (e) => {
@@ -184,36 +217,43 @@ const IntruderAlarmCertificate = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!formData.selectedAsset) {
+      if (!formData.assetId) {
         toast.error("Please select an asset first");
         return;
       }
 
       const dataToSave = {
         ...formData,
-        assetId: formData.selectedAsset.assetId,
+        assetId: formData.assetId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId,
         subType,
+        inspectionDate: formData.inspectionDate || new Date().toISOString(),
+        job: formData.job,
+        engineer: formData.user?.id || loggedInUserData?.id,
+        signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
-        engineersReport: formData.engineersReport,
-        walkTestComplete: formData.walkTestComplete,
-        walkTestRemarks: formData.walkTestRemarks,
-        pirsCleaned: formData.pirsCleaned,
-        pirsCleanedRemarks: formData.pirsCleanedRemarks,
-        remoteSignallingCheck: formData.remoteSignallingCheck,
-        remoteSignallingRemarks: formData.remoteSignallingRemarks,
-        systemOperationCheck: formData.systemOperationCheck,
-        systemOperationRemarks: formData.systemOperationRemarks,
-        audibleWarningCheck: formData.audibleWarningCheck,
-        audibleWarningRemarks: formData.audibleWarningRemarks,
-        electricalConnectionsCheck: formData.electricalConnectionsCheck,
-        electricalConnectionsRemarks: formData.electricalConnectionsRemarks,
+        report: formData.report,
+        param1: formData.param1, // jobComplete
+        param2: formData.param2, // partsRequired
+        param3: formData.param3, // walkTestComplete
+        param4: formData.param4, // pirsCleaned
+        param5: formData.param5, // remoteSignallingCheck
+        param6: formData.param6, // systemOperationCheck
+        param7: formData.param7, // audibleWarningCheck
+        param8: formData.param8, // electricalConnectionsCheck
+        param1Remark: formData.param1Remark, // walkTestRemarks
+        param2Remark: formData.param2Remark, // pirsCleanedRemarks
+        param3Remark: formData.param3Remark, // remoteSignallingRemarks
+        param4Remark: formData.param4Remark, // systemOperationRemarks
+        param5Remark: formData.param5Remark, // audibleWarningRemarks
+        param6Remark: formData.param6Remark, // electricalConnectionsRemarks
       };
 
-      await post("/api/site-check/intruder-report", dataToSave);
-      toast.success("Fire refuge report saved successfully");
+      await post("/api/site-check/generic-inspection", dataToSave);
+      toast.success("Intruder Alarm report saved successfully");
       setIsSubmitted(true);
+      setSubmissionSuccess(true);
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -234,13 +274,12 @@ const IntruderAlarmCertificate = ({
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
           value={
-            filteredUsers.find((user) => user.name === formData.clientName) ||
-            null
+            filteredUsers.find((user) => user.id === formData.client) || null
           }
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              clientName: newValue?.name || "",
+              client: newValue?.id || "",
             }));
           }}
           renderInput={(params) => (
@@ -274,8 +313,14 @@ const IntruderAlarmCertificate = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientName}
-        onChange={handleInputChange}
+        value={users.find((u) => u.id === formData.client)?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            client: e.target.value,
+            clientNameText: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
@@ -296,13 +341,13 @@ const IntruderAlarmCertificate = ({
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
           value={
-            filteredUsers.find((user) => user.name === formData.siteContact) ||
+            filteredUsers.find((user) => user.id === formData.siteContact) ||
             null
           }
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              siteContact: newValue?.name || "",
+              siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
             }));
           }}
@@ -337,13 +382,21 @@ const IntruderAlarmCertificate = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContact}
-        onChange={handleInputChange}
+        value={users.find((u) => u.id === formData.siteContact)?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
     );
   };
+
+  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -386,8 +439,8 @@ const IntruderAlarmCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="date"
-                value={formatDate(formData.date)}
+                name="inspectionDate"
+                value={formatDate(formData.inspectionDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -395,7 +448,7 @@ const IntruderAlarmCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -412,7 +465,7 @@ const IntruderAlarmCertificate = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -420,10 +473,10 @@ const IntruderAlarmCertificate = ({
               <input
                 type="text"
                 className="form-control"
-                name="jobNo"
-                value={formData.jobNo}
+                name="job"
+                value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -437,19 +490,19 @@ const IntruderAlarmCertificate = ({
             <div className="row mb-4">
               <div className="col-md-12">
                 <Autocomplete
-                  disabled={isSubmitted}
+                  disabled={isSubmitted && !canEditSubmittedReport}
                   options={filteredAssets}
                   getOptionLabel={(option) =>
                     `${option.assetId} - ${option.assetName} (${
                       option.position || "NA"
                     } > ${option.floor || "NA"} > ${option.room || "NA"})`
                   }
-                  value={formData.selectedAsset}
+                  value={selectedAsset}
                   onChange={handleAssetSelect}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Microwave Oven Testing Device"
+                      label="Select an Intruder Alarm Device"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -459,7 +512,7 @@ const IntruderAlarmCertificate = ({
               </div>
             </div>
 
-            {formData.selectedAsset && (
+            {selectedAsset && (
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
@@ -468,7 +521,7 @@ const IntruderAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={formData.panelManufacturer}
+                      value={selectedAsset.manufacturer}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -481,8 +534,8 @@ const IntruderAlarmCertificate = ({
                     <input
                       type="text"
                       className="form-control"
-                      name="modelNumber"
-                      value={formData.panelModelNumber}
+                      name="model"
+                      value={selectedAsset.model}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -496,7 +549,7 @@ const IntruderAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="position"
-                      value={formData.position}
+                      value={selectedAsset.position}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -510,7 +563,7 @@ const IntruderAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="floor"
-                      value={formData.floor}
+                      value={selectedAsset.floor}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -524,7 +577,7 @@ const IntruderAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="room"
-                      value={formData.room}
+                      value={selectedAsset.room}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -536,7 +589,6 @@ const IntruderAlarmCertificate = ({
           </div>
         </div>
 
-        {/*  Engineers Comments Section */}
         <div className="card mb-4">
           <div className="card-header">
             <h5 className="mb-0">Engineers Report</h5>
@@ -548,15 +600,15 @@ const IntruderAlarmCertificate = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersReport || ""}
+                value={formData.report || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersReport: e.target.value,
+                    report: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -568,59 +620,45 @@ const IntruderAlarmCertificate = ({
               <table className="table table-bordered">
                 <tbody>
                   <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Job Complete
-                    </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Parts Required
-                    </td>
-                  </tr>
-                  <tr>
                     <td>
-                      <select
-                        className="form-select"
-                        value={formData.jobComplete}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            jobComplete: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
+                      <div className="mb-3">
+                        <label className="form-label">Job Complete</label>
+                        <select
+                          className="form-select"
+                          value={formData.param1} // jobComplete
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param1: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
                     </td>
                     <td>
-                      <select
-                        className="form-select"
-                        value={formData.partsRequired}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            partsRequired: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select</option>
-                        <option value="Pass">Yes</option>
-                        <option value="Fail">No</option>
-                      </select>
+                      <div className="mb-3">
+                        <label className="form-label">Parts Required</label>
+                        <select
+                          className="form-select"
+                          value={formData.param2} // partsRequired
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param2: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -655,7 +693,6 @@ const IntruderAlarmCertificate = ({
             <div className="table-responsive">
               <table className="table table-bordered">
                 <tbody>
-                  {/* Your table headers */}
                   <tr style={{ fontSize: "18px" }}>
                     <td
                       style={{
@@ -683,10 +720,14 @@ const IntruderAlarmCertificate = ({
                         <label className="form-label">Walk Test Complete</label>
                         <select
                           className="form-select"
-                          name="walkTestComplete"
-                          value={formData.walkTestComplete}
-                          onChange={handleInputChange}
-                          disabled={isSubmitted}
+                          value={formData.param3} // walkTestComplete
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param3: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -700,31 +741,38 @@ const IntruderAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          name="walkTestRemarks"
-                          value={formData.walkTestRemarks}
-                          onChange={handleInputChange}
+                          value={formData.param1Remark} // walkTestRemarks
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param1Remark: e.target.value,
+                            })
+                          }
                           onMouseEnter={(e) =>
-                            handleMouseEnter(e, formData.walkTestRemarks)
+                            handleMouseEnter(e, formData.param1Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted && !canEditSubmittedReport}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* PIR's Cleaned */}
                   <tr>
                     <td>
                       <div className="mb-3">
                         <label className="form-label">PIR's Cleaned</label>
                         <select
                           className="form-select"
-                          name="pirsCleaned"
-                          value={formData.pirsCleaned}
-                          onChange={handleInputChange}
-                          disabled={isSubmitted}
+                          value={formData.param4} // pirsCleaned
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param4: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -738,21 +786,24 @@ const IntruderAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          name="pirsCleanedRemarks"
-                          value={formData.pirsCleanedRemarks}
-                          onChange={handleInputChange}
+                          value={formData.param2Remark} // pirsCleanedRemarks
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param2Remark: e.target.value,
+                            })
+                          }
                           onMouseEnter={(e) =>
-                            handleMouseEnter(e, formData.pirsCleanedRemarks)
+                            handleMouseEnter(e, formData.param2Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted && !canEditSubmittedReport}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* Remote signalling equipment check */}
                   <tr>
                     <td>
                       <div className="mb-3">
@@ -761,10 +812,14 @@ const IntruderAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          name="remoteSignallingCheck"
-                          value={formData.remoteSignallingCheck}
-                          onChange={handleInputChange}
-                          disabled={isSubmitted}
+                          value={formData.param5} // remoteSignallingCheck
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param5: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -778,25 +833,24 @@ const IntruderAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          name="remoteSignallingRemarks"
-                          value={formData.remoteSignallingRemarks}
-                          onChange={handleInputChange}
+                          value={formData.param3Remark} // remoteSignallingRemarks
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param3Remark: e.target.value,
+                            })
+                          }
                           onMouseEnter={(e) =>
-                            handleMouseEnter(
-                              e,
-                              formData.remoteSignallingRemarks
-                            )
+                            handleMouseEnter(e, formData.param3Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted && !canEditSubmittedReport}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* Continue with the same pattern for other rows */}
-                  {/* System Operation Check */}
                   <tr>
                     <td>
                       <div className="mb-3">
@@ -805,10 +859,14 @@ const IntruderAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          name="systemOperationCheck"
-                          value={formData.systemOperationCheck}
-                          onChange={handleInputChange}
-                          disabled={isSubmitted}
+                          value={formData.param6} // systemOperationCheck
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param6: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -822,21 +880,24 @@ const IntruderAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          name="systemOperationRemarks"
-                          value={formData.systemOperationRemarks}
-                          onChange={handleInputChange}
+                          value={formData.param4Remark} // systemOperationRemarks
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param4Remark: e.target.value,
+                            })
+                          }
                           onMouseEnter={(e) =>
-                            handleMouseEnter(e, formData.systemOperationRemarks)
+                            handleMouseEnter(e, formData.param4Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted && !canEditSubmittedReport}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* Audible warning and alarm devices Check */}
                   <tr>
                     <td>
                       <div className="mb-3">
@@ -845,10 +906,14 @@ const IntruderAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          name="audibleWarningCheck"
-                          value={formData.audibleWarningCheck}
-                          onChange={handleInputChange}
-                          disabled={isSubmitted}
+                          value={formData.param7} // audibleWarningCheck
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param7: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -862,21 +927,24 @@ const IntruderAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          name="audibleWarningRemarks"
-                          value={formData.audibleWarningRemarks}
-                          onChange={handleInputChange}
+                          value={formData.param5Remark} // audibleWarningRemarks
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param5Remark: e.target.value,
+                            })
+                          }
                           onMouseEnter={(e) =>
-                            handleMouseEnter(e, formData.audibleWarningRemarks)
+                            handleMouseEnter(e, formData.param5Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted && !canEditSubmittedReport}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* Electrical Connections Check */}
                   <tr>
                     <td>
                       <div className="mb-3">
@@ -885,10 +953,14 @@ const IntruderAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          name="electricalConnectionsCheck"
-                          value={formData.electricalConnectionsCheck}
-                          onChange={handleInputChange}
-                          disabled={isSubmitted}
+                          value={formData.param8} // electricalConnectionsCheck
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param8: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted && !canEditSubmittedReport}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -902,17 +974,18 @@ const IntruderAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          name="electricalConnectionsRemarks"
-                          value={formData.electricalConnectionsRemarks}
-                          onChange={handleInputChange}
+                          value={formData.param6Remark} // electricalConnectionsRemarks
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param6Remark: e.target.value,
+                            })
+                          }
                           onMouseEnter={(e) =>
-                            handleMouseEnter(
-                              e,
-                              formData.electricalConnectionsRemarks
-                            )
+                            handleMouseEnter(e, formData.param6Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted && !canEditSubmittedReport}
                           placeholder="Enter remarks"
                         />
                       </div>
@@ -936,8 +1009,8 @@ const IntruderAlarmCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="clientDate"
-                value={formatDate(formData.clientDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -945,7 +1018,7 @@ const IntruderAlarmCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -955,11 +1028,11 @@ const IntruderAlarmCertificate = ({
               <input
                 type="text"
                 className="form-control"
-                name="engineerName"
-                value={formData.engineerName}
-                required
+                name="engineer name"
                 readOnly
-                disabled={isSubmitted}
+                value={formData.user.name}
+                required
+                disabled
               />
             </div>
             <div className="mb-3">
@@ -967,11 +1040,11 @@ const IntruderAlarmCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="engineerDate"
-                value={formatDate(formData.engineerDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
                 style={{
                   height: "40px",
                   padding: "0 10px",
@@ -998,7 +1071,7 @@ const IntruderAlarmCertificate = ({
           </div>
         )}
 
-        {isSubmitted && (
+        {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">
             Report submitted successfully on {new Date().toLocaleDateString()}
           </div>
