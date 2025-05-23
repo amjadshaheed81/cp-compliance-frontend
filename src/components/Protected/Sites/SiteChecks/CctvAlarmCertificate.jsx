@@ -185,7 +185,15 @@ const CctvAlarmCertificate = ({
       };
 
       fetchData();
-    }, [isInternalUserTaggedWithSite, users.length, getUsers]);
+    }, [
+      isInternalUserTaggedWithSite,
+      users.length,
+      getUsers,
+      fetchInspectionData,
+      siteSelectedForGlobal,
+      getSiteAssets,
+      getSiteDetailsById,
+    ]);
 
     const filteredAssets =
       siteAssets?.filter(

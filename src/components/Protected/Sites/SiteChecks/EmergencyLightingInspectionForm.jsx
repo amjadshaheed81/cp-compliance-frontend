@@ -129,6 +129,23 @@ const EmergencyLightingInspectionForm = ({
         installationName: license.companyName,
       }));
     }
+    if (siteSelectedForGlobal.siteId) {
+      const addressParts = [
+        siteSelectedForGlobal.address1,
+        siteSelectedForGlobal.address2,
+        siteSelectedForGlobal.city,
+        siteSelectedForGlobal.area,
+        siteSelectedForGlobal.postCode,
+        siteSelectedForGlobal.country,
+      ].filter((part) => part);
+
+      const fullAddress = addressParts.join(", ");
+
+      setFormData((prev) => ({
+        ...prev,
+        installationAddress: fullAddress,
+      }));
+    }
   }, [license]);
 
   const handleInputChange = (e, field) => {
@@ -374,6 +391,7 @@ const EmergencyLightingInspectionForm = ({
                 <input
                   disabled
                   type="text"
+                  style={{ height: "80px" }}
                   className="form-control"
                   value={license?.companyName}
                 />
@@ -384,7 +402,7 @@ const EmergencyLightingInspectionForm = ({
                 <label className="form-label">Address</label>
                 <textarea
                   disabled
-                  rows={4}
+                  rows={3}
                   className="form-control"
                   value={license?.companyAddress}
                 />
@@ -402,6 +420,7 @@ const EmergencyLightingInspectionForm = ({
                 </label>
                 <input
                   type="text"
+                  style={{ height: "80px" }}
                   className="form-control"
                   value={formData?.installationName || ""}
                   disabled
@@ -415,11 +434,12 @@ const EmergencyLightingInspectionForm = ({
                   Address
                 </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   className="form-control"
                   value={formData?.installationAddress || ""}
                   onChange={(e) => handleInputChange(e, "installationAddress")}
                   required
+                  disabled
                 />
               </div>
             </div>
@@ -735,6 +755,7 @@ const EmergencyLightingInspectionForm = ({
                   onChange={handleDateChange}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
+                  wrapperClassName="w-100"
                   required
                 />
               </div>
