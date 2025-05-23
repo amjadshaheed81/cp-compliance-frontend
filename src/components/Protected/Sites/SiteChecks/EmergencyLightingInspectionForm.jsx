@@ -120,7 +120,7 @@ const EmergencyLightingInspectionForm = ({
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal.siteId);
     }
-  }, []);
+  }, [siteSelectedForGlobal?.siteId]);
 
   useEffect(() => {
     if (license?.companyName) {
@@ -129,24 +129,25 @@ const EmergencyLightingInspectionForm = ({
         installationName: license.companyName,
       }));
     }
-    if (siteSelectedForGlobal.siteId) {
-      const addressParts = [
-        siteSelectedForGlobal.address1,
-        siteSelectedForGlobal.address2,
-        siteSelectedForGlobal.city,
-        siteSelectedForGlobal.area,
-        siteSelectedForGlobal.postCode,
-        siteSelectedForGlobal.country,
-      ].filter((part) => part);
-
-      const fullAddress = addressParts.join(", ");
-
-      setFormData((prev) => ({
-        ...prev,
-        installationAddress: fullAddress,
-      }));
+    if (!siteSelectedForGlobal.siteId) {
+      return;
     }
-  }, [license]);
+    const addressParts = [
+      siteSelectedForGlobal.address1,
+      siteSelectedForGlobal.address2,
+      siteSelectedForGlobal.city,
+      siteSelectedForGlobal.area,
+      siteSelectedForGlobal.postCode,
+      siteSelectedForGlobal.country,
+    ].filter((part) => part);
+
+    const fullAddress = addressParts.join(", ");
+
+    setFormData((prev) => ({
+      ...prev,
+      installationAddress: fullAddress,
+    }));
+  }, [license, siteSelectedForGlobal]);
 
   const handleInputChange = (e, field) => {
     const value =
@@ -436,8 +437,51 @@ const EmergencyLightingInspectionForm = ({
                 <textarea
                   rows={3}
                   className="form-control"
+                  style={{
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                    wordWrap: "break-word",
+                    fontWeight: "normal",
+                  }}
                   value={formData?.installationAddress || ""}
-                  onChange={(e) => handleInputChange(e, "installationAddress")}
+                  required
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+          <h5 className="mb-3">Summary of Installation</h5>
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <div className="mb-3">
+                <label htmlFor="installationName" className="form-label">
+                  Inspection and Test Carried out by :
+                </label>
+                <input
+                  type="text"
+                  style={{ height: "80px" }}
+                  className="form-control"
+                  value={formData?.installationName || ""}
+                  disabled
+                  required
+                />
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="mb-3">
+                <label htmlFor="installationAddress" className="form-label">
+                  Address
+                </label>
+                <textarea
+                  rows={3}
+                  className="form-control"
+                  style={{
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                    wordWrap: "break-word",
+                    fontWeight: "normal",
+                  }}
+                  value={formData?.installationAddress || ""}
                   required
                   disabled
                 />
