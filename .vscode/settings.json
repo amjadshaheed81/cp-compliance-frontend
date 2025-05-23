@@ -4,11 +4,17 @@
     "Calorifier",
     "Crum",
     "folderfiles",
+    "getcatoptions",
+    "getsubtypeoptions",
     "Legionella",
+    "lovtypes",
     "ltrs",
     "luminaire",
     "pirs",
     "Referesh",
+    "setcatoptions",
+    "setsubtypeoptions",
+    "settypeoptions",
     "Swal",
     "sweetalert"
   ]

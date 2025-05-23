@@ -106,8 +106,16 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const lovtypes = await get(
       "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData.subType
     );
+    const filteredCategories =
+      formData.subType === "Emergency Lighting to meet BS5266"
+        ? lovtypes?.filter(
+            (l) =>
+              l.lovValue !==
+              "Emergency Lighting (systems less than 3 years old) 6 monthly 1 hour discharge testing"
+          )
+        : lovtypes;
     setcatoptions(
-      lovtypes
+      filteredCategories
         ?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {

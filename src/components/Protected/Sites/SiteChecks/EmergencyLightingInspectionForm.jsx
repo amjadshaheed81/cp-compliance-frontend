@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getSiteAssets, getUsers } from "../../../../store/thunk/site";
-import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
+import { get, post, uploadSiteCheckDoc } from "../../../../api";
 
 const EmergencyLightingInspectionForm = ({
   checkId,
@@ -15,10 +15,9 @@ const EmergencyLightingInspectionForm = ({
   loggedInUserData = {},
   siteCheck = {},
 }) => {
-  const license = JSON.parse(localStorage.getItem('license'));
-  
+  const license = JSON.parse(localStorage.getItem("license"));
+
   const [formData, setFormData] = useState({
-    
     inspectionChecks: [
       {
         check: 1,
@@ -60,10 +59,10 @@ const EmergencyLightingInspectionForm = ({
     ],
     additionalComments: "",
     allFittingsPassed: false,
-    
+
     siteAssetId: "",
     files: [],
-    user: loggedInUserData
+    user: loggedInUserData,
   });
   const [hoveredRemarksIndex, setHoveredRemarksIndex] = useState(null);
   const [completed, setCompleted] = useState(false);
@@ -71,10 +70,12 @@ const EmergencyLightingInspectionForm = ({
 
   const getInspection = async () => {
     try {
-      const apiData = await get("/api/site-check/emergency-lighting/" + checkId);
-     // if (data && data.length > 0) {
+      const apiData = await get(
+        "/api/site-check/emergency-lighting/" + checkId
+      );
+      // if (data && data.length > 0) {
       //  const apiData = data[0];
-      if(apiData) {
+      if (apiData) {
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
@@ -107,8 +108,7 @@ const EmergencyLightingInspectionForm = ({
         }));
 
         setCompleted(true);
-        }
-      
+      }
     } catch (error) {
       toast.error("Failed to load inspection data");
       console.error("Inspection load error:", error);
@@ -122,16 +122,40 @@ const EmergencyLightingInspectionForm = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (license?.companyName) {
+      setFormData((prev) => ({
+        ...prev,
+        installationName: license.companyName,
+      }));
+    }
+    if (siteSelectedForGlobal.siteId) {
+      const addressParts = [
+        siteSelectedForGlobal.address1,
+        siteSelectedForGlobal.address2,
+        siteSelectedForGlobal.city,
+        siteSelectedForGlobal.area,
+        siteSelectedForGlobal.postCode,
+        siteSelectedForGlobal.country,
+      ].filter((part) => part);
+
+      const fullAddress = addressParts.join(", ");
+
+      setFormData((prev) => ({
+        ...prev,
+        installationAddress: fullAddress,
+      }));
+    }
+  }, [license]);
+
   const handleInputChange = (e, field) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
 
-   
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleCheckChange = (index, field, value) => {
@@ -239,7 +263,7 @@ const EmergencyLightingInspectionForm = ({
   const handleDateChange = (date) => {
     setFormData((prev) => ({
       ...prev,
-      inspectionDate: date || new Date()
+      inspectionDate: date || new Date(),
     }));
   };
 
@@ -269,7 +293,7 @@ const EmergencyLightingInspectionForm = ({
         ...formData,
         siteId: siteSelectedForGlobal?.siteId || "",
         checkId,
-        inspectionBy: loggedInUserData?.id
+        inspectionBy: loggedInUserData?.id,
       };
 
       // Upload file if exists
@@ -293,7 +317,6 @@ const EmergencyLightingInspectionForm = ({
           return;
         }
       }
-
 
       // Submit inspection data
       await post("/api/site-check/emergency-lighting", payload);
@@ -322,7 +345,6 @@ const EmergencyLightingInspectionForm = ({
 
       toast.success("Inspection submitted successfully");
       setCompleted(true);
-     
     } catch (error) {
       console.error("Submission error:", error);
       toast.error("Failed to submit inspection");
@@ -349,12 +371,15 @@ const EmergencyLightingInspectionForm = ({
       <div className="card-body">
         <form onSubmit={submitInspection}>
           {/* Warning Section */}
-          <div className="alert alert-warning mb-4">
-            <strong>WARNING</strong> – Full duration tests involve discharging
-            the batteries, so the emergency lighting system will not be fully
-            functional until the batteries have had time to recharge. For this
-            reason, always carry out testing at times of minimal risk, or only
-            test alternate luminaires at one time.
+          <div className="alert text-danger mb-4">
+            <b>WARNING</b>{" "}
+            <strong>
+              – Full duration tests involve discharging the batteries, so the
+              emergency lighting system will not be fully functional until the
+              batteries have had time to recharge. For this reason, always carry
+              out testing at times of minimal risk, or only test alternate
+              luminaries at one time.
+            </strong>
           </div>
 
           {/* Client Details Section */}
@@ -364,11 +389,11 @@ const EmergencyLightingInspectionForm = ({
               <div className="mb-3">
                 <label className="form-label">Name</label>
                 <input
-                disabled
+                  disabled
                   type="text"
+                  style={{ height: "80px" }}
                   className="form-control"
                   value={license?.companyName}
-                  
                 />
               </div>
             </div>
@@ -376,11 +401,10 @@ const EmergencyLightingInspectionForm = ({
               <div className="mb-3">
                 <label className="form-label">Address</label>
                 <textarea
-                disabled
-                  rows={4}
+                  disabled
+                  rows={3}
                   className="form-control"
                   value={license?.companyAddress}
-                  
                 />
               </div>
             </div>
@@ -396,9 +420,10 @@ const EmergencyLightingInspectionForm = ({
                 </label>
                 <input
                   type="text"
+                  style={{ height: "80px" }}
                   className="form-control"
                   value={formData?.installationName || ""}
-                  onChange={(e) => handleInputChange(e, "installationName")}
+                  disabled
                   required
                 />
               </div>
@@ -409,13 +434,12 @@ const EmergencyLightingInspectionForm = ({
                   Address
                 </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   className="form-control"
                   value={formData?.installationAddress || ""}
-                  onChange={(e) =>
-                    handleInputChange(e, "installationAddress")
-                  }
+                  onChange={(e) => handleInputChange(e, "installationAddress")}
                   required
+                  disabled
                 />
               </div>
             </div>
@@ -473,9 +497,7 @@ const EmergencyLightingInspectionForm = ({
                 <select
                   className="form-select"
                   value={formData?.bsiCategoryDuration || ""}
-                  onChange={(e) =>
-                    handleInputChange(e, "bsiCategoryDuration")
-                  }
+                  onChange={(e) => handleInputChange(e, "bsiCategoryDuration")}
                 >
                   <option value="">Select</option>
                   <option value="30">30 minutes</option>
@@ -671,21 +693,23 @@ const EmergencyLightingInspectionForm = ({
           {/* Inspector Details Section */}
           <h5 className="mb-3">For the Inspection & Test of the system:</h5>
           <div className="row mb-3">
-            <div className="col-md-4">
+            {/* Name */}
+            <div className="col-md-3">
               <div className="mb-3">
                 <label htmlFor="inspector.name" className="form-label">
                   Name
                 </label>
                 <input
-                disabled
+                  disabled
                   type="text"
                   className="form-control"
                   value={formData.user?.name || ""}
-                 
                 />
               </div>
             </div>
-            <div className="col-md-4">
+
+            {/* Position */}
+            <div className="col-md-3">
               <div className="mb-3">
                 <label htmlFor="inspector.position" className="form-label">
                   Position
@@ -698,36 +722,46 @@ const EmergencyLightingInspectionForm = ({
                 />
               </div>
             </div>
-            <div className="col-md-2">
+
+            {/* Signature */}
+            <div className="col-md-3">
               <div className="mb-3">
                 <label htmlFor="inspector.signature" className="form-label">
                   Signature
                 </label>
-                <br />
-                <img 
-                width="200"
-                height="50"
-                style={{border: '1px solid'}}
-                src={formData.user?.signature+ "?" + sasToken} />
-                
+                <div
+                  className="border rounded bg-white d-flex align-items-center"
+                  style={{ height: "38px", padding: "2px" }}
+                >
+                  <img
+                    width="100%"
+                    height="100%"
+                    style={{ objectFit: "contain" }}
+                    src={formData.user?.signature + "?" + sasToken}
+                    alt="Signature"
+                  />
+                </div>
               </div>
             </div>
-            <div className="col-md-2">
+
+            {/* Date */}
+            <div className="col-md-3">
               <div className="mb-3">
                 <label htmlFor="inspector.date" className="form-label">
                   Date
                 </label>
                 <DatePicker
-                
                   selected={formData.inspectionDate || ""}
                   onChange={handleDateChange}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
+                  wrapperClassName="w-100"
                   required
                 />
               </div>
             </div>
           </div>
+
           <div className="d-flex justify-content-end">
             <button
               type="submit"
