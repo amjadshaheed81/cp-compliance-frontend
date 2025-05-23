@@ -29,7 +29,7 @@ const SurveyWaterTemperatureMonitoring = ({
   siteSelectedForGlobal,
   getSiteLayout,
   loggedInUserData,
-  repeatFrequency
+  repeatFrequency,
 }) => {
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
@@ -43,7 +43,6 @@ const SurveyWaterTemperatureMonitoring = ({
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -66,13 +65,13 @@ const SurveyWaterTemperatureMonitoring = ({
     );
     setnormruntime(normruntimetypes?.map((l) => l.lovValue));
     let data = await get("/api/site-check/water-outlet-temp/" + checkId);
-    data = data.filter(d=> d.assetId);
+    data = data.filter((d) => d.assetId);
     if (data.length > 0) {
       data.forEach((_) => {
         _.completed = true;
       });
       //data = data.filter(d=> !d.assetId === null);
-      
+
       setalldata(data);
       //data = data.reverse();
       data = removeduplciate(data);
@@ -82,20 +81,22 @@ const SurveyWaterTemperatureMonitoring = ({
   };
 
   const removeduplciate = (array) => {
-    
     const latestRecordsMap = {};
 
-    array.forEach(item => {
-  if (!latestRecordsMap[item.assetId] || new Date(item.r1Date) > new Date(latestRecordsMap[item.assetId].r1Date)) {
-    latestRecordsMap[item.assetId] = item;
-  }
-  });
+    array.forEach((item) => {
+      if (
+        !latestRecordsMap[item.assetId] ||
+        new Date(item.r1Date) > new Date(latestRecordsMap[item.assetId].r1Date)
+      ) {
+        latestRecordsMap[item.assetId] = item;
+      }
+    });
 
-  const latestRecords = Object.values(latestRecordsMap);
+    const latestRecords = Object.values(latestRecordsMap);
 
-  latestRecords.sort((a, b) =>  Number(a.sortOrder) - Number(b.sortOrder));
-   return  latestRecords;
-    
+    latestRecords.sort((a, b) => Number(a.sortOrder) - Number(b.sortOrder));
+    return latestRecords;
+
     const seen = new Map();
 
     return array.filter((item) => {
@@ -157,11 +158,9 @@ const SurveyWaterTemperatureMonitoring = ({
 
   const getNodeName = (id) => {
     let res = "";
-    const node = siteLayout.filter(
-      (s) => String(s.id) === String(id)
-    );
-    
-    return node?.[0]?.nodeName??id ;
+    const node = siteLayout.filter((s) => String(s.id) === String(id));
+
+    return node?.[0]?.nodeName ?? id;
   };
 
   const handleInputChange = (e, idx) => {
@@ -180,7 +179,7 @@ const SurveyWaterTemperatureMonitoring = ({
     const { name, value } = e.target;
     const udata = {
       ...formData2,
-      [name]: value
+      [name]: value,
     };
     setFormData2(udata);
   };
@@ -191,9 +190,9 @@ const SurveyWaterTemperatureMonitoring = ({
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    let i =0;
+    let i = 0;
     for (const data of formData) {
-      i=i+1;
+      i = i + 1;
       if (!data.completed || data.update) {
         if (isDuplicate(data) && !data.update) {
           toast.error("Duplicate data!!!");
@@ -209,13 +208,11 @@ const SurveyWaterTemperatureMonitoring = ({
           data.r2Date = data.r1Date;
           data.r3Date = data.r1Date;
         }
-        if(data.assetId && data.reading1 && data.reading2 && data.reading3) {
+        if (data.assetId && data.reading1 && data.reading2 && data.reading3) {
           await post("/api/site-check/water-outlet-temp", data);
-         
+
           break;
         }
-        
-       
       }
     }
     toast.success("Water outlet temperature data saved.");
@@ -229,8 +226,8 @@ const SurveyWaterTemperatureMonitoring = ({
       form.reportValidity();
     }
     for (const data of formData) {
-      console.log('data',data)
-      if (data.new ) {
+      console.log("data", data);
+      if (data.new) {
         if (isDuplicate(data) && data.new) {
           toast.error("Duplicate data!!!");
           return;
@@ -245,11 +242,10 @@ const SurveyWaterTemperatureMonitoring = ({
           data.r2Date = data.r1Date;
           data.r3Date = data.r1Date;
         }
-        if(data.assetId) {
+        if (data.assetId) {
           await post("/api/site-check/water-outlet-temp", data);
         }
-        
-      } else if(data.update){
+      } else if (data.update) {
         await put("/api/site-check/water-outlet-temp", data);
       }
     }
@@ -281,25 +277,26 @@ const SurveyWaterTemperatureMonitoring = ({
         Number(formData[readingPop]?.reading3) > 20);
     if (!isReading1ok && !isReading2ok && !isReading3ok) {
       addSiteCheckSurvey(event);
-      
     } else {
       addSiteCheckSurvey(event);
       const body = {
         type: "Survey",
         status: "Reported",
         observation: formData2.observation,
-        desc: `Surevy Water - Outlet Temprature - ${moment(new Date()).format("DD/MM/YYYY")}`,
+        desc: `Surevy Water - Outlet Temprature - ${moment(new Date()).format(
+          "DD/MM/YYYY"
+        )}`,
         requiredAction: formData2.requiredAction,
         riskScore: Number(formData2.likelihood) * Number(formData2.consequence),
         dueDate: new Date(),
         siteId: siteSelectedForGlobal?.siteId,
         userId: loggedInUserData?.id,
-      }
-    put("/api/site/actions", body);
-    } 
+      };
+      put("/api/site/actions", body);
+    }
     setReadingPop((prev) => {
       const nextIndex = prev < formData.length - 1 ? prev + 1 : null;
-      if(nextIndex === null) {
+      if (nextIndex === null) {
         setReadingPop(null);
         setReadingPopShow(false);
         getSurvey();
@@ -308,7 +305,14 @@ const SurveyWaterTemperatureMonitoring = ({
       setFormData((prevData) => {
         const updatedData = [...prevData];
         updatedData[prev].update = false;
-        updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: new Date().toISOString(), update: true };
+        updatedData[nextIndex] = {
+          ...updatedData[nextIndex],
+          reading1: "",
+          reading2: "",
+          reading3: "",
+          r1Date: new Date().toISOString(),
+          update: true,
+        };
         return updatedData;
       });
       return nextIndex;
@@ -321,30 +325,49 @@ const SurveyWaterTemperatureMonitoring = ({
 
   const dateFormatFromFrequency = (date) => {
     let daysToAdd = 0;
-    if(repeatFrequency === "Daily") {
-      daysToAdd = 1
-    } else  if(repeatFrequency === "Weekly") {
-      daysToAdd = 7
-    } else if(repeatFrequency === "Monthly") {
-      daysToAdd = 30
-    } else if(repeatFrequency === "Yearly") {
-      daysToAdd = 365
+    if (repeatFrequency === "Daily") {
+      daysToAdd = 1;
+    } else if (repeatFrequency === "Weekly") {
+      daysToAdd = 7;
+    } else if (repeatFrequency === "Monthly") {
+      daysToAdd = 30;
+    } else if (repeatFrequency === "Yearly") {
+      daysToAdd = 365;
     }
-    return moment(date, "YYYY-MM-DD").add('days', daysToAdd).format("DD/MM/YYYY");
+    return moment(date, "YYYY-MM-DD")
+      .add("days", daysToAdd)
+      .format("DD/MM/YYYY");
   };
 
-  const isRed1 = formData[readingPop]?.reading1?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading1) <50) ||
-    (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading1) > 20);
+  const isRed1 =
+    formData[readingPop]?.reading1?.length === 0
+      ? false
+      : (formData?.[readingPop]?.temperature === "Hot" &&
+          Number(formData[readingPop]?.reading1) < 50) ||
+        (formData?.[readingPop]?.temperature === "Cold" &&
+          Number(formData[readingPop]?.reading1) > 20);
 
-  const isRed2 = formData[readingPop]?.reading2?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading2) <50) ||
-    (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading2) > 20);
+  const isRed2 =
+    formData[readingPop]?.reading2?.length === 0
+      ? false
+      : (formData?.[readingPop]?.temperature === "Hot" &&
+          Number(formData[readingPop]?.reading2) < 50) ||
+        (formData?.[readingPop]?.temperature === "Cold" &&
+          Number(formData[readingPop]?.reading2) > 20);
 
-  const isRed3 = formData[readingPop]?.reading3?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading3) <50) ||
-    (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading3) > 20);
-  
-    const isRed =  (isRed1 || isRed2 || isRed3) && formData[readingPop]?.reading1?.length > 0 && formData[readingPop]?.reading2?.length > 0
-      && formData[readingPop]?.reading3?.length > 0
+  const isRed3 =
+    formData[readingPop]?.reading3?.length === 0
+      ? false
+      : (formData?.[readingPop]?.temperature === "Hot" &&
+          Number(formData[readingPop]?.reading3) < 50) ||
+        (formData?.[readingPop]?.temperature === "Cold" &&
+          Number(formData[readingPop]?.reading3) > 20);
 
+  const isRed =
+    (isRed1 || isRed2 || isRed3) &&
+    formData[readingPop]?.reading1?.length > 0 &&
+    formData[readingPop]?.reading2?.length > 0 &&
+    formData[readingPop]?.reading3?.length > 0;
 
   return (
     <>
@@ -352,8 +375,8 @@ const SurveyWaterTemperatureMonitoring = ({
         open={readingPopShow}
         onClose={() => {
           setReadingPop(null);
-          setReadingPopShow(false)
-          getSurvey()
+          setReadingPopShow(false);
+          getSurvey();
         }}
         maxWidth="lg"
         fullWidth
@@ -366,7 +389,12 @@ const SurveyWaterTemperatureMonitoring = ({
                 siteAssets
                   .filter((a) => a.assetId == formData[readingPop]?.assetId)
                   .map(
-                    (option) => option.assetId + " "+ option.assetName + " - " + option.category
+                    (option) =>
+                      option.assetId +
+                      " " +
+                      option.assetName +
+                      " - " +
+                      option.category
                   )[0] +
                 ")"
               : ""}
@@ -374,172 +402,167 @@ const SurveyWaterTemperatureMonitoring = ({
           <DialogContent dividers>
             <Fragment>
               <Grid container>
-                  <>
-                    <Grid sm={4}>
-                      <label htmlFor="outletType">Outlet Type</label>
-                      <input
-                        style={{ maxWidth: "300px" }}
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        className="form-control"
-                        id="outletType"
-                        disabled
-                        value={formData?.[readingPop]?.outletType}
-                      />
-                    </Grid>
-                    <Grid sm={4}>
-                      <label htmlFor="outletType">Temperature</label>
-                      <input
-                        style={{ maxWidth: "300px" }}
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        className="form-control"
-                        id="outletType"
-                        disabled
-                        value={formData?.[readingPop]?.temperature}
-                      />
-                    </Grid>
-                    <Grid sm={4}>
-                      <label htmlFor="outletType">Location</label>
-                      <input
-                        style={{ maxWidth: "300px" }}
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        className="form-control"
-                        id="outletType"
-                        disabled
-                        value={getName(readingPop)}
-                      />
-                    </Grid>
-                    <Grid sm={12}>
-                      <div
-                        className="table-responsive"
-                        style={{ marginTop: "30px" }}
-                      >
-                        <table className="table table-bordered f-11">
-                          <thead className="table-dark">
-                            <tr>
-                              <th></th>
-                              <th>Test Date</th>
-                              <th>Reading</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td>
-                                Reading 1{" "}
-                                <b style={{ color: "red" }}> 30 seconds </b>
-                              </td>
-                              <td
-                                rowSpan={3}
-                                style={{ verticalAlign: "middle" }}
-                              >
-                                <DatePicker
-                                  value={
-                                    formData?.[readingPop]?.update
-                                      ? formData?.[readingPop]?.r1Date
-                                      : moment()
-                                  }
-                                  onChange={(date) => {
-                                    const uformData = [...formData];
-                                    const udata = {
-                                      ...formData[readingPop],
-                                      r1Date: new Date(
-                                        date.getTime() -
-                                          date.getTimezoneOffset() * 60000
-                                      ).toISOString(),
-                                      update: true,
-                                    };
-                                    uformData[readingPop] = udata;
-                                    setFormData(uformData);
-                                  }}
-                                />
-                                {/* // <input
+                <>
+                  <Grid sm={4}>
+                    <label htmlFor="outletType">Outlet Type</label>
+                    <input
+                      style={{ maxWidth: "300px" }}
+                      type="text"
+                      autoComplete="off"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute("readonly")}
+                      className="form-control"
+                      id="outletType"
+                      disabled
+                      value={formData?.[readingPop]?.outletType}
+                    />
+                  </Grid>
+                  <Grid sm={4}>
+                    <label htmlFor="outletType">Temperature</label>
+                    <input
+                      style={{ maxWidth: "300px" }}
+                      type="text"
+                      autoComplete="off"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute("readonly")}
+                      className="form-control"
+                      id="outletType"
+                      disabled
+                      value={formData?.[readingPop]?.temperature}
+                    />
+                  </Grid>
+                  <Grid sm={4}>
+                    <label htmlFor="outletType">Location</label>
+                    <input
+                      style={{ maxWidth: "300px" }}
+                      type="text"
+                      autoComplete="off"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute("readonly")}
+                      className="form-control"
+                      id="outletType"
+                      disabled
+                      value={getName(readingPop)}
+                    />
+                  </Grid>
+                  <Grid sm={12}>
+                    <div
+                      className="table-responsive"
+                      style={{ marginTop: "30px" }}
+                    >
+                      <table className="table table-bordered f-11">
+                        <thead className="table-dark">
+                          <tr>
+                            <th></th>
+                            <th>Test Date</th>
+                            <th>Reading</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>
+                              Reading 1{" "}
+                              <b style={{ color: "red" }}> 30 seconds </b>
+                            </td>
+                            <td rowSpan={3} style={{ verticalAlign: "middle" }}>
+                              <DatePicker
+                                value={
+                                  formData?.[readingPop]?.update
+                                    ? formData?.[readingPop]?.r1Date
+                                    : moment()
+                                }
+                                onChange={(date) => {
+                                  const uformData = [...formData];
+                                  const udata = {
+                                    ...formData[readingPop],
+                                    r1Date: new Date(
+                                      date.getTime() -
+                                        date.getTimezoneOffset() * 60000
+                                    ).toISOString(),
+                                    update: true,
+                                  };
+                                  uformData[readingPop] = udata;
+                                  setFormData(uformData);
+                                }}
+                              />
+                              {/* // <input
                               //   type="date"
                               //   className="form-control"
                               //     name="r1Date"
                               //     required
                               //   onChange={(e) => handleInputChange(e, readingPop)}
                               // /> */}
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  onWheel={(e) => e.target.blur()}
-                                  className="form-control"
-                                  name="reading1"
-                                  value={formData?.[readingPop]?.reading1 || ""}
-                                  required
-                                  style={{
-                                    color:
-                                    isRed1 ? "red" : "green",
-                                    fontWeight: "600",
-                                  }}
-                                  onChange={(e) =>
-                                    handleInputChange(e, readingPop)
-                                  }
-                                />
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                onWheel={(e) => e.target.blur()}
+                                className="form-control"
+                                name="reading1"
+                                value={formData?.[readingPop]?.reading1 || ""}
+                                required
+                                style={{
+                                  color: isRed1 ? "red" : "green",
+                                  fontWeight: "600",
+                                }}
+                                onChange={(e) =>
+                                  handleInputChange(e, readingPop)
+                                }
+                              />
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>
                               Reading 2{" "}
-                                
-                                <b style={{ color: "red" }}> 60 seconds </b>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  onWheel={(e) => e.target.blur()}
-                                  className="form-control"
-                                  name="reading2"
-                                  required
-                                  value={formData?.[readingPop]?.reading2 || ""}
-                                  style={{
-                                    color:isRed2 ? "red" : "green",
-                                    fontWeight: "600",
-                                  }}
-                                  onChange={(e) =>
-                                    handleInputChange(e, readingPop)
-                                  }
-                                />
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                Reading 3{" "}
-                                <b style={{ color: "red" }}> 120 seconds </b>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  onWheel={(e) => e.target.blur()}
-                                  required
-                                  className="form-control"
-                                  name="reading3"
-                                  value={formData?.[readingPop]?.reading3 || ""}
-                                  style={{
-                                    color:isRed3 ? "red" : "green",
-                                    fontWeight: "600",
-                                  }}
-                                  onChange={(e) =>
-                                    handleInputChange(e, readingPop)
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </Grid>
-                  </>
-                
+                              <b style={{ color: "red" }}> 60 seconds </b>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                onWheel={(e) => e.target.blur()}
+                                className="form-control"
+                                name="reading2"
+                                required
+                                value={formData?.[readingPop]?.reading2 || ""}
+                                style={{
+                                  color: isRed2 ? "red" : "green",
+                                  fontWeight: "600",
+                                }}
+                                onChange={(e) =>
+                                  handleInputChange(e, readingPop)
+                                }
+                              />
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>
+                              Reading 3{" "}
+                              <b style={{ color: "red" }}> 120 seconds </b>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                onWheel={(e) => e.target.blur()}
+                                required
+                                className="form-control"
+                                name="reading3"
+                                value={formData?.[readingPop]?.reading3 || ""}
+                                style={{
+                                  color: isRed3 ? "red" : "green",
+                                  fontWeight: "600",
+                                }}
+                                onChange={(e) =>
+                                  handleInputChange(e, readingPop)
+                                }
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </Grid>
+                </>
+
                 {/* {action && (
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
@@ -675,7 +698,8 @@ autoComplete="off"
           <DialogActions>
             <Button
               type="button"
-              onClick={() => { setReadingPop(null);
+              onClick={() => {
+                setReadingPop(null);
                 setReadingPopShow(false);
                 getSurvey();
               }}
@@ -694,7 +718,7 @@ autoComplete="off"
               }}
               className="btn btn-primary text-white pr-2"
             >
-              {readingPop === (formData?.length -1)? 'Save & Close' : 'Next'}
+              {readingPop === formData?.length - 1 ? "Save & Close" : "Next"}
             </button>
             {/* <button
               type="button"
@@ -724,7 +748,6 @@ autoComplete="off"
             >
               Next
             </button> */}
-            
           </DialogActions>
         </form>
       </Dialog>
@@ -737,16 +760,24 @@ autoComplete="off"
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>Reading History {" "}
-            {formData[showHistory]?.assetId
-              ? "(" +
-                siteAssets
-                  .filter((a) => a.assetId == formData[showHistory]?.assetId)
-                  .map(
-                    (option) => option.assetId + " "+ option.assetName + " - " + option.category
-                  )[0] +
-                ")"
-              : ""} {" - "} {getName(showHistory)}</DialogTitle>
+        <DialogTitle>
+          Reading History{" "}
+          {formData[showHistory]?.assetId
+            ? "(" +
+              siteAssets
+                .filter((a) => a.assetId == formData[showHistory]?.assetId)
+                .map(
+                  (option) =>
+                    option.assetId +
+                    " " +
+                    option.assetName +
+                    " - " +
+                    option.category
+                )[0] +
+              ")"
+            : ""}{" "}
+          {" - "} {getName(showHistory)}
+        </DialogTitle>
         <DialogContent dividers>
           <Fragment>
             <Grid container>
@@ -766,7 +797,9 @@ autoComplete="off"
                       {alldata
                         ?.filter(
                           (a) =>
-                            a.reading1 && a.reading2 && a.reading3 &&
+                            a.reading1 &&
+                            a.reading2 &&
+                            a.reading3 &&
                             a.assetId === formData[showHistory]?.assetId &&
                             a.temperature ===
                               formData[showHistory]?.temperature &&
@@ -845,7 +878,6 @@ autoComplete="off"
           </Fragment>
         </DialogContent>
         <DialogActions>
-        
           <Button
             className="bg-primary text-white"
             onClick={() => {
@@ -854,16 +886,18 @@ autoComplete="off"
           >
             Close
           </Button>
-          {showHistory < (formData.length - 1) && 
-          <Button
-            className="bg-primary text-white"
-            onClick={() => {
-              setShowHistory((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
-            }}
-          >
-            Next
-          </Button>
-          }
+          {showHistory < formData.length - 1 && (
+            <Button
+              className="bg-primary text-white"
+              onClick={() => {
+                setShowHistory((prev) =>
+                  prev < formData.length - 1 ? prev + 1 : prev
+                );
+              }}
+            >
+              Next
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
@@ -892,7 +926,7 @@ autoComplete="off"
               onClick={(e) => {
                 e.preventDefault();
                 const uformData = [...formData];
-                uformData.push({new: true});
+                uformData.push({ new: true });
                 setFormData(uformData);
               }}
             >
@@ -918,31 +952,39 @@ autoComplete="off"
                   </tr>
                 </thead>
                 <tbody>
-                {isLoading && (
-                  <tr>
-                  <td colSpan={9} align="center"><CircularProgress /></td>
-                </tr>
-            )}
-            {!isLoading && 
-                  formData?.map((d, idx) => {
-                    const isAllFilled =
-                      formData[idx].assetId &&
-                      formData?.[idx]?.outletType &&
-                      formData?.[idx]?.temperature &&
-                      formData?.[idx]?.normalRunTime &&
-                      formData?.[idx]?.usageFrequency &&
-                      formData?.[idx]?.floor &&
-                      formData?.[idx]?.room;
-                    const assetName = siteAssets
-                      .filter((a) => a.assetId == formData[idx].assetId)
-                      .map(
-                        (option) => option.assetId + " - "+ option.assetName + " - " + option.category
-                      )?.[0];
-                    formData[idx].completed = formData?.[idx]?.completed && isAllFilled;
-                    return (
-                      <tr key={idx}>
-                         <td>
-                          {/* {formData?.[idx]?.completed ? (
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={9} align="center">
+                        <CircularProgress />
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading &&
+                    formData?.map((d, idx) => {
+                      const isAllFilled =
+                        formData[idx].assetId &&
+                        formData?.[idx]?.outletType &&
+                        formData?.[idx]?.temperature &&
+                        formData?.[idx]?.normalRunTime &&
+                        formData?.[idx]?.usageFrequency &&
+                        formData?.[idx]?.floor &&
+                        formData?.[idx]?.room;
+                      const assetName = siteAssets
+                        .filter((a) => a.assetId == formData[idx].assetId)
+                        .map(
+                          (option) =>
+                            option.assetId +
+                            " - " +
+                            option.assetName +
+                            " - " +
+                            option.category
+                        )?.[0];
+                      formData[idx].completed =
+                        formData?.[idx]?.completed && isAllFilled;
+                      return (
+                        <tr key={idx}>
+                          <td>
+                            {/* {formData?.[idx]?.completed ? (
                             <p>{formData?.[idx]?.sortOrder}</p>
                           ) : ( */}
                             <input
@@ -954,213 +996,242 @@ autoComplete="off"
                               className="form-control"
                               onChange={(e) => handleInputChange(e, idx)}
                               required
-                            /> 
-                            {/* )} */}
-                            </td>
-                        <td>
-                          {formData?.[idx]?.completed ? (
-                            <p>{assetName}</p>
-                          ) : (
-                             
-                            <Autocomplete
-                              id="assetId"
-                              disabled={formData?.[idx]?.completed}
-                              onChange={(event, item) => {
-                                const uformData = [...formData];
-                                uformData[idx].assetId = item?.key;
-                                uformData[idx].room = item?.room;
-                                uformData[idx].floor = item?.floor;
-                                setFormData(uformData);
-                              }}
-                              options={siteAssets
-                                .filter(s=> s.category === "Mechanical" && s.subCategory === "Water Services" && s.subCategory2 === "Outlet")
-                                .filter(s=> !formData?.map(a=> a.assetId).includes(s.assetId) )
-                                .map((option) => ({
-                                key: option.assetId,
-                                label:
-                                option.assetId + " - "+ option.assetName + " - " + option.category,
-                                room:option.room,
-                                floor:option.floor
-                              }))}
-                              getOptionLabel={(option) => option.label}
-                              renderInput={(params) => (
-                                <div ref={params.InputProps.ref}>
-                                  <input
-                                    type="text"
-                                    autoComplete="off"
-                                    readOnly
-                                    onFocus={(e) => e.target.removeAttribute("readonly")}
-                                    {...params.inputProps}
-                                    required
-                                    disabled={formData?.[idx]?.completed}
-                                    className="form-control"
-                                  />
-                                </div>
-                              )}
                             />
-                          )}
-                        </td>
-                        <td>
-                          <select
-                            disabled={formData?.[idx]?.completed}
-                            name="outletType"
-                            className="form-control form-select"
-                            id="outletType"
-                            value={formData?.[idx]?.outletType}
-                            required
-                            onChange={(e) => handleInputChange(e, idx)}
-                          >
-                            <option value="">Select Outlet Type</option>
-                            {outletoptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <select
-                            disabled={formData?.[idx]?.completed}
-                            name="temperature"
-                            className="form-control form-select"
-                            id="temperature"
-                            required
-                            value={formData?.[idx]?.temperature}
-                            onChange={(e) => handleInputChange(e, idx)}
-                          >
-                            <option value="">Select temperature</option>
-                            {tempratureoptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
+                            {/* )} */}
+                          </td>
+                          <td>
+                            {formData?.[idx]?.completed ? (
+                              <p>{assetName}</p>
+                            ) : (
+                              <Autocomplete
+                                id="assetId"
+                                disabled={formData?.[idx]?.completed}
+                                onChange={(event, item) => {
+                                  const uformData = [...formData];
+                                  uformData[idx].assetId = item?.key;
+                                  uformData[idx].room = item?.room;
+                                  uformData[idx].floor = item?.floor;
+                                  setFormData(uformData);
+                                }}
+                                options={siteAssets
+                                  .filter(
+                                    (s) =>
+                                      s.category === "Mechanical" &&
+                                      s.subCategory === "Water Services" &&
+                                      s.subCategory2 === "Outlet"
+                                  )
+                                  .filter(
+                                    (s) =>
+                                      !formData
+                                        ?.map((a) => a.assetId)
+                                        .includes(s.assetId)
+                                  )
+                                  .map((option) => ({
+                                    key: option.assetId,
+                                    label:
+                                      option.assetId +
+                                      " - " +
+                                      option.assetName +
+                                      " - " +
+                                      option.category,
+                                    room: option.room,
+                                    floor: option.floor,
+                                  }))}
+                                getOptionLabel={(option) => option.label}
+                                renderInput={(params) => (
+                                  <div ref={params.InputProps.ref}>
+                                    <input
+                                      type="text"
+                                      autoComplete="off"
+                                      readOnly
+                                      onFocus={(e) =>
+                                        e.target.removeAttribute("readonly")
+                                      }
+                                      {...params.inputProps}
+                                      required
+                                      disabled={formData?.[idx]?.completed}
+                                      className="form-control"
+                                    />
+                                  </div>
+                                )}
+                              />
+                            )}
+                          </td>
+                          <td>
+                            <select
+                              disabled={formData?.[idx]?.completed}
+                              name="outletType"
+                              className="form-control form-select"
+                              id="outletType"
+                              value={formData?.[idx]?.outletType}
+                              required
+                              onChange={(e) => handleInputChange(e, idx)}
+                            >
+                              <option value="">Select Outlet Type</option>
+                              {outletoptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              disabled={formData?.[idx]?.completed}
+                              name="temperature"
+                              className="form-control form-select"
+                              id="temperature"
+                              required
+                              value={formData?.[idx]?.temperature}
+                              onChange={(e) => handleInputChange(e, idx)}
+                            >
+                              <option value="">Select temperature</option>
+                              {tempratureoptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
 
-                        <td style={{ width: "150px" }}>
-                          <select
-                            disabled={formData?.[idx]?.completed}
-                            name="normalRunTime"
-                            className="form-control form-select"
-                            id="normalRunTime"
-                            required
-                            value={formData?.[idx]?.normalRunTime}
-                            onChange={(e) => handleInputChange(e, idx)}
-                          >
-                            <option value="">Select</option>
-                            {normruntime.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <select
-                            disabled={formData?.[idx]?.completed}
-                            name="usageFrequency"
-                            className="form-control form-select"
-                            id="usageFrequency"
-                            required
-                            value={formData?.[idx]?.usageFrequency}
-                            onChange={(e) => handleInputChange(e, idx)}
-                          >
-                            <option value="">Select frequency</option>
-                            <option value="None">None</option>
-                            <option value="Daily">Daily</option>
-                            <option value="Weekly">Weekly</option>
-                            <option value="Monthly">Monthly</option>
-                            <option value="Yearly">Yearly</option>
-                          </select>
-                        </td>
-                        <td>
-                        {
-                          formData?.[idx]?.floor != 'null' ? getNodeName(formData?.[idx]?.floor) : '--'
-                          }
-                        </td>
-                        <td>
-                          {formData?.[idx]?.room != 'null' ? getNodeName(formData?.[idx]?.room) : '--'
-                          }
-                        </td>
-                        <td style={{ width: "200px" }}>
-                          <p>
-                            1st : {formData?.[idx]?.reading1 ?? ""}{" "}
-                            {formData?.[idx]?.r1Date
-                              ? "(" +
-                              moment(String(formData?.[idx]?.r1Date)).format("DD-MM-YYYY")+
-                                ")"
-                              : "N/A"}
-                          </p>
-                          <p>
-                            2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
-                            {formData?.[idx]?.r1Date
-                              ? "(" +
-                              moment(formData?.[idx]?.r1Date).format("DD-MM-YYYY")+
-                                ")"
-                              : "N/A"}
-                          </p>
-                          <p>
-                            3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
-                            {formData?.[idx]?.r1Date
-                              ? "(" +
-                              moment(formData?.[idx]?.r1Date).format("DD-MM-YYYY")+
-                                ")"
-                              : "N/A"}
-                          </p>
-                        </td>
+                          <td style={{ width: "150px" }}>
+                            <select
+                              disabled={formData?.[idx]?.completed}
+                              name="normalRunTime"
+                              className="form-control form-select"
+                              id="normalRunTime"
+                              required
+                              value={formData?.[idx]?.normalRunTime}
+                              onChange={(e) => handleInputChange(e, idx)}
+                            >
+                              <option value="">Select</option>
+                              {normruntime.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              disabled={formData?.[idx]?.completed}
+                              name="usageFrequency"
+                              className="form-control form-select"
+                              id="usageFrequency"
+                              required
+                              value={formData?.[idx]?.usageFrequency}
+                              onChange={(e) => handleInputChange(e, idx)}
+                            >
+                              <option value="">Select frequency</option>
+                              <option value="None">None</option>
+                              <option value="Daily">Daily</option>
+                              <option value="Weekly">Weekly</option>
+                              <option value="Monthly">Monthly</option>
+                              <option value="Yearly">Yearly</option>
+                            </select>
+                          </td>
+                          <td>
+                            {formData?.[idx]?.floor != "null"
+                              ? getNodeName(formData?.[idx]?.floor)
+                              : "--"}
+                          </td>
+                          <td>
+                            {formData?.[idx]?.room != "null"
+                              ? getNodeName(formData?.[idx]?.room)
+                              : "--"}
+                          </td>
+                          <td style={{ width: "200px" }}>
+                            <p>
+                              1st : {formData?.[idx]?.reading1 ?? ""}{" "}
+                              {formData?.[idx]?.r1Date
+                                ? "(" +
+                                  moment(
+                                    String(formData?.[idx]?.r1Date)
+                                  ).format("DD-MM-YYYY") +
+                                  ")"
+                                : "N/A"}
+                            </p>
+                            <p>
+                              2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
+                              {formData?.[idx]?.r1Date
+                                ? "(" +
+                                  moment(formData?.[idx]?.r1Date).format(
+                                    "DD-MM-YYYY"
+                                  ) +
+                                  ")"
+                                : "N/A"}
+                            </p>
+                            <p>
+                              3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
+                              {formData?.[idx]?.r1Date
+                                ? "(" +
+                                  moment(formData?.[idx]?.r1Date).format(
+                                    "DD-MM-YYYY"
+                                  ) +
+                                  ")"
+                                : "N/A"}
+                            </p>
+                          </td>
 
-                        <td style={{ width: "120px" }}>
-                          {isAllFilled && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-light text-dark"
-                              onClick={() => {
-                                setReadingPopShow(true)
-                                setReadingPop(() => {
-                                  const nextIndex = idx;
-                                  // Ensure the next index has default/blank values
-                                  setFormData((prevData) => {
-                                    const updatedData = [...prevData];
-                                    updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: new Date().toISOString(), update: true };
-                                    return updatedData;
+                          <td style={{ width: "120px" }}>
+                            {isAllFilled && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-light text-dark"
+                                onClick={() => {
+                                  setReadingPopShow(true);
+                                  setReadingPop(() => {
+                                    const nextIndex = idx;
+                                    // Ensure the next index has default/blank values
+                                    setFormData((prevData) => {
+                                      const updatedData = [...prevData];
+                                      updatedData[nextIndex] = {
+                                        ...updatedData[nextIndex],
+                                        reading1: "",
+                                        reading2: "",
+                                        reading3: "",
+                                        r1Date: new Date().toISOString(),
+                                        update: true,
+                                      };
+                                      return updatedData;
+                                    });
+                                    return nextIndex;
                                   });
-                                  return nextIndex;
-                                });
-                              }}
-                            >
-                              <i className="fas fa-chart-line"></i>
-                            </button>
-                          )}
-                          &nbsp;
-                          {isAllFilled && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-light text-dark"
-                              onClick={() => {
-                                setShowHistory(idx);
-                              }}
-                            >
-                              <i className="fas fa-clock"></i>
-                            </button>
-                          )}
-                          &nbsp;
-                          {!formData?.[idx]?.completed &&
-                          <button
-                            disabled={formData?.[idx]?.completed}
-                            className="btn btn-sm btn-light text-dark"
-                            onClick={() => {
-                              const uformData = [...formData];
-                              uformData.splice(idx, 1);
-                              setFormData(uformData);
-                            }}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
-                          }
-                        </td>
-                      </tr>
-                    );
-                  })}
+                                }}
+                              >
+                                <i className="fas fa-chart-line"></i>
+                              </button>
+                            )}
+                            &nbsp;
+                            {isAllFilled && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-light text-dark"
+                                onClick={() => {
+                                  setShowHistory(idx);
+                                }}
+                              >
+                                <i className="fas fa-clock"></i>
+                              </button>
+                            )}
+                            &nbsp;
+                            {!formData?.[idx]?.completed && (
+                              <button
+                                disabled={formData?.[idx]?.completed}
+                                className="btn btn-sm btn-light text-dark"
+                                onClick={() => {
+                                  const uformData = [...formData];
+                                  uformData.splice(idx, 1);
+                                  setFormData(uformData);
+                                }}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -1176,7 +1247,7 @@ autoComplete="off"
               className="btn btn-primary text-white pr-2"
               type="submit"
             >
-              Save 
+              Save
             </button>
           </Grid>
         </Grid>
