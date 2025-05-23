@@ -229,8 +229,7 @@ const SurveyWaterTemperatureMonitoring = ({
       form.reportValidity();
     }
     for (const data of formData) {
-      console.log('data',data)
-      if (data.new ) {
+      if (!data.completed && (data.update || data.new )) {
         if (isDuplicate(data) && data.new) {
           toast.error("Duplicate data!!!");
           return;
@@ -249,8 +248,6 @@ const SurveyWaterTemperatureMonitoring = ({
           await post("/api/site-check/water-outlet-temp", data);
         }
         
-      } else if(data.update){
-        await put("/api/site-check/water-outlet-temp", data);
       }
     }
     toast.success("Water outlet temperature data saved.");
@@ -942,9 +939,9 @@ autoComplete="off"
                     return (
                       <tr key={idx}>
                          <td>
-                          {/* {formData?.[idx]?.completed ? (
+                          {formData?.[idx]?.completed ? (
                             <p>{formData?.[idx]?.sortOrder}</p>
-                          ) : ( */}
+                          ) : (
                             <input
                               value={formData?.[idx]?.sortOrder}
                               type="number"
@@ -954,8 +951,7 @@ autoComplete="off"
                               className="form-control"
                               onChange={(e) => handleInputChange(e, idx)}
                               required
-                            /> 
-                            {/* )} */}
+                            /> )}
                             </td>
                         <td>
                           {formData?.[idx]?.completed ? (
@@ -968,8 +964,6 @@ autoComplete="off"
                               onChange={(event, item) => {
                                 const uformData = [...formData];
                                 uformData[idx].assetId = item?.key;
-                                uformData[idx].room = item?.room;
-                                uformData[idx].floor = item?.floor;
                                 setFormData(uformData);
                               }}
                               options={siteAssets
@@ -979,8 +973,6 @@ autoComplete="off"
                                 key: option.assetId,
                                 label:
                                 option.assetId + " - "+ option.assetName + " - " + option.category,
-                                room:option.room,
-                                floor:option.floor
                               }))}
                               getOptionLabel={(option) => option.label}
                               renderInput={(params) => (
@@ -1074,13 +1066,54 @@ autoComplete="off"
                           </select>
                         </td>
                         <td>
-                        {
-                          formData?.[idx]?.floor != 'null' ? getNodeName(formData?.[idx]?.floor) : '--'
-                          }
+                        {formData?.[idx]?.completed ? (
+                            formData?.[idx]?.floor != 'null' ? getNodeName(formData?.[idx]?.floor) : '--'
+                          ) : (
+                          <select
+                            disabled={formData?.[idx]?.completed}
+                            className="form-control form-select"
+                            name="floor"
+                            value={formData?.[idx]?.floor}
+                            required
+                            onChange={(e) => handleInputChange(e, idx)}
+                          >
+                            <option value="">Select </option>
+                            {siteLayout
+                              .filter((site) => site.nodeType === "floor")
+                              .map((site) => (
+                                <option key={site.id} value={site.nodeName}>
+                                  {site.nodeName}{" "}
+                                </option>
+                              ))}
+                          </select>)}
                         </td>
                         <td>
-                          {formData?.[idx]?.room != 'null' ? getNodeName(formData?.[idx]?.room) : '--'
-                          }
+                          {formData?.[idx]?.completed ? (
+                            formData?.[idx]?.room != 'null' ? getNodeName(formData?.[idx]?.room) : '--'
+                          ) : (
+                            <select
+                              disabled={formData?.[idx]?.completed}
+                              className="form-control form-select"
+                              name="room"
+                              value={formData?.[idx]?.room}
+                              required
+                              onChange={(e) => handleInputChange(e, idx)}
+                            >
+                              <option value="">Select </option>
+                              {siteLayout
+                                //.filter((site) => site.nodeType === "room")
+                                .filter(
+                                  (site) =>
+                                    site.nodeType === "room" &&
+                                    site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && s.nodeType === "floor")[0]?.id
+                                )
+                                .map((site) => (
+                                  <option key={site.id} value={site.nodeName}>
+                                    {site.nodeName}{" "}
+                                  </option>
+                                ))}
+                            </select>
+                          )}
                         </td>
                         <td style={{ width: "200px" }}>
                           <p>
