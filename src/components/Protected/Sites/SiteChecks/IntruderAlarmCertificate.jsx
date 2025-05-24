@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { connect } from "react-redux";
+import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { post, get } from "../../../../api";
 import {
@@ -53,7 +53,11 @@ const IntruderAlarmCertificate = ({
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
     signedDate: new Date().toISOString().split("T")[0],
+    clientUser: null, // Add this
+    siteContactUser: null, // Add this
   });
+
+  const sites = useSelector((state) => state.site.sites);
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +99,11 @@ const IntruderAlarmCertificate = ({
     try {
       if (!checkId) return;
 
+      // Ensure users are loaded first if needed
+      if (isInternalUserTaggedWithSite && users.length === 0) {
+        await getUsers();
+      }
+
       const apiData = await get(
         `/api/site-check/generic-inspection/${checkId}`
       );
@@ -104,9 +113,17 @@ const IntruderAlarmCertificate = ({
           (asset) => asset.assetId === mostRecentItem.assetId
         );
 
-        const engineerUser =
-          users.find((user) => user.id === mostRecentItem.engineer) ||
-          loggedInUserData;
+        // Find users from the users array in Redux store
+        const clientUser = users.find(
+          (user) => user.id === mostRecentItem.client
+        );
+        const engineerUser = users.find(
+          (user) => user.id === mostRecentItem.engineer
+        );
+        const siteContactUser = users.find(
+          (user) => user.id === mostRecentItem.siteContact
+        );
+
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
@@ -116,26 +133,29 @@ const IntruderAlarmCertificate = ({
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
-          param1: mostRecentItem.param1 || prev.param1, // jobComplete
-          param2: mostRecentItem.param2 || prev.param2, // partsRequired
-          param3: mostRecentItem.param3 || prev.param3, // walkTestComplete
-          param4: mostRecentItem.param4 || prev.param4, // pirsCleaned
-          param5: mostRecentItem.param5 || prev.param5, // remoteSignallingCheck
-          param6: mostRecentItem.param6 || prev.param6, // systemOperationCheck
-          param7: mostRecentItem.param7 || prev.param7, // audibleWarningCheck
-          param8: mostRecentItem.param8 || prev.param8, // electricalConnectionsCheck
-          param1Remark: mostRecentItem.param1Remark || prev.param1Remark, // walkTestRemarks
-          param2Remark: mostRecentItem.param2Remark || prev.param2Remark, // pirsCleanedRemarks
-          param3Remark: mostRecentItem.param3Remark || prev.param3Remark, // remoteSignallingRemarks
-          param4Remark: mostRecentItem.param4Remark || prev.param4Remark, // systemOperationRemarks
-          param5Remark: mostRecentItem.param5Remark || prev.param5Remark, // audibleWarningRemarks
-          param6Remark: mostRecentItem.param6Remark || prev.param6Remark, // electricalConnectionsRemarks
+          param1: mostRecentItem.param1 || prev.param1,
+          param2: mostRecentItem.param2 || prev.param2,
+          param3: mostRecentItem.param3 || prev.param3,
+          param4: mostRecentItem.param4 || prev.param4,
+          param5: mostRecentItem.param5 || prev.param5,
+          param6: mostRecentItem.param6 || prev.param6,
+          param7: mostRecentItem.param7 || prev.param7,
+          param8: mostRecentItem.param8 || prev.param8,
+          param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
+          param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
+          param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+          param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
+          param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
+          param6Remark: mostRecentItem.param6Remark || prev.param6Remark,
+
           client: mostRecentItem.client || "",
           engineer:
             mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser,
+          user: engineerUser || loggedInUserData || prev.user,
           selectedAsset: selectedAsset || prev.selectedAsset,
           signedDate: mostRecentItem.signedDate || prev.signedDate,
+          clientUser: clientUser || null,
+          siteContactUser: siteContactUser || null,
         }));
       }
     } catch (error) {
@@ -145,20 +165,27 @@ const IntruderAlarmCertificate = ({
   };
 
   useEffect(() => {
-    fetchInspectionData();
-    if (isInternalUserTaggedWithSite && users.length === 0) {
-      getUsers();
-    }
     const fetchData = async () => {
       setIsLoading(true);
       try {
         if (siteSelectedForGlobal?.siteId) {
+          await getSiteDetailsById(siteSelectedForGlobal.siteId);
+
           await Promise.all([
             getSiteAssets(siteSelectedForGlobal.siteId),
-            getSiteDetailsById(siteSelectedForGlobal.siteId),
+            isInternalUserTaggedWithSite && users.length === 0
+              ? getUsers()
+              : Promise.resolve(),
           ]);
+
           await fetchInspectionData();
-          if (siteSelectedForGlobal) {
+
+          const currentSite = sites.find(
+            (site) => site.siteId === siteSelectedForGlobal.siteId
+          );
+          const siteData = currentSite || siteSelectedForGlobal;
+          // Properly construct the address
+          if (siteData) {
             const addressParts = [
               siteSelectedForGlobal.address1,
               siteSelectedForGlobal.address2,
@@ -166,7 +193,16 @@ const IntruderAlarmCertificate = ({
               siteSelectedForGlobal.area,
               siteSelectedForGlobal.postCode,
               siteSelectedForGlobal.country,
-            ].filter((part) => part);
+            ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
+
+            console.log("Site address data:", {
+              address1: siteSelectedForGlobal?.address1,
+              address2: siteSelectedForGlobal?.address2,
+              city: siteSelectedForGlobal?.city,
+              area: siteSelectedForGlobal?.area,
+              postCode: siteSelectedForGlobal?.postCode,
+              country: siteSelectedForGlobal?.country,
+            });
 
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
@@ -189,7 +225,13 @@ const IntruderAlarmCertificate = ({
     };
 
     fetchData();
-  }, [isInternalUserTaggedWithSite, users.length, getUsers]);
+  }, [
+    siteSelectedForGlobal?.siteId,
+    isInternalUserTaggedWithSite,
+    getSiteDetailsById,
+    getUsers,
+    users.length,
+  ]);
 
   const filteredAssets =
     siteAssets?.filter(
@@ -230,7 +272,7 @@ const IntruderAlarmCertificate = ({
         subType,
         inspectionDate: formData.inspectionDate || new Date().toISOString(),
         job: formData.job,
-        engineer: formData.user?.id || loggedInUserData?.id,
+        engineer: loggedInUserData?.id,
         signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
         report: formData.report,
@@ -260,141 +302,138 @@ const IntruderAlarmCertificate = ({
     }
   };
 
-  const renderClientNameField = () => {
-    if (isInternalUserTaggedWithSite) {
-      const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
-
+   const renderClientNameField = () => {
+      if (isInternalUserTaggedWithSite) {
+        const filteredUsers =
+          users?.filter((user) =>
+            user.taggedSites?.some(
+              (site) => site.id === siteSelectedForGlobal?.siteId
+            )
+          ) || [];
+  
+        return (
+          <Autocomplete
+            options={filteredUsers}
+            getOptionLabel={(user) => user.name}
+            value={formData.clientUser || null} // Use the stored clientUser
+            onChange={(event, newValue) => {
+              setFormData((prev) => ({
+                ...prev,
+                client: newValue?.id || "",
+                clientUser: newValue || null,
+              }));
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined"
+                required
+                style={{
+                  height: "40px",
+                  "& .MuiOutlinedInput-root": {
+                    height: "40px",
+                  },
+                  "& .MuiAutocomplete-input": {
+                    padding: "8.5px 4px !important",
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    height: "40px",
+                    padding: "0 5px",
+                  },
+                }}
+              />
+            )}
+            disabled={isSubmitted}
+          />
+        );
+      }
       return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.id === formData.client) || null
-          }
-          onChange={(event, newValue) => {
+        <input
+          type="text"
+          className="form-control"
+          name="clientName"
+          value={formData.clientUser?.name || ""}
+          onChange={(e) => {
             setFormData((prev) => ({
               ...prev,
-              client: newValue?.id || "",
+              client: e.target.value,
+              clientNameText: e.target.value,
             }));
           }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              style={{
-                height: "40px",
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                },
-                "& .MuiAutocomplete-input": {
-                  padding: "8.5px 4px !important",
-                },
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
+          required
           disabled={isSubmitted}
         />
       );
-    }
-    return (
-      <input
-        type="text"
-        className="form-control"
-        name="clientName"
-        value={users.find((u) => u.id === formData.client)?.name || ""}
-        onChange={(e) => {
-          setFormData((prev) => ({
-            ...prev,
-            client: e.target.value,
-            clientNameText: e.target.value,
-          }));
-        }}
-        required
-        disabled={isSubmitted}
-      />
-    );
-  };
-
-  const renderSiteContactField = () => {
-    if (isInternalUserTaggedWithSite) {
-      const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
-
+    };
+  
+    const renderSiteContactField = () => {
+      if (isInternalUserTaggedWithSite) {
+        const filteredUsers =
+          users?.filter((user) =>
+            user.taggedSites?.some(
+              (site) => site.id === siteSelectedForGlobal?.siteId
+            )
+          ) || [];
+  
+        return (
+          <Autocomplete
+            options={filteredUsers}
+            getOptionLabel={(user) => user.name}
+            value={formData.siteContactUser || null} // Use the stored siteContactUser
+            onChange={(event, newValue) => {
+              setFormData((prev) => ({
+                ...prev,
+                siteContact: newValue?.id || "",
+                siteContactNo: newValue?.phone || "",
+                siteContactUser: newValue || null,
+              }));
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined"
+                required
+                style={{
+                  height: "40px",
+                  "& .MuiOutlinedInput-root": {
+                    height: "40px",
+                  },
+                  "& .MuiAutocomplete-input": {
+                    padding: "8.5px 4px !important",
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    height: "40px",
+                    padding: "0 5px",
+                  },
+                }}
+              />
+            )}
+            disabled={isSubmitted}
+          />
+        );
+      }
       return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.id === formData.siteContact) ||
-            null
-          }
-          onChange={(event, newValue) => {
+        <input
+          type="text"
+          className="form-control"
+          name="siteContact"
+          value={formData.siteContactUser?.name || ""}
+          onChange={(e) => {
             setFormData((prev) => ({
               ...prev,
-              siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
+              siteContact: e.target.value,
+              siteContactName: e.target.value,
             }));
           }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              style={{
-                height: "40px",
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                },
-                "& .MuiAutocomplete-input": {
-                  padding: "8.5px 4px !important",
-                },
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
+          required
           disabled={isSubmitted}
         />
       );
-    }
-    return (
-      <input
-        type="text"
-        className="form-control"
-        name="siteContact"
-        value={users.find((u) => u.id === formData.siteContact)?.name || ""}
-        onChange={(e) => {
-          setFormData((prev) => ({
-            ...prev,
-            siteContact: e.target.value,
-            siteContactName: e.target.value,
-          }));
-        }}
-        required
-        disabled={isSubmitted}
-      />
-    );
-  };
+    };
 
   const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
@@ -1073,7 +1112,8 @@ const IntruderAlarmCertificate = ({
 
         {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on {new Date().toLocaleDateString()}
+            Report submitted successfully on{" "}
+            {new Date().toISOString().split("T")[0]}
           </div>
         )}
       </form>
