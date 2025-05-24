@@ -171,6 +171,10 @@ const CctvAlarmCertificate = ({
             await fetchInspectionData();
 
             if (siteSelectedForGlobal) {
+              // console.log(
+              //   "Current siteSelectedForGlobal:",
+              //   siteSelectedForGlobal
+              // );
               const addressParts = [
                 siteSelectedForGlobal.address1,
                 siteSelectedForGlobal.address2,
