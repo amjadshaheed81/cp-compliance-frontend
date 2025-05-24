@@ -49,6 +49,8 @@ const CctvAlarmCertificate = ({
       engineer: loggedInUserData?.id || "",
       selectedAsset: null,
       signedDate: new Date().toISOString().split("T")[0],
+      clientUser: null, // Add this
+      siteContactUser: null, // Add this
     });
 
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -81,24 +83,34 @@ const CctvAlarmCertificate = ({
       try {
         if (!checkId) return;
 
+        // Ensure users are loaded first if needed
+        if (isInternalUserTaggedWithSite && users.length === 0) {
+          await getUsers();
+        }
+
         const apiData = await get(
           `/api/site-check/generic-inspection/${checkId}`
         );
         if (apiData && apiData.length > 0) {
-          // Take the last item as it will be the most recent submission
           const mostRecentItem = apiData[apiData.length - 1];
-
-          // Find the asset in siteAssets that matches the assetId
           const selectedAsset = siteAssets.find(
             (asset) => asset.assetId === mostRecentItem.assetId
           );
 
-          const engineerUser =
-            users.find((user) => user.id === mostRecentItem.engineer) ||
-            loggedInUserData;
+          // Find users from the users array in Redux store
+          const clientUser = users.find(
+            (user) => user.id === mostRecentItem.client
+          );
+          const engineerUser = users.find(
+            (user) => user.id === mostRecentItem.engineer
+          );
+          const siteContactUser = users.find(
+            (user) => user.id === mostRecentItem.siteContact
+          );
+
           setFormData((prev) => ({
             ...prev,
-            address: prev.address, // Keep existing address if not in response
+            address: prev.address,
             assetId: mostRecentItem.assetId || prev.assetId,
             siteContact: mostRecentItem.siteContact || prev.siteContact,
             inspectionDate:
@@ -106,23 +118,24 @@ const CctvAlarmCertificate = ({
             siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
             job: mostRecentItem.job || prev.job,
             report: mostRecentItem.report || prev.report,
-            // Map generic parameters
-            param1: mostRecentItem.param1 || prev.param1, // jobComplete
-            param2: mostRecentItem.param2 || prev.param2, // partsRequired
-            param3: mostRecentItem.param3 || prev.param3, // imageQualityCheck
-            param4: mostRecentItem.param4 || prev.param4, // lensesCleaned
-            param5: mostRecentItem.param5 || prev.param5, // dvrRecordingCheck
-            param6: mostRecentItem.param6 || prev.param6, // electricalConnectionCheck
-            param1Remark: mostRecentItem.param1Remark || prev.param1Remark, // imageQualityRemarks
-            param2Remark: mostRecentItem.param2Remark || prev.param2Remark, // lensesCleanedRemarks
-            param3Remark: mostRecentItem.param3Remark || prev.param3Remark, // dvrRecordingRemarks
-            param4Remark: mostRecentItem.param4Remark || prev.param4Remark, // electricalConnectionRemarks
+            param1: mostRecentItem.param1 || prev.param1,
+            param2: mostRecentItem.param2 || prev.param2,
+            param3: mostRecentItem.param3 || prev.param3,
+            param4: mostRecentItem.param4 || prev.param4,
+            param5: mostRecentItem.param5 || prev.param5,
+            param6: mostRecentItem.param6 || prev.param6,
+            param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
+            param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
+            param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+            param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
             client: mostRecentItem.client || "",
             engineer:
               mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-            user: engineerUser,
+            user: engineerUser || loggedInUserData || prev.user,
             selectedAsset: selectedAsset || prev.selectedAsset,
             signedDate: mostRecentItem.signedDate || prev.signedDate,
+            clientUser: clientUser || null,
+            siteContactUser: siteContactUser || null,
           }));
         }
       } catch (error) {
@@ -130,6 +143,7 @@ const CctvAlarmCertificate = ({
         toast.error("Failed to load inspection data");
       }
     };
+
     const handleMouseLeave = () => {
       setPopup((prev) => ({ ...prev, show: false }));
     };
@@ -141,10 +155,6 @@ const CctvAlarmCertificate = ({
       );
 
     useEffect(() => {
-      fetchInspectionData();
-      if (isInternalUserTaggedWithSite && users.length === 0) {
-        getUsers();
-      }
       const fetchData = async () => {
         setIsLoading(true);
         try {
@@ -153,7 +163,13 @@ const CctvAlarmCertificate = ({
               getSiteAssets(siteSelectedForGlobal.siteId),
               getSiteDetailsById(siteSelectedForGlobal.siteId),
             ]);
+
+            if (isInternalUserTaggedWithSite && users.length === 0) {
+              await getUsers();
+            }
+
             await fetchInspectionData();
+
             if (siteSelectedForGlobal) {
               const addressParts = [
                 siteSelectedForGlobal.address1,
@@ -185,8 +201,13 @@ const CctvAlarmCertificate = ({
       };
 
       fetchData();
-    }, [isInternalUserTaggedWithSite, users.length, siteSelectedForGlobal]);
-
+    }, [
+      siteSelectedForGlobal?.siteId,
+      isInternalUserTaggedWithSite,
+      getSiteDetailsById,
+      getUsers,
+      users.length,
+    ]);
     const filteredAssets =
       siteAssets?.filter(
         (asset) =>
@@ -263,13 +284,12 @@ const CctvAlarmCertificate = ({
           <Autocomplete
             options={filteredUsers}
             getOptionLabel={(user) => user.name}
-            value={
-              filteredUsers.find((user) => user.id === formData.client) || null
-            }
+            value={formData.clientUser || null} // Use the stored clientUser
             onChange={(event, newValue) => {
               setFormData((prev) => ({
                 ...prev,
                 client: newValue?.id || "",
+                clientUser: newValue || null,
               }));
             }}
             renderInput={(params) => (
@@ -303,7 +323,7 @@ const CctvAlarmCertificate = ({
           type="text"
           className="form-control"
           name="clientName"
-          value={users.find((u) => u.id === formData.client)?.name || ""}
+          value={formData.clientUser?.name || ""}
           onChange={(e) => {
             setFormData((prev) => ({
               ...prev,
@@ -330,15 +350,13 @@ const CctvAlarmCertificate = ({
           <Autocomplete
             options={filteredUsers}
             getOptionLabel={(user) => user.name}
-            value={
-              filteredUsers.find((user) => user.id === formData.siteContact) ||
-              null
-            }
+            value={formData.siteContactUser || null} // Use the stored siteContactUser
             onChange={(event, newValue) => {
               setFormData((prev) => ({
                 ...prev,
                 siteContact: newValue?.id || "",
                 siteContactNo: newValue?.phone || "",
+                siteContactUser: newValue || null,
               }));
             }}
             renderInput={(params) => (
@@ -372,7 +390,7 @@ const CctvAlarmCertificate = ({
           type="text"
           className="form-control"
           name="siteContact"
-          value={users.find((u) => u.id === formData.siteContact)?.name || ""}
+          value={formData.siteContactUser?.name || ""}
           onChange={(e) => {
             setFormData((prev) => ({
               ...prev,
