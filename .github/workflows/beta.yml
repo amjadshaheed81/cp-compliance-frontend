@@ -1,6 +1,5 @@
 name: BETA VM Deployment 
 
-
 on:
   workflow_dispatch:
   push:
@@ -74,6 +73,8 @@ jobs:
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/
+          overwrite: true
+          rm: true
 
       - name: clean build files
         run: rm -rf *
@@ -92,6 +93,8 @@ jobs:
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/static/
+          overwrite: true
+          rm: true
 
       - name: clean build_static files
         run: rm -rf *
@@ -110,3 +113,5 @@ jobs:
           port: ${{ env.PORT }}
           source: "*"
           target: /var/www/html/src/
+          overwrite: true
+          rm: true
