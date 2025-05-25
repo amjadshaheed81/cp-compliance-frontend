@@ -5,9 +5,10 @@ on:
   push:
     branches:
       - main
+
 env:
   HOST: cpc-beta.ukwest.cloudapp.azure.com
-  USERNAME: github-user
+  USERNAME: ubuntu
   PORT: 22
     
 jobs:
@@ -30,29 +31,17 @@ jobs:
         env: 
           CI: false
 
-      - name: Set outputs
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: build
-          retention-days: 2
+      - name: Verify build output
+        run: |
+          echo "Build directory contents:"
+          ls -la build/
+          [ -f build/index.html ] || { echo "Error: index.html not found in build directory"; exit 1; }
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: build_static
-          path: build/static
-          retention-days: 2
-
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v4
-        with:
-          name: src
-          path: src
+          name: build-artifact
+          path: build/
           retention-days: 2
 
   Deployment:
@@ -62,50 +51,51 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: build
+          name: build-artifact
+          path: downloaded-build/
 
-      - name: copy build via ssh password
+      - name: Verify downloaded files
+        run: |
+          echo "Downloaded artifact contents:"
+          ls -la downloaded-build/
+          [ -f downloaded-build/index.html ] || { echo "Error: index.html not found in downloaded artifact"; exit 1; }
+
+      - name: Prepare remote directory
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          key: ${{ secrets.NEW_SSH_KEY }}
+          port: ${{ env.PORT }}
+          script: |
+            sudo rm -rf /var/www/html/*
+            sudo mkdir -p /var/www/html
+            sudo chown -R ${{ env.USERNAME }}:${{ env.USERNAME }} /var/www/html
+            sudo chmod -R 755 /var/www/html
+
+      - name: Deploy files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.BETA_VM_PASSWORD }}
+          key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
-          source: "*"
+          source: "downloaded-build/*"
           target: /var/www/html/
+          overwrite: true
+          strip_components: 1
 
-      - name: clean build files
-        run: rm -rf *
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build_static
-
-      - name: copy build_static via ssh password
-        uses: appleboy/scp-action@v0.1.7
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          password: ${{ secrets.BETA_VM_PASSWORD }}
+          key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
-          source: "*"
-          target: /var/www/html/static/
-
-      - name: clean build_static files
-        run: rm -rf *
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: src
-
-      - name: copy file via ssh password
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.HOST }}
-          username: ${{ env.USERNAME }}
-          password: ${{ secrets.BETA_VM_PASSWORD }}
-          port: ${{ env.PORT }}
-          source: "*"
-          target: /var/www/html/src/
+          script: |
+            echo "Deployed files:"
+            ls -la /var/www/html/
+            [ -f /var/www/html/index.html ] || { echo "Error: index.html not deployed"; exit 1; }
+            sudo chown -R www-data:www-data /var/www/html
+            sudo chmod -R 755 /var/www/html
+            sudo systemctl restart nginx
