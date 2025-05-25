@@ -33,6 +33,7 @@ jobs:
 
       - name: Verify build output
         run: |
+          echo "Build directory contents:"
           ls -la build/
           [ -f build/index.html ] || { echo "Error: index.html not found in build directory"; exit 1; }
 
@@ -40,13 +41,25 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
-          path: build
+          path: build/
           retention-days: 2
 
   Deployment:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: build/
+
+      - name: Verify downloaded files
+        run: |
+          echo "Downloaded artifact contents:"
+          ls -la build/
+          [ -f build/index.html ] || { echo "Error: index.html not found in downloaded artifact"; exit 1; }
+
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -60,13 +73,7 @@ jobs:
             sudo chown -R ${{ env.USERNAME }}:${{ env.USERNAME }} /var/www/html
             sudo chmod -R 755 /var/www/html
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: .
-
-      - name: Deploy all files
+      - name: Deploy files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.HOST }}
