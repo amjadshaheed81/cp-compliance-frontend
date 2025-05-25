@@ -80,7 +80,7 @@ jobs:
           username: ${{ env.USERNAME }}
           key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
-          source: "downloaded-build/*"
+          source: "downloaded-build/**"  # <-- FIXED HERE
           target: /var/www/html/
           overwrite: true
           strip_components: 0
