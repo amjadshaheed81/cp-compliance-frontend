@@ -33,6 +33,7 @@ jobs:
 
       - name: Verify build output
         run: |
+          echo "Build directory contents:"
           ls -la build/
           [ -f build/index.html ] || { echo "Error: index.html not found in build directory"; exit 1; }
 
@@ -51,7 +52,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          path: .
+          path: downloaded-build/
+
+      - name: Verify downloaded files
+        run: |
+          echo "Downloaded artifact contents:"
+          ls -la downloaded-build/
+          [ -f downloaded-build/index.html ] || { echo "Error: index.html not found in downloaded artifact"; exit 1; }
 
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v0.1.7
@@ -73,9 +80,10 @@ jobs:
           username: ${{ env.USERNAME }}
           key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
-          source: "build/*"
+          source: "downloaded-build/*"
           target: /var/www/html/
           overwrite: true
+          strip_components: 0
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v0.1.7
@@ -85,7 +93,9 @@ jobs:
           key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
           script: |
+            echo "Deployed files:"
             ls -la /var/www/html/
             [ -f /var/www/html/index.html ] || { echo "Error: index.html not deployed"; exit 1; }
             sudo chown -R www-data:www-data /var/www/html
+            sudo chmod -R 755 /var/www/html
             sudo systemctl restart nginx
