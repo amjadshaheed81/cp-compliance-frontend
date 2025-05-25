@@ -60,28 +60,7 @@ const MicroWaveOvenCertificate = ({
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
 
-  const [popup, setPopup] = useState({
-    show: false,
-    content: "",
-    position: { x: 0, y: 0 },
-  });
-
-  const handleMouseEnter = (e, content) => {
-    if (!content) return;
-
-    setPopup({
-      show: true,
-      content,
-      position: {
-        x: e.target.getBoundingClientRect().left,
-        y: e.target.getBoundingClientRect().top - 10,
-      },
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setPopup((prev) => ({ ...prev, show: false }));
-  };
+  
 
   const fetchInspectionData = async () => {
     try {
