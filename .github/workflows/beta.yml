@@ -80,10 +80,10 @@ jobs:
           username: ${{ env.USERNAME }}
           key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
-          source: "downloaded-build/**"  # <-- FIXED HERE
+          source: "downloaded-build/*"
           target: /var/www/html/
           overwrite: true
-          strip_components: 0
+          strip_components: 1
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v0.1.7
