@@ -59,6 +59,18 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Prepare remote directory
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          key: ${{ secrets.NEW_SSH_KEY }}
+          port: ${{ env.PORT }}
+          script: |
+            sudo mkdir -p /var/www/html
+            sudo chown -R ubuntu:ubuntu /var/www/html
+            sudo chmod -R 755 /var/www/html
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -74,7 +86,7 @@ jobs:
           source: "*"
           target: /var/www/html/
           overwrite: true
-          rm: true
+          strip_components: 1
 
       - name: clean build files
         run: rm -rf *
@@ -94,7 +106,7 @@ jobs:
           source: "*"
           target: /var/www/html/static/
           overwrite: true
-          rm: true
+          strip_components: 1
 
       - name: clean build_static files
         run: rm -rf *
@@ -114,4 +126,4 @@ jobs:
           source: "*"
           target: /var/www/html/src/
           overwrite: true
-          rm: true
+          strip_components: 1
