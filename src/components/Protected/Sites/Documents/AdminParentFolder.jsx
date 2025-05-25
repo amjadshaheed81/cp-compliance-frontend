@@ -420,7 +420,7 @@ const AdminParentFolder = ({
           showFolderModal={showSubFolderModal}
           setShowFolderModal={setShowSubFolderModal}
           folderId={columns[columns.length - 1]?.id}
-          siteId={473}
+          //siteId={473}
           folder2={currentFolderData}
           refresh={async () => {
             if (columns.length > 0) {

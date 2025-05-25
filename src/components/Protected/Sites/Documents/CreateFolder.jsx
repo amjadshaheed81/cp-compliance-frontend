@@ -22,7 +22,7 @@ const CreateFolder = ({
   folderId,
   folder2,
   refresh,
-  siteSelectedForGlobal,
+  siteId,
   loggedInUserData,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +54,7 @@ const CreateFolder = ({
     const folderData = {
       folderName: data.folderName,
       parentFolderId: folderId,
-      siteId: siteSelectedForGlobal?.siteId,
+      siteId: siteId,
       sharedFolder: isShared, // No need for Boolean() conversion
       isStatutoryRegister: folder2?.name === "Statutory Documents",
     };
