@@ -64,7 +64,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          path: build-files
+          path: .
 
       - name: Deploy all files
         uses: appleboy/scp-action@v0.1.7
@@ -73,10 +73,9 @@ jobs:
           username: ${{ env.USERNAME }}
           key: ${{ secrets.NEW_SSH_KEY }}
           port: ${{ env.PORT }}
-          source: "build-files/*"
+          source: "build/*"
           target: /var/www/html/
           overwrite: true
-          strip_components: 0
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v0.1.7
