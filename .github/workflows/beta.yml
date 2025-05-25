@@ -33,7 +33,6 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "Build directory contents:"
           ls -la build/
           [ -f build/index.html ] || { echo "Error: index.html not found in build directory"; exit 1; }
 
@@ -52,13 +51,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
-          path: build/
-
-      - name: Verify downloaded files
-        run: |
-          echo "Downloaded artifact contents:"
-          ls -la build/
-          [ -f build/index.html ] || { echo "Error: index.html not found in downloaded artifact"; exit 1; }
+          path: .
 
       - name: Prepare remote directory
         uses: appleboy/ssh-action@v0.1.7
