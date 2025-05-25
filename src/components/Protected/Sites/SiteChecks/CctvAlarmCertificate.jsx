@@ -176,23 +176,23 @@ const CctvAlarmCertificate = ({
           // Properly construct the address
           if (siteData) {
             const addressParts = [
-              siteSelectedForGlobal.address1,
-              siteSelectedForGlobal.address2,
-              siteSelectedForGlobal.city,
-              siteSelectedForGlobal.area,
-              siteSelectedForGlobal.postCode,
-              siteSelectedForGlobal.country,
+              siteData.address1,
+              siteData.address2,
+              siteData.city,
+              siteData.area,
+              siteData.postCode,
+              siteData.country,
             ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
 
-            console.log("Site address data:", {
-              address1: siteSelectedForGlobal?.address1,
-              address2: siteSelectedForGlobal?.address2,
-              city: siteSelectedForGlobal?.city,
-              area: siteSelectedForGlobal?.area,
-              postCode: siteSelectedForGlobal?.postCode,
-              country: siteSelectedForGlobal?.country,
-            });
-
+            console.log(
+              "Address Parts:",
+              siteData.address1,
+              siteData.address2,
+              siteData.city,
+              siteData.area,
+              siteData.postCode,
+              siteData.country
+            );
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
           }
@@ -275,7 +275,7 @@ const CctvAlarmCertificate = ({
       };
 
       await post("/api/site-check/generic-inspection", dataToSave);
-      toast.success("CCtv Service report saved successfully");
+      toast.success("CCTV Service report saved successfully");
       setIsSubmitted(true);
       setSubmissionSuccess(true);
     } catch (error) {

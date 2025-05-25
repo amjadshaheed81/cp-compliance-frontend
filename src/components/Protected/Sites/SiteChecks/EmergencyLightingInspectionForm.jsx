@@ -644,8 +644,8 @@ const EmergencyLightingInspectionForm = ({
               color: "#7b7b7b",
             }}
           >
-            Please provide as much information on luminaire failures &
-            deviations including locations, luminaire types, make & model
+            Please provide as much information as possible on luminaire failures
+            & deviations including locations, luminaire types, make & model
             numbers
           </p>
           <div className="mb-4">
@@ -660,65 +660,7 @@ const EmergencyLightingInspectionForm = ({
 
           {/* File Upload Section */}
           {/* File Upload Section */}
-          <div className="mb-4">
-            <label htmlFor="files" className="form-label">
-              Upload Supporting Documents (Max{" "}
-              {FILE_VALIDATION_CONFIG.MAX_FILE_COUNT} files,{" "}
-              {FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024}MB total)
-            </label>
-            <input
-              type="file"
-              className="form-control"
-              onChange={handleFileChange}
-              multiple
-              accept={FILE_VALIDATION_CONFIG.ALLOWED_TYPES.join(",")}
-              id="files"
-            />
-
-            {/* Display file size information */}
-            <small className="text-muted">
-              Accepted formats: JPG, PNG, PDF, DOC, DOCX. Max{" "}
-              {FILE_VALIDATION_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB per file.
-            </small>
-
-            {/* Display uploaded files with size information */}
-            {formData.files.length > 0 && (
-              <div className="mt-3">
-                <h6>Selected Files:</h6>
-                <ul className="list-group">
-                  {formData.files.map((file, index) => (
-                    <li
-                      key={index}
-                      className="list-group-item d-flex justify-content-between align-items-center"
-                    >
-                      <div>
-                        <span className="d-block">{file.name}</span>
-                        <small className="text-muted">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleFileDelete(index)}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-2 text-end">
-                  <small>
-                    Total:{" "}
-                    {formData.files.reduce((sum, file) => sum + file.size, 0) /
-                      1024 /
-                      1024}{" "}
-                    MB /{FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024} MB
-                  </small>
-                </div>
-              </div>
-            )}
-          </div>
+          {/*  */}
 
           {/* Certification Statement */}
           <div className="border p-3 mb-4 bg-light">
