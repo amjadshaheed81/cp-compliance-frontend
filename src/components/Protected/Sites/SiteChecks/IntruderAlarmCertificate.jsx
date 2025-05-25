@@ -195,15 +195,6 @@ const IntruderAlarmCertificate = ({
               siteSelectedForGlobal.country,
             ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
 
-            console.log("Site address data:", {
-              address1: siteSelectedForGlobal?.address1,
-              address2: siteSelectedForGlobal?.address2,
-              city: siteSelectedForGlobal?.city,
-              area: siteSelectedForGlobal?.area,
-              postCode: siteSelectedForGlobal?.postCode,
-              country: siteSelectedForGlobal?.country,
-            });
-
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
           }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { connect } from "react-redux";
+import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { get, post } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -29,32 +29,123 @@ const ExternalLightningCertificate = ({
 
   const [formData, setFormData] = useState({
     address: "",
+    assetId: "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    inspectionDate: new Date().toISOString().split("T")[0],
     siteContactNo: "",
-    jobNo: "",
-    fittingTypes: "",
-    fittingQuantity: "",
-    fittingLocation: "",
-    engineersReport: "",
-    jobComplete: "",
-    partsRequired: "",
-    timersChecked: "",
-    fittingsOperational: "",
-    clientName: "",
-    engineerName: loggedInUserData?.name || "",
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    job: "",
+    param1Remark: "", // fittingTypes
+    param2Remark: "", // fittingQuantity
+    param3Remark: "", // fittingLocation
+    report: "",
+    param1: "", // job complete
+    param2: "", // parts required
+    param3: "", // timers checked
+    param4: "", // fittings operational
+    client: "",
+    user: loggedInUserData || {},
+    engineer: loggedInUserData?.id || "",
+    selectedAsset: null,
+    signedDate: new Date().toISOString().split("T")[0],
+    clientUser: null,
+    siteContactUser: null,
   });
 
+  const sites = useSelector((state) => state.site.sites);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
+
+  const [popup, setPopup] = useState({
+    show: false,
+    content: "",
+    position: { x: 0, y: 0 },
+  });
+
+  const handleMouseEnter = (e, content) => {
+    if (!content) return;
+
+    setPopup({
+      show: true,
+      content,
+      position: {
+        x: e.target.getBoundingClientRect().left,
+        y: e.target.getBoundingClientRect().top - 10,
+      },
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setPopup((prev) => ({ ...prev, show: false }));
+  };
+
+  const fetchInspectionData = async () => {
+    try {
+      if (!checkId) return;
+
+      if (isInternalUserTaggedWithSite && users.length === 0) {
+        await getUsers();
+      }
+
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+      if (apiData && apiData.length > 0) {
+        const mostRecentItem = apiData[apiData.length - 1];
+        const selectedAsset = siteAssets.find(
+          (asset) => asset.assetId === mostRecentItem.assetId
+        );
+
+        const clientUser = users.find(
+          (user) => user.id === mostRecentItem.client
+        );
+        const engineerUser = users.find(
+          (user) => user.id === mostRecentItem.engineer
+        );
+        const siteContactUser = users.find(
+          (user) => user.id === mostRecentItem.siteContact
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          address: prev.address,
+          assetId: mostRecentItem.assetId || prev.assetId,
+          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || prev.report,
+          param1: mostRecentItem.param1 || prev.param1,
+          param2: mostRecentItem.param2 || prev.param2,
+          param3: mostRecentItem.param3 || prev.param3,
+          param4: mostRecentItem.param4 || prev.param4,
+          param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
+          param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
+          param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+          client: mostRecentItem.client || "",
+          engineer:
+            mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          user: engineerUser || loggedInUserData || prev.user,
+          selectedAsset: selectedAsset || prev.selectedAsset,
+          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          clientUser: clientUser || null,
+          siteContactUser: siteContactUser || null,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      toast.error("Failed to load inspection data");
+    }
+  };
 
   useEffect(() => {
     if (isInternalUserTaggedWithSite && users.length === 0) {
@@ -67,7 +158,14 @@ const ExternalLightningCertificate = ({
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
 
-          if (siteSelectedForGlobal) {
+          await fetchInspectionData();
+
+          const currentSite = sites.find(
+            (site) => site.siteId === siteSelectedForGlobal.siteId
+          );
+          const siteData = currentSite || siteSelectedForGlobal;
+          // Properly construct the address
+          if (siteData) {
             const addressParts = [
               siteSelectedForGlobal.address1,
               siteSelectedForGlobal.address2,
@@ -75,7 +173,7 @@ const ExternalLightningCertificate = ({
               siteSelectedForGlobal.area,
               siteSelectedForGlobal.postCode,
               siteSelectedForGlobal.country,
-            ].filter((part) => part);
+            ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
 
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
@@ -119,16 +217,29 @@ const ExternalLightningCertificate = ({
     try {
       const dataToSave = {
         ...formData,
+        assetId: formData.assetId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId,
         subType,
+        inspectionDate: formData.inspectionDate || new Date().toISOString(),
+        job: formData.job,
+        engineer: loggedInUserData?.id,
+        signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
-        engineersComments: formData.engineersComments,
+        report: formData.report,
+        param1: formData.param1, // jobComplete
+        param2: formData.param2, // partsRequired
+        param3: formData.param3, // walkTestComplete
+        param4: formData.param4, // pirsCleaned
+        param1Remark: formData.param1Remark, // walkTestRemarks
+        param2Remark: formData.param2Remark, // pirsCleanedRemarks
+        param3Remark: formData.param3Remark, // remoteSignallingRemarks
       };
 
-      await post("/api/site-check/external-lightning-report", dataToSave);
-      toast.success("External lighting report saved successfully");
+      await post("/api/site-check/generic-inspection", dataToSave);
+      toast.success("External lightning report saved successfully");
       setIsSubmitted(true);
+      setSubmissionSuccess(true);
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -148,14 +259,12 @@ const ExternalLightningCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.clientName) ||
-            null
-          }
+          value={formData.clientUser || null} // Use the stored clientUser
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              clientName: newValue?.name || "",
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -189,8 +298,14 @@ const ExternalLightningCertificate = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientName}
-        onChange={handleInputChange}
+        value={formData.clientUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            client: e.target.value,
+            clientNameText: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
@@ -210,15 +325,13 @@ const ExternalLightningCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.siteContact) ||
-            null
-          }
+          value={formData.siteContactUser || null} // Use the stored siteContactUser
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              siteContact: newValue?.name || "",
+              siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -252,13 +365,21 @@ const ExternalLightningCertificate = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContact}
-        onChange={handleInputChange}
+        value={formData.siteContactUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
     );
   };
+
+  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -301,8 +422,8 @@ const ExternalLightningCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="date"
-                value={formatDate(formData.date)}
+                name="inspectionDate"
+                value={formatDate(formData.inspectionDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -310,7 +431,7 @@ const ExternalLightningCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -327,7 +448,7 @@ const ExternalLightningCertificate = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -335,10 +456,10 @@ const ExternalLightningCertificate = ({
               <input
                 type="text"
                 className="form-control"
-                name="jobNo"
-                value={formData.jobNo}
+                name="job"
+                value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -356,12 +477,20 @@ const ExternalLightningCertificate = ({
                   <input
                     type="text"
                     className="form-control"
-                    name="fittingTypes"
-                    value={formData.fittingTypes}
-                    onChange={handleInputChange}
+                    value={formData.param1Remark} // Using param1Remark for fitting types
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        param1Remark: e.target.value,
+                      })
+                    }
+                    onMouseEnter={(e) =>
+                      handleMouseEnter(e, formData.param1Remark)
+                    }
+                    onMouseLeave={handleMouseLeave}
+                    disabled={isSubmitted && !canEditSubmittedReport}
                     required
                     style={{ width: "1200px" }}
-                    disabled={isSubmitted}
                   />
                 </div>
               </div>
@@ -371,12 +500,20 @@ const ExternalLightningCertificate = ({
                   <input
                     type="text"
                     className="form-control"
-                    name="fittingQuantity"
-                    value={formData.fittingQuantity}
-                    onChange={handleInputChange}
+                    value={formData.param2Remark} // Using param2Remark for fitting quantity
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        param2Remark: e.target.value,
+                      })
+                    }
+                    onMouseEnter={(e) =>
+                      handleMouseEnter(e, formData.param2Remark)
+                    }
+                    onMouseLeave={handleMouseLeave}
+                    disabled={isSubmitted && !canEditSubmittedReport}
                     required
                     style={{ width: "1200px" }}
-                    disabled={isSubmitted}
                   />
                 </div>
               </div>
@@ -386,12 +523,20 @@ const ExternalLightningCertificate = ({
                   <input
                     type="text"
                     className="form-control"
-                    name="fittingLocation"
-                    value={formData.fittingLocation}
-                    onChange={handleInputChange}
+                    value={formData.param3Remark} // Using param3Remark for fitting Location
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        param3Remark: e.target.value,
+                      })
+                    }
+                    onMouseEnter={(e) =>
+                      handleMouseEnter(e, formData.param3Remark)
+                    }
+                    onMouseLeave={handleMouseLeave}
+                    disabled={isSubmitted && !canEditSubmittedReport}
                     required
                     style={{ width: "1200px" }}
-                    disabled={isSubmitted}
                   />
                 </div>
               </div>
@@ -411,19 +556,20 @@ const ExternalLightningCertificate = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersReport || ""}
+                value={formData.report || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersComments: e.target.value,
+                    report: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
         </div>
+
         <div className="mb-4">
           <div className="card-body">
             <div className="table-responsive">
@@ -453,11 +599,11 @@ const ExternalLightningCertificate = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.jobComplete}
+                        value={formData.param1}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            jobComplete: e.target.value,
+                            param1: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -470,11 +616,11 @@ const ExternalLightningCertificate = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.partsRequired}
+                        value={formData.param2}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            partsRequired: e.target.value,
+                            param2: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -508,11 +654,11 @@ const ExternalLightningCertificate = ({
                     <td style={{ textAlign: "center" }}>
                       <select
                         className="form-select"
-                        value={formData.timersChecked}
+                        value={formData.param3}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            timersChecked: e.target.value,
+                            param3: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -530,11 +676,11 @@ const ExternalLightningCertificate = ({
                     <td style={{ textAlign: "center" }}>
                       <select
                         className="form-select"
-                        value={formData.fittingsOperational}
+                        value={formData.param4}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            fittingsOperational: e.target.value,
+                            param4: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -563,8 +709,8 @@ const ExternalLightningCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="clientDate"
-                value={formatDate(formData.clientDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -572,7 +718,7 @@ const ExternalLightningCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -582,12 +728,11 @@ const ExternalLightningCertificate = ({
               <input
                 type="text"
                 className="form-control"
-                name="engineerName"
-                value={formData.engineerName}
-                onChange={handleInputChange}
-                required
+                name="engineer name"
                 readOnly
-                disabled={isSubmitted}
+                value={formData.user.name}
+                required
+                disabled
               />
             </div>
             <div className="mb-3">
@@ -595,11 +740,11 @@ const ExternalLightningCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="engineerDate"
-                value={formatDate(formData.engineerDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
                 style={{
                   height: "40px",
                   padding: "0 10px",
@@ -626,9 +771,10 @@ const ExternalLightningCertificate = ({
           </div>
         )}
 
-        {isSubmitted && (
+        {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on {new Date().toLocaleDateString()}
+            Report submitted successfully on{" "}
+            {new Date().toISOString().split("T")[0]}
           </div>
         )}
       </form>
