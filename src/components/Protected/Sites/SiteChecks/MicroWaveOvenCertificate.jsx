@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { connect } from "react-redux";
+import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { get, post } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -28,34 +28,115 @@ const MicroWaveOvenCertificate = ({
 }) => {
   const [formData, setFormData] = useState({
     address: "",
+    assetId: "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    inspectionDate: new Date().toISOString().split("T")[0],
     siteContactNo: "",
-    jobNo: "",
-    manufacturer: "",
-    modelNumber: "",
-    position: "",
-    floor: "",
-    room: "",
-    engineersReports: "",
-    emissionLevelCheck: "",
-    interlockCheck: "",
-    passOrFail: "",
-    clientName: "",
-    engineerName: loggedInUserData?.name || "",
+    job: "",
+    report: "",
+    param1: "", // emission level check
+    param2: "", // interlock check
+    param3: "", // pass or fail
+    client: "",
+    user: loggedInUserData || {},
+    engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    signedDate: new Date().toISOString().split("T")[0],
+    clientUser: null,
+    siteContactUser: null,
   });
 
+  const sites = useSelector((state) => state.site.sites);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
+
+  const [popup, setPopup] = useState({
+    show: false,
+    content: "",
+    position: { x: 0, y: 0 },
+  });
+
+  const handleMouseEnter = (e, content) => {
+    if (!content) return;
+
+    setPopup({
+      show: true,
+      content,
+      position: {
+        x: e.target.getBoundingClientRect().left,
+        y: e.target.getBoundingClientRect().top - 10,
+      },
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setPopup((prev) => ({ ...prev, show: false }));
+  };
+
+  const fetchInspectionData = async () => {
+    try {
+      if (!checkId) return;
+
+      if (isInternalUserTaggedWithSite && users.length === 0) {
+        await getUsers();
+      }
+
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+      if (apiData && apiData.length > 0) {
+        const mostRecentItem = apiData[apiData.length - 1];
+        const selectedAsset = siteAssets.find(
+          (asset) => asset.assetId === mostRecentItem.assetId
+        );
+
+        const clientUser = users.find(
+          (user) => user.id === mostRecentItem.client
+        );
+        const engineerUser = users.find(
+          (user) => user.id === mostRecentItem.engineer
+        );
+        const siteContactUser = users.find(
+          (user) => user.id === mostRecentItem.siteContact
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          address: prev.address,
+          assetId: mostRecentItem.assetId || prev.assetId,
+          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || prev.report,
+          param1: mostRecentItem.param1 || prev.param1,
+          param2: mostRecentItem.param2 || prev.param2,
+          param3: mostRecentItem.param3 || prev.param3,
+          client: mostRecentItem.client || "",
+          engineer:
+            mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          user: engineerUser || loggedInUserData || prev.user,
+          selectedAsset: selectedAsset || prev.selectedAsset,
+          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          clientUser: clientUser || null,
+          siteContactUser: siteContactUser || null,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      toast.error("Failed to load inspection data");
+    }
+  };
 
   useEffect(() => {
     if (isInternalUserTaggedWithSite && users.length === 0) {
@@ -68,14 +149,21 @@ const MicroWaveOvenCertificate = ({
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
 
-          if (siteSelectedForGlobal) {
+          await fetchInspectionData();
+
+          const currentSite = sites.find(
+            (site) => site.siteId === siteSelectedForGlobal.siteId
+          );
+          const siteData = currentSite || siteSelectedForGlobal;
+
+          if (siteData) {
             const addressParts = [
-              siteSelectedForGlobal.address1,
-              siteSelectedForGlobal.address2,
-              siteSelectedForGlobal.city,
-              siteSelectedForGlobal.area,
-              siteSelectedForGlobal.postCode,
-              siteSelectedForGlobal.country,
+              siteData.address1,
+              siteData.address2,
+              siteData.city,
+              siteData.area,
+              siteData.postCode,
+              siteData.country,
             ].filter((part) => part);
 
             const fullAddress = addressParts.join(", ");
@@ -109,33 +197,17 @@ const MicroWaveOvenCertificate = ({
 
   const filteredAssets =
     siteAssets?.filter(
-      (asset) => asset.category === "Electrical" //&&
-      // asset.subCategory === "Fire Alarm" &&
+      (asset) =>
+        asset.category === "Electrical" &&
+        asset.subCategory === "Small Appliances"
       // asset.subCategory2 === "Disabled Refuge Outstation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
-    if (newValue) {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: newValue,
-        manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.model || "",
-        position: newValue.position || "",
-        floor: newValue.floor || "",
-        room: newValue.room || "",
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: null,
-        manufacturer: "",
-        modelNumber: "",
-        position: "",
-        floor: "",
-        room: "",
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      assetId: newValue ? newValue.assetId : "",
+    }));
   };
 
   const handleInputChange = (e) => {
@@ -149,24 +221,32 @@ const MicroWaveOvenCertificate = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!formData.selectedAsset) {
+      if (!formData.assetId) {
         toast.error("Please select an asset first");
         return;
       }
 
       const dataToSave = {
         ...formData,
-        assetId: formData.selectedAsset.assetId,
+        assetId: formData.assetId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId,
         subType,
+        inspectionDate: formData.inspectionDate || new Date().toISOString(),
+        job: formData.job,
+        engineer: loggedInUserData?.id,
+        signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
-        engineersComments: formData.engineersComments,
+        report: formData.report,
+        param1: formData.param1, // emission level check
+        param2: formData.param2, // interlock check
+        param3: formData.param3, // pass or fail
       };
 
-      await post("/api/site-check/fire-refuge-report", dataToSave);
-      toast.success("Fire refuge report saved successfully");
+      await post("/api/site-check/generic-inspection", dataToSave);
+      toast.success("Microwave Oven Test report saved successfully");
       setIsSubmitted(true);
+      setSubmissionSuccess(true);
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -186,14 +266,12 @@ const MicroWaveOvenCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.clientName) ||
-            null
-          }
+          value={formData.clientUser || null} // Use the stored clientUser
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              clientName: newValue?.name || "",
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -227,8 +305,14 @@ const MicroWaveOvenCertificate = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientName}
-        onChange={handleInputChange}
+        value={formData.clientUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            client: e.target.value,
+            clientNameText: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
@@ -248,15 +332,13 @@ const MicroWaveOvenCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.siteContact) ||
-            null
-          }
+          value={formData.siteContactUser || null} // Use the stored siteContactUser
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              siteContact: newValue?.name || "",
+              siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -290,13 +372,21 @@ const MicroWaveOvenCertificate = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContact}
-        onChange={handleInputChange}
+        value={formData.siteContactUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
     );
   };
+
+  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -340,7 +430,7 @@ const MicroWaveOvenCertificate = ({
                 type="date"
                 className="form-control"
                 name="date"
-                value={formatDate(formData.date)}
+                value={formatDate(formData.inspectionDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -348,7 +438,7 @@ const MicroWaveOvenCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -365,7 +455,7 @@ const MicroWaveOvenCertificate = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -373,10 +463,10 @@ const MicroWaveOvenCertificate = ({
               <input
                 type="text"
                 className="form-control"
-                name="jobNo"
-                value={formData.jobNo}
+                name="job"
+                value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -390,19 +480,19 @@ const MicroWaveOvenCertificate = ({
             <div className="row mb-4">
               <div className="col-md-12">
                 <Autocomplete
-                  disabled={isSubmitted}
+                  disabled={isSubmitted && !canEditSubmittedReport}
                   options={filteredAssets}
                   getOptionLabel={(option) =>
                     `${option.assetId} - ${option.assetName} (${
                       option.position || "NA"
                     } > ${option.floor || "NA"} > ${option.room || "NA"})`
                   }
-                  value={formData.selectedAsset}
+                  value={selectedAsset} // Use the computed selectedAsset
                   onChange={handleAssetSelect}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Microwave Oven Testing Device"
+                      label="Select a CCTV Device"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -412,7 +502,7 @@ const MicroWaveOvenCertificate = ({
               </div>
             </div>
 
-            {formData.selectedAsset && (
+            {selectedAsset && (
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
@@ -421,7 +511,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={formData.manufacturer}
+                      value={selectedAsset.manufacturer}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -434,8 +524,8 @@ const MicroWaveOvenCertificate = ({
                     <input
                       type="text"
                       className="form-control"
-                      name="modelNumber"
-                      value={formData.modelNumber}
+                      name="model"
+                      value={selectedAsset.model}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -449,7 +539,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="position"
-                      value={formData.position}
+                      value={selectedAsset.position}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -463,7 +553,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="floor"
-                      value={formData.floor}
+                      value={selectedAsset.floor}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -477,7 +567,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="room"
-                      value={formData.room}
+                      value={selectedAsset.room}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -501,15 +591,15 @@ const MicroWaveOvenCertificate = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersReports || ""}
+                value={formData.report || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersReports: e.target.value,
+                    report: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -553,14 +643,14 @@ const MicroWaveOvenCertificate = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.emissionLevelCheck}
+                        value={formData.param1}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            emissionLevelCheck: e.target.value,
+                            param1: e.target.value,
                           })
                         }
-                        disabled={isSubmitted}
+                        disabled={isSubmitted && !canEditSubmittedReport}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
@@ -570,14 +660,14 @@ const MicroWaveOvenCertificate = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.interlockCheck}
+                        value={formData.param2}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            interlockCheck: e.target.value,
+                            param2: e.target.value,
                           })
                         }
-                        disabled={isSubmitted}
+                        disabled={isSubmitted && !canEditSubmittedReport}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
@@ -587,14 +677,14 @@ const MicroWaveOvenCertificate = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.passOrFail}
+                        value={formData.param3}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            passOrFail: e.target.value,
+                            param3: e.target.value,
                           })
                         }
-                        disabled={isSubmitted}
+                        disabled={isSubmitted && !canEditSubmittedReport}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Pass</option>
@@ -619,8 +709,8 @@ const MicroWaveOvenCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="clientDate"
-                value={formatDate(formData.clientDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -628,7 +718,7 @@ const MicroWaveOvenCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -638,12 +728,11 @@ const MicroWaveOvenCertificate = ({
               <input
                 type="text"
                 className="form-control"
-                name="engineerName"
-                value={formData.engineerName}
-                onChange={handleInputChange}
-                required
+                name="engineer name"
                 readOnly
-                disabled={isSubmitted}
+                value={formData.user.name}
+                required
+                disabled
               />
             </div>
             <div className="mb-3">
@@ -651,11 +740,11 @@ const MicroWaveOvenCertificate = ({
               <input
                 type="date"
                 className="form-control"
-                name="engineerDate"
-                value={formatDate(formData.engineerDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
                 style={{
                   height: "40px",
                   padding: "0 10px",
@@ -682,9 +771,10 @@ const MicroWaveOvenCertificate = ({
           </div>
         )}
 
-        {isSubmitted && (
+        {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on {new Date().toLocaleDateString()}
+            Report submitted successfully on{" "}
+            {new Date().toISOString().split("T")[0]}
           </div>
         )}
       </form>

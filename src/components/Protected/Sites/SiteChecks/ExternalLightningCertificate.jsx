@@ -55,9 +55,7 @@ const ExternalLightningCertificate = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
-  const selectedAsset = siteAssets.find(
-    (asset) => asset.assetId === formData.assetId
-  );
+  
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
@@ -167,12 +165,12 @@ const ExternalLightningCertificate = ({
           // Properly construct the address
           if (siteData) {
             const addressParts = [
-              siteSelectedForGlobal.address1,
-              siteSelectedForGlobal.address2,
-              siteSelectedForGlobal.city,
-              siteSelectedForGlobal.area,
-              siteSelectedForGlobal.postCode,
-              siteSelectedForGlobal.country,
+              siteData.address1,
+              siteData.address2,
+              siteData.city,
+              siteData.area,
+              siteData.postCode,
+              siteData.country,
             ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
 
             const fullAddress = addressParts.join(", ");
