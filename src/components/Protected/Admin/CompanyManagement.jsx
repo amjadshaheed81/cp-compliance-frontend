@@ -129,7 +129,14 @@ const CompanyManagement = ({ }) => {
   return (
     <Fragment>
       <SidebarNew />
-      <Dialog open={addNewDrp} onClose={() => { setAddNewDrp(false); }} maxWidth="lg" fullWidth>
+      <Dialog
+        open={addNewDrp}
+        onClose={() => {
+          setAddNewDrp(false);
+        }}
+        maxWidth="lg"
+        fullWidth
+      >
         <DialogTitle>Add New Company</DialogTitle>
         <DialogContent dividers>
           <Fragment>
@@ -137,48 +144,71 @@ const CompanyManagement = ({ }) => {
               <Grid sm={4}>
                 <label htmlFor="companyName">Company Name</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="companyName"
                   onChange={handleInputChange2}
                 />
-                {errors.companyName && <span className="text-danger">{errors.companyName}</span>}
+                {errors.companyName && (
+                  <span className="text-danger">{errors.companyName}</span>
+                )}
               </Grid>
               <Grid sm={4}>
                 <label htmlFor="email">Email</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
                   className="form-control"
                   name="email"
                   onChange={handleInputChange2}
                 />
-                {errors.email && <span className="text-danger">{errors.email}</span>}
+                {errors.email && (
+                  <span className="text-danger">{errors.email}</span>
+                )}
               </Grid>
               <Grid sm={4}>
                 <label htmlFor="phone">Phone</label>
                 <input
-                  style={{ maxWidth: '300px' }}
+                  style={{ maxWidth: "300px" }}
                   type="tel"
                   maxLength={11}
                   className="form-control"
                   name="phone"
                   onChange={handleInputChange2}
                 />
-                {errors.phone && <span className="text-danger">{errors.phone}</span>}
+                {errors.phone && (
+                  <span className="text-danger">{errors.phone}</span>
+                )}
+              </Grid>
+              <Grid sm={5}>
+                <label htmlFor="companyAddress">Company Address</label>
+                <input
+                  style={{ maxWidth: "300px" }}
+                  type="tel"
+                  maxLength={11}
+                  className="form-control"
+                  name="companyAddress"
+                  onChange={handleInputChange2}
+                />
+                {errors.companyAddress && (
+                  <span className="text-danger">{errors.companyAddress}</span>
+                )}
               </Grid>
             </Grid>
           </Fragment>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddNewDrp(false)} className="bg-light text-primary">
+          <Button
+            onClick={() => setAddNewDrp(false)}
+            className="bg-light text-primary"
+          >
             Cancel
           </Button>
           <Button className="bg-primary text-white" onClick={saveNew}>
@@ -195,7 +225,7 @@ autoComplete="off"
           <Grid container>
             <Grid sm={12}>
               <button
-                style={{ width: "250px", margin: '20px' }}
+                style={{ width: "250px", margin: "20px" }}
                 className="btn btn-primary"
                 onClick={() => setAddNewDrp(true)}
               >
@@ -209,104 +239,241 @@ autoComplete="off"
             <table className="table" style={{ border: "1px solid" }}>
               <thead className="table-dark">
                 <tr>
-                  <th scope="col" style={{ border: "2px groove" }}>Company Name</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Email</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Phone</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Actions</th>
+                  <th scope="col" style={{ border: "2px groove" }}>
+                    Company Name
+                  </th>
+                  <th scope="col" style={{ border: "2px groove" }}>
+                    Email
+                  </th>
+                  <th scope="col" style={{ border: "2px groove" }}>
+                    Phone
+                  </th>
+                  <th scope="col" style={{ border: "2px groove" }}>
+                    Company Address
+                  </th>
+                  <th scope="col" style={{ border: "2px groove" }}>
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
                   <tr>
-                    <td colSpan={4} align="center"><CircularProgress /></td>
+                    <td colSpan={4} align="center">
+                      <CircularProgress />
+                    </td>
                   </tr>
                 )}
 
                 {!isLoading && data?.length === 0 && (
                   <tr>
-                    <td colSpan={4} align="center">No result found!!</td>
+                    <td colSpan={4} align="center">
+                      No result found!!
+                    </td>
                   </tr>
                 )}
-                {!isLoading && data?.map((d, rowIndex) => (
-                  <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.companyName}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        value={d.companyName}
-                        name="companyName"
-                        className="form-control"
-                        id="companyName"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.companyName && <span className="text-danger">{errors.companyName}</span>}
-                    </td>}
-                    
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.email}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        value={d.email}
-                        name="email"
-                        className="form-control"
-                        id="email"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.email && <span className="text-danger">{errors.email}</span>}
-                    </td>}
+                {!isLoading &&
+                  data?.map((d, rowIndex) => (
+                    <tr
+                      key={rowIndex}
+                      style={{
+                        border: "2px groove",
+                        fontWeight: "500",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {!d.add && !d.edit && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          {d.companyName}
+                        </td>
+                      )}
+                      {(d.add || d.edit) && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
+                            value={d.companyName}
+                            name="companyName"
+                            className="form-control"
+                            id="companyName"
+                            onChange={(e) => handleInputChange(e, rowIndex)}
+                          />
+                          {errors.companyName && (
+                            <span className="text-danger">
+                              {errors.companyName}
+                            </span>
+                          )}
+                        </td>
+                      )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.phone}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        value={d.phone}
-                        name="phone"
-                        className="form-control"
-                        id="phone"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
-                    </td>}
+                      {!d.add && !d.edit && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          {d.email}
+                        </td>
+                      )}
+                      {(d.add || d.edit) && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
+                            value={d.email}
+                            name="email"
+                            className="form-control"
+                            id="email"
+                            onChange={(e) => handleInputChange(e, rowIndex)}
+                          />
+                          {errors.email && (
+                            <span className="text-danger">{errors.email}</span>
+                          )}
+                        </td>
+                      )}
 
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => editData(rowIndex)}
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>{" "}
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => deletData(rowIndex)}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => save(rowIndex)}
-                      >
-                        <i className="fas fa-save"></i>&nbsp; Save
-                      </button>&nbsp;
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => cancel(rowIndex)}
-                      >
-                        <i className="fas fa-save"></i>&nbsp; Cancel
-                      </button>
-                    </td>}
-                  </tr>
-                ))}
+                      {!d.add && !d.edit && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          {d.phone}
+                        </td>
+                      )}
+                      {(d.add || d.edit) && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
+                            value={d.phone}
+                            name="phone"
+                            className="form-control"
+                            id="phone"
+                            onChange={(e) => handleInputChange(e, rowIndex)}
+                          />
+                          {errors.phone && (
+                            <span className="text-danger">{errors.phone}</span>
+                          )}
+                        </td>
+                      )}
+                      {!d.add && !d.edit && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          {d.companyAddress}
+                        </td>
+                      )}
+                      {(d.add || d.edit) && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            readOnly
+                            onFocus={(e) =>
+                              e.target.removeAttribute("readonly")
+                            }
+                            value={d.companyAddress}
+                            name="companyAddress"
+                            className="form-control"
+                            id="companyAddress"
+                            onChange={(e) => handleInputChange(e, rowIndex)}
+                          />
+                          {errors.companyAddress && (
+                            <span className="text-danger">
+                              {errors.companyAddress}
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {!d.add && !d.edit && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => editData(rowIndex)}
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>{" "}
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => deletData(rowIndex)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      )}
+                      {(d.add || d.edit) && (
+                        <td
+                          style={{
+                            border: "2px groove",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => save(rowIndex)}
+                          >
+                            <i className="fas fa-save"></i>&nbsp; Save
+                          </button>
+                          &nbsp;
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => cancel(rowIndex)}
+                          >
+                            <i className="fas fa-save"></i>&nbsp; Cancel
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
