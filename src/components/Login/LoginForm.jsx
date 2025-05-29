@@ -27,6 +27,7 @@ const LoginForm = ({ login, loginUser }) => {
   const handleLoginSubmit = (data) => {
     const payload = { ...data, email: String(data?.email).toLowerCase() || "" };
     setLoading(true);
+    localStorage.clear();
     loginUser(payload, goTo, setLoading);
   };
 
