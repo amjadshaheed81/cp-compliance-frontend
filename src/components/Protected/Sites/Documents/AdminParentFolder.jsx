@@ -555,7 +555,7 @@ const AdminParentFolder = ({
       )}
 
       <div className="container-fluid pad-side">
-        <BreadCrumHeader header={"Shared Folder Management 2"} page={"Folders"} />
+        <BreadCrumHeader header={"Shared Folder Management"} page={"Folders"} />
 
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
           {columns.map((column, index) => (
