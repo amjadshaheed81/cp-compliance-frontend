@@ -703,16 +703,31 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setSubCategory2List(subCategoryData);
-    setSubCategory3List([]);
+    setValue("subCategory2", null);
+  setValue("subCategory3", null);
+  setSubCategory3List([]);
+  };
+
+
+  const subCategoryChange2 = (val) => {
+    setValue("subCategory2", val);
+    const subCategoryData = subCategory3?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategory3List(subCategoryData);
+   setValue("subCategory3", null);
   };
   const categoryChange = (val) => {
     setValue("category", val);
     const subCategoryData = subCategory?.filter(
       (itm) => itm?.attribite1 === val
     );
-    setSubCategoryList(subCategoryData);
-    setSubCategory2List([]);
-    setSubCategory3List([]);
+    setValue("subCategory", null);
+  setValue("subCategory2", null);
+  setValue("subCategory3", null);
+  setSubCategory2List([]);
+  setSubCategory3List([]);
+  setSubCategoryList(subCategoryData);
   };
   const getSelectedValue = () => {
     const arr = [];
@@ -1152,12 +1167,7 @@ const UpdateAsset = ({
                             id="subCategory2"
                             {...register("subCategory2")}
                             onChange={(e) => {
-                              const val = e.target.value;
-                              setValue("subCategory2", val);
-                              const subCategoryData = subCategory3?.filter(
-                                (itm) => itm?.attribite1 === val
-                              );
-                              setSubCategory3List(subCategoryData);
+                              subCategoryChange2(e.target.value);
                             }}
                           >
                             <option value="">Select Sub Category 2</option>
