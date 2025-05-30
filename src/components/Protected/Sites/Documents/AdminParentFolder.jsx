@@ -89,16 +89,16 @@ const AdminParentFolder = ({
   // Helper Functions
   const getFolderEndpoint = (folderId) => {
     if (folderId === "root") {
-      return `/api/document/site/${473}/parent/folders`;
+      return `/api/document/site/${473}/parent/admin-folders`;
     }
-    return `/api/document/parent/${folderId}/folders?siteId=${473}`;
+    return `/api/document/parent/${folderId}/admin-folders?siteId=${473}`;
   };
 
   // Initial Load
   useEffect(() => {
     if (473) {
       setLoader(true);
-      getDocumentsRootFolder(473);
+      getDocumentsRootFolder(473, true);
     } else {
       Swal.fire({
         icon: "error",
@@ -555,7 +555,7 @@ const AdminParentFolder = ({
       )}
 
       <div className="container-fluid pad-side">
-        <BreadCrumHeader header={"Shared Folder Management"} page={"Folders"} />
+        <BreadCrumHeader header={"Shared Folder Management 2"} page={"Folders"} />
 
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
           {columns.map((column, index) => (
