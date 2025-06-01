@@ -41,14 +41,14 @@ const Sites = ({
   const [selectedStatus, setSelectedStatus] = useState("open");
   const [selectedArea, setSelectedArea] = useState("");
   const [sortConfig, setSortConfig] = useState({
-    key: 'siteName', // Default sort by 'site'
-    direction: 'asc', // Default direction
+    key: "siteName", // Default sort by 'site'
+    direction: "asc", // Default direction
   });
 
   const handleSort = (column) => {
-    let direction = 'asc';
-    if (sortConfig.key === column && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction = "asc";
+    if (sortConfig.key === column && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key: column, direction });
     getSites(loggedInUserData, direction, column); // Pass sorting params
@@ -78,9 +78,9 @@ const Sites = ({
   }, [searchTerm, selectedStatus, selectedArea]);
 
   const getRisks = async () => {
-    const risksdata = await get('/api/site-check/risks');
+    const risksdata = await get("/api/site-check/risks");
     setrisks(risksdata);
-  }
+  };
   const deleteSiteById = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.siteName}`,
@@ -112,12 +112,12 @@ const Sites = ({
     if (value) {
       const list = sites?.filter(
         (x) =>
-           (String(x?.siteName)
+          String(x?.siteName)
             .toLowerCase()
             .includes(String(value).toLowerCase()) ||
           String(x?.address1)
             .toLowerCase()
-            .includes(String(value).toLowerCase()))
+            .includes(String(value).toLowerCase())
       );
       setCurrentPage(1); //calculateLastPageIndex(list?.length, sitesPerPage)
       setFilterSite(list);
@@ -145,14 +145,17 @@ const Sites = ({
     let filteredSites = sites;
     // Apply text search filter
     if (searchTerm) {
-      filteredSites = filteredSites.filter((site) =>
-        site?.siteName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.address1?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.address2?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.area?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.buildingCode?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.city?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-        site?.postCode?.toLowerCase().includes(searchTerm?.toLowerCase())
+      filteredSites = filteredSites.filter(
+        (site) =>
+          site?.siteName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+          site?.address1?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+          site?.address2?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+          site?.area?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+          site?.buildingCode
+            ?.toLowerCase()
+            .includes(searchTerm?.toLowerCase()) ||
+          site?.city?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+          site?.postCode?.toLowerCase().includes(searchTerm?.toLowerCase())
       );
     }
 
@@ -166,7 +169,9 @@ const Sites = ({
     // Apply area filter
     if (selectedArea) {
       filteredSites = filteredSites.filter(
-        (site) => site?.area?.toLowerCase() === selectedArea?.replace('%26','&')?.toLowerCase()
+        (site) =>
+          site?.area?.toLowerCase() ===
+          selectedArea?.replace("%26", "&")?.toLowerCase()
       );
     }
 
@@ -350,6 +355,24 @@ const Sites = ({
                         </button>{" "}
                       </Tooltip>
                       &nbsp;
+                      {(loggedInUserData?.role === ROLE.ADMIN ||
+                        loggedInUserData?.role === ROLE.PROPERTY_MANAGER) && (
+                        <Tooltip title={`Edit ${itm?.siteName}`} arrow>
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => {
+                              setTimeout(() => {
+                                goTo(
+                                  `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
+                                );
+                              }, 1000);
+                              updateSiteData({ ...itm, isViewMode: false });
+                            }}
+                          >
+                            <i className="fas fa-pen"></i>
+                          </button>{" "}
+                        </Tooltip>
+                      )}
                       {/* {loggedInUserData?.userType === "External" &&
                         loggedInUserData?.role !== ROLE.ADMIN && (
                           <Tooltip title={`Edit ${itm?.siteName}`} arrow>
@@ -368,35 +391,19 @@ const Sites = ({
                             </button>{" "}
                           </Tooltip>
                         )} */}
-                      {loggedInUserData?.role === ROLE.ADMIN ||
-                        loggedInUserData?.role === ROLE.PROPERTY_MANAGER || (
-                          <Fragment>
-                            <Tooltip title={`Edit ${itm?.siteName}`} arrow>
-                              <button
-                                className="btn btn-sm btn-light"
-                                onClick={() => {
-                                  setTimeout(() => {
-                                    goTo(
-                                      `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
-                                    );
-                                  }, 1000);
-                                  updateSiteData({ ...itm, isViewMode: false });
-                                }}
-                              >
-                                <i className="fas fa-pen"></i>
-                              </button>{" "}
-                            </Tooltip>
-                            &nbsp;
-                            <Tooltip title={`Delete ${itm?.siteName}`} arrow>
-                              <button
-                                className="btn btn-sm btn-light text-danger"
-                                onClick={() => deleteSiteById(itm)}
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
-                            </Tooltip>
-                          </Fragment>
-                        )}
+                      {loggedInUserData?.role === ROLE.ADMIN && (
+                        <Fragment>
+                          &nbsp;
+                          <Tooltip title={`Delete ${itm?.siteName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light text-danger"
+                              onClick={() => deleteSiteById(itm)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </Tooltip>
+                        </Fragment>
+                      )}
                     </th>
                   </tr>
                 ))}
