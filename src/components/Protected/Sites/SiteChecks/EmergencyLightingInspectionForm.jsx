@@ -64,6 +64,7 @@ const EmergencyLightingInspectionForm = ({
     files: [],
     user: loggedInUserData,
   });
+
   const [hoveredRemarksIndex, setHoveredRemarksIndex] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -114,6 +115,7 @@ const EmergencyLightingInspectionForm = ({
       console.error("Inspection load error:", error);
     }
   };
+
   useEffect(() => {
     getUsers();
     getInspection();
@@ -132,6 +134,7 @@ const EmergencyLightingInspectionForm = ({
     if (!siteSelectedForGlobal.siteId) {
       return;
     }
+    console.log("siteSelectedForGlobal", siteSelectedForGlobal);
     const addressParts = [
       siteSelectedForGlobal.address1,
       siteSelectedForGlobal.address2,
@@ -147,7 +150,7 @@ const EmergencyLightingInspectionForm = ({
       ...prev,
       installationAddress: fullAddress,
     }));
-  }, [license, siteSelectedForGlobal]);
+  }, [license?.companyName, siteSelectedForGlobal]);
 
   const handleInputChange = (e, field) => {
     const value =
@@ -461,7 +464,7 @@ const EmergencyLightingInspectionForm = ({
                   type="text"
                   style={{ height: "80px" }}
                   className="form-control"
-                  value={formData?.installationName || ""}
+                  value={loggedInUserData?.companyName}
                   disabled
                   required
                 />
@@ -650,7 +653,7 @@ const EmergencyLightingInspectionForm = ({
           </p>
           <div className="mb-4">
             <textarea
-              rows={4}
+              rows={8}
               className="form-control"
               value={formData?.additionalComments || ""}
               onChange={(e) => handleInputChange(e, "additionalComments")}
