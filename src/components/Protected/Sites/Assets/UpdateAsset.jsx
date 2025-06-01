@@ -152,7 +152,7 @@ const UpdateAsset = ({
       getTester();
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId);
-      getCategories();
+      
     } else {
       Swal.fire({
         icon: "error",
@@ -162,6 +162,13 @@ const UpdateAsset = ({
       return;
     }
   }, []);
+
+  useEffect(()=>{
+    if(selectedAsset) {
+      getCategories()
+    }
+    
+  },[selectedAsset])
 
   const getCategories = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
@@ -174,9 +181,19 @@ const UpdateAsset = ({
     setSubCategory2(subCategory2);
     setPassiveFireMaterial(material);
     setSubCategoryList(subCategory);
-    setSubCategory2List(subCategory2);
+    const subCategoryData = subCategory?.filter(
+      (itm) => itm?.attribite1 === selectedAsset?.category
+    );
+    setSubCategory2List(subCategoryData);
+    const subCategoryData2 = subCategory2?.filter(
+      (itm) => itm?.attribite1 === selectedAsset?.subCategory
+    );
+    setSubCategory2List(subCategoryData2);
     setSubCategory3(subCategory3);
-    setSubCategory3List(subCategory3);
+    const subCategoryData3 = subCategory3?.filter(
+      (itm) => itm?.attribite1 === selectedAsset?.subCategory2
+    );
+    setSubCategory3List(subCategoryData3);
   };
 
   const getTester = async () => {
