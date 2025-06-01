@@ -368,35 +368,35 @@ const Sites = ({
                             </button>{" "}
                           </Tooltip>
                         )} */}
-                      {loggedInUserData?.role === ROLE.ADMIN ||
-                        loggedInUserData?.role === ROLE.PROPERTY_MANAGER || (
-                          <Fragment>
-                            <Tooltip title={`Edit ${itm?.siteName}`} arrow>
-                              <button
-                                className="btn btn-sm btn-light"
-                                onClick={() => {
-                                  setTimeout(() => {
-                                    goTo(
-                                      `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
-                                    );
-                                  }, 1000);
-                                  updateSiteData({ ...itm, isViewMode: false });
-                                }}
-                              >
-                                <i className="fas fa-pen"></i>
-                              </button>{" "}
-                            </Tooltip>
-                            &nbsp;
-                            <Tooltip title={`Delete ${itm?.siteName}`} arrow>
-                              <button
-                                className="btn btn-sm btn-light text-danger"
-                                onClick={() => deleteSiteById(itm)}
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
-                            </Tooltip>
-                          </Fragment>
-                        )}
+                      {(loggedInUserData?.role === ROLE.ADMIN ||
+                        loggedInUserData?.role === ROLE.MANAGER) && (
+                        <Fragment>
+                          <Tooltip title={`Edit ${itm?.siteName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                setTimeout(() => {
+                                  goTo(
+                                    `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
+                                  );
+                                }, 1000);
+                                updateSiteData({ ...itm, isViewMode: false });
+                              }}
+                            >
+                              <i className="fas fa-pen"></i>
+                            </button>{" "}
+                          </Tooltip>
+                          &nbsp;
+                          <Tooltip title={`Delete ${itm?.siteName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light text-danger"
+                              onClick={() => deleteSiteById(itm)}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </Tooltip>
+                        </Fragment>
+                      )}
                     </th>
                   </tr>
                 ))}
