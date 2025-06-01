@@ -152,7 +152,7 @@ const UpdateAsset = ({
       getTester();
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId);
-      getCategories();
+      
     } else {
       Swal.fire({
         icon: "error",
@@ -162,6 +162,13 @@ const UpdateAsset = ({
       return;
     }
   }, []);
+
+  useEffect(()=>{
+    if(selectedAsset) {
+      getCategories()
+    }
+    
+  },[selectedAsset])
 
   const getCategories = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
@@ -174,9 +181,19 @@ const UpdateAsset = ({
     setSubCategory2(subCategory2);
     setPassiveFireMaterial(material);
     setSubCategoryList(subCategory);
-    setSubCategory2List(subCategory2);
+    const subCategoryData = subCategory?.filter(
+      (itm) => itm?.attribite1 === selectedAsset?.category
+    );
+    setSubCategory2List(subCategoryData);
+    const subCategoryData2 = subCategory2?.filter(
+      (itm) => itm?.attribite1 === selectedAsset?.subCategory
+    );
+    setSubCategory2List(subCategoryData2);
     setSubCategory3(subCategory3);
-    setSubCategory3List(subCategory3);
+    const subCategoryData3 = subCategory3?.filter(
+      (itm) => itm?.attribite1 === selectedAsset?.subCategory2
+    );
+    setSubCategory3List(subCategoryData3);
   };
 
   const getTester = async () => {
@@ -703,16 +720,31 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setSubCategory2List(subCategoryData);
-    setSubCategory3List([]);
+    setValue("subCategory2", null);
+  setValue("subCategory3", null);
+  setSubCategory3List([]);
+  };
+
+
+  const subCategoryChange2 = (val) => {
+    setValue("subCategory2", val);
+    const subCategoryData = subCategory3?.filter(
+      (itm) => itm?.attribite1 === val
+    );
+    setSubCategory3List(subCategoryData);
+   setValue("subCategory3", null);
   };
   const categoryChange = (val) => {
     setValue("category", val);
     const subCategoryData = subCategory?.filter(
       (itm) => itm?.attribite1 === val
     );
-    setSubCategoryList(subCategoryData);
-    setSubCategory2List([]);
-    setSubCategory3List([]);
+    setValue("subCategory", null);
+  setValue("subCategory2", null);
+  setValue("subCategory3", null);
+  setSubCategory2List([]);
+  setSubCategory3List([]);
+  setSubCategoryList(subCategoryData);
   };
   const getSelectedValue = () => {
     const arr = [];
@@ -1152,12 +1184,7 @@ const UpdateAsset = ({
                             id="subCategory2"
                             {...register("subCategory2")}
                             onChange={(e) => {
-                              const val = e.target.value;
-                              setValue("subCategory2", val);
-                              const subCategoryData = subCategory3?.filter(
-                                (itm) => itm?.attribite1 === val
-                              );
-                              setSubCategory3List(subCategoryData);
+                              subCategoryChange2(e.target.value);
                             }}
                           >
                             <option value="">Select Sub Category 2</option>
