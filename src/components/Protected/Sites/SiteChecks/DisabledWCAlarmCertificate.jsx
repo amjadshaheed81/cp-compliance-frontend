@@ -18,7 +18,6 @@ const DisabledWCAlarmCertificate = ({
   subType,
   category,
   getSiteDetailsById,
-  siteDetailsById,
   siteAssets,
   getSiteAssets,
   users,

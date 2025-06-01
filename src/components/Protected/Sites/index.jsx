@@ -185,12 +185,12 @@ const Sites = ({
           <div className="d-flex bd-highlight">
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
-              <div className="col-md-3 col-sm-4 mt-2">
+                <div className="col-md-3 col-sm-4 mt-2">
                   <input
                     type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                    autoComplete="off"
+                    readOnly
+                    onFocus={(e) => e.target.removeAttribute("readonly")}
                     className="form-control"
                     placeholder="Search site"
                     value={searchTerm}
@@ -210,7 +210,7 @@ autoComplete="off"
                   >
                     <option value="">Select Area</option>
                     {SiteArea?.map((itm) => (
-                      <option value={itm.replace('&','%26')}>{itm}</option>
+                      <option value={itm.replace("&", "%26")}>{itm}</option>
                     ))}
                   </select>
                 </div>
@@ -259,14 +259,26 @@ autoComplete="off"
             <table className="table">
               <thead className="table-dark">
                 <tr>
-                <th scope="col" className="cursor" onClick={() => handleSort('siteName')}>
-                  Site {sortConfig.key === 'siteName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </th>
-                <th scope="col">Building Code</th>
-                
-                <th scope="col" className="cursor" onClick={() => handleSort('address1')}>
-                  Address {sortConfig.key === 'address1' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </th>
+                  <th
+                    scope="col"
+                    className="cursor"
+                    onClick={() => handleSort("siteName")}
+                  >
+                    Site{" "}
+                    {sortConfig.key === "siteName" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th scope="col">Building Code</th>
+
+                  <th
+                    scope="col"
+                    className="cursor"
+                    onClick={() => handleSort("address1")}
+                  >
+                    Address{" "}
+                    {sortConfig.key === "address1" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
                   <th scope="col">Status</th>
                   <th scope="col">Outstanding Risk</th>
                   <th scope="col">Actions</th>
@@ -291,31 +303,36 @@ autoComplete="off"
                       >
                         {itm?.siteName}
                       </span>
-                      <p><small>{itm?.postCode}</small></p>
+                      <p>
+                        <small>{itm?.postCode}</small>
+                      </p>
                     </th>
                     <th scope="col">{itm?.buildingCode}</th>
-                    <th scope="col">{itm?.address1}
-                      {itm?.address2 && <br/>}{itm?.address2}
-                      
-                      {itm?.city && <br/>}{itm?.city}
-                      {itm?.postCode && <br/>}{itm?.postCode}
-                      
-                      </th>
+                    <th scope="col">
+                      {itm?.address1}
+                      {itm?.address2 && <br />}
+                      {itm?.address2}
+
+                      {itm?.city && <br />}
+                      {itm?.city}
+                      {itm?.postCode && <br />}
+                      {itm?.postCode}
+                    </th>
                     <th scope="col">
                       <ListStatusBadge status={itm?.status} />
                     </th>
                     <th scope="col">
                       <span className="badge bg-danger p-2 m-1 risk-span">
-                        {risks?.[itm?.siteId]?.riskScoreRed??0}
+                        {risks?.[itm?.siteId]?.riskScoreRed ?? 0}
                       </span>
                       <span className="badge bg-warning p-2 m-1 risk-span">
-                      {risks?.[itm?.siteId]?.riskScoreAmber??0}
+                        {risks?.[itm?.siteId]?.riskScoreAmber ?? 0}
                       </span>
                       <span className="badge bg-info p-2 m-1 risk-span">
-                      {risks?.[itm?.siteId]?.riskScoreYellow??0}
+                        {risks?.[itm?.siteId]?.riskScoreYellow ?? 0}
                       </span>
                       <span className="badge bg-success p-2 m-1 risk-span">
-                      {risks?.[itm?.siteId]?.riskScoreGreen??0}
+                        {risks?.[itm?.siteId]?.riskScoreGreen ?? 0}
                       </span>
                     </th>
                     <th scope="col">
@@ -351,34 +368,35 @@ autoComplete="off"
                             </button>{" "}
                           </Tooltip>
                         )} */}
-                      {loggedInUserData?.role === ROLE.ADMIN && (
-                        <Fragment>
-                          <Tooltip title={`Edit ${itm?.siteName}`} arrow>
-                            <button
-                              className="btn btn-sm btn-light"
-                              onClick={() => {
-                                setTimeout(() => {
-                                  goTo(
-                                    `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
-                                  );
-                                }, 1000);
-                                updateSiteData({ ...itm, isViewMode: false });
-                              }}
-                            >
-                              <i className="fas fa-pen"></i>
-                            </button>{" "}
-                          </Tooltip>
-                          &nbsp;
-                          <Tooltip title={`Delete ${itm?.siteName}`} arrow>
-                            <button
-                              className="btn btn-sm btn-light text-danger"
-                              onClick={() => deleteSiteById(itm)}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </Tooltip>
-                        </Fragment>
-                      )}
+                      {loggedInUserData?.role === ROLE.ADMIN ||
+                        loggedInUserData?.role === ROLE.PROPERTY_MANAGER || (
+                          <Fragment>
+                            <Tooltip title={`Edit ${itm?.siteName}`} arrow>
+                              <button
+                                className="btn btn-sm btn-light"
+                                onClick={() => {
+                                  setTimeout(() => {
+                                    goTo(
+                                      `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
+                                    );
+                                  }, 1000);
+                                  updateSiteData({ ...itm, isViewMode: false });
+                                }}
+                              >
+                                <i className="fas fa-pen"></i>
+                              </button>{" "}
+                            </Tooltip>
+                            &nbsp;
+                            <Tooltip title={`Delete ${itm?.siteName}`} arrow>
+                              <button
+                                className="btn btn-sm btn-light text-danger"
+                                onClick={() => deleteSiteById(itm)}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </Tooltip>
+                          </Fragment>
+                        )}
                     </th>
                   </tr>
                 ))}
