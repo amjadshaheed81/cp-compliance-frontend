@@ -356,7 +356,7 @@ const Sites = ({
                       </Tooltip>
                       &nbsp;
                       {(loggedInUserData?.role === ROLE.ADMIN ||
-                        loggedInUserData?.role === ROLE.MANAGER) (
+                        loggedInUserData?.role === ROLE.MANAGER) && (
                           <Tooltip title={`Edit ${itm?.siteName}`} arrow>
                             <button
                               className="btn btn-sm btn-light"
@@ -392,7 +392,7 @@ const Sites = ({
                           </Tooltip>
                         )} */}
                       {(loggedInUserData?.role === ROLE.ADMIN ||
-                        loggedInUserData?.role === ROLE.MANAGER) (
+                        loggedInUserData?.role === ROLE.MANAGER) && (
                         <Fragment>
                           &nbsp;
                           <Tooltip title={`Delete ${itm?.siteName}`} arrow>
