@@ -1854,7 +1854,7 @@ const UpdateAsset = ({
                         id="room"
                         {...locationForm.register("room", {
                           required: {
-                            value: true,
+                            value: false,
                             message: `Please select room`,
                           },
                         })}
