@@ -60,7 +60,6 @@ const UpdateAsset = ({
   setLoader,
   siteSelectedForGlobal,
   getDocumentsRootFolder,
-  rootFolder,
   addSiteAsset,
   updatePurchaseDetails,
   getUsers,
@@ -152,7 +151,6 @@ const UpdateAsset = ({
       getTester();
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId);
-      
     } else {
       Swal.fire({
         icon: "error",
@@ -163,12 +161,11 @@ const UpdateAsset = ({
     }
   }, []);
 
-  useEffect(()=>{
-    if(selectedAsset) {
-      getCategories()
+  useEffect(() => {
+    if (selectedAsset) {
+      getCategories();
     }
-    
-  },[selectedAsset])
+  }, [selectedAsset]);
 
   const getCategories = async () => {
     const category = await get("/api/lov/ASSET_CATEGORY");
@@ -428,6 +425,7 @@ const UpdateAsset = ({
     defaultValues,
   });
   const navigate = useNavigate();
+
   const goTo = (link) => {
     navigate(link);
   };
@@ -464,7 +462,9 @@ const UpdateAsset = ({
 
     form_data.append("assetRequestString", JSON.stringify(formDetails));
     try {
-      await addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+      await addSiteAsset(form_data, null, siteSelectedForGlobal?.siteId);
+      await getAssetDetails();
+
       setLoader(false);
     } catch (e) {
       toast.error("Something went wrong while update asset. Please try again.");
@@ -721,10 +721,9 @@ const UpdateAsset = ({
     );
     setSubCategory2List(subCategoryData);
     setValue("subCategory2", null);
-  setValue("subCategory3", null);
-  setSubCategory3List([]);
+    setValue("subCategory3", null);
+    setSubCategory3List([]);
   };
-
 
   const subCategoryChange2 = (val) => {
     setValue("subCategory2", val);
@@ -732,7 +731,7 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setSubCategory3List(subCategoryData);
-   setValue("subCategory3", null);
+    setValue("subCategory3", null);
   };
   const categoryChange = (val) => {
     setValue("category", val);
@@ -740,11 +739,11 @@ const UpdateAsset = ({
       (itm) => itm?.attribite1 === val
     );
     setValue("subCategory", null);
-  setValue("subCategory2", null);
-  setValue("subCategory3", null);
-  setSubCategory2List([]);
-  setSubCategory3List([]);
-  setSubCategoryList(subCategoryData);
+    setValue("subCategory2", null);
+    setValue("subCategory3", null);
+    setSubCategory2List([]);
+    setSubCategory3List([]);
+    setSubCategoryList(subCategoryData);
   };
   const getSelectedValue = () => {
     const arr = [];
