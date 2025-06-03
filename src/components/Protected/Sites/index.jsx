@@ -357,22 +357,22 @@ const Sites = ({
                       &nbsp;
                       {(loggedInUserData?.role === ROLE.ADMIN ||
                         loggedInUserData?.role === ROLE.MANAGER) && (
-                        <Tooltip title={`Edit ${itm?.siteName}`} arrow>
-                          <button
-                            className="btn btn-sm btn-light"
-                            onClick={() => {
-                              setTimeout(() => {
-                                goTo(
-                                  `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
-                                );
-                              }, 1000);
-                              updateSiteData({ ...itm, isViewMode: false });
-                            }}
-                          >
-                            <i className="fas fa-pen"></i>
-                          </button>{" "}
-                        </Tooltip>
-                      )}
+                          <Tooltip title={`Edit ${itm?.siteName}`} arrow>
+                            <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                setTimeout(() => {
+                                  goTo(
+                                    `/update-site?siteId=${itm?.siteId}&isViewMode=edit`
+                                  );
+                                }, 1000);
+                                updateSiteData({ ...itm, isViewMode: false });
+                              }}
+                            >
+                              <i className="fas fa-pen"></i>
+                            </button>{" "}
+                          </Tooltip>
+                        )}
                       {/* {loggedInUserData?.userType === "External" &&
                         loggedInUserData?.role !== ROLE.ADMIN && (
                           <Tooltip title={`Edit ${itm?.siteName}`} arrow>
