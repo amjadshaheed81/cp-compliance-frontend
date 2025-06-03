@@ -1496,7 +1496,9 @@ export const addSiteAsset = (data, goTo, siteId) => {
       if (userData?.status === 200) {
         toast.success("Site asset has been added/updated successully.");
         setTimeout(() => {
-          goTo("/assets");
+          if (typeof goTo === "function") {
+            goTo("/assets");
+          }
         }, 500);
         dispatch({
           type: ADD_SITE_ASSET,
