@@ -464,7 +464,8 @@ const UpdateAsset = ({
 
     form_data.append("assetRequestString", JSON.stringify(formDetails));
     try {
-      await addSiteAsset(form_data, goTo, siteSelectedForGlobal?.siteId);
+      await addSiteAsset(form_data, null, siteSelectedForGlobal?.siteId);
+      await getAssetDetails();
       setLoader(false);
     } catch (e) {
       toast.error("Something went wrong while update asset. Please try again.");
