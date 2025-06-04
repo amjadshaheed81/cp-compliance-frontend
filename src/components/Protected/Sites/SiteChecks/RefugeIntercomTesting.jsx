@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { connect } from "react-redux";
+import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { get, post } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -28,34 +28,92 @@ const RefugeIntercomTesting = ({
 }) => {
   const [formData, setFormData] = useState({
     address: "",
+    assetId: "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    inspectionDate: new Date().toISOString().split("T")[0],
     siteContactNo: "",
-    jobNo: "",
-    manufacturer: "",
-    modelNumber: "",
-    position: "",
-    floor: "",
-    room: "",
-    engineersComments: "",
-    outstationOperational: "",
-    intercomSoundTest: "",
-    sounderTest: "",
-    clientName: "",
-    engineerName: loggedInUserData?.name || "",
+    job: "",
+    report: "",
+    param1: "", // outstation operational
+    param2: "", // intercom sound test
+    param3: "", // sounder test
+    client: "",
+    user: loggedInUserData || {},
+    engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    signedDate: new Date().toISOString().split("T")[0],
+    clientUser: null,
+    siteContactUser: null,
   });
 
+  const sites = useSelector((state) => state.site.sites);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
     loggedInUserData?.taggedSites?.some(
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
+
+  const fetchInspectionData = async () => {
+    try {
+      if (!checkId) return;
+
+      if (isInternalUserTaggedWithSite && users.length === 0) {
+        await getUsers();
+      }
+
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+      if (apiData && apiData.length > 0) {
+        const mostRecentItem = apiData[apiData.length - 1];
+        const selectedAsset = siteAssets.find(
+          (asset) => asset.assetId === mostRecentItem.assetId
+        );
+
+        const clientUser = users.find(
+          (user) => user.id === mostRecentItem.client
+        );
+        const engineerUser = users.find(
+          (user) => user.id === mostRecentItem.engineer
+        );
+        const siteContactUser = users.find(
+          (user) => user.id === mostRecentItem.siteContact
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          address: prev.address,
+          assetId: mostRecentItem.assetId || prev.assetId,
+          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || prev.report,
+          param1: mostRecentItem.param1 || prev.param1,
+          param2: mostRecentItem.param2 || prev.param2,
+          param3: mostRecentItem.param3 || prev.param3,
+          client: mostRecentItem.client || "",
+          engineer:
+            mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          user: engineerUser || loggedInUserData || prev.user,
+          selectedAsset: selectedAsset || prev.selectedAsset,
+          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          clientUser: clientUser || null,
+          siteContactUser: siteContactUser || null,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      toast.error("Failed to load inspection data");
+    }
+  };
 
   useEffect(() => {
     if (isInternalUserTaggedWithSite && users.length === 0) {
@@ -68,14 +126,24 @@ const RefugeIntercomTesting = ({
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
 
-          if (siteSelectedForGlobal) {
+          await fetchInspectionData();
+
+          // const currentSite = sites.find(
+          //   (site) => site.siteId === siteSelectedForGlobal.siteId
+          // );
+          // const siteData = currentSite || siteSelectedForGlobal;
+          const siteData = siteDetailsById || siteSelectedForGlobal;
+
+          console.log(siteData);
+
+          if (siteData) {
             const addressParts = [
-              siteSelectedForGlobal.address1,
-              siteSelectedForGlobal.address2,
-              siteSelectedForGlobal.city,
-              siteSelectedForGlobal.area,
-              siteSelectedForGlobal.postCode,
-              siteSelectedForGlobal.country,
+              siteData.address1,
+              siteData.address2,
+              siteData.city,
+              siteData.area,
+              siteData.postCode,
+              siteData.country,
             ].filter((part) => part);
 
             const fullAddress = addressParts.join(", ");
@@ -116,27 +184,11 @@ const RefugeIntercomTesting = ({
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
-    if (newValue) {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: newValue,
-        manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.model || "",
-        position: newValue.position || "",
-        floor: newValue.floor || "",
-        room: newValue.room || "",
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: null,
-        manufacturer: "",
-        modelNumber: "",
-        position: "",
-        floor: "",
-        room: "",
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue,
+    }));
   };
 
   const handleInputChange = (e) => {
@@ -150,24 +202,32 @@ const RefugeIntercomTesting = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!formData.selectedAsset) {
+      if (!formData.assetId) {
         toast.error("Please select an asset first");
         return;
       }
 
       const dataToSave = {
         ...formData,
-        assetId: formData.selectedAsset.assetId,
+        assetId: formData.assetId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId,
         subType,
+        inspectionDate: formData.inspectionDate || new Date().toISOString(),
+        job: formData.job,
+        engineer: loggedInUserData?.id,
+        signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
-        engineersComments: formData.engineersComments,
+        report: formData.report,
+        param1: formData.param1, // outstation operational
+        param2: formData.param2, // intercom sound test
+        param3: formData.param3, // sounder test
       };
 
-      await post("/api/site-check/fire-refuge-report", dataToSave);
-      toast.success("Fire refuge report saved successfully");
+      await post("/api/site-check/generic-inspection", dataToSave);
+      toast.success("Refuge Intercom Testing report saved successfully");
       setIsSubmitted(true);
+      setSubmissionSuccess(true);
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -187,14 +247,12 @@ const RefugeIntercomTesting = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.clientName) ||
-            null
-          }
+          value={formData.clientUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              clientName: newValue?.name || "",
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -228,8 +286,14 @@ const RefugeIntercomTesting = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientName}
-        onChange={handleInputChange}
+        value={formData.clientUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            client: e.target.value,
+            clientNameText: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
@@ -249,15 +313,13 @@ const RefugeIntercomTesting = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.siteContact) ||
-            null
-          }
+          value={formData.siteContactUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              siteContact: newValue?.name || "",
+              siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -291,13 +353,21 @@ const RefugeIntercomTesting = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContact}
-        onChange={handleInputChange}
+        value={formData.siteContactUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
     );
   };
+
+  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -340,8 +410,8 @@ const RefugeIntercomTesting = ({
               <input
                 type="date"
                 className="form-control"
-                name="date"
-                value={formatDate(formData.date)}
+                name="inspectionDate"
+                value={formatDate(formData.inspectionDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -349,7 +419,7 @@ const RefugeIntercomTesting = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -366,7 +436,7 @@ const RefugeIntercomTesting = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -374,10 +444,10 @@ const RefugeIntercomTesting = ({
               <input
                 type="text"
                 className="form-control"
-                name="jobNo"
-                value={formData.jobNo}
+                name="job"
+                value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -391,14 +461,14 @@ const RefugeIntercomTesting = ({
             <div className="row mb-4">
               <div className="col-md-12">
                 <Autocomplete
-                  disabled={isSubmitted}
+                  disabled={isSubmitted && !canEditSubmittedReport}
                   options={filteredAssets}
                   getOptionLabel={(option) =>
                     `${option.assetId} - ${option.assetName} (${
                       option.position || "NA"
                     } > ${option.floor || "NA"} > ${option.room || "NA"})`
                   }
-                  value={formData.selectedAsset}
+                  value={selectedAsset}
                   onChange={handleAssetSelect}
                   renderInput={(params) => (
                     <TextField
@@ -413,7 +483,7 @@ const RefugeIntercomTesting = ({
               </div>
             </div>
 
-            {formData.selectedAsset && (
+            {selectedAsset && (
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
@@ -422,7 +492,7 @@ const RefugeIntercomTesting = ({
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={formData.manufacturer}
+                      value={selectedAsset.manufacturer}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -435,8 +505,8 @@ const RefugeIntercomTesting = ({
                     <input
                       type="text"
                       className="form-control"
-                      name="modelNumber"
-                      value={formData.modelNumber}
+                      name="model"
+                      value={selectedAsset.model}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -450,7 +520,7 @@ const RefugeIntercomTesting = ({
                       type="text"
                       className="form-control"
                       name="position"
-                      value={formData.position}
+                      value={selectedAsset.position}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -464,7 +534,7 @@ const RefugeIntercomTesting = ({
                       type="text"
                       className="form-control"
                       name="floor"
-                      value={formData.floor}
+                      value={selectedAsset.floor}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -478,7 +548,7 @@ const RefugeIntercomTesting = ({
                       type="text"
                       className="form-control"
                       name="room"
-                      value={formData.room}
+                      value={selectedAsset.room}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -493,7 +563,7 @@ const RefugeIntercomTesting = ({
         {/*  Engineers Comments Section */}
         <div className="card mb-4">
           <div className="card-header">
-            <h5 className="mb-0">Engineers Comments</h5>
+            <h5 className="mb-0">Engineers Reports</h5>
           </div>
           <div className="card-body">
             <div className="mb-3">
@@ -502,15 +572,15 @@ const RefugeIntercomTesting = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersComments || ""}
+                value={formData.report || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersComments: e.target.value,
+                    report: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -522,13 +592,31 @@ const RefugeIntercomTesting = ({
               <table className="table table-bordered">
                 <tbody>
                   <tr>
-                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
                       Outstation Operational
                     </td>
-                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
                       Intercom Sound Test
                     </td>
-                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        width: "400px",
+                      }}
+                    >
                       Sounder Test
                     </td>
                   </tr>
@@ -536,14 +624,14 @@ const RefugeIntercomTesting = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.outstationOperational}
+                        value={formData.param1}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            outstationOperational: e.target.value,
+                            param1: e.target.value,
                           })
                         }
-                        disabled={isSubmitted}
+                        disabled={isSubmitted && !canEditSubmittedReport}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Pass</option>
@@ -553,14 +641,14 @@ const RefugeIntercomTesting = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.intercomSoundTest}
+                        value={formData.param2}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            intercomSoundTest: e.target.value,
+                            param2: e.target.value,
                           })
                         }
-                        disabled={isSubmitted}
+                        disabled={isSubmitted && !canEditSubmittedReport}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Pass</option>
@@ -570,14 +658,14 @@ const RefugeIntercomTesting = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.sounderTest}
+                        value={formData.param3}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            sounderTest: e.target.value,
+                            param3: e.target.value,
                           })
                         }
-                        disabled={isSubmitted}
+                        disabled={isSubmitted && !canEditSubmittedReport}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Pass</option>
@@ -602,8 +690,8 @@ const RefugeIntercomTesting = ({
               <input
                 type="date"
                 className="form-control"
-                name="clientDate"
-                value={formatDate(formData.clientDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -611,7 +699,7 @@ const RefugeIntercomTesting = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -621,12 +709,11 @@ const RefugeIntercomTesting = ({
               <input
                 type="text"
                 className="form-control"
-                name="engineerName"
-                value={formData.engineerName}
-                onChange={handleInputChange}
-                required
+                name="engineer name"
                 readOnly
-                disabled={isSubmitted}
+                value={formData.user.name}
+                required
+                disabled
               />
             </div>
             <div className="mb-3">
@@ -634,11 +721,11 @@ const RefugeIntercomTesting = ({
               <input
                 type="date"
                 className="form-control"
-                name="engineerDate"
-                value={formatDate(formData.engineerDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
                 style={{
                   height: "40px",
                   padding: "0 10px",
@@ -665,9 +752,10 @@ const RefugeIntercomTesting = ({
           </div>
         )}
 
-        {isSubmitted && (
+        {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on {new Date().toLocaleDateString()}
+            Report submitted successfully on{" "}
+            {new Date().toISOString().split("T")[0]}
           </div>
         )}
       </form>
@@ -695,6 +783,7 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
   siteAssets: state.site.siteAssets,
+  siteDetailsById: state.site.siteDetailsById,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
