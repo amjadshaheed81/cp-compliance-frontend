@@ -46,7 +46,6 @@ const RefugeIntercomTesting = ({
     siteContactUser: null,
   });
 
-  const sites = useSelector((state) => state.site.sites);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
