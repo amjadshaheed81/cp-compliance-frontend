@@ -115,7 +115,7 @@ const CreateParentFolder = ({
                     onChange={(e) => setIsShared(e.target.checked)}
                   />
                 }
-                label="Shared Folder (Files uploaded in this folder will be visible to all sites)" 
+                label="Default Folder (Files uploaded in this folder will be visible to all sites)" 
               />
             </Box>
           )}
