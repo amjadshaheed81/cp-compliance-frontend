@@ -122,7 +122,7 @@ const CreateFolder = ({
                 color="primary"
               />
             }
-            label="Shared Folder (Visible to all users)"
+            label="Default Folder (Visible to all users)"
             disabled={isLoading}
           />
 
