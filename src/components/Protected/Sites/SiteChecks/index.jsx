@@ -420,6 +420,12 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setIsLoading(true);
     event.preventDefault();
     const form = event.target;
+
+    if (!formData.startDate) {
+      toast.error("Start Date is required!");
+      setIsLoading(false);
+      return;
+    }
     if (!form.checkValidity()) {
       setIsLoading(false);
       form.reportValidity();
@@ -1084,6 +1090,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           className="form-control form-select"
                           id="repeatFrequency"
                           onChange={handleInputChange}
+                          disabled={!formData?.startDate}
                           value={formData?.repeatFrequency}
                         >
                           <option value="None">None</option>

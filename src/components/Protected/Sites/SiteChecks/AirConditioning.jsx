@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { post, uploadSiteCheckDoc } from "../../../../api";
+import { get, post, uploadSiteCheckDoc } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -27,43 +27,52 @@ const AirConditioning = ({
 }) => {
   const [formData, setFormData] = useState({
     address: "",
+    assetId: "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    inspectionDate: new Date().toISOString().split("T")[0],
     siteContactNo: "",
-    jobNo: "",
+    job: "",
     manufacturer: "",
     modelNumber: "",
     position: "",
-    assetId: "",
     floor: "",
     room: "",
     serialNo: "",
-    engineersReport: "",
-    jobComplete: "",
-    partsRequired: "",
-    fGasCheck: "",
-    filtersCleaned: "",
-    indoorCoilCleaned: "",
-    outdoorCoilCleaned: "",
-    systemLeakCheck: "",
-    drainPumpTest: "",
-    electricalConnectionsCheck: "",
-    temperatureChecks: "",
-    ofn: "",
-    welding: "",
-    refrigerant: "",
-    reclaimCylinder: "",
-    cleaningChemicals: "",
-    airSpray: "",
-    clientName: "",
-    engineerName: loggedInUserData?.name || "",
+    report: "", // Engineers report
+    param1: "", //jobComplete
+    param2: "", // partsRequired
+    param3: "", // fGasCheck
+    param4: "", // filtersCleaned
+    param5: "", // indoorCoilCleaned
+    param6: "", // outdoorCoilCleaned
+    param7: "", // systemLeakCheck
+    param8: "", // drainPumpTest
+    param9: "", // electricalConnectionsCheck
+    param10: "", // temperatureChecks
+
+    param1Remark: "", // ofn
+    param2Remark: "", // welding
+    param3Remark: "", // refrigerant
+    param4Remark: "", // reclaimCylinder
+    param5Remark: "", // cleaningChemicals
+    param6Remark: "", // airSpray
+
+    client: "",
+    user: loggedInUserData || {},
+    engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    signedDate: new Date().toISOString().split("T")[0],
+    clientUser: null,
+    siteContactUser: null,
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
@@ -71,6 +80,73 @@ const AirConditioning = ({
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
 
+  const fetchInspectionData = async () => {
+    try {
+      if (!checkId) return;
+
+      if (isInternalUserTaggedWithSite && users.length === 0) {
+        await getUsers();
+      }
+
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+      if (apiData && apiData.length > 0) {
+        const mostRecentItem = apiData[apiData.length - 1];
+        const selectedAsset = siteAssets.find(
+          (asset) => asset.assetId === mostRecentItem.assetId
+        );
+
+        const clientUser = users.find(
+          (user) => user.id === mostRecentItem.client
+        );
+        const engineerUser = users.find(
+          (user) => user.id === mostRecentItem.engineer
+        );
+        const siteContactUser = users.find(
+          (user) => user.id === mostRecentItem.siteContact
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          address: prev.address,
+          assetId: mostRecentItem.assetId || prev.assetId,
+          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || prev.report,
+          param1: mostRecentItem.jobComplete || prev.param1,
+          param2: mostRecentItem.partsRequired || prev.param2,
+          param3: mostRecentItem.fGasCheck || prev.param3,
+          param4: mostRecentItem.filtersCleaned || prev.param4,
+          param5: mostRecentItem.indoorCoilCleaned || prev.param5,
+          param6: mostRecentItem.outdoorCoilCleaned || prev.param6,
+          param7: mostRecentItem.systemLeakCheck || prev.param7,
+          param8: mostRecentItem.drainPumpTest || prev.param8,
+          param9: mostRecentItem.electricalConnectionsCheck || prev.param9,
+          param10: mostRecentItem.temperatureChecks || prev.param10,
+          param1Remark: mostRecentItem.ofn || prev.param1Remark,
+          param2Remark: mostRecentItem.welding || prev.param2Remark,
+          param3Remark: mostRecentItem.refrigerant || prev.param3Remark,
+          param4Remark: mostRecentItem.reclaimCylinder || prev.param4Remark,
+          param5Remark: mostRecentItem.cleaningChemicals || prev.param5Remark,
+          param6Remark: mostRecentItem.airSpray || prev.param6Remark,
+          client: mostRecentItem.client || "",
+          engineer:
+            mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          user: engineerUser || loggedInUserData || prev.user,
+          selectedAsset: selectedAsset || prev.selectedAsset,
+          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          clientUser: clientUser || null,
+          siteContactUser: siteContactUser || null,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      toast.error("Failed to load inspection data");
+    }
+  };
   useEffect(() => {
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
@@ -81,6 +157,8 @@ const AirConditioning = ({
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+
+          await fetchInspectionData();
 
           if (siteSelectedForGlobal) {
             const addressParts = [
@@ -129,38 +207,10 @@ const AirConditioning = ({
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
-    if (newValue) {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: newValue,
-        manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.model || "",
-        serialNo: newValue.serialNumber || "",
-        position: newValue.position || "",
-        floor: newValue.floor || "",
-        room: newValue.room || "",
-        assetId: newValue.assetId || "",
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        selectedAsset: null,
-        manufacturer: "",
-        modelNumber: "",
-        serialNo: "",
-        position: "",
-        floor: "",
-        room: "",
-        assetId: "",
-      }));
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue,
     }));
   };
 
@@ -238,31 +288,57 @@ const AirConditioning = ({
   //     URL.revokeObjectURL(removedPhoto.previewUrl);
   //   };
 
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!formData.selectedAsset) {
+      if (!formData.assetId) {
         toast.error("Please select an asset first");
         return;
       }
 
       const dataToSave = {
         ...formData,
-        assetId: formData.selectedAsset.assetId,
+        assetId: formData.assetId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId,
         subType,
+        category,
+        inspectionDate: formData.inspectionDate || new Date().toISOString(),
+        job: formData.job || "",
+        engineer: loggedInUserData?.id,
+        signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
-        engineersReport: formData.engineersReport,
-        // uploadedPhotos: uploadedPhotos.map((photo) => ({
-        //   url: photo.url,
-        //   fileName: photo.fileName,
-        // })),
+        report: formData.report,
+        param1: formData.param1, // jobComplete
+        param2: formData.param2, // partsRequired
+        param3: formData.param3, // fGasCheck
+        param4: formData.param4, // filtersCleaned
+        param5: formData.param5, // indoorCoilCleaned
+        param6: formData.param6, // outdoorCoilCleaned
+        param7: formData.param7, // systemLeakCheck
+        param8: formData.param8, // drainPumpTest
+        param9: formData.param9, // electricalConnectionsCheck
+        param10: formData.param10, // temperatureChecks
+        param1Remark: formData.param1Remark,
+        param2Remark: formData.param2Remark,
+        param3Remark: formData.param3Remark,
+        param4Remark: formData.param4Remark,
+        param5Remark: formData.param5Remark,
+        param6Remark: formData.param6Remark,
       };
 
-      await post("/api/site-check/storage-tank-report", dataToSave);
-      toast.success("Storage tank report saved successfully");
+      await post("/api/site-check/generic-inspection", dataToSave);
+      toast.success("Air Conditioning report saved successfully");
       setIsSubmitted(true);
+      setSubmissionSuccess(true);
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -282,14 +358,12 @@ const AirConditioning = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.clientName) ||
-            null
-          }
+          value={formData.clientUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              clientName: newValue?.name || "",
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -323,8 +397,14 @@ const AirConditioning = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientName}
-        onChange={handleInputChange}
+        value={formData.clientUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            client: e.target.value,
+            clientNameText: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
@@ -344,15 +424,13 @@ const AirConditioning = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={
-            filteredUsers.find((user) => user.name === formData.siteContact) ||
-            null
-          }
+          value={formData.siteContactUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
-              siteContact: newValue?.name || "",
+              siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -386,13 +464,21 @@ const AirConditioning = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContact}
-        onChange={handleInputChange}
+        value={formData.siteContactUser?.name || ""}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
         required
         disabled={isSubmitted}
       />
     );
   };
+
+  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -436,7 +522,7 @@ const AirConditioning = ({
                 type="date"
                 className="form-control"
                 name="date"
-                value={formatDate(formData.date)}
+                value={formatDate(formData.inspectionDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -444,7 +530,7 @@ const AirConditioning = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
@@ -461,18 +547,18 @@ const AirConditioning = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
             <div className="mb-3">
               <label className="form-label">Job No.</label>
               <input
                 type="text"
+                name="job"
                 className="form-control"
-                name="jobNo"
-                value={formData.jobNo}
+                value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -493,7 +579,7 @@ const AirConditioning = ({
                       option.position || "NA"
                     } > ${option.floor || "NA"} > ${option.room || "NA"})`
                   }
-                  value={formData.selectedAsset}
+                  value={selectedAsset}
                   onChange={handleAssetSelect}
                   renderInput={(params) => (
                     <TextField
@@ -508,7 +594,7 @@ const AirConditioning = ({
               </div>
             </div>
 
-            {formData.selectedAsset && (
+            {selectedAsset && (
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
@@ -517,7 +603,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={formData.manufacturer}
+                      value={selectedAsset.manufacturer}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -531,7 +617,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="modelNumber"
-                      value={formData.modelNumber}
+                      value={selectedAsset.modelNumber}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -545,7 +631,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="serialNo"
-                      value={formData.serialNo}
+                      value={selectedAsset.serialNo}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -559,7 +645,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="assetId"
-                      value={`Asset No - ${formData.assetId}`}
+                      value={`Asset No - ${selectedAsset.assetId}`}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -573,7 +659,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="position"
-                      value={formData.position}
+                      value={selectedAsset.position}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -587,7 +673,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="floor"
-                      value={formData.floor}
+                      value={selectedAsset.floor}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -601,7 +687,7 @@ const AirConditioning = ({
                       type="text"
                       className="form-control"
                       name="room"
-                      value={formData.room}
+                      value={selectedAsset.room}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -638,11 +724,11 @@ const AirConditioning = ({
                 rows={16}
                 fullWidth
                 variant="outlined"
-                value={formData.engineersReport || ""}
+                value={formData.report || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    engineersComments: e.target.value,
+                    report: e.target.value,
                   })
                 }
                 style={{ height: "400px" }}
@@ -672,11 +758,11 @@ const AirConditioning = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.jobComplete}
+                        value={formData.param1}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            jobComplete: e.target.value,
+                            param1: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -689,11 +775,11 @@ const AirConditioning = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.partsRequired}
+                        value={formData.param2}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            partsRequired: e.target.value,
+                            param2: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -706,11 +792,11 @@ const AirConditioning = ({
                     <td>
                       <select
                         className="form-select"
-                        value={formData.fGasCheck}
+                        value={formData.param3}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            fGasCheck: e.target.value,
+                            param3: e.target.value,
                           })
                         }
                         disabled={isSubmitted}
@@ -739,11 +825,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.filtersCleaned}
+                      value={formData.param4}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          filtersCleaned: e.target.value,
+                          param4: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -760,11 +846,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.indoorCoilCleaned}
+                      value={formData.param5}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          indoorCoilCleaned: e.target.value,
+                          param5: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -781,11 +867,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.outdoorCoilCleaned}
+                      value={formData.param6}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          outdoorCoilCleaned: e.target.value,
+                          param6: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -802,11 +888,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.systemLeakCheck}
+                      value={formData.param7}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          systemLeakCheck: e.target.value,
+                          param7: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -823,11 +909,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.drainPumpTest}
+                      value={formData.param8}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          drainPumpTest: e.target.value,
+                          param8: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -844,11 +930,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.electricalConnectionsCheck}
+                      value={formData.param9}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          electricalConnectionsCheck: e.target.value,
+                          param9: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -865,11 +951,11 @@ const AirConditioning = ({
                     </label>
                     <select
                       className="form-select"
-                      value={formData.temperatureChecks}
+                      value={formData.param10}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          temperatureChecks: e.target.value,
+                          param10: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -891,9 +977,9 @@ const AirConditioning = ({
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.ofn}
+                      value={formData.param1Remark}
                       onChange={(e) =>
-                        setFormData({ ...formData, ofn: e.target.value })
+                        setFormData({ ...formData, param1Remark: e.target.value })
                       }
                       disabled={isSubmitted}
                     />
@@ -904,9 +990,9 @@ const AirConditioning = ({
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.welding}
+                      value={formData.param2Remark}
                       onChange={(e) =>
-                        setFormData({ ...formData, welding: e.target.value })
+                        setFormData({ ...formData, param2Remark: e.target.value })
                       }
                       disabled={isSubmitted}
                     />
@@ -916,11 +1002,11 @@ const AirConditioning = ({
                     <label className="form-label fw-bold">Refrigerant </label>
                     <select
                       className="form-select"
-                      value={formData.refrigerant}
+                      value={formData.param3Remark}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          refrigerant: e.target.value,
+                          param3Remark: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -937,11 +1023,11 @@ const AirConditioning = ({
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.reclaimCylinder}
+                      value={formData.param4Remark}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          reclaimCylinder: e.target.value,
+                          param4Remark: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -954,11 +1040,11 @@ const AirConditioning = ({
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.cleaningChemicals}
+                      value={formData.param5Remark}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          cleaningChemicals: e.target.value,
+                          param5Remark: e.target.value,
                         })
                       }
                       disabled={isSubmitted}
@@ -969,9 +1055,9 @@ const AirConditioning = ({
                     <input
                       type="text"
                       className="form-control"
-                      value={formData.airSpray}
+                      value={formData.param6Remark}
                       onChange={(e) =>
-                        setFormData({ ...formData, airSpray: e.target.value })
+                        setFormData({ ...formData, param6Remark: e.target.value })
                       }
                       disabled={isSubmitted}
                     />
@@ -994,8 +1080,8 @@ const AirConditioning = ({
               <input
                 type="date"
                 className="form-control"
-                name="clientDate"
-                value={formatDate(formData.clientDate)}
+                name="signedDate"
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
                 style={{
@@ -1003,7 +1089,7 @@ const AirConditioning = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted}
+                disabled={isSubmitted && !canEditSubmittedReport}
               />
             </div>
           </div>
@@ -1013,12 +1099,11 @@ const AirConditioning = ({
               <input
                 type="text"
                 className="form-control"
-                name="engineerName"
-                value={formData.engineerName}
-                onChange={handleInputChange}
-                required
+                name="engineer name"
                 readOnly
-                disabled={isSubmitted}
+                value={formData.user.name}
+                required
+                disabled
               />
             </div>
             <div className="mb-3">
@@ -1026,8 +1111,7 @@ const AirConditioning = ({
               <input
                 type="date"
                 className="form-control"
-                name="engineerDate"
-                value={formatDate(formData.engineerDate)}
+                value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
                 disabled={isSubmitted}
@@ -1057,9 +1141,10 @@ const AirConditioning = ({
           </div>
         )}
 
-        {isSubmitted && (
+        {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on {new Date().toLocaleDateString()}
+            Report submitted successfully on{" "}
+            {new Date().toISOString().split("T")[0]}
           </div>
         )}
       </form>

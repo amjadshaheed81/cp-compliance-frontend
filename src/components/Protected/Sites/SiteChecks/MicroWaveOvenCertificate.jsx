@@ -178,8 +178,8 @@ const MicroWaveOvenCertificate = ({
     siteAssets?.filter(
       (asset) =>
         asset.category === "Electrical" &&
-        asset.subCategory === "Small Appliances"
-      // asset.subCategory2 === "Disabled Refuge Outstation"
+        asset.subCategory === "Small Appliances" &&
+        asset.subCategory2 === "Disabled Refuge Outstation"
     ) || [];
 
   const handleAssetSelect = (event, newValue) => {
