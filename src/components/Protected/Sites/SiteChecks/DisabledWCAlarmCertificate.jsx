@@ -476,7 +476,7 @@ const DisabledWCAlarmCertificate = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a CCTV Device"
+                      label="Select a Disabled WC Alarm Device"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
