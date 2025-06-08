@@ -115,6 +115,7 @@ const CreateAsset = ({
     subCategory3: "",
     model: "",
     serialNumber: "",
+    powerOutput: "",
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -197,9 +198,11 @@ const CreateAsset = ({
                             <label for="assetName">Asset Name</label>
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="assetName"
                               name="assetName"
@@ -224,9 +227,11 @@ autoComplete="off"
                             <label for="manufacturer">Manufacturer</label>
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="manufacturer"
                               name="manufacturer"
@@ -295,9 +300,11 @@ autoComplete="off"
                             <label for="model">Model</label>
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="model"
                               name="model"
@@ -312,14 +319,35 @@ autoComplete="off"
                             <label for="serialNumber">Serial Number</label>
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               className="form-control"
                               id="serialNumber"
                               name="serialNumber"
                               placeholder=""
                               {...register("serialNumber")}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-md-6 mt-2">
+                          <div className="form-group mt-2">
+                            <label for="powerOutput">Power Output</label>
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="powerOutput"
+                              name="powerOutput"
+                              placeholder=""
+                              {...register("powerOutput")}
                             />
                           </div>
                         </div>
@@ -449,8 +477,7 @@ autoComplete="off"
                         </select>
                       </div>
                     </div>
-                    
-                     
+
                     <div className="col-md-4 mt-2">
                       <input
                         type="checkbox"
@@ -494,100 +521,93 @@ autoComplete="off"
                         Door Assets (fill Door assets details below below)
                       </label>
                     </div>
-                    
-                    <div className="row" style={{marginTop:'20px'}}>
-                      
+
+                    <div className="row" style={{ marginTop: "20px" }}>
                       <hr />
                       <h5>Location </h5>
                     </div>
                     <div className="row">
-                    <div className="col-md-4">
-                      <label for="position">Interior/Exterior</label>
-                      <select
-                        name="position"
-                        className="form-control form-select"
-                        id="position"
-                        {...register("position")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("position", val);
-                          
-                    
-                          const node = siteLayout.filter(
-                            (site) => site.nodeName === val
-                          );
-                          const data = siteLayout.filter(
-                            (site) =>
-                              site.nodeType === "floor" &&
-                              site.parentNode === node?.[0]?.id
-                          );
-                          setFloors(data || []);
-                        }}
-                      >
-                        <option value="">Select Interior/Exterior</option>
-                        {["Interior", "Exterior"].map((num) => (
-                          <option value={num}>{num} </option>
-                        ))}
-                      </select>
-                      
+                      <div className="col-md-4">
+                        <label for="position">Interior/Exterior</label>
+                        <select
+                          name="position"
+                          className="form-control form-select"
+                          id="position"
+                          {...register("position")}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setValue("position", val);
+
+                            const node = siteLayout.filter(
+                              (site) => site.nodeName === val
+                            );
+                            const data = siteLayout.filter(
+                              (site) =>
+                                site.nodeType === "floor" &&
+                                site.parentNode === node?.[0]?.id
+                            );
+                            setFloors(data || []);
+                          }}
+                        >
+                          <option value="">Select Interior/Exterior</option>
+                          {["Interior", "Exterior"].map((num) => (
+                            <option value={num}>{num} </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label for="floor">Floor</label>
+                        <select
+                          name="floor"
+                          className="form-control form-select"
+                          id="floor"
+                          {...register("floor")}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setValue("floor", val);
+
+                            const node = siteLayout.filter(
+                              (site) => site.nodeName === val
+                            );
+                            const data = siteLayout.filter(
+                              (site) =>
+                                site.nodeType === "room" &&
+                                site.parentNode === node?.[0]?.id
+                            );
+                            setRooms(data || []);
+                          }}
+                        >
+                          <option value="">Select Floor</option>
+                          {floors?.map((site) => (
+                            <option value={site.nodeName}>
+                              {site.nodeName}{" "}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label for="room">Room</label>
+                        <select
+                          name="room"
+                          className="form-control form-select"
+                          id="room"
+                          {...register("room")}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setValue("room", val);
+                          }}
+                        >
+                          <option value="">Select Room</option>
+                          {rooms?.map((site) => (
+                            <option value={site.nodeName}>
+                              {site.nodeName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    <div className="col-md-4">
-                      <label for="floor">Floor</label>
-                      <select
-                        name="floor"
-                        className="form-control form-select"
-                        id="floor"
-                        {...register("floor")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("floor", val);
-                          
-                          const node = siteLayout.filter(
-                            (site) => site.nodeName === val
-                          );
-                          const data = siteLayout.filter(
-                            (site) =>
-                              site.nodeType === "room" &&
-                              site.parentNode === node?.[0]?.id
-                          );
-                          setRooms(data || []);
-                        }}
-                      >
-                        <option value="">Select Floor</option>
-                        {floors?.map((site) => (
-                          <option value={site.nodeName}>
-                            {site.nodeName}{" "}
-                          </option>
-                        ))}
-                      </select>
-                     
-                    </div>
-                    <div className="col-md-4">
-                      <label for="room">Room</label>
-                      <select
-                        name="room"
-                        className="form-control form-select"
-                        id="room"
-                        {...register("room")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("room", val);
-                          
-                        }}
-                      >
-                        <option value="">Select Room</option>
-                        {rooms?.map((site) => (
-                          <option value={site.nodeName}>{site.nodeName}</option>
-                        ))}
-                      </select>
-                      
-                    </div>
-                    
-                  </div>
                   </div>
 
-                  
-                 
                   {/* start */}
 
                   {/* end */}

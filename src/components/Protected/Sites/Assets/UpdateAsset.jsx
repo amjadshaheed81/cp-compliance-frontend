@@ -406,6 +406,7 @@ const UpdateAsset = ({
     subCategory2: "",
     model: "",
     serialNumber: "",
+    powerOutput: "",
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -449,6 +450,7 @@ const UpdateAsset = ({
       model: formData?.model,
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
+      powerOutput: formData?.powerOutput,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
@@ -1113,6 +1115,24 @@ const UpdateAsset = ({
                               name="serialNumber"
                               placeholder=""
                               {...register("serialNumber")}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="form-group mt-2">
+                            <label for="powerOutput">Power Output</label>
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="powerOutput"
+                              name="powerOutput"
+                              placeholder=""
+                              {...register("powerOutput")}
                             />
                           </div>
                         </div>
