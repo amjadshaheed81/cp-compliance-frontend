@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { post, get } from "../../../../api";
@@ -32,25 +32,23 @@ const CctvAlarmCertificate = ({
     siteContactNo: "",
     job: "",
     report: "",
-    // Using generic parameters for yes/no fields
-    param1: "", // jobComplete
-    param2: "", // partsRequired
-    param3: "", // imageQualityCheck
-    param4: "", // lensesCleaned
-    param5: "", // dvrRecordingCheck
-    param6: "", // electricalConnectionCheck
-    // Using generic parameters for remarks
-    param1Remark: "", // imageQualityRemarks
-    param2Remark: "", // lensesCleanedRemarks
-    param3Remark: "", // dvrRecordingRemarks
-    param4Remark: "", // electricalConnectionRemarks
+    param1: "",
+    param2: "",
+    param3: "",
+    param4: "",
+    param5: "",
+    param6: "",
+    param1Remark: "",
+    param2Remark: "",
+    param3Remark: "",
+    param4Remark: "",
     client: "",
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
     signedDate: new Date().toISOString().split("T")[0],
-    clientUser: null, // Add this
-    siteContactUser: null, // Add this
+    clientUser: null,
+    siteContactUser: null,
   });
   const sites = useSelector((state) => state.site.sites);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -83,7 +81,6 @@ const CctvAlarmCertificate = ({
     try {
       if (!checkId) return;
 
-      // Ensure users are loaded first if needed
       if (isInternalUserTaggedWithSite && users.length === 0) {
         await getUsers();
       }
@@ -93,11 +90,12 @@ const CctvAlarmCertificate = ({
       );
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        const isSubmitted = !!mostRecentItem.submittedDate;
+        setIsSubmitted(isSubmitted);
         const selectedAsset = siteAssets.find(
           (asset) => asset.assetId === mostRecentItem.assetId
         );
 
-        // Find users from the users array in Redux store
         const clientUser = users.find(
           (user) => user.id === mostRecentItem.client
         );
@@ -112,7 +110,7 @@ const CctvAlarmCertificate = ({
           ...prev,
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
-          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          siteContact: mostRecentItem.siteContact || "",
           inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
@@ -133,8 +131,8 @@ const CctvAlarmCertificate = ({
           user: engineerUser || loggedInUserData || prev.user,
           selectedAsset: selectedAsset || prev.selectedAsset,
           signedDate: mostRecentItem.signedDate || prev.signedDate,
-          clientUser: clientUser || null,
-          siteContactUser: siteContactUser || null,
+          clientUser: clientUser || siteContactUser || null,
+          siteContactUser: siteContactUser || clientUser || null,
         }));
       }
     } catch (error) {
@@ -173,7 +171,6 @@ const CctvAlarmCertificate = ({
             (site) => site.siteId === siteSelectedForGlobal.siteId
           );
           const siteData = currentSite || siteSelectedForGlobal;
-          // Properly construct the address
           if (siteData) {
             const addressParts = [
               siteData.address1,
@@ -182,17 +179,8 @@ const CctvAlarmCertificate = ({
               siteData.area,
               siteData.postCode,
               siteData.country,
-            ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
+            ].filter((part) => part && part.trim() !== "");
 
-            console.log(
-              "Address Parts:",
-              siteData.address1,
-              siteData.address2,
-              siteData.city,
-              siteData.area,
-              siteData.postCode,
-              siteData.country
-            );
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
           }
@@ -231,6 +219,7 @@ const CctvAlarmCertificate = ({
     setFormData((prev) => ({
       ...prev,
       assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue || null,
     }));
   };
 
@@ -249,6 +238,10 @@ const CctvAlarmCertificate = ({
         toast.error("Please select an asset first");
         return;
       }
+      if (isSubmitted) {
+        toast.error("This form has already been submitted");
+        return;
+      }
 
       const dataToSave = {
         ...formData,
@@ -262,16 +255,16 @@ const CctvAlarmCertificate = ({
         signedDate: formData.signedDate || new Date().toISOString(),
         submittedDate: new Date().toISOString(),
         report: formData.report,
-        param1: formData.param1, // jobComplete
-        param2: formData.param2, // partsRequired
-        param3: formData.param3, // imageQualityCheck
-        param4: formData.param4, // lensesCleaned
-        param5: formData.param5, // dvrRecordingCheck
-        param6: formData.param6, // electricalConnectionCheck
-        param1Remark: formData.param1Remark, // imageQualityRemarks
-        param2Remark: formData.param2Remark, // lensesCleanedRemarks
-        param3Remark: formData.param3Remark, // dvrRecordingRemarks
-        param4Remark: formData.param4Remark, // electricalConnectionRemarks
+        param1: formData.param1,
+        param2: formData.param2,
+        param3: formData.param3,
+        param4: formData.param4,
+        param5: formData.param5,
+        param6: formData.param6,
+        param1Remark: formData.param1Remark,
+        param2Remark: formData.param2Remark,
+        param3Remark: formData.param3Remark,
+        param4Remark: formData.param4Remark,
       };
 
       await post("/api/site-check/generic-inspection", dataToSave);
@@ -297,12 +290,15 @@ const CctvAlarmCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.clientUser || null} // Use the stored clientUser
+          value={formData.clientUser || formData.siteContactUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
               client: newValue?.id || "",
               clientUser: newValue || null,
+              siteContact: newValue?.id || "",
+              siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -310,6 +306,7 @@ const CctvAlarmCertificate = ({
               {...params}
               variant="outlined"
               required
+              disabled={isSubmitted}
               style={{
                 height: "40px",
                 "& .MuiOutlinedInput-root": {
@@ -336,12 +333,16 @@ const CctvAlarmCertificate = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientUser?.name || ""}
+        value={
+          formData.clientUser?.name || formData.siteContactUser?.name || ""
+        }
         onChange={(e) => {
           setFormData((prev) => ({
             ...prev,
             client: e.target.value,
             clientNameText: e.target.value,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
           }));
         }}
         required
@@ -363,13 +364,15 @@ const CctvAlarmCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || null} // Use the stored siteContactUser
+          value={formData.siteContactUser || formData.clientUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
               siteContactUser: newValue || null,
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -377,6 +380,7 @@ const CctvAlarmCertificate = ({
               {...params}
               variant="outlined"
               required
+              disabled={isSubmitted}
               style={{
                 height: "40px",
                 "& .MuiOutlinedInput-root": {
@@ -403,12 +407,16 @@ const CctvAlarmCertificate = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContactUser?.name || ""}
+        value={
+          formData.siteContactUser?.name || formData.clientUser?.name || ""
+        }
         onChange={(e) => {
           setFormData((prev) => ({
             ...prev,
             siteContact: e.target.value,
             siteContactName: e.target.value,
+            client: e.target.value,
+            clientNameText: e.target.value,
           }));
         }}
         required
@@ -416,8 +424,6 @@ const CctvAlarmCertificate = ({
       />
     );
   };
-
-  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -469,7 +475,7 @@ const CctvAlarmCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
             <div className="mb-3">
@@ -486,7 +492,7 @@ const CctvAlarmCertificate = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
             <div className="mb-3">
@@ -497,7 +503,7 @@ const CctvAlarmCertificate = ({
                 name="job"
                 value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -511,14 +517,14 @@ const CctvAlarmCertificate = ({
             <div className="row mb-4">
               <div className="col-md-12">
                 <Autocomplete
-                  disabled={isSubmitted && !canEditSubmittedReport}
+                  disabled={isSubmitted}
                   options={filteredAssets}
                   getOptionLabel={(option) =>
                     `${option.assetId} - ${option.assetName} (${
                       option.position || "NA"
                     } > ${option.floor || "NA"} > ${option.room || "NA"})`
                   }
-                  value={selectedAsset} // Use the computed selectedAsset
+                  value={selectedAsset}
                   onChange={handleAssetSelect}
                   renderInput={(params) => (
                     <TextField
@@ -526,6 +532,7 @@ const CctvAlarmCertificate = ({
                       label="Select a CCTV Device"
                       variant="outlined"
                       placeholder="Search devices..."
+                      disabled={isSubmitted}
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -542,7 +549,7 @@ const CctvAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={selectedAsset.manufacturer}
+                      value={selectedAsset.manufacturer || ""}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -556,7 +563,7 @@ const CctvAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="model"
-                      value={selectedAsset.model}
+                      value={selectedAsset.model || ""}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -570,7 +577,7 @@ const CctvAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="position"
-                      value={selectedAsset.position}
+                      value={selectedAsset.position || ""}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -584,7 +591,7 @@ const CctvAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="floor"
-                      value={selectedAsset.floor}
+                      value={selectedAsset.floor || ""}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -598,7 +605,7 @@ const CctvAlarmCertificate = ({
                       type="text"
                       className="form-control"
                       name="room"
-                      value={selectedAsset.room}
+                      value={selectedAsset.room || ""}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -610,7 +617,6 @@ const CctvAlarmCertificate = ({
           </div>
         </div>
 
-        {/*  Engineers Comments Section */}
         <div className="card mb-4">
           <div className="card-header">
             <h5 className="mb-0">Engineers Report</h5>
@@ -630,61 +636,8 @@ const CctvAlarmCertificate = ({
                   })
                 }
                 style={{ height: "400px" }}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <div className="card-body">
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <tbody>
-                  <tr>
-                    <td>
-                      <div className="mb-3">
-                        <label className="form-label">Job Complete</label>
-                        <select
-                          className="form-select"
-                          value={formData.param1} // jobComplete
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              param1: e.target.value,
-                            })
-                          }
-                          disabled={isSubmitted && !canEditSubmittedReport}
-                        >
-                          <option value="">Select</option>
-                          <option value="Pass">Yes</option>
-                          <option value="Fail">No</option>
-                        </select>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="mb-3">
-                        <label className="form-label">Parts Required</label>
-                        <select
-                          className="form-select"
-                          value={formData.param2} // partsRequired
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              param2: e.target.value,
-                            })
-                          }
-                          disabled={isSubmitted && !canEditSubmittedReport}
-                        >
-                          <option value="">Select</option>
-                          <option value="Pass">Yes</option>
-                          <option value="Fail">No</option>
-                        </select>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
         </div>
@@ -715,7 +668,59 @@ const CctvAlarmCertificate = ({
             <div className="table-responsive">
               <table className="table table-bordered">
                 <tbody>
-                  {/* Your table headers */}
+                  <tr>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Job Complete</label>
+                        <select
+                          className="form-select"
+                          value={formData.param1}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param1: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="mb-3">
+                        <label className="form-label">Parts Required</label>
+                        <select
+                          className="form-select"
+                          value={formData.param2}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              param2: e.target.value,
+                            })
+                          }
+                          disabled={isSubmitted}
+                        >
+                          <option value="">Select</option>
+                          <option value="Pass">Yes</option>
+                          <option value="Fail">No</option>
+                        </select>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <tbody>
                   <tr style={{ fontSize: "18px" }}>
                     <td
                       style={{
@@ -737,7 +742,6 @@ const CctvAlarmCertificate = ({
                     </td>
                   </tr>
 
-                  {/* Image Quality Check Row */}
                   <tr style={{ fontSize: "22px" }}>
                     <td>
                       <div className="mb-3">
@@ -746,14 +750,14 @@ const CctvAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          value={formData.param3} // imageQualityCheck
+                          value={formData.param3}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
                               param3: e.target.value,
                             })
                           }
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -767,7 +771,7 @@ const CctvAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          value={formData.param1Remark} // imageQualityRemarks
+                          value={formData.param1Remark}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
@@ -778,28 +782,27 @@ const CctvAlarmCertificate = ({
                             handleMouseEnter(e, formData.param1Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* Lenses Cleaned Row */}
                   <tr>
                     <td>
                       <div className="mb-3">
                         <label className="form-label">Lenses Cleaned</label>
                         <select
                           className="form-select"
-                          value={formData.param4} // lensesCleaned
+                          value={formData.param4}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
                               param4: e.target.value,
                             })
                           }
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -813,7 +816,7 @@ const CctvAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          value={formData.param2Remark} // lensesCleanedRemarks
+                          value={formData.param2Remark}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
@@ -824,14 +827,13 @@ const CctvAlarmCertificate = ({
                             handleMouseEnter(e, formData.param2Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* DVR Recording Check Row */}
                   <tr>
                     <td>
                       <div className="mb-3">
@@ -840,14 +842,14 @@ const CctvAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          value={formData.param5} // Use param5 instead of dvrRecordingCheck
+                          value={formData.param5}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              param5: e.target.value, // Update param5
+                              param5: e.target.value,
                             })
                           }
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -861,25 +863,24 @@ const CctvAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          value={formData.param3Remark} // Use param3Remark instead of dvrRecordingRemarks
+                          value={formData.param3Remark}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              param3Remark: e.target.value, // Update param3Remark
+                              param3Remark: e.target.value,
                             })
                           }
                           onMouseEnter={(e) =>
                             handleMouseEnter(e, formData.param3Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                           placeholder="Enter remarks"
                         />
                       </div>
                     </td>
                   </tr>
 
-                  {/* Electrical Connection Check Row */}
                   <tr>
                     <td>
                       <div className="mb-3">
@@ -888,14 +889,14 @@ const CctvAlarmCertificate = ({
                         </label>
                         <select
                           className="form-select"
-                          value={formData.param6} // electricalConnectionCheck
+                          value={formData.param6}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
                               param6: e.target.value,
                             })
                           }
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                         >
                           <option value="">Select</option>
                           <option value="Pass">Yes</option>
@@ -909,7 +910,7 @@ const CctvAlarmCertificate = ({
                         <input
                           type="text"
                           className="form-control"
-                          value={formData.param4Remark} // electricalConnectionRemarks
+                          value={formData.param4Remark}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
@@ -920,7 +921,7 @@ const CctvAlarmCertificate = ({
                             handleMouseEnter(e, formData.param4Remark)
                           }
                           onMouseLeave={handleMouseLeave}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                           placeholder="Enter remarks"
                         />
                       </div>
@@ -953,7 +954,7 @@ const CctvAlarmCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -979,7 +980,7 @@ const CctvAlarmCertificate = ({
                 value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
                 style={{
                   height: "40px",
                   padding: "0 10px",
@@ -1034,16 +1035,16 @@ const CctvAlarmCertificate = ({
 };
 
 const mapStateToProps = (state) => ({
-    sites: state.site.sites,
-    users: state.site.users,
-    siteAssets: state.site.siteAssets,
-    siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
-    loggedInUserData: state.site.loggedInUserData,
+  sites: state.site.sites,
+  users: state.site.users,
+  siteAssets: state.site.siteAssets,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
+  loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
-    getSiteDetailsById,
-    getSiteAssets,
-    getSites,
-    getUsers,
+  getSiteDetailsById,
+  getSiteAssets,
+  getSites,
+  getUsers,
 })(CctvAlarmCertificate);

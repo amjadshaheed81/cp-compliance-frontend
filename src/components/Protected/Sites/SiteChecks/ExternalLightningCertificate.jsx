@@ -257,12 +257,15 @@ const ExternalLightningCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.clientUser || null} // Use the stored clientUser
+          value={formData.clientUser || formData.siteContactUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
               client: newValue?.id || "",
               clientUser: newValue || null,
+              siteContact: newValue?.id || "",
+              siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -270,6 +273,7 @@ const ExternalLightningCertificate = ({
               {...params}
               variant="outlined"
               required
+              disabled={isSubmitted}
               style={{
                 height: "40px",
                 "& .MuiOutlinedInput-root": {
@@ -296,12 +300,16 @@ const ExternalLightningCertificate = ({
         type="text"
         className="form-control"
         name="clientName"
-        value={formData.clientUser?.name || ""}
+        value={
+          formData.clientUser?.name || formData.siteContactUser?.name || ""
+        }
         onChange={(e) => {
           setFormData((prev) => ({
             ...prev,
             client: e.target.value,
             clientNameText: e.target.value,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
           }));
         }}
         required
@@ -323,13 +331,15 @@ const ExternalLightningCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || null} // Use the stored siteContactUser
+          value={formData.siteContactUser || formData.clientUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
               siteContactUser: newValue || null,
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -337,6 +347,7 @@ const ExternalLightningCertificate = ({
               {...params}
               variant="outlined"
               required
+              disabled={isSubmitted}
               style={{
                 height: "40px",
                 "& .MuiOutlinedInput-root": {
@@ -363,12 +374,16 @@ const ExternalLightningCertificate = ({
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContactUser?.name || ""}
+        value={
+          formData.siteContactUser?.name || formData.clientUser?.name || ""
+        }
         onChange={(e) => {
           setFormData((prev) => ({
             ...prev,
             siteContact: e.target.value,
             siteContactName: e.target.value,
+            client: e.target.value,
+            clientNameText: e.target.value,
           }));
         }}
         required
@@ -376,8 +391,6 @@ const ExternalLightningCertificate = ({
       />
     );
   };
-
-  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
     <div className="container mt-4 mb-5">
@@ -429,7 +442,7 @@ const ExternalLightningCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
             <div className="mb-3">
@@ -446,7 +459,7 @@ const ExternalLightningCertificate = ({
                 name="siteContactNo"
                 value={formData.siteContactNo}
                 onChange={handleInputChange}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
             <div className="mb-3">
@@ -457,7 +470,7 @@ const ExternalLightningCertificate = ({
                 name="job"
                 value={formData.job}
                 onChange={handleInputChange}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -486,7 +499,7 @@ const ExternalLightningCertificate = ({
                       handleMouseEnter(e, formData.param1Remark)
                     }
                     onMouseLeave={handleMouseLeave}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                     required
                     style={{ width: "1200px" }}
                   />
@@ -509,7 +522,7 @@ const ExternalLightningCertificate = ({
                       handleMouseEnter(e, formData.param2Remark)
                     }
                     onMouseLeave={handleMouseLeave}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                     required
                     style={{ width: "1200px" }}
                   />
@@ -532,7 +545,7 @@ const ExternalLightningCertificate = ({
                       handleMouseEnter(e, formData.param3Remark)
                     }
                     onMouseLeave={handleMouseLeave}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                     required
                     style={{ width: "1200px" }}
                   />
@@ -562,7 +575,7 @@ const ExternalLightningCertificate = ({
                   })
                 }
                 style={{ height: "400px" }}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -716,7 +729,7 @@ const ExternalLightningCertificate = ({
                   padding: "0 10px",
                   width: "100%",
                 }}
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
               />
             </div>
           </div>
@@ -742,7 +755,7 @@ const ExternalLightningCertificate = ({
                 value={formatDate(formData.signedDate)}
                 onChange={handleInputChange}
                 required
-                disabled={isSubmitted && !canEditSubmittedReport}
+                disabled={isSubmitted}
                 style={{
                   height: "40px",
                   padding: "0 10px",
