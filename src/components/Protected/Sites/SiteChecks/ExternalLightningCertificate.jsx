@@ -11,6 +11,48 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
+import { v4 as uuidv4 } from 'uuid';
+import { saveAs } from 'file-saver';
+import axios from 'axios';
+
+// Import the PDF file directly
+import pdfTemplate from './pdf/ExternalLightingCertificate.pdf';
+
+// Dynamically import pdf-lib to avoid SSR issues
+let PDFLib;
+
+if (typeof window !== 'undefined') {
+  import('pdf-lib').then((pdfLib) => {
+    PDFLib = pdfLib;
+  });
+}
+
+// Helper function to fetch PDF as ArrayBuffer
+const fetchPdfTemplate = async () => {
+  try {
+    // Fetch the PDF file using the imported URL
+    const response = await fetch(pdfTemplate);
+    
+    if (!response.ok) {
+      throw new Error('Failed to load PDF template: ' + response.statusText);
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    
+    // Verify the PDF header
+    const header = new Uint8Array(arrayBuffer, 0, 5);
+    const headerStr = String.fromCharCode.apply(null, header);
+    
+    if (headerStr !== '%PDF-') {
+      throw new Error('Invalid PDF file: Missing PDF header');
+    }
+    
+    return arrayBuffer;
+  } catch (error) {
+    console.error('Error loading PDF template:', error);
+    throw new Error('Failed to load PDF template: ' + error.message);
+  }
+};
 
 const ExternalLightningCertificate = ({
   sasToken,
@@ -55,7 +97,10 @@ const ExternalLightningCertificate = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
-  
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPdfButton, setShowPdfButton] = useState(false);
+  const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const isInternalUserTaggedWithSite =
     loggedInUserData?.userType === "Internal" &&
@@ -210,8 +255,264 @@ const ExternalLightningCertificate = ({
     }));
   };
 
+  // Helper function to save PDF to local storage
+  const savePdfToLocal = async (pdfBlob, fileName) => {
+    try {
+      // Create a temporary URL for the blob
+      const url = URL.createObjectURL(pdfBlob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving PDF locally:', error);
+      return false;
+    }
+  };
+
+  // Helper function to upload PDF to the server
+  const uploadPdfToServer = async (pdfBlob, fileName) => {
+    try {
+      setIsUploading(true);
+      
+      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+      if (!savedLocally) {
+        throw new Error('Failed to save PDF locally');
+      }
+      
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      
+      const formData = new FormData();
+      formData.append('files', pdfFile);
+      
+      const documentRequestString = {
+        folderId: 217059,
+        files: [{
+          name: fileName.split('.')[0],
+          issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+          expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+          note: 'External Lightning Certificate',
+          fileVersion: 1,
+          siteId: siteSelectedForGlobal?.siteId || 0,
+          originalFileName: fileName,
+          uploaderUserId: loggedInUserData?.id || 0,
+          reviewerUserId: loggedInUserData?.id || 0,
+          referenceNumber: `ELC-${new Date().getTime()}`
+        }]
+      };
+      
+      // 5. Add metadata as a JSON string
+      formData.append('documentRequestString', JSON.stringify(documentRequestString));
+      
+      // 6. Make the API call
+      const response = await axios({
+        method: 'post',
+        url: '/api/document/files/upload',
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.data) {
+        toast.success('PDF uploaded successfully!');
+        return true;
+      } else {
+        throw new Error('Upload failed: No response data');
+      }
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast.error('Failed to upload PDF: ' + (error.response?.data?.message || error.message));
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Function to save PDF to public folder (for development)
+  const savePdfToPublic = async (pdfBlob, fileName) => {
+    try {
+      // In a real app, you would save to a server-side endpoint
+      // For client-side only, we'll just download it
+      saveAs(pdfBlob, fileName);
+      return true;
+    } catch (error) {
+      console.error('Error saving PDF:', error);
+      return false;
+    }
+  };
+
+  const generatePDF = async (uploadToServer = true) => {
+    try {
+      setIsGeneratingPDF(true);
+
+      if (!PDFLib) {
+        PDFLib = await import('pdf-lib');
+      }
+
+      const pdfBytes = await fetchPdfTemplate();
+
+      const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+
+      const form = pdfDoc.getForm();
+      
+      // Log all fields for debugging
+      console.log('=== PDF Form Fields ===');
+      const fields = form.getFields();
+      fields.forEach(field => {
+        try {
+          console.log(`Field: ${field.getName()}, Type: ${field.constructor.name}`);
+        } catch (error) {
+          console.warn('Error getting field name:', error);
+        }
+      });
+      console.log('======================');
+
+      console.log(JSON.stringify(formData)+"=====================formData==============================");
+      
+      const setTextField = (fieldName, value, fontSize = 10) => {
+        try {
+          const field = form.getTextField(fieldName);
+          if (field) {
+            field.setText(value || '');
+            try {
+              if (field.setFontSize) {
+                field.setFontSize(fontSize);
+              }
+            } catch (e) {
+              console.warn(`Could not set font size for ${fieldName}:`, e);
+            }
+          } else {
+            console.warn(`Field not found: ${fieldName}`);
+          }
+        } catch (error) {
+          console.warn(`Error setting field ${fieldName}:`, error.message);
+        }
+      };
+      
+      // Helper function to set checkbox
+      const setCheckbox = (fieldName, isChecked) => {
+        try {
+          const field = form.getCheckBox(fieldName);
+          if (field) {
+            field.setValue(!!isChecked);
+          } else {
+            console.warn(`Checkbox not found: ${fieldName}`);
+          }
+        } catch (error) {
+          console.warn(`Error setting checkbox ${fieldName}:`, error.message);
+        }
+      };
+      
+      const smallFont = 10;
+      const mediumFont = 10;
+      
+      const addressLines = (formData.address || '').split(',');
+      setTextField('AddressLine1', addressLines[0] || '', mediumFont);
+      setTextField('AddressLine2', addressLines[1] || '', mediumFont);
+      setTextField('city', addressLines[2] || '', mediumFont);
+      setTextField('postalCode', addressLines[3] || '', mediumFont);
+      setTextField('country', addressLines[4] || '', mediumFont);
+     
+      const siteContactName = formData.siteContactUser?.name || formData.siteContact || '';
+      setTextField('siteContract', siteContactName, mediumFont);
+      setTextField('contactNo', formData.siteContactNo || '', mediumFont);
+      setTextField('jobNo', formData.job || '', mediumFont);
+      
+      // Date
+      const formattedDate = formatDate(formData.inspectionDate) || '';
+      setTextField('Date', formattedDate, mediumFont);
+
+      // Fitting Information
+      setTextField('Fitting Types', formData.param1Remark || '', smallFont);
+      setTextField('Fitting Quanitity', formData.param2Remark || '', smallFont);
+      setTextField('Fittings Location', formData.param3Remark || '', smallFont);
+
+      // Service Items - Using checkboxes (Pass = true, Fail = false)
+      setCheckbox('JobComplete', formData.param1);
+      setCheckbox('PartsRequired', formData.param2);
+      setCheckbox('Timers Checked', formData.param3);
+      setCheckbox('Fittings Operational', formData.param4);
+      
+
+
+      // Engineer's Report
+      setTextField('Engineers Report', formData.report || '', smallFont);
+      
+      // Client and Engineer Information
+      // Use clientUser.name if it exists, otherwise fall back to client
+      const clientName = formData.clientUser?.name || formData.client || '';
+      // Use engineer name from users list if available, otherwise use the ID
+      const engineer = users?.find(u => u.id === formData.engineer);
+      const engineerName = engineer?.name || formData.engineer || '';
+      
+      setTextField('Clients Name', clientName, mediumFont);
+      setTextField('Engineers Name', engineerName, mediumFont);
+      
+      // Signature dates (using the 'on' fields)
+      setTextField('on', formattedDate, mediumFont);
+      setTextField('on_2', formattedDate, mediumFont);
+      
+      // Additional fields that might be missing
+      setTextField('Address', addressLines[0] || '', mediumFont);
+      
+      // Flatten the form to make it read-only
+      try {
+        form.flatten();
+      } catch (error) {
+        console.warn('Error flattening form:', error.message);
+      }
+
+      // Save the modified PDF
+      const pdfBytesModified = await pdfDoc.save();
+      
+      // Create a blob
+      const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
+      
+      const fileName = `ExternalLightningReport_${formData.job || 'report'}_${new Date().toISOString().split('T')[0]}_${uuidv4().substring(0, 8)}.pdf`;
+      
+      setGeneratedPdfBlob(blob);
+      
+      const savedToPublic = await savePdfToPublic(blob, fileName);
+      
+      // Upload to server if requested
+      let uploadedToServer = false;
+      if (uploadToServer && savedToPublic) {
+        uploadedToServer = await uploadPdfToServer(blob, fileName);
+      }
+      
+      // Show success message
+      if (savedToPublic && (!uploadToServer || uploadedToServer)) {
+        toast.success('PDF generated successfully!');
+        setShowPdfButton(true);
+      }
+      
+      return { success: true, fileName };
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF: ' + (error.message || 'Unknown error'));
+      return { success: false, error: error.message };
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const dataToSave = {
         ...formData,
@@ -238,9 +539,12 @@ const ExternalLightningCertificate = ({
       toast.success("External lightning report saved successfully");
       setIsSubmitted(true);
       setSubmissionSuccess(true);
+      setShowPdfButton(true); // Show the PDF button after successful submission
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -766,28 +1070,53 @@ const ExternalLightningCertificate = ({
           </div>
         </div>
 
-        {!isSubmitted && (
-          <div className="d-flex justify-content-end gap-2 mt-4 print-hide">
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </button>
-
-            <button type="submit" className="btn btn-primary">
-              Submit Report
-            </button>
-          </div>
-        )}
-
-        {submissionSuccess && (
-          <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on{" "}
-            {new Date().toISOString().split("T")[0]}
-          </div>
-        )}
+        <div className="mt-4 print-hide">
+          {!isSubmitted ? (
+            <div className="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => window.history.back()}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Submitting...' : 'Submit Report'}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="alert alert-success mb-4">
+                Report submitted successfully on {new Date().toISOString().split("T")[0]}
+              </div>
+              <div className="d-flex justify-content-center">
+                <button
+                  type="button"
+                  className="btn btn-primary d-flex align-items-center gap-2"
+                  onClick={() => generatePDF(true)}
+                  disabled={isGeneratingPDF || isUploading}
+                  style={{
+                    padding: '8px 20px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-pdf" viewBox="0 0 16 16">
+                    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                    <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388.09-.87.36-1.164c.272-.303.592-.458 1.022-.558.43-.1.813-.187 1.09-.214a.6.6 0 0 1 .153.01c.344.038.662.13.93.36c.27.23.4.55.4.91c0 .35-.12.65-.36.85c-.23.2-.55.3-.95.3c-.35 0-.66-.08-.89-.24a1.2 1.2 0 0 1-.5-.82h-.84c.02.3.1.56.23.74c.15.19.35.3.6.3c.14 0 .27-.03.38-.1c.1-.06.15-.16.15-.3c0-.1-.03-.18-.1-.24c-.06-.06-.16-.1-.3-.1c-.1 0-.2 0-.3.02c-.1.02-.19.04-.29.08v-.9c.08-.03.18-.05.3-.06c.12-.01.23-.02.34-.02c.33 0 .6.06.8.18c.2.12.3.3.3.55c0 .16-.04.3-.13.42c-.1.11-.23.2-.4.25c.2.03.36.1.5.22c.14.12.2.29.2.5c0 .23-.07.43-.23.59c-.15.16-.38.24-.7.24c-.32 0-.57-.07-.73-.22c-.16-.15-.25-.35-.27-.6h.82c0 .11.04.2.11.26c.08.06.17.08.26.08c.08 0 .16-.03.2-.08c.04-.06.07-.13.07-.22c0-.2-.1-.3-.3-.3c-.03 0-.07 0-.12.02c-.04.01-.08.02-.12.02h-.15v-.66h.15c.04 0 .08 0 .12.02c.04 0 .08.01.12.02c.05 0 .1 0 .15-.01c.04-.02.08-.03.1-.06c.03-.03.04-.07.04-.12c0-.1-.04-.17-.1-.21c-.06-.04-.15-.06-.28-.06c-.2 0-.35.04-.45.12c-.1.08-.15.2-.15.36h-.81c0-.22.06-.4.18-.54c.12-.14.3-.22.52-.22c.1 0 .2.02.3.06c.1.04.18.1.24.16c.06.06.1.14.13.24c.02.1.04.2.04.31c0 .12-.02.23-.06.33c-.04.1-.1.19-.18.26c-.08.07-.18.13-.3.17c-.12.04-.25.06-.4.06c-.1 0-.2-.01-.3-.03c-.1-.02-.19-.05-.27-.1v.66zM4.5 11.1h.76c.1 0 .2.03.28.07c.1.04.17.1.23.18c.06.07.1.16.13.26c.02.1.04.2.04.31c0 .12-.02.22-.06.32c-.04.1-.1.18-.18.26c-.08.08-.17.14-.28.18c-.1.04-.22.06-.34.06h-.78v-1.34h.02c.02 0 .03 0 .05.01c.02 0 .03 0 .05.01zm.25.66c.08 0 .16-.02.23-.05c.07-.04.13-.09.17-.16c.04-.07.06-.15.06-.24c0-.1-.02-.18-.06-.25c-.04-.07-.1-.12-.17-.16c-.07-.04-.15-.06-.23-.06h-.25v.86h.25z"/>
+                  </svg>
+                  {isGeneratingPDF ? 'Generating...' : isUploading ? 'Uploading...' : 'Generate & Upload PDF'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </form>
 
       <style>{`
