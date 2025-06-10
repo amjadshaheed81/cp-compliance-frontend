@@ -125,7 +125,7 @@ const SubFolder = ({
       let parentFolderId = subfolderFiles?.document?.parentFolderId;
       for (let i = 0; i < 10; i = i + 1) {
         if (parentFolderId !== null) {
-          const url = `/api/document/parent/${parentFolderId}/folders`;
+          const url = `/api/document/parent/${parentFolderId}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
           const response = await get(url);
           parentFolderId = response?.document?.parentFolderId;
           foldersList.push({
@@ -160,7 +160,7 @@ const SubFolder = ({
     }).then(async (result) => {
       if (result.isConfirmed) {
         await deleteFile(id);
-        getSubFilesAndFolder(folderId);
+        getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
         toast.success("File deleted succesfully!!");
       } else if (result.isDenied) {
         // Swal.fire("Changes are not saved", "", "info");
@@ -173,7 +173,7 @@ const SubFolder = ({
   };
 
   useEffect(() => {
-    getSubFilesAndFolder(folderId);
+    getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
     if (previousFolderId.length === 0) {
       //setPreviousFolderId([{ id: folderId, name: subfolderFiles?.document?.name }])
     }
@@ -191,7 +191,7 @@ const SubFolder = ({
             //fileId={file?.id}
             fileId={fileId}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -208,7 +208,7 @@ const SubFolder = ({
             setShowCopyModal={setShowCopyModal}
             selectedFileForCopy={selectedFileForCopy}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -218,7 +218,7 @@ const SubFolder = ({
             setShowMoveModal={setShowMoveModal}
             selectedFileForCopy={selectedFileForCopy}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -228,7 +228,7 @@ const SubFolder = ({
             setEditDocumentModal={setEditDocumentModal}
             selectedFile={selectedFileForCopy}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -240,7 +240,7 @@ const SubFolder = ({
             folderId={folderId2}
             folder2={subfolderFiles?.document}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -258,7 +258,7 @@ const SubFolder = ({
             uploaderUserId={loggedInUserData?.id}
             reviewerUserId={loggedInUserData?.id}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -273,7 +273,7 @@ const SubFolder = ({
             folder={folderData}
             setBulkUploadModal={setBulkUploadModal}
             refresh={() => {
-              getSubFilesAndFolder(folderId);
+              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
             }}
           />
         )}
@@ -570,7 +570,7 @@ autoComplete="off"
                                             const url = `/api/document/folder/${folder?.id}/delete`;
                                             const res = await del(url);
                                             if (res?.status === 200) {
-                                              getSubFilesAndFolder(folderId);
+                                              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
                                               toast.success(
                                                 `${folder?.name} has been deleted successully`
                                               );
@@ -621,7 +621,7 @@ autoComplete="off"
                                               toast.success(
                                                 `${folder?.name} has been updated successully`
                                               );
-                                              getSubFilesAndFolder(folderId);
+                                              getSubFilesAndFolder(folderId, siteSelectedForGlobal?.siteId);
                                             } else {
                                               toast.error(
                                                 "Something went wrong while updating document. Please try again!"

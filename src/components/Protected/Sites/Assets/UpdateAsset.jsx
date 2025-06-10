@@ -932,6 +932,7 @@ const UpdateAsset = ({
         <TagAsset
           showModal={showModal}
           setShowModal={setShowModal}
+          siteId={siteSelectedForGlobal?.siteId}
           assetId={assetId}
           refresh={() => {
             getAssetDetails();

@@ -42,7 +42,7 @@ const BulkUpload = ({
     }
   }, [selectedMandatoryFolder]);
   const getFiles = async () => {
-    const url = `/api/document/parent/${selectedMandatoryFolder[0].id}/folders`;
+    const url = `/api/document/parent/${selectedMandatoryFolder[0].id}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
     const res = await get(url);
     setFiles(res?.document?.files || [])
   }

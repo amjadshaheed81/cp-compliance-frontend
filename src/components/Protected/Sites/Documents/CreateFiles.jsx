@@ -207,7 +207,7 @@ const CreateFiles = ({
               let fileExtensionValue = "";
               if (isStautoryFolderSelected && !isStautoryFileSelected) {
                 const res = await get(
-                  `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders`
+                  `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders?siteId=${siteSelectedForGlobal?.siteId}`
                 );
                 const files = res?.document?.files;
                 if (files) {

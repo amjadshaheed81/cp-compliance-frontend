@@ -972,10 +972,10 @@ export const getDocumentsRootFolder = (id, isAdmin) => {
   };
 };
 
-export const getSubFilesAndFolder = (folderId) => {
+export const getSubFilesAndFolder = (folderId, siteId) => {
   return async (dispatch) => {
     try {
-      const url = `/api/document/parent/${folderId}/folders`;
+      const url = `/api/document/parent/${folderId}/folders?siteId=${siteId}`;
       const subFolderFiles = await get(url);
       dispatch({
         type: GET_DOCUMENTS_SUB_FOLDER_FILES,
