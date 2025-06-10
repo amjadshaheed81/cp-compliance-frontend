@@ -297,7 +297,7 @@ const AdminParentFolder = ({
     setLoader(true);
 
     try {
-      const url = `/api/document/parent-folder/${folderId}/delete`;
+      const url = `/api/document/folder/${folderId}/delete`;
       const res = await del(url);
 
       if (res?.status === 200) {
