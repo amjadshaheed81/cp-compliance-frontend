@@ -67,7 +67,7 @@ const MandatoryFile = ({
     }
   };
   const checkSubFolder = async (folderId) => {
-    const res = await get(`/api/document/parent/${folderId}/folders`);
+    const res = await get(`/api/document/parent/${folderId}/folders?siteId=${siteSelectedForGlobal?.siteId}`);
     if (res?.document?.files?.length > 0){
         setFiles(res?.document?.files);
     }
