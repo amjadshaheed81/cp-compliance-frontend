@@ -895,7 +895,7 @@ const Document = ({
                           </div>
 
                           {isAdminLogin(loggedInUserData) &&
-                            column.id !== "root" && (
+                            column.id !== "root" && folder.siteId > 0 && (
                               <Tooltip title="Delete Folder" arrow>
                                 <DeleteIcon
                                   onClick={(e) => {
