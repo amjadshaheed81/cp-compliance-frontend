@@ -630,7 +630,7 @@ const AdminParentFolder = ({
                       Subfolder
                     </Button>
 
-                    <Button
+                    {/* <Button
                       variant="outlined"
                       color="primary"
                       startIcon={<NoteAddIcon />}
@@ -647,7 +647,7 @@ const AdminParentFolder = ({
                       onClick={() => setIsBulkUploadModalOpen(true)}
                     >
                       Bulk Upload
-                    </Button>
+                    </Button> */}
                   </>
                 )}
 

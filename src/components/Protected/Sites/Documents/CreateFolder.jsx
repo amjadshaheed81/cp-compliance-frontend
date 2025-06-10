@@ -114,7 +114,7 @@ const CreateFolder = ({
             disabled={isLoading}
           />
 
-          <FormControlLabel
+          {!siteId && <FormControlLabel
             control={
               <Checkbox
                 checked={isShared}
@@ -124,7 +124,7 @@ const CreateFolder = ({
             }
             label="Default Folder (Visible to all users)"
             disabled={isLoading}
-          />
+          />}
 
           {isLoading && (
             <Box sx={{ display: "flex", justifyContent: "center" }}>
