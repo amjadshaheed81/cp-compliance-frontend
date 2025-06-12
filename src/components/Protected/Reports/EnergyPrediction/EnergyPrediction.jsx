@@ -7,218 +7,229 @@ import {
   Paper,
   Typography,
   Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  FormControl,
+  InputLabel,
   Select,
   MenuItem,
-  InputLabel,
-  FormControl
+  Box
 } from "@mui/material";
 import { 
   Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
+  CategoryScale,
+  LinearScale,
+  PointElement,
   LineElement,
+  BarElement,
+  Title,
   Tooltip, 
   Legend 
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
+  Title,
   Tooltip,
   Legend
 );
 
-const EnergyPrediction = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
+const EnergyAndAssetConsumption = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
+  // Common state
   const [isLoading, setIsLoading] = useState(false);
-  const [assets, setAssets] = useState([]);
-  const [energyReadings, setEnergyReadings] = useState([]);
-  const [predictions, setPredictions] = useState([]);
   const [selectedSite, setSelectedSite] = useState(siteSelectedForGlobal?.siteId || '');
-  const [siteArea, setSiteArea] = useState(0);
+  const [siteArea, setSiteArea] = useState(1);
+  const [allSites, setAllSites] = useState([]);
+  
+  // Energy consumption state
+  const [energyReadings, setEnergyReadings] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
+  // Asset consumption state
+  const [assets, setAssets] = useState([]);
 
   useEffect(() => {
     if (selectedSite) {
-      getEnergyData(selectedSite);
+      fetchSiteData(selectedSite);
     }
-  }, [selectedSite]);
+  }, [selectedSite, selectedYear]);
 
-  const getEnergyData = async (siteId) => {
+  const fetchSiteData = async (siteId) => {
     setIsLoading(true);
     try {
-      // Get site details to get area
-      const siteDetails = await get(`/api/site/site/${siteId}`);
+      // Get site details
+      if (allSites?.length === 0) {
+        const res = await get("/api/site/site/all?sort=asc&sortName=siteName&withDetails=true");
+        setAllSites(res);
+      }
+      
+      const siteDetails = allSites.find(site => site?.siteId === siteId) || {};
       const area = Number(siteDetails?.siteAreaOccupancyData?.totalBuildingArea) || 1;
       setSiteArea(area);
 
-      // Get assets with power consumption data
-      const assetsRes = await get(`/api/site/${siteId}/assets`);
-      setAssets(assetsRes.assets || []);
-
-      // Get energy readings
-      const readingsRes = await get(`/api/energy/site/survey/${siteId}`);
-      console.log('API Response:', readingsRes); // Debug log
-
-      if (!Array.isArray(readingsRes)) {
-        throw new Error('Invalid readings data format');
-      }
-
-      const processedReadings = processReadings(readingsRes, area);
-      console.log('Processed Readings:', processedReadings); // Debug log
-      
-      setEnergyReadings(processedReadings);
-
-      // Generate predictions only if we have valid data
-      const futurePredictions = processedReadings.length >= 3 
-        ? predictFutureConsumption(processedReadings, area)
-        : [];
-      setPredictions(futurePredictions);
+      // Fetch both energy and asset data in parallel
+      await Promise.all([
+        getEnergyData(siteId, area),
+        getAssetData(siteId)
+      ]);
     } catch (error) {
-      console.error('Error in getEnergyData:', error);
-      toast.error("Failed to fetch energy data: " + error.message);
+      console.error('Error in fetchSiteData:', error);
+      toast.error("Failed to fetch site data: " + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const processReadings = (readings, area) => {
-  if (!readings || !Array.isArray(readings)) return [];
-
-  const monthlyData = {};
-
-  // Flatten readings from all energy types and filter for kWh units
-  const allReadings = readings
-    .flatMap(item => item.readingList || [])
-    .filter(reading => reading.readingUnit.toLowerCase() === 'kwh' && reading.readingValue > 0);
-
-  allReadings.forEach(reading => {
+  const getEnergyData = async (siteId, area) => {
     try {
-      // Parse the reading date
-      let date;
-      if (typeof reading.readingDate === 'string') {
-        date = new Date(reading.readingDate);
-        if (isNaN(date.getTime())) {
-          // Try parsing different date formats if needed
-          const parts = reading.readingDate.split('-');
-          if (parts.length === 3) {
-            date = new Date(parts[0], parts[1] - 1, parts[2]);
-          }
-        }
-      } else if (reading.readingDate instanceof Date) {
-        date = new Date(reading.readingDate);
-      }
-
-      if (!date || isNaN(date.getTime())) {
-        console.warn('Invalid date:', reading.readingDate);
-        return;
-      }
-
-      const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
-
-      if (!monthlyData[monthYear]) {
-        monthlyData[monthYear] = {
-          month: date.getMonth(),
-          monthName: date.toLocaleString('default', { month: 'short' }),
-          year: date.getFullYear(),
-          consumption: 0,
-          consumptionPerM2: 0,
-          date: date
-        };
-      }
-
-      // Use readingValue instead of actualConsumption
-      const actualConsumption = parseFloat(reading.readingValue) || 0;
-      monthlyData[monthYear].consumption += actualConsumption;
-      monthlyData[monthYear].consumptionPerM2 += actualConsumption / area;
-    } catch (error) {
-      console.error('Error processing reading:', reading, error);
-    }
-  });
-
-  return Object.values(monthlyData)
-    .sort((a, b) => a.date - b.date)
-    .map(({ date, ...rest }) => rest);
-};
-
-  const predictFutureConsumption = (historicalData, area, monthsToPredict = 3) => {
-    if (!historicalData || historicalData.length < 3) return [];
-    
-    const x = historicalData.map((_, i) => i);
-    const y = historicalData.map(item => item.consumption);
-    const yPerM2 = historicalData.map(item => item.consumptionPerM2);
-    
-    const n = x.length;
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = y.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((a, val, i) => a + val * y[i], 0);
-    const sumXX = x.reduce((a, b) => a + b * b, 0);
-    
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
-    
-    const sumYPerM2 = yPerM2.reduce((a, b) => a + b, 0);
-    const sumXYPerM2 = x.reduce((a, val, i) => a + val * yPerM2[i], 0);
-    
-    const slopePerM2 = (n * sumXYPerM2 - sumX * sumYPerM2) / (n * sumXX - sumX * sumX);
-    const interceptPerM2 = (sumYPerM2 - slopePerM2 * sumX) / n;
-    
-    const lastDate = new Date(
-      historicalData[historicalData.length - 1].year, 
-      historicalData[historicalData.length - 1].month + 1, 
-      1
-    );
-    
-    return Array(monthsToPredict).fill(0).map((_, i) => {
-      const predictionDate = new Date(lastDate);
-      predictionDate.setMonth(predictionDate.getMonth() + i);
+      const readingsRes = await get(`/api/energy/site/survey/${siteId}`);
       
-      return {
-        monthName: predictionDate.toLocaleString('default', { month: 'short' }),
-        year: predictionDate.getFullYear(),
-        consumption: slope * (n + i) + intercept,
-        consumptionPerM2: slopePerM2 * (n + i) + interceptPerM2,
-        isPrediction: true
-      };
-    });
+      if (!Array.isArray(readingsRes)) {
+        throw new Error('Invalid readings data format');
+      }
+
+      const processedReadings = processElectricityReadings(readingsRes, area);
+      setEnergyReadings(processedReadings);
+    } catch (error) {
+      console.error('Error in getEnergyData:', error);
+      toast.error("Failed to fetch energy data: " + error.message);
+    }
   };
 
-  const prepareChartData = (usePerM2 = false) => {
-    const allData = [...energyReadings, ...predictions];
-    
-    const validData = allData.filter(item => 
-      !isNaN(item.consumption) && 
+  const getAssetData = async (siteId) => {
+    try {
+      const assetsRes = await get(`/api/site/${siteId}/assets`);
+      setAssets(assetsRes.assets || []);
+    } catch (error) {
+      console.error('Error fetching asset data:', error);
+      toast.error("Failed to fetch asset data: " + error.message);
+    }
+  };
+
+  const processElectricityReadings = (readings, area) => {
+    if (!readings || !Array.isArray(readings)) return [];
+
+    const monthlyData = {};
+
+    // Filter only electricity readings in kWh
+    const electricityReadings = readings
+      .filter(item => item.budgetCategory === "Electricity")
+      .flatMap(item => item.readingList || [])
+      .filter(reading => 
+        reading.readingUnit.toLowerCase() === 'kwh' && 
+        reading.readingValue > 0
+      );
+
+    electricityReadings.forEach(reading => {
+      try {
+        // Parse the reading date
+        let date;
+        if (typeof reading.readingDate === 'string') {
+          date = new Date(reading.readingDate);
+          if (isNaN(date.getTime())) {
+            // Try parsing different date formats if needed
+            const parts = reading.readingDate.split('-');
+            if (parts.length === 3) {
+              date = new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+          }
+        } else if (reading.readingDate instanceof Date) {
+          date = new Date(reading.readingDate);
+        }
+
+        if (!date || isNaN(date.getTime())) {
+          console.warn('Invalid date:', reading.readingDate);
+          return;
+        }
+
+        // Skip if not in selected year
+        if (date.getFullYear() !== selectedYear) return;
+
+        const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
+
+        if (!monthlyData[monthYear]) {
+          monthlyData[monthYear] = {
+            month: date.getMonth(),
+            monthName: date.toLocaleString('default', { month: 'short' }),
+            year: date.getFullYear(),
+            consumption: 0,
+            consumptionPerM2: 0,
+            date: date
+          };
+        }
+
+        // Use readingValue for consumption
+        const actualConsumption = parseFloat(reading.readingValue) || 0;
+        monthlyData[monthYear].consumption += actualConsumption;
+        monthlyData[monthYear].consumptionPerM2 += actualConsumption / area;
+      } catch (error) {
+        console.error('Error processing reading:', reading, error);
+      }
+    });
+
+    return Object.values(monthlyData)
+      .sort((a, b) => a.date - b.date)
+      .map(({ date, ...rest }) => rest);
+  };
+
+  const prepareConsumptionChartData = () => {
+    const validData = energyReadings.filter(item => 
       !isNaN(item.consumptionPerM2) && 
       item.monthName && 
       item.year
     );
 
-    const labels = validData.map(item => `${item.monthName} ${item.year}`);
-    const data = validData.map(item => usePerM2 ? item.consumptionPerM2 : item.consumption);
-    const unit = usePerM2 ? 'kWh/m²' : 'kWh';
+    const labels = validData.map(item => `${item.monthName}`);
+    const data = validData.map(item => item.consumptionPerM2);
     
     return {
       labels,
       datasets: [
         {
-          label: `Energy Consumption (${unit})`,
+          label: `Electricity Consumption per m² (kWh/m²) - ${selectedYear}`,
           data,
           borderColor: 'rgba(54, 162, 235, 1)',
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderWidth: 2,
-          borderDash: validData.map(item => item.isPrediction ? [5, 5] : []),
-          pointBackgroundColor: validData.map(item => 
-            item.isPrediction ? 'rgba(54, 162, 235, 0.8)' : 'rgba(54, 162, 235, 1)'
-          ),
           tension: 0.1
+        }
+      ]
+    };
+  };
+
+  const prepareAssetChartData = () => {
+    // Filter assets with powerOutput and convert to kW
+    const powerAssets = assets
+      .filter(asset => asset.powerOutput && asset.powerOutput > 0)
+      .map(asset => {
+        const power = parseFloat(asset.powerOutput) || 0;
+        const unit = 'W'; // Assuming values < 20 are in kW
+        const powerInKW = unit === 'kW' ? power : power / 1000;
+        const powerPerM2 = powerInKW / siteArea;
+        
+        return {
+          ...asset,
+          powerInKW,
+          powerPerM2
+        };
+      })
+      .sort((a, b) => b.powerInKW - a.powerInKW); // Sort by highest consumption first
+
+    const labels = powerAssets.map(asset => asset.assetName);
+    const data = powerAssets.map(asset => asset.powerPerM2);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Power Consumption per m² (kW/m²)',
+          data,
+          backgroundColor: 'rgba(75, 192, 192, 0.7)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
         }
       ]
     };
@@ -228,17 +239,26 @@ const EnergyPrediction = ({ loggedInUserData, siteSelectedForGlobal, sites }) =>
     setSelectedSite(event.target.value);
   };
 
+  const handleYearChange = (event) => {
+    setSelectedYear(event.target.value);
+  };
+
+  const years = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() - i
+  );
+
   return (
     <Fragment>
       <div className="row mt-4">
         <div className="col-md-12">
           <Paper elevation={3} style={{ padding: '20px', marginBottom: '20px' }}>
-            <Typography variant="h5" gutterBottom>
-              Energy Consumption Analysis
+            <Typography variant="h4" gutterBottom style={{ marginBottom: '30px' }}>
+              Energy and Asset Consumption Analysis
             </Typography>
             
             <Grid container spacing={2} style={{ marginBottom: '20px' }}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} md={3}>
                 <FormControl fullWidth>
                   <InputLabel id="site-select-label">Select Site</InputLabel>
                   <Select
@@ -258,204 +278,145 @@ const EnergyPrediction = ({ loggedInUserData, siteSelectedForGlobal, sites }) =>
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="year-select-label">Select Year</InputLabel>
+                  <Select
+                    labelId="year-select-label"
+                    id="year-select"
+                    value={selectedYear}
+                    label="Select Year"
+                    onChange={handleYearChange}
+                  >
+                    {years.map(year => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
             
             {isLoading ? (
-              <div className="text-center">
+              <Box display="flex" justifyContent="center" alignItems="center" height="400px">
                 <CircularProgress />
-              </div>
+              </Box>
             ) : (
               selectedSite ? (
-                <Grid container spacing={3}>
-                  {/* Energy Consumption Chart */}
+                <Grid container spacing={4}>
+                  {/* Electricity Consumption Chart */}
                   <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>
-                      Total Energy Consumption with 3-Month Forecast
-                    </Typography>
-                    <div style={{ height: '400px' }}>
-                      <Line 
-                        data={prepareChartData(false)} 
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          scales: {
-                            y: {
-                              beginAtZero: false,
-                              title: {
-                                display: true,
-                                text: 'kWh'
-                              }
-                            }
-                          },
-                          plugins: {
-                            legend: {
-                              position: 'top',
-                            },
-                            tooltip: {
-                              callbacks: {
-                                label: (context) => {
-                                  const value = context.raw;
-                                  if (isNaN(value)) return 'No data';
-                                  return `${context.dataset.label}: ${value.toFixed(2)} kWh${
-                                    context.dataIndex >= energyReadings.length ? ' (predicted)' : ''
-                                  }`;
+                    <Paper elevation={2} style={{ padding: '20px', height: '100%' }}>
+                      <Typography variant="h6" gutterBottom>
+                        Monthly Electricity Consumption per m²
+                      </Typography>
+                      <div style={{ height: '400px' }}>
+                        {energyReadings.length > 0 ? (
+                          <Line 
+                            data={prepareConsumptionChartData()} 
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              scales: {
+                                y: {
+                                  beginAtZero: false,
+                                  title: {
+                                    display: true,
+                                    text: 'kWh/m²'
+                                  }
+                                },
+                                x: {
+                                  title: {
+                                    display: true,
+                                    text: 'Month'
+                                  }
+                                }
+                              },
+                              plugins: {
+                                legend: {
+                                  position: 'top',
+                                },
+                                tooltip: {
+                                  callbacks: {
+                                    label: (context) => {
+                                      const value = context.raw;
+                                      if (isNaN(value)) return 'No data';
+                                      return `${context.dataset.label}: ${value.toFixed(2)} kWh/m²`;
+                                    }
+                                  }
                                 }
                               }
-                            }
-                          }
-                        }}
-                      />
-                    </div>
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="body1" style={{ textAlign: 'center', marginTop: '150px' }}>
+                            No electricity consumption data available for the selected site and year
+                          </Typography>
+                        )}
+                      </div>
+                    </Paper>
                   </Grid>
 
-                  {/* Energy Consumption per M2 Chart */}
+                  {/* Asset Power Consumption Chart */}
                   <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>
-                      Energy Consumption per m² with 3-Month Forecast
-                    </Typography>
-                    <div style={{ height: '400px' }}>
-                      <Line 
-                        data={prepareChartData(true)} 
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          scales: {
-                            y: {
-                              beginAtZero: false,
-                              title: {
-                                display: true,
-                                text: 'kWh/m²'
-                              }
-                            }
-                          },
-                          plugins: {
-                            legend: {
-                              position: 'top',
-                            },
-                            tooltip: {
-                              callbacks: {
-                                label: (context) => {
-                                  const value = context.raw;
-                                  if (isNaN(value)) return 'No data';
-                                  return `${context.dataset.label}: ${value.toFixed(2)} kWh/m²${
-                                    context.dataIndex >= energyReadings.length ? ' (predicted)' : ''
-                                  }`;
+                    <Paper elevation={2} style={{ padding: '20px', height: '100%' }}>
+                      <Typography variant="h6" gutterBottom>
+                        Asset Power Consumption per m²
+                      </Typography>
+                      <div style={{ height: '400px' }}>
+                        {assets.filter(a => a.powerOutput).length > 0 ? (
+                          <Bar 
+                            data={prepareAssetChartData()} 
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              scales: {
+                                y: {
+                                  beginAtZero: true,
+                                  title: {
+                                    display: true,
+                                    text: 'kW/m²'
+                                  }
+                                },
+                                x: {
+                                  title: {
+                                    display: true,
+                                    text: 'Assets'
+                                  }
+                                }
+                              },
+                              plugins: {
+                                legend: {
+                                  position: 'top',
+                                },
+                                tooltip: {
+                                  callbacks: {
+                                    label: (context) => {
+                                      const asset = assets.find(a => a.assetName === context.label);
+                                      const totalPower = asset?.powerInKW?.toFixed(2) || 'N/A';
+                                      return [
+                                        `Area: ${siteArea} m²`,
+                                        `Power/m²: ${context.raw.toFixed(4)} kW/m²`
+                                      ];
+                                    }
+                                  }
                                 }
                               }
-                            }
-                          }
-                        }}
-                      />
-                    </div>
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="body1" style={{ textAlign: 'center', marginTop: '150px' }}>
+                            No assets with power consumption data available
+                          </Typography>
+                        )}
+                      </div>
+                    </Paper>
                   </Grid>
-
-                  {/* Display if no data available */}
-                  {energyReadings.length === 0 && (
-                    <Grid item xs={12}>
-                      <Typography variant="body1" style={{ textAlign: 'center' }}>
-                        No energy consumption data available for the selected site
-                      </Typography>
-                    </Grid>
-                  )}
-
-                  {/* Assets with Power Consumption */}
-                  {assets.length > 0 && (
-                    <Grid item xs={12}>
-                      <Typography variant="h6" gutterBottom>
-                        Assets with Power Consumption
-                      </Typography>
-                      <TableContainer component={Paper}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Asset Name</TableCell>
-                              <TableCell>Category</TableCell>
-                              <TableCell align="right">Power Output</TableCell>
-                              <TableCell>Location</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {assets.filter(a => a.powerOutput).map((asset) => (
-                              <TableRow key={asset.assetId}>
-                                <TableCell>{asset.assetName}</TableCell>
-                                <TableCell>{asset.category}</TableCell>
-                                <TableCell align="right">
-                                  {asset.powerOutput} {asset.powerOutput < 20 ? 'kW' : 'W'}
-                                </TableCell>
-                                <TableCell>
-                                  {[asset.floor, asset.room].filter(Boolean).join(', ')}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {assets.filter(a => a.powerOutput).length === 0 && (
-                              <TableRow>
-                                <TableCell colSpan={4} align="center">
-                                  No assets with power consumption data found
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Grid>
-                  )}
-
-                  {/* Future Predictions */}
-                  {predictions.length > 0 && (
-                    <Grid item xs={12}>
-                      <Typography variant="h6" gutterBottom>
-                        Predicted Consumption (Next 3 Months)
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
-                          <Typography variant="subtitle1">Total Consumption</Typography>
-                          <TableContainer component={Paper}>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Month</TableCell>
-                                  <TableCell align="right">Predicted Consumption (kWh)</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {predictions.map((pred, index) => (
-                                  <TableRow key={`total-${index}`}>
-                                    <TableCell>{pred.monthName} {pred.year}</TableCell>
-                                    <TableCell align="right">{pred.consumption.toFixed(2)}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <Typography variant="subtitle1">Per m² Consumption</Typography>
-                          <TableContainer component={Paper}>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Month</TableCell>
-                                  <TableCell align="right">Predicted Consumption (kWh/m²)</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {predictions.map((pred, index) => (
-                                  <TableRow key={`m2-${index}`}>
-                                    <TableCell>{pred.monthName} {pred.year}</TableCell>
-                                    <TableCell align="right">{pred.consumptionPerM2.toFixed(2)}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                  )}
                 </Grid>
               ) : (
                 <Typography variant="body1" style={{ textAlign: 'center' }}>
-                  Please select a site to view energy data
+                  Please select a site to view consumption data
                 </Typography>
               )
             )}
@@ -472,4 +433,4 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 
-export default connect(mapStateToProps)(EnergyPrediction);
+export default connect(mapStateToProps)(EnergyAndAssetConsumption);
