@@ -101,12 +101,13 @@ const ExternalLightningCertificate = ({
   const [showPdfButton, setShowPdfButton] = useState(false);
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [folderIds, setFolderIds] = useState({
+    logBooks: null,
+    electricalManagement: null,
+    externalLighting: null
+  });
 
-  const isInternalUserTaggedWithSite =
-    loggedInUserData?.userType === "Internal" &&
-    loggedInUserData?.taggedSites?.some(
-      (site) => site.id === siteSelectedForGlobal?.siteId
-    );
+  const isInternalUserTaggedWithSite = true
 
   const [popup, setPopup] = useState({
     show: false,
@@ -190,6 +191,60 @@ const ExternalLightningCertificate = ({
     }
   };
 
+  const fetchFolderStructure = async (siteId) => {
+    try {
+      // First, get all parent folders for the site
+      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+      
+      if (parentFoldersResponse?.parentFolders?.length > 0) {
+        // Find the Log Books folder
+        const logBooksFolder = parentFoldersResponse.parentFolders.find(
+          folder => folder.name.trim() === 'Log Books'
+        );
+
+        if (logBooksFolder) {
+          // Get the contents of Log Books folder
+          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+          
+          if (logBooksResponse?.document?.childFolders) {
+            // Find the Electrical Management folder
+            const electricalManagementFolder = logBooksResponse.document.childFolders.find(
+              folder => folder.name.trim() === 'Electrical Management'
+            );
+
+            if (electricalManagementFolder) {
+              // Get the contents of Electrical Management folder
+              const electricalResponse = await get(
+                `/api/document/parent/${electricalManagementFolder.id}/folders?siteId=${siteId}`
+              );
+
+              if (electricalResponse?.document?.childFolders) {
+                // Find the External Lighting folder
+                const externalLightingFolder = electricalResponse.document.childFolders.find(
+                  folder => folder.name.trim() === 'External Lighting'
+                );
+
+                // Update state with all found folder IDs
+                setFolderIds({
+                  logBooks: logBooksFolder.id,
+                  electricalManagement: electricalManagementFolder.id,
+                  externalLighting: externalLightingFolder?.id || null
+                });
+
+                return externalLightingFolder?.id || null;
+              }
+            }
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching folder structure:', error);
+      toast.error('Failed to load document folders');
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
@@ -200,6 +255,9 @@ const ExternalLightningCertificate = ({
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+          
+          // Fetch the folder structure when site changes
+          await fetchFolderStructure(siteSelectedForGlobal.siteId);
 
           await fetchInspectionData();
 
@@ -296,8 +354,15 @@ const ExternalLightningCertificate = ({
       const formData = new FormData();
       formData.append('files', pdfFile);
       
+      // Use the externalLighting folder ID if available, otherwise fall back to Log Books
+      const targetFolderId = folderIds.externalLighting || folderIds.logBooks;
+      
+      if (!targetFolderId) {
+        throw new Error('Could not determine target folder for PDF upload');
+      }
+      
       const documentRequestString = {
-        folderId: 217059,
+        folderId: targetFolderId,
         files: [{
           name: fileName.split('.')[0],
           issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
@@ -368,8 +433,6 @@ const ExternalLightningCertificate = ({
 
       const form = pdfDoc.getForm();
       
-      // Log all fields for debugging
-      console.log('=== PDF Form Fields ===');
       const fields = form.getFields();
       fields.forEach(field => {
         try {
@@ -378,10 +441,18 @@ const ExternalLightningCertificate = ({
           console.warn('Error getting field name:', error);
         }
       });
-      console.log('======================');
 
-      console.log(JSON.stringify(formData)+"=====================formData==============================");
+
       
+      const convertPassFail = (value) => {
+        if (typeof value === 'string') {
+          const lower = value.toLowerCase();
+          if (lower === 'pass') return 'Yes';
+          if (lower === 'fail') return 'No';
+        }
+        return value || '';
+      };
+
       const setTextField = (fieldName, value, fontSize = 10) => {
         try {
           const field = form.getTextField(fieldName);
@@ -431,8 +502,17 @@ const ExternalLightningCertificate = ({
       setTextField('contactNo', formData.siteContactNo || '', mediumFont);
       setTextField('jobNo', formData.job || '', mediumFont);
       
-      // Date
-      const formattedDate = formatDate(formData.inspectionDate) || '';
+      // Format date as dd-mm-yyyy
+      const formatDateString = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+      };
+      
+      const formattedDate = formatDateString(formData.inspectionDate);
       setTextField('Date', formattedDate, mediumFont);
 
       // Fitting Information
@@ -440,18 +520,13 @@ const ExternalLightningCertificate = ({
       setTextField('Fitting Quanitity', formData.param2Remark || '', smallFont);
       setTextField('Fittings Location', formData.param3Remark || '', smallFont);
 
-      // Service Items - Using checkboxes (Pass = true, Fail = false)
-      setCheckbox('JobComplete', formData.param1);
-      setCheckbox('PartsRequired', formData.param2);
-      setCheckbox('Timers Checked', formData.param3);
-      setCheckbox('Fittings Operational', formData.param4);
-      
+      setTextField('JobComplete', convertPassFail(formData.param1));
+      setTextField('PartsRequired', convertPassFail(formData.param2));
+      setTextField('Timers Checked', convertPassFail(formData.param3));
+      setTextField('Fittings Operational', convertPassFail(formData.param4));
 
-
-      // Engineer's Report
       setTextField('Engineers Report', formData.report || '', smallFont);
       
-      // Client and Engineer Information
       // Use clientUser.name if it exists, otherwise fall back to client
       const clientName = formData.clientUser?.name || formData.client || '';
       // Use engineer name from users list if available, otherwise use the ID
@@ -1109,7 +1184,7 @@ const ExternalLightningCertificate = ({
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-pdf" viewBox="0 0 16 16">
                     <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
-                    <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388.09-.87.36-1.164c.272-.303.592-.458 1.022-.558.43-.1.813-.187 1.09-.214a.6.6 0 0 1 .153.01c.344.038.662.13.93.36c.27.23.4.55.4.91c0 .35-.12.65-.36.85c-.23.2-.55.3-.95.3c-.35 0-.66-.08-.89-.24a1.2 1.2 0 0 1-.5-.82h-.84c.02.3.1.56.23.74c.15.19.35.3.6.3c.14 0 .27-.03.38-.1c.1-.06.15-.16.15-.3c0-.1-.03-.18-.1-.24c-.06-.06-.16-.1-.3-.1c-.1 0-.2 0-.3.02c-.1.02-.19.04-.29.08v-.9c.08-.03.18-.05.3-.06c.12-.01.23-.02.34-.02c.33 0 .6.06.8.18c.2.12.3.3.3.55c0 .16-.04.3-.13.42c-.1.11-.23.2-.4.25c.2.03.36.1.5.22c.14.12.2.29.2.5c0 .23-.07.43-.23.59c-.15.16-.38.24-.7.24c-.32 0-.57-.07-.73-.22c-.16-.15-.25-.35-.27-.6h.82c0 .11.04.2.11.26c.08.06.17.08.26.08c.08 0 .16-.03.2-.08c.04-.06.07-.13.07-.22c0-.2-.1-.3-.3-.3c-.03 0-.07 0-.12.02c-.04.01-.08.02-.12.02h-.15v-.66h.15c.04 0 .08 0 .12.02c.04 0 .08.01.12.02c.05 0 .1 0 .15-.01c.04-.02.08-.03.1-.06c.03-.03.04-.07.04-.12c0-.1-.04-.17-.1-.21c-.06-.04-.15-.06-.28-.06c-.2 0-.35.04-.45.12c-.1.08-.15.2-.15.36h-.81c0-.22.06-.4.18-.54c.12-.14.3-.22.52-.22c.1 0 .2.02.3.06c.1.04.18.1.24.16c.06.06.1.14.13.24c.02.1.04.2.04.31c0 .12-.02.23-.06.33c-.04.1-.1.19-.18.26c-.08.07-.18.13-.3.17c-.12.04-.25.06-.4.06c-.1 0-.2-.01-.3-.03c-.1-.02-.19-.05-.27-.1v.66zM4.5 11.1h.76c.1 0 .2.03.28.07c.1.04.17.1.23.18c.06.07.1.16.13.26c.02.1.04.2.04.31c0 .12-.02.22-.06.32c-.04.1-.1.18-.18.26c-.08.08-.17.14-.28.18c-.1.04-.22.06-.34.06h-.78v-1.34h.02c.02 0 .03 0 .05.01c.02 0 .03 0 .05.01zm.25.66c.08 0 .16-.02.23-.05c.07-.04.13-.09.17-.16c.04-.07.06-.15.06-.24c0-.1-.02-.18-.06-.25c-.04-.07-.1-.12-.17-.16c-.07-.04-.15-.06-.23-.06h-.25v.86h.25z"/>
+                    <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388.09-.87.36-1.164c.272-.303.592-.458 1.022-.558.43-.1.813-.187 1.09-.214a.6.6 0 0 1 .153.01c.344.038.662.13.93.36c.27.23.4.55.4.91c0 .35-.12.65-.36.85c-.23.2-.55.3-.95.3c-.35 0-.66-.08-.89-.24a1.2 1.2 0 0 1-.5-.82h-.84c.02.3.1.56.23.74c.15.19.35.3.6.3c.14 0 .27-.03.38-.1c.1-.06.15-.16.15-.3c0-.1-.03-.18-.1-.24c-.06-.06-.16-.1-.3-.1c-.1 0-.2 0-.3.02c-.1.02-.19.04-.29.08v-.9c.08-.03.18-.05.3-.06c.12-.01.23-.02.34-.02c.33 0 .6.06.8.18c.2.12.3.3.3.55c0 .16-.04.3-.13.42c-.1.11-.23.2-.4.25c.2.03.36.1.5.22c.14.12.2.29.2.5c0 .23-.07.43-.23.59c-.15.16-.38.24-.7.24c-.32 0-.57-.07-.73-.22c-.16-.15-.25-.35-.27-.6h.82c0 .11.04.2.11.26c.08.06.17.08.26.08c.08 0 .16-.03.2-.08c.04-.06.07-.13.07-.22c0-.2-.1-.3-.3-.3c-.03 0-.07 0-.12.02c-.04 0-.08.01-.12.02h-.15v-.66h.15c.04 0 .08 0 .12.02c.04 0 .08.01.12.02c.05 0 .1 0 .15-.01c.04-.02.08-.03.1-.06c.03-.03.04-.07.04-.12c0-.1-.04-.17-.1-.21c-.06-.04-.15-.06-.28-.06c-.2 0-.35.04-.45.12c-.1.08-.15.2-.15.36h-.81c0-.22.06-.4.18-.54c.12-.14.3-.22.52-.22c.1 0 .2.02.3.06c.1.04.18.1.24.16c.06.06.1.14.13.24c.02.1.04.2.04.31c0 .12-.02.23-.06.33c-.04.1-.1.19-.18.26c-.08.07-.18.13-.3.17c-.12.04-.25.06-.4.06c-.1 0-.2-.01-.3-.03c-.1-.02-.19-.05-.27-.1v.66zM4.5 11.1h.76c.1 0 .2.03.28.07c.1.04.17.1.23.18c.06.07.1.16.13.26c.02.1.04.2.04.31c0 .12-.02.22-.06.32c-.04.1-.1.18-.18.26c-.08.08-.17.14-.28.18c-.1.04-.22.06-.34.06h-.78v-1.34h.02c.02 0 .03 0 .05.01c.02 0 .03 0 .05.01zm.25.66c.08 0 .16-.02.23-.05c.07-.04.13-.09.17-.16c.04-.07.06-.15.06-.24c0-.1-.02-.18-.06-.25c-.04-.07-.1-.12-.17-.16c-.07-.04-.15-.06-.23-.06h-.25v.86h.25z"/>
                   </svg>
                   {isGeneratingPDF ? 'Generating...' : isUploading ? 'Uploading...' : 'Generate & Upload PDF'}
                 </button>
