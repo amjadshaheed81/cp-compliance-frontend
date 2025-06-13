@@ -30,6 +30,7 @@ const SurveyWaterTemperatureMonitoring = ({
   getSiteLayout,
   loggedInUserData,
   repeatFrequency,
+  leadUserID
 }) => {
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
@@ -291,9 +292,10 @@ const SurveyWaterTemperatureMonitoring = ({
         dueDate: new Date(),
         siteId: siteSelectedForGlobal?.siteId,
         userId: loggedInUserData?.id,
-      };
-      put("/api/site/actions", body);
-    }
+        assignedTo: leadUserID,
+      }
+    put("/api/site/actions", body);
+    } 
     setReadingPop((prev) => {
       const nextIndex = prev < formData.length - 1 ? prev + 1 : null;
       if (nextIndex === null) {
