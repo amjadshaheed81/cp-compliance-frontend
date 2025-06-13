@@ -530,6 +530,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <EmergencyLightingInspectionForm
                   checkId={checkId}
                   sasToken={sasToken}
+                  leadUserID={siteCheck?.leadUserID}
                   siteCheck={siteCheck}
                 />
               </Item>
@@ -589,6 +590,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -674,7 +676,9 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             )}
             {step === "audit-unit-maintenance-periodic" && (
               <Item>
-                <AuditUnitPeriodic checkId={checkId} sasToken={sasToken} />
+                <AuditUnitPeriodic checkId={checkId} 
+                leadUserID={siteCheck?.leadUserID}
+                sasToken={sasToken} />
               </Item>
             )}
             {step === "audit-question" && (
@@ -683,6 +687,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -691,13 +696,16 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <SurveyWaterTemperatureMonitoring
                   checkId={checkId}
                   sasToken={sasToken}
+                  leadUserID={siteCheck?.leadUserID}
                   repeatFrequency={siteCheck?.repeatFrequency}
                 />
               </Item>
             )}
             {step === "survey-water-domestic-ra" && (
               <Item>
-                <SurveyWaterDomesticRA checkId={checkId} sasToken={sasToken} />
+                <SurveyWaterDomesticRA 
+                leadUserID={siteCheck?.leadUserID}
+                checkId={checkId} sasToken={sasToken} />
               </Item>
             )}
             {step === "survey-asbestos" && (
@@ -722,6 +730,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   checkId={checkId}
                   sasToken={sasToken}
                   siteCheck={siteCheck}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -741,6 +750,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 <InspectionFireCertificate
                   checkId={checkId}
                   sasToken={sasToken}
+                  leadUserID={siteCheck?.leadUserID}
                   siteCheck={siteCheck}
                 />
               </Item>

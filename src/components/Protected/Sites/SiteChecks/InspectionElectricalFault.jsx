@@ -14,6 +14,7 @@ const InspectionElectricalFault = ({
   siteSelectedForGlobal,
   siteCheck,
   loggedInUserData,
+  leadUserID
 }) => {
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -84,6 +85,7 @@ const InspectionElectricalFault = ({
           userId: loggedInUserData?.id,
           actionImage: data.imageUrl,
           taggedAsset: data.assetId,
+          assignedTo: leadUserID,
         };
         await put("/api/site/actions", actionData);
       }

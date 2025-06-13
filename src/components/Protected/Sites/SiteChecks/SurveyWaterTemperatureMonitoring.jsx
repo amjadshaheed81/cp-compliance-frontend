@@ -29,7 +29,8 @@ const SurveyWaterTemperatureMonitoring = ({
   siteSelectedForGlobal,
   getSiteLayout,
   loggedInUserData,
-  repeatFrequency
+  repeatFrequency,
+  leadUserID
 }) => {
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
@@ -291,6 +292,7 @@ const SurveyWaterTemperatureMonitoring = ({
         dueDate: new Date(),
         siteId: siteSelectedForGlobal?.siteId,
         userId: loggedInUserData?.id,
+        assignedTo: leadUserID,
       }
     put("/api/site/actions", body);
     } 

@@ -15,6 +15,7 @@ const AuditUnitPeriodic = ({
   siteAssets,
   getSiteAssets,
   siteSelectedForGlobal,
+  leadUserID
 }) => {
   const navigate = useNavigate();
 
@@ -86,6 +87,7 @@ const AuditUnitPeriodic = ({
         userId: loggedInUserData?.id,
         actionImage: data.imageUrl,
         taggedAsset: data.assetId,
+        assignedTo: leadUserID,
       };
       await put("/api/site/actions", actionData);
     }
