@@ -101,6 +101,7 @@ const ExternalLightningCertificate = ({
   const [showPdfButton, setShowPdfButton] = useState(false);
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     electricalManagement: null,
@@ -587,6 +588,19 @@ const ExternalLightningCertificate = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const errors = {};
+    if (!formData.param1) errors.param1 = "Please select one option";
+    if (!formData.param2) errors.param2 = "Please select one option";
+    if (!formData.param3) errors.param3 = "Please select one option";
+    if (!formData.param4) errors.param4 = "Please select one option";
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors({});
+
     setIsLoading(true);
     try {
       const dataToSave = {
@@ -988,37 +1002,65 @@ const ExternalLightningCertificate = ({
                   <tr>
                     <td>
                       <select
-                        className="form-select"
+                        className={`form-select ${
+                          validationErrors.param1 ? "is-invalid" : ""
+                        }`}
                         value={formData.param1}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             param1: e.target.value,
-                          })
-                        }
+                          });
+                          if (validationErrors.param1) {
+                            setValidationErrors((prev) => {
+                              const newErrors = { ...prev };
+                              delete newErrors.param1;
+                              return newErrors;
+                            });
+                          }
+                        }}
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param1 && (
+                        <div className="invalid-feedback">
+                          {validationErrors.param1}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <select
-                        className="form-select"
+                        className={`form-select ${
+                          validationErrors.param2 ? "is-invalid" : ""
+                        }`}
                         value={formData.param2}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             param2: e.target.value,
-                          })
-                        }
+                          });
+                          if (validationErrors.param2) {
+                            setValidationErrors((prev) => {
+                              const newErrors = { ...prev };
+                              delete newErrors.param2;
+                              return newErrors;
+                            });
+                          }
+                        }}
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param2 && (
+                        <div className="invalid-feedback">
+                          {validationErrors.param2}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 </tbody>
@@ -1043,20 +1085,34 @@ const ExternalLightningCertificate = ({
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <select
-                        className="form-select"
+                        className={`form-select ${
+                          validationErrors.param3 ? "is-invalid" : ""
+                        }`}
                         value={formData.param3}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             param3: e.target.value,
-                          })
-                        }
+                          });
+                          if (validationErrors.param3) {
+                            setValidationErrors((prev) => {
+                              const newErrors = { ...prev };
+                              delete newErrors.param3;
+                              return newErrors;
+                            });
+                          }
+                        }}
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param3 && (
+                        <div className="invalid-feedback">
+                          {validationErrors.param3}
+                        </div>
+                      )}
                     </td>
                   </tr>
                   <tr>
@@ -1065,20 +1121,34 @@ const ExternalLightningCertificate = ({
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <select
-                        className="form-select"
+                        className={`form-select ${
+                          validationErrors.param4 ? "is-invalid" : ""
+                        }`}
                         value={formData.param4}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             param4: e.target.value,
-                          })
-                        }
+                          });
+                          if (validationErrors.param4) {
+                            setValidationErrors((prev) => {
+                              const newErrors = { ...prev };
+                              delete newErrors.param4;
+                              return newErrors;
+                            });
+                          }
+                        }}
                         disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param4 && (
+                        <div className="invalid-feedback">
+                          {validationErrors.param4}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 </tbody>
@@ -1195,6 +1265,16 @@ const ExternalLightningCertificate = ({
       </form>
 
       <style>{`
+        .is-invalid {
+          border-color: #dc3545 !important;
+        }
+        .invalid-feedback {
+          display: block;
+          width: 100%;
+          margin-top: .25rem;
+          font-size: .875em;
+          color: #dc3545;
+        }
         @media print {
           .print-hide {
             display: none !important;
