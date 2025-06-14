@@ -14,11 +14,8 @@ import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
-
-// Import the PDF file directly
 import pdfTemplate from './pdf/ExternalLightingCertificate.pdf';
 
-// Dynamically import pdf-lib to avoid SSR issues
 let PDFLib;
 
 if (typeof window !== 'undefined') {
