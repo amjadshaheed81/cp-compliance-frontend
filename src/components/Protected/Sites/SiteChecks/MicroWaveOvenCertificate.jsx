@@ -15,7 +15,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/MicrowaveOvenCertificate.pdf';
 
-// Helper function to fetch PDF as ArrayBuffer
 const fetchPdfTemplate = async () => {
   try {
     const response = await fetch(pdfTemplate);
@@ -102,45 +101,60 @@ const MicroWaveOvenCertificate = ({
     microwaveOvenTesting: null
   });
   
-  const selectedAsset = siteAssets.find(
-    (asset) => asset.assetId === formData.assetId
+  // Fetch assets when component mounts or when site selection changes
+  useEffect(() => {
+    if (siteSelectedForGlobal?.siteId) {
+      getSiteAssets(siteSelectedForGlobal.siteId);
+    }
+  }, [siteSelectedForGlobal, getSiteAssets]);
+
+  const filteredAssets = React.useMemo(() => 
+    siteAssets?.filter(asset => {
+      return asset.category === "Electrical" && (
+        asset.subCategory === "Microwave Oven" ||
+        (asset.subCategory === "Small Appliances" && asset.subCategory2 === "Microware")
+      );
+    }) || [],
+    [siteAssets]  // Only re-calculate if siteAssets changes
   );
 
-  // Fetch folder structure for the site
+  const handleAssetSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedAsset: newValue,
+      assetId: newValue ? newValue.assetId : "",
+      ...(newValue && newValue.modelNumber && { param1: newValue.modelNumber }),
+      ...(newValue && newValue.serialNumber && { param2: newValue.serialNumber }),
+    }));
+  };
+
   const fetchFolderStructure = async (siteId) => {
     try {
-      // First, get all parent folders for the site
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
       
       if (parentFoldersResponse?.parentFolders?.length > 0) {
-        // Find the Log Books folder
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
           folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
-          // Get the contents of Log Books folder
           const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
           
           if (logBooksResponse?.document?.childFolders) {
-            // Find the Electrical Management folder
             const electricalManagementFolder = logBooksResponse.document.childFolders.find(
               folder => folder.name.trim() === 'Electrical Management'
             );
 
             if (electricalManagementFolder) {
-              // Get the contents of Electrical Management folder
               const electricalResponse = await get(
                 `/api/document/parent/${electricalManagementFolder.id}/folders?siteId=${siteId}`
               );
 
               if (electricalResponse?.document?.childFolders) {
-                // Find the Microwave Oven Testing folder
                 const microwaveOvenFolder = electricalResponse.document.childFolders.find(
                   folder => folder.name.trim() === 'Microwave Oven Testing'
                 );
 
-                // Update state with all found folder IDs
                 setFolderIds({
                   logBooks: logBooksFolder.id,
                   electricalManagement: electricalManagementFolder.id,
@@ -161,12 +175,10 @@ const MicroWaveOvenCertificate = ({
     }
   };
 
-  // Helper function to upload PDF to the server
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
       
-      // First, ensure we have the latest folder structure
       if (siteSelectedForGlobal?.siteId) {
         await fetchFolderStructure(siteSelectedForGlobal.siteId);
       }
@@ -176,7 +188,6 @@ const MicroWaveOvenCertificate = ({
       const formData = new FormData();
       formData.append('files', pdfFile);
       
-      // Use the microwaveOvenTesting folder ID if available, otherwise fall back to Log Books
       const targetFolderId = folderIds.microwaveOvenTesting || folderIds.logBooks;
       
       if (!targetFolderId) {
@@ -360,7 +371,7 @@ const MicroWaveOvenCertificate = ({
       // Microwave specific fields - using selectedAsset data
       setTextField('Model_Number', formData.selectedAsset?.model || 'N/A', mediumFont);
       setTextField('Manufacturer', formData.selectedAsset?.manufacturer || 'N/A', mediumFont);
-      setTextField('Location', formData.selectedAsset?.position || 'N/A', mediumFont);
+      setTextField('Location', `${formData.selectedAsset?.position} ${formData.selectedAsset?.room} ${formData.selectedAsset?.floor}`  || 'N/A', mediumFont);
       
       // Test results
       setTextField('EmissionLevel', formData.param1 === 'Pass' ? 'Yes' : 'No', mediumFont);
@@ -569,20 +580,8 @@ const MicroWaveOvenCertificate = ({
     getUsers,
   ]);
 
-  const filteredAssets =
-    siteAssets?.filter(
-      (asset) =>
-        asset.category === "Electrical" &&
-        asset.subCategory === "Small Appliances" &&
-        asset.subCategory2 === "Disabled Refuge Outstation"
-    ) || [];
-
-  const handleAssetSelect = (event, newValue) => {
-    setFormData((prev) => ({
-      ...prev,
-      assetId: newValue ? newValue.assetId : "",
-    }));
-  };
+  // filteredAssets is now defined above with useMemo
+  // handleAssetSelect is defined above
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -860,12 +859,20 @@ const MicroWaveOvenCertificate = ({
                       option.position || "NA"
                     } > ${option.floor || "NA"} > ${option.room || "NA"})`
                   }
-                  value={selectedAsset} // Use the computed selectedAsset
+                  value={formData.selectedAsset} // Use the stored selectedAsset
                   onChange={handleAssetSelect}
+                  noOptionsText={
+                    siteAssets === null 
+                      ? 'Loading assets...' 
+                      : filteredAssets.length === 0 
+                        ? 'No Microwave Ovens found. Please add Microwave Oven assets first.'
+                        : 'No results found'
+                  }
+                  loading={siteAssets === null}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a CCTV Device"
+                      label="Select a Microwave Oven"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -875,7 +882,7 @@ const MicroWaveOvenCertificate = ({
               </div>
             </div>
 
-            {selectedAsset && (
+            {formData.selectedAsset && (
               <div className="row">
                 <div className="col-md-4">
                   <div className="mb-3">
@@ -884,7 +891,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="manufacturer"
-                      value={selectedAsset.manufacturer}
+                      value={formData.selectedAsset?.manufacturer || ''}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -898,7 +905,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="model"
-                      value={selectedAsset.model}
+                      value={formData.selectedAsset?.model || ''}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -912,7 +919,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="position"
-                      value={selectedAsset.position}
+                      value={formData.selectedAsset?.position || ''}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -926,7 +933,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="floor"
-                      value={selectedAsset.floor}
+                      value={formData.selectedAsset?.floor || ''}
                       onChange={handleInputChange}
                       required
                       disabled
@@ -940,7 +947,7 @@ const MicroWaveOvenCertificate = ({
                       type="text"
                       className="form-control"
                       name="room"
-                      value={selectedAsset.room}
+                      value={formData.selectedAsset?.room || ''}
                       onChange={handleInputChange}
                       required
                       disabled
