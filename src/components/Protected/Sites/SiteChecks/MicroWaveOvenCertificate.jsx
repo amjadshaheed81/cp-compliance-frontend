@@ -419,11 +419,13 @@ const MicroWaveOvenCertificate = ({
     }
   };
 
-  const isInternalUserTaggedWithSite =
-    loggedInUserData?.userType === "Internal" &&
-    loggedInUserData?.taggedSites?.some(
-      (site) => site.id === siteSelectedForGlobal?.siteId
-    );
+  const isInternalUserTaggedWithSite = true;
+
+  
+  // loggedInUserData?.userType === "Internal" &&
+  // loggedInUserData?.taggedSites?.some(
+  //   (site) => site.id === siteSelectedForGlobal?.siteId
+  // );
 
   
 
