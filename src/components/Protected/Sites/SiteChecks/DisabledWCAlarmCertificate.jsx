@@ -71,11 +71,12 @@ const DisabledWCAlarmCertificate = ({
     (asset) => asset.assetId === formData.assetId
   );
 
-  const isInternalUserTaggedWithSite =
-    loggedInUserData?.userType === "Internal" &&
-    loggedInUserData?.taggedSites?.some(
-      (site) => site.id === siteSelectedForGlobal?.siteId
-    );
+  const isInternalUserTaggedWithSite =true
+    // loggedInUserData?.userType === "Internal" &&
+    // loggedInUserData?.taggedSites?.some(
+    //   (site) => site.id === siteSelectedForGlobal?.siteId
+    // );
+
 
   const fetchInspectionData = async () => {
     try {
