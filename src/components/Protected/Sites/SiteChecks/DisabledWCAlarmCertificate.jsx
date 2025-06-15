@@ -11,6 +11,9 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
+import { v4 as uuidv4 } from 'uuid';
+import { saveAs } from 'file-saver';
+import pdfTemplate from './pdf/DisabledWCAlarmCertificate.pdf';
 
 const DisabledWCAlarmCertificate = ({
   sasToken,
@@ -52,6 +55,18 @@ const DisabledWCAlarmCertificate = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPdfButton, setShowPdfButton] = useState(false);
+  const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [PDFLib, setPDFLib] = useState(null);
+  const [folderIds, setFolderIds] = useState({
+    logBooks: null,
+    plantAndEquipment: null,
+    miscellaneousService: null,
+    disabledWCAlarm: null
+  });
   const selectedAsset = siteAssets.find(
     (asset) => asset.assetId === formData.assetId
   );
@@ -124,6 +139,15 @@ const DisabledWCAlarmCertificate = ({
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
     }
+    
+    // Fetch folder structure when component mounts
+    const fetchFolders = async () => {
+      if (siteSelectedForGlobal?.siteId) {
+        await fetchFolderStructure(siteSelectedForGlobal.siteId);
+      }
+    };
+    
+    fetchFolders();
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -177,6 +201,331 @@ const DisabledWCAlarmCertificate = ({
     getUsers,
   ]);
 
+  // Load PDF library when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('pdf-lib').then((pdfLib) => {
+        setPDFLib(pdfLib);
+      }).catch(error => {
+        console.error('Failed to load PDF library:', error);
+        toast.error('Failed to load PDF functionality. Please refresh the page.');
+      });
+    }
+  }, []);
+
+  // Fetch PDF template from the server
+  const fetchPdfTemplate = async () => {
+    try {
+      const response = await fetch(pdfTemplate);
+      
+      if (!response.ok) {
+        throw new Error('Failed to load PDF template: ' + response.statusText);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // Verify the PDF header
+      const header = new Uint8Array(arrayBuffer, 0, 5);
+      const headerStr = String.fromCharCode.apply(null, header);
+      
+      if (headerStr !== '%PDF-') {
+        throw new Error('Invalid PDF file: Missing PDF header');
+      }
+      
+      return arrayBuffer;
+    } catch (error) {
+      console.error('Error loading PDF template:', error);
+      throw new Error('Failed to load PDF template: ' + error.message);
+    }
+  };
+
+  const generatePdf = async () => {
+    if (!PDFLib) {
+      toast.error('PDF library not loaded yet. Please wait and try again.');
+      return;
+    }
+    
+    if (!PDFLib.PDFDocument || typeof PDFLib.PDFDocument.load !== 'function') {
+      toast.error('PDF library not properly initialized. Please refresh the page.');
+      return;
+    }
+
+    try {
+      setIsGeneratingPDF(true);
+      
+      // Validate required fields
+      const requiredFields = [
+        'address', 'siteContact', 'inspectionDate', 'assetId',
+        'param1', 'param2', 'param3', 'param4', 'param5', 'param6', 'engineer'
+      ];
+      
+      const errors = {};
+      requiredFields.forEach(field => {
+        if (!formData[field]) {
+          errors[field] = 'This field is required';
+        }
+      });
+
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      setValidationErrors({});
+      
+      let pdfBytes;
+      try {
+        pdfBytes = await fetchPdfTemplate();
+      } catch (error) {
+        console.error('Error loading PDF template:', error);
+        toast.error('Failed to load PDF template. Please try again.');
+        return;
+      }
+      
+      let pdfDoc;
+      try {
+        pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+      } catch (error) {
+        console.error('Error loading PDF document:', error);
+        toast.error('Failed to process PDF. The template may be corrupted.');
+        return;
+      }
+      
+      const form = pdfDoc.getForm();
+      const fields = form.getFields();
+      
+      // Log all field names for debugging
+      console.log('PDF Form Fields:');
+      fields.forEach(f => console.log(f.getName()));
+      
+      // Helper function to set text field with font size
+      const setTextField = (fieldName, value, fontSize = 10) => {
+        try {
+          const field = form.getTextField(fieldName);
+          if (field) {
+            const stringValue = value !== null && value !== undefined ? String(value) : '';
+            field.setText(stringValue);
+            try {
+              if (field.setFontSize) {
+                field.setFontSize(fontSize);
+              }
+            } catch (e) {
+              console.warn(`Could not set font size for ${fieldName}:`, e);
+            }
+          } else {
+            console.warn(`Field not found: ${fieldName}`);
+          }
+        } catch (error) {
+          console.warn(`Error setting field ${fieldName}:`, error.message);
+        }
+      };
+
+      // Format date as dd/mm/yyyy
+      const formatDateString = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+
+      // Process address
+      const addressLines = (formData.address || '').split(',').map(s => s.trim());
+      
+      // Set manufacturer, model, and location from selected asset
+      setTextField('Manufacturer', formData.selectedAsset?.manufacturer || 'N/A');
+      setTextField('Model Number', formData.selectedAsset?.model || 'N/A');
+      setTextField('Location', `${formData.selectedAsset?.position || ''} ${formData.selectedAsset?.room || ''} ${formData.selectedAsset?.floor || ''}`.trim() || 'N/A');
+      
+      // Set client and engineer information
+      setTextField('Clients Name', formData.clientUser?.name || formData.client || 'N/A');
+      setTextField('Engineers Name', formData.user?.name || 'N/A');
+      
+      // Set dates
+      setTextField('on', formatDateString(formData.signedDate));
+      setTextField('on_2', formatDateString(formData.signedDate));
+      
+      // Set address fields with proper formatting
+      setTextField('AddressLine1', addressLines[0] || '');
+      setTextField('AddressLine2', addressLines[1] || '');
+      setTextField('city', addressLines[2] || '');
+      setTextField('postalCode', addressLines[3] || '');
+      setTextField('country', addressLines[4] || '');
+      
+      // Set other fields
+      setTextField('Date', formatDateString(formData.inspectionDate));
+      setTextField('siteContract', formData.siteContactUser?.name || 'N/A');
+      setTextField('contactNo', formData.siteContactNo || 'N/A');
+      setTextField('jobNo', formData.job || 'N/A');
+      setTextField('EngineerReport', formData.report || 'N/A');
+      
+      // Set test results
+      setTextField('PullSwitchCheck', formData.param1 === 'Pass' ? 'Yes' : 'No');
+      setTextField('ResetPointCheck', formData.param2 === 'Pass' ? 'Yes' : 'No');
+      setTextField('OverDoorCheck', formData.param3 === 'Pass' ? 'Yes' : 'No');
+      setTextField('OverDoorSound', formData.param4 === 'Pass' ? 'Yes' : 'No');
+      setTextField('ControlPointCheck', formData.param5 === 'Pass' ? 'Yes' : 'No');
+      setTextField('PassFail', formData.param6 || '');
+      
+      form.flatten();
+      
+      const pdfBytesSaved = await pdfDoc.save();
+      const blob = new Blob([pdfBytesSaved], { type: 'application/pdf' });
+      setGeneratedPdfBlob(blob);
+      
+      // Generate file name with timestamp
+      const fileName = `Disabled_WC_Alarm_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Save to local machine
+      saveAs(blob, fileName);
+      
+      // Upload to server
+      await uploadPdfToServer(blob, fileName);
+      
+      setShowPdfButton(true);
+      toast.success('PDF generated and uploaded successfully!');
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const fetchFolderStructure = async (siteId) => {
+    try {
+      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+      
+      if (parentFoldersResponse?.parentFolders?.length > 0) {
+        const logBooksFolder = parentFoldersResponse.parentFolders.find(
+          folder => folder.name.trim() === 'Log Books'
+        );
+
+        if (logBooksFolder) {
+          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+          
+          if (logBooksResponse?.document?.childFolders) {
+            const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
+              folder => folder.name.trim() === 'Plant and Equipment'
+            );
+
+            if (plantAndEquipmentFolder) {
+              const plantAndEquipmentResponse = await get(
+                `/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`
+              );
+
+              if (plantAndEquipmentResponse?.document?.childFolders) {
+                const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
+                  folder => folder.name.trim() === 'Miscellaneous Service Documents' || 
+                           folder.name.trim() === 'Miscellaneous Service'
+                );
+
+                if (miscellaneousFolder) {
+                  const miscResponse = await get(
+                    `/api/document/parent/${miscellaneousFolder.id}/folders?siteId=${siteId}`
+                  );
+
+                  if (miscResponse?.document?.childFolders) {
+                    const disabledWCAlarmFolder = miscResponse.document.childFolders.find(
+                      folder => folder.name.trim() === 'Disabled WC Alarm' || 
+                               folder.name.trim() === 'Disabled WC Alarm Testing'
+                    );
+
+                    setFolderIds({
+                      logBooks: logBooksFolder.id,
+                      plantAndEquipment: plantAndEquipmentFolder.id,
+                      miscellaneousService: miscellaneousFolder.id,
+                      disabledWCAlarm: disabledWCAlarmFolder?.id || null
+                    });
+
+                    return disabledWCAlarmFolder?.id || null;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching folder structure:', error);
+
+      return null;
+    }
+  };
+
+  const uploadPdfToServer = async (pdfBlob, fileName) => {
+    try {
+      setIsUploading(true);
+      
+      // If we don't have the folder ID, try to create the folder structure
+      let targetFolderId = folderIds.disabledWCAlarm;
+      if (!targetFolderId && siteSelectedForGlobal?.siteId) {
+        targetFolderId = await fetchFolderStructure(siteSelectedForGlobal.siteId);
+      }
+      
+      if (!targetFolderId) {
+        // Try to fetch the folder structure one more time
+        targetFolderId = await fetchFolderStructure(siteSelectedForGlobal?.siteId);
+        
+        if (!targetFolderId) {
+          throw new Error('Could not find the target folder. Please ensure the folder structure exists: Log Books > Plant and Equipment > Miscellaneous Service > Disabled WC Alarm');
+        }
+      }
+      
+      // Create FormData to send the file
+      const formData = new FormData();
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      formData.append('files', file);
+      
+      // Prepare document request string
+      const documentRequestString = {
+        folderId: targetFolderId,
+        files: [{
+          name: fileName.split('.')[0],
+          issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+          expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+          note: 'Disabled WC Alarm Certificate',
+          fileVersion: 1,
+          siteId: siteSelectedForGlobal?.siteId || 0,
+          originalFileName: fileName,
+          uploaderUserId: loggedInUserData?.id || 0,
+          reviewerUserId: loggedInUserData?.id || 0,
+          referenceNumber: `DWC-${new Date().getTime()}`
+        }]
+      };
+      
+      formData.append('documentRequestString', JSON.stringify(documentRequestString));
+      
+      const response = await fetch('/api/document/files/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const responseData = await response.json();
+      
+      if (response.ok && responseData.success) {
+        toast.success('PDF uploaded successfully to Disabled WC Alarm folder');
+        return true;
+      } else {
+        console.error('Upload error response:', responseData);
+        throw new Error(responseData.message || 'Failed to upload PDF');
+      }
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+     
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const filteredAssets =
     siteAssets?.filter(
       (asset) =>
@@ -199,6 +548,8 @@ const DisabledWCAlarmCertificate = ({
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -228,10 +579,22 @@ const DisabledWCAlarmCertificate = ({
         param6: formData.param6, // pass/fail check
       };
 
-      await post("/api/site-check/generic-inspection", dataToSave);
-      toast.success("Microwave Oven Test report saved successfully");
+      const response = await post("/api/site-check/generic-inspection", dataToSave);
+      
+      // Update form data with the response data to ensure we have the latest data
+      if (response) {
+        setFormData(prev => ({
+          ...prev,
+          ...response,
+          // Ensure we keep the selected asset
+          selectedAsset: prev.selectedAsset
+        }));
+      }
+      
+      toast.success("Disabled WC Alarm Test report saved successfully");
       setIsSubmitted(true);
       setSubmissionSuccess(true);
+      setShowPdfButton(true);
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -831,21 +1194,30 @@ const DisabledWCAlarmCertificate = ({
           </div>
         </div>
 
-        {!isSubmitted && (
-          <div className="d-flex justify-content-end gap-2 mt-4 print-hide">
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </button>
+        <div className="d-flex justify-content-end gap-2 mt-4 print-hide">
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            onClick={() => window.history.back()}
+          >
+            {isSubmitted ? 'Back' : 'Cancel'}
+          </button>
 
+          {!isSubmitted ? (
             <button type="submit" className="btn btn-primary">
               Submit Report
             </button>
-          </div>
-        )}
+          ) : (
+            <button 
+              type="button" 
+              className="btn btn-success"
+              onClick={generatePdf}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? 'Generating PDF...' : 'Save and Generate PDF'}
+            </button>
+          )}
+        </div>
 
         {submissionSuccess && (
           <div className="alert alert-success mt-4 print-hide">

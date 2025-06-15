@@ -296,16 +296,13 @@ const MicroWaveOvenCertificate = ({
 
       const fields = form.getFields();
       
-      // Log all field names for debugging
       console.log('PDF Form Fields:');
       fields.forEach(f => console.log(f.getName()));
       
-      // Define font sizes
       const smallFont = 10;
       const mediumFont = 10;
       const largeFont = 10;
 
-      // Helper function to set text field with font size
       const setTextField = (fieldName, value, fontSize = mediumFont) => {
         try {
           const field = form.getTextField(fieldName);
@@ -328,7 +325,6 @@ const MicroWaveOvenCertificate = ({
         }
       };
 
-      // Helper function to set checkbox
       const setCheckbox = (fieldName, isChecked) => {
         try {
           const field = form.getCheckBox(fieldName);
@@ -342,7 +338,6 @@ const MicroWaveOvenCertificate = ({
         }
       };
 
-      // Format date as dd/mm/yyyy
       const formatDateString = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
