@@ -100,62 +100,117 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
   };
 
   const processElectricityReadings = (readings) => {
-    if (!readings || !Array.isArray(readings)) return [];
+  if (!readings || !Array.isArray(readings)) return [];
 
-    const monthlyData = {};
+  // Initialize monthly data structure for all 12 months
+  const monthlyData = Array.from({ length: 12 }, (_, month) => {
+    const date = new Date(selectedYear, month, 1);
+    return {
+      month,
+      monthName: date.toLocaleString('default', { month: 'short' }),
+      year: selectedYear,
+      consumption: 0,
+      daysInMonth: new Date(selectedYear, month + 1, 0).getDate(),
+      startDate: new Date(selectedYear, month, 1),
+      endDate: new Date(selectedYear, month + 1, 0)
+    };
+  });
 
-    // Initialize all 12 months
-    for (let month = 0; month < 12; month++) {
-      const date = new Date(selectedYear, month, 1);
-      const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
+  // Process all electricity readings
+  const electricityReadings = readings
+    .filter(item => item.budgetCategory === "Electricity")
+    .flatMap(item => item.readingList || [])
+    .map(reading => {
+      // Parse the reading date
+      let date;
+      if (typeof reading.readingDate === 'string') {
+        // Try ISO format first
+        date = new Date(reading.readingDate);
+        if (isNaN(date.getTime())) {
+          // Try splitting date string (format: "YYYY-MM-DD")
+          const parts = reading.readingDate.split(/[-/]/);
+          if (parts.length === 3) {
+            date = new Date(parts[0], parts[1] - 1, parts[2]);
+          }
+        }
+      } else if (reading.readingDate instanceof Date) {
+        date = new Date(reading.readingDate);
+      }
+
+      // Parse the reading value
+      const value = parseFloat(reading.readingValue);
       
-      monthlyData[monthYear] = {
-        month: date.getMonth(),
-        monthName: date.toLocaleString('default', { month: 'short' }),
-        year: date.getFullYear(),
-        consumption: 0, // Absolute kWh
-        date: date
+      return {
+        ...reading,
+        parsedDate: date,
+        parsedValue: !isNaN(value) ? value : null,
+        isValid: date instanceof Date && !isNaN(date.getTime()) && 
+                !isNaN(value) && value >= 0 &&
+                reading.readingUnit.toLowerCase() === 'kwh'
       };
+    })
+    .filter(reading => 
+      reading.isValid && 
+      reading.parsedDate.getFullYear() === selectedYear
+    )
+    .sort((a, b) => a.parsedDate - b.parsedDate);
+
+  // Calculate consumption between consecutive valid readings
+  for (let i = 1; i < electricityReadings.length; i++) {
+    const prevReading = electricityReadings[i - 1];
+    const currentReading = electricityReadings[i];
+
+    // Skip if readings are invalid or out of order
+    if (!prevReading.isValid || !currentReading.isValid || 
+        prevReading.parsedDate >= currentReading.parsedDate) {
+      continue;
     }
 
-    // Filter only electricity readings in kWh
-    const electricityReadings = readings
-      .filter(item => item.budgetCategory === "Electricity")
-      .flatMap(item => item.readingList || [])
-      .filter(reading => 
-        reading.readingUnit.toLowerCase() === 'kwh' && 
-        reading.readingValue > 0
-      );
+    const consumption = currentReading.parsedValue - prevReading.parsedValue;
+    
+    // Only process positive consumption (ignore meter resets or negative values)
+    if (consumption <= 0) continue;
 
-    electricityReadings.forEach(reading => {
-      try {
-        let date;
-        if (typeof reading.readingDate === 'string') {
-          date = new Date(reading.readingDate);
-          if (isNaN(date.getTime())) {
-            const parts = reading.readingDate.split('-');
-            if (parts.length === 3) {
-              date = new Date(parts[0], parts[1] - 1, parts[2]);
-            }
-          }
-        } else if (reading.readingDate instanceof Date) {
-          date = new Date(reading.readingDate);
-        }
+    const totalHours = (currentReading.parsedDate - prevReading.parsedDate) / (1000 * 60 * 60);
+    if (totalHours <= 0) continue;
 
-        if (!date || isNaN(date.getTime()) || date.getFullYear() !== selectedYear) return;
+    // Find all months between these two readings
+    let currentMonth = new Date(prevReading.parsedDate);
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
 
-        const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
-        if (!monthlyData[monthYear]) return;
+    const endMonth = new Date(currentReading.parsedDate);
+    endMonth.setDate(1);
+    endMonth.setHours(0, 0, 0, 0);
 
-        const actualConsumption = parseFloat(reading.readingValue) || 0;
-        monthlyData[monthYear].consumption += actualConsumption;
-      } catch (error) {
-        console.error('Error processing reading:', reading, error);
+    while (currentMonth <= endMonth) {
+      const month = currentMonth.getMonth();
+      const monthData = monthlyData[month];
+      
+      // Calculate the time period within this month
+      const periodStart = new Date(Math.max(
+        prevReading.parsedDate, 
+        monthData.startDate
+      ));
+      const periodEnd = new Date(Math.min(
+        currentReading.parsedDate,
+        monthData.endDate
+      ));
+      
+      const periodHours = (periodEnd - periodStart) / (1000 * 60 * 60);
+      if (periodHours > 0) {
+        // Allocate consumption proportionally by time
+        const monthConsumption = (consumption * periodHours) / totalHours;
+        monthData.consumption += monthConsumption;
       }
-    });
 
-    return Object.values(monthlyData).sort((a, b) => a.month - b.month);
-  };
+      // Move to next month
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+  }
+
+  return monthlyData;
+};
 
   const prepareComparisonChartData = () => {
     // Get all months with names
