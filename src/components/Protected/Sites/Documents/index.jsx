@@ -850,7 +850,7 @@ const Document = ({
                       {column.data.map((folder) => (
                         <div
                           key={folder.id}
-                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : folder.fileCount === 0 ? 'bg-light':'bg-white' }`}
+                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : folder.fileCount === 0 ? 'bg-light':'bg-white' } ${folder.fileCount === 0 ? 'text-muted' : ''}`}
                           role="button"
                           onClick={() => {
                             handleFolderClick(folder, colIdx, true);
