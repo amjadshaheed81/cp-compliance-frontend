@@ -379,6 +379,31 @@ const ExternalLightningCertificate = ({
     }
   };
 
+  // Function to check if a file exists in the folder
+  const checkFileExists = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId || !folderId) return { exists: false, file: null };
+      
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      
+      // Find file with the same base name (without extension)
+      const baseName = fileName.split('.')[0];
+      const existingFile = files.find(file => 
+        file.name && file.name.startsWith(baseName)
+      );
+      
+      return {
+        exists: !!existingFile,
+        file: existingFile || null
+      };
+    } catch (error) {
+      console.error('Error checking file existence:', error);
+      return { exists: false, file: null };
+    }
+  };
+
   // Helper function to upload PDF to the server
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
@@ -391,9 +416,6 @@ const ExternalLightningCertificate = ({
       
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
       
-      const formData = new FormData();
-      formData.append('files', pdfFile);
-      
       // Use the externalLighting folder ID if available, otherwise fall back to Log Books
       const targetFolderId = folderIds.externalLighting || folderIds.logBooks;
       
@@ -401,46 +423,92 @@ const ExternalLightningCertificate = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
       
-      // Get the next version number
-      const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+      // Check if file exists
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
       
-      const documentRequestString = {
-        folderId: targetFolderId,
-        files: [{
-          name: fileName.split('.')[0],
-          issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-          expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-            .toISOString().replace('T', ' ').split('.')[0],
-          note: 'External Lightning Certificate',
-          fileVersion: fileVersion,
-          siteId: siteSelectedForGlobal?.siteId || 0,
-          originalFileName: fileName,
-          uploaderUserId: loggedInUserData?.id || 0,
-          reviewerUserId: loggedInUserData?.id || 0,
-          referenceNumber: `ELC-${new Date().getTime()}`
-        }]
-      };
+      // Create FormData for both cases
+      const formData = new FormData();
       
-      // Add metadata as a JSON string
-      formData.append('documentRequestString', JSON.stringify(documentRequestString));
-      
-      // Make the API call
-      const response = await axios({
-        method: 'post',
-        url: '/api/document/files/upload',
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      if (exists && existingFile) {
+        // File exists, use the new version upload endpoint
+        formData.append('file', pdfFile);  // Single file for new version
+        
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: existingFile.fileVersion + 1,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `ELC-${new Date().getTime()}`
+          }]
+        };
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        
+        const response = await axios({
+          method: 'put',
+          url: '/api/document/file/newVersion/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+          return true;
         }
-      });
-      
-      if (response.data) {
-        toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-        return true;
-      } else {
-        throw new Error('Upload failed: No response data');
+} else {
+        // File doesn't exist, use the regular upload endpoint
+        formData.append('files', pdfFile);  // Note: 'files' (plural) for new upload
+        
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            note: 'External Lightning Certificate',
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            originalFileName: fileName,
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `ELC-${new Date().getTime()}`
+          }]
+        };
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        
+        const response = await axios({
+          method: 'post',
+          url: '/api/document/files/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          return true;
+        }
       }
+      
+      throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
       toast.error('Failed to upload PDF: ' + (error.response?.data?.message || error.message));
