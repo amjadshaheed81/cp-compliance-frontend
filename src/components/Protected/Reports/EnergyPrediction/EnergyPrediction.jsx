@@ -11,20 +11,20 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Box
+  Box,
 } from "@mui/material";
-import { 
-  Chart as ChartJS, 
+import {
+  Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
   BarElement,
   Title,
-  Tooltip, 
-  Legend 
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Pie } from "react-chartjs-2";
 
 ChartJS.register(
   CategoryScale,
@@ -37,98 +37,96 @@ ChartJS.register(
   Legend
 );
 
-const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
+const EnergyAndAssetComparisonChart = ({
+  loggedInUserData,
+  siteSelectedForGlobal,
+  sites,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedSite, setSelectedSite] = useState(siteSelectedForGlobal?.siteId || '');
+  const [selectedSite, setSelectedSite] = useState(
+    siteSelectedForGlobal?.siteId || ""
+  );
   const [allSites, setAllSites] = useState([]);
   const [energyReadings, setEnergyReadings] = useState([]);
   const [assets, setAssets] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [floorArea, setFloorArea] = useState(null);
 
-  // Fetch site data when selectedSite changes
   useEffect(() => {
-    if (selectedSite) {
-      fetchSiteData(selectedSite);
-    }
-  }, [selectedSite]);
-
-  // Fetch energy and asset data when selectedSite or selectedYear changes
-  useEffect(() => {
-    if (selectedSite) {
-      fetchEnergyData(selectedSite);
-      fetchAssetData(selectedSite);
-    }
-  }, [selectedSite, selectedYear]);
-
-  const fetchSiteData = async (siteId) => {
-    setIsLoading(true);
-    try {
-      // Get site details if not already fetched
-      if (allSites.length === 0) {
-        const res = await get("/api/site/site/all?sort=asc&sortName=siteName&withDetails=true");
+    const fetchAllSites = async () => {
+      try {
+        const res = await get(
+          "/api/site/site/all?sort=asc&sortName=siteName&withDetails=true"
+        );
         setAllSites(res);
+      } catch (error) {
+        console.error("Error fetching all sites:", error);
       }
-    } catch (error) {
-      console.error('Error in fetchSiteData:', error);
-      toast.error("Failed to fetch site data: " + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+    fetchAllSites();
+  }, [siteSelectedForGlobal, loggedInUserData, sites]);
 
-  const fetchEnergyData = async (siteId) => {
-    setIsLoading(true);
-    try {
-      await getEnergyData(siteId);
-    } catch (error) {
-      console.error('Error in fetchEnergyData:', error);
-      toast.error("Failed to fetch energy data: " + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Fetch site-specific data when selectedSite changes
+  useEffect(() => {
+    if (selectedSite) {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          // First fetch site data to get floor area
+          const site = allSites.find((s) => s.siteId === selectedSite);
+          const area = site?.siteAreaOccupancyData?.totalBuildingArea || null;
+          setFloorArea(area);
 
-  const fetchAssetData = async (siteId) => {
-    setIsLoading(true);
-    try {
-      await getAssetData(siteId);
-    } catch (error) {
-      console.error('Error in fetchAssetData:', error);
-      toast.error("Failed to fetch asset data: " + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+          // Then fetch energy and asset data
+          await Promise.all([
+            getEnergyData(selectedSite, area),
+            getAssetData(selectedSite),
+          ]);
+        } catch (error) {
+          console.error("Error in fetchData:", error);
+          toast.error("Failed to fetch data: " + error.message);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-  const getEnergyData = async (siteId) => {
+      fetchData();
+    }
+  }, [selectedSite, selectedYear, allSites]);
+
+  const getEnergyData = async (siteId, area) => {
     try {
       const readingsRes = await get(`/api/energy/site/survey/${siteId}`);
-      
       if (!Array.isArray(readingsRes)) {
-        throw new Error('Invalid readings data format');
+        throw new Error("Invalid readings data format");
       }
-
-      const processedReadings = processElectricityReadings(readingsRes, selectedYear);
+      const processedReadings = processElectricityReadings(
+        readingsRes,
+        selectedYear,
+        area
+      );
       setEnergyReadings(processedReadings);
     } catch (error) {
-      console.error('Error in getEnergyData:', error);
+      console.error("Error in getEnergyData:", error);
       toast.error("Failed to fetch energy data: " + error.message);
     }
   };
 
   const getAssetData = async (siteId) => {
     try {
-      // Note: If your API supports historical asset data, modify this to include the year
-      // Example: `/api/site/${siteId}/assets?year=${selectedYear}`
       const assetsRes = await get(`/api/site/${siteId}/assets`);
       setAssets(assetsRes.assets || []);
     } catch (error) {
-      console.error('Error fetching asset data:', error);
+      console.error("Error fetching asset data:", error);
       toast.error("Failed to fetch asset data: " + error.message);
     }
   };
 
-  const processElectricityReadings = (readings, selectedYear = new Date().getFullYear()) => {
+  const processElectricityReadings = (
+    readings,
+    selectedYear = new Date().getFullYear(),
+    area
+  ) => {
     if (!readings || !Array.isArray(readings)) return [];
 
     // Initialize month containers
@@ -136,35 +134,42 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
       const date = new Date(selectedYear, month, 1);
       return {
         month,
-        monthName: date.toLocaleString('default', { month: 'short' }),
+        monthName: date.toLocaleString("default", { month: "short" }),
         year: selectedYear,
         consumption: 0,
+        consumptionPerM2: 0,
         daysInMonth: new Date(selectedYear, month + 1, 0).getDate(),
         startDate: new Date(selectedYear, month, 1),
-        endDate: new Date(selectedYear, month + 1, 0)
+        endDate: new Date(selectedYear, month + 1, 0),
       };
     });
 
     // Process electricity readings
     const electricityReadings = readings
-      .filter(item => item.budgetCategory === "Electricity")
-      .flatMap(item => item.readingList || [])
-      .map(reading => {
+      .filter((item) => item.budgetCategory === "Electricity")
+      .flatMap((item) => item.readingList || [])
+      .map((reading) => {
         const date = new Date(reading.readingDate);
         const value = parseFloat(reading.readingValue);
-        const unit = (reading.readingUnit?.toLowerCase() === 'units' ? 'kwh' : reading.readingUnit?.toLowerCase()) || '';
+        const unit =
+          (reading.readingUnit?.toLowerCase() === "units"
+            ? "kwh"
+            : reading.readingUnit?.toLowerCase()) || "";
 
         return {
           ...reading,
           parsedDate: date,
           parsedValue: !isNaN(value) ? value : null,
           readingUnit: unit,
-          isValid: date instanceof Date && !isNaN(date) &&
-            !isNaN(value) && value >= 0 &&
-            (unit === 'kwh')
+          isValid:
+            date instanceof Date &&
+            !isNaN(date) &&
+            !isNaN(value) &&
+            value >= 0 &&
+            unit === "kwh",
         };
       })
-      .filter(r => r.isValid && r.parsedDate.getFullYear() === selectedYear)
+      .filter((r) => r.isValid && r.parsedDate.getFullYear() === selectedYear)
       .sort((a, b) => a.parsedDate - b.parsedDate);
 
     // Calculate consumption
@@ -178,7 +183,8 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
         const prev = electricityReadings[i - 1];
 
         if (
-          prev.isValid && current.isValid &&
+          prev.isValid &&
+          current.isValid &&
           prev.readingUnit === current.readingUnit &&
           prev.parsedDate < current.parsedDate
         ) {
@@ -190,58 +196,184 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
       }
     }
 
+    // Calculate per m² values if floor area is available
+    if (area) {
+      monthlyData.forEach((month) => {
+        month.consumptionPerM2 = month.consumption / area;
+      });
+    }
+
     return monthlyData;
   };
 
-  const prepareComparisonChartData = () => {
+  const prepareAbsoluteChartData = () => {
     const months = Array.from({ length: 12 }, (_, i) => {
       const date = new Date(selectedYear, i, 1);
-      return date.toLocaleString('default', { month: 'short' });
-    });
-
-    // Actual consumption data
-    const actualData = months.map((month, index) => {
-      const reading = energyReadings.find(r => r.month === index);
-      return reading ? reading.consumption : 0;
+      return date.toLocaleString("default", { month: "short" });
     });
 
     // Process assets for prediction
     const powerAssets = assets
-      .filter(asset => asset.powerOutput && asset.powerOutput > 0)
-      .map(asset => {
+      .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
+      .map((asset) => {
         const power = parseFloat(asset.powerOutput) || 0;
-        const powerInKW = asset.powerOutputUnit === 'kW' ? power : power / 1000;
+        const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
         return {
           ...asset,
-          powerInKW
+          powerInKW,
         };
       });
 
-    const totalAssetPowerKW = powerAssets.reduce((sum, asset) => sum + asset.powerInKW, 0);
+    const totalAssetPowerKW = powerAssets.reduce(
+      (sum, asset) => sum + asset.powerInKW,
+      0
+    );
+    console.log("Total Asset Power (kW):", totalAssetPowerKW);
+
     const monthlyPredictedConsumption = totalAssetPowerKW * 8 * 30;
-    
+    console.log(
+      "Monthly Predicted Consumption (kWh):",
+      monthlyPredictedConsumption
+    );
+
     return {
       labels: months,
       datasets: [
         {
-          label: 'Actual Electricity Consumption (kWh)',
-          data: actualData,
-          backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1
+          label: "Actual Consumption (kWh)",
+          data: energyReadings.map((r) => r.consumption),
+          backgroundColor: "rgba(54, 162, 235, 0.7)",
+          borderColor: "rgba(54, 162, 235, 1)",
+          borderWidth: 1,
         },
         {
-          label: 'Predicted Asset Consumption (kWh)',
+          label: "Predicted Consumption (kWh)",
           data: months.map(() => monthlyPredictedConsumption),
-          backgroundColor: 'rgba(255, 99, 132, 0.7)',
-          borderColor: 'rgba(255, 99, 132, 1)',
+          backgroundColor: "rgba(255, 99, 132, 0.7)",
+          borderColor: "rgba(255, 99, 132, 1)",
           borderWidth: 1,
-          assets: powerAssets,
-          totalPowerKW: totalAssetPowerKW
-        }
-      ]
+        },
+      ],
+      powerAssets,
+      totalAssetPowerKW,
+      monthlyPredictedConsumption,
+      unit: "kWh",
     };
   };
+
+  const preparePerM2ChartData = () => {
+    if (!floorArea) return null;
+    console.log("Preparing per m² chart data with floor area:", floorArea);
+
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(selectedYear, i, 1);
+      return date.toLocaleString("default", { month: "short" });
+    });
+
+    // Process assets for prediction
+    const powerAssets = assets
+      .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
+      .map((asset) => {
+        const power = parseFloat(asset.powerOutput) || 0;
+        const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
+        return {
+          ...asset,
+          powerInKW,
+        };
+      });
+
+    const totalAssetPowerKW = powerAssets.reduce(
+      (sum, asset) => sum + asset.powerInKW,
+      0
+    );
+    const monthlyPredictedConsumptionPerM2 =
+      (totalAssetPowerKW * 8 * 30) / floorArea;
+
+    return {
+      labels: months,
+      datasets: [
+        {
+          label: "Actual Consumption (kWh/m²)",
+          data: energyReadings.map((r) => r.consumptionPerM2),
+          backgroundColor: "rgba(75, 192, 192, 0.7)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 1,
+        },
+        {
+          label: "Predicted Consumption (kWh/m²)",
+          data: months.map(() => monthlyPredictedConsumptionPerM2),
+          backgroundColor: "rgba(255, 99, 132, 0.7)",
+          borderColor: "rgba(255, 99, 132, 0.7)",
+          borderWidth: 1,
+        },
+      ],
+      powerAssets,
+      totalAssetPowerKW,
+      monthlyPredictedConsumptionPerM2,
+      unit: "kWh/m²",
+    };
+  };
+
+  const prepareAssetBreakdownData = () => {
+    if (!assets || assets.length === 0) return null;
+
+    // Process assets for breakdown
+    const processedAssets = assets
+      .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
+      .map((asset) => {
+        const powerW = parseFloat(asset.powerOutput) || 0;
+        const powerKW = asset.powerOutputUnit === "kW" ? powerW : powerW / 1000;
+        const dailyKWH = powerKW * 8; // 8 hours operation
+        const monthlyKWH = dailyKWH * 30; // 30 days
+
+        return {
+          ...asset,
+          powerW,
+          powerKW,
+          dailyKWH,
+          monthlyKWH,
+        };
+      });
+
+    const totalMonthlyKWH = processedAssets.reduce(
+      (sum, asset) => sum + asset.monthlyKWH,
+      0
+    );
+    const assetsWithPercentage = processedAssets.map((asset) => ({
+      ...asset,
+      percentage: (asset.monthlyKWH / totalMonthlyKWH) * 100,
+    }));
+
+    // Prepare data for pie chart
+    const pieChartData = {
+      labels: assetsWithPercentage.map((asset) => asset.assetName),
+      datasets: [
+        {
+          data: assetsWithPercentage.map((asset) => asset.monthlyKWH),
+          backgroundColor: [
+            "#fd88a2",
+            "#36A2EB",
+            "#FFCE56",
+            "#4BC0C0",
+            "#9966FF",
+            "#FF9F40",
+            "#8AC24A",
+            "#607D8B",
+          ],
+          borderColor: "#fff",
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    return {
+      pieChartData,
+      assetsWithPercentage,
+      totalMonthlyKWH,
+    };
+  };
+
+  const assetBreakdownData = prepareAssetBreakdownData();
 
   const handleSiteChange = (event) => {
     setSelectedSite(event.target.value);
@@ -256,16 +388,26 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
     (_, i) => new Date().getFullYear() - i
   );
 
+  const absoluteChartData = prepareAbsoluteChartData();
+  const perM2ChartData = preparePerM2ChartData();
+
   return (
     <Fragment>
       <div className="row mt-4">
         <div className="col-md-12">
-          <Paper elevation={3} style={{ padding: '20px', marginBottom: '20px' }}>
-            <Typography variant="h4" gutterBottom style={{ marginBottom: '30px' }}>
+          <Paper
+            elevation={3}
+            style={{ padding: "20px", marginBottom: "20px" }}
+          >
+            <Typography
+              variant="h4"
+              gutterBottom
+              style={{ marginBottom: "30px" }}
+            >
               Energy Consumption vs Asset Prediction
             </Typography>
-            
-            <Grid container spacing={2} style={{ marginBottom: '20px' }}>
+
+            <Grid container spacing={2} style={{ marginBottom: "20px" }}>
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl fullWidth>
                   <InputLabel id="site-select-label">Select Site</InputLabel>
@@ -277,8 +419,10 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
                     onChange={handleSiteChange}
                   >
                     {sites
-                      ?.filter(site => String(site?.status).toLowerCase() === "open")
-                      ?.map(site => (
+                      ?.filter(
+                        (site) => String(site?.status).toLowerCase() === "open"
+                      )
+                      ?.map((site) => (
                         <MenuItem key={site.siteId} value={site.siteId}>
                           {site.siteName}
                         </MenuItem>
@@ -296,7 +440,7 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
                     label="Select Year"
                     onChange={handleYearChange}
                   >
-                    {years.map(year => (
+                    {years.map((year) => (
                       <MenuItem key={year} value={year}>
                         {year}
                       </MenuItem>
@@ -305,20 +449,29 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
                 </FormControl>
               </Grid>
             </Grid>
-            
+
             {isLoading ? (
-              <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                height="400px"
+              >
                 <CircularProgress />
               </Box>
-            ) : (
-              selectedSite ? (
-                <Paper elevation={2} style={{ padding: '20px', height: '100%' }}>
+            ) : selectedSite ? (
+              <>
+                {/* Absolute Values Chart */}
+                <Paper
+                  elevation={2}
+                  style={{ padding: "20px", marginBottom: "20px" }}
+                >
                   <Typography variant="h6" gutterBottom>
-                    Monthly Energy Consumption vs Asset Prediction
+                    Monthly Energy Consumption (Absolute Values)
                   </Typography>
-                  <div style={{ height: '500px' }}>
-                    <Bar 
-                      data={prepareComparisonChartData()} 
+                  <div style={{ height: "500px" }}>
+                    <Bar
+                      data={absoluteChartData}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
@@ -327,67 +480,333 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
                             beginAtZero: true,
                             title: {
                               display: true,
-                              text: 'kWh'
-                            }
+                              text: absoluteChartData.unit,
+                            },
                           },
                           x: {
                             title: {
                               display: true,
-                              text: 'Month'
-                            }
-                          }
+                              text: "Month",
+                            },
+                          },
                         },
                         plugins: {
                           legend: {
-                            position: 'top',
+                            position: "top",
                           },
                           tooltip: {
                             callbacks: {
                               label: (context) => {
                                 const datasetLabel = context.dataset.label;
                                 const value = context.raw;
-                                return `${datasetLabel}: ${value.toFixed(2)} kWh`;
+                                return `${datasetLabel}: ${value.toFixed(2)} ${
+                                  absoluteChartData.unit
+                                }`;
                               },
                               afterLabel: (context) => {
                                 if (context.datasetIndex === 1) {
-                                  const assets = context.dataset.assets;
-                                  const totalPower = context.dataset.totalPowerKW;
-                                  
+                                  const assets = absoluteChartData.powerAssets;
+                                  const totalPower =
+                                    absoluteChartData.totalAssetPowerKW;
+
                                   let assetDetails = [
                                     `Total Power: ${totalPower.toFixed(2)} kW`,
-                                    'Asset Breakdown:'
+                                    "Asset Breakdown:",
                                   ];
-                                  
-                                  assets.forEach(asset => {
+
+                                  assets.forEach((asset) => {
                                     assetDetails.push(
-                                      `- ${asset.assetName}: ${asset.powerInKW.toFixed(2)} kW ` +
-                                      `(${asset.powerOutput} ${asset.powerOutputUnit})`
+                                      `- ${
+                                        asset.assetName
+                                      }: ${asset.powerInKW.toFixed(2)} kW ` +
+                                        `(${asset.powerOutput} ${asset.powerOutputUnit})`
                                     );
                                   });
-                                  
+
                                   assetDetails.push(
-                                    `\nCalculation: ${totalPower.toFixed(2)} kW × 8 hours × 30 days = ${context.raw.toFixed(2)} kWh`
+                                    `\nCalculation: ${totalPower.toFixed(
+                                      2
+                                    )} kW × 8 hours × 30 days = ${context.raw.toFixed(
+                                      2
+                                    )} ${absoluteChartData.unit}`
                                   );
-                                  
-                                  return assetDetails.join('\n');
+
+                                  if (floorArea) {
+                                    assetDetails.push(
+                                      `\nPer m²: ${(
+                                        context.raw / floorArea
+                                      ).toFixed(2)} kWh/m² (${floorArea} m²)`
+                                    );
+                                  }
+
+                                  return assetDetails.join("\n");
                                 }
                                 return null;
-                              }
-                            }
-                          }
-                        }
+                              },
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
-                  <Typography variant="body2" style={{ marginTop: '20px', fontStyle: 'italic' }}>
-                    Note: Predicted consumption is calculated as (sum of asset power in kW) × 8 hours/day × 30 days
-                  </Typography>
+                  {floorArea && (
+                    <Typography variant="body2" style={{ marginTop: "10px" }}>
+                      Floor Area: {floorArea} m² | Total Annual Consumption:{" "}
+                      {energyReadings
+                        .reduce((sum, month) => sum + month.consumption, 0)
+                        .toFixed(2)}{" "}
+                      kWh | Annual per m²:{" "}
+                      {(
+                        energyReadings.reduce(
+                          (sum, month) => sum + month.consumption,
+                          0
+                        ) / floorArea
+                      ).toFixed(2)}{" "}
+                      kWh/m²
+                    </Typography>
+                  )}
                 </Paper>
-              ) : (
-                <Typography variant="body1" style={{ textAlign: 'center' }}>
-                  Please select a site to view comparison data
+
+                {/* Per m² Chart */}
+                {floorArea && perM2ChartData && (
+                  <Paper
+                    elevation={2}
+                    style={{ padding: "20px", marginBottom: "20px" }}
+                  >
+                    <Typography variant="h6" gutterBottom>
+                      Monthly Energy Consumption (per m²)
+                    </Typography>
+                    <div style={{ height: "500px" }}>
+                      <Bar
+                        data={perM2ChartData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            y: {
+                              beginAtZero: true,
+                              title: {
+                                display: true,
+                                text: perM2ChartData.unit,
+                              },
+                            },
+                            x: {
+                              title: {
+                                display: true,
+                                text: "Month",
+                              },
+                            },
+                          },
+                          plugins: {
+                            legend: {
+                              position: "top",
+                            },
+                            tooltip: {
+                              callbacks: {
+                                label: (context) => {
+                                  const datasetLabel = context.dataset.label;
+                                  const value = context.raw;
+                                  return `${datasetLabel}: ${value.toFixed(
+                                    2
+                                  )} ${perM2ChartData.unit}`;
+                                },
+                                afterLabel: (context) => {
+                                  if (context.datasetIndex === 1) {
+                                    const assets = perM2ChartData.powerAssets;
+                                    const totalPower =
+                                      perM2ChartData.totalAssetPowerKW;
+
+                                    let assetDetails = [
+                                      `Total Power: ${totalPower.toFixed(
+                                        2
+                                      )} kW`,
+                                      "Asset Breakdown:",
+                                    ];
+
+                                    assets.forEach((asset) => {
+                                      assetDetails.push(
+                                        `- ${
+                                          asset.assetName
+                                        }: ${asset.powerInKW.toFixed(2)} kW ` +
+                                          `(${asset.powerOutput} ${asset.powerOutputUnit})`
+                                      );
+                                    });
+
+                                    assetDetails.push(
+                                      `\nCalculation: ${totalPower.toFixed(
+                                        2
+                                      )} kW × 8 hours × 30 days / ${floorArea} m² = ${context.raw.toFixed(
+                                        2
+                                      )} ${perM2ChartData.unit}`
+                                    );
+
+                                    return assetDetails.join("\n");
+                                  }
+                                  return null;
+                                },
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                    <Typography variant="body2" style={{ marginTop: "10px" }}>
+                      Floor Area: {floorArea} m² | Annual Consumption:{" "}
+                      {(
+                        energyReadings.reduce(
+                          (sum, month) => sum + month.consumption,
+                          0
+                        ) / floorArea
+                      ).toFixed(2)}{" "}
+                      kWh/m²
+                    </Typography>
+                  </Paper>
+                )}
+
+                {/* New Asset Breakdown Pie Chart */}
+                {assetBreakdownData && (
+                  <Paper
+                    elevation={2}
+                    style={{ padding: "20px", marginBottom: "20px" }}
+                  >
+                    <Typography variant="h6" gutterBottom>
+                      Asset Energy Contribution Breakdown
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <div style={{ height: "400px" }}>
+                          <Pie
+                            data={assetBreakdownData.pieChartData}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  position: "right",
+                                },
+                                tooltip: {
+                                  callbacks: {
+                                    label: (context) => {
+                                      const label = context.label || "";
+                                      const value = context.raw || 0;
+                                      const percentage = (
+                                        (value /
+                                          assetBreakdownData.totalMonthlyKWH) *
+                                        100
+                                      ).toFixed(1);
+                                      return `${label}: ${value.toFixed(
+                                        2
+                                      )} kWh (${percentage}%)`;
+                                    },
+                                  },
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="subtitle1" gutterBottom>
+                          Asset Details (Monthly Consumption)
+                        </Typography>
+                        <Box
+                          style={{
+                            maxHeight: "350px",
+                            overflowY: "auto",
+                            padding: "10px",
+                            border: "1px solid #eee",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          <table style={{ width: "100%" }}>
+                            <thead>
+                              <tr>
+                                <th>Asset</th>
+                                <th>Power (W)</th>
+                                <th>Power (kW)</th>
+                                <th>Daily (kWh)</th>
+                                <th>Monthly (kWh)</th>
+                                <th>%</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {assetBreakdownData.assetsWithPercentage.map(
+                                (asset, index) => (
+                                  <tr key={index}>
+                                    <td>{asset.assetName}</td>
+                                    <td>{asset.powerW.toFixed(0)}</td>
+                                    <td>{asset.powerKW.toFixed(3)}</td>
+                                    <td>{asset.dailyKWH.toFixed(2)}</td>
+                                    <td>{asset.monthlyKWH.toFixed(2)}</td>
+                                    <td>{asset.percentage.toFixed(1)}%</td>
+                                  </tr>
+                                )
+                              )}
+                              <tr style={{ fontWeight: "bold" }}>
+                                <td>Total</td>
+                                <td>
+                                  {assetBreakdownData.assetsWithPercentage
+                                    .reduce(
+                                      (sum, asset) => sum + asset.powerW,
+                                      0
+                                    )
+                                    .toFixed(0)}
+                                </td>
+                                <td>
+                                  {assetBreakdownData.assetsWithPercentage
+                                    .reduce(
+                                      (sum, asset) => sum + asset.powerKW,
+                                      0
+                                    )
+                                    .toFixed(3)}
+                                </td>
+                                <td>
+                                  {assetBreakdownData.assetsWithPercentage
+                                    .reduce(
+                                      (sum, asset) => sum + asset.dailyKWH,
+                                      0
+                                    )
+                                    .toFixed(2)}
+                                </td>
+                                <td>
+                                  {assetBreakdownData.totalMonthlyKWH.toFixed(
+                                    2
+                                  )}
+                                </td>
+                                <td>100%</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </Box>
+                        {floorArea && (
+                          <Typography
+                            variant="body2"
+                            style={{ marginTop: "10px" }}
+                          >
+                            Total per m²:{" "}
+                            {(
+                              assetBreakdownData.totalMonthlyKWH / floorArea
+                            ).toFixed(2)}{" "}
+                            kWh/m²
+                          </Typography>
+                        )}
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                )}
+
+                <Typography
+                  variant="body2"
+                  style={{ marginTop: "10px", fontStyle: "italic" }}
+                >
+                  Note: Predicted consumption is calculated as (sum of asset
+                  power in kW) × 8 hours/day × 30 days
                 </Typography>
-              )
+              </>
+            ) : (
+              <Typography variant="body1" style={{ textAlign: "center" }}>
+                Please select a site to view comparison data
+              </Typography>
             )}
           </Paper>
         </div>
