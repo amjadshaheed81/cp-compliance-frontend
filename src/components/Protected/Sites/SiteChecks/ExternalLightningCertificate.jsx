@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { get, post } from "../../../../api";
 import {
@@ -104,6 +105,13 @@ const ExternalLightningCertificate = ({
     electricalManagement: null,
     externalLighting: null
   });
+  const [checkStatus, setCheckStatus] = useState('Open');
+  const [isFormEditable, setIsFormEditable] = useState(true);
+  // Initialize with the checkId prop if available, otherwise null
+  const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  
+  // Get the navigate function from react-router
+  const navigate = useNavigate();
 
   const isInternalUserTaggedWithSite = true
 
@@ -244,6 +252,28 @@ const ExternalLightningCertificate = ({
   };
 
   useEffect(() => {
+    const fetchSiteCheckData = async () => {
+      try {
+        if (siteSelectedForGlobal?.siteId) {
+          const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+          if (response && response.length > 0) {
+            const externalLightingCheck = response.find(
+              check => check.category === 'External Lighting' || check.subType === 'External Lighting'
+            );
+            
+            if (externalLightingCheck) {
+              setCurrentCheckId(externalLightingCheck.checkId);
+              setCheckStatus(externalLightingCheck.status);
+              setIsFormEditable(externalLightingCheck.status === 'Open');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching site check data:', error);
+        toast.error('Failed to load site check status');
+      }
+    };
+
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
     }
@@ -258,6 +288,8 @@ const ExternalLightningCertificate = ({
           await fetchFolderStructure(siteSelectedForGlobal.siteId);
 
           await fetchInspectionData();
+
+          await fetchSiteCheckData();
 
           const currentSite = sites.find(
             (site) => site.siteId === siteSelectedForGlobal.siteId
@@ -511,7 +543,6 @@ const ExternalLightningCertificate = ({
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      toast.error('Failed to upload PDF: ' + (error.response?.data?.message || error.message));
       return false;
     } finally {
       setIsUploading(false);
@@ -702,7 +733,18 @@ const ExternalLightningCertificate = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    console.log('Form submitted');
+    
+    if (isLoading) {
+      console.log('Submit prevented: Already loading');
+      return;
+    }
+    
+    if (!isFormEditable) {
+      console.log('Submit prevented: Form is not editable');
+      return;
+    }
+    
     const errors = {};
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
@@ -713,47 +755,124 @@ const ExternalLightningCertificate = ({
       setValidationErrors(errors);
       return;
     }
+    
     setValidationErrors({});
-
     setIsLoading(true);
+    
     try {
-      const dataToSave = {
-        ...formData,
-        assetId: formData.assetId,
-        siteId: siteSelectedForGlobal?.siteId,
-        checkId,
-        subType,
-        inspectionDate: formData.inspectionDate || new Date().toISOString(),
-        job: formData.job,
-        engineer: loggedInUserData?.id,
-        signedDate: formData.signedDate || new Date().toISOString(),
-        submittedDate: new Date().toISOString(),
-        report: formData.report,
-        param1: formData.param1,
-        param2: formData.param2,
-        param3: formData.param3,
-        param4: formData.param4,
-        param1Remark: formData.param1Remark,
-        param2Remark: formData.param2Remark,
-        param3Remark: formData.param3Remark,
-      };
-
-      // First save the form data
-      await post("/api/site-check/generic-inspection", dataToSave);
+      console.log('Starting form submission');
       
-      // Then generate and save the PDF
-      const pdfResult = await generatePDF(true); // true to upload to server
-      if (pdfResult.success) {
-        toast.success("External lightning report saved and PDF generated successfully!");
-        setShowPdfButton(true);
-        setIsSubmitted(true);
-        setSubmissionSuccess(true);
+      // Get the current check ID, either from state or props
+      const effectiveCheckId = currentCheckId || checkId;
+      
+      // First, update the site check status to Done
+      if (!effectiveCheckId) {
+        console.error('Cannot submit: No check ID available');
+        throw new Error('No inspection check found. Please refresh the page and try again.');
+      }
+      
+      console.log('Updating site check status with checkId:', effectiveCheckId);
+      
+      // Prepare the payload with exact structure as required
+      const payload = {
+        checkId: parseInt(effectiveCheckId, 10),
+        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        type: 'Inspection',
+        subType: 'Electrical',
+        category: 'External Lighting Testing',
+        status: 'Done',
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0' // Using same as lead if no specific assistant
+      };
+      
+      console.log('Sending PUT request to update site check:', {
+        url: `/api/site-check/${effectiveCheckId}`,
+        payload,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') ? 'token-exists' : 'no-token'}`
+        }
+      });
+      
+      // Make the API call to update site check status
+      const startTime = Date.now();
+      const response = await axios.put(
+        `/api/site-check/${effectiveCheckId}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      const endTime = Date.now();
+      console.log(`API call completed in ${endTime - startTime}ms`, response);
+      
+      if (response.status === 200 || response.status === 204) {
+        console.log('Successfully updated site check status');
+        setCheckStatus('Done');
+        setIsFormEditable(false);
+        console.log('Site check status updated successfully:', response.data);
+        
+        // Now save the form data
+        const saveResponse = await axios.post(
+          '/api/site-check/generic-inspection',
+          {
+            ...formData,
+            siteId: siteSelectedForGlobal?.siteId,
+            assetId: formData.selectedAsset?.assetId || formData.assetId,
+            client: formData.clientUser?.id || formData.client,
+            engineer: formData.engineer,
+            siteContact: formData.siteContactUser?.id || formData.siteContact,
+            type: 'Inspection',
+            subType: 'External Lighting',
+            category: 'External Lighting Certificate',
+            checkId: checkId,
+            param3Remark: formData.param3Remark,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+
+        if (saveResponse.status === 200 || saveResponse.status === 201) {
+          console.log('Form data saved successfully:', saveResponse.data);
+          
+          // Generate and save the PDF
+          const pdfResult = await generatePDF(true);
+          if (pdfResult.success) {
+            toast.success("External lightning report saved and PDF generated successfully!");
+            setShowPdfButton(true);
+            setIsSubmitted(true);
+            setSubmissionSuccess(true);
+            
+            // Navigate back after a short delay to show the success message
+            setTimeout(() => {
+              navigate(-1); // Go back to the previous page
+            }, 1500); // 1.5 second delay to show the success message
+          } else {
+            throw new Error(pdfResult.error || "Failed to generate PDF");
+          }
+        } else {
+          throw new Error(`Failed to save form data: ${saveResponse.statusText}`);
+        }
+        
+        return response;
       } else {
-        throw new Error(pdfResult.error || "Failed to generate PDF");
+        console.warn('Unexpected response status:', response.status);
+        throw new Error(`Unexpected response status: ${response.status}`);
       }
     } catch (error) {
-      console.error("Error:", error);
-      toast.error(error.message || "Failed to save report");
+      console.error('Error in form submission:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      toast.error(error.message || 'Failed to submit form');
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -909,9 +1028,15 @@ const ExternalLightningCertificate = ({
 
   return (
     <div className="container mt-4 mb-5">
-      <div className="header text-center bg-light p-4 mb-4 rounded">
+      <div className="header text-center bg-light p-4 mb-4 rounded d-flex justify-content-between align-items-center">
         <h4 className="mb-0">External Lighting Service Report</h4>
       </div>
+      {!isFormEditable && (
+        <div className="alert alert-warning" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          This form is read-only because the check has been marked as completed.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="row mb-4">
@@ -1348,13 +1473,15 @@ const ExternalLightningCertificate = ({
                 Back
               </button>
               <div>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isLoading || isGeneratingPDF}
-                >
-                  {isLoading ? 'Submitting...' : 'Submit Report'}
-                </button>
+                {isFormEditable && (
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={!isFormEditable || isLoading || isGeneratingPDF}
+                  >
+                    {isLoading ? 'Submitting...' : 'Submit Report'}
+                  </button>
+                )}
               </div>
             </div>
           ) : (
