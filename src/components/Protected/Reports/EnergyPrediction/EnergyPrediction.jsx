@@ -519,7 +519,7 @@ const EnergyAndAssetComparisonChart = ({
                                       `- ${
                                         asset.assetName
                                       }: ${asset.powerInKW.toFixed(2)} kW ` +
-                                        `(${asset.powerOutput} ${asset.powerOutputUnit})`
+                                        `(${asset.powerOutput} watt)`
                                     );
                                   });
 
@@ -550,8 +550,7 @@ const EnergyAndAssetComparisonChart = ({
                     />
                   </div>
                 </Paper>
-
-                {/* Per m² Chart */}
+                ;{/* Per m² Chart */}
                 {floorArea && perM2ChartData && (
                   <Paper
                     elevation={2}
@@ -612,7 +611,7 @@ const EnergyAndAssetComparisonChart = ({
                                         `- ${
                                           asset.assetName
                                         }: ${asset.powerInKW.toFixed(3)} kW ` +
-                                          `(${asset.powerOutput} ${asset.powerOutputUnit})`
+                                          `(${asset.powerOutput} watt)`
                                       );
                                     });
 
@@ -635,20 +634,11 @@ const EnergyAndAssetComparisonChart = ({
                       />
                     </div>
                     <Typography variant="body2" style={{ marginTop: "10px" }}>
-                      {/* Floor Area: {floorArea} m² | Annual Consumption:{" "}
-                      {(
-                        energyReadings.reduce(
-                          (sum, month) => sum + month.consumption,
-                          0
-                        ) / floorArea
-                      ).toFixed(2)}{" "}
-                      kWh/m² */}
                       Floor Area: {floorArea} m²
                     </Typography>
                   </Paper>
                 )}
-
-                {/* New Asset Breakdown Pie Chart */}
+                ; {/* New Asset Breakdown Pie Chart */}
                 {assetBreakdownData && (
                   <Paper
                     elevation={2}
@@ -781,7 +771,6 @@ const EnergyAndAssetComparisonChart = ({
                     </Grid>
                   </Paper>
                 )}
-
                 <Typography
                   variant="body2"
                   style={{ marginTop: "10px", fontStyle: "italic" }}
