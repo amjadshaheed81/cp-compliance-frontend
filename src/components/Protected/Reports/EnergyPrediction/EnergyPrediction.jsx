@@ -45,29 +45,56 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
   const [assets, setAssets] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  // Fetch site data when selectedSite changes
   useEffect(() => {
     if (selectedSite) {
       fetchSiteData(selectedSite);
+    }
+  }, [selectedSite]);
+
+  // Fetch energy and asset data when selectedSite or selectedYear changes
+  useEffect(() => {
+    if (selectedSite) {
+      fetchEnergyData(selectedSite);
+      fetchAssetData(selectedSite);
     }
   }, [selectedSite, selectedYear]);
 
   const fetchSiteData = async (siteId) => {
     setIsLoading(true);
     try {
-      // Get site details
-      if (allSites?.length === 0) {
+      // Get site details if not already fetched
+      if (allSites.length === 0) {
         const res = await get("/api/site/site/all?sort=asc&sortName=siteName&withDetails=true");
         setAllSites(res);
       }
-      
-      // Fetch both energy and asset data in parallel
-      await Promise.all([
-        getEnergyData(siteId),
-        getAssetData(siteId)
-      ]);
     } catch (error) {
       console.error('Error in fetchSiteData:', error);
       toast.error("Failed to fetch site data: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchEnergyData = async (siteId) => {
+    setIsLoading(true);
+    try {
+      await getEnergyData(siteId);
+    } catch (error) {
+      console.error('Error in fetchEnergyData:', error);
+      toast.error("Failed to fetch energy data: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchAssetData = async (siteId) => {
+    setIsLoading(true);
+    try {
+      await getAssetData(siteId);
+    } catch (error) {
+      console.error('Error in fetchAssetData:', error);
+      toast.error("Failed to fetch asset data: " + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +108,7 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
         throw new Error('Invalid readings data format');
       }
 
-      const processedReadings = processElectricityReadings(readingsRes);
+      const processedReadings = processElectricityReadings(readingsRes, selectedYear);
       setEnergyReadings(processedReadings);
     } catch (error) {
       console.error('Error in getEnergyData:', error);
@@ -91,6 +118,8 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
 
   const getAssetData = async (siteId) => {
     try {
+      // Note: If your API supports historical asset data, modify this to include the year
+      // Example: `/api/site/${siteId}/assets?year=${selectedYear}`
       const assetsRes = await get(`/api/site/${siteId}/assets`);
       setAssets(assetsRes.assets || []);
     } catch (error) {
@@ -99,133 +128,84 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
     }
   };
 
-  const processElectricityReadings = (readings) => {
-  if (!readings || !Array.isArray(readings)) return [];
+  const processElectricityReadings = (readings, selectedYear = new Date().getFullYear()) => {
+    if (!readings || !Array.isArray(readings)) return [];
 
-  // Initialize monthly data structure for all 12 months
-  const monthlyData = Array.from({ length: 12 }, (_, month) => {
-    const date = new Date(selectedYear, month, 1);
-    return {
-      month,
-      monthName: date.toLocaleString('default', { month: 'short' }),
-      year: selectedYear,
-      consumption: 0,
-      daysInMonth: new Date(selectedYear, month + 1, 0).getDate(),
-      startDate: new Date(selectedYear, month, 1),
-      endDate: new Date(selectedYear, month + 1, 0)
-    };
-  });
+    // Initialize month containers
+    const monthlyData = Array.from({ length: 12 }, (_, month) => {
+      const date = new Date(selectedYear, month, 1);
+      return {
+        month,
+        monthName: date.toLocaleString('default', { month: 'short' }),
+        year: selectedYear,
+        consumption: 0,
+        daysInMonth: new Date(selectedYear, month + 1, 0).getDate(),
+        startDate: new Date(selectedYear, month, 1),
+        endDate: new Date(selectedYear, month + 1, 0)
+      };
+    });
 
-  // Process all electricity readings
-  const electricityReadings = readings
-    .filter(item => item.budgetCategory === "Electricity")
-    .flatMap(item => item.readingList || [])
-    .map(reading => {
-      // Parse the reading date
-      let date;
-      if (typeof reading.readingDate === 'string') {
-        // Try ISO format first
-        date = new Date(reading.readingDate);
-        if (isNaN(date.getTime())) {
-          // Try splitting date string (format: "YYYY-MM-DD")
-          const parts = reading.readingDate.split(/[-/]/);
-          if (parts.length === 3) {
-            date = new Date(parts[0], parts[1] - 1, parts[2]);
+    // Process electricity readings
+    const electricityReadings = readings
+      .filter(item => item.budgetCategory === "Electricity")
+      .flatMap(item => item.readingList || [])
+      .map(reading => {
+        const date = new Date(reading.readingDate);
+        const value = parseFloat(reading.readingValue);
+        const unit = (reading.readingUnit?.toLowerCase() === 'units' ? 'kwh' : reading.readingUnit?.toLowerCase()) || '';
+
+        return {
+          ...reading,
+          parsedDate: date,
+          parsedValue: !isNaN(value) ? value : null,
+          readingUnit: unit,
+          isValid: date instanceof Date && !isNaN(date) &&
+            !isNaN(value) && value >= 0 &&
+            (unit === 'kwh')
+        };
+      })
+      .filter(r => r.isValid && r.parsedDate.getFullYear() === selectedYear)
+      .sort((a, b) => a.parsedDate - b.parsedDate);
+
+    // Calculate consumption
+    for (let i = 0; i < electricityReadings.length; i++) {
+      const current = electricityReadings[i];
+      const monthIndex = current.parsedDate.getMonth();
+
+      if (i === 0) {
+        monthlyData[monthIndex].consumption += current.parsedValue;
+      } else {
+        const prev = electricityReadings[i - 1];
+
+        if (
+          prev.isValid && current.isValid &&
+          prev.readingUnit === current.readingUnit &&
+          prev.parsedDate < current.parsedDate
+        ) {
+          const consumption = current.parsedValue - prev.parsedValue;
+          if (consumption >= 0) {
+            monthlyData[monthIndex].consumption += consumption;
           }
         }
-      } else if (reading.readingDate instanceof Date) {
-        date = new Date(reading.readingDate);
       }
-
-      // Parse the reading value
-      const value = parseFloat(reading.readingValue);
-      
-      return {
-        ...reading,
-        parsedDate: date,
-        parsedValue: !isNaN(value) ? value : null,
-        isValid: date instanceof Date && !isNaN(date.getTime()) && 
-                !isNaN(value) && value >= 0 &&
-                reading.readingUnit.toLowerCase() === 'kwh'
-      };
-    })
-    .filter(reading => 
-      reading.isValid && 
-      reading.parsedDate.getFullYear() === selectedYear
-    )
-    .sort((a, b) => a.parsedDate - b.parsedDate);
-
-  // Calculate consumption between consecutive valid readings
-  for (let i = 1; i < electricityReadings.length; i++) {
-    const prevReading = electricityReadings[i - 1];
-    const currentReading = electricityReadings[i];
-
-    // Skip if readings are invalid or out of order
-    if (!prevReading.isValid || !currentReading.isValid || 
-        prevReading.parsedDate >= currentReading.parsedDate) {
-      continue;
     }
 
-    const consumption = currentReading.parsedValue - prevReading.parsedValue;
-    
-    // Only process positive consumption (ignore meter resets or negative values)
-    if (consumption <= 0) continue;
-
-    const totalHours = (currentReading.parsedDate - prevReading.parsedDate) / (1000 * 60 * 60);
-    if (totalHours <= 0) continue;
-
-    // Find all months between these two readings
-    let currentMonth = new Date(prevReading.parsedDate);
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
-
-    const endMonth = new Date(currentReading.parsedDate);
-    endMonth.setDate(1);
-    endMonth.setHours(0, 0, 0, 0);
-
-    while (currentMonth <= endMonth) {
-      const month = currentMonth.getMonth();
-      const monthData = monthlyData[month];
-      
-      // Calculate the time period within this month
-      const periodStart = new Date(Math.max(
-        prevReading.parsedDate, 
-        monthData.startDate
-      ));
-      const periodEnd = new Date(Math.min(
-        currentReading.parsedDate,
-        monthData.endDate
-      ));
-      
-      const periodHours = (periodEnd - periodStart) / (1000 * 60 * 60);
-      if (periodHours > 0) {
-        // Allocate consumption proportionally by time
-        const monthConsumption = (consumption * periodHours) / totalHours;
-        monthData.consumption += monthConsumption;
-      }
-
-      // Move to next month
-      currentMonth.setMonth(currentMonth.getMonth() + 1);
-    }
-  }
-
-  return monthlyData;
-};
+    return monthlyData;
+  };
 
   const prepareComparisonChartData = () => {
-    // Get all months with names
     const months = Array.from({ length: 12 }, (_, i) => {
       const date = new Date(selectedYear, i, 1);
       return date.toLocaleString('default', { month: 'short' });
     });
 
-    // Prepare actual consumption data (fill with 0 if no data)
+    // Actual consumption data
     const actualData = months.map((month, index) => {
       const reading = energyReadings.find(r => r.month === index);
       return reading ? reading.consumption : 0;
     });
 
-    // Filter assets with power output and convert to kW
+    // Process assets for prediction
     const powerAssets = assets
       .filter(asset => asset.powerOutput && asset.powerOutput > 0)
       .map(asset => {
@@ -237,13 +217,9 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
         };
       });
 
-    // Calculate total predicted consumption
     const totalAssetPowerKW = powerAssets.reduce((sum, asset) => sum + asset.powerInKW, 0);
     const monthlyPredictedConsumption = totalAssetPowerKW * 8 * 30;
     
-    // Same predicted value for all months
-    const predictedData = months.map(() => monthlyPredictedConsumption);
-
     return {
       labels: months,
       datasets: [
@@ -256,11 +232,10 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
         },
         {
           label: 'Predicted Asset Consumption (kWh)',
-          data: predictedData,
+          data: months.map(() => monthlyPredictedConsumption),
           backgroundColor: 'rgba(255, 99, 132, 0.7)',
           borderColor: 'rgba(255, 99, 132, 1)',
           borderWidth: 1,
-          // Store asset details for tooltip
           assets: powerAssets,
           totalPowerKW: totalAssetPowerKW
         }
@@ -374,12 +349,10 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
                                 return `${datasetLabel}: ${value.toFixed(2)} kWh`;
                               },
                               afterLabel: (context) => {
-                                // Only show asset details for predicted consumption dataset
                                 if (context.datasetIndex === 1) {
                                   const assets = context.dataset.assets;
                                   const totalPower = context.dataset.totalPowerKW;
                                   
-                                  // Create asset details list
                                   let assetDetails = [
                                     `Total Power: ${totalPower.toFixed(2)} kW`,
                                     'Asset Breakdown:'
@@ -388,7 +361,7 @@ const EnergyAndAssetComparisonChart = ({ loggedInUserData, siteSelectedForGlobal
                                   assets.forEach(asset => {
                                     assetDetails.push(
                                       `- ${asset.assetName}: ${asset.powerInKW.toFixed(2)} kW ` +
-                                      `(${asset.powerOutput} W)`
+                                      `(${asset.powerOutput} ${asset.powerOutputUnit})`
                                     );
                                   });
                                   
