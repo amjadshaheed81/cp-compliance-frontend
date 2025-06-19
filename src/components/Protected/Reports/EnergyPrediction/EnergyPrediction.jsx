@@ -591,7 +591,7 @@ const EnergyAndAssetComparisonChart = ({
                                   const datasetLabel = context.dataset.label;
                                   const value = context.raw;
                                   return `${datasetLabel}: ${value.toFixed(
-                                    2
+                                    3
                                   )} ${perM2ChartData.unit}`;
                                 },
                                 afterLabel: (context) => {
@@ -602,7 +602,7 @@ const EnergyAndAssetComparisonChart = ({
 
                                     let assetDetails = [
                                       `Total Power: ${totalPower.toFixed(
-                                        2
+                                        3
                                       )} kW`,
                                       "Asset Breakdown:",
                                     ];
@@ -611,16 +611,16 @@ const EnergyAndAssetComparisonChart = ({
                                       assetDetails.push(
                                         `- ${
                                           asset.assetName
-                                        }: ${asset.powerInKW.toFixed(2)} kW ` +
+                                        }: ${asset.powerInKW.toFixed(3)} kW ` +
                                           `(${asset.powerOutput} ${asset.powerOutputUnit})`
                                       );
                                     });
 
                                     assetDetails.push(
                                       `\nCalculation: ${totalPower.toFixed(
-                                        2
+                                        3
                                       )} kW × 8 hours × 30 days / ${floorArea} m² = ${context.raw.toFixed(
-                                        2
+                                        3
                                       )} ${perM2ChartData.unit}`
                                     );
 
