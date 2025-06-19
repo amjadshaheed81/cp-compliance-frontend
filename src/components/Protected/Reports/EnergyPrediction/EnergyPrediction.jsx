@@ -467,7 +467,7 @@ const EnergyAndAssetComparisonChart = ({
                   style={{ padding: "20px", marginBottom: "20px" }}
                 >
                   <Typography variant="h6" gutterBottom>
-                    Monthly Energy Consumption (Absolute Values)
+                    Monthly Energy Consumption vs Asset Prediction
                   </Typography>
                   <div style={{ height: "500px" }}>
                     <Bar
@@ -549,22 +549,6 @@ const EnergyAndAssetComparisonChart = ({
                       }}
                     />
                   </div>
-                  {floorArea && (
-                    <Typography variant="body2" style={{ marginTop: "10px" }}>
-                      Floor Area: {floorArea} m² | Total Annual Consumption:{" "}
-                      {energyReadings
-                        .reduce((sum, month) => sum + month.consumption, 0)
-                        .toFixed(2)}{" "}
-                      kWh | Annual per m²:{" "}
-                      {(
-                        energyReadings.reduce(
-                          (sum, month) => sum + month.consumption,
-                          0
-                        ) / floorArea
-                      ).toFixed(2)}{" "}
-                      kWh/m²
-                    </Typography>
-                  )}
                 </Paper>
 
                 {/* Per m² Chart */}
@@ -651,14 +635,15 @@ const EnergyAndAssetComparisonChart = ({
                       />
                     </div>
                     <Typography variant="body2" style={{ marginTop: "10px" }}>
-                      Floor Area: {floorArea} m² | Annual Consumption:{" "}
+                      {/* Floor Area: {floorArea} m² | Annual Consumption:{" "}
                       {(
                         energyReadings.reduce(
                           (sum, month) => sum + month.consumption,
                           0
                         ) / floorArea
                       ).toFixed(2)}{" "}
-                      kWh/m²
+                      kWh/m² */}
+                      Floor Area: {floorArea} m²
                     </Typography>
                   </Paper>
                 )}
@@ -721,6 +706,7 @@ const EnergyAndAssetComparisonChart = ({
                           <table style={{ width: "100%" }}>
                             <thead>
                               <tr>
+                                <th>Asset Id</th>
                                 <th>Asset</th>
                                 <th>Power (W)</th>
                                 <th>Power (kW)</th>
@@ -733,6 +719,7 @@ const EnergyAndAssetComparisonChart = ({
                               {assetBreakdownData.assetsWithPercentage.map(
                                 (asset, index) => (
                                   <tr key={index}>
+                                    <td>{asset.assetId}</td>
                                     <td>{asset.assetName}</td>
                                     <td>{asset.powerW.toFixed(0)}</td>
                                     <td>{asset.powerKW.toFixed(3)}</td>
