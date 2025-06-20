@@ -951,10 +951,10 @@ export const uploadFloorPlan = (formData, siteId) => {
 };
 
 //TODO: move to documents reducers
-export const getDocumentsRootFolder = (id) => {
+export const getDocumentsRootFolder = (id, isAdmin) => {
   return async (dispatch) => {
     try {
-      const url = `/api/document/site/${id}/parent/folders`;
+      const url = isAdmin ?  `/api/document/site/${id}/parent/admin-folders` : `/api/document/site/${id}/parent/folders`;
       const folderList = await get(url);
       dispatch({
         type: GET_DOCUMENTS_ROOT_FOLDER,
@@ -1496,7 +1496,7 @@ export const addSiteAsset = (data, goTo, siteId) => {
       if (userData?.status === 200) {
         toast.success("Site asset has been added/updated successully.");
         setTimeout(() => {
-         if (typeof goTo === "function") {
+          if (typeof goTo === "function") {
             goTo("/assets");
           }
         }, 500);
