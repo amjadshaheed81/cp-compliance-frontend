@@ -317,39 +317,50 @@ const EnergyAndAssetComparisonChart = ({
   const prepareAssetBreakdownData = () => {
     if (!assets || assets.length === 0) return null;
 
-    // Process assets for breakdown
-    const processedAssets = assets
+    // Group assets by category and calculate total power consumption
+    const categoryData = assets
       .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
-      .map((asset) => {
+      .reduce((acc, asset) => {
+        const category = asset.category || "Uncategorized";
         const powerW = parseFloat(asset.powerOutput) || 0;
         const powerKW = asset.powerOutputUnit === "kW" ? powerW : powerW / 1000;
         const dailyKWH = powerKW * 8; // 8 hours operation
         const monthlyKWH = dailyKWH * 30; // 30 days
 
-        return {
-          ...asset,
-          powerW,
-          powerKW,
-          dailyKWH,
-          monthlyKWH,
-        };
-      });
+        if (!acc[category]) {
+          acc[category] = {
+            category,
+            powerW: 0,
+            powerKW: 0,
+            dailyKWH: 0,
+            monthlyKWH: 0,
+            assetCount: 0,
+            assets: [],
+          };
+        }
 
-    const totalMonthlyKWH = processedAssets.reduce(
-      (sum, asset) => sum + asset.monthlyKWH,
+        acc[category].powerW += powerW;
+        acc[category].powerKW += powerKW;
+        acc[category].dailyKWH += dailyKWH;
+        acc[category].monthlyKWH += monthlyKWH;
+        acc[category].assetCount += 1;
+        acc[category].assets.push(asset);
+
+        return acc;
+      }, {});
+
+    const categories = Object.values(categoryData);
+    const totalMonthlyKWH = categories.reduce(
+      (sum, category) => sum + category.monthlyKWH,
       0
     );
-    const assetsWithPercentage = processedAssets.map((asset) => ({
-      ...asset,
-      percentage: (asset.monthlyKWH / totalMonthlyKWH) * 100,
-    }));
 
     // Prepare data for pie chart
     const pieChartData = {
-      labels: assetsWithPercentage.map((asset) => asset.assetName),
+      labels: categories.map((cat) => cat.category),
       datasets: [
         {
-          data: assetsWithPercentage.map((asset) => asset.monthlyKWH),
+          data: categories.map((cat) => cat.monthlyKWH),
           backgroundColor: [
             "#fd88a2",
             "#36A2EB",
@@ -368,11 +379,10 @@ const EnergyAndAssetComparisonChart = ({
 
     return {
       pieChartData,
-      assetsWithPercentage,
+      categories,
       totalMonthlyKWH,
     };
   };
-
   const assetBreakdownData = prepareAssetBreakdownData();
 
   const handleSiteChange = (event) => {
@@ -404,7 +414,7 @@ const EnergyAndAssetComparisonChart = ({
               gutterBottom
               style={{ marginBottom: "30px" }}
             >
-              Energy Consumption vs Asset Prediction
+              Energy Consumption vs Asset Forecast
             </Typography>
 
             <Grid container spacing={2} style={{ marginBottom: "20px" }}>
@@ -467,7 +477,7 @@ const EnergyAndAssetComparisonChart = ({
                   style={{ padding: "20px", marginBottom: "20px" }}
                 >
                   <Typography variant="h6" gutterBottom>
-                    Monthly Energy Consumption vs Asset Prediction
+                    Monthly Energy Consumption vs Asset Forecast
                   </Typography>
                   <div style={{ height: "500px" }}>
                     <Bar
@@ -682,7 +692,7 @@ const EnergyAndAssetComparisonChart = ({
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <Typography variant="subtitle1" gutterBottom>
-                          Asset Details (Monthly Consumption)
+                          Category Details (Monthly Consumption)
                         </Typography>
                         <Box
                           style={{
@@ -696,9 +706,8 @@ const EnergyAndAssetComparisonChart = ({
                           <table style={{ width: "100%" }}>
                             <thead>
                               <tr>
-                                <th>Asset Id</th>
-                                <th>Asset</th>
-                                <th>Power (W)</th>
+                                <th>Category</th>
+                                <th>Assets</th>
                                 <th>Power (kW)</th>
                                 <th>Daily (kWh)</th>
                                 <th>Monthly (kWh)</th>
@@ -706,43 +715,41 @@ const EnergyAndAssetComparisonChart = ({
                               </tr>
                             </thead>
                             <tbody>
-                              {assetBreakdownData.assetsWithPercentage.map(
-                                (asset, index) => (
+                              {assetBreakdownData.categories.map(
+                                (category, index) => (
                                   <tr key={index}>
-                                    <td>{asset.assetId}</td>
-                                    <td>{asset.assetName}</td>
-                                    <td>{asset.powerW.toFixed(0)}</td>
-                                    <td>{asset.powerKW.toFixed(3)}</td>
-                                    <td>{asset.dailyKWH.toFixed(2)}</td>
-                                    <td>{asset.monthlyKWH.toFixed(2)}</td>
-                                    <td>{asset.percentage.toFixed(1)}%</td>
+                                    <td>{category.category}</td>
+                                    <td>{category.assetCount}</td>
+                                    <td>{category.powerKW.toFixed(3)}</td>
+                                    <td>{category.dailyKWH.toFixed(2)}</td>
+                                    <td>{category.monthlyKWH.toFixed(2)}</td>
+                                    <td>
+                                      {(
+                                        (category.monthlyKWH /
+                                          assetBreakdownData.totalMonthlyKWH) *
+                                        100
+                                      ).toFixed(2)}
+                                      %
+                                    </td>
                                   </tr>
                                 )
                               )}
                               <tr style={{ fontWeight: "bold" }}>
                                 <td>Total</td>
                                 <td>
-                                  {assetBreakdownData.assetsWithPercentage
-                                    .reduce(
-                                      (sum, asset) => sum + asset.powerW,
-                                      0
-                                    )
-                                    .toFixed(0)}
+                                  {assetBreakdownData.categories.reduce(
+                                    (sum, cat) => sum + cat.assetCount,
+                                    0
+                                  )}
                                 </td>
                                 <td>
-                                  {assetBreakdownData.assetsWithPercentage
-                                    .reduce(
-                                      (sum, asset) => sum + asset.powerKW,
-                                      0
-                                    )
+                                  {assetBreakdownData.categories
+                                    .reduce((sum, cat) => sum + cat.powerKW, 0)
                                     .toFixed(3)}
                                 </td>
                                 <td>
-                                  {assetBreakdownData.assetsWithPercentage
-                                    .reduce(
-                                      (sum, asset) => sum + asset.dailyKWH,
-                                      0
-                                    )
+                                  {assetBreakdownData.categories
+                                    .reduce((sum, cat) => sum + cat.dailyKWH, 0)
                                     .toFixed(2)}
                                 </td>
                                 <td>
