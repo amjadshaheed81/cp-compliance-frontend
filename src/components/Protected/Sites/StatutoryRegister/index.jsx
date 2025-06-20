@@ -507,6 +507,7 @@ const StatutoryRegister = ({
           showModal={showTagDocumentModal}
           setShowModal={setShowTagDocumentModal}
           statutoryCategory={folder}
+          siteId={siteSelectedForGlobal?.siteId}
           refresh={() => {
             getStatutory(siteSelectedForGlobal?.siteId);
           }}

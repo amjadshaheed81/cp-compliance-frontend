@@ -6,8 +6,16 @@ import moment from 'moment';
 import { Typography, Grid, Autocomplete, Chip, Divider } from "@mui/material";
 import { getSiteAssets } from "../../../../store/thunk/site";
 
-const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, siteCheck, loggedInUserData }) => {
-
+const InspectionElectricalFault = ({
+  sasToken,
+  checkId,
+  siteAssets,
+  getSiteAssets,
+  siteSelectedForGlobal,
+  siteCheck,
+  loggedInUserData,
+  leadUserID
+}) => {
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
@@ -82,8 +90,9 @@ const InspectionElectricalFault = ({ sasToken, checkId, siteAssets, getSiteAsset
           siteId: siteSelectedForGlobal?.siteId,
           userId: loggedInUserData?.id,
           actionImage: data.imageUrl,
-          taggedAsset: data.assetId
-        }
+          taggedAsset: data.assetId,
+          assignedTo: leadUserID
+        };
         await put("/api/site/actions", actionData);
       } 
     }

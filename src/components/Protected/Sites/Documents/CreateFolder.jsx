@@ -1,19 +1,19 @@
 import React, { useState } from "react";
-import { Button, Modal, Typography, Box } from "@mui/material";
-import { useForm, ErrorMessage } from "react-hook-form";
-import TextField from '@mui/material/TextField';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import CircularProgress from '@mui/material/CircularProgress';
-import DialogTitle from '@mui/material/DialogTitle';
-import { toast } from 'react-toastify';
-import { post } from '../../../../api'
 import {
-  createDocumentFolder,
-  uploadDocumentFile,
-} from "../../../../store/thunk/site";
-import { connect } from "react-redux";
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  FormControlLabel,
+  Checkbox,
+  CircularProgress,
+  Box,
+} from "@mui/material";
+import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
+import { post } from "../../../../api";
 import { isAdminLogin } from "../../../../utils/isManagerAdminLogin";
 
 const CreateFolder = ({
@@ -21,112 +21,129 @@ const CreateFolder = ({
   setShowFolderModal,
   folderId,
   folder2,
-  uploadDocumentFile,
   refresh,
-  siteSelectedForGlobal,
-  loggedInUserData
+  siteId,
+  loggedInUserData,
 }) => {
-  const handleOpen = () => setShowFolderModal(true);
-  const handleClose = () => setShowFolderModal(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [isShared, setIsShared] = useState(false);
 
-  const submitFolder = async (data) => {
-    if (folder2.name === 'Statutory Documents') {
-      data.isStatutoryRegister = true;
-      if (isAdminLogin(loggedInUserData)) {
-        setIsLoading(true);
-        await post("/api/document/folder", data);
-        //createDocumentFolder(data, folderId);
-        setIsLoading(false);
-        handleClose();
-        refresh();
-        toast.success("Folder added successfully");
-      }
-      else {
-        toast.error("Only Admin can create folder in statutory");
-      }
-    }
-    else {
-      setIsLoading(true);
-      await post("/api/document/folder", data);
-      //createDocumentFolder(data, folderId);
-      setIsLoading(false);
-      handleClose();
-      refresh();
-      toast.success("Folder added successfully");
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm();
+
+  const handleClose = () => {
+    reset();
+    setIsShared(false);
+    setShowFolderModal(false);
   };
 
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 500,
-    bgcolor: 'background.paper',
-    boxShadow: 24,
-    p: 4,
+  const submitFolder = async (data) => {
+    // Admin check for statutory folders
+    if (
+      folder2?.name === "Statutory Documents" &&
+      !isAdminLogin(loggedInUserData)
+    ) {
+      toast.error("Only Admin can create folder in statutory");
+      return;
+    }
+
+    const folderData = {
+      folderName: data.folderName,
+      parentFolderId: folderId,
+      siteId: siteId,
+      sharedFolder: isShared, // No need for Boolean() conversion
+      isStatutoryRegister: folder2?.name === "Statutory Documents",
+    };
+
+    setIsLoading(true);
+
+    post("/api/document/folder", folderData)
+      .then(() => {
+        toast.success("Folder created successfully!");
+        handleClose();
+        refresh();
+      })
+      .catch((error) => {
+        console.error("Error creating folder:", error);
+        if (error?.response?.data?.message === "Folder exists") {
+          toast.error("Folder with same name already exists");
+        } else {
+          toast.error("Failed to create folder. Please try again.");
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
-    <React.Fragment>
-      <Dialog
-        open={showFolderModal}
-        onClose={handleClose}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          component: 'form',
-          onSubmit: handleSubmit((data) => {
-            data.parentFolderId = folderId;
-            data.siteId = siteSelectedForGlobal?.siteId;
-            //data.parentFolderName =
-            submitFolder(data);
-          }),
-        }}
-      >
-        <DialogTitle>Create New Folder</DialogTitle>
-        <DialogContent dividers>
-          {isLoading && <Box sx={{ display: 'flex' }}>
-            <CircularProgress />
-          </Box>}
-          {!isLoading && (
-            <Box component="div">
-              <TextField
-                fullWidth
-                label="Folder Name"
-                variant="outlined"
-                {...register("folderName", {
-                  required: "Please enter folder name.",
-                  minLength: {
-                    value: 3,
-                    message: "Folder name should be at least 3 characters."
-                  }
-                })}
-                error={!!errors.folderName}
-                helperText={errors.folderName ? errors.folderName.message : ''}
+    <Dialog
+      open={showFolderModal}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        component: "form",
+        onSubmit: handleSubmit(submitFolder),
+      }}
+    >
+      <DialogTitle>Create New Folder</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <TextField
+            fullWidth
+            label="Folder Name"
+            variant="outlined"
+            {...register("folderName", {
+              required: "Folder name is required",
+              minLength: {
+                value: 3,
+                message: "Folder name must be at least 3 characters",
+              },
+              maxLength: {
+                value: 50,
+                message: "Folder name cannot exceed 50 characters",
+              },
+            })}
+            error={!!errors.folderName}
+            helperText={errors.folderName?.message}
+            disabled={isLoading}
+          />
+
+          {!siteId && <FormControlLabel
+            control={
+              <Checkbox
+                checked={isShared}
+                onChange={(e) => setIsShared(e.target.checked)}
+                color="primary"
               />
+            }
+            label="Default Folder (Visible to all users)"
+            disabled={isLoading}
+          />}
+
+          {isLoading && (
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <CircularProgress />
             </Box>
           )}
-        </DialogContent>
-        {!isLoading && (
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit">Save</Button>
-          </DialogActions>
-        )}
-      </Dialog>
-    </React.Fragment>
+        </Box>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={handleClose} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="contained" disabled={isLoading}>
+          Create Folder
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
-const mapStateToProps = (state) => ({
-  success: state.site.success,
-  error: state.site.error,
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
-  loggedInUserData: state.site.loggedInUserData,
-});
-export default connect(mapStateToProps, {
-  uploadDocumentFile,
-})(CreateFolder);
+export default CreateFolder;

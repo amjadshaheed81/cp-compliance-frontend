@@ -13,7 +13,7 @@ import SelectMandatoryFile from "../Documents/File/SelectMandatoryFile";
 import { toast } from "react-toastify";
 import { get, put } from "../../../../api";
 
-const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
+const TagAsset = ({ showModal, setShowModal, assetId, refresh, siteId }) => {
   const [open, setOpen] = useState(showModal);
   const [isLoading, setIsLoading] = useState(false);
   const [extension, setExtension] = useState("");
@@ -31,7 +31,7 @@ const TagAsset = ({ showModal, setShowModal, assetId, refresh }) => {
       toast.warn("Please select folder or existing file to tag with asset.");
     } else if (isFolderSelected) {
       const res = await get(
-        `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders`
+        `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders?siteId=${siteId}`
       );
       const files = res?.document?.files;
       if (files) {

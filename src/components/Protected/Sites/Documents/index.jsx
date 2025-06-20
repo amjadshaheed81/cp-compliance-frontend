@@ -850,7 +850,7 @@ const Document = ({
                       {column.data.map((folder) => (
                         <div
                           key={folder.id}
-                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : ''}`}
+                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : folder.fileCount === 0 ? 'bg-light':'bg-white' } ${folder.fileCount === 0 ? 'text-muted' : ''}`}
                           role="button"
                           onClick={() => {
                             handleFolderClick(folder, colIdx, true);
@@ -888,14 +888,14 @@ const Document = ({
                             </span>
                             <span>
                               {folder.name}
-                              <span className="ms-2 badge bg-secondary">
+                              {/* <span className="ms-2 badge bg-secondary">
                                 {folder.fileCount}
-                              </span>
+                              </span> */}
                             </span>
                           </div>
 
                           {isAdminLogin(loggedInUserData) &&
-                            column.id !== "root" && (
+                            column.id !== "root" && folder.siteId > 0 && (
                               <Tooltip title="Delete Folder" arrow>
                                 <DeleteIcon
                                   onClick={(e) => {
@@ -923,7 +923,7 @@ const Document = ({
                         {column.files.map((file) => (
                           <div
                             key={file.id}
-                            className="finder-item d-flex justify-content-between align-items-center"
+                            className="finder-item d-flex justify-content-between align-items-center bg-white"
                             style={{
                               padding: "8px",
                               borderRadius: "4px",

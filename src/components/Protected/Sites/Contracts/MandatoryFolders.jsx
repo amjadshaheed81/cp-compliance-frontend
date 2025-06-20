@@ -68,7 +68,7 @@ const MandatoryFolders = ({
     }
   };
   const checkSubFolder = async (folderId) => {
-    const res = await get(`/api/document/parent/${folderId}/folders`);
+    const res = await get(`/api/document/parent/${folderId}/folders?siteId=${siteSelectedForGlobal?.siteId}`);
     if(res?.document?.childFolders?.length > 0) {
       setFilteredFolders(res?.document?.childFolders || []);
     } else {

@@ -49,6 +49,7 @@ const AssessmentFireRisk = ({
   getSiteLayout,
   siteLayout,
   loggedInUserData,
+  leadUserID,
 }) => {
   const carouselSettings = {
     dots: true,
@@ -275,6 +276,7 @@ const AssessmentFireRisk = ({
       createdAt: new Date(),
       siteId: siteSelectedForGlobal?.siteId,
       userId: loggedInUserData?.id,
+      assignedTo: leadUserID,
       taggedAsset: quest[index]?.response?.faultassets,
       images: images,
     };
