@@ -521,6 +521,10 @@ const EmergencyLightingInspectionForm = ({
       return 'Emergency Lighting - Weekly \'Flick\' Testing';
     }
     // Check for 6 monthly testing pattern (case insensitive)
+    else if (/6.*monthly.*testing/i.test(normalizedCategory)) {
+      return 'Emergency Lighting - 6 Monthly Testing';
+    }
+    // Check for 6 monthly testing pattern (case insensitive)
     else if (/1.*monthly.*testing/i.test(normalizedCategory)) {
       return ' Emergency Lighting - Monthly Testing';
     }
