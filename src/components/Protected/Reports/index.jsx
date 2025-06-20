@@ -25,6 +25,7 @@ import StatutoryRegister from "./StatutoryRegister/StatutoryRegister";
 import Actions from "./Actions/Actions";
 import BasicReports from "./BasicReports/BasicReports";
 import NewAssets from "./Assets/NewAssets";
+import EnergyPrediction from "./Energy Prediction/EnergyPrediction";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -103,6 +104,7 @@ const Reports = ({}) => {
               <Tab label="Actions" {...a11yProps(6)} />
               <Tab label="Basic Reports" {...a11yProps(7)} />
               <Tab label="Energy Consumption" {...a11yProps(8)} />
+              <Tab label="Energy Forecast" {...a11yProps(9)} />
             </Tabs>
             <TabPanel value={value} index={0}>
               <SiteCharts siteChart={siteChart} setSiteChart={setSiteChart} />
@@ -150,6 +152,11 @@ const Reports = ({}) => {
             <TabPanel value={value} index={8}>
               <div className="row">
                 <EnergyConsumption />
+              </div>
+            </TabPanel>
+            <TabPanel value={value} index={9}>
+              <div className="row">
+                <EnergyPrediction />
               </div>
             </TabPanel>
           </Box>
