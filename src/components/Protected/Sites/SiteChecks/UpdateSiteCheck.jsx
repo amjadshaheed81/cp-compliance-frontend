@@ -532,6 +532,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   leadUserID={siteCheck?.leadUserID}
                   siteCheck={siteCheck}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -542,6 +543,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -552,6 +554,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -562,6 +565,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -572,6 +576,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -581,6 +586,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 sasToken={sasToken}
                 subType={siteCheck?.subType}
                 category={siteCheck.category}
+                leadUserID={siteCheck?.leadUserID}
               />
             )}
             {step === "assessment-fire-risk" && (
@@ -591,6 +597,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
                   leadUserID={siteCheck?.leadUserID}
+                  
                 />
               </Item>
             )}
@@ -601,6 +608,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -611,6 +619,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -621,6 +630,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -631,6 +641,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -641,6 +652,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -651,6 +663,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -661,6 +674,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -671,6 +685,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
                   category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
