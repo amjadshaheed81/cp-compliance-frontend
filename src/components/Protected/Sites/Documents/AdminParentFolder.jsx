@@ -215,7 +215,7 @@ const AdminParentFolder = ({
 
     try {
       if (colIndex === 0) {
-        await getDocumentsRootFolder(473);
+        await getDocumentsRootFolder(473,true);
       } else {
         const newColumns = columns.slice(0, colIndex);
         setColumns(newColumns);
@@ -302,13 +302,16 @@ const AdminParentFolder = ({
 
       if (res?.status === 200) {
         const parentColumnIndex = columns.length - 1;
-        if (parentColumnIndex >= 0) {
+        if (parentColumnIndex > 0) {
           const parentColumn = columns[parentColumnIndex];
           await handleFolderClick(
             { id: parentColumn.id, name: parentColumn.name },
             parentColumnIndex
           );
-        }
+        } else {
+              setLoader(true);
+              getDocumentsRootFolder(473, true);
+            }
         toast.success(`Folder "${folderName}" deleted successfully`);
       } else {
         throw new Error("Failed to delete folder");
@@ -411,7 +414,7 @@ const AdminParentFolder = ({
         <CreateParentFolder
           showFolderModal={showRootFolderModal}
           setShowFolderModal={setShowRootFolderModal}
-          refresh={() => getDocumentsRootFolder(473)}
+          refresh={() => getDocumentsRootFolder(473, true)}
         />
       )}
 
@@ -433,7 +436,7 @@ const AdminParentFolder = ({
               }
             } else {
               setLoader(true);
-              getDocumentsRootFolder(473);
+              getDocumentsRootFolder(473, true);
             }
           }}
         />
