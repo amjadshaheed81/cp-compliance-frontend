@@ -20,16 +20,16 @@ import { TextField, Autocomplete } from "@mui/material";
 import { get } from "../../../../api";
 
 const CreateAsset = ({
-  setLoader,
-  siteSelectedForGlobal,
-  getDocumentsRootFolder,
-  rootFolder,
-  addSiteAsset,
-  getSiteAssets,
-  siteAssets,
-  getSiteLayout,
-  siteLayout,
-}) => {
+                       setLoader,
+                       siteSelectedForGlobal,
+                       getDocumentsRootFolder,
+                       rootFolder,
+                       addSiteAsset,
+                       getSiteAssets,
+                       siteAssets,
+                       getSiteLayout,
+                       siteLayout,
+                     }) => {
   const [patRecord, setPatRecord] = useState([]);
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
@@ -115,6 +115,7 @@ const CreateAsset = ({
     subCategory3: "",
     model: "",
     serialNumber: "",
+    powerOutput: "",
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -143,8 +144,8 @@ const CreateAsset = ({
     if (data?.assetImage?.length > 0) {
       data?.assetImage?.forEach(assetImage=>{
         form_data.append(
-          "assetImage",
-          assetImage,
+            "assetImage",
+            assetImage,
         );
       })
     } else {
@@ -158,122 +159,126 @@ const CreateAsset = ({
     } catch (e) {
       setLoader(false);
       toast.error(
-        "Something went wrong while adding asset. Please try again!!"
+          "Something went wrong while adding asset. Please try again!!"
       );
     }
   };
   return (
-    <Fragment>
-      <SidebarNew />
-      <div className="content">
-        <Header />
-        <div className="container-fluid">
-          <BreadCrumHeader header={"Create New Asset"} page={"Asset Details"} />
+      <Fragment>
+        <SidebarNew />
+        <div className="content">
+          <Header />
+          <div className="container-fluid">
+            <BreadCrumHeader header={"Create New Asset"} page={"Asset Details"} />
 
-          <Box sx={{ width: "100%", typography: "body1" }}>
-            <form onSubmit={handleSubmit(submitSiteAsset)}>
-              <div className="row p-2 border">
-                <div className="col-md-12">
-                  <div className="float-end">
-                    <button
-                      type="button"
-                      className="btn btn-light mb-3 mr-4"
-                      onClick={() => window.history.back()}
-                    >
-                      Close
-                    </button>
-                    &nbsp; &nbsp;
-                    <button type="submit" className="btn btn-primary mb-3 mr-4">
-                      Save
-                    </button>
+            <Box sx={{ width: "100%", typography: "body1" }}>
+              <form onSubmit={handleSubmit(submitSiteAsset)}>
+                <div className="row p-2 border">
+                  <div className="col-md-12">
+                    <div className="float-end">
+                      <button
+                          type="button"
+                          className="btn btn-light mb-3 mr-4"
+                          onClick={() => window.history.back()}
+                      >
+                        Close
+                      </button>
+                      &nbsp; &nbsp;
+                      <button type="submit" className="btn btn-primary mb-3 mr-4">
+                        Save
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="col-md-12 p-2">
-                  <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-8">
-                      <div className="row">
-                        <div className="col-md-6 mt-2">
-                          <div className="form-group mt-2">
-                            <label for="assetName">Asset Name</label>
-                            <input
-                              type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="assetName"
-                              name="assetName"
-                              placeholder=""
-                              {...register("assetName", {
-                                required: {
-                                  value: true,
-                                  message: `${Validation.REQUIRED} asset name`,
-                                },
-                              })}
-                            />
-                            {errors?.assetName && (
-                              <InputError
-                                message={errors?.assetName?.message}
-                                key={errors?.assetName?.message}
+                  <div className="col-md-12 p-2">
+                    <div className="row" style={{ height: "auto" }}>
+                      <div className="col-md-8">
+                        <div className="row">
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label for="assetName">Asset Name</label>
+                              <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  className="form-control"
+                                  id="assetName"
+                                  name="assetName"
+                                  placeholder=""
+                                  {...register("assetName", {
+                                    required: {
+                                      value: true,
+                                      message: `${Validation.REQUIRED} asset name`,
+                                    },
+                                  })}
                               />
-                            )}
-                          </div>
-                        </div>
-                        <div className="col-md-6 mt-2">
-                          <div className="form-group mt-2">
-                            <label for="manufacturer">Manufacturer</label>
-                            <input
-                              type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="manufacturer"
-                              name="manufacturer"
-                              placeholder=""
-                              {...register("manufacturer")}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="col-md-6 mt-2">
-                          <div className="form-group mt-2">
-                            <label for="relatedAssetId">Related Asset</label>
-                            <Autocomplete
-                              multiple
-                              onChange={(event, newValue) => {
-                                const keys = newValue
-                                  ?.map((itm) => itm?.key)
-                                  ?.join(",");
-                                setValue("relatedAssetId", keys);
-                              }}
-                              options={siteAssets?.map((option) => {
-                                return {
-                                  key: option.assetId,
-                                  label:
-                                    option.assetId +
-                                    " - " +
-                                    option.assetName +
-                                    " (" +
-                                    `${option?.position || "NA"} > ${
-                                      option?.floor || "NA"
-                                    } > ${option?.room || "NA"}` +
-                                    ")",
-                                };
-                              })}
-                              getOptionLabel={(option) => option.label}
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  label="Tag Asset"
-                                  placeholder="Tag Asset"
-                                />
+                              {errors?.assetName && (
+                                  <InputError
+                                      message={errors?.assetName?.message}
+                                      key={errors?.assetName?.message}
+                                  />
                               )}
-                            />
+                            </div>
                           </div>
-                        </div>
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label for="manufacturer">Manufacturer</label>
+                              <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  className="form-control"
+                                  id="manufacturer"
+                                  name="manufacturer"
+                                  placeholder=""
+                                  {...register("manufacturer")}
+                              />
+                            </div>
+                          </div>
 
-                        {/* <div className="col-md-6 mt-2">
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label for="relatedAssetId">Related Asset</label>
+                              <Autocomplete
+                                  multiple
+                                  onChange={(event, newValue) => {
+                                    const keys = newValue
+                                        ?.map((itm) => itm?.key)
+                                        ?.join(",");
+                                    setValue("relatedAssetId", keys);
+                                  }}
+                                  options={siteAssets?.map((option) => {
+                                    return {
+                                      key: option.assetId,
+                                      label:
+                                          option.assetId +
+                                          " - " +
+                                          option.assetName +
+                                          " (" +
+                                          `${option?.position || "NA"} > ${
+                                              option?.floor || "NA"
+                                          } > ${option?.room || "NA"}` +
+                                          ")",
+                                    };
+                                  })}
+                                  getOptionLabel={(option) => option.label}
+                                  renderInput={(params) => (
+                                      <TextField
+                                          {...params}
+                                          label="Tag Asset"
+                                          placeholder="Tag Asset"
+                                      />
+                                  )}
+                              />
+                            </div>
+                          </div>
+
+                          {/* <div className="col-md-6 mt-2">
                           <label for="folder">Folder</label>
                           <select
                             name="folderId"
@@ -290,316 +295,331 @@ autoComplete="off"
                           </select>
                         </div> */}
 
-                        <div className="col-md-6 mt-2">
-                          <div className="form-group mt-2">
-                            <label for="model">Model</label>
-                            <input
-                              type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="model"
-                              name="model"
-                              placeholder=""
-                              {...register("model")}
-                            />
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label for="model">Model</label>
+                              <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  className="form-control"
+                                  id="model"
+                                  name="model"
+                                  placeholder=""
+                                  {...register("model")}
+                              />
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="col-md-6 mt-2">
-                          <div className="form-group mt-2">
-                            <label for="serialNumber">Serial Number</label>
-                            <input
-                              type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="serialNumber"
-                              name="serialNumber"
-                              placeholder=""
-                              {...register("serialNumber")}
-                            />
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label for="serialNumber">Serial Number</label>
+                              <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  className="form-control"
+                                  id="serialNumber"
+                                  name="serialNumber"
+                                  placeholder=""
+                                  {...register("serialNumber")}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label for="powerOutput">Power Output</label>
+                              <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  className="form-control"
+                                  id="powerOutput"
+                                  name="powerOutput"
+                                  placeholder=""
+                                  {...register("powerOutput")}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <div className="form-group">
-                        <input
-                          type="file"
-                          multiple
-                          className="form-control"
-                          {...register("assetImage")}
-                        />
+                      <div className="col-md-4 mt-2">
+                        <div className="form-group">
+                          <input
+                              type="file"
+                              multiple
+                              className="form-control"
+                              {...register("assetImage")}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-4 mt-2">
-                      <label for="category">Category</label>
-                      <select
-                        name="category"
-                        className="form-control form-select"
-                        id="category"
-                        {...register("category", {
-                          required: {
-                            value: true,
-                            message: `Please select category`,
-                          },
-                        })}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("category", val);
-                          const subCategoryData = subCategory?.filter(
-                            (itm) => itm?.attribite1 === val
-                          );
-                          setSubCategoryList(subCategoryData);
-                          setSubCategory2List([]);
-                          setSubCategory3List([]);
-                        }}
-                      >
-                        <option value="" selected disabled>
-                          Select Category
-                        </option>
-                        {category?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
-                        ))}
-                      </select>
-                      {errors?.category && (
-                        <InputError
-                          message={errors?.category?.message}
-                          key={errors?.category?.message}
-                        />
-                      )}
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <label for="subCategory">Sub Category 1</label>
-                      <select
-                        name="subCategory"
-                        className="form-control form-select"
-                        id="subCategory"
-                        {...register("subCategory")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("subCategory", val);
-                          const subCategoryData = subCategory2?.filter(
-                            (itm) => itm?.attribite1 === val
-                          );
-                          setSubCategory2List(subCategoryData);
-                          setSubCategory3List([]);
-                        }}
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subCategoryList?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
-                        ))}
-                      </select>
-                      {errors?.subCategory && (
-                        <InputError
-                          message={errors?.subCategory?.message}
-                          key={errors?.subCategory?.message}
-                        />
-                      )}
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <label for="subCategory2">Sub Category 2</label>
-                      <select
-                        name="subCategory2"
-                        className="form-control form-select"
-                        id="subCategory2"
-                        {...register("subCategory2")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("subCategory2", val);
-                          const subCategoryData = subCategory3?.filter(
-                            (itm) => itm?.attribite1 === val
-                          );
-                          setSubCategory3List(subCategoryData);
-                        }}
-                      >
-                        <option value="">Select Sub Category 2</option>
-                        {subCategory2List?.map((itm) => (
-                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
-                        ))}
-                      </select>
-                      {errors?.subCategory2 && (
-                        <InputError
-                          message={errors?.subCategory2?.message}
-                          key={errors?.subCategory2?.message}
-                        />
-                      )}
-                    </div>
-                    <div>
+                    <div className="row" style={{ height: "auto" }}>
                       <div className="col-md-4 mt-2">
-                        <label for="subCategory3">Sub Category 3</label>
+                        <label for="category">Category</label>
                         <select
-                          name="subCategory3"
-                          className="form-control form-select"
-                          id="subCategory3"
-                          {...register("subCategory3")}
+                            name="category"
+                            className="form-control form-select"
+                            id="category"
+                            {...register("category", {
+                              required: {
+                                value: true,
+                                message: `Please select category`,
+                              },
+                            })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setValue("category", val);
+                              const subCategoryData = subCategory?.filter(
+                                  (itm) => itm?.attribite1 === val
+                              );
+                              setSubCategoryList(subCategoryData);
+                              setSubCategory2List([]);
+                              setSubCategory3List([]);
+                            }}
                         >
-                          <option value="">Select Sub Category 3</option>
-                          {subCategory3List?.map((itm) => (
-                            <option value={itm?.lovValue}>
-                              {itm?.lovValue}
-                            </option>
+                          <option value="" selected disabled>
+                            Select Category
+                          </option>
+                          {category?.map((itm) => (
+                              <option value={itm?.lovValue}>{itm?.lovValue}</option>
                           ))}
                         </select>
+                        {errors?.category && (
+                            <InputError
+                                message={errors?.category?.message}
+                                key={errors?.category?.message}
+                            />
+                        )}
+                      </div>
+                      <div className="col-md-4 mt-2">
+                        <label for="subCategory">Sub Category 1</label>
+                        <select
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            {...register("subCategory")}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setValue("subCategory", val);
+                              const subCategoryData = subCategory2?.filter(
+                                  (itm) => itm?.attribite1 === val
+                              );
+                              setSubCategory2List(subCategoryData);
+                              setSubCategory3List([]);
+                            }}
+                        >
+                          <option value="">Select Sub Category</option>
+                          {subCategoryList?.map((itm) => (
+                              <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          ))}
+                        </select>
+                        {errors?.subCategory && (
+                            <InputError
+                                message={errors?.subCategory?.message}
+                                key={errors?.subCategory?.message}
+                            />
+                        )}
+                      </div>
+                      <div className="col-md-4 mt-2">
+                        <label for="subCategory2">Sub Category 2</label>
+                        <select
+                            name="subCategory2"
+                            className="form-control form-select"
+                            id="subCategory2"
+                            {...register("subCategory2")}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setValue("subCategory2", val);
+                              const subCategoryData = subCategory3?.filter(
+                                  (itm) => itm?.attribite1 === val
+                              );
+                              setSubCategory3List(subCategoryData);
+                            }}
+                        >
+                          <option value="">Select Sub Category 2</option>
+                          {subCategory2List?.map((itm) => (
+                              <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          ))}
+                        </select>
+                        {errors?.subCategory2 && (
+                            <InputError
+                                message={errors?.subCategory2?.message}
+                                key={errors?.subCategory2?.message}
+                            />
+                        )}
+                      </div>
+                      <div>
+                        <div className="col-md-4 mt-2">
+                          <label for="subCategory3">Sub Category 3</label>
+                          <select
+                              name="subCategory3"
+                              className="form-control form-select"
+                              id="subCategory3"
+                              {...register("subCategory3")}
+                          >
+                            <option value="">Select Sub Category 3</option>
+                            {subCategory3List?.map((itm) => (
+                                <option value={itm?.lovValue}>
+                                  {itm?.lovValue}
+                                </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="col-md-4 mt-2">
+                        <input
+                            type="checkbox"
+                            id="patItem"
+                            name="patItem"
+                            onClick={changePatItem}
+                            className="form-check-input"
+                            {...register("patItem")}
+                        />
+                        &nbsp;
+                        <label for="patItem">
+                          PAT item (fill PAT details below)
+                        </label>
+                      </div>
+                      <div className="col-md-4 mt-2">
+                        <input
+                            type="checkbox"
+                            id="pfpItem"
+                            name="pfpItem"
+                            onClick={changePfpItem}
+                            className="form-check-input"
+                            {...register("pfpItem")}
+                        />
+                        &nbsp;
+                        <label for="pfpItem">
+                          Passive fire schedule required (fill PFS details below
+                          below)
+                        </label>
+                      </div>
+                      <div className="col-md-4 mt-2">
+                        <input
+                            type="checkbox"
+                            id="doorItem"
+                            name="doorItem"
+                            onClick={changeDoorItem}
+                            className="form-check-input"
+                            {...register("doorItem")}
+                        />
+                        &nbsp;
+                        <label for="doorItem">
+                          Door Assets (fill Door assets details below below)
+                        </label>
+                      </div>
+
+                      <div className="row" style={{ marginTop: "20px" }}>
+                        <hr />
+                        <h5>Location </h5>
+                      </div>
+                      <div className="row">
+                        <div className="col-md-4">
+                          <label for="position">Interior/Exterior</label>
+                          <select
+                              name="position"
+                              className="form-control form-select"
+                              id="position"
+                              {...register("position")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setValue("position", val);
+
+                                const node = siteLayout.filter(
+                                    (site) => site.nodeName === val
+                                );
+                                const data = siteLayout.filter(
+                                    (site) =>
+                                        site.nodeType === "floor" &&
+                                        site.parentNode === node?.[0]?.id
+                                );
+                                setFloors(data || []);
+                              }}
+                          >
+                            <option value="">Select Interior/Exterior</option>
+                            {["Interior", "Exterior"].map((num) => (
+                                <option value={num}>{num} </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-4">
+                          <label for="floor">Floor</label>
+                          <select
+                              name="floor"
+                              className="form-control form-select"
+                              id="floor"
+                              {...register("floor")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setValue("floor", val);
+
+                                const node = siteLayout.filter(
+                                    (site) => site.nodeName === val
+                                );
+                                const data = siteLayout.filter(
+                                    (site) =>
+                                        site.nodeType === "room" &&
+                                        site.parentNode === node?.[0]?.id
+                                );
+                                setRooms(data || []);
+                              }}
+                          >
+                            <option value="">Select Floor</option>
+                            {floors?.map((site) => (
+                                <option value={site.nodeName}>
+                                  {site.nodeName}{" "}
+                                </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-4">
+                          <label for="room">Room</label>
+                          <select
+                              name="room"
+                              className="form-control form-select"
+                              id="room"
+                              {...register("room")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setValue("room", val);
+                              }}
+                          >
+                            <option value="">Select Room</option>
+                            {rooms?.map((site) => (
+                                <option value={site.nodeName}>
+                                  {site.nodeName}
+                                </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                    
-                     
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="patItem"
-                        name="patItem"
-                        onClick={changePatItem}
-                        className="form-check-input"
-                        {...register("patItem")}
-                      />
-                      &nbsp;
-                      <label for="patItem">
-                        PAT item (fill PAT details below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="pfpItem"
-                        name="pfpItem"
-                        onClick={changePfpItem}
-                        className="form-check-input"
-                        {...register("pfpItem")}
-                      />
-                      &nbsp;
-                      <label for="pfpItem">
-                        Passive fire schedule required (fill PFS details below
-                        below)
-                      </label>
-                    </div>
-                    <div className="col-md-4 mt-2">
-                      <input
-                        type="checkbox"
-                        id="doorItem"
-                        name="doorItem"
-                        onClick={changeDoorItem}
-                        className="form-check-input"
-                        {...register("doorItem")}
-                      />
-                      &nbsp;
-                      <label for="doorItem">
-                        Door Assets (fill Door assets details below below)
-                      </label>
-                    </div>
-                    
-                    <div className="row" style={{marginTop:'20px'}}>
-                      
-                      <hr />
-                      <h5>Location </h5>
-                    </div>
-                    <div className="row">
-                    <div className="col-md-4">
-                      <label for="position">Interior/Exterior</label>
-                      <select
-                        name="position"
-                        className="form-control form-select"
-                        id="position"
-                        {...register("position")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("position", val);
-                          
-                    
-                          const node = siteLayout.filter(
-                            (site) => site.nodeName === val
-                          );
-                          const data = siteLayout.filter(
-                            (site) =>
-                              site.nodeType === "floor" &&
-                              site.parentNode === node?.[0]?.id
-                          );
-                          setFloors(data || []);
-                        }}
-                      >
-                        <option value="">Select Interior/Exterior</option>
-                        {["Interior", "Exterior"].map((num) => (
-                          <option value={num}>{num} </option>
-                        ))}
-                      </select>
-                      
-                    </div>
-                    <div className="col-md-4">
-                      <label for="floor">Floor</label>
-                      <select
-                        name="floor"
-                        className="form-control form-select"
-                        id="floor"
-                        {...register("floor")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("floor", val);
-                          
-                          const node = siteLayout.filter(
-                            (site) => site.nodeName === val
-                          );
-                          const data = siteLayout.filter(
-                            (site) =>
-                              site.nodeType === "room" &&
-                              site.parentNode === node?.[0]?.id
-                          );
-                          setRooms(data || []);
-                        }}
-                      >
-                        <option value="">Select Floor</option>
-                        {floors?.map((site) => (
-                          <option value={site.nodeName}>
-                            {site.nodeName}{" "}
-                          </option>
-                        ))}
-                      </select>
-                     
-                    </div>
-                    <div className="col-md-4">
-                      <label for="room">Room</label>
-                      <select
-                        name="room"
-                        className="form-control form-select"
-                        id="room"
-                        {...register("room")}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("room", val);
-                          
-                        }}
-                      >
-                        <option value="">Select Room</option>
-                        {rooms?.map((site) => (
-                          <option value={site.nodeName}>{site.nodeName}</option>
-                        ))}
-                      </select>
-                      
-                    </div>
-                    
-                  </div>
-                  </div>
 
-                  
-                 
-                  {/* start */}
+                    {/* start */}
 
-                  {/* end */}
+                    {/* end */}
+                  </div>
                 </div>
-              </div>
-            </form>
-          </Box>
-          {/*  */}
-          {/*  */}
+              </form>
+            </Box>
+            {/*  */}
+            {/*  */}
+          </div>
         </div>
-      </div>
-    </Fragment>
+      </Fragment>
   );
 };
 const mapStateToProps = (state) => ({
