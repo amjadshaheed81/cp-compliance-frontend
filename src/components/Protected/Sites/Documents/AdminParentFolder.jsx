@@ -344,15 +344,19 @@ const AdminParentFolder = ({
 
       try {
         const url = `/api/document/folder/${folderId}/manage`;
+
         await put(url, { folderName: newName });
 
         const lastColumn = columns[columns.length - 1];
-        if (lastColumn) {
+        if (lastColumn && columns.length - 1 > 0) {
           await handleFolderClick(
             { id: lastColumn.id, name: newName },
             columns.length - 1
           );
-        }
+        } else {
+              getDocumentsRootFolder(473, true);
+            }
+        
         toast.success(`Folder renamed to "${newName}"`);
       } catch (error) {
         console.error("Update folder name error:", error);
