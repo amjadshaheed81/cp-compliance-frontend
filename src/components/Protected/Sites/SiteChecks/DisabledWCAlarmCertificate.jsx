@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { post, get } from "../../../../api";
+import axios from 'axios';
 import {
   getSiteAssets,
   getSiteById,
@@ -240,20 +241,43 @@ const DisabledWCAlarmCertificate = ({
     }
   };
 
+  const savePdfToLocal = async (pdfBlob, fileName) => {
+    try {
+      // Create a temporary URL for the blob
+      const url = URL.createObjectURL(pdfBlob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving PDF locally:', error);
+      return false;
+    }
+  };
+
   const generatePdf = async () => {
     if (!PDFLib) {
       toast.error('PDF library not loaded yet. Please wait and try again.');
-      return;
+      return false;
     }
     
     if (!PDFLib.PDFDocument || typeof PDFLib.PDFDocument.load !== 'function') {
       toast.error('PDF library not properly initialized. Please refresh the page.');
-      return;
+      return false;
     }
 
     try {
-      setIsGeneratingPDF(true);
-      
       // Validate required fields
       const requiredFields = [
         'address', 'siteContact', 'inspectionDate', 'assetId',
@@ -270,7 +294,7 @@ const DisabledWCAlarmCertificate = ({
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         toast.error('Please fill in all required fields');
-        return;
+        return false;
       }
 
       setValidationErrors({});
@@ -281,7 +305,7 @@ const DisabledWCAlarmCertificate = ({
       } catch (error) {
         console.error('Error loading PDF template:', error);
         toast.error('Failed to load PDF template. Please try again.');
-        return;
+        return false;
       }
       
       let pdfDoc;
@@ -290,15 +314,11 @@ const DisabledWCAlarmCertificate = ({
       } catch (error) {
         console.error('Error loading PDF document:', error);
         toast.error('Failed to process PDF. The template may be corrupted.');
-        return;
+        return false;
       }
       
       const form = pdfDoc.getForm();
       const fields = form.getFields();
-      
-      // Log all field names for debugging
-      console.log('PDF Form Fields:');
-      fields.forEach(f => console.log(f.getName()));
       
       // Helper function to set text field with font size
       const setTextField = (fieldName, value, fontSize = 10) => {
@@ -339,8 +359,7 @@ const DisabledWCAlarmCertificate = ({
       setTextField('Manufacturer', formData.selectedAsset?.manufacturer || 'N/A');
       setTextField('Model Number', formData.selectedAsset?.model || 'N/A');
       setTextField('Location', `${formData.selectedAsset?.position || ''} ${formData.selectedAsset?.room || ''} ${formData.selectedAsset?.floor || ''}`.trim() || 'N/A');
-      
-      // Set client and engineer information
+  
       setTextField('Clients Name', formData.clientUser?.name || formData.client || 'N/A');
       setTextField('Engineers Name', formData.user?.name || 'N/A');
       
@@ -376,21 +395,29 @@ const DisabledWCAlarmCertificate = ({
       const blob = new Blob([pdfBytesSaved], { type: 'application/pdf' });
       setGeneratedPdfBlob(blob);
       
-      // Generate file name with timestamp
-      const fileName = `Disabled_WC_Alarm_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`;
-      
-      // Save to local machine
-      saveAs(blob, fileName);
+      // Generate file name with timestamp to ensure uniqueness
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `DisabledWCAlarmCertificate.pdf`;
       
       // Upload to server
-      await uploadPdfToServer(blob, fileName);
-      
-      setShowPdfButton(true);
-      toast.success('PDF generated and uploaded successfully!');
+      try {
+        const uploadSuccess = await uploadPdfToServer(blob, fileName);
+        if (uploadSuccess) {
+          setShowPdfButton(true);
+          return true;
+        } else {
+          throw new Error('Failed to upload PDF to server');
+        }
+      } catch (error) {
+        console.error('Error uploading PDF:', error);
+        toast.error('Failed to upload PDF. Please try again.');
+        return false;
+      }
       
     } catch (error) {
       console.error('Error generating PDF:', error);
-      
+      toast.error(error.message || 'Failed to generate PDF');
+      return false;
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -458,69 +485,184 @@ const DisabledWCAlarmCertificate = ({
     }
   };
 
+  // Function to get the highest file version for a given file name in a folder
+  const getHighestFileVersion = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId) {
+        console.warn('No site ID available for file version check');
+        return 1;
+      }
+      
+      console.log('Fetching files from folder:', folderId, 'for site:', siteId);
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      
+      console.log('Files in folder:', files);
+      
+      if (files.length > 0) {
+        // Filter files with the same base name (without extension)
+        const baseName = fileName.split('.')[0];
+        console.log('Looking for files starting with:', baseName);
+        
+        const matchingFiles = files.filter(file => 
+          file.name && file.name.startsWith(baseName)
+        );
+        
+        console.log('Matching files:', matchingFiles);
+        
+        if (matchingFiles.length > 0) {
+          // Get the highest version number
+          const versions = matchingFiles.map(f => f.fileVersion || 1);
+          const maxVersion = Math.max(...versions);
+          console.log('Current versions:', versions, 'Max version:', maxVersion, 'Next version:', maxVersion + 1);
+          return maxVersion + 1;
+        }
+      }
+      console.log('No matching files found, using version 1');
+      return 1; // Default to 1 if no matching files found
+    } catch (error) {
+      console.error('Error checking file versions:', error);
+      return 1; // Default to 1 if there's an error
+    }
+  };
+
+  // Function to check if a file exists in the folder
+  const checkFileExists = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId || !folderId) return { exists: false, file: null };
+      
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      
+      // Find file with the same base name (without extension)
+      const baseName = fileName.split('.')[0];
+      const existingFile = files.find(file => 
+        file.name && file.name.startsWith(baseName)
+      );
+      
+      return {
+        exists: !!existingFile,
+        file: existingFile || null
+      };
+    } catch (error) {
+      console.error('Error checking file existence:', error);
+      return { exists: false, file: null };
+    }
+  };
+
+  // Helper function to upload PDF to the server
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
       
-      // If we don't have the folder ID, try to create the folder structure
-      let targetFolderId = folderIds.disabledWCAlarm;
-      if (!targetFolderId && siteSelectedForGlobal?.siteId) {
-        targetFolderId = await fetchFolderStructure(siteSelectedForGlobal.siteId);
+      // First save a local copy
+      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+      if (!savedLocally) {
+        throw new Error('Failed to save PDF locally');
       }
+      
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      
+      // Use the disabledWCAlarm folder ID if available, otherwise fall back to logBooks
+      const targetFolderId = folderIds.disabledWCAlarm || folderIds.logBooks;
       
       if (!targetFolderId) {
-        // Try to fetch the folder structure one more time
-        targetFolderId = await fetchFolderStructure(siteSelectedForGlobal?.siteId);
-        
-        if (!targetFolderId) {
-          throw new Error('Could not find the target folder. Please ensure the folder structure exists: Log Books > Plant and Equipment > Miscellaneous Service > Disabled WC Alarm');
-        }
+        throw new Error('Could not determine target folder for PDF upload');
       }
       
-      // Create FormData to send the file
+      // Check if file exists
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+      
+      // Create FormData for both cases
       const formData = new FormData();
-      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      formData.append('files', file);
+      const now = new Date();
+      const formattedDate = now.toISOString().replace('T', ' ').split('.')[0];
       
-      // Prepare document request string
-      const documentRequestString = {
-        folderId: targetFolderId,
-        files: [{
-          name: fileName.split('.')[0],
-          issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-          expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
-          note: 'Disabled WC Alarm Certificate',
-          fileVersion: 1,
-          siteId: siteSelectedForGlobal?.siteId || 0,
-          originalFileName: fileName,
-          uploaderUserId: loggedInUserData?.id || 0,
-          reviewerUserId: loggedInUserData?.id || 0,
-          referenceNumber: `DWC-${new Date().getTime()}`
-        }]
-      };
-      
-      formData.append('documentRequestString', JSON.stringify(documentRequestString));
-      
-      const response = await fetch('/api/document/files/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      if (exists && existingFile) {
+        // File exists, use the new version upload endpoint
+        formData.append('file', pdfFile);  // Single file for new version
+        
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: existingFile.fileVersion + 1,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: formattedDate,
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `DWC-${new Date().getTime()}`,
+            note: 'Disabled WC Alarm Certificate'
+          }]
+        };
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        
+        const response = await axios({
+          method: 'put',
+          url: '/api/document/file/newVersion/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
+          return true;
         }
-      });
-      
-      const responseData = await response.json();
-      
-      if (response.ok && responseData.success) {
-        toast.success('PDF uploaded successfully to Disabled WC Alarm folder');
-        return true;
       } else {
-        console.error('Upload error response:', responseData);
-        throw new Error(responseData.message || 'Failed to upload PDF');
+        // New file upload
+        formData.append('files', pdfFile);
+        
+        // Get the next version number
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            originalFileName: fileName,
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: formattedDate,
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `DWC-${new Date().getTime()}`,
+            note: 'Disabled WC Alarm Certificate'
+          }]
+        };
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        
+        const response = await axios({
+          method: 'post',
+          url: '/api/document/files/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (response.data) {
+          toast.success('PDF uploaded successfully!');
+          return true;
+        }
       }
     } catch (error) {
       console.error('Error uploading PDF:', error);
-     
       return false;
     } finally {
       setIsUploading(false);
@@ -554,18 +696,47 @@ const DisabledWCAlarmCertificate = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isLoading || isGeneratingPDF) {
+      console.log('Submit prevented: Already processing');
+      return;
+    }
+    
     try {
       if (!formData.assetId) {
         toast.error("Please select an asset first");
         return;
       }
+      
+      // Validate required fields
+      const requiredFields = [
+        'address', 'siteContact', 'inspectionDate', 'assetId',
+        'param1', 'param2', 'param3', 'param4', 'param5', 'param6', 'engineer'
+      ];
+      
+      const errors = {};
+      requiredFields.forEach(field => {
+        if (!formData[field]) {
+          errors[field] = 'This field is required';
+        }
+      });
+
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
+      setValidationErrors({});
+      setIsLoading(true);
 
       const dataToSave = {
         ...formData,
         assetId: formData.assetId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId,
-        subType,
+        subType: 'Disabled WC Alarm',
+        category: 'Disabled WC Alarm Certificate',
         inspectionDate: formData.inspectionDate || new Date().toISOString(),
         job: formData.job,
         engineer: loggedInUserData?.id,
@@ -580,6 +751,7 @@ const DisabledWCAlarmCertificate = ({
         param6: formData.param6, // pass/fail check
       };
 
+      // First save the form data
       const response = await post("/api/site-check/generic-inspection", dataToSave);
       
       // Update form data with the response data to ensure we have the latest data
@@ -592,13 +764,31 @@ const DisabledWCAlarmCertificate = ({
         }));
       }
       
-      toast.success("Disabled WC Alarm Test report saved successfully");
-      setIsSubmitted(true);
-      setSubmissionSuccess(true);
-      setShowPdfButton(true);
+      // Generate and upload PDF
+      try {
+        setIsGeneratingPDF(true);
+        const pdfGenerated = await generatePdf();
+        
+        if (pdfGenerated) {
+          toast.success("Disabled WC Alarm Test report saved and PDF generated successfully");
+          setIsSubmitted(true);
+          setSubmissionSuccess(true);
+        } else {
+          throw new Error("Failed to generate PDF");
+        }
+      } catch (pdfError) {
+        console.error('PDF generation/upload error:', pdfError);
+        //toast.error("Report saved, but there was an error generating/uploading the PDF");
+        // Still mark as submitted even if PDF generation fails
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+      }
     } catch (error) {
-      toast.error("Failed to save report");
-      console.error(error);
+      console.error('Form submission error:', error);
+      toast.error(error.response?.data?.message || error.message || "Failed to save report");
+      throw error; // Re-throw to allow caller to handle the error
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -681,13 +871,16 @@ const DisabledWCAlarmCertificate = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || null} // Use the stored siteContactUser
+          value={formData.siteContactUser || null}
           onChange={(event, newValue) => {
             setFormData((prev) => ({
               ...prev,
               siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
               siteContactUser: newValue || null,
+              // Autopopulate client name when site contact is selected
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -1204,20 +1397,13 @@ const DisabledWCAlarmCertificate = ({
             {isSubmitted ? 'Back' : 'Cancel'}
           </button>
 
-          {!isSubmitted ? (
-            <button type="submit" className="btn btn-primary">
-              Submit Report
-            </button>
-          ) : (
-            <button 
-              type="button" 
-              className="btn btn-success"
-              onClick={generatePdf}
-              disabled={isGeneratingPDF}
-            >
-              {isGeneratingPDF ? 'Generating PDF...' : 'Save and Generate PDF'}
-            </button>
-          )}
+          <button 
+            type="submit" 
+            className="btn btn-primary"
+            disabled={isLoading || isGeneratingPDF}
+          >
+            {isLoading || isGeneratingPDF ? 'Processing...' : 'Submit Report'}
+          </button>
         </div>
 
         {submissionSuccess && (
