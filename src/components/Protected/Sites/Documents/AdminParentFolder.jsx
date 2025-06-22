@@ -343,7 +343,7 @@ const AdminParentFolder = ({
       setLoader(true);
 
       try {
-        const url = `/api/document/parent-folder/${folderId}/manage`;
+        const url = `/api/document/folder/${folderId}/manage`;
         await put(url, { folderName: newName });
 
         const lastColumn = columns[columns.length - 1];
