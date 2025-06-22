@@ -318,18 +318,18 @@ const EnergyAndAssetComparisonChart = ({
     if (!assets || assets.length === 0) return null;
 
     // Group assets by category and calculate total power consumption
-    const categoryData = assets
+    const subCategoryData = assets
       .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
       .reduce((acc, asset) => {
-        const category = asset.category || "Uncategorized";
+        const subCategory = asset.subCategory || "Uncategorized";
         const powerW = parseFloat(asset.powerOutput) || 0;
         const powerKW = asset.powerOutputUnit === "kW" ? powerW : powerW / 1000;
         const dailyKWH = powerKW * 8; // 8 hours operation
         const monthlyKWH = dailyKWH * 30; // 30 days
 
-        if (!acc[category]) {
-          acc[category] = {
-            category,
+        if (!acc[subCategory]) {
+          acc[subCategory] = {
+            subCategory,
             powerW: 0,
             powerKW: 0,
             dailyKWH: 0,
@@ -339,25 +339,25 @@ const EnergyAndAssetComparisonChart = ({
           };
         }
 
-        acc[category].powerW += powerW;
-        acc[category].powerKW += powerKW;
-        acc[category].dailyKWH += dailyKWH;
-        acc[category].monthlyKWH += monthlyKWH;
-        acc[category].assetCount += 1;
-        acc[category].assets.push(asset);
+        acc[subCategory].powerW += powerW;
+        acc[subCategory].powerKW += powerKW;
+        acc[subCategory].dailyKWH += dailyKWH;
+        acc[subCategory].monthlyKWH += monthlyKWH;
+        acc[subCategory].assetCount += 1;
+        acc[subCategory].assets.push(asset);
 
         return acc;
       }, {});
 
-    const categories = Object.values(categoryData);
+    const categories = Object.values(subCategoryData);
     const totalMonthlyKWH = categories.reduce(
-      (sum, category) => sum + category.monthlyKWH,
+      (sum, subCategory) => sum + subCategory.monthlyKWH,
       0
     );
 
     // Prepare data for pie chart
     const pieChartData = {
-      labels: categories.map((cat) => cat.category),
+      labels: categories.map((cat) => cat.subCategory),
       datasets: [
         {
           data: categories.map((cat) => cat.monthlyKWH),
@@ -692,7 +692,7 @@ const EnergyAndAssetComparisonChart = ({
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <Typography variant="subtitle1" gutterBottom>
-                          Category Details (Monthly Consumption)
+                          Sub Category Details (Monthly Consumption)
                         </Typography>
                         <Box
                           style={{
@@ -706,7 +706,7 @@ const EnergyAndAssetComparisonChart = ({
                           <table style={{ width: "100%" }}>
                             <thead>
                               <tr>
-                                <th>Category</th>
+                                <th>Sub Category</th>
                                 <th>Assets</th>
                                 <th>Power (kW)</th>
                                 <th>Daily (kWh)</th>
@@ -716,16 +716,16 @@ const EnergyAndAssetComparisonChart = ({
                             </thead>
                             <tbody>
                               {assetBreakdownData.categories.map(
-                                (category, index) => (
+                                (subCategory, index) => (
                                   <tr key={index}>
-                                    <td>{category.category}</td>
-                                    <td>{category.assetCount}</td>
-                                    <td>{category.powerKW.toFixed(3)}</td>
-                                    <td>{category.dailyKWH.toFixed(2)}</td>
-                                    <td>{category.monthlyKWH.toFixed(2)}</td>
+                                    <td>{subCategory.subCategory}</td>
+                                    <td>{subCategory.assetCount}</td>
+                                    <td>{subCategory.powerKW.toFixed(3)}</td>
+                                    <td>{subCategory.dailyKWH.toFixed(2)}</td>
+                                    <td>{subCategory.monthlyKWH.toFixed(2)}</td>
                                     <td>
                                       {(
-                                        (category.monthlyKWH /
+                                        (subCategory.monthlyKWH /
                                           assetBreakdownData.totalMonthlyKWH) *
                                         100
                                       ).toFixed(2)}
