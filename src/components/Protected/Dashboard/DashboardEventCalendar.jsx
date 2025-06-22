@@ -6,7 +6,7 @@ import moment from "moment";
 import { useNavigate } from "react-router-dom";
 import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
-import { connect } from "react-redux";
+import { connect, useDispatch } from "react-redux";
 import { del, get, put } from "../../../api";
 import {
   Dialog,
@@ -19,8 +19,9 @@ import {
 } from "@mui/material";
 import Form from 'react-bootstrap/Form';
 import { toast } from "react-toastify";
+import { selectGlobalSite } from "../../../store/thunk/site";
 
-const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal }) => {
+const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal,selectGlobalSite  }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [invites, setInvites] = useState([]);
@@ -30,6 +31,9 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   const [proposedDate, setProposedDate] = useState('');
   const [proposedStartTime, setProposedStartTime] = useState('');
   const [proposedEndTime, setProposedEndTime] = useState('');
+
+  const dispatch = useDispatch();
+
 
   useEffect(() => {
     if(sites?.length > 0) {
@@ -91,8 +95,6 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
         param: u2,
         includeCompanyUsers: false,
         status: "Active",
-        startTime: currentInvite.startTime,
-        endTime: currentInvite.endTime,
         section: "accepted"
       };
       put('/api/user/calendar', calenderBody);
@@ -214,6 +216,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
             type: d.eventType + getSiteName(d.siteId),
             section: d.section,
             data: d,
+            siteId: d.siteId
           }]),
         date: moment(d.endDate).format("YYYY-MM-DD"),
         getDate: moment(d.endDate).format("YYYY-MM-DD"),
@@ -240,6 +243,25 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
     });
   }
 
+  const handleEventClick = async (section, siteId) => {
+    try {
+      const newSite = sites.find(s => s.siteId === siteId);
+      if (!newSite) {
+        toast.error("Site not found");
+        return;
+      }
+      // Use the selectGlobalSite action instead of updateSite
+      await selectGlobalSite(newSite);
+      localStorage.setItem("site", JSON.stringify(newSite)); // Also update localStorage like in SearchSite
+      // Small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 50));
+      navigate(section);
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      toast.error("Failed to navigate to item");
+    }
+  };
+
   const renderEventContent = (eventInfo) => {
     const title = JSON.parse(eventInfo.event.title);
     return (
@@ -249,25 +271,25 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
             <>
               <Tooltip title={itm?.type?.includes("Appointment") ? `${itm?.label} - ${getUserName(itm)} - Timing : ${itm?.data?.startTime} - : ${itm?.data?.endTime}` : itm?.label} arrow>
                 {itm?.type?.includes("Audit") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-primary" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-primary" >{itm?.type}</span></p>
                 )}
                 {itm?.type?.includes("Assessment") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-dark" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-dark" >{itm?.type}</span></p>
                 )}
                 {itm?.type?.includes("Inspection") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-success" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-success" >{itm?.type}</span></p>
                 )}
                 {itm?.type?.includes("Survey") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-danger" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-danger" >{itm?.type}</span></p>
                 )}
                 {itm?.type?.includes("Asbestos") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-warning text-dark" >{itm?.type}</span></p>
                 )}
                 {itm?.type?.includes("Document") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
                 {itm?.type?.includes("Contract") && (
-                  <p onClick={() => { navigateTo(itm?.section) }}><span class="badge bg-info" >{itm?.type}</span></p>
+                  <p onClick={() => {handleEventClick(itm?.section, itm.data.siteId)}}><span class="badge bg-info" >{itm?.type}</span></p>
                 )}
 
 {itm?.type?.includes("Appointment") &&  itm?.data?.section === "accepted" && (
@@ -444,4 +466,4 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 
-export default connect(mapStateToProps, {})(DashboardEventCalendar);
+export default connect(mapStateToProps, {selectGlobalSite})(DashboardEventCalendar);
