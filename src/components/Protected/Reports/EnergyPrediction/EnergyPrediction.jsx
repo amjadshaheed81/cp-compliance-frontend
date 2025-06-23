@@ -115,13 +115,23 @@ const EnergyAndAssetComparisonChart = ({
   const getAssetData = async (siteId) => {
     try {
       const assetsRes = await get(`/api/site/${siteId}/assets`);
-      setAssets(assetsRes.assets || []);
+      // Process assets to ensure powerOutput is properly converted
+      const processedAssets = (assetsRes.assets || []).map(asset => {
+        const power = parseFloat(asset.powerOutput) || 0;
+        const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
+        return {
+          ...asset,
+          powerInKW,
+          // Ensure powerOutput is a number
+          powerOutput: power
+        };
+      });
+      setAssets(processedAssets);
     } catch (error) {
       console.error("Error fetching asset data:", error);
       toast.error("Failed to fetch asset data: " + error.message);
     }
   };
-
   const processElectricityReadings = (
     readings,
     selectedYear = new Date().getFullYear(),
@@ -214,26 +224,44 @@ const EnergyAndAssetComparisonChart = ({
 
     // Process assets for prediction
     const powerAssets = assets
-      .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
-      .map((asset) => {
-        const power = parseFloat(asset.powerOutput) || 0;
-        const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
-        return {
-          ...asset,
-          powerInKW,
-        };
-      });
+        .filter(asset => {
+          const power = parseFloat(asset.powerOutput);
+          return !isNaN(power) && power > 0;
+        })
+        .map(asset => {
+          const power = parseFloat(asset.powerOutput);
+          const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
+          return {
+            ...asset,
+            powerInKW,
+            powerOutput: power
+          };
+        });
 
     const totalAssetPowerKW = powerAssets.reduce(
-      (sum, asset) => sum + asset.powerInKW,
-      0
+        (sum, asset) => sum + (asset.powerInKW || 0),
+        0
     );
-    console.log("Total Asset Power (kW):", totalAssetPowerKW);
 
-    const monthlyPredictedConsumption = totalAssetPowerKW * 8 * 30;
-    console.log(
-      "Monthly Predicted Consumption (kWh):",
-      monthlyPredictedConsumption
+    const monthlyPredictedConsumption = powerAssets.length > 0
+        ? totalAssetPowerKW * 8 * 30
+        : 0;
+
+    // Find the maximum actual consumption value
+    const maxActualConsumption = Math.max(...energyReadings.map(r => r.consumption), 1);
+
+    // Calculate dynamic scaling factor
+    let scaleFactor = 1;
+    let scaledPrediction = monthlyPredictedConsumption;
+
+    if (maxActualConsumption > 5000 && monthlyPredictedConsumption > 0) {
+      scaleFactor = (maxActualConsumption * 0.01) / 1000;
+      scaledPrediction = monthlyPredictedConsumption * scaleFactor;
+    }
+
+    // Modify the consumption data to show minimal bars for zero values
+    const modifiedConsumptionData = energyReadings.map(r =>
+        r.consumption === 0 ? 0.1 : r.consumption
     );
 
     return {
@@ -241,29 +269,31 @@ const EnergyAndAssetComparisonChart = ({
       datasets: [
         {
           label: "Actual Consumption (kWh)",
-          data: energyReadings.map((r) => r.consumption),
+          data: modifiedConsumptionData, // Use modified data here
           backgroundColor: "rgba(54, 162, 235, 0.7)",
           borderColor: "rgba(54, 162, 235, 1)",
           borderWidth: 1,
+          minBarLength: 0, // Set minBarLength to 0 for actual consumption
         },
         {
-          label: "Predicted Consumption (kWh)",
-          data: months.map(() => monthlyPredictedConsumption),
+          label: `Predicted Consumption (kWh${scaleFactor !== 1 ? ` (scaled ×${scaleFactor.toFixed(1)})` : ''}`,
+          data: months.map(() => scaledPrediction),
           backgroundColor: "rgba(255, 99, 132, 0.7)",
           borderColor: "rgba(255, 99, 132, 1)",
           borderWidth: 1,
+          minBarLength: 20, // Keep minBarLength for predicted bars
         },
       ],
       powerAssets,
       totalAssetPowerKW,
       monthlyPredictedConsumption,
+      scaleFactor,
       unit: "kWh",
     };
   };
 
   const preparePerM2ChartData = () => {
     if (!floorArea) return null;
-    console.log("Preparing per m² chart data with floor area:", floorArea);
 
     const months = Array.from({ length: 12 }, (_, i) => {
       const date = new Date(selectedYear, i, 1);
@@ -272,48 +302,73 @@ const EnergyAndAssetComparisonChart = ({
 
     // Process assets for prediction
     const powerAssets = assets
-      .filter((asset) => asset.powerOutput && asset.powerOutput > 0)
-      .map((asset) => {
-        const power = parseFloat(asset.powerOutput) || 0;
-        const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
-        return {
-          ...asset,
-          powerInKW,
-        };
-      });
+        .filter(asset => {
+          const power = parseFloat(asset.powerOutput);
+          return !isNaN(power) && power > 0;
+        })
+        .map(asset => {
+          const power = parseFloat(asset.powerOutput);
+          const powerInKW = asset.powerOutputUnit === "kW" ? power : power / 1000;
+          return {
+            ...asset,
+            powerInKW,
+            powerOutput: power
+          };
+        });
 
     const totalAssetPowerKW = powerAssets.reduce(
-      (sum, asset) => sum + asset.powerInKW,
-      0
+        (sum, asset) => sum + (asset.powerInKW || 0),
+        0
     );
-    const monthlyPredictedConsumptionPerM2 =
-      (totalAssetPowerKW * 8 * 30) / floorArea;
+
+    const monthlyPredictedConsumptionPerM2 = powerAssets.length > 0
+        ? (totalAssetPowerKW * 8 * 30) / floorArea
+        : 0;
+
+    // Find the maximum actual consumption value
+    const maxActualConsumption = Math.max(...energyReadings.map(r => r.consumptionPerM2), 1);
+
+    // Calculate dynamic scaling factor
+    let scaleFactor = 1;
+    let scaledPrediction = monthlyPredictedConsumptionPerM2;
+
+    if (maxActualConsumption > 50 && monthlyPredictedConsumptionPerM2 > 0) {
+      scaleFactor = (maxActualConsumption * 0.1) / 100;
+      scaledPrediction = monthlyPredictedConsumptionPerM2 * scaleFactor;
+    }
+
+    // Modify the consumption data to show minimal bars for zero values
+    const modifiedConsumptionData = energyReadings.map(r =>
+        r.consumptionPerM2 === 0 ? 0.01 : r.consumptionPerM2
+    );
 
     return {
       labels: months,
       datasets: [
         {
           label: "Actual Consumption (kWh/m²)",
-          data: energyReadings.map((r) => r.consumptionPerM2),
+          data: modifiedConsumptionData,
           backgroundColor: "rgba(75, 192, 192, 0.7)",
           borderColor: "rgba(75, 192, 192, 1)",
           borderWidth: 1,
+          minBarLength: 0,
         },
         {
-          label: "Predicted Consumption (kWh/m²)",
-          data: months.map(() => monthlyPredictedConsumptionPerM2),
+          label: `Predicted Consumption (kWh/m²${scaleFactor !== 1 ? ` (scaled ×${scaleFactor.toFixed(1)})` : ''})`,
+          data: months.map(() => scaledPrediction),
           backgroundColor: "rgba(255, 99, 132, 0.7)",
-          borderColor: "rgba(255, 99, 132, 0.7)",
+          borderColor: "rgba(255, 99, 132, 1)",
           borderWidth: 1,
+          minBarLength: 20,
         },
       ],
       powerAssets,
       totalAssetPowerKW,
       monthlyPredictedConsumptionPerM2,
+      scaleFactor,
       unit: "kWh/m²",
     };
   };
-
   const prepareAssetBreakdownData = () => {
     if (!assets || assets.length === 0) return null;
 
@@ -492,7 +547,14 @@ const EnergyAndAssetComparisonChart = ({
                               display: true,
                               text: absoluteChartData.unit,
                             },
+                            ticks: {
+                              callback: function(value) {
+                                // Don't show the 0.1 tick label, show it as 0
+                                return value === 0.1 ? '0' : value;
+                              }
+                            }
                           },
+
                           x: {
                             title: {
                               display: true,
@@ -501,61 +563,56 @@ const EnergyAndAssetComparisonChart = ({
                           },
                         },
                         plugins: {
-                          legend: {
-                            position: "top",
-                          },
                           tooltip: {
                             callbacks: {
-                              label: (context) => {
-                                const datasetLabel = context.dataset.label;
-                                const value = context.raw;
-                                return `${datasetLabel}: ${value.toFixed(2)} ${
-                                  absoluteChartData.unit
-                                }`;
-                              },
                               afterLabel: (context) => {
                                 if (context.datasetIndex === 1) {
                                   const assets = absoluteChartData.powerAssets;
-                                  const totalPower =
-                                    absoluteChartData.totalAssetPowerKW;
+                                  const totalPower = absoluteChartData.totalAssetPowerKW;
+                                  const scaleFactor = absoluteChartData.scaleFactor;
+                                  const originalValue = absoluteChartData.monthlyPredictedConsumption;
 
-                                  let assetDetails = [
-                                    `Total Power: ${totalPower.toFixed(2)} kW`,
-                                    "Asset Breakdown:",
-                                  ];
+                                  let assetDetails = [];
 
-                                  assets.forEach((asset) => {
+                                  if (assets.length > 0) {
                                     assetDetails.push(
-                                      `- ${
-                                        asset.assetName
-                                      }: ${asset.powerInKW.toFixed(2)} kW ` +
-                                        `(${asset.powerOutput} watt)`
+                                        `Total Power: ${totalPower.toFixed(2)} kW`,
+                                        "Asset Breakdown:"
                                     );
-                                  });
 
-                                  assetDetails.push(
-                                    `\nCalculation: ${totalPower.toFixed(
-                                      2
-                                    )} kW × 8 hours × 30 days = ${context.raw.toFixed(
-                                      2
-                                    )} ${absoluteChartData.unit}`
-                                  );
+                                    assets.forEach((asset) => {
+                                      assetDetails.push(
+                                          `- ${asset.assetName}: ${asset.powerInKW.toFixed(2)} kW ` +
+                                          `(${asset.powerOutput} ${asset.powerOutputUnit || 'W'})`
+                                      );
+                                    });
 
-                                  if (floorArea) {
                                     assetDetails.push(
-                                      `\nPer m²: ${(
-                                        context.raw / floorArea
-                                      ).toFixed(2)} kWh/m² (${floorArea} m²)`
+                                        `\nCalculation: ${totalPower.toFixed(2)} kW × 8 hours × 30 days = ${originalValue.toFixed(2)} kWh`
+                                    );
+                                  } else {
+                                    assetDetails.push("No power-generating assets found");
+                                  }
+
+                                  if (scaleFactor !== 1 && originalValue > 0) {
+                                    assetDetails.push(`(displayed ×${scaleFactor.toFixed(1)} for visibility)`);
+                                  }
+
+                                  if (floorArea && originalValue > 0) {
+                                    assetDetails.push(
+                                        `\nPer m²: ${(originalValue / floorArea).toFixed(2)} kWh/m² (${floorArea} m²)`
                                     );
                                   }
 
                                   return assetDetails.join("\n");
                                 }
                                 return null;
-                              },
-                            },
-                          },
+                              }
+                            }
+                          }
                         },
+                        barThickness: 'flex',
+                        minBarLength: 20,
                       }}
                     />
                   </div>
@@ -582,6 +639,12 @@ const EnergyAndAssetComparisonChart = ({
                                 display: true,
                                 text: perM2ChartData.unit,
                               },
+                              ticks: {
+                                callback: function(value) {
+                                  // Don't show the 0.01 tick label, show it as 0
+                                  return value === 0.01 ? '0' : value;
+                                }
+                              }
                             },
                             x: {
                               title: {
@@ -591,55 +654,50 @@ const EnergyAndAssetComparisonChart = ({
                             },
                           },
                           plugins: {
-                            legend: {
-                              position: "top",
-                            },
                             tooltip: {
                               callbacks: {
-                                label: (context) => {
-                                  const datasetLabel = context.dataset.label;
-                                  const value = context.raw;
-                                  return `${datasetLabel}: ${value.toFixed(
-                                    3
-                                  )} ${perM2ChartData.unit}`;
-                                },
                                 afterLabel: (context) => {
                                   if (context.datasetIndex === 1) {
                                     const assets = perM2ChartData.powerAssets;
-                                    const totalPower =
-                                      perM2ChartData.totalAssetPowerKW;
+                                    const totalPower = perM2ChartData.totalAssetPowerKW;
+                                    const scaleFactor = perM2ChartData.scaleFactor;
+                                    const originalValue = perM2ChartData.monthlyPredictedConsumptionPerM2;
 
-                                    let assetDetails = [
-                                      `Total Power: ${totalPower.toFixed(
-                                        3
-                                      )} kW`,
-                                      "Asset Breakdown:",
-                                    ];
+                                    let assetDetails = [];
 
-                                    assets.forEach((asset) => {
+                                    if (assets.length > 0) {
                                       assetDetails.push(
-                                        `- ${
-                                          asset.assetName
-                                        }: ${asset.powerInKW.toFixed(3)} kW ` +
-                                          `(${asset.powerOutput} watt)`
+                                          `Total Power: ${totalPower.toFixed(2)} kW`,
+                                          "Asset Breakdown:"
                                       );
-                                    });
 
-                                    assetDetails.push(
-                                      `\nCalculation: ${totalPower.toFixed(
-                                        3
-                                      )} kW × 8 hours × 30 days / ${floorArea} m² = ${context.raw.toFixed(
-                                        3
-                                      )} ${perM2ChartData.unit}`
-                                    );
+                                      assets.forEach((asset) => {
+                                        assetDetails.push(
+                                            `- ${asset.assetName}: ${asset.powerInKW.toFixed(2)} kW ` +
+                                            `(${asset.powerOutput} ${asset.powerOutputUnit || 'W'})`
+                                        );
+                                      });
+
+                                      assetDetails.push(
+                                          `\nCalculation: ${totalPower.toFixed(2)} kW × 8 hours × 30 days / ${floorArea} m² = ${originalValue.toFixed(2)} kWh/m²`
+                                      );
+                                    } else {
+                                      assetDetails.push("No power-generating assets found");
+                                    }
+
+                                    if (scaleFactor !== 1 && originalValue > 0) {
+                                      assetDetails.push(`(displayed ×${scaleFactor.toFixed(1)} for visibility)`);
+                                    }
 
                                     return assetDetails.join("\n");
                                   }
                                   return null;
-                                },
-                              },
-                            },
+                                }
+                              }
+                            }
                           },
+                          barThickness: 'flex',
+                          minBarLength: 20,
                         }}
                       />
                     </div>
@@ -706,7 +764,7 @@ const EnergyAndAssetComparisonChart = ({
                           <table style={{ width: "100%" }}>
                             <thead>
                               <tr>
-                                <th>Sub Category</th>
+                                <th>Sub Category 1</th>
                                 <th>Assets</th>
                                 <th>Power (kW)</th>
                                 <th>Daily (kWh)</th>
