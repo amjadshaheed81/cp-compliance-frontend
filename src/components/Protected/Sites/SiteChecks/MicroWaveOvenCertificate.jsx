@@ -337,7 +337,7 @@ const MicroWaveOvenCertificate = ({
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      toast.error(`Failed to upload PDF: ${error.message || 'Unknown error'}`);
+      //toast.error(`Failed to upload PDF: ${error.message || 'Unknown error'}`);
       return false;
     } finally {
       setIsUploading(false);
@@ -739,7 +739,7 @@ const MicroWaveOvenCertificate = ({
         }
       } catch (pdfError) {
         console.error("Error in PDF generation/upload:", pdfError);
-        toast.warning("Report saved, but there was an error with the PDF: " + (pdfError.message || 'Unknown error'));
+        //toast.warning("Report saved, but there was an error with the PDF: " + (pdfError.message || 'Unknown error'));
       }
       
     } catch (error) {
