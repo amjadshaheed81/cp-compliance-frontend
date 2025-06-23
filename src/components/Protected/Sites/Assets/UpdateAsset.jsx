@@ -1121,7 +1121,7 @@ const UpdateAsset = ({
                           </div>
                           <div className="col-md-6">
                             <div className="form-group mt-2">
-                              <label for="powerOutput">Power Output</label>
+                              <label for="powerOutput">Power Output(KW)</label>
                               <input
                                   type="text"
                                   autoComplete="off"

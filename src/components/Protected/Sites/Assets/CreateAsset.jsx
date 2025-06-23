@@ -335,7 +335,7 @@ const CreateAsset = ({
 
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="powerOutput">Power Output</label>
+                              <label for="powerOutput">Power Output(KW)</label>
                               <input
                                   type="text"
                                   autoComplete="off"
