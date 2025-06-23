@@ -175,70 +175,176 @@ const MicroWaveOvenCertificate = ({
     }
   };
 
+  const checkFileExists = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId || !folderId) return { exists: false, file: null };
+      
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      
+      // Find file with the same base name (without extension)
+      const baseName = fileName.split('.')[0];
+      const existingFile = files.find(file => 
+        file.name && file.name.startsWith(baseName)
+      );
+      
+      return {
+        exists: !!existingFile,
+        file: existingFile || null
+      };
+    } catch (error) {
+      console.error('Error checking file existence:', error);
+      return { exists: false, file: null };
+    }
+  };
+
+  const getHighestFileVersion = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId || !folderId) return 1;
+      
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      
+      // Find all files with the same base name
+      const baseName = fileName.split('.')[0];
+      const matchingFiles = files.filter(file => 
+        file.name && file.name.startsWith(baseName)
+      );
+      
+      if (matchingFiles.length > 0) {
+        // Extract versions and find the maximum
+        const versions = matchingFiles.map(f => f.fileVersion || 1);
+        const maxVersion = Math.max(...versions);
+        console.log('Current versions:', versions, 'Max version:', maxVersion, 'Next version:', maxVersion + 1);
+        return maxVersion + 1;
+      }
+      
+      console.log('No matching files found, using version 1');
+      return 1; // Default to 1 if no matching files found
+    } catch (error) {
+      console.error('Error checking file versions:', error);
+      return 1; // Default to 1 if there's an error
+    }
+  };
+
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
       
-      if (siteSelectedForGlobal?.siteId) {
-        await fetchFolderStructure(siteSelectedForGlobal.siteId);
-      }
+      // Save a copy locally
+      const fileURL = window.URL.createObjectURL(pdfBlob);
+      const tempLink = document.createElement('a');
+      tempLink.href = fileURL;
+      tempLink.setAttribute('download', fileName);
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+      window.URL.revokeObjectURL(fileURL);
       
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      
-      const formData = new FormData();
-      formData.append('files', pdfFile);
-      
+      // Use the microwaveOvenTesting folder ID if available, otherwise fall back to Log Books
       const targetFolderId = folderIds.microwaveOvenTesting || folderIds.logBooks;
       
       if (!targetFolderId) {
         throw new Error('Could not determine target folder for PDF upload');
       }
       
-      const documentRequestString = {
-        folderId: targetFolderId,
-        files: [{
-          name: fileName.split('.')[0],
-          issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-          expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
-          note: 'Microwave Oven Testing Certificate',
-          fileVersion: 1,
-          siteId: siteSelectedForGlobal?.siteId || 0,
-          originalFileName: fileName,
-          uploaderUserId: loggedInUserData?.id || 0,
-          reviewerUserId: loggedInUserData?.id || 0,
-          referenceNumber: `MOTC-${new Date().getTime()}`
-        }]
-      };
+      // Check if file exists
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
       
-      formData.append('documentRequestString', JSON.stringify(documentRequestString));
+      // Create FormData for both cases
+      const formData = new FormData();
       
-      const response = await fetch('/api/document/files/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      if (exists && existingFile) {
+        // File exists, use the new version upload endpoint
+        formData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+        
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: (existingFile.fileVersion || 1) + 1,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `MOTC-${new Date().getTime()}`
+          }]
+        };
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        
+        const response = await fetch('/api/document/file/newVersion/upload', {
+          method: 'PUT',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        const responseData = await response.json();
+        
+        if (responseData.success) {
+          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
+          return true;
         }
-      });
-      
-  
-      
-      const responseData = await response.json();
-      
-      if (responseData.success) {
-        toast.success('PDF uploaded successfully to Microwave Oven Testing folder');
-        return true;
       } else {
-        throw new Error(responseData.message || 'Failed to upload PDF');
+        // File doesn't exist, use the regular upload endpoint
+        formData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+        
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            note: 'Microwave Oven Testing Certificate',
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            originalFileName: fileName,
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `MOTC-${new Date().getTime()}`
+          }]
+        };
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        
+        const response = await fetch('/api/document/files/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        const responseData = await response.json();
+        
+        if (responseData.success) {
+          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          return true;
+        }
       }
+      
+      throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
+      toast.error(`Failed to upload PDF: ${error.message || 'Unknown error'}`);
       return false;
     } finally {
       setIsUploading(false);
     }
   };
 
-  const generatePdf = async () => {
+  const generatePdf = async (showSuccessMessage = false) => {
     console.log(JSON.stringify(formData)+"==================================================================================>>>>>")
     if (!PDFLib) {
       toast.error('PDF library not loaded yet. Please wait and try again.');
@@ -389,22 +495,17 @@ const MicroWaveOvenCertificate = ({
       const blob = new Blob([pdfBytesSaved], { type: 'application/pdf' });
       setGeneratedPdfBlob(blob);
       
-      saveAs(blob, `Microwave_Oven_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`);
-      
-      setShowPdfButton(true);
-      
-          // Save to Microwave Oven Testing folder if site is selected
-      if (siteSelectedForGlobal?.siteId) {
-        try {
-          const fileName = `Microwave_Oven_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`;
-          await uploadPdfToServer(blob, fileName);
-        } catch (uploadError) {
-          console.error('Error in upload process:', uploadError);
-          // Don't show error here as it's already handled in uploadPdfToServer
-        }
+      // Only save locally if not being called from form submission
+      if (!showSuccessMessage) {
+        saveAs(blob, `Microwave_Oven_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`);
       }
       
-      toast.success('PDF generated successfully!');
+      if (showSuccessMessage) {
+        toast.success('PDF generated successfully!');
+      }
+      
+      // Return the blob for upload
+      return blob;
       
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -613,9 +714,34 @@ const MicroWaveOvenCertificate = ({
         param3: formData.param3, // pass or fail
       };
 
-      await post("/api/site-check/generic-inspection", dataToSave);
+      // First save the form data
+      const response = await post("/api/site-check/generic-inspection", dataToSave);
       setIsSubmitted(true);
-      setShowPdfButton(true);
+      
+      // After successful save, generate and save the PDF
+      try {
+        // Generate the PDF and get the blob
+        const pdfBlob = await generatePdf(true);
+        if (!pdfBlob) {
+          throw new Error('Failed to generate PDF');
+        }
+
+        // Create a file name for the PDF
+        const fileName = `Microwave_Oven_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        // Upload the PDF to the server
+        const uploadSuccess = await uploadPdfToServer(pdfBlob, fileName);
+        
+        if (uploadSuccess) {
+          toast.success("Report saved and PDF uploaded successfully!");
+        } else {
+          throw new Error('PDF upload failed');
+        }
+      } catch (pdfError) {
+        console.error("Error in PDF generation/upload:", pdfError);
+        toast.warning("Report saved, but there was an error with the PDF: " + (pdfError.message || 'Unknown error'));
+      }
+      
     } catch (error) {
       toast.error("Failed to save report");
       console.error(error);
@@ -708,6 +834,8 @@ const MicroWaveOvenCertificate = ({
               siteContact: newValue?.id || "",
               siteContactNo: newValue?.phone || "",
               siteContactUser: newValue || null,
+              client: newValue?.id || "",
+              clientUser: newValue || null,
             }));
           }}
           renderInput={(params) => (
@@ -1151,15 +1279,7 @@ const MicroWaveOvenCertificate = ({
         {isSubmitted && (
           <div className="row mt-4">
             <div className="col-12 text-center">
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={generatePdf}
-                disabled={isGeneratingPDF || isUploading}
-                className="me-2 print-hide"
-              >
-                {isGeneratingPDF || isUploading ? (isUploading ? 'Saving...' : 'Generating PDF...') : 'Generate & Save PDF'}
-              </Button>
+              {/* PDF generation is now handled automatically on form submission */}
             </div>
           </div>
         )}
