@@ -724,7 +724,7 @@ const EnergyAndAssetComparisonChart = ({
                                                     <table style={{ width: "100%" }}>
                                                         <thead>
                                                         <tr>
-                                                            <th>Sub Category</th>
+                                                            <th>Sub Category 1</th>
                                                             <th>Assets</th>
                                                             <th>Power (kW)</th>
                                                             <th>Daily (kWh)</th>
