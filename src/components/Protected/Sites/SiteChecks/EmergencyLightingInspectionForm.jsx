@@ -549,11 +549,9 @@ const EmergencyLightingInspectionForm = ({
         );
 
         if (logBooksFolder) {
-          // Get the contents of Log Books folder
           const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
           
           if (logBooksResponse?.document?.childFolders) {
-            // Find the Fire Log Book folder
             const fireLogBookFolder = logBooksResponse.document.childFolders.find(
               folder => folder.name.trim() === 'Fire Log Book'
             );
@@ -1500,14 +1498,6 @@ const EmergencyLightingInspectionForm = ({
                 disabled={isLoading}
               >
                 {isLoading ? "Submitting..." : "Submit Inspection"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={generatePDF}
-                disabled={isGeneratingPDF}
-              >
-                {isGeneratingPDF ? "Generating PDF..." : "Generate PDF"}
               </button>
             </div>
           </div>
