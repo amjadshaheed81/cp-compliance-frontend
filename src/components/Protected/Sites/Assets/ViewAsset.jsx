@@ -273,6 +273,7 @@ const UpdateAsset = ({
     patItem: false,
     pfpItem: false,
     doorItem: false,
+    powerOutput: "",
     barcode: "",
   };
 
@@ -487,29 +488,29 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label htmlFor="assetName">Asset Name</label>
                           <input
-                            type="text"
-                            autoComplete="off"
-                            readOnly
-                            onFocus={(e) =>
-                              e.target.removeAttribute("readonly")
-                            }
-                            className="form-control"
-                            id="assetName"
-                            name="assetName"
-                            placeholder=""
-                            disabled
-                            {...register("assetName", {
-                              required: {
-                                value: true,
-                                message: `${Validation.REQUIRED} asset name`,
-                              },
-                            })}
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="assetName"
+                              name="assetName"
+                              placeholder=""
+                              disabled
+                              {...register("assetName", {
+                                required: {
+                                  value: true,
+                                  message: `${Validation.REQUIRED} asset name`,
+                                },
+                              })}
                           />
                           {errors?.assetName && (
-                            <InputError
-                              message={errors?.assetName?.message}
-                              key={errors?.assetName?.message}
-                            />
+                              <InputError
+                                  message={errors?.assetName?.message}
+                                  key={errors?.assetName?.message}
+                              />
                           )}
                         </div>
                       </div>
@@ -517,18 +518,18 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label htmlFor="manufacturer">Manufacturer</label>
                           <input
-                            type="text"
-                            autoComplete="off"
-                            readOnly
-                            onFocus={(e) =>
-                              e.target.removeAttribute("readonly")
-                            }
-                            className="form-control"
-                            id="manufacturer"
-                            name="manufacturer"
-                            placeholder=""
-                            disabled
-                            {...register("manufacturer")}
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="manufacturer"
+                              name="manufacturer"
+                              placeholder=""
+                              disabled
+                              {...register("manufacturer")}
                           />
                         </div>
                       </div>
@@ -537,20 +538,20 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label htmlFor="relatedAssetId">Related Asset</label>
                           <Autocomplete
-                            multiple
-                            value={getSelectedValue()}
-                            disabled
-                            onChange={(event, newValue) => {
-                              setValue("relatedAssetId", newValue?.key);
-                            }}
-                            options={siteAssets?.map((option) => {
-                              return {
-                                key: option.assetId,
-                                label: option.assetName,
-                              };
-                            })}
-                            getOptionLabel={(option) => option.label || ""}
-                            renderInput={(params) => <TextField {...params} />}
+                              multiple
+                              value={getSelectedValue()}
+                              disabled
+                              onChange={(event, newValue) => {
+                                setValue("relatedAssetId", newValue?.key);
+                              }}
+                              options={siteAssets?.map((option) => {
+                                return {
+                                  key: option.assetId,
+                                  label: option.assetName,
+                                };
+                              })}
+                              getOptionLabel={(option) => option.label || ""}
+                              renderInput={(params) => <TextField {...params} />}
                           />
                         </div>
                       </div>
@@ -559,18 +560,18 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label htmlFor="model">Model</label>
                           <input
-                            type="text"
-                            autoComplete="off"
-                            readOnly
-                            onFocus={(e) =>
-                              e.target.removeAttribute("readonly")
-                            }
-                            disabled
-                            className="form-control"
-                            id="model"
-                            name="model"
-                            placeholder=""
-                            {...register("model")}
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                              }
+                              disabled
+                              className="form-control"
+                              id="model"
+                              name="model"
+                              placeholder=""
+                              {...register("model")}
                           />
                         </div>
                       </div>
@@ -579,18 +580,38 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label htmlFor="serialNumber">Serial Number</label>
                           <input
-                            type="text"
-                            autoComplete="off"
-                            readOnly
-                            onFocus={(e) =>
-                              e.target.removeAttribute("readonly")
-                            }
-                            className="form-control"
-                            id="serialNumber"
-                            disabled
-                            name="serialNumber"
-                            placeholder=""
-                            {...register("serialNumber")}
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="serialNumber"
+                              disabled
+                              name="serialNumber"
+                              placeholder=""
+                              {...register("serialNumber")}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="col-md-6">
+                        <div className="form-group mt-2">
+                          <label htmlFor="powerOutput">Power Output(KW)</label>
+                          <input
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                              }
+                              disabled
+                              className="form-control"
+                              id="powerOutput"
+                              name="powerOutput"
+                              placeholder=""
+                              {...register("powerOutput")}
                           />
                         </div>
                       </div>
@@ -599,101 +620,101 @@ const UpdateAsset = ({
                         <div className="form-group mt-2">
                           <label htmlFor="model">Device Id</label>
                           <input
-                            type="text"
-                            autoComplete="off"
-                            readOnly
-                            onFocus={(e) =>
-                              e.target.removeAttribute("readonly")
-                            }
-                            disabled
-                            className="form-control"
-                            id="deviceId"
-                            name="deviceId"
-                            placeholder=""
-                            {...register("deviceId")}
+                              type="text"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                  e.target.removeAttribute("readonly")
+                              }
+                              disabled
+                              className="form-control"
+                              id="deviceId"
+                              name="deviceId"
+                              placeholder=""
+                              {...register("deviceId")}
                           />
                         </div>
                       </div>
                       <div className="col-md-6">
                         <label htmlFor="category">Category</label>
                         <select
-                          name="category"
-                          className="form-control form-select"
-                          id="category"
-                          disabled
-                          {...register("category", {
-                            required: {
-                              value: true,
-                              message: `Please select category`,
-                            },
-                          })}
-                          onChange={(e) => {
-                            categoryChange(e.target.value);
-                          }}
+                            name="category"
+                            className="form-control form-select"
+                            id="category"
+                            disabled
+                            {...register("category", {
+                              required: {
+                                value: true,
+                                message: `Please select category`,
+                              },
+                            })}
+                            onChange={(e) => {
+                              categoryChange(e.target.value);
+                            }}
                         >
                           <option value="">Select category</option>
                           {category?.map((itm) => (
-                            <option
-                              selected={
-                                selectedAsset?.category === itm?.lovValue
-                              }
-                              value={itm?.lovValue}
-                            >
-                              {itm?.lovValue}
-                            </option>
+                              <option
+                                  selected={
+                                      selectedAsset?.category === itm?.lovValue
+                                  }
+                                  value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
                           ))}
                         </select>
                         {errors?.category && (
-                          <InputError
-                            message={errors?.category?.message}
-                            key={errors?.category?.message}
-                          />
+                            <InputError
+                                message={errors?.category?.message}
+                                key={errors?.category?.message}
+                            />
                         )}
                       </div>
                       <div className="col-md-6">
                         <label htmlFor="subCategory">Sub Category 1</label>
                         <select
-                          name="subCategory"
-                          className="form-control form-select"
-                          id="subCategory"
-                          disabled
-                          {...register("subCategory")}
-                          onChange={(e) => {
-                            subCategoryChange(e.target.value);
-                          }}
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            disabled
+                            {...register("subCategory")}
+                            onChange={(e) => {
+                              subCategoryChange(e.target.value);
+                            }}
                         >
                           <option value="">Select Sub Category</option>
                           {subCategoryList?.map((itm) => (
-                            <option
-                              selected={
-                                selectedAsset?.subCategory === itm?.lovValue
-                              }
-                              value={itm?.lovValue}
-                            >
-                              {itm?.lovValue}
-                            </option>
+                              <option
+                                  selected={
+                                      selectedAsset?.subCategory === itm?.lovValue
+                                  }
+                                  value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
                           ))}
                         </select>
                       </div>
                       <div className="col-md-6">
                         <label htmlFor="subCategory2">Sub Category 2</label>
                         <select
-                          name="subCategory2"
-                          disabled
-                          className="form-control form-select"
-                          id="subCategory2"
-                          {...register("subCategory2")}
+                            name="subCategory2"
+                            disabled
+                            className="form-control form-select"
+                            id="subCategory2"
+                            {...register("subCategory2")}
                         >
                           <option value="">Select Sub Category 2</option>
                           {subCategory2List?.map((itm) => (
-                            <option
-                              selected={
-                                selectedAsset?.subCategory2 === itm?.lovValue
-                              }
-                              value={itm?.lovValue}
-                            >
-                              {itm?.lovValue}
-                            </option>
+                              <option
+                                  selected={
+                                      selectedAsset?.subCategory2 === itm?.lovValue
+                                  }
+                                  value={itm?.lovValue}
+                              >
+                                {itm?.lovValue}
+                              </option>
                           ))}
                         </select>
                       </div>
@@ -701,22 +722,22 @@ const UpdateAsset = ({
                         <div className="col-md-6">
                           <label htmlFor="subCategory3">Sub Category 3</label>
                           <select
-                            name="subCategory3"
-                            disabled
-                            className="form-control form-select"
-                            id="subCategory3"
-                            {...register("subCategory3")}
+                              name="subCategory3"
+                              disabled
+                              className="form-control form-select"
+                              id="subCategory3"
+                              {...register("subCategory3")}
                           >
                             <option value=""></option>
                             {subCategory3List?.map((itm) => (
-                              <option
-                                selected={
-                                  selectedAsset?.subCategory3 === itm?.lovValue
-                                }
-                                value={itm?.lovValue}
-                              >
-                                {itm?.lovValue}
-                              </option>
+                                <option
+                                    selected={
+                                        selectedAsset?.subCategory3 === itm?.lovValue
+                                    }
+                                    value={itm?.lovValue}
+                                >
+                                  {itm?.lovValue}
+                                </option>
                             ))}
                           </select>
                         </div>
@@ -726,22 +747,22 @@ const UpdateAsset = ({
                   <div className="col-md-4 text-center">
                     <div className="form-group">
                       {selectedAsset?.images?.length > 1 && (
-                        <Slider {...carouselSettings}>
-                          {selectedAsset?.images?.map((i) => (
-                            <div>
-                              <img
-                                src={i?.imageUrl}
-                                className="img img-responsive border p-2 m-2 w-100"
-                                alt="Asset Image"
-                              />
-                            </div>
-                          ))}
-                        </Slider>
+                          <Slider {...carouselSettings}>
+                            {selectedAsset?.images?.map((i) => (
+                                <div>
+                                  <img
+                                      src={i?.imageUrl}
+                                      className="img img-responsive border p-2 m-2 w-100"
+                                      alt="Asset Image"
+                                  />
+                                </div>
+                            ))}
+                          </Slider>
                       )}
                       {selectedAsset?.images?.length === 1 && (
-                        <img
-                          src={selectedAsset?.images[0].imageUrl}
-                          className="img img-responsive border p-2 m-2 w-100"
+                          <img
+                              src={selectedAsset?.images[0].imageUrl}
+                              className="img img-responsive border p-2 m-2 w-100"
                         />
                       )}
                       {selectedAsset?.images?.length === 0 && (
