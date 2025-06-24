@@ -381,6 +381,7 @@ const Summary = ({
           position: item.position,
           floor: item.floor,
           room: item.room,
+          powerOutput: item.powerOutput,
         })),
       };
 
@@ -489,6 +490,9 @@ const Summary = ({
                         </th>
                         <th style={{ width: "200px", minWidth: "200px" }}>
                           Room
+                        </th>
+                        <th style={{ width: "200px", minWidth: "200px" }}>
+                          Power Output (KW)
                         </th>
                       </tr>
                     </thead>
@@ -740,6 +744,20 @@ const Summary = ({
                                     </option>
                                   ))}
                               </select>
+                            </td>
+                            <td style={{ width: "300px", minWidth: "300px" }}>
+                              <input
+                                  type="text"
+                                  className="form-control form-control-sm"
+                                  value={asset.powerOutput || ""}
+                                  onChange={(e) =>
+                                      handleFieldUpdate(
+                                          asset.assetId,
+                                          "powerOutput",
+                                          e.target.value
+                                      )
+                                  }
+                              />
                             </td>
                           </tr>
                         );
