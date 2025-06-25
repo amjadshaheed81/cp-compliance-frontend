@@ -158,6 +158,7 @@ const Summary = ({
     location: "",
     floor: "",
     room: "",
+    powerOutput: "",
   });
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -217,6 +218,7 @@ const Summary = ({
     formData.manufacturer,
     formData.floor,
     formData.room,
+    formData.powerOutput,
   ]);
   const searchAssets = () => {
     const assetName = formData?.assetName;
@@ -394,7 +396,6 @@ const Summary = ({
 
       if (response.status === 200 || response.status === 201) {
         toast.success(`Successfully updated ${selectedItems.length} assets`);
-
         getSiteAssets(siteSelectedForGlobal?.siteId);
 
         // Reset selection and close modal
