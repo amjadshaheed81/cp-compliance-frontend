@@ -18,6 +18,8 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { useLocation } from "react-router-dom";
 import Papa from "papaparse";
+import MultiEditModal from './MultiEdit';
+
 
 
 const Door = ({
@@ -50,6 +52,7 @@ const Door = ({
   const [floorNode, setFloorNode] = useState([]);
   const [roomNode, setRoomNode] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showMultiEditModal, setShowMultiEditModal] = useState(false);
   const location = useLocation();
   const currentSiteAssets = filteredSiteDoorItems?.slice(
     indexOfFirstPreAction,
@@ -304,6 +307,51 @@ const Door = ({
   });
   };
 
+  const handleSaveMultiEdit = async () => {
+    try {
+      setIsLoading(true);
+
+      const updatePayload = {
+        assets: selectedItems.map((item) => ({
+          assetId: item.assetId,
+          assetName: item.assetName,
+          manufacturer: item.manufacturer,
+          category: item.category,
+          subCategory: item.subCategory,
+          subCategory2: item.subCategory2,
+          subCategory3: item.subCategory3,
+          position: item.position,
+          floor: item.floor,
+          room: item.room,
+          powerOutput: item.powerOutput,
+          // Include PAT specific fields if needed
+          assetDoorSpecifications: item.assetDoorSpecifications,
+        })),
+      };
+
+      const response = await put(
+          `/api/site/${siteSelectedForGlobal?.siteId}/assets/mutiples`,
+          updatePayload,
+          { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success(`Successfully updated ${selectedItems.length} assets`);
+        getSiteDoorAssets(siteSelectedForGlobal?.siteId); // Changed from getSiteDoorAssets
+        setSelectedItems([]);
+        setShowMultiEditModal(false);
+      } else {
+        throw new Error("Failed to update assets");
+      }
+    } catch (error) {
+      console.error("Asset update error:", error);
+      toast.error(`Error updating assets: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -446,6 +494,25 @@ const Door = ({
             getSiteDoorAssets(siteSelectedForGlobal?.siteId);
           }}
         />
+      )}
+
+      {showMultiEditModal && (
+
+          <MultiEditModal
+              showModal={showMultiEditModal}
+              setShowModal={setShowMultiEditModal}
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+              categoryOptions={category}
+              subCategoryOptions={subCategory}
+              subCategory2Options={subCategory2}
+              subCategory3Options={subCategory3}
+              floorOptions={floorNode}
+              roomOptions={roomNode}
+              onSave={handleSaveMultiEdit}
+              isLoading={isLoading}
+              title="Edit Multiple Door Assets"
+          />
       )}
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight">
@@ -642,6 +709,32 @@ autoComplete="off"
                               </Tooltip>
                             </CSVLink>
                           </div>
+
+            <div className="col-md-3 col-sm-4 mt-2">
+              <Tooltip
+                  title={
+                    selectedItems.length < 2
+                        ? "Select at least 2 assets to enable multi-edit"
+                        : "Multi-Edit"
+                  }
+                  arrow
+              >
+                <button
+                    className={`btn btn-light text-primary pr-2 ${
+                        selectedItems.length < 2 ? "disabled" : ""
+                    }`}
+                    onClick={() => setShowMultiEditModal(true)}
+                    disabled={selectedItems.length < 2}
+                    style={
+                      selectedItems.length < 2
+                          ? { opacity: 0.6, cursor: "not-allowed" }
+                          : {}
+                    }
+                >
+                  Multi-Edit
+                </button>
+              </Tooltip>
+            </div>
                           <div className="col-md-3 col-sm-4 mt-2">
                             <Tooltip title={`Upload CSV to Update Assets`} arrow>
                               <input
