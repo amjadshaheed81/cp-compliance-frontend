@@ -453,15 +453,15 @@ const MicroWaveOvenCertificate = ({
         return `${day}/${month}/${year}`;
       };
 
-      // Process address
+      // Process address - split by commas and trim whitespace
       const addressLines = (formData.address || '').split(',').map(s => s.trim());
       
-      // Set address fields with proper formatting
-      setTextField('AddressLine1', addressLines[0] || '', mediumFont);
+      // Set address fields with consistent font size
+      setTextField('AddressLine1', addressLines[0] || '', 8);
       setTextField('AddressLine2', addressLines[1] || '', 8);
-      setTextField('city', addressLines[2] || '', mediumFont);
-      setTextField('postalCode', addressLines[3] || '', mediumFont);
-      setTextField('country', addressLines[4] || '', mediumFont);
+      setTextField('city', addressLines[2] || '', 8);
+      setTextField('postalCode', addressLines[3] || '', 8);
+      setTextField('country', addressLines[4] || '', 8);
       
       // Set other fields with appropriate font sizes
       setTextField('Date', formatDateString(formData.inspectionDate), mediumFont);
@@ -484,10 +484,9 @@ const MicroWaveOvenCertificate = ({
       setTextField('Engineers Name', formData.user?.name || '', mediumFont);
       setTextField('Engineers Report', formData.report || 'N/A', smallFont);
       
-      // Date checkboxes
-      const today = new Date().toISOString().split('T')[0];
-      setTextField('on',formData.signedDate);
-      setTextField('on_2',formData.signedDate);
+      // Format and set dates using consistent format (dd/mm/yyyy)
+      setTextField('on', formatDateString(formData.signedDate));
+      setTextField('on_2', formatDateString(formData.signedDate));
       
       form.flatten();
       
@@ -727,7 +726,7 @@ const MicroWaveOvenCertificate = ({
         }
 
         // Create a file name for the PDF
-        const fileName = `Microwave_Oven_Certificate_${formData.assetId || 'inspection'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        const fileName = `MicrowaveOvenCertificate.pdf`;
         
         // Upload the PDF to the server
         const uploadSuccess = await uploadPdfToServer(pdfBlob, fileName);
