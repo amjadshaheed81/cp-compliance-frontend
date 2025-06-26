@@ -464,13 +464,13 @@ const Summary = ({
                         <th style={{ width: "100px", minWidth: "100px" }}>
                           Asset ID
                         </th>
-                        <th style={{ width: "100px", minWidth: "100px" }}>
+                        <th style={{ width: "400px", minWidth: "400px" }}>
                           Asset Name
                         </th>
-                        <th style={{ width: "100px", minWidth: "100px" }}>
+                        <th style={{ width: "50px", minWidth: "50px" }}>
                           Manufacturer
                         </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
+                        <th style={{ width: "50px", minWidth: "50px" }}>
                           Category
                         </th>
                         <th style={{ width: "200px", minWidth: "200px" }}>
@@ -482,7 +482,7 @@ const Summary = ({
                         <th style={{ width: "200px", minWidth: "200px" }}>
                           Sub Cat 3
                         </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
+                        <th style={{ width: "100px", minWidth: "100px" }}>
                           Position
                         </th>
                         <th style={{ width: "200px", minWidth: "200px" }}>
@@ -491,7 +491,7 @@ const Summary = ({
                         <th style={{ width: "200px", minWidth: "200px" }}>
                           Room
                         </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
+                        <th style={{ width: "50px", minWidth: "50px" }}>
                           Power Output (KW)
                         </th>
                       </tr>
