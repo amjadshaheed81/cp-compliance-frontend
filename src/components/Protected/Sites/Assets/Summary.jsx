@@ -461,41 +461,41 @@ const Summary = ({
                 <div className="table-responsive" style={{ maxHeight: "70vh" }}>
                   <table className="table table-hover mb-0">
                     <thead className="sticky-top bg-light">
-                      <tr>
-                        <th style={{ width: "100px", minWidth: "100px" }}>
-                          Asset ID
-                        </th>
-                        <th style={{ width: "100px", minWidth: "100px" }}>
-                          Asset Name
-                        </th>
-                        <th style={{ width: "100px", minWidth: "100px" }}>
-                          Manufacturer
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Category
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Sub Category
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Sub Cat 2
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Sub Cat 3
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Position
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Floor
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Room
-                        </th>
-                        <th style={{ width: "200px", minWidth: "200px" }}>
-                          Power Output (KW)
-                        </th>
-                      </tr>
+                    <tr>
+                      <th style={{ width: "100px", minWidth: "100px" }}>
+                        Asset ID
+                      </th>
+                      <th style={{ width: "400px", minWidth: "400px" }}>
+                        Asset Name
+                      </th>
+                      <th style={{ width: "50px", minWidth: "50px" }}>
+                        Manufacturer
+                      </th>
+                      <th style={{ width: "50px", minWidth: "50px" }}>
+                        Category
+                      </th>
+                      <th style={{ width: "200px", minWidth: "200px" }}>
+                        Sub Category
+                      </th>
+                      <th style={{ width: "200px", minWidth: "200px" }}>
+                        Sub Cat 2
+                      </th>
+                      <th style={{ width: "200px", minWidth: "200px" }}>
+                        Sub Cat 3
+                      </th>
+                      <th style={{ width: "100px", minWidth: "100px" }}>
+                        Position
+                      </th>
+                      <th style={{ width: "200px", minWidth: "200px" }}>
+                        Floor
+                      </th>
+                      <th style={{ width: "200px", minWidth: "200px" }}>
+                        Room
+                      </th>
+                      <th style={{ width: "50px", minWidth: "50px" }}>
+                        Power Output (KW)
+                      </th>
+                    </tr>
                     </thead>
                     <tbody style={{ overflowY: "auto" }}>
                       {selectedItems.map((asset) => {
