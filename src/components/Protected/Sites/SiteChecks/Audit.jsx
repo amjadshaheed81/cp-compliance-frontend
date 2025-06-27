@@ -237,7 +237,34 @@ const AssessmentFireRisk = ({
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    const dataToSave = quest[index].response;
+
+    const q = quest[index];
+    const faultAssets = (q.response?.faultassets?.split(",") || []).filter(Boolean);
+    const okAssets = (q.response?.assets?.split(",") || []).filter(Boolean);
+    const isSpecialQuestion = ['3.5.1', '8.1.1'].includes(q.order);
+
+    // Get asset count for this question
+    let catAsset = [];
+    let assetCategory = q?.assetCategory?.split(",") ?? [];
+    assetCategory = assetCategory.map((item) => item.trim());
+
+    if (faultAssets.length > 0) {
+      if (!q.response.position || !q.response.action) {
+        toast.error("Please provide observation and action for faulty assets");
+        return;
+      }
+      if (!q.response.consequence || !q.response.likelihood) {
+        toast.error("Please assess risk score for faulty assets");
+        return;
+      }
+    }
+
+    const canClose = isSpecialQuestion
+        ? (okAssets.length > 0 || faultAssets.length > 0) // At least one asset marked
+        : (catAsset.length - okAssets.length - faultAssets.length) === 0; // All assets marked
+
+
+    const dataToSave = { ...q.response };
     if (dataToSave?.file?.length > 0) {
       dataToSave.siteId = siteSelectedForGlobal?.siteId;
       const files = [];
@@ -254,7 +281,7 @@ const AssessmentFireRisk = ({
     dataToSave.responseDate = new Date();
     dataToSave.checkId = checkId;
     dataToSave.qid = quest[index].qid;
-    dataToSave.status = completed ? "Closed" : "Open";
+    dataToSave.status = canClose ? "Closed" : "Open";
     dataToSave.totalRiskScore =
       Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0);
     const saveResponse = await post(
@@ -436,14 +463,17 @@ const AssessmentFireRisk = ({
                         }
 
                         const faultAsset = (
-                          q.response?.faultassets?.split(",") ?? []
-                        )?.filter((s) => s.length > 0).length;
+                            q.response?.faultassets?.split(",") ?? []
+                        ).filter((s) => s.length > 0).length;
                         const okAsset = (
-                          q.response?.assets?.split(",") ?? []
-                        )?.filter((s) => s.length > 0).length;
+                            q.response?.assets?.split(",") ?? []
+                        ).filter((s) => s.length > 0).length;
 
-                        const isCompleted =
-                          catAsset?.length - okAsset - faultAsset === 0;
+                        const isSpecialQuestion = ['3.5.1', '8.1.1'].includes(q.order);
+                        const isCompleted = isSpecialQuestion
+                            ? (okAsset > 0 || faultAsset > 0)  // At least one asset marked
+                            : (catAsset?.length - okAsset - faultAsset) === 0; // Original strict logic
+
                         return (
                           <Accordion
                             defaultExpanded={idx === openIndex}
