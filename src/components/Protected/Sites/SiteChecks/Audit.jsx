@@ -40,17 +40,17 @@ import {
 } from "../../../../store/thunk/site";
 
 const AssessmentFireRisk = ({
-  subType,
-  sasToken,
-  checkId,
-  siteAssets,
-  getSiteAssets,
-  siteSelectedForGlobal,
-  getSiteLayout,
-  siteLayout,
-  loggedInUserData,
-  leadUserID,
-}) => {
+                              subType,
+                              sasToken,
+                              checkId,
+                              siteAssets,
+                              getSiteAssets,
+                              siteSelectedForGlobal,
+                              getSiteLayout,
+                              siteLayout,
+                              loggedInUserData,
+                              leadUserID,
+                            }) => {
   const carouselSettings = {
     dots: true,
     infinite: true,
@@ -80,19 +80,19 @@ const AssessmentFireRisk = ({
   const getQuestions = async () => {
     setIsLoading(true);
     let questionCat =
-      subType === "Annual Winter Audit"
-        ? "annual-winter-audit"
-        : "monthly-inspection";
+        subType === "Annual Winter Audit"
+            ? "annual-winter-audit"
+            : "monthly-inspection";
     const lovs = await get("/api/lov/SITE_CHECK_AUDIT_HEADER");
     const questionsFromDB = await get(
-      "/api/site-check/assessment/questions/" + questionCat
+        "/api/site-check/assessment/questions/" + questionCat
     );
     const headers = lovs
-      .filter((a) => a.attribite1 === questionCat)
-      .sort((a, b) => parseFloat(a.lovDesc) - parseFloat(b.lovDesc));
+        .filter((a) => a.attribite1 === questionCat)
+        .sort((a, b) => parseFloat(a.lovDesc) - parseFloat(b.lovDesc));
     setheaders(headers);
     const questionsResponse = await get(
-      "/api/site-check/assessment/response/" + checkId
+        "/api/site-check/assessment/response/" + checkId
     );
     questionsFromDB.forEach((q) => {
       const resIdx = questionsResponse.findIndex((r) => r.qid === q.qid);
@@ -191,7 +191,7 @@ const AssessmentFireRisk = ({
   const handleFileChange = (e, idx) => {
     const files = Array.from(e.target.files || []);
     const validImageFiles = files.filter((file) =>
-      ["image/jpeg", "image/jpg", "image/png"].includes(file.type)
+        ["image/jpeg", "image/jpg", "image/png"].includes(file.type)
     );
 
     if (files.length > 0 && validImageFiles.length === 0) {
@@ -209,7 +209,7 @@ const AssessmentFireRisk = ({
   const handleFileDelete = (idx, idx2) => {
     const uquest = [...quest];
     quest[idx].response.file = [...quest[idx].response.file].filter(
-      (_, index) => index !== idx2
+        (_, index) => index !== idx2
     );
     setquest(uquest);
   };
@@ -237,7 +237,34 @@ const AssessmentFireRisk = ({
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    const dataToSave = quest[index].response;
+
+    const q = quest[index];
+    const faultAssets = (q.response?.faultassets?.split(",") || []).filter(Boolean);
+    const okAssets = (q.response?.assets?.split(",") || []).filter(Boolean);
+    const isSpecialQuestion = ['3.5.1', '8.1.1'].includes(q.order);
+
+    // Get asset count for this question
+    let catAsset = [];
+    let assetCategory = q?.assetCategory?.split(",") ?? [];
+    assetCategory = assetCategory.map((item) => item.trim());
+
+    if (faultAssets.length > 0) {
+      if (!q.response.position || !q.response.action) {
+        toast.error("Please provide observation and action for faulty assets");
+        return;
+      }
+      if (!q.response.consequence || !q.response.likelihood) {
+        toast.error("Please assess risk score for faulty assets");
+        return;
+      }
+    }
+
+    const canClose = isSpecialQuestion
+        ? (okAssets.length > 0 || faultAssets.length > 0) // At least one asset marked
+        : (catAsset.length - okAssets.length - faultAssets.length) === 0; // All assets marked
+
+
+    const dataToSave = { ...q.response };
     if (dataToSave?.file?.length > 0) {
       dataToSave.siteId = siteSelectedForGlobal?.siteId;
       const files = [];
@@ -254,12 +281,12 @@ const AssessmentFireRisk = ({
     dataToSave.responseDate = new Date();
     dataToSave.checkId = checkId;
     dataToSave.qid = quest[index].qid;
-    dataToSave.status = completed ? "Closed" : "Open";
+    dataToSave.status = canClose ? "Closed" : "Open";
     dataToSave.totalRiskScore =
-      Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0);
+        Number(dataToSave.consequence ?? 0) * Number(dataToSave.likelihood ?? 0);
     const saveResponse = await post(
-      "/api/site-check/assessment/response",
-      dataToSave
+        "/api/site-check/assessment/response",
+        dataToSave
     );
     const images = saveResponse?.data?.images;
     images.forEach((i) => {
@@ -289,859 +316,862 @@ const AssessmentFireRisk = ({
   };
 
   return (
-    <Box p={3}>
-      <Card>
-        {true && (
-          <CardContent>
-            <Grid
-              container
-              alignItems="center"
-              justifyContent="space-between"
-              mb={2}
-            >
-              <Grid item>
-                <Typography variant="h6">Questions</Typography>
-              </Grid>
-              <Grid item>
-                <Box display="flex" alignItems="center">
-                  {/* <Typography variant="body1" style={{ backgroundColor: '#E0E7FF', padding: '4px 8px', borderRadius: '4px' }}>
+      <Box p={3}>
+        <Card>
+          {true && (
+              <CardContent>
+                <Grid
+                    container
+                    alignItems="center"
+                    justifyContent="space-between"
+                    mb={2}
+                >
+                  <Grid item>
+                    <Typography variant="h6">Questions</Typography>
+                  </Grid>
+                  <Grid item>
+                    <Box display="flex" alignItems="center">
+                      {/* <Typography variant="body1" style={{ backgroundColor: '#E0E7FF', padding: '4px 8px', borderRadius: '4px' }}>
                   Total: {quest.length}, Open: {quest.filter(q => q.status === "Open").length}, Closed: {quest.filter(q => q.status === "Closed").length}
                 </Typography> */}
-                  <Box ml={2} display="flex" alignItems="center">
-                    <Box
-                      width={24}
-                      height={24}
-                      bgcolor="#F44336"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      borderRadius="4px"
-                      mx={0.5}
-                    >
-                      {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
-                      <span className="badge bg-danger p-2 m-1 risk-span">
+                      <Box ml={2} display="flex" alignItems="center">
+                        <Box
+                            width={24}
+                            height={24}
+                            bgcolor="#F44336"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            borderRadius="4px"
+                            mx={0.5}
+                        >
+                          {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
+                          <span className="badge bg-danger p-2 m-1 risk-span">
                         {risks[0]}
                       </span>
-                    </Box>
-                    <Box
-                      width={24}
-                      height={24}
-                      bgcolor="#FF9800"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      borderRadius="4px"
-                      mx={0.5}
-                    >
-                      {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
-                      <span className="badge bg-warning p-2 m-1 risk-span">
+                        </Box>
+                        <Box
+                            width={24}
+                            height={24}
+                            bgcolor="#FF9800"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            borderRadius="4px"
+                            mx={0.5}
+                        >
+                          {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
+                          <span className="badge bg-warning p-2 m-1 risk-span">
                         {risks[1]}
                       </span>
-                    </Box>
-                    <Box
-                      width={24}
-                      height={24}
-                      bgcolor="#FFEB3B"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      borderRadius="4px"
-                      mx={0.5}
-                    >
-                      {/* <Typography variant="body2" color="white">{risks[2]}</Typography> */}
-                      <span className="badge bg-info p-2 m-1 risk-span">
+                        </Box>
+                        <Box
+                            width={24}
+                            height={24}
+                            bgcolor="#FFEB3B"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            borderRadius="4px"
+                            mx={0.5}
+                        >
+                          {/* <Typography variant="body2" color="white">{risks[2]}</Typography> */}
+                          <span className="badge bg-info p-2 m-1 risk-span">
                         {risks[2]}
                       </span>
-                    </Box>
-                    <Box
-                      width={24}
-                      height={24}
-                      bgcolor="#4CAF50"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      borderRadius="4px"
-                      mx={0.5}
-                    >
-                      {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
-                      <span className="badge bg-success p-2 m-1 risk-span">
+                        </Box>
+                        <Box
+                            width={24}
+                            height={24}
+                            bgcolor="#4CAF50"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            borderRadius="4px"
+                            mx={0.5}
+                        >
+                          {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
+                          <span className="badge bg-success p-2 m-1 risk-span">
                         {risks[3]}
                       </span>
+                        </Box>
+                      </Box>
                     </Box>
-                  </Box>
-                </Box>
-              </Grid>
-            </Grid>
+                  </Grid>
+                </Grid>
 
-            {quest?.length > 0 &&
-              header?.map((h) => {
-                return (
-                  <div>
-                    <h5>
-                      {h.lovDesc} {h.lovValue}
-                    </h5>
+                {quest?.length > 0 &&
+                    header?.map((h) => {
+                      return (
+                          <div>
+                            <h5>
+                              {h.lovDesc} {h.lovValue}
+                            </h5>
 
-                    {quest
-                      //?.filter(q=> !q?.question?.includes("DELETE") && q.order.startsWith(h.lovDesc+".") )
-                      ?.map((q, idx) => {
-                        if (
-                          q?.question?.includes("DELETE") ||
-                          !q.order.startsWith(h.lovDesc + ".")
-                        ) {
-                          return null;
-                        }
+                            {quest
+                                //?.filter(q=> !q?.question?.includes("DELETE") && q.order.startsWith(h.lovDesc+".") )
+                                ?.map((q, idx) => {
+                                  if (
+                                      q?.question?.includes("DELETE") ||
+                                      !q.order.startsWith(h.lovDesc + ".")
+                                  ) {
+                                    return null;
+                                  }
 
-                        let catAsset = [];
-                        let assetCategory = q?.assetCategory?.split(",") ?? [];
-                        assetCategory = assetCategory.map((item) =>
-                          item.trim()
-                        );
+                                  let catAsset = [];
+                                  let assetCategory = q?.assetCategory?.split(",") ?? [];
+                                  assetCategory = assetCategory.map((item) =>
+                                      item.trim()
+                                  );
 
-                        if (assetCategory.length === 4) {
-                          catAsset = siteAssets?.filter(
-                            (s) =>
-                              s.category?.trim() === assetCategory[0]?.trim() &&
-                              s.subCategory?.trim() ===
-                                assetCategory[1]?.trim() &&
-                              (s.subCategory2?.trim() ===
-                                assetCategory[2]?.trim() ||
-                                s.subCategory2?.trim() ===
-                                  assetCategory[3]?.trim())
-                          );
-                        } else if (assetCategory.length === 3) {
-                          catAsset = siteAssets?.filter(
-                            (s) =>
-                              s.category?.trim() === assetCategory[0]?.trim() &&
-                              s.subCategory?.trim() ===
-                                assetCategory[1]?.trim() &&
-                              s.subCategory2?.trim() ===
-                                assetCategory[2]?.trim()
-                          );
-                        } else if (assetCategory.length === 2) {
-                          catAsset = siteAssets?.filter(
-                            (s) =>
-                              s.category === assetCategory[0]?.trim() &&
-                              s.subCategory?.trim() === assetCategory[1]?.trim()
-                          );
-                        } else if (
-                          assetCategory.length === 1 &&
-                          assetCategory[0]?.trim() !== ""
-                        ) {
-                          catAsset = siteAssets?.filter(
-                            (s) =>
-                              s.category?.trim() === assetCategory[0]?.trim()
-                          );
-                        } else {
-                          catAsset = siteAssets;
-                        }
+                                  if (assetCategory.length === 4) {
+                                    catAsset = siteAssets?.filter(
+                                        (s) =>
+                                            s.category?.trim() === assetCategory[0]?.trim() &&
+                                            s.subCategory?.trim() ===
+                                            assetCategory[1]?.trim() &&
+                                            (s.subCategory2?.trim() ===
+                                                assetCategory[2]?.trim() ||
+                                                s.subCategory2?.trim() ===
+                                                assetCategory[3]?.trim())
+                                    );
+                                  } else if (assetCategory.length === 3) {
+                                    catAsset = siteAssets?.filter(
+                                        (s) =>
+                                            s.category?.trim() === assetCategory[0]?.trim() &&
+                                            s.subCategory?.trim() ===
+                                            assetCategory[1]?.trim() &&
+                                            s.subCategory2?.trim() ===
+                                            assetCategory[2]?.trim()
+                                    );
+                                  } else if (assetCategory.length === 2) {
+                                    catAsset = siteAssets?.filter(
+                                        (s) =>
+                                            s.category === assetCategory[0]?.trim() &&
+                                            s.subCategory?.trim() === assetCategory[1]?.trim()
+                                    );
+                                  } else if (
+                                      assetCategory.length === 1 &&
+                                      assetCategory[0]?.trim() !== ""
+                                  ) {
+                                    catAsset = siteAssets?.filter(
+                                        (s) =>
+                                            s.category?.trim() === assetCategory[0]?.trim()
+                                    );
+                                  } else {
+                                    catAsset = siteAssets;
+                                  }
 
-                        const faultAsset = (
-                          q.response?.faultassets?.split(",") ?? []
-                        )?.filter((s) => s.length > 0).length;
-                        const okAsset = (
-                          q.response?.assets?.split(",") ?? []
-                        )?.filter((s) => s.length > 0).length;
+                                  const faultAsset = (
+                                      q.response?.faultassets?.split(",") ?? []
+                                  ).filter((s) => s.length > 0).length;
+                                  const okAsset = (
+                                      q.response?.assets?.split(",") ?? []
+                                  ).filter((s) => s.length > 0).length;
 
-                        const isCompleted =
-                          catAsset?.length - okAsset - faultAsset === 0;
-                        return (
-                          <Accordion
-                            defaultExpanded={idx === openIndex}
-                            disabled={catAsset?.length === 0}
-                          >
-                            <AccordionSummary expandIcon={<ExpandMore />}>
-                              <Typography>
-                                {q.order} {q.question}
-                                {/* <Checkbox disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
+                                  const isSpecialQuestion = ['3.5.1', '8.1.1'].includes(q.order);
+                                  const isCompleted = isSpecialQuestion
+                                      ? (okAsset > 0 || faultAsset > 0)  // At least one asset marked
+                                      : (catAsset?.length - okAsset - faultAsset) === 0; // Original strict logic
+
+                                  return (
+                                      <Accordion
+                                          defaultExpanded={idx === openIndex}
+                                          disabled={catAsset?.length === 0}
+                                      >
+                                        <AccordionSummary expandIcon={<ExpandMore />}>
+                                          <Typography>
+                                            {q.order} {q.question}
+                                            {/* <Checkbox disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
                   <Checkbox disabled={q?.completed} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
-                              </Typography>
-                              &nbsp;&nbsp;&nbsp;&nbsp;
-                              {catAsset?.length > 0 && (
-                                <Chip
-                                  style={{ margin: "5px", marginLeft: "30px" }}
-                                  color={!q?.completed ? "success" : "primary"}
-                                  label={!q?.completed ? "Open" : "Closed"}
-                                />
-                              )}
-                            </AccordionSummary>
-                            {catAsset?.length > 0 && (
-                              <AccordionDetails>
-                                <form
-                                  onSubmit={(e) => {
-                                    //setOpenIndex(idx + 1);
-                                    saveAssessmentResponse(e, idx, isCompleted);
-                                  }}
-                                >
-                                  <Grid container spacing={2}>
-                                    <Grid item xs={12} sm={6}>
-                                      <label
-                                        htmlFor="totalAsset"
-                                        name="totalAsset"
-                                      >
-                                        Total Asset
-                                      </label>
-                                      <input
-                                        disabled
-                                        name="totalAsset"
-                                        className="form-control"
-                                        id="totalAsset"
-                                        value={catAsset?.length}
-                                        style={{
-                                          width: "100%",
-                                          padding: "10px",
-                                          margin: "8px 0",
-                                          borderRadius: "4px",
-                                          border: "1px solid #ccc",
-                                        }}
-                                      />
-                                    </Grid>
-
-                                    <Grid item xs={12} sm={6}>
-                                      <label
-                                        htmlFor="totalAsset"
-                                        name="totalAsset"
-                                      >
-                                        Remaining Asset
-                                      </label>
-                                      <input
-                                        disabled
-                                        name="totalAsset"
-                                        className="form-control"
-                                        id="totalAsset"
-                                        value={
-                                          catAsset?.length -
-                                          okAsset -
-                                          faultAsset
-                                        }
-                                        style={{
-                                          width: "100%",
-                                          padding: "10px",
-                                          margin: "8px 0",
-                                          borderRadius: "4px",
-                                          border: "1px solid #ccc",
-                                        }}
-                                      />
-                                    </Grid>
-
-                                    <Grid item xs={12} sm={12}>
-                                      <Autocomplete
-                                        //limitTags={3}
-                                        disabled={q?.completed}
-                                        multiple
-                                        disableCloseOnSelect={true}
-                                        onClose={(event, reason) => {
-                                          if (reason === "toggleInput") {
-                                            event.preventDefault();
-                                          }
-                                        }}
-                                        value={catAsset
-                                          .filter((s) =>
-                                            q?.response?.assets
-                                              ?.split(",")
-                                              ?.includes(s.assetId.toString())
-                                          )
-                                          .map((option) => option.assetId)}
-                                        onChange={(event, newValue) => {
-                                          const assetsList = catAsset.filter(
-                                            (s) =>
-                                              !q?.response?.faultassets
-                                                ?.split(",")
-                                                ?.includes(s.assetId.toString())
-                                          );
-                                          const uquest = [...quest];
-                                          if (
-                                            newValue.find(
-                                              (option) =>
-                                                option === "Select All"
-                                            )
-                                          ) {
-                                            // If Select All is in newValue, select all options
-                                            uquest[idx].response = {
-                                              ...uquest[idx].response,
-                                              assets: assetsList
-                                                .map((i) => i.assetId)
-                                                .join(","),
-                                            };
-                                          } else if (newValue.length === 0) {
-                                            // If nothing selected, clear selection
-                                            uquest[idx].response = {
-                                              ...uquest[idx].response,
-                                              assets: "",
-                                            };
-                                          } else {
-                                            // Regular selection
-                                            uquest[idx].response = {
-                                              ...uquest[idx].response,
-                                              assets: newValue.join(","),
-                                            };
-                                          }
-                                          setquest(uquest);
-                                        }}
-                                        options={[
-                                          "Select All",
-                                          ...catAsset
-                                            .filter(
-                                              (s) =>
-                                                !q?.response?.faultassets
-                                                  ?.split(",")
-                                                  ?.includes(
-                                                    s.assetId.toString()
-                                                  )
-                                            )
-                                            .map((option) => option.assetId),
-                                        ]}
-                                        getOptionLabel={(option) =>
-                                          option === "Select All"
-                                            ? "Select All"
-                                            : catAsset
-                                                .filter(
-                                                  (a) => a.assetId === option
-                                                )
-                                                .map(
-                                                  (option) =>
-                                                    option.assetId +
-                                                    " - " +
-                                                    option.assetName +
-                                                    " (" +
-                                                    `${
-                                                      option?.position || "NA"
-                                                    } > ${
-                                                      option?.floor || "NA"
-                                                    } > ${
-                                                      option?.room || "NA"
-                                                    }` +
-                                                    ")"
-                                                )[0]
-                                        }
-                                        renderInput={(params) => (
-                                          <TextField
-                                            {...params}
-                                            label="Asset OK"
-                                            size="small"
-                                          />
-                                        )}
-                                        renderOption={(
-                                          props,
-                                          option,
-                                          { selected }
-                                        ) => (
-                                          <li {...props}>
-                                            <Checkbox checked={selected} />
-                                            {option === "Select All"
-                                              ? "Select All"
-                                              : catAsset
-                                                  .filter(
-                                                    (a) => a.assetId === option
-                                                  )
-                                                  .map(
-                                                    (option) =>
-                                                      option.assetId +
-                                                      " - " +
-                                                      option.assetName +
-                                                      " (" +
-                                                      `${
-                                                        option?.position || "NA"
-                                                      } > ${
-                                                        option?.floor || "NA"
-                                                      } > ${
-                                                        option?.room || "NA"
-                                                      }` +
-                                                      ")"
-                                                  )[0]}
-                                          </li>
-                                        )}
-                                        renderTags={(value, getTagProps) => (
-                                          <Box
-                                            sx={{
-                                              display: "flex",
-                                              flexWrap: "wrap",
-                                              gap: 0.5,
-                                              maxHeight: 120,
-                                              overflowY: "auto",
-                                              alignItems: "flex-start",
-                                              alignContent: "flex-start",
-                                              padding: "4px 0",
-                                            }}
-                                          >
-                                            {value.map((option, index) => (
-                                              <Chip
-                                                key={index}
-                                                label={
-                                                  catAsset
-                                                    .filter(
-                                                      (a) =>
-                                                        a.assetId === option
-                                                    )
-                                                    .map(
-                                                      (option) =>
-                                                        option.assetId +
-                                                        " - " +
-                                                        option.assetName +
-                                                        " (" +
-                                                        `${
-                                                          option?.position ||
-                                                          "NA"
-                                                        } > ${
-                                                          option?.floor || "NA"
-                                                        } > ${
-                                                          option?.room || "NA"
-                                                        }` +
-                                                        ")"
-                                                    )[0]
-                                                }
-                                                {...getTagProps({ index })}
-                                              />
-                                            ))}
-                                          </Box>
-                                        )}
-                                      />
-                                    </Grid>
-                                    <Grid item xs={12} sm={12}>
-                                      <Autocomplete
-                                        disabled={q?.completed}
-                                        multiple
-                                        disableCloseOnSelect={true}
-                                        onClose={(event, reason) => {
-                                          if (reason === "toggleInput") {
-                                            event.preventDefault();
-                                          }
-                                        }}
-                                        value={catAsset
-                                          .filter((s) =>
-                                            q?.response?.faultassets
-                                              ?.split(",")
-                                              ?.includes(s.assetId.toString())
-                                          )
-                                          .map((option) => option.assetId)}
-                                        onChange={(event, newValue) => {
-                                          const assetsList = catAsset.filter(
-                                            (s) =>
-                                              !q?.response?.assets
-                                                ?.split(",")
-                                                ?.includes(s.assetId.toString())
-                                          );
-
-                                          const uquest = [...quest];
-
-                                          if (
-                                            newValue.find(
-                                              (option) =>
-                                                option === "Select All"
-                                            )
-                                          ) {
-                                            uquest[idx].response = {
-                                              ...uquest[idx].response,
-                                              faultassets: assetsList
-                                                .map((i) => i.assetId)
-                                                .join(","),
-                                            };
-                                          } else if (newValue.length === 0) {
-                                            uquest[idx].response = {
-                                              ...uquest[idx].response,
-                                              faultassets: "",
-                                            };
-                                          } else {
-                                            uquest[idx].response = {
-                                              ...uquest[idx].response,
-                                              faultassets: newValue.join(","),
-                                            };
-                                          }
-                                          setquest(uquest);
-                                        }}
-                                        options={[
-                                          "Select All",
-                                          ...catAsset
-                                            .filter(
-                                              (s) =>
-                                                !q?.response?.assets
-                                                  ?.split(",")
-                                                  ?.includes(
-                                                    s.assetId.toString()
-                                                  )
-                                            )
-                                            .map((option) => option.assetId),
-                                        ]}
-                                        getOptionLabel={(option) =>
-                                          option === "Select All"
-                                            ? "Select All"
-                                            : catAsset
-                                                .filter(
-                                                  (a) => a.assetId === option
-                                                )
-                                                .map(
-                                                  (option) =>
-                                                    option.assetId +
-                                                    " - " +
-                                                    option.assetName +
-                                                    " (" +
-                                                    `${
-                                                      option?.position || "NA"
-                                                    } > ${
-                                                      option?.floor || "NA"
-                                                    } > ${
-                                                      option?.room || "NA"
-                                                    }` +
-                                                    ")"
-                                                )[0]
-                                        }
-                                        renderInput={(params) => (
-                                          <TextField
-                                            {...params}
-                                            label="Defective OK"
-                                            size="small"
-                                          />
-                                        )}
-                                        renderOption={(
-                                          props,
-                                          option,
-                                          { selected }
-                                        ) => (
-                                          <li {...props}>
-                                            <Checkbox checked={selected} />
-                                            {option === "Select All"
-                                              ? "Select All"
-                                              : catAsset
-                                                  .filter(
-                                                    (a) => a.assetId === option
-                                                  )
-                                                  .map(
-                                                    (option) =>
-                                                      option.assetId +
-                                                      " - " +
-                                                      option.assetName +
-                                                      " (" +
-                                                      `${
-                                                        option?.position || "NA"
-                                                      } > ${
-                                                        option?.floor || "NA"
-                                                      } > ${
-                                                        option?.room || "NA"
-                                                      }` +
-                                                      ")"
-                                                  )[0]}
-                                          </li>
-                                        )}
-                                        renderTags={(value, getTagProps) => (
-                                          <Box
-                                            sx={{
-                                              display: "flex",
-                                              flexWrap: "wrap",
-                                              gap: 0.5,
-                                              maxHeight: 120,
-                                              overflowY: "auto",
-                                              alignItems: "flex-start",
-                                              alignContent: "flex-start",
-                                              padding: "4px 0",
-                                            }}
-                                          >
-                                            {value.map((option, index) => (
-                                              <Chip
-                                                key={index}
-                                                label={
-                                                  catAsset
-                                                    .filter(
-                                                      (a) =>
-                                                        a.assetId === option
-                                                    )
-                                                    .map(
-                                                      (option) =>
-                                                        option.assetId +
-                                                        " - " +
-                                                        option.assetName +
-                                                        " (" +
-                                                        `${
-                                                          option?.position ||
-                                                          "NA"
-                                                        } > ${
-                                                          option?.floor || "NA"
-                                                        } > ${
-                                                          option?.room || "NA"
-                                                        }` +
-                                                        ")"
-                                                    )[0]
-                                                }
-                                                {...getTagProps({ index })}
-                                              />
-                                            ))}
-                                          </Box>
-                                        )}
-                                      />
-                                    </Grid>
-                                    {faultAsset > 0 && (
-                                      <Grid item xs={6}>
-                                        <label
-                                          htmlFor="position"
-                                          name="position"
-                                        >
-                                          Observation
-                                        </label>
-                                        <textarea
-                                          disabled={q?.completed}
-                                          name="position"
-                                          className="form-control"
-                                          id="position"
-                                          rows="4"
-                                          required={faultAsset > 0}
-                                          placeholder="Enter notes..."
-                                          value={q?.response?.position}
-                                          onChange={(e) =>
-                                            handleInputChange(e, idx)
-                                          }
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            margin: "8px 0",
-                                            borderRadius: "4px",
-                                            border: "1px solid #ccc",
-                                          }}
-                                        />
-                                      </Grid>
-                                    )}
-
-                                    {faultAsset > 0 && (
-                                      <Grid item xs={6}>
-                                        <label htmlFor="action" name="action">
-                                          Suggested Action
-                                        </label>
-                                        <textarea
-                                          disabled={q?.completed}
-                                          name="action"
-                                          required={faultAsset > 0}
-                                          className="form-control"
-                                          id="action"
-                                          rows="4"
-                                          placeholder="Enter notes..."
-                                          value={q?.response?.action}
-                                          onChange={(e) =>
-                                            handleInputChange(e, idx)
-                                          }
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            margin: "8px 0",
-                                            borderRadius: "4px",
-                                            border: "1px solid #ccc",
-                                          }}
-                                        />
-                                      </Grid>
-                                    )}
-                                    {faultAsset > 0 && (
-                                      <Grid
-                                        item
-                                        xs={
-                                          !q?.response?.images ||
-                                          q?.response?.images?.length === 0
-                                            ? 12
-                                            : 8
-                                        }
-                                      >
-                                        <Box
-                                          display="flex"
-                                          alignItems="center"
-                                          justifyContent="center"
-                                          border="1px dashed grey"
-                                          p={2}
-                                          mb={2}
-                                          style={{
-                                            backgroundColor: "#f9f9f9",
-                                            height: "150px",
-                                            borderRadius: "4px",
-                                            color: "#3f51b5",
-                                          }}
-                                          onDragOver={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            e.dataTransfer.dropEffect = "copy";
-                                          }}
-                                          onDragEnter={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                          }}
-                                          onDragLeave={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                          }}
-                                          onDrop={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            const files = Array.from(
-                                              e.dataTransfer.files || []
-                                            );
-                                            const validImageFiles =
-                                              files.filter((file) =>
-                                                [
-                                                  "image/jpeg",
-                                                  "image/jpg",
-                                                  "image/png",
-                                                ].includes(file.type)
-                                              );
-
-                                            if (
-                                              files.length > 0 &&
-                                              validImageFiles.length === 0
-                                            ) {
-                                              toast.error(
-                                                "Please drop only image files (JPEG, JPG, PNG)"
-                                              );
-                                              return;
-                                            }
-
-                                            if (validImageFiles.length > 0) {
-                                              const uquest = [...quest];
-                                              uquest[idx].response.file = [
-                                                ...(uquest[idx].response.file ||
-                                                  []),
-                                                ...validImageFiles,
-                                              ];
-                                              setquest(uquest);
-                                            }
-                                          }}
-                                        >
-                                          <IconButton
-                                            component="label"
-                                            disabled={q?.completed}
-                                          >
-                                            <input
-                                              hidden
-                                              type="file"
-                                              onChange={(e) =>
-                                                handleFileChange(e, idx)
-                                              }
-                                              accept="image/jpeg, image/jpg, image/png"
-                                              multiple
-                                              disabled={q?.completed}
-                                            />
-                                            <UploadFile
-                                              color={
-                                                q?.completed
-                                                  ? "disabled"
-                                                  : "primary"
-                                              }
-                                            />
-                                          </IconButton>
-                                          <Typography
-                                            color={
-                                              q?.completed
-                                                ? "text.disabled"
-                                                : "text.primary"
-                                            }
-                                          >
-                                            {
-                                              "Click to upload or drag and drop PNG/JPG (max, 1MB)"
-                                            }
                                           </Typography>
-                                        </Box>
-                                        {q?.response?.file &&
-                                          q?.response?.file?.length > 0 &&
-                                          [...q?.response?.file]?.map(
-                                            (f, idx2) => (
+                                          &nbsp;&nbsp;&nbsp;&nbsp;
+                                          {catAsset?.length > 0 && (
                                               <Chip
-                                                label={
-                                                  f?.name ?? "Attached Image"
-                                                }
-                                                onDelete={() =>
-                                                  handleFileDelete(idx, idx2)
-                                                }
+                                                  style={{ margin: "5px", marginLeft: "30px" }}
+                                                  color={!q?.completed ? "success" : "primary"}
+                                                  label={!q?.completed ? "Open" : "Closed"}
                                               />
-                                            )
                                           )}
-                                      </Grid>
-                                    )}
-
-                                    {q?.response?.images?.length > 1 && (
-                                      // <Grid item xs={6} container alignItems="center" >
-                                      <div className="col-md-4 text-center mt-2">
-                                        <div className="form-group">
-                                          <Slider {...carouselSettings}>
-                                            {q?.response?.images?.map((i) => (
-                                              <div>
-                                                <img
-                                                  onClick={() => {
-                                                    window.open(
-                                                      i?.imageUrl +
-                                                        "?" +
-                                                        sasToken,
-                                                      "_blank"
-                                                    );
+                                        </AccordionSummary>
+                                        {catAsset?.length > 0 && (
+                                            <AccordionDetails>
+                                              <form
+                                                  onSubmit={(e) => {
+                                                    //setOpenIndex(idx + 1);
+                                                    saveAssessmentResponse(e, idx, isCompleted);
                                                   }}
-                                                  style={{ cursor: "pointer" }}
-                                                  src={
-                                                    i?.imageUrl + "?" + sasToken
-                                                  }
-                                                  className="img img-responsive border p-2 m-2 w-100"
-                                                  height={200}
-                                                  width={200}
-                                                  alt="ActionResponse"
-                                                />
-                                                {!q?.completed && (
-                                                  <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-danger mb-2"
-                                                    onClick={() => {
-                                                      deleteAssessmentResponseImage(
-                                                        i
-                                                      );
-                                                    }}
-                                                  >
-                                                    Delete
-                                                  </button>
-                                                )}
-                                              </div>
-                                            ))}
-                                          </Slider>
-                                        </div>
-                                      </div>
-                                      // </Grid>
-                                    )}
-                                    {q?.response?.images?.length === 1 && (
-                                      <div
-                                        className="col-md-4 text-center mt-2"
-                                        style={{ marginBottom: "10px" }}
-                                      >
-                                        <div className="form-group">
-                                          <img
-                                            onClick={() => {
-                                              window.open(
-                                                q?.response?.images[0]
-                                                  ?.imageUrl +
-                                                  "?" +
-                                                  sasToken,
-                                                "_blank"
-                                              );
-                                            }}
-                                            style={{ cursor: "pointer" }}
-                                            src={
-                                              q?.response?.images[0].imageUrl +
-                                              "?" +
-                                              sasToken
-                                            }
-                                            className="img img-responsive border p-2 m-2 w-100"
-                                            height={200}
-                                            width={200}
-                                          />
-                                          {!q?.completed && (
-                                            <button
-                                              type="button"
-                                              className="btn btn-sm btn-danger mb-2"
-                                              onClick={() => {
-                                                deleteAssessmentResponseImage(
-                                                  q?.response?.images[0]
-                                                );
-                                              }}
-                                              style={{ margin: "10px" }}
-                                            >
-                                              Delete
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {/* {q?.response?.file && q?.response?.file?.name === undefined && 
+                                              >
+                                                <Grid container spacing={2}>
+                                                  <Grid item xs={12} sm={6}>
+                                                    <label
+                                                        htmlFor="totalAsset"
+                                                        name="totalAsset"
+                                                    >
+                                                      Total Asset
+                                                    </label>
+                                                    <input
+                                                        disabled
+                                                        name="totalAsset"
+                                                        className="form-control"
+                                                        id="totalAsset"
+                                                        value={catAsset?.length}
+                                                        style={{
+                                                          width: "100%",
+                                                          padding: "10px",
+                                                          margin: "8px 0",
+                                                          borderRadius: "4px",
+                                                          border: "1px solid #ccc",
+                                                        }}
+                                                    />
+                                                  </Grid>
+
+                                                  <Grid item xs={12} sm={6}>
+                                                    <label
+                                                        htmlFor="totalAsset"
+                                                        name="totalAsset"
+                                                    >
+                                                      Remaining Asset
+                                                    </label>
+                                                    <input
+                                                        disabled
+                                                        name="totalAsset"
+                                                        className="form-control"
+                                                        id="totalAsset"
+                                                        value={
+                                                            catAsset?.length -
+                                                            okAsset -
+                                                            faultAsset
+                                                        }
+                                                        style={{
+                                                          width: "100%",
+                                                          padding: "10px",
+                                                          margin: "8px 0",
+                                                          borderRadius: "4px",
+                                                          border: "1px solid #ccc",
+                                                        }}
+                                                    />
+                                                  </Grid>
+
+                                                  <Grid item xs={12} sm={12}>
+                                                    <Autocomplete
+                                                        //limitTags={3}
+                                                        disabled={q?.completed}
+                                                        multiple
+                                                        disableCloseOnSelect={true}
+                                                        onClose={(event, reason) => {
+                                                          if (reason === "toggleInput") {
+                                                            event.preventDefault();
+                                                          }
+                                                        }}
+                                                        value={catAsset
+                                                            .filter((s) =>
+                                                                q?.response?.assets
+                                                                    ?.split(",")
+                                                                    ?.includes(s.assetId.toString())
+                                                            )
+                                                            .map((option) => option.assetId)}
+                                                        onChange={(event, newValue) => {
+                                                          const assetsList = catAsset.filter(
+                                                              (s) =>
+                                                                  !q?.response?.faultassets
+                                                                      ?.split(",")
+                                                                      ?.includes(s.assetId.toString())
+                                                          );
+                                                          const uquest = [...quest];
+                                                          if (
+                                                              newValue.find(
+                                                                  (option) =>
+                                                                      option === "Select All"
+                                                              )
+                                                          ) {
+                                                            // If Select All is in newValue, select all options
+                                                            uquest[idx].response = {
+                                                              ...uquest[idx].response,
+                                                              assets: assetsList
+                                                                  .map((i) => i.assetId)
+                                                                  .join(","),
+                                                            };
+                                                          } else if (newValue.length === 0) {
+                                                            // If nothing selected, clear selection
+                                                            uquest[idx].response = {
+                                                              ...uquest[idx].response,
+                                                              assets: "",
+                                                            };
+                                                          } else {
+                                                            // Regular selection
+                                                            uquest[idx].response = {
+                                                              ...uquest[idx].response,
+                                                              assets: newValue.join(","),
+                                                            };
+                                                          }
+                                                          setquest(uquest);
+                                                        }}
+                                                        options={[
+                                                          "Select All",
+                                                          ...catAsset
+                                                              .filter(
+                                                                  (s) =>
+                                                                      !q?.response?.faultassets
+                                                                          ?.split(",")
+                                                                          ?.includes(
+                                                                              s.assetId.toString()
+                                                                          )
+                                                              )
+                                                              .map((option) => option.assetId),
+                                                        ]}
+                                                        getOptionLabel={(option) =>
+                                                            option === "Select All"
+                                                                ? "Select All"
+                                                                : catAsset
+                                                                    .filter(
+                                                                        (a) => a.assetId === option
+                                                                    )
+                                                                    .map(
+                                                                        (option) =>
+                                                                            option.assetId +
+                                                                            " - " +
+                                                                            option.assetName +
+                                                                            " (" +
+                                                                            `${
+                                                                                option?.position || "NA"
+                                                                            } > ${
+                                                                                option?.floor || "NA"
+                                                                            } > ${
+                                                                                option?.room || "NA"
+                                                                            }` +
+                                                                            ")"
+                                                                    )[0]
+                                                        }
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                label="Asset OK"
+                                                                size="small"
+                                                            />
+                                                        )}
+                                                        renderOption={(
+                                                            props,
+                                                            option,
+                                                            { selected }
+                                                        ) => (
+                                                            <li {...props}>
+                                                              <Checkbox checked={selected} />
+                                                              {option === "Select All"
+                                                                  ? "Select All"
+                                                                  : catAsset
+                                                                      .filter(
+                                                                          (a) => a.assetId === option
+                                                                      )
+                                                                      .map(
+                                                                          (option) =>
+                                                                              option.assetId +
+                                                                              " - " +
+                                                                              option.assetName +
+                                                                              " (" +
+                                                                              `${
+                                                                                  option?.position || "NA"
+                                                                              } > ${
+                                                                                  option?.floor || "NA"
+                                                                              } > ${
+                                                                                  option?.room || "NA"
+                                                                              }` +
+                                                                              ")"
+                                                                      )[0]}
+                                                            </li>
+                                                        )}
+                                                        renderTags={(value, getTagProps) => (
+                                                            <Box
+                                                                sx={{
+                                                                  display: "flex",
+                                                                  flexWrap: "wrap",
+                                                                  gap: 0.5,
+                                                                  maxHeight: 120,
+                                                                  overflowY: "auto",
+                                                                  alignItems: "flex-start",
+                                                                  alignContent: "flex-start",
+                                                                  padding: "4px 0",
+                                                                }}
+                                                            >
+                                                              {value.map((option, index) => (
+                                                                  <Chip
+                                                                      key={index}
+                                                                      label={
+                                                                        catAsset
+                                                                            .filter(
+                                                                                (a) =>
+                                                                                    a.assetId === option
+                                                                            )
+                                                                            .map(
+                                                                                (option) =>
+                                                                                    option.assetId +
+                                                                                    " - " +
+                                                                                    option.assetName +
+                                                                                    " (" +
+                                                                                    `${
+                                                                                        option?.position ||
+                                                                                        "NA"
+                                                                                    } > ${
+                                                                                        option?.floor || "NA"
+                                                                                    } > ${
+                                                                                        option?.room || "NA"
+                                                                                    }` +
+                                                                                    ")"
+                                                                            )[0]
+                                                                      }
+                                                                      {...getTagProps({ index })}
+                                                                  />
+                                                              ))}
+                                                            </Box>
+                                                        )}
+                                                    />
+                                                  </Grid>
+                                                  <Grid item xs={12} sm={12}>
+                                                    <Autocomplete
+                                                        disabled={q?.completed}
+                                                        multiple
+                                                        disableCloseOnSelect={true}
+                                                        onClose={(event, reason) => {
+                                                          if (reason === "toggleInput") {
+                                                            event.preventDefault();
+                                                          }
+                                                        }}
+                                                        value={catAsset
+                                                            .filter((s) =>
+                                                                q?.response?.faultassets
+                                                                    ?.split(",")
+                                                                    ?.includes(s.assetId.toString())
+                                                            )
+                                                            .map((option) => option.assetId)}
+                                                        onChange={(event, newValue) => {
+                                                          const assetsList = catAsset.filter(
+                                                              (s) =>
+                                                                  !q?.response?.assets
+                                                                      ?.split(",")
+                                                                      ?.includes(s.assetId.toString())
+                                                          );
+
+                                                          const uquest = [...quest];
+
+                                                          if (
+                                                              newValue.find(
+                                                                  (option) =>
+                                                                      option === "Select All"
+                                                              )
+                                                          ) {
+                                                            uquest[idx].response = {
+                                                              ...uquest[idx].response,
+                                                              faultassets: assetsList
+                                                                  .map((i) => i.assetId)
+                                                                  .join(","),
+                                                            };
+                                                          } else if (newValue.length === 0) {
+                                                            uquest[idx].response = {
+                                                              ...uquest[idx].response,
+                                                              faultassets: "",
+                                                            };
+                                                          } else {
+                                                            uquest[idx].response = {
+                                                              ...uquest[idx].response,
+                                                              faultassets: newValue.join(","),
+                                                            };
+                                                          }
+                                                          setquest(uquest);
+                                                        }}
+                                                        options={[
+                                                          "Select All",
+                                                          ...catAsset
+                                                              .filter(
+                                                                  (s) =>
+                                                                      !q?.response?.assets
+                                                                          ?.split(",")
+                                                                          ?.includes(
+                                                                              s.assetId.toString()
+                                                                          )
+                                                              )
+                                                              .map((option) => option.assetId),
+                                                        ]}
+                                                        getOptionLabel={(option) =>
+                                                            option === "Select All"
+                                                                ? "Select All"
+                                                                : catAsset
+                                                                    .filter(
+                                                                        (a) => a.assetId === option
+                                                                    )
+                                                                    .map(
+                                                                        (option) =>
+                                                                            option.assetId +
+                                                                            " - " +
+                                                                            option.assetName +
+                                                                            " (" +
+                                                                            `${
+                                                                                option?.position || "NA"
+                                                                            } > ${
+                                                                                option?.floor || "NA"
+                                                                            } > ${
+                                                                                option?.room || "NA"
+                                                                            }` +
+                                                                            ")"
+                                                                    )[0]
+                                                        }
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                label="Defective OK"
+                                                                size="small"
+                                                            />
+                                                        )}
+                                                        renderOption={(
+                                                            props,
+                                                            option,
+                                                            { selected }
+                                                        ) => (
+                                                            <li {...props}>
+                                                              <Checkbox checked={selected} />
+                                                              {option === "Select All"
+                                                                  ? "Select All"
+                                                                  : catAsset
+                                                                      .filter(
+                                                                          (a) => a.assetId === option
+                                                                      )
+                                                                      .map(
+                                                                          (option) =>
+                                                                              option.assetId +
+                                                                              " - " +
+                                                                              option.assetName +
+                                                                              " (" +
+                                                                              `${
+                                                                                  option?.position || "NA"
+                                                                              } > ${
+                                                                                  option?.floor || "NA"
+                                                                              } > ${
+                                                                                  option?.room || "NA"
+                                                                              }` +
+                                                                              ")"
+                                                                      )[0]}
+                                                            </li>
+                                                        )}
+                                                        renderTags={(value, getTagProps) => (
+                                                            <Box
+                                                                sx={{
+                                                                  display: "flex",
+                                                                  flexWrap: "wrap",
+                                                                  gap: 0.5,
+                                                                  maxHeight: 120,
+                                                                  overflowY: "auto",
+                                                                  alignItems: "flex-start",
+                                                                  alignContent: "flex-start",
+                                                                  padding: "4px 0",
+                                                                }}
+                                                            >
+                                                              {value.map((option, index) => (
+                                                                  <Chip
+                                                                      key={index}
+                                                                      label={
+                                                                        catAsset
+                                                                            .filter(
+                                                                                (a) =>
+                                                                                    a.assetId === option
+                                                                            )
+                                                                            .map(
+                                                                                (option) =>
+                                                                                    option.assetId +
+                                                                                    " - " +
+                                                                                    option.assetName +
+                                                                                    " (" +
+                                                                                    `${
+                                                                                        option?.position ||
+                                                                                        "NA"
+                                                                                    } > ${
+                                                                                        option?.floor || "NA"
+                                                                                    } > ${
+                                                                                        option?.room || "NA"
+                                                                                    }` +
+                                                                                    ")"
+                                                                            )[0]
+                                                                      }
+                                                                      {...getTagProps({ index })}
+                                                                  />
+                                                              ))}
+                                                            </Box>
+                                                        )}
+                                                    />
+                                                  </Grid>
+                                                  {faultAsset > 0 && (
+                                                      <Grid item xs={6}>
+                                                        <label
+                                                            htmlFor="position"
+                                                            name="position"
+                                                        >
+                                                          Observation
+                                                        </label>
+                                                        <textarea
+                                                            disabled={q?.completed}
+                                                            name="position"
+                                                            className="form-control"
+                                                            id="position"
+                                                            rows="4"
+                                                            required={faultAsset > 0}
+                                                            placeholder="Enter notes..."
+                                                            value={q?.response?.position}
+                                                            onChange={(e) =>
+                                                                handleInputChange(e, idx)
+                                                            }
+                                                            style={{
+                                                              width: "100%",
+                                                              padding: "10px",
+                                                              margin: "8px 0",
+                                                              borderRadius: "4px",
+                                                              border: "1px solid #ccc",
+                                                            }}
+                                                        />
+                                                      </Grid>
+                                                  )}
+
+                                                  {faultAsset > 0 && (
+                                                      <Grid item xs={6}>
+                                                        <label htmlFor="action" name="action">
+                                                          Suggested Action
+                                                        </label>
+                                                        <textarea
+                                                            disabled={q?.completed}
+                                                            name="action"
+                                                            required={faultAsset > 0}
+                                                            className="form-control"
+                                                            id="action"
+                                                            rows="4"
+                                                            placeholder="Enter notes..."
+                                                            value={q?.response?.action}
+                                                            onChange={(e) =>
+                                                                handleInputChange(e, idx)
+                                                            }
+                                                            style={{
+                                                              width: "100%",
+                                                              padding: "10px",
+                                                              margin: "8px 0",
+                                                              borderRadius: "4px",
+                                                              border: "1px solid #ccc",
+                                                            }}
+                                                        />
+                                                      </Grid>
+                                                  )}
+                                                  {faultAsset > 0 && (
+                                                      <Grid
+                                                          item
+                                                          xs={
+                                                            !q?.response?.images ||
+                                                            q?.response?.images?.length === 0
+                                                                ? 12
+                                                                : 8
+                                                          }
+                                                      >
+                                                        <Box
+                                                            display="flex"
+                                                            alignItems="center"
+                                                            justifyContent="center"
+                                                            border="1px dashed grey"
+                                                            p={2}
+                                                            mb={2}
+                                                            style={{
+                                                              backgroundColor: "#f9f9f9",
+                                                              height: "150px",
+                                                              borderRadius: "4px",
+                                                              color: "#3f51b5",
+                                                            }}
+                                                            onDragOver={(e) => {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
+                                                              e.dataTransfer.dropEffect = "copy";
+                                                            }}
+                                                            onDragEnter={(e) => {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
+                                                            }}
+                                                            onDragLeave={(e) => {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
+                                                            }}
+                                                            onDrop={(e) => {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
+                                                              const files = Array.from(
+                                                                  e.dataTransfer.files || []
+                                                              );
+                                                              const validImageFiles =
+                                                                  files.filter((file) =>
+                                                                      [
+                                                                        "image/jpeg",
+                                                                        "image/jpg",
+                                                                        "image/png",
+                                                                      ].includes(file.type)
+                                                                  );
+
+                                                              if (
+                                                                  files.length > 0 &&
+                                                                  validImageFiles.length === 0
+                                                              ) {
+                                                                toast.error(
+                                                                    "Please drop only image files (JPEG, JPG, PNG)"
+                                                                );
+                                                                return;
+                                                              }
+
+                                                              if (validImageFiles.length > 0) {
+                                                                const uquest = [...quest];
+                                                                uquest[idx].response.file = [
+                                                                  ...(uquest[idx].response.file ||
+                                                                      []),
+                                                                  ...validImageFiles,
+                                                                ];
+                                                                setquest(uquest);
+                                                              }
+                                                            }}
+                                                        >
+                                                          <IconButton
+                                                              component="label"
+                                                              disabled={q?.completed}
+                                                          >
+                                                            <input
+                                                                hidden
+                                                                type="file"
+                                                                onChange={(e) =>
+                                                                    handleFileChange(e, idx)
+                                                                }
+                                                                accept="image/jpeg, image/jpg, image/png"
+                                                                multiple
+                                                                disabled={q?.completed}
+                                                            />
+                                                            <UploadFile
+                                                                color={
+                                                                  q?.completed
+                                                                      ? "disabled"
+                                                                      : "primary"
+                                                                }
+                                                            />
+                                                          </IconButton>
+                                                          <Typography
+                                                              color={
+                                                                q?.completed
+                                                                    ? "text.disabled"
+                                                                    : "text.primary"
+                                                              }
+                                                          >
+                                                            {
+                                                              "Click to upload or drag and drop PNG/JPG (max, 1MB)"
+                                                            }
+                                                          </Typography>
+                                                        </Box>
+                                                        {q?.response?.file &&
+                                                            q?.response?.file?.length > 0 &&
+                                                            [...q?.response?.file]?.map(
+                                                                (f, idx2) => (
+                                                                    <Chip
+                                                                        label={
+                                                                            f?.name ?? "Attached Image"
+                                                                        }
+                                                                        onDelete={() =>
+                                                                            handleFileDelete(idx, idx2)
+                                                                        }
+                                                                    />
+                                                                )
+                                                            )}
+                                                      </Grid>
+                                                  )}
+
+                                                  {q?.response?.images?.length > 1 && (
+                                                      // <Grid item xs={6} container alignItems="center" >
+                                                      <div className="col-md-4 text-center mt-2">
+                                                        <div className="form-group">
+                                                          <Slider {...carouselSettings}>
+                                                            {q?.response?.images?.map((i) => (
+                                                                <div>
+                                                                  <img
+                                                                      onClick={() => {
+                                                                        window.open(
+                                                                            i?.imageUrl +
+                                                                            "?" +
+                                                                            sasToken,
+                                                                            "_blank"
+                                                                        );
+                                                                      }}
+                                                                      style={{ cursor: "pointer" }}
+                                                                      src={
+                                                                          i?.imageUrl + "?" + sasToken
+                                                                      }
+                                                                      className="img img-responsive border p-2 m-2 w-100"
+                                                                      height={200}
+                                                                      width={200}
+                                                                      alt="ActionResponse"
+                                                                  />
+                                                                  {!q?.completed && (
+                                                                      <button
+                                                                          type="button"
+                                                                          className="btn btn-sm btn-danger mb-2"
+                                                                          onClick={() => {
+                                                                            deleteAssessmentResponseImage(
+                                                                                i
+                                                                            );
+                                                                          }}
+                                                                      >
+                                                                        Delete
+                                                                      </button>
+                                                                  )}
+                                                                </div>
+                                                            ))}
+                                                          </Slider>
+                                                        </div>
+                                                      </div>
+                                                      // </Grid>
+                                                  )}
+                                                  {q?.response?.images?.length === 1 && (
+                                                      <div
+                                                          className="col-md-4 text-center mt-2"
+                                                          style={{ marginBottom: "10px" }}
+                                                      >
+                                                        <div className="form-group">
+                                                          <img
+                                                              onClick={() => {
+                                                                window.open(
+                                                                    q?.response?.images[0]
+                                                                        ?.imageUrl +
+                                                                    "?" +
+                                                                    sasToken,
+                                                                    "_blank"
+                                                                );
+                                                              }}
+                                                              style={{ cursor: "pointer" }}
+                                                              src={
+                                                                  q?.response?.images[0].imageUrl +
+                                                                  "?" +
+                                                                  sasToken
+                                                              }
+                                                              className="img img-responsive border p-2 m-2 w-100"
+                                                              height={200}
+                                                              width={200}
+                                                          />
+                                                          {!q?.completed && (
+                                                              <button
+                                                                  type="button"
+                                                                  className="btn btn-sm btn-danger mb-2"
+                                                                  onClick={() => {
+                                                                    deleteAssessmentResponseImage(
+                                                                        q?.response?.images[0]
+                                                                    );
+                                                                  }}
+                                                                  style={{ margin: "10px" }}
+                                                              >
+                                                                Delete
+                                                              </button>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                  )}
+                                                  {/* {q?.response?.file && q?.response?.file?.name === undefined &&
                       <Grid item xs={12} style={{background: 'grey'}}>
                       <img src={q?.response?.file+"?"+sasToken} />
                       </Grid>
                       } */}
-                                    {/* {q?.response?.file && q?.response?.file?.name === undefined && <Grid item xs={12}>
+                                                  {/* {q?.response?.file && q?.response?.file?.name === undefined && <Grid item xs={12}>
                     &nbsp;<button
                         type={"button"}
                           style={{ float: 'right', margin:"20px" }}
@@ -1160,125 +1190,125 @@ const AssessmentFireRisk = ({
                         </button>&nbsp;
                       </a></Grid>} */}
 
-                                    {faultAsset > 0 && (
-                                      <Grid item xs={12}>
-                                        <Typography variant="h6" gutterBottom>
-                                          Risk Score Card (
-                                          <strong>
-                                            Total Risk Score ={" "}
-                                            {(q?.response?.consequence ?? 0) *
-                                              (q?.response?.likelihood ?? 0)}
-                                          </strong>
-                                          )
-                                        </Typography>
-                                        <Grid container spacing={2}>
-                                          <Grid item xs={12} sm={4}>
-                                            <Grid item xs={12} sm={12}>
-                                              <label
-                                                htmlFor="consequence"
-                                                name="consequence"
-                                              >
-                                                Consequence
-                                              </label>
-                                              <select
-                                                required={faultAsset > 0}
-                                                disabled={q?.completed}
-                                                className="form-control form-select"
-                                                name="consequence"
-                                                value={q?.response?.consequence}
-                                                onChange={(e) =>
-                                                  handleInputChange(e, idx)
-                                                }
-                                              >
-                                                <option value="">
-                                                  Select{" "}
-                                                </option>
-                                                {[1, 2, 3, 4, 5].map((num) => (
-                                                  <option value={num}>
-                                                    {num}{" "}
-                                                  </option>
-                                                ))}
-                                              </select>
-                                            </Grid>
-                                            <Grid item xs={12} sm={12}>
-                                              <label
-                                                htmlFor="likelihood"
-                                                name="likelihood"
-                                              >
-                                                Likelihood
-                                              </label>
-                                              <select
-                                                required={faultAsset > 0}
-                                                disabled={q?.completed}
-                                                className="form-control form-select"
-                                                name="likelihood"
-                                                value={q?.response?.likelihood}
-                                                onChange={(e) =>
-                                                  handleInputChange(e, idx)
-                                                }
-                                              >
-                                                <option value="">
-                                                  Select{" "}
-                                                </option>
-                                                {[1, 2, 3, 4, 5].map((num) => (
-                                                  <option value={num}>
-                                                    {num}{" "}
-                                                  </option>
-                                                ))}
-                                              </select>
-                                            </Grid>
-                                          </Grid>
-                                          <Grid item xs={12} sm={8}>
-                                            <Box
-                                              display="flex"
-                                              alignItems="center"
-                                              justifyContent="center"
-                                              p={2}
-                                              mb={2}
-                                              style={{
-                                                height: "290px",
-                                                marginTop: "-70px",
-                                              }}
-                                            >
-                                              <img
-                                                src="/RiskScore.png"
-                                                alt="Risk Score Matrix"
-                                                style={{
-                                                  width: "100%",
-                                                  height: "100%",
-                                                }}
-                                              />
-                                            </Box>
-                                          </Grid>
-                                        </Grid>
-                                      </Grid>
-                                    )}
-                                    {!q?.completed && (
-                                      <Grid item xs={12}>
-                                        <button
-                                          style={{
-                                            width: "150px",
-                                            marginBottom: "20px",
-                                            margin: "10px",
-                                            float: "right",
-                                          }}
-                                          className="btn btn-primary text-white pr-2"
-                                          disabled={
-                                            okAsset === 0 && faultAsset === 0
-                                          }
-                                          type="submit"
-                                        >
-                                          {isLoading ? (
-                                            <CircularProgress
-                                              sx={{ color: "white" }}
-                                            />
-                                          ) : (
-                                            "Save & Continue"
-                                          )}
-                                        </button>
-                                      </Grid>
-                                    )}
-                                    {/* {q?.completed && q?.response?.file && <Grid item xs={12}>
+                                                  {faultAsset > 0 && (
+                                                      <Grid item xs={12}>
+                                                        <Typography variant="h6" gutterBottom>
+                                                          Risk Score Card (
+                                                          <strong>
+                                                            Total Risk Score ={" "}
+                                                            {(q?.response?.consequence ?? 0) *
+                                                                (q?.response?.likelihood ?? 0)}
+                                                          </strong>
+                                                          )
+                                                        </Typography>
+                                                        <Grid container spacing={2}>
+                                                          <Grid item xs={12} sm={4}>
+                                                            <Grid item xs={12} sm={12}>
+                                                              <label
+                                                                  htmlFor="consequence"
+                                                                  name="consequence"
+                                                              >
+                                                                Consequence
+                                                              </label>
+                                                              <select
+                                                                  required={faultAsset > 0}
+                                                                  disabled={q?.completed}
+                                                                  className="form-control form-select"
+                                                                  name="consequence"
+                                                                  value={q?.response?.consequence}
+                                                                  onChange={(e) =>
+                                                                      handleInputChange(e, idx)
+                                                                  }
+                                                              >
+                                                                <option value="">
+                                                                  Select{" "}
+                                                                </option>
+                                                                {[1, 2, 3, 4, 5].map((num) => (
+                                                                    <option value={num}>
+                                                                      {num}{" "}
+                                                                    </option>
+                                                                ))}
+                                                              </select>
+                                                            </Grid>
+                                                            <Grid item xs={12} sm={12}>
+                                                              <label
+                                                                  htmlFor="likelihood"
+                                                                  name="likelihood"
+                                                              >
+                                                                Likelihood
+                                                              </label>
+                                                              <select
+                                                                  required={faultAsset > 0}
+                                                                  disabled={q?.completed}
+                                                                  className="form-control form-select"
+                                                                  name="likelihood"
+                                                                  value={q?.response?.likelihood}
+                                                                  onChange={(e) =>
+                                                                      handleInputChange(e, idx)
+                                                                  }
+                                                              >
+                                                                <option value="">
+                                                                  Select{" "}
+                                                                </option>
+                                                                {[1, 2, 3, 4, 5].map((num) => (
+                                                                    <option value={num}>
+                                                                      {num}{" "}
+                                                                    </option>
+                                                                ))}
+                                                              </select>
+                                                            </Grid>
+                                                          </Grid>
+                                                          <Grid item xs={12} sm={8}>
+                                                            <Box
+                                                                display="flex"
+                                                                alignItems="center"
+                                                                justifyContent="center"
+                                                                p={2}
+                                                                mb={2}
+                                                                style={{
+                                                                  height: "290px",
+                                                                  marginTop: "-70px",
+                                                                }}
+                                                            >
+                                                              <img
+                                                                  src="/RiskScore.png"
+                                                                  alt="Risk Score Matrix"
+                                                                  style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                  }}
+                                                              />
+                                                            </Box>
+                                                          </Grid>
+                                                        </Grid>
+                                                      </Grid>
+                                                  )}
+                                                  {!q?.completed && (
+                                                      <Grid item xs={12}>
+                                                        <button
+                                                            style={{
+                                                              width: "150px",
+                                                              marginBottom: "20px",
+                                                              margin: "10px",
+                                                              float: "right",
+                                                            }}
+                                                            className="btn btn-primary text-white pr-2"
+                                                            disabled={
+                                                                okAsset === 0 && faultAsset === 0
+                                                            }
+                                                            type="submit"
+                                                        >
+                                                          {isLoading ? (
+                                                              <CircularProgress
+                                                                  sx={{ color: "white" }}
+                                                              />
+                                                          ) : (
+                                                              "Save & Continue"
+                                                          )}
+                                                        </button>
+                                                      </Grid>
+                                                  )}
+                                                  {/* {q?.completed && q?.response?.file && <Grid item xs={12}>
                       <a href={q?.response?.file + "?" + sasToken} target="_blank">
                         <button
                           style={{ float: 'right' }}
@@ -1288,20 +1318,20 @@ const AssessmentFireRisk = ({
                           <i className="fas fa-download" />&nbsp;Download Attachment
                         </button>
                       </a></Grid>} */}
-                                  </Grid>
-                                </form>
-                              </AccordionDetails>
-                            )}
-                          </Accordion>
-                        );
-                      })}
-                  </div>
-                );
-              })}
-          </CardContent>
-        )}
-      </Card>
-    </Box>
+                                                </Grid>
+                                              </form>
+                                            </AccordionDetails>
+                                        )}
+                                      </Accordion>
+                                  );
+                                })}
+                          </div>
+                      );
+                    })}
+              </CardContent>
+          )}
+        </Card>
+      </Box>
   );
 };
 

@@ -65,8 +65,13 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
     }
     const res = await get(`api/site/actions/${siteSelectedForGlobal?.siteId}`);
     setActions(sortCompletedLast(res) || []);
-    const filtered = res.filter(action => action.status.toLowerCase() === status.toLowerCase());
-    setFilteredActions(sortCompletedLast(filtered));
+    // Only filter if status is provided
+    if (status) {
+      const filtered = res.filter(action => action.status.toLowerCase() === status.toLowerCase());
+      setFilteredActions(sortCompletedLast(filtered));
+    } else {
+      setFilteredActions(sortCompletedLast(res));
+    }
   };
   
   const [formData, setFormData] = useState({
@@ -100,7 +105,14 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
         (x) =>
           (String(x?.type)
             .toLowerCase()
-            .includes(String(searchField).toLowerCase()) ||
+            .includes(String(searchField).toLowerCase()
+            )
+              ||
+            (String(x?.actionId)
+                .toLowerCase()
+                .includes(String(searchField).toLowerCase())
+            )
+              ||
             String(x?.desc)
               .toLowerCase()
               .includes(String(searchField).toLowerCase())) &&
