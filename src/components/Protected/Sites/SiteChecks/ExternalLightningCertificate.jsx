@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/ExternalLightingCertificate.pdf';
+import RiskScoreCard from "./RiskScoreCard";
 
 let PDFLib;
 
@@ -109,7 +110,23 @@ const ExternalLightningCertificate = ({
   const [isFormEditable, setIsFormEditable] = useState(true);
   // Initialize with the checkId prop if available, otherwise null
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
-  
+
+  const [riskData, setRiskData] = useState({
+    consequence: null,
+    likelihood: null,
+    observation: "",
+    suggestedAction: "",
+    priority: null
+  });
+
+  const [showRiskCard, setShowRiskCard] = useState(false);
+  const calculatePriority = (score) => {
+    if (score > 17) return 9;
+    if (score > 10) return 7;
+    if (score > 5) return 5;
+    return 3;
+  };
+
   // Get the navigate function from react-router
   const navigate = useNavigate();
 
@@ -1368,38 +1385,95 @@ const ExternalLightningCertificate = ({
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <select
-                        className={`form-select ${
-                          validationErrors.param4 ? "is-invalid" : ""
-                        }`}
-                        value={formData.param4}
-                        onChange={(e) => {
-                          setFormData({
-                            ...formData,
-                            param4: e.target.value,
-                          });
-                          if (validationErrors.param4) {
-                            setValidationErrors((prev) => {
-                              const newErrors = { ...prev };
-                              delete newErrors.param4;
-                              return newErrors;
+                          className={`form-select ${
+                              validationErrors.param4 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param4}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param4: e.target.value,
                             });
-                          }
-                        }}
-                        disabled={isSubmitted}
+                            // Show risk card when "No" is selected
+                            if (e.target.value === "Fail") {
+                              setShowRiskCard(true);
+                            } else {
+                              setShowRiskCard(false);
+                            }
+                            if (validationErrors.param4) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param4;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
                       {validationErrors.param4 && (
-                        <div className="invalid-feedback">
-                          {validationErrors.param4}
-                        </div>
+                          <div className="invalid-feedback">
+                            {validationErrors.param4}
+                          </div>
                       )}
                     </td>
                   </tr>
                 </tbody>
               </table>
+              {showRiskCard && (
+                  <div className="card mt-4">
+                    <div className="card-header">
+                      <h5>Risk Assessment (Required for Non-Operational Fittings)</h5>
+                    </div>
+                    <div className="card-body">
+                      <RiskScoreCard
+                          consequence={riskData.consequence}
+                          likelihood={riskData.likelihood}
+                          observation={riskData.observation}
+                          suggestedAction={riskData.suggestedAction}
+                          priority={riskData.priority}
+                          onConsequenceChange={(e) => {
+                            const consequence = parseInt(e.target.value);
+                            setRiskData({
+                              ...riskData,
+                              consequence,
+                              priority: calculatePriority(consequence * (riskData.likelihood || 1))
+                            });
+                          }}
+                          onLikelihoodChange={(e) => {
+                            const likelihood = parseInt(e.target.value);
+                            setRiskData({
+                              ...riskData,
+                              likelihood,
+                              priority: calculatePriority((riskData.consequence || 1) * likelihood)
+                            });
+                          }}
+                          onObservationChange={(e) => {
+                            setRiskData({
+                              ...riskData,
+                              observation: e.target.value
+                            });
+                          }}
+                          onSuggestedActionChange={(e) => {
+                            setRiskData({
+                              ...riskData,
+                              suggestedAction: e.target.value
+                            });
+                          }}
+                          disabled={isSubmitted}
+                          siteId={siteSelectedForGlobal?.siteId}
+                          assignedTo={loggedInUserData?.id}
+                          createdBy={loggedInUserData?.id}
+                          onRiskAssessmentComplete={(response) => {
+                            toast.success("Risk assessment action raised successfully!");
+                          }}
+                      />
+                    </div>
+                  </div>
+              )}
             </div>
           </div>
         </div>
