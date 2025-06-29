@@ -101,6 +101,10 @@ const Actions = ({ siteSelectedForGlobal, deletePreAction, loggedInUserData }) =
           (String(x?.type)
             .toLowerCase()
             .includes(String(searchField).toLowerCase()) ||
+              (String(x?.actionId)
+                      .toLowerCase()
+                      .includes(String(searchField).toLowerCase())
+              ) ||
             String(x?.desc)
               .toLowerCase()
               .includes(String(searchField).toLowerCase())) &&

@@ -1,25 +1,26 @@
 import React, { useState } from "react";
 import { Grid, Typography, Box, Button, CircularProgress } from "@mui/material";
 import { toast } from "react-toastify";
-import {post, put} from "../../../../api"; // Adjust the import path as needed
+import {post, put} from "../../../../api";
+import moment from "moment"; // Adjust the import path as needed
 
 const RiskScoreCard = ({
                            consequence: initialConsequence,
+                           desc = "",
                            likelihood: initialLikelihood,
                            observation: initialObservation,
-                           suggestedAction: initialSuggestedAction,
+                           requiredAction: initialSuggestedAction,
                            disabled = false,
                            onRiskAssessmentComplete, // Optional callback when action is raised
                            siteId, // Required for API call
                            assignedTo, // Required for API call
                            createdBy, // Required for API call
-                           category = "External Lighting", // Default category
                        }) => {
     const [riskData, setRiskData] = useState({
         consequence: initialConsequence || null,
         likelihood: initialLikelihood || null,
         observation: initialObservation || "",
-        suggestedAction: initialSuggestedAction || "",
+        requiredAction: initialSuggestedAction || "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,7 +71,7 @@ const RiskScoreCard = ({
     const handleSuggestedActionChange = (e) => {
         setRiskData({
             ...riskData,
-            suggestedAction: e.target.value,
+            requiredAction: e.target.value,
         });
     };
 
@@ -92,15 +93,15 @@ const RiskScoreCard = ({
         try {
             const payload = {
                 siteId,
+                desc: `${desc} - ${moment(new Date()).format("DD/MM/YYYY")}`,
                 observation: riskData.observation,
-                suggestedAction: riskData.suggestedAction,
+                requiredAction: riskData.requiredAction,
                 consequence: riskData.consequence,
                 likelihood: riskData.likelihood,
                 totalRiskScore,
                 priority: currentPriority,
-                category,
                 type: "Safety Risk",
-                status: "Open",
+                status: "Reported",
                 assignedTo,
                 createdBy,
                 dueDate: calculateDueDate(totalRiskScore).toISOString(),
@@ -153,17 +154,16 @@ const RiskScoreCard = ({
             </Grid>
 
             <Grid item xs={12} md={6}>
-                <label htmlFor="suggestedAction" name="suggestedAction">
+                <label htmlFor="requiredAction" >
                     Suggested Action
                 </label>
                 <textarea
                     disabled={disabled}
-                    name="suggestedAction"
                     className="form-control"
                     id="suggestedAction"
                     rows="4"
                     placeholder="Enter suggested action..."
-                    value={riskData.suggestedAction}
+                    value={riskData.requiredAction}
                     onChange={(e) => handleSuggestedActionChange(e)}
                     style={{
                         width: "100%",

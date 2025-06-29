@@ -115,11 +115,14 @@ const ExternalLightningCertificate = ({
     consequence: null,
     likelihood: null,
     observation: "",
-    suggestedAction: "",
+    requiredAction: "",
     priority: null
   });
 
   const [showRiskCard, setShowRiskCard] = useState(false);
+  const [actionRaised, setActionRaised] = useState(false);
+
+
   const calculatePriority = (score) => {
     if (score > 17) return 9;
     if (score > 10) return 7;
@@ -1397,8 +1400,10 @@ const ExternalLightningCertificate = ({
                             // Show risk card when "No" is selected
                             if (e.target.value === "Fail") {
                               setShowRiskCard(true);
+                              setActionRaised(false); // Reset action raised state when showing risk card
                             } else {
                               setShowRiskCard(false);
+                              setActionRaised(true); // Consider action as raised when not showing risk card
                             }
                             if (validationErrors.param4) {
                               setValidationErrors((prev) => {
@@ -1433,7 +1438,8 @@ const ExternalLightningCertificate = ({
                           consequence={riskData.consequence}
                           likelihood={riskData.likelihood}
                           observation={riskData.observation}
-                          suggestedAction={riskData.suggestedAction}
+                          suggestedAction={riskData.requiredAction}
+                          desc="External Lighting"
                           priority={riskData.priority}
                           onConsequenceChange={(e) => {
                             const consequence = parseInt(e.target.value);
@@ -1469,6 +1475,7 @@ const ExternalLightningCertificate = ({
                           createdBy={loggedInUserData?.id}
                           onRiskAssessmentComplete={(response) => {
                             toast.success("Risk assessment action raised successfully!");
+                            setActionRaised(true); // Add this line to update the state when action is raised
                           }}
                       />
                     </div>
@@ -1551,7 +1558,7 @@ const ExternalLightningCertificate = ({
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={!isFormEditable || isLoading || isGeneratingPDF}
+                    disabled={!isFormEditable || isLoading || isGeneratingPDF || (showRiskCard && !actionRaised)}
                   >
                     {isLoading ? 'Submitting...' : 'Submit Report'}
                   </button>
