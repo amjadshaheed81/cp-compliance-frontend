@@ -84,7 +84,7 @@ const RiskScoreCard = ({
             toast.error("Please enter observation");
             return;
         }
-        if (!riskData.suggestedAction) {
+        if (!riskData.requiredAction) {
             toast.error("Please enter suggested action");
             return;
         }
