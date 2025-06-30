@@ -1487,13 +1487,13 @@ const ExternalLightningCertificate = ({
                               requiredAction: e.target.value
                             });
                           }}
-                          disabled={isSubmitted || actionRaised}
+                          disabled={isSubmitted}
                           siteId={siteSelectedForGlobal?.siteId}
                           assignedTo={loggedInUserData?.id}
                           createdBy={loggedInUserData?.id}
-                          onRiskAssessmentComplete={(response) => {
+                          onRiskAssessmentComplete={() => {
+                            setActionRaised(true);
                             toast.success("Risk assessment action raised successfully!");
-                            setActionRaised(true); // Add this line to update the state when action is raised
                           }}
                       />
                     </div>
@@ -1576,8 +1576,7 @@ const ExternalLightningCertificate = ({
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={!isFormEditable || isLoading || isGeneratingPDF || (showRiskCard && !actionRaised) ||
-                        (showRiskCard && (riskData.consequence === null || riskData.likelihood === null))} // Prevent if risk fields are empty}
+                    disabled={!isFormEditable || isLoading || isGeneratingPDF || (showRiskCard && !actionRaised)} // Prevent if risk fields are empty}
                   >
                     {isLoading ? 'Submitting...' : 'Submit Report'}
                   </button>

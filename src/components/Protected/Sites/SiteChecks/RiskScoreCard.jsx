@@ -78,7 +78,7 @@ const RiskScoreCard = ({
     };
 
     const handleRaiseAction = async () => {
-        if (!validateForm() || actionRaised) return; // Prevent if already raised
+        if (!validateForm() || actionRaised) return;
         setIsSubmitting(true);
         try {
             const payload = {
@@ -88,7 +88,7 @@ const RiskScoreCard = ({
                 requiredAction: riskData.requiredAction.trim(),
                 consequence: riskData.consequence,
                 likelihood: riskData.likelihood,
-                riskScore: totalRiskScore, // Send to API with correct field name
+                riskScore: totalRiskScore,
                 priority: currentPriority,
                 type: "Inspection",
                 status: "Reported",
@@ -98,9 +98,11 @@ const RiskScoreCard = ({
             };
 
             const response = await put("/api/site/actions", payload);
-            setActionRaised(true); // Mark as raised
+            setActionRaised(true);
+
+            // Call the parent callback
             if (onRiskAssessmentComplete) {
-                onRiskAssessmentComplete(response.data);
+                onRiskAssessmentComplete(response);
             }
         } catch (error) {
             console.error("Error raising risk assessment action:", error);
@@ -109,7 +111,6 @@ const RiskScoreCard = ({
             setIsSubmitting(false);
         }
     };
-
     return (
         <Grid container spacing={2}>
             <Grid item xs={12}>
