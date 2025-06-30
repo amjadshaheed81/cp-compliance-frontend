@@ -127,6 +127,8 @@ const ExternalLightningCertificate = ({
 
   const [showRiskCard, setShowRiskCard] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
+  const [latestAction, setLatestAction] = useState(null);
+  const [hasExistingAction, setHasExistingAction] = useState(false);
 
 
   const calculatePriority = (score) => {
@@ -216,12 +218,41 @@ const ExternalLightningCertificate = ({
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
         }));
+
+        if (mostRecentItem.param4 === "Fail") {
+          setShowRiskCard(true);
+          setActionRaised(true); // Mark as raised since we have existing data
+        }
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
       toast.error("Failed to load inspection data");
     }
   };
+
+  const fetchLatestAction = async () => {
+    try {
+      if (siteSelectedForGlobal?.siteId) {
+        const response = await get(`api/site/actions/${siteSelectedForGlobal.siteId}`);
+
+        // Filter and sort to get the most recent relevant action
+        const relevantActions = response
+            .filter(action =>
+                action.type === "Inspection" &&
+                action.desc.includes("External Lighting Testing") &&
+                action.siteId === siteSelectedForGlobal.siteId
+            )
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const foundAction = relevantActions[0] || null;
+        setLatestAction(foundAction);
+        setHasExistingAction(!!foundAction); // Set to true if action exists
+      }
+    } catch (error) {
+      console.error("Error fetching latest action:", error);
+    }
+  };
+
 
   const fetchFolderStructure = async (siteId) => {
     try {
@@ -326,6 +357,8 @@ const ExternalLightningCertificate = ({
           await fetchFolderStructure(siteSelectedForGlobal.siteId);
 
           await fetchInspectionData();
+
+          await fetchLatestAction();
 
           await fetchSiteCheckData();
 
@@ -1447,58 +1480,83 @@ const ExternalLightningCertificate = ({
                 </tbody>
               </table>
               {showRiskCard && (
-                  <div className="card mt-4">
-                    <div className="card-header">
-                      <h5>Risk Assessment (Required for Non-Operational Fittings)</h5>
-                    </div>
-                    <div className="card-body">
-                      <RiskScoreCard
-                          consequence={riskData.consequence}
-                          likelihood={riskData.likelihood}
-                          observation={riskData.observation}
-                          requiredAction={riskData.requiredAction}
-                          desc={`${checkDetails.type} - ${checkDetails.subType} - ${checkDetails.category}`}
-                          priority={riskData.priority}
-                          onConsequenceChange={(e) => {
-                            const consequence = parseInt(e.target.value);
-                            setRiskData({
-                              ...riskData,
-                              consequence,
-                              priority: calculatePriority(consequence * (riskData.likelihood || 1))
-                            });
-                          }}
-                          onLikelihoodChange={(e) => {
-                            const likelihood = parseInt(e.target.value);
-                            setRiskData({
-                              ...riskData,
-                              likelihood,
-                              priority: calculatePriority((riskData.consequence || 1) * likelihood)
-                            });
-                          }}
-                          onObservationChange={(e) => {
-                            setRiskData({
-                              ...riskData,
-                              observation: e.target.value
-                            });
-                          }}
-                          onSuggestedActionChange={(e) => {
-                            setRiskData({
-                              ...riskData,
-                              requiredAction: e.target.value
-                            });
-                          }}
-                          disabled={isSubmitted}
-                          siteId={siteSelectedForGlobal?.siteId}
-                          assignedTo={loggedInUserData?.id}
-                          createdBy={loggedInUserData?.id}
-                          onRiskAssessmentComplete={() => {
-                            setActionRaised(true);
-                            toast.success("Risk assessment action raised successfully!");
-                          }}
-                      />
-                    </div>
+                <div className="card mt-4">
+                  <div className="card-header">
+                    <h5>Non-Operational Fittings</h5>
                   </div>
-              )}
+                  <div className="card-body">
+                    {hasExistingAction ? (
+                        // Show only the existing action
+                        <div className="existing-action">
+                          <div className="alert alert-info mb-3">
+                            <i className="bi bi-info-circle me-2"></i>
+                            An existing action for this issue is already open.
+                          </div>
+
+                          <div className="p-3 border rounded bg-light">
+                            <div className="d-flex flex-wrap gap-4">
+                              <div>
+                                <strong>Observation:</strong>
+                                <div>{latestAction.observation || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <strong>Action Required:</strong>
+                                <div>{latestAction.requiredAction || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <strong>Risk Score:</strong>
+                                <span className={`badge ${
+                                    latestAction.riskScore > 17 ? 'bg-danger' :
+                                        latestAction.riskScore > 10 ? 'bg-warning' : 'bg-primary'
+                                }`}>
+                  {latestAction.riskScore}
+                </span>
+                              </div>
+                              <div>
+                                <strong>Status:</strong>
+                                <span className={`badge ${
+                                    latestAction.status === 'Completed' ? 'bg-success' :
+                                        latestAction.status === 'In Progress' ? 'bg-warning' : 'bg-danger'
+                                }`}>
+                  {latestAction.status}
+                </span>
+                              </div>
+                              <div>
+                                <strong>Due Date:</strong>
+                                <div className={new Date(latestAction.dueDate) < new Date() ? 'text-danger' : ''}>
+                                  {new Date(latestAction.dueDate).toLocaleDateString()}
+                                  {new Date(latestAction.dueDate) < new Date() && ' (Overdue)'}
+                                </div>
+                              </div>
+                            </div>
+
+
+                          </div>
+                        </div>
+                    ) : (
+                        // Show the RiskScoreCard only if no existing action
+                        <RiskScoreCard
+                            consequence={riskData.consequence}
+                            likelihood={riskData.likelihood}
+                            observation={riskData.observation}
+                            requiredAction={riskData.requiredAction}
+                            desc={`${checkDetails.type} - ${checkDetails.subType} - ${checkDetails.category}`}
+                            priority={riskData.priority}
+                            disabled={isSubmitted}
+                            siteId={siteSelectedForGlobal?.siteId}
+                            assignedTo={loggedInUserData?.id}
+                            createdBy={loggedInUserData?.id}
+                            onRiskAssessmentComplete={(newAction) => {
+                              setLatestAction(newAction);
+                              setHasExistingAction(true);
+                              setActionRaised(true);
+                              toast.success("Action raised successfully!");
+                            }}
+                        />
+                    )}
+                  </div>
+                </div>
+            )}
             </div>
           </div>
         </div>
@@ -1604,6 +1662,27 @@ const ExternalLightningCertificate = ({
           font-size: .875em;
           color: #dc3545;
         }
+        
+        .existing-action {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.existing-action .badge {
+  font-size: 0.9rem;
+  padding: 0.35em 0.65em;
+}
+
+.existing-action > div > div {
+  margin-bottom: 0.5rem;
+}
+
+.existing-action strong {
+  display: block;
+  color: #666;
+  font-size: 0.85rem;
+}
+        
         @media print {
           .print-hide {
             display: none !important;
