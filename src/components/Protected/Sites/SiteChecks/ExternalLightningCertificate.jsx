@@ -111,6 +111,12 @@ const ExternalLightningCertificate = ({
   // Initialize with the checkId prop if available, otherwise null
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
 
+  const [checkDetails, setCheckDetails] = useState({
+    type: '',
+    subType: '',
+    category: ''
+  });
+
   const [riskData, setRiskData] = useState({
     consequence: null,
     likelihood: null,
@@ -278,21 +284,33 @@ const ExternalLightningCertificate = ({
           const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
           if (response && response.length > 0) {
             const externalLightingCheck = response.find(
-              check => check.category === 'External Lighting' || check.subType === 'External Lighting'
+                check =>
+                    check.type === 'Inspection' &&
+                    check.subType === 'Electrical' &&
+                    check.category === 'External Lighting Testing'
             );
+
             
             if (externalLightingCheck) {
               setCurrentCheckId(externalLightingCheck.checkId);
               setCheckStatus(externalLightingCheck.status);
               setIsFormEditable(externalLightingCheck.status === 'Open');
+
+              setCheckDetails({
+                type: externalLightingCheck.type || 'Inspection',
+                subType: externalLightingCheck.subType || 'Electrical',
+                category: externalLightingCheck.category || 'External Lighting Testing'
+              });
             }
           }
         }
+
       } catch (error) {
         console.error('Error fetching site check data:', error);
         toast.error('Failed to load site check status');
       }
     };
+    console.log(`${checkDetails.type} - ${checkDetails.subType} - ${checkDetails.category}`)
 
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
@@ -1438,8 +1456,8 @@ const ExternalLightningCertificate = ({
                           consequence={riskData.consequence}
                           likelihood={riskData.likelihood}
                           observation={riskData.observation}
-                          suggestedAction={riskData.requiredAction}
-                          desc="External Lighting"
+                          requiredAction={riskData.requiredAction}
+                          desc={`${checkDetails.type} - ${checkDetails.subType} - ${checkDetails.category}`}
                           priority={riskData.priority}
                           onConsequenceChange={(e) => {
                             const consequence = parseInt(e.target.value);
@@ -1466,10 +1484,10 @@ const ExternalLightningCertificate = ({
                           onSuggestedActionChange={(e) => {
                             setRiskData({
                               ...riskData,
-                              suggestedAction: e.target.value
+                              requiredAction: e.target.value
                             });
                           }}
-                          disabled={isSubmitted}
+                          disabled={isSubmitted || actionRaised}
                           siteId={siteSelectedForGlobal?.siteId}
                           assignedTo={loggedInUserData?.id}
                           createdBy={loggedInUserData?.id}
@@ -1558,7 +1576,8 @@ const ExternalLightningCertificate = ({
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={!isFormEditable || isLoading || isGeneratingPDF || (showRiskCard && !actionRaised)}
+                    disabled={!isFormEditable || isLoading || isGeneratingPDF || (showRiskCard && !actionRaised) ||
+                        (showRiskCard && (riskData.consequence === null || riskData.likelihood === null))} // Prevent if risk fields are empty}
                   >
                     {isLoading ? 'Submitting...' : 'Submit Report'}
                   </button>

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Grid, Typography, Box, Button, CircularProgress } from "@mui/material";
+import React, { useState, useCallback } from "react";
+import { Grid, Typography, Box, Button, CircularProgress, FormControl, InputLabel, Select, MenuItem, TextareaAutosize } from "@mui/material";
 import { toast } from "react-toastify";
-import {post, put} from "../../../../api";
-import moment from "moment"; // Adjust the import path as needed
+import { put } from "../../../../api";
+import moment from "moment";
+import PropTypes from "prop-types";
 
 const RiskScoreCard = ({
                            consequence: initialConsequence,
@@ -11,10 +12,10 @@ const RiskScoreCard = ({
                            observation: initialObservation,
                            requiredAction: initialSuggestedAction,
                            disabled = false,
-                           onRiskAssessmentComplete, // Optional callback when action is raised
-                           siteId, // Required for API call
-                           assignedTo, // Required for API call
-                           createdBy, // Required for API call
+                           onRiskAssessmentComplete,
+                           siteId,
+                           assignedTo,
+                           createdBy,
                        }) => {
     const [riskData, setRiskData] = useState({
         consequence: initialConsequence || null,
@@ -22,101 +23,88 @@ const RiskScoreCard = ({
         observation: initialObservation || "",
         requiredAction: initialSuggestedAction || "",
     });
+
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [actionRaised, setActionRaised] = useState(false);
 
-    const totalRiskScore = (riskData.consequence || 0) * (riskData.likelihood || 0);
-
-    // Determine priority based on risk score
-    const calculatePriority = (score) => {
+    // Memoized calculation functions
+    const calculatePriority = useCallback((score) => {
         if (score > 17) return 9;
         if (score > 10) return 7;
         if (score > 5) return 5;
         return 3;
-    };
+    }, []);
 
+    const calculateDueDate = useCallback((riskScore) => {
+        const now = new Date();
+        if (riskScore > 17) return new Date(now.setDate(now.getDate() + 5));
+        if (riskScore > 10) return new Date(now.setDate(now.getDate() + 30));
+        if (riskScore > 5) return new Date(now.setDate(now.getDate() + 90));
+        return new Date(now.setDate(now.getDate() + 365));
+    }, []);
+
+    const totalRiskScore =
+        riskData.consequence !== null && riskData.likelihood !== null
+            ? riskData.consequence * riskData.likelihood
+            : 1;
     const currentPriority = calculatePriority(totalRiskScore);
 
-    // Calculate due date based on risk score
-    const calculateDueDate = (riskScore) => {
-        const now = new Date();
-        if (riskScore > 17) return new Date(now.setDate(now.getDate() + 5));  // <5 days
-        if (riskScore > 10) return new Date(now.setDate(now.getDate() + 30)); // <30 days
-        if (riskScore > 5) return new Date(now.setDate(now.getDate() + 90));  // <90 days
-        return new Date(now.setDate(now.getDate() + 365));                    // <365 days
+    // Handler functions
+    const handleInputChange = (field) => (e) => {
+        const value = field === 'consequence' || field === 'likelihood'
+            ? parseInt(e.target.value)
+            : e.target.value;
+
+        setRiskData(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
-    const handleConsequenceChange = (e) => {
-        const consequence = parseInt(e.target.value);
-        setRiskData({
-            ...riskData,
-            consequence,
-        });
-    };
-
-    const handleLikelihoodChange = (e) => {
-        const likelihood = parseInt(e.target.value);
-        setRiskData({
-            ...riskData,
-            likelihood,
-        });
-    };
-
-    const handleObservationChange = (e) => {
-        setRiskData({
-            ...riskData,
-            observation: e.target.value,
-        });
-    };
-
-    const handleSuggestedActionChange = (e) => {
-        setRiskData({
-            ...riskData,
-            requiredAction: e.target.value,
-        });
+    const validateForm = () => {
+        if (riskData.consequence === null || riskData.likelihood === null) {
+            toast.error("Please select both Consequence and Likelihood");
+            return false;
+        }
+        if (!riskData.observation.trim()) {
+            toast.error("Please enter Observation");
+            return false;
+        }
+        if (!riskData.requiredAction.trim()) {
+            toast.error("Please enter Required Action");
+            return false;
+        }
+        return true;
     };
 
     const handleRaiseAction = async () => {
-        if (!riskData.consequence || !riskData.likelihood) {
-            toast.error("Please select both consequence and likelihood");
-            return;
-        }
-        if (!riskData.observation) {
-            toast.error("Please enter observation");
-            return;
-        }
-        if (!riskData.requiredAction) {
-            toast.error("Please enter suggested action");
-            return;
-        }
-
+        if (!validateForm() || actionRaised) return; // Prevent if already raised
         setIsSubmitting(true);
         try {
             const payload = {
                 siteId,
                 desc: `${desc} - ${moment(new Date()).format("DD/MM/YYYY")}`,
-                observation: riskData.observation,
-                requiredAction: riskData.requiredAction,
+                observation: riskData.observation.trim(),
+                requiredAction: riskData.requiredAction.trim(),
                 consequence: riskData.consequence,
                 likelihood: riskData.likelihood,
-                totalRiskScore,
+                riskScore: totalRiskScore, // Send to API with correct field name
                 priority: currentPriority,
-                type: "Safety Risk",
+                type: "Inspection",
                 status: "Reported",
                 assignedTo,
                 createdBy,
-                dueDate: calculateDueDate(totalRiskScore).toISOString(),
+                dueDate: calculateDueDate(riskData.consequence * riskData.likelihood || 1).toISOString(),
             };
 
             const response = await put("/api/site/actions", payload);
-
-            toast.success("Risk assessment action raised successfully!");
-
+            setActionRaised(true); // Mark as raised
             if (onRiskAssessmentComplete) {
                 onRiskAssessmentComplete(response.data);
             }
         } catch (error) {
             console.error("Error raising risk assessment action:", error);
-            toast.error("Failed to raise action. Please try again.");
+            toast.error(error.response?.data?.message || "Failed to raise action. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -131,104 +119,103 @@ const RiskScoreCard = ({
             </Grid>
 
             <Grid item xs={12} md={6}>
-                <label htmlFor="observation" name="observation">
-                    Observation
-                </label>
-                <textarea
-                    disabled={disabled}
-                    name="observation"
-                    className="form-control"
-                    id="observation"
-                    rows="4"
-                    placeholder="Enter observation..."
-                    value={riskData.observation}
-                    onChange={(e) => handleObservationChange(e)}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        margin: "8px 0",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                    }}
-                />
+                <FormControl fullWidth>
+                    <InputLabel htmlFor="observation" shrink={!!riskData.observation} // Force label to shrink when content exists
+                                sx={{
+                                    position: 'absolute',
+                                    top: riskData.observation ? -8 : 8, // Adjust position
+                                    left: 10,
+                                    backgroundColor: riskData.observation ? 'background.paper' : 'transparent',
+                                    px: 1,
+                                    transition: 'all 0.2s ease-out'
+                                }}>Observation</InputLabel>
+                    <TextareaAutosize
+                        id="observation"
+                        minRows={4}
+                        value={riskData.observation}
+                        onChange={handleInputChange('observation')}
+                        disabled={disabled}
+                        style={{
+                            width: "100%",
+                            padding: "10px",
+                            margin: "8px 0",
+                            borderRadius: "4px",
+                            border: "1px solid #ccc",
+                            fontFamily: 'inherit',
+                        }}
+                    />
+                </FormControl>
             </Grid>
 
             <Grid item xs={12} md={6}>
-                <label htmlFor="requiredAction" >
-                    Suggested Action
-                </label>
-                <textarea
-                    disabled={disabled}
-                    className="form-control"
-                    id="suggestedAction"
-                    rows="4"
-                    placeholder="Enter suggested action..."
-                    value={riskData.requiredAction}
-                    onChange={(e) => handleSuggestedActionChange(e)}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        margin: "8px 0",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                    }}
-                />
+                <FormControl fullWidth>
+                    <InputLabel htmlFor="requiredAction" shrink={!!riskData.requiredAction} // Force label to shrink when content exists
+                                sx={{
+                                    position: 'absolute',
+                                    top: riskData.requiredAction ? -8 : 8, // Adjust position
+                                    left: 10,
+                                    backgroundColor: riskData.requiredAction ? 'background.paper' : 'transparent',
+                                    px: 1,
+                                    transition: 'all 0.2s ease-out'
+                                }}>Suggested Action</InputLabel>
+                    <TextareaAutosize
+                        id="requiredAction"
+                        minRows={4}
+                        value={riskData.requiredAction}
+                        onChange={handleInputChange('requiredAction')}
+                        disabled={disabled}
+                        style={{
+                            width: "100%",
+                            padding: "10px",
+                            margin: "8px 0",
+                            borderRadius: "4px",
+                            border: "1px solid #ccc",
+                            fontFamily: 'inherit',
+                        }}
+                    />
+                </FormControl>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-                <label htmlFor="consequence" name="consequence">
-                    Consequence
-                </label>
-                <select
-                    required
-                    disabled={disabled}
-                    className="form-control form-select"
-                    name="consequence"
-                    value={riskData.consequence || ""}
-                    onChange={handleConsequenceChange}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        margin: "8px 0",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                    }}
-                >
-                    <option value="">Select</option>
-                    {[1, 2, 3, 4, 5].map((num) => (
-                        <option key={`consequence-${num}`} value={num}>
-                            {num}
-                        </option>
-                    ))}
-                </select>
+                <FormControl fullWidth>
+                    <InputLabel id="consequence-label">Consequence</InputLabel>
+                    <Select
+                        labelId="consequence-label"
+                        id="consequence"
+                        value={riskData.consequence || ''}
+                        onChange={handleInputChange('consequence')}
+                        disabled={disabled}
+                        required
+                    >
+                        <MenuItem value=""><em>Select</em></MenuItem>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                            <MenuItem key={`consequence-${num}`} value={num}>
+                                {num}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-                <label htmlFor="likelihood" name="likelihood">
-                    Likelihood
-                </label>
-                <select
-                    required
-                    disabled={disabled}
-                    className="form-control form-select"
-                    name="likelihood"
-                    value={riskData.likelihood || ""}
-                    onChange={handleLikelihoodChange}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        margin: "8px 0",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                    }}
-                >
-                    <option value="">Select</option>
-                    {[1, 2, 3, 4, 5].map((num) => (
-                        <option key={`likelihood-${num}`} value={num}>
-                            {num}
-                        </option>
-                    ))}
-                </select>
+                <FormControl fullWidth>
+                    <InputLabel id="likelihood-label">Likelihood</InputLabel>
+                    <Select
+                        labelId="likelihood-label"
+                        id="likelihood"
+                        value={riskData.likelihood || ''}
+                        onChange={handleInputChange('likelihood')}
+                        disabled={disabled}
+                        required
+                    >
+                        <MenuItem value=""><em>Select</em></MenuItem>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                            <MenuItem key={`likelihood-${num}`} value={num}>
+                                {num}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -237,9 +224,11 @@ const RiskScoreCard = ({
                     alignItems="center"
                     justifyContent="center"
                     p={2}
-                    style={{
+                    sx={{
                         height: "100%",
                         minHeight: "150px",
+                        border: "1px solid #eee",
+                        borderRadius: 1,
                     }}
                 >
                     <img
@@ -254,47 +243,32 @@ const RiskScoreCard = ({
                 </Box>
             </Grid>
 
-            {/*<Grid item xs={12}>*/}
-            {/*    <Box mt={2}>*/}
-            {/*        <Typography variant="subtitle1">*/}
-            {/*            <strong>Priority: {currentPriority}</strong>*/}
-            {/*        </Typography>*/}
-            {/*        {currentPriority === 9 && (*/}
-            {/*            <Typography variant="body2" color="error">*/}
-            {/*                Immediate Action must be taken &lt; 5 days*/}
-            {/*            </Typography>*/}
-            {/*        )}*/}
-            {/*        {(currentPriority === 7 || currentPriority === 8) && (*/}
-            {/*            <Typography variant="body2" color="warning">*/}
-            {/*                Priority actions to be taken &lt; 30 days*/}
-            {/*            </Typography>*/}
-            {/*        )}*/}
-            {/*        {(currentPriority === 5 || currentPriority === 6) && (*/}
-            {/*            <Typography variant="body2" color="info">*/}
-            {/*                Action to be taken within a reasonable timescale &lt; 90 days*/}
-            {/*            </Typography>*/}
-            {/*        )}*/}
-            {/*        {currentPriority <= 4 && (*/}
-            {/*            <Typography variant="body2" color="textSecondary">*/}
-            {/*                Action when removal/upgrade work is undertaken &lt; 365 days*/}
-            {/*            </Typography>*/}
-            {/*        )}*/}
-            {/*    </Box>*/}
-            {/*</Grid>*/}
-
             <Grid item xs={12}>
                 <Button
                     variant="contained"
                     color="primary"
                     onClick={handleRaiseAction}
-                    disabled={disabled || isSubmitting}
+                    disabled={disabled || isSubmitting || actionRaised}
                     startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+                    sx={{ mt: 2 }}
                 >
-                    {isSubmitting ? "Raising Action..." : "Raise Action"}
-                </Button>
+                    {actionRaised ? "Action Raised" : (isSubmitting ? "Raising Action..." : "Raise Action")}                </Button>
             </Grid>
         </Grid>
     );
+};
+
+RiskScoreCard.propTypes = {
+    consequence: PropTypes.number,
+    desc: PropTypes.string,
+    likelihood: PropTypes.number,
+    observation: PropTypes.string,
+    requiredAction: PropTypes.string,
+    disabled: PropTypes.bool,
+    onRiskAssessmentComplete: PropTypes.func,
+    siteId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    assignedTo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    createdBy: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default RiskScoreCard;

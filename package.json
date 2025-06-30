@@ -38,6 +38,7 @@
     "papaparse": "^5.5.2",
     "pdf-lib": "^1.17.1",
     "pizzip": "^3.2.0",
+    "prop-types": "^15.8.1",
     "qrcode": "^1.5.4",
     "qrcode.react": "^3.1.0",
     "react": "^18.2.0",
