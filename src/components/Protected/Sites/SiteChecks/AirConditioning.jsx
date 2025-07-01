@@ -71,7 +71,8 @@ const AirConditioning = ({
     position: "",
     floor: "",
     room: "",
-    serialNo: "",
+    serialNumber: "",
+    assetName:"",
     report: "",
     param1: "", // jobComplete
     param2: "", // partsRequired
@@ -170,6 +171,16 @@ const AirConditioning = ({
             (user) => user.id === mostRecentItem.siteContact
         );
 
+        // Fetch action data if actionId exists
+        let existingAction = null;
+        if (mostRecentItem.actionId) {
+          existingAction = await fetchActionById(mostRecentItem.actionId);
+          if (existingAction) {
+            setExistingAction(existingAction);
+            setActionRaised(true);
+          }
+        }
+
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
@@ -183,7 +194,8 @@ const AirConditioning = ({
           position: mostRecentItem.position || prev.position,
           floor: mostRecentItem.floor || prev.floor,
           room: mostRecentItem.room || prev.room,
-          serialNo: mostRecentItem.serialNo || prev.serialNo,
+          assetName: mostRecentItem.assetName || prev.assetName,
+          serialNumber: mostRecentItem.serialNumber || prev.serialNumber,
           report: mostRecentItem.report || prev.report,
           param1: mostRecentItem.param1 || prev.param1,
           param2: mostRecentItem.param2 || prev.param2,
@@ -216,11 +228,10 @@ const AirConditioning = ({
       toast.error("Failed to load inspection data");
     }
   };
-
-  const fetchActionById = async (actionId) => {
+  const fetchActionById = async (id) => {
     try {
-      if (!actionId) return null;
-      const response = await get(`/api/site/actions/id/${actionId}`);
+      if (!id) return null;
+      const response = await get(`/api/site/actions/id/${id}`);
       return response;
     } catch (error) {
       console.error("Error fetching action:", error);
@@ -230,6 +241,7 @@ const AirConditioning = ({
 
   const fetchExistingActions = async () => {
     try {
+      // If we already have an actionId in form data, use that
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
         if (action) {
@@ -239,10 +251,12 @@ const AirConditioning = ({
         }
       }
 
+      // Otherwise look for related actions
       if (!siteSelectedForGlobal?.siteId) return;
 
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
+        // Find actions related to this inspection
         const relevantActions = response.filter(action =>
             action.desc.includes('Air Conditioning') ||
             action.type === 'Inspection'
@@ -256,6 +270,7 @@ const AirConditioning = ({
           setExistingAction(mostRecentAction);
           setActionRaised(true);
 
+          // Update formData with the actionId if not already set
           if (mostRecentAction.actionId && !formData.actionId) {
             setFormData(prev => ({
               ...prev,
@@ -268,7 +283,6 @@ const AirConditioning = ({
       console.error("Error fetching existing actions:", error);
     }
   };
-
   const fetchFolderStructure = async (siteId) => {
     try {
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -317,6 +331,7 @@ const AirConditioning = ({
   };
 
   useEffect(() => {
+    // Enhance the status check in your fetchSiteCheckData function
     const fetchSiteCheckData = async () => {
       try {
         if (siteSelectedForGlobal?.siteId) {
@@ -329,7 +344,12 @@ const AirConditioning = ({
             if (airConditioningCheck) {
               setCurrentCheckId(airConditioningCheck.checkId);
               setCheckStatus(airConditioningCheck.status);
-              setIsFormEditable(airConditioningCheck.status === 'Open');
+              // More explicit status check
+              setIsFormEditable(airConditioningCheck.status === 'Open' || airConditioningCheck.status === 'In Progress');
+              // Ensure form is locked if already completed
+              if (airConditioningCheck.status === 'Done') {
+                setIsSubmitted(true);
+              }
             }
           }
         }
@@ -349,8 +369,10 @@ const AirConditioning = ({
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+
           await fetchInspectionData();
+          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+
           await fetchSiteCheckData();
 
           if (formData.actionId) {
@@ -410,37 +432,28 @@ const AirConditioning = ({
   ]);
 
   useEffect(() => {
-    const hasFailures = [
-      formData.param1, formData.param2, formData.param3, formData.param4,
-      formData.param5, formData.param6, formData.param7, formData.param8,
-      formData.param9, formData.param10
-    ].some(val => val === "Fail" || val === "No");
+    // Only show risk assessment if Parts Required (param2) is "Yes" (Pass)
+    const showRisk = formData.param2 === "Pass";
+    setShowRiskAssessment(showRisk);
 
-    setShowRiskAssessment(hasFailures);
-    if (!hasFailures) {
+    if (!showRisk) {
       setActionRaised(false);
     }
-  }, [
-    formData.param1, formData.param2, formData.param3, formData.param4,
-    formData.param5, formData.param6, formData.param7, formData.param8,
-    formData.param9, formData.param10
-  ]);
+  }, [formData.param2]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      const completeAction = await fetchActionById(actionResponse.actionId);
+      // Update state immediately with the new action
+      setActionRaised(true);
+      setExistingAction(actionResponse);
 
-      if (completeAction) {
-        setActionRaised(true);
-        setExistingAction(completeAction);
-        setFormData(prev => ({
-          ...prev,
-          actionId: completeAction.actionId
-        }));
-        toast.success(`Action #${completeAction.actionId} raised successfully`);
-      } else {
-        toast.error("Failed to fetch complete action details");
-      }
+      // Update formData with the new actionId
+      setFormData(prev => ({
+        ...prev,
+        actionId: actionResponse.actionId
+      }));
+
+      toast.success(`Action #${actionResponse.actionId} raised successfully`);
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
       toast.error("Failed to process action completion");
@@ -647,23 +660,17 @@ const AirConditioning = ({
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
 
-      const fields = form.getFields();
-      fields.forEach(field => {
+      // Debug: Log all field names
+      console.log('PDF Form Fields:');
+      form.getFields().forEach((field, i) => {
         try {
-          console.log(`Field: ${field.getName()}, Type: ${field.constructor.name}`);
+          const name = field.getName();
+          const type = field.constructor.name;
+          console.log(`${i + 1}. ${name} (${type})`);
         } catch (error) {
-          console.warn('Error getting field name:', error);
+          console.warn('Error getting field info:', error);
         }
       });
-
-      const convertPassFail = (value) => {
-        if (typeof value === 'string') {
-          const lower = value.toLowerCase();
-          if (lower === 'pass') return 'Yes';
-          if (lower === 'fail') return 'No';
-        }
-        return value || '';
-      };
 
       const setTextField = (fieldName, value, fontSize = 10) => {
         try {
@@ -677,11 +684,9 @@ const AirConditioning = ({
             } catch (e) {
               console.warn(`Could not set font size for ${fieldName}:`, e);
             }
-          } else {
-            console.warn(`Field not found: ${fieldName}`);
           }
         } catch (error) {
-          console.warn(`Error setting field ${fieldName}:`, error.message);
+          console.warn(`Error setting text field ${fieldName}:`, error);
         }
       };
 
@@ -689,118 +694,90 @@ const AirConditioning = ({
         try {
           const field = form.getCheckBox(fieldName);
           if (field) {
-            field.setValue(!!isChecked);
-          } else {
-            console.warn(`Checkbox not found: ${fieldName}`);
+            field.check(isChecked);
           }
         } catch (error) {
-          console.warn(`Error setting checkbox ${fieldName}:`, error.message);
+          console.warn(`Error setting checkbox ${fieldName}:`, error);
         }
       };
 
-      const smallFont = 10;
+      const smallFont = 8;
       const mediumFont = 10;
 
-      const addressLines = (formData.address || '').split(',');
-      setTextField('AddressLine1', addressLines[0] || '', mediumFont);
-      setTextField('AddressLine2', addressLines[1] || '', mediumFont);
-      setTextField('city', addressLines[2] || '', mediumFont);
-      setTextField('postalCode', addressLines[3] || '', mediumFont);
-      setTextField('country', addressLines[4] || '', mediumFont);
+      // Address and contact information
+      setTextField('Address', formData.address || '', mediumFont);
+      setTextField('Date', formatDate(formData.inspectionDate), mediumFont);
+      setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', mediumFont);
+      setTextField('Site Contact No', formData.siteContactNo || '', mediumFont);
+      setTextField('Job No', formData.job || '', mediumFont);
 
-      const siteContactName = formData.siteContactUser?.name || formData.siteContact || '';
-      setTextField('siteContract', siteContactName, mediumFont);
-      setTextField('contactNo', formData.siteContactNo || '', mediumFont);
-      setTextField('jobNo', formData.job || '', mediumFont);
-
-      const formatDateString = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
-      };
-
-      const formattedDate = formatDateString(formData.inspectionDate);
-      setTextField('Date', formattedDate, mediumFont);
-
-      // Asset Information
+      // Equipment information
       setTextField('Manufacturer', formData.manufacturer || '', smallFont);
-      setTextField('ModelNumber', formData.modelNumber || '', smallFont);
-      setTextField('SerialNumber', formData.serialNo || '', smallFont);
-      setTextField('Position', formData.position || '', smallFont);
-      setTextField('Floor', formData.floor || '', smallFont);
-      setTextField('Room', formData.room || '', smallFont);
+      setTextField('Model Number', formData.modelNumber || '', smallFont);
+      setTextField('Serial Number', formData.serialNumber || '', smallFont);
+      setTextField('Equipment Details & Location',
+          [formData.floor, formData.room, formData.position, formData.assetName]
+              .filter(Boolean)
+              .join(' - '),
+          smallFont
+      );
 
-      // Service Items
-      setTextField('JobComplete', convertPassFail(formData.param1));
-      setTextField('PartsRequired', convertPassFail(formData.param2));
-      setTextField('FGasCheck', convertPassFail(formData.param3));
-      setTextField('FiltersCleaned', convertPassFail(formData.param4));
-      setTextField('IndoorCoilCleaned', convertPassFail(formData.param5));
-      setTextField('OutdoorCoilCleaned', convertPassFail(formData.param6));
-      setTextField('SystemLeakCheck', convertPassFail(formData.param7));
-      setTextField('DrainPumpTest', convertPassFail(formData.param8));
-      setTextField('ElectricalConnectionsCheck', convertPassFail(formData.param9));
-      setTextField('TemperatureChecks', convertPassFail(formData.param10));
+      // Service checkboxes
+      setCheckbox('Job Complete', formData.param1 === "Pass");
+      setCheckbox('Parts Required', formData.param2 === "Pass");
+      setCheckbox('F Gas Check Complete', formData.param3 === "Pass");
+      setCheckbox('Filters Cleaned', formData.param4 === "Pass");
+      setCheckbox('Indoor Coil Cleaned', formData.param5 === "Pass");
+      setCheckbox('Outdoor Coil Cleaned', formData.param6 === "Pass");
+      setCheckbox('System Leak Check', formData.param7 === "Pass");
+      setCheckbox('Drain / Pump Test', formData.param8 === "Pass");
+      setCheckbox('Electrical Connections Check', formData.param9 === "Pass");
+      setCheckbox('Temperature Checks', formData.param10 === "Pass");
 
-      // Materials Used
+      // Materials used
       setTextField('OFN', formData.param1Remark || '', smallFont);
       setTextField('Welding', formData.param2Remark || '', smallFont);
-      setTextField('Refrigerant', formData.param3Remark || '', smallFont);
-      setTextField('ReclaimCylinder', formData.param4Remark || '', smallFont);
-      setTextField('CleaningChemicals', formData.param5Remark || '', smallFont);
-      setTextField('AirSpray', formData.param6Remark || '', smallFont);
+      setTextField('Refridgerant', formData.param3Remark || '', smallFont);
+      setTextField('Reclaim Cylinder', formData.param4Remark || '', smallFont);
+      setTextField('Cleaning Chemicals', formData.param5Remark || '', smallFont);
+      setTextField('Air Spray', formData.param6Remark || '', smallFont);
 
-      setTextField('EngineersReport', formData.report || '', smallFont);
+      // Report
+      setTextField('Engineers Report', formData.report || '', smallFont);
 
+      // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
-      const engineer = users?.find(u => u.id === formData.engineer);
-      const engineerName = engineer?.name || formData.engineer || '';
+      const engineerName = formData.user?.name || '';
 
-      setTextField('ClientsName', clientName, mediumFont);
-      setTextField('EngineersName', engineerName, mediumFont);
+      setTextField('Clients Name', clientName, mediumFont);
+      setTextField('Engineers Name', engineerName, mediumFont);
+      setTextField('on', formatDate(formData.signedDate), mediumFont);
+      setTextField('on_2', formatDate(formData.signedDate), mediumFont);
 
-      setTextField('on', formattedDate, mediumFont);
-      setTextField('on_2', formattedDate, mediumFont);
-      setTextField('Address', addressLines[0] || '', mediumFont);
-
-      try {
-        form.flatten();
-      } catch (error) {
-        console.warn('Error flattening form:', error.message);
-      }
-
+      // Flatten and save
+      form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `AirConditioningReport.pdf`;
+      const fileName = `AirConditioningReport_${formatDate(formData.inspectionDate)}.pdf`;
 
       setGeneratedPdfBlob(blob);
-      const savedToPublic = await savePdfToPublic(blob, fileName);
+      setShowPdfButton(true);
 
-      let uploadedToServer = false;
-      if (uploadToServer && savedToPublic) {
-        uploadedToServer = await uploadPdfToServer(blob, fileName);
-      } else if (savedToPublic) {
-        saveAs(blob, fileName);
+      if (uploadToServer) {
+        await uploadPdfToServer(blob, fileName);
       }
 
-      if (savedToPublic && (!uploadToServer || uploadedToServer)) {
-        toast.success('PDF generated successfully!');
-        setShowPdfButton(true);
-      }
-
+      toast.success('PDF generated successfully!');
       return { success: true, fileName };
+
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to generate PDF');
       return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted');
@@ -818,6 +795,10 @@ const AirConditioning = ({
 
     if (hasFailures && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+    if (formData.param2 === "Pass" && !actionRaised) {
+      toast.error("Parts are required - please complete the risk assessment");
       return;
     }
 
@@ -1117,12 +1098,13 @@ const AirConditioning = ({
       ...prev,
       assetId: newValue ? newValue.assetId : "",
       selectedAsset: newValue,
+      assetName: newValue ? newValue.assetName : "",
       manufacturer: newValue ? newValue.manufacturer : "",
       modelNumber: newValue ? newValue.model : "",
       position: newValue ? newValue.position : "",
       floor: newValue ? newValue.floor : "",
       room: newValue ? newValue.room : "",
-      serialNo: newValue ? newValue.serialNumber : "",
+      serialNumber: newValue ? newValue.serialNumber : "",
     }));
   };
 
@@ -1282,8 +1264,8 @@ const AirConditioning = ({
                         <input
                             type="text"
                             className="form-control"
-                            name="serialNo"
-                            value={formData.serialNo}
+                            name="serialNumber"
+                            value={formData.serialNumber}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1776,16 +1758,22 @@ const AirConditioning = ({
                     </div>
 
                     <div>
-                      <label className="form-label fw-bold">Refrigerant</label>
-                      <input
-                          type="text"
-                          className="form-control"
+                      <label className="form-label fw-bold">Refrigerant </label>
+                      <select
+                          className="form-select"
                           value={formData.param3Remark}
                           onChange={(e) =>
-                              setFormData({ ...formData, param3Remark: e.target.value })
+                              setFormData({
+                                ...formData,
+                                param3Remark: e.target.value,
+                              })
                           }
                           disabled={isSubmitted}
-                      />
+                      >
+                        <option value="">Select</option>
+                        <option value="Yes">Type</option>
+                        <option value="No">Quant</option>
+                      </select>
                     </div>
                     <div>
                       <label className="form-label fw-bold">
@@ -1836,53 +1824,52 @@ const AirConditioning = ({
                   </div>
                 </div>
               </div>
-
-              {showRiskAssessment && (
-                  <div className="card mb-4">
-                    <div className="card-header">
-                      <h5 className="mb-0">Risk Assessment</h5>
-                      {existingAction && (
-                          <span className="badge bg-success ms-2">
-                      Action #{existingAction.actionId} - {existingAction.status}
-                    </span>
-                      )}
-                    </div>
-                    <div className="card-body">
-                      {existingAction ? (
-                          <div className="existing-action">
-                            <div className="row">
-                              <div className="col-md-6">
-                                <p><strong>Observation:</strong> {existingAction.observation}</p>
-                                <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
-                                <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
-                              </div>
-                              <div className="col-md-6">
-                                <p><strong>Priority:</strong> {existingAction.priority}</p>
-                                <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
-                                <p><strong>Status:</strong> {existingAction.status}</p>
-                              </div>
-                            </div>
-                            {existingAction.comments && (
-                                <div className="mt-3">
-                                  <h6>Comments:</h6>
-                                  <p>{existingAction.comments}</p>
-                                </div>
-                            )}
-                          </div>
-                      ) : (
-                          <RiskScoreCard
-                              desc={`Inspection - Mechanical - Air Conditioning - ${formatDate(formData.inspectionDate)}`}
-                              siteId={siteSelectedForGlobal?.siteId}
-                              assignedTo={loggedInUserData?.id}
-                              createdBy={loggedInUserData?.id}
-                              onRiskAssessmentComplete={handleRiskAssessmentComplete}
-                              actionRaised={actionRaised}
-                          />
-                      )}
-                    </div>
-                  </div>
-              )}
             </div>
+            {showRiskAssessment && (
+                <div className="card mb-4">
+                  <div className="card-header">
+                    <h5 className="mb-0">Risk Assessment</h5>
+                    {existingAction && (
+                        <span className="badge bg-success ms-2">
+          Action #{existingAction.actionId} - {existingAction.status}
+        </span>
+                    )}
+                  </div>
+                  <div className="card-body">
+                    {existingAction ? (
+                        <div className="existing-action">
+                          <div className="row">
+                            <div className="col-md-6">
+                              <p><strong>Observation:</strong> {existingAction.observation}</p>
+                              <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                              <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                            </div>
+                            <div className="col-md-6">
+                              <p><strong>Description: </strong> {existingAction.desc}</p>
+                              <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                              <p><strong>Status:</strong> {existingAction.status}</p>
+                            </div>
+                          </div>
+                          {existingAction.comments && (
+                              <div className="mt-3">
+                                <h6>Comments:</h6>
+                                <p>{existingAction.comments}</p>
+                              </div>
+                          )}
+                        </div>
+                    ) : (
+                        <RiskScoreCard
+                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service - ${formatDate(formData.inspectionDate)}`}
+                            siteId={siteSelectedForGlobal?.siteId}
+                            assignedTo={loggedInUserData?.id}
+                            createdBy={loggedInUserData?.id}
+                            onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                            actionRaised={actionRaised}
+                        />
+                    )}
+                  </div>
+                </div>
+            )}
           </div>
 
           <div className="row mt-4">
