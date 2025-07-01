@@ -22,7 +22,7 @@ const DashboardNotification = ({siteSelectedForGlobal, loggedInUserData}) => {
       const actions = await get(
         `/api/user/notification/${loggedInUserData?.id}/site/${siteSelectedForGlobal?.siteId}`
       );
-      setNotification(actions?.length > 100 ? actions?.slice(0, 100) : actions);
+      setNotification(actions?.length > 1000 ? actions?.slice(0, 1000) : actions);
     }
   };
 
@@ -36,7 +36,7 @@ const DashboardNotification = ({siteSelectedForGlobal, loggedInUserData}) => {
         <div className="card-body p-2">
           <div className="d-flex bd-highlight p-0">
             <div className="bd-highlight">
-              <h5 className="card-title">Notification - {siteSelectedForGlobal?.siteName}</h5>
+              <h5 className="card-title">Notification</h5>
             </div>
             <div className="ms-auto bd-highlight">
               <button
