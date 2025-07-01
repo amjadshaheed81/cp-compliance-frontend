@@ -16,6 +16,7 @@ const RiskScoreCard = ({
                            siteId,
                            assignedTo,
                            createdBy,
+                           actionRaised,
                        }) => {
     const [riskData, setRiskData] = useState({
         consequence: initialConsequence || null,
@@ -25,7 +26,6 @@ const RiskScoreCard = ({
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [actionRaised, setActionRaised] = useState(false);
 
     // Memoized calculation functions
     const calculatePriority = useCallback((score) => {
@@ -98,7 +98,6 @@ const RiskScoreCard = ({
             };
 
             const response = await put("/api/site/actions", payload);
-            setActionRaised(true);
 
             // Call the parent callback
             if (onRiskAssessmentComplete) {
