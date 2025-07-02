@@ -1902,7 +1902,7 @@ const AirConditioning = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service - ${formatDate(formData.inspectionDate)}`}
+                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service - `}
                             siteId={siteSelectedForGlobal?.siteId}
                             assignedTo={loggedInUserData?.id}
                             createdBy={loggedInUserData?.id}
