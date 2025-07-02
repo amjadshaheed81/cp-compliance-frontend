@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { get, post } from "../../../../api";
+import {get, post, put} from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -17,6 +17,7 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/AirConditioningCertificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
+import moment from "moment";
 
 let PDFLib;
 
@@ -344,8 +345,8 @@ const AirConditioning = ({
             if (airConditioningCheck) {
               setCurrentCheckId(airConditioningCheck.checkId);
               setCheckStatus(airConditioningCheck.status);
-              // More explicit status check
-              setIsFormEditable(airConditioningCheck.status === 'Open' || airConditioningCheck.status === 'In Progress');
+              setIsFormEditable(airConditioningCheck.status === 'Open');
+
               // Ensure form is locked if already completed
               if (airConditioningCheck.status === 'Done') {
                 setIsSubmitted(true);
@@ -441,19 +442,67 @@ const AirConditioning = ({
     }
   }, [formData.param2]);
 
+
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      // Update state immediately with the new action
+      console.log("Action response received:", actionResponse); // Debug log
+
+      if (!actionResponse?.actionId) {
+        console.error("Invalid action response:", actionResponse);
+        throw new Error("Invalid action response received");
+      }
+
       setActionRaised(true);
       setExistingAction(actionResponse);
 
-      // Update formData with the new actionId
-      setFormData(prev => ({
-        ...prev,
+      const updatedFormData = {
+        ...formData,
         actionId: actionResponse.actionId
-      }));
+      };
 
-      toast.success(`Action #${actionResponse.actionId} raised successfully`);
+      setFormData(updatedFormData);
+
+      console.log("Updating inspection with actionId:", actionResponse.actionId); // Debug log
+
+      if (currentCheckId) {
+        // First check if inspection exists
+        try {
+          const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+
+          const inspectionPayload = {
+            ...updatedFormData,
+            checkId: currentCheckId,
+            actionId: actionResponse.actionId,
+            siteId: siteSelectedForGlobal?.siteId,
+            assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
+            client: updatedFormData.clientUser?.id || updatedFormData.client,
+            engineer: updatedFormData.engineer,
+            siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
+            type: 'Inspection',
+            subType: 'Air Conditioning',
+            category: 'Air Conditioning Service'
+          };
+
+          if (!existingInspections || existingInspections.length === 0) {
+            // Create new inspection if none exists
+            await post(
+                `/api/site-check/generic-inspection`,
+                inspectionPayload
+            );
+          } else {
+            // Update existing inspection
+            await put(
+                `/api/site-check/generic-inspection/${currentCheckId}`,
+                inspectionPayload
+            );
+          }
+
+          toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
+        } catch (error) {
+          console.error("Error handling inspection record:", error);
+          throw error;
+        }
+      }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
       toast.error("Failed to process action completion");
@@ -538,6 +587,10 @@ const AirConditioning = ({
       return { exists: false, file: null };
     }
   };
+
+  const dateFormat = (date) => {
+    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  }
 
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
@@ -705,34 +758,51 @@ const AirConditioning = ({
       const mediumFont = 10;
 
       // Address and contact information
-      setTextField('Address', formData.address || '', mediumFont);
-      setTextField('Date', formatDate(formData.inspectionDate), mediumFont);
+      const addressLines = (formData.address || '').split(',');
+      setTextField('Address', addressLines[0] || '', mediumFont);
+      setTextField('Address_2', addressLines[1] || '', mediumFont);
+      setTextField('Address_3', addressLines[2] || '', mediumFont);
+      setTextField('Address_4', addressLines[3] || '', mediumFont);
+      setTextField('Address_4', addressLines[4] || '', mediumFont);
+
+
+      setTextField('Date', dateFormat(formData.inspectionDate), mediumFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', mediumFont);
       setTextField('Site Contact No', formData.siteContactNo || '', mediumFont);
       setTextField('Job No', formData.job || '', mediumFont);
 
-      // Equipment information
-      setTextField('Manufacturer', formData.manufacturer || '', smallFont);
-      setTextField('Model Number', formData.modelNumber || '', smallFont);
-      setTextField('Serial Number', formData.serialNumber || '', smallFont);
-      setTextField('Equipment Details & Location',
-          [formData.floor, formData.room, formData.position, formData.assetName]
-              .filter(Boolean)
-              .join(' - '),
-          smallFont
-      );
 
+      const equipmentDetailsLocation = [
+        formData.floor,
+        formData.room,
+        formData.position,
+        formData.assetName
+      ].filter(Boolean).join(' - ');
+
+      // Equipment information
+      setTextField('Manufacturer', formData.manufacturer || '', mediumFont);
+      setTextField('Model Number', formData.modelNumber || '', mediumFont);
+      setTextField('Serial Number', formData.serialNumber || '', mediumFont);
+      setTextField('Equipment Details Location', equipmentDetailsLocation || '', mediumFont);
+
+
+      const mapPassFailToYesNo = (value) => {
+        if (value === "Pass") return "Yes";
+        if (value === "Fail") return "No";
+        return ""; // or whatever default you want for empty values
+      };
       // Service checkboxes
-      setCheckbox('Job Complete', formData.param1 === "Pass");
-      setCheckbox('Parts Required', formData.param2 === "Pass");
-      setCheckbox('F Gas Check Complete', formData.param3 === "Pass");
-      setCheckbox('Filters Cleaned', formData.param4 === "Pass");
-      setCheckbox('Indoor Coil Cleaned', formData.param5 === "Pass");
-      setCheckbox('Outdoor Coil Cleaned', formData.param6 === "Pass");
-      setCheckbox('System Leak Check', formData.param7 === "Pass");
-      setCheckbox('Drain / Pump Test', formData.param8 === "Pass");
-      setCheckbox('Electrical Connections Check', formData.param9 === "Pass");
-      setCheckbox('Temperature Checks', formData.param10 === "Pass");
+      setTextField('Job Complete', mapPassFailToYesNo(formData.param1) || '', mediumFont);
+      setTextField('Parts Required', mapPassFailToYesNo(formData.param2) || '', mediumFont);
+      setTextField('F Gas Check Complete', mapPassFailToYesNo(formData.param3) || '', mediumFont);
+      setTextField('Filters Cleaned', mapPassFailToYesNo(formData.param4) || '', mediumFont);
+      setTextField('Indoor Coil Cleaned', mapPassFailToYesNo(formData.param5) || '', mediumFont);
+      setTextField('Outdoor Coil Cleaned', mapPassFailToYesNo(formData.param6) || '', mediumFont);
+      setTextField('System Leak Check', mapPassFailToYesNo(formData.param7) || '', mediumFont);
+      setTextField('Drain  Pump Test', mapPassFailToYesNo(formData.param8) || '', mediumFont);
+      setTextField('Electrical Connections Check', mapPassFailToYesNo(formData.param9) || '', mediumFont);
+      setTextField('Temperature Checks', mapPassFailToYesNo(formData.param10) || '', mediumFont);
+
 
       // Materials used
       setTextField('OFN', formData.param1Remark || '', smallFont);
@@ -751,8 +821,8 @@ const AirConditioning = ({
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', formatDate(formData.signedDate), mediumFont);
-      setTextField('on_2', formatDate(formData.signedDate), mediumFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -787,11 +857,10 @@ const AirConditioning = ({
       return;
     }
 
+    // Validation checks
     const hasFailures = [
-      formData.param1, formData.param2, formData.param3, formData.param4,
-      formData.param5, formData.param6, formData.param7, formData.param8,
-      formData.param9, formData.param10
-    ].some(val => val === "Fail" || val === "No");
+      formData.param2
+    ].some(val => val === "Pass" || val === "Yes");
 
     if (hasFailures && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
@@ -807,6 +876,7 @@ const AirConditioning = ({
       return;
     }
 
+    // Form validation
     const errors = {};
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
@@ -831,13 +901,11 @@ const AirConditioning = ({
       const effectiveCheckId = currentCheckId || checkId;
 
       if (!effectiveCheckId) {
-        console.error('Cannot submit: No check ID available');
         throw new Error('No inspection check found. Please refresh the page and try again.');
       }
 
-      console.log('Updating site check status with checkId:', effectiveCheckId);
-
-      const payload = {
+      // First update the site check status
+      const statusPayload = {
         checkId: parseInt(effectiveCheckId, 10),
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
@@ -849,94 +917,68 @@ const AirConditioning = ({
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
-      console.log('Sending PUT request to update site check:', {
-        url: `/api/site-check/${effectiveCheckId}`,
-        payload,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') ? 'token-exists' : 'no-token'}`
-        }
-      });
-
-      const startTime = Date.now();
-      const response = await axios.put(
+      const statusResponse = await put(
           `/api/site-check/${effectiveCheckId}`,
-          payload,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
+          statusPayload
       );
 
-      const endTime = Date.now();
-      console.log(`API call completed in ${endTime - startTime}ms`, response);
-
-      if (response.status === 200 || response.status === 204) {
-        console.log('Successfully updated site check status');
-        setCheckStatus('Done');
-        setIsFormEditable(false);
-        console.log('Site check status updated successfully:', response.data);
-
-        const saveResponse = await axios.post(
-            '/api/site-check/generic-inspection',
-            {
-              ...formData,
-              siteId: siteSelectedForGlobal?.siteId,
-              assetId: formData.selectedAsset?.assetId || formData.assetId,
-              client: formData.clientUser?.id || formData.client,
-              engineer: formData.engineer,
-              siteContact: formData.siteContactUser?.id || formData.siteContact,
-              type: 'Inspection',
-              subType: 'Air Conditioning',
-              category: 'Air Conditioning Service',
-              checkId: checkId,
-              actionId: formData.actionId,
-            },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
-
-        if (saveResponse.status === 200 || saveResponse.status === 201) {
-          console.log('Form data saved successfully:', saveResponse.data);
-
-          const pdfResult = await generatePDF(true);
-          if (pdfResult.success) {
-            toast.success("Air Conditioning report saved and PDF generated successfully!");
-            setShowPdfButton(true);
-            setIsSubmitted(true);
-            setSubmissionSuccess(true);
-
-            setTimeout(() => {
-              navigate(-1);
-            }, 1500);
-          } else {
-            throw new Error(pdfResult.error || "Failed to generate PDF");
-          }
-        } else {
-          throw new Error(`Failed to save form data: ${saveResponse.statusText}`);
-        }
-
-        return response;
-      } else {
-        console.warn('Unexpected response status:', response.status);
-        throw new Error(`Unexpected response status: ${response.status}`);
+      if (![200, 204].includes(statusResponse?.status)) {
+        throw new Error('Failed to update site check status');
       }
+
+      console.log('Site check status updated successfully:', statusResponse.data);
+      setCheckStatus('Done');
+      setIsFormEditable(false);
+
+      // Then update the generic inspection record
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        assetId: formData.selectedAsset?.assetId || formData.assetId,
+        client: formData.clientUser?.id || formData.client,
+        engineer: formData.engineer,
+        siteContact: formData.siteContactUser?.id || formData.siteContact,
+        type: 'Inspection',
+        subType: 'Air Conditioning',
+        category: 'Air Conditioning Service',
+        checkId: effectiveCheckId,
+        actionId: formData.actionId,
+      };
+
+      const saveResponse = await put(
+          `/api/site-check/generic-inspection/${effectiveCheckId}`,
+          inspectionPayload
+      );
+
+      if (![200, 204].includes(saveResponse?.status)) {
+        throw new Error('Failed to save inspection data');
+      }
+
+      console.log('Inspection data saved successfully:', saveResponse.data);
+
+      // Generate PDF
+      const pdfResult = await generatePDF(true);
+      if (!pdfResult.success) {
+        throw new Error(pdfResult.error || "Failed to generate PDF");
+      }
+
+      toast.success("Air Conditioning report saved and PDF generated successfully!");
+      setShowPdfButton(true);
+      setIsSubmitted(true);
+      setSubmissionSuccess(true);
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 1500);
+
     } catch (error) {
       console.error('Error in form submission:', error);
       console.error('Error details:', error.response?.data || error.message);
       toast.error(error.message || 'Failed to submit form');
-      throw error;
     } finally {
       setIsLoading(false);
     }
   };
-
   const renderClientNameField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
@@ -1771,8 +1813,8 @@ const AirConditioning = ({
                           disabled={isSubmitted}
                       >
                         <option value="">Select</option>
-                        <option value="Yes">Type</option>
-                        <option value="No">Quant</option>
+                        <option value="Type">Type</option>
+                        <option value="Quant">Quant</option>
                       </select>
                     </div>
                     <div>
@@ -1941,7 +1983,7 @@ const AirConditioning = ({
                     Back
                   </button>
                   <div>
-                    {isFormEditable && (
+                    {isFormEditable && !actionRaised &&(
                         <button
                             type="submit"
                             className="btn btn-primary"
