@@ -339,17 +339,18 @@ const AirConditioning = ({
           const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
           if (response && response.length > 0) {
             const airConditioningCheck = response.find(
-                check => check.category === 'Air Conditioning' || check.subType === 'Air Conditioning'
+                check => check.type === 'Inspection' && check.subType === 'Plant and Equipment Inspection' && check.category === 'Air Conditioning Service'
             );
 
             if (airConditioningCheck) {
               setCurrentCheckId(airConditioningCheck.checkId);
               setCheckStatus(airConditioningCheck.status);
-              setIsFormEditable(airConditioningCheck.status === 'Open');
+              const isDone = airConditioningCheck.status === 'Done';
+              setIsFormEditable(!isDone);
+              setIsSubmitted(isDone); // Explicitly set isSubmitted
 
-              // Ensure form is locked if already completed
-              if (airConditioningCheck.status === 'Done') {
-                setIsSubmitted(true);
+              if (isDone) {
+                setShowPdfButton(true); // Show PDF button for completed checks
               }
             }
           }
@@ -1155,7 +1156,7 @@ const AirConditioning = ({
         <div className="header text-center bg-light p-4 mb-4 rounded d-flex justify-content-between align-items-center">
           <h4 className="mb-0">Air Conditioning Service Report</h4>
         </div>
-        {isFormEditable && (
+        {!isFormEditable && (
             <div className="alert alert-warning" role="alert">
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               This form is read-only because the check has been marked as completed.
@@ -1983,12 +1984,12 @@ const AirConditioning = ({
                     Back
                   </button>
                   <div>
-                    {isFormEditable && !actionRaised &&(
+                    {isFormEditable && (
                         <button
                             type="submit"
                             className="btn btn-primary"
                             disabled={
-                                !isFormEditable ||
+
                                 isLoading ||
                                 isGeneratingPDF ||
                                 (showRiskAssessment && !actionRaised)
