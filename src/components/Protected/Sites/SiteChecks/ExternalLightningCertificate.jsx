@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { get, post } from "../../../../api";
+import {get, post, put} from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -429,22 +429,63 @@ const ExternalLightningCertificate = ({
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      // Fetch the complete action details using the actionId
-      const completeAction = await fetchActionById(actionResponse.actionId);
+      console.log("Action response received:", actionResponse); // Debug log
 
-      if (completeAction) {
-        setActionRaised(true);
-        setExistingAction(completeAction);
+      if (!actionResponse?.actionId) {
+        console.error("Invalid action response:", actionResponse);
+        throw new Error("Invalid action response received");
+      }
 
-        // Update formData with the new actionId
-        setFormData(prev => ({
-          ...prev,
-          actionId: completeAction.actionId
-        }));
+      setActionRaised(true);
+      setExistingAction(actionResponse);
 
-        toast.success(`Action #${completeAction.actionId} raised successfully`);
-      } else {
-        toast.error("Failed to fetch complete action details");
+      const updatedFormData = {
+        ...formData,
+        actionId: actionResponse.actionId
+      };
+
+      setFormData(updatedFormData);
+
+      console.log("Updating inspection with actionId:", actionResponse.actionId); // Debug log
+
+      if (currentCheckId) {
+        // First check if inspection exists
+        try {
+          const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+
+          const inspectionPayload = {
+            ...updatedFormData,
+            checkId: currentCheckId,
+            actionId: actionResponse.actionId,
+            siteId: siteSelectedForGlobal?.siteId,
+            assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
+            client: updatedFormData.clientUser?.id || updatedFormData.client,
+            engineer: updatedFormData.engineer,
+            siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
+            type: 'Inspection',
+            subType: 'Air Conditioning',
+            category: 'Air Conditioning Service'
+          };
+
+          if (!existingInspections || existingInspections.length === 0) {
+            // Create new inspection if none exists
+            await post(
+                `/api/site-check/generic-inspection`,
+                inspectionPayload
+            );
+          } else {
+            // Update existing inspection
+            await put(
+                `/api/site-check/generic-inspection/${currentCheckId}`,
+                inspectionPayload
+            );
+          }
+
+          toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
+        } catch (error) {
+          console.error("Error handling inspection record:", error);
+          throw error;
+        }
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
@@ -857,6 +898,7 @@ const ExternalLightningCertificate = ({
       return;
     }
 
+    // Validation checks
     if (formData.param4 === "Fail" && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
       return;
@@ -867,6 +909,7 @@ const ExternalLightningCertificate = ({
       return;
     }
 
+    // Form validation
     const errors = {};
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
@@ -882,21 +925,14 @@ const ExternalLightningCertificate = ({
     setIsLoading(true);
 
     try {
-      console.log('Starting form submission');
-
-      // Get the current check ID, either from state or props
       const effectiveCheckId = currentCheckId || checkId;
 
-      // First, update the site check status to Done
       if (!effectiveCheckId) {
-        console.error('Cannot submit: No check ID available');
         throw new Error('No inspection check found. Please refresh the page and try again.');
       }
 
-      console.log('Updating site check status with checkId:', effectiveCheckId);
-
-      // Prepare the payload with exact structure as required
-      const payload = {
+      // First update the site check status
+      const statusPayload = {
         checkId: parseInt(effectiveCheckId, 10),
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
@@ -905,23 +941,12 @@ const ExternalLightningCertificate = ({
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
-        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0' // Using same as lead if no specific assistant
+        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
-      console.log('Sending PUT request to update site check:', {
-        url: `/api/site-check/${effectiveCheckId}`,
-        payload,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') ? 'token-exists' : 'no-token'}`
-        }
-      });
-
-      // Make the API call to update site check status
-      const startTime = Date.now();
-      const response = await axios.put(
+      const statusResponse = await axios.put(
           `/api/site-check/${effectiveCheckId}`,
-          payload,
+          statusPayload,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -930,77 +955,70 @@ const ExternalLightningCertificate = ({
           }
       );
 
-      const endTime = Date.now();
-      console.log(`API call completed in ${endTime - startTime}ms`, response);
-
-      if (response.status === 200 || response.status === 204) {
-        console.log('Successfully updated site check status');
-        setCheckStatus('Done');
-        setIsFormEditable(false);
-        console.log('Site check status updated successfully:', response.data);
-
-        // Now save the form data
-        const saveResponse = await axios.post(
-            '/api/site-check/generic-inspection',
-            {
-              ...formData,
-              siteId: siteSelectedForGlobal?.siteId,
-              assetId: formData.selectedAsset?.assetId || formData.assetId,
-              client: formData.clientUser?.id || formData.client,
-              engineer: formData.engineer,
-              siteContact: formData.siteContactUser?.id || formData.siteContact,
-              type: 'Inspection',
-              subType: 'External Lighting',
-              category: 'External Lighting Certificate',
-              checkId: checkId,
-              param3Remark: formData.param3Remark,
-              actionId: formData.actionId,
-            },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
-
-        if (saveResponse.status === 200 || saveResponse.status === 201) {
-          console.log('Form data saved successfully:', saveResponse.data);
-
-          // Generate and save the PDF
-          const pdfResult = await generatePDF(true);
-          if (pdfResult.success) {
-            toast.success("External lightning report saved and PDF generated successfully!");
-            setShowPdfButton(true);
-            setIsSubmitted(true);
-            setSubmissionSuccess(true);
-
-            // Navigate back after a short delay to show the success message
-            setTimeout(() => {
-              navigate(-1); // Go back to the previous page
-            }, 1500); // 1.5 second delay to show the success message
-          } else {
-            throw new Error(pdfResult.error || "Failed to generate PDF");
-          }
-        } else {
-          throw new Error(`Failed to save form data: ${saveResponse.statusText}`);
-        }
-
-        return response;
-      } else {
-        console.warn('Unexpected response status:', response.status);
-        throw new Error(`Unexpected response status: ${response.status}`);
+      if (![200, 204].includes(statusResponse?.status)) {
+        throw new Error('Failed to update site check status');
       }
+
+      console.log('Site check status updated successfully:', statusResponse.data);
+      setCheckStatus('Done');
+      setIsFormEditable(false);
+
+      // Then save the inspection data
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        assetId: formData.selectedAsset?.assetId || formData.assetId,
+        client: formData.clientUser?.id || formData.client,
+        engineer: formData.engineer,
+        siteContact: formData.siteContactUser?.id || formData.siteContact,
+        type: 'Inspection',
+        subType: 'External Lighting',
+        category: 'External Lighting Certificate',
+        checkId: effectiveCheckId,
+        param3Remark: formData.param3Remark,
+        actionId: formData.actionId,
+      };
+
+      const saveResponse = await axios.post(
+          '/api/site-check/generic-inspection',
+          inspectionPayload,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+      );
+
+      if (![200, 201].includes(saveResponse?.status)) {
+        throw new Error('Failed to save inspection data');
+      }
+
+      console.log('Inspection data saved successfully:', saveResponse.data);
+
+      // Generate PDF
+      const pdfResult = await generatePDF(true);
+      if (!pdfResult.success) {
+        throw new Error(pdfResult.error || "Failed to generate PDF");
+      }
+
+      toast.success("External lighting report saved and PDF generated successfully!");
+      setShowPdfButton(true);
+      setIsSubmitted(true);
+      setSubmissionSuccess(true);
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 1500);
+
     } catch (error) {
       console.error('Error in form submission:', error);
       console.error('Error details:', error.response?.data || error.message);
       toast.error(error.message || 'Failed to submit form');
-      throw error;
     } finally {
       setIsLoading(false);
     }
   };
-
   const renderClientNameField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
@@ -1642,7 +1660,7 @@ const ExternalLightningCertificate = ({
                     Back
                   </button>
                   <div>
-                    {isFormEditable && (
+                    {isFormEditable && !actionRaised &&(
                         <button
                             type="submit"
                             className="btn btn-primary"
