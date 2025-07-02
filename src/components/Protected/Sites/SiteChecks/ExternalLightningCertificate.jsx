@@ -112,6 +112,7 @@ const ExternalLightningCertificate = ({
   // Initialize with the checkId prop if available, otherwise null
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
 
+
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
@@ -332,6 +333,10 @@ const ExternalLightningCertificate = ({
               setCurrentCheckId(externalLightingCheck.checkId);
               setCheckStatus(externalLightingCheck.status);
               setIsFormEditable(externalLightingCheck.status === 'Open');
+
+              if (externalLightingCheck.status === 'Done') {
+                setIsSubmitted(true);
+              }
             }
           }
         }
@@ -350,8 +355,6 @@ const ExternalLightningCertificate = ({
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-
-          // Fetch the folder structure when site changes
           await fetchFolderStructure(siteSelectedForGlobal.siteId);
 
           await fetchInspectionData();
@@ -1541,7 +1544,7 @@ const ExternalLightningCertificate = ({
                                   <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
                                 </div>
                                 <div className="col-md-6">
-                                  <p><strong>Priority:</strong> {existingAction.priority}</p>
+                                  <p><strong>Desc :</strong> {existingAction.desc}</p>
                                   <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
                                   <p><strong>Status:</strong> {existingAction.status}</p>
                                 </div>

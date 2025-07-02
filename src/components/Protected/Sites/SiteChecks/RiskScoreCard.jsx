@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { put } from "../../../../api";
 import moment from "moment";
 import PropTypes from "prop-types";
+import axios from "axios";
 
 const RiskScoreCard = ({
                            consequence: initialConsequence,
@@ -27,7 +28,6 @@ const RiskScoreCard = ({
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Memoized calculation functions
     const calculatePriority = useCallback((score) => {
         if (score > 17) return 9;
         if (score > 10) return 7;
@@ -49,7 +49,6 @@ const RiskScoreCard = ({
             : 1;
     const currentPriority = calculatePriority(totalRiskScore);
 
-    // Handler functions
     const handleInputChange = (field) => (e) => {
         const value = field === 'consequence' || field === 'likelihood'
             ? parseInt(e.target.value)
@@ -80,6 +79,7 @@ const RiskScoreCard = ({
     const handleRaiseAction = async () => {
         if (!validateForm() || actionRaised) return;
         setIsSubmitting(true);
+
         try {
             const payload = {
                 siteId,
@@ -94,22 +94,66 @@ const RiskScoreCard = ({
                 status: "Reported",
                 assignedTo,
                 createdBy,
-                dueDate: calculateDueDate(riskData.consequence * riskData.likelihood || 1).toISOString(),
+                dueDate: calculateDueDate(totalRiskScore).toISOString(),
             };
 
-            const response = await put("/api/site/actions", payload);
+            // Make the API call using axios
+            const response = await axios.put("/api/site/actions", payload);
 
-            // Call the parent callback
-            if (onRiskAssessmentComplete) {
-                onRiskAssessmentComplete(response);
+            // Handle different response structures
+            let actionId;
+            let actionResponse;
+
+            if (response.data && response.data.actionId) {
+                // Case 1: Response has data with actionId
+                actionId = response.data.actionId;
+                actionResponse = response.data;
+            } else if (response.actionId) {
+                // Case 2: Response is the action object directly
+                actionId = response.actionId;
+                actionResponse = response;
+            } else {
+                // Case 3: Unexpected response structure
+                console.error("Unexpected response structure:", response);
+                throw new Error("Unexpected response structure from server");
             }
+
+            // Create a normalized action object
+            const normalizedAction = {
+                actionId,
+                ...actionResponse,
+                // Ensure required fields exist
+                observation: actionResponse.observation || riskData.observation,
+                requiredAction: actionResponse.requiredAction || riskData.requiredAction,
+                riskScore: actionResponse.riskScore || totalRiskScore,
+            };
+
+            if (onRiskAssessmentComplete) {
+                onRiskAssessmentComplete(normalizedAction);
+            }
+
+            return normalizedAction;
         } catch (error) {
             console.error("Error raising risk assessment action:", error);
-            toast.error(error.response?.data?.message || "Failed to raise action. Please try again.");
+
+            let errorMessage = "Failed to raise action. Please try again.";
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                errorMessage = error.response.data?.message ||
+                    error.response.statusText ||
+                    `Server responded with ${error.response.status}`;
+            } else if (error.request) {
+                // The request was made but no response was received
+                errorMessage = "No response received from server";
+            }
+
+            toast.error(errorMessage);
+            throw error;
         } finally {
             setIsSubmitting(false);
         }
     };
+
     return (
         <Grid container spacing={2}>
             <Grid item xs={12}>
