@@ -326,7 +326,7 @@ const ExternalLightningCertificate = ({
           const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
           if (response && response.length > 0) {
             const externalLightingCheck = response.find(
-                check => check.category === 'External Lighting' || check.subType === 'External Lighting'
+                check => check.type === 'Inspection' && check.subType === 'Electrical' && check.category === 'External Lighting Testing'
             );
 
             if (externalLightingCheck) {
@@ -1172,7 +1172,7 @@ const ExternalLightningCertificate = ({
         <div className="header text-center bg-light p-4 mb-4 rounded d-flex justify-content-between align-items-center">
           <h4 className="mb-0">External Lighting Service Report</h4>
         </div>
-        {!isFormEditable && (
+        {isFormEditable && (
             <div className="alert alert-warning" role="alert">
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               This form is read-only because the check has been marked as completed.
