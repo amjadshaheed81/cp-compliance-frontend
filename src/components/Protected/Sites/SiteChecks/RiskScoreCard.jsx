@@ -15,7 +15,7 @@ const RiskScoreCard = ({
                            disabled = false,
                            onRiskAssessmentComplete,
                            siteId,
-                           assignedTo,
+                           taggedAsset,
                            createdBy,
                            actionRaised,
                        }) => {
@@ -92,8 +92,8 @@ const RiskScoreCard = ({
                 priority: currentPriority,
                 type: "Inspection",
                 status: "Reported",
-                assignedTo,
                 createdBy,
+                taggedAsset,
                 dueDate: calculateDueDate(totalRiskScore).toISOString(),
             };
 
@@ -311,7 +311,6 @@ RiskScoreCard.propTypes = {
     disabled: PropTypes.bool,
     onRiskAssessmentComplete: PropTypes.func,
     siteId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    assignedTo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     createdBy: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
