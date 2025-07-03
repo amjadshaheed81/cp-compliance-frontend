@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { post, get } from "../../../../api";
-import axios from 'axios';
+import { get, post, put } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -15,20 +15,51 @@ import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/DisabledWCAlarmCertificate.pdf';
+import RiskScoreCard from "./RiskScoreCard";
+import moment from "moment";
+import axios from "axios";
+
+let PDFLib;
+
+if (typeof window !== 'undefined') {
+  import('pdf-lib').then((pdfLib) => {
+    PDFLib = pdfLib;
+  });
+}
+
+// Helper function to fetch PDF as ArrayBuffer
+const fetchPdfTemplate = async () => {
+  try {
+    const response = await fetch(pdfTemplate);
+    if (!response.ok) {
+      throw new Error('Failed to load PDF template: ' + response.statusText);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const header = new Uint8Array(arrayBuffer, 0, 5);
+    const headerStr = String.fromCharCode.apply(null, header);
+    if (headerStr !== '%PDF-') {
+      throw new Error('Invalid PDF file: Missing PDF header');
+    }
+    return arrayBuffer;
+  } catch (error) {
+    console.error('Error loading PDF template:', error);
+    throw new Error('Failed to load PDF template: ' + error.message);
+  }
+};
 
 const DisabledWCAlarmCertificate = ({
-  sasToken,
-  checkId,
-  subType,
-  category,
-  getSiteDetailsById,
-  siteAssets,
-  getSiteAssets,
-  users,
-  getUsers,
-  siteSelectedForGlobal,
-  loggedInUserData,
-}) => {
+                                      sasToken,
+                                      checkId,
+                                      subType,
+                                      category,
+                                      getSiteDetailsById,
+                                      siteAssets,
+                                      getSiteAssets,
+                                      users,
+                                      getUsers,
+                                      siteSelectedForGlobal,
+                                      loggedInUserData,
+                                    }) => {
   const [formData, setFormData] = useState({
     address: "",
     assetId: "",
@@ -50,6 +81,7 @@ const DisabledWCAlarmCertificate = ({
     signedDate: new Date().toISOString().split("T")[0],
     clientUser: null,
     siteContactUser: null,
+    actionId: null,
   });
 
   const sites = useSelector((state) => state.site.sites);
@@ -61,23 +93,21 @@ const DisabledWCAlarmCertificate = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [PDFLib, setPDFLib] = useState(null);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
     miscellaneousService: null,
     disabledWCAlarm: null
   });
-  const selectedAsset = siteAssets.find(
-    (asset) => asset.assetId === formData.assetId
-  );
+  const [checkStatus, setCheckStatus] = useState('Open');
+  const [isFormEditable, setIsFormEditable] = useState(true);
+  const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [actionRaised, setActionRaised] = useState(false);
+  const [existingAction, setExistingAction] = useState(null);
+  const navigate = useNavigate();
 
-  const isInternalUserTaggedWithSite =true
-    // loggedInUserData?.userType === "Internal" &&
-    // loggedInUserData?.taggedSites?.some(
-    //   (site) => site.id === siteSelectedForGlobal?.siteId
-    // );
-
+  const isInternalUserTaggedWithSite = true;
 
   const fetchInspectionData = async () => {
     try {
@@ -87,24 +117,32 @@ const DisabledWCAlarmCertificate = ({
         await getUsers();
       }
 
-      const apiData = await get(
-        `/api/site-check/generic-inspection/${checkId}`
-      );
+      const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
         const selectedAsset = siteAssets.find(
-          (asset) => asset.assetId === mostRecentItem.assetId
+            (asset) => asset.assetId === mostRecentItem.assetId
         );
 
         const clientUser = users.find(
-          (user) => user.id === mostRecentItem.client
+            (user) => user.id === mostRecentItem.client
         );
         const engineerUser = users.find(
-          (user) => user.id === mostRecentItem.engineer
+            (user) => user.id === mostRecentItem.engineer
         );
         const siteContactUser = users.find(
-          (user) => user.id === mostRecentItem.siteContact
+            (user) => user.id === mostRecentItem.siteContact
         );
+
+        // Fetch action data if actionId exists
+        let existingAction = null;
+        if (mostRecentItem.actionId) {
+          existingAction = await fetchActionById(mostRecentItem.actionId);
+          if (existingAction) {
+            setExistingAction(existingAction);
+            setActionRaised(true);
+          }
+        }
 
         setFormData((prev) => ({
           ...prev,
@@ -122,13 +160,13 @@ const DisabledWCAlarmCertificate = ({
           param5: mostRecentItem.param5 || prev.param5,
           param6: mostRecentItem.param6 || prev.param6,
           client: mostRecentItem.client || "",
-          engineer:
-            mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
           user: engineerUser || loggedInUserData || prev.user,
           selectedAsset: selectedAsset || prev.selectedAsset,
           signedDate: mostRecentItem.signedDate || prev.signedDate,
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
+          actionId: mostRecentItem.actionId || null,
         }));
       }
     } catch (error) {
@@ -137,30 +175,209 @@ const DisabledWCAlarmCertificate = ({
     }
   };
 
+  const fetchActionById = async (id) => {
+    try {
+      if (!id) return null;
+      const response = await get(`/api/site/actions/id/${id}`);
+      return response;
+    } catch (error) {
+      console.error("Error fetching action:", error);
+      return null;
+    }
+  };
+
+  const selectedAsset = siteAssets.find(
+      (asset) => asset.assetId === formData.assetId
+  );
+
+  const fetchExistingActions = async () => {
+    try {
+      // If we already have an actionId in form data, use that
+      if (formData.actionId) {
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+          return;
+        }
+      }
+
+      // Otherwise look for related actions
+      if (!siteSelectedForGlobal?.siteId) return;
+
+      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      if (response && response.length > 0) {
+        // Find actions related to this inspection
+        const relevantActions = response.filter(action =>
+            action.desc.includes('Disabled WC Alarm') ||
+            action.type === 'Inspection'
+        );
+
+        if (relevantActions.length > 0) {
+          const mostRecentAction = relevantActions.sort((a, b) =>
+              new Date(b.createdAt) - new Date(a.createdAt)
+          )[0];
+
+          setExistingAction(mostRecentAction);
+          setActionRaised(true);
+
+          // Update formData with the actionId if not already set
+          if (mostRecentAction.actionId && !formData.actionId) {
+            setFormData(prev => ({
+              ...prev,
+              actionId: mostRecentAction.actionId
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching existing actions:", error);
+    }
+  };
+
+  const fetchFolderStructure = async (siteId) => {
+    try {
+      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+
+      if (parentFoldersResponse?.parentFolders?.length > 0) {
+        const logBooksFolder = parentFoldersResponse.parentFolders.find(
+            folder => folder.name.trim() === 'Log Books'
+        );
+
+        if (logBooksFolder) {
+          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+
+          if (logBooksResponse?.document?.childFolders) {
+            const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
+                folder => folder.name.trim() === 'Plant and Equipment'
+            );
+
+            if (plantAndEquipmentFolder) {
+              const plantAndEquipmentResponse = await get(
+                  `/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`
+              );
+
+              if (plantAndEquipmentResponse?.document?.childFolders) {
+                const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
+                    folder => folder.name.trim() === 'Miscellaneous Service Documents' ||
+                        folder.name.trim() === 'Miscellaneous Service'
+                );
+
+                if (miscellaneousFolder) {
+                  const miscResponse = await get(
+                      `/api/document/parent/${miscellaneousFolder.id}/folders?siteId=${siteId}`
+                  );
+
+                  if (miscResponse?.document?.childFolders) {
+                    const disabledWCAlarmFolder = miscResponse.document.childFolders.find(
+                        folder => folder.name.trim() === 'Disabled WC Alarm' ||
+                            folder.name.trim() === 'Disabled WC Alarm Testing'
+                    );
+
+                    setFolderIds({
+                      logBooks: logBooksFolder.id,
+                      plantAndEquipment: plantAndEquipmentFolder.id,
+                      miscellaneousService: miscellaneousFolder.id,
+                      disabledWCAlarm: disabledWCAlarmFolder?.id || null
+                    });
+
+                    return disabledWCAlarmFolder?.id || null;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching folder structure:', error);
+      toast.error('Failed to load document folders');
+      return null;
+    }
+  };
+
   useEffect(() => {
+    // Enhance the status check in your fetchSiteCheckData function
+    const fetchSiteCheckData = async () => {
+      try {
+        if (!siteSelectedForGlobal?.siteId) return;
+
+        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        if (response && response.length > 0) {
+          // First try to find the exact checkId from URL
+          let disabledWCCheck = checkId
+              ? response.find(check => check.checkId === parseInt(checkId, 10))
+              : null;
+
+          // If not found by checkId, find first matching type
+          if (!disabledWCCheck) {
+            disabledWCCheck = response.find(check =>
+                check.type === 'Inspection' &&
+                check.subType === 'Plant and Equipment Inspection' &&
+                check.category === 'Disabled WC Alarm Certificate'
+            );
+          }
+
+          if (disabledWCCheck) {
+            console.log('Found check:', {
+              checkId: disabledWCCheck.checkId,
+              requestedCheckId: checkId,
+              matchType: disabledWCCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
+            });
+
+            setCurrentCheckId(disabledWCCheck.checkId);
+            setCheckStatus(disabledWCCheck.status);
+
+            // Set form editability based on status
+            const isDone = disabledWCCheck.status === 'Done';
+            setIsFormEditable(!isDone);
+            setIsSubmitted(isDone);
+            setShowPdfButton(isDone);
+          } else {
+            // If no matching check found, default to editable
+            console.log('No matching check found, using checkId from URL:', checkId);
+            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+            setIsFormEditable(true);
+            setIsSubmitted(false);
+            setShowPdfButton(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching site check data:', error);
+        toast.error('Failed to load site check status');
+        setIsFormEditable(true);
+      }
+    };
+
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
     }
-    
-    // Fetch folder structure when component mounts
-    const fetchFolders = async () => {
-      if (siteSelectedForGlobal?.siteId) {
-        await fetchFolderStructure(siteSelectedForGlobal.siteId);
-      }
-    };
-    
-    fetchFolders();
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-
+          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+          await fetchSiteCheckData();
           await fetchInspectionData();
 
+          if (formData.actionId) {
+            const action = await fetchActionById(formData.actionId);
+            if (action) {
+              setExistingAction(action);
+              setActionRaised(true);
+            } else {
+              await fetchExistingActions();
+            }
+          } else {
+            await fetchExistingActions();
+          }
+
           const currentSite = sites.find(
-            (site) => site.siteId === siteSelectedForGlobal.siteId
+              (site) => site.siteId === siteSelectedForGlobal.siteId
           );
           const siteData = currentSite || siteSelectedForGlobal;
 
@@ -172,7 +389,7 @@ const DisabledWCAlarmCertificate = ({
               siteData.area,
               siteData.postCode,
               siteData.country,
-            ].filter((part) => part);
+            ].filter((part) => part && part.trim() !== "");
 
             const fullAddress = addressParts.join(", ");
             setFormData((prev) => ({ ...prev, address: fullAddress }));
@@ -201,487 +418,86 @@ const DisabledWCAlarmCertificate = ({
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
+    checkId,
   ]);
 
-  // Load PDF library when component mounts
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      import('pdf-lib').then((pdfLib) => {
-        setPDFLib(pdfLib);
-      }).catch(error => {
-        console.error('Failed to load PDF library:', error);
-        toast.error('Failed to load PDF functionality. Please refresh the page.');
-      });
-    }
-  }, []);
+    // Only show risk assessment if any check is "Fail"
+    const showRisk = [
+      formData.param6
+    ].some(val => val === "Fail");
 
-  // Fetch PDF template from the server
-  const fetchPdfTemplate = async () => {
+    setShowRiskAssessment(showRisk);
+
+    if (!showRisk) {
+      setActionRaised(false);
+    }
+  }, [formData.param6]);
+
+  const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      const response = await fetch(pdfTemplate);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load PDF template: ' + response.statusText);
-      }
-      
-      const arrayBuffer = await response.arrayBuffer();
-      
-      // Verify the PDF header
-      const header = new Uint8Array(arrayBuffer, 0, 5);
-      const headerStr = String.fromCharCode.apply(null, header);
-      
-      if (headerStr !== '%PDF-') {
-        throw new Error('Invalid PDF file: Missing PDF header');
-      }
-      
-      return arrayBuffer;
-    } catch (error) {
-      console.error('Error loading PDF template:', error);
-      throw new Error('Failed to load PDF template: ' + error.message);
-    }
-  };
+      console.log("Action response received:", actionResponse); // Debug log
 
-  const savePdfToLocal = async (pdfBlob, fileName) => {
-    try {
-      // Create a temporary URL for the blob
-      const url = URL.createObjectURL(pdfBlob);
-      
-      // Create a temporary link and trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving PDF locally:', error);
-      return false;
-    }
-  };
-
-  const generatePdf = async () => {
-    if (!PDFLib) {
-      toast.error('PDF library not loaded yet. Please wait and try again.');
-      return false;
-    }
-    
-    if (!PDFLib.PDFDocument || typeof PDFLib.PDFDocument.load !== 'function') {
-      toast.error('PDF library not properly initialized. Please refresh the page.');
-      return false;
-    }
-
-    try {
-      // Validate required fields
-      const requiredFields = [
-        'address', 'siteContact', 'inspectionDate', 'assetId',
-        'param1', 'param2', 'param3', 'param4', 'param5', 'param6', 'engineer'
-      ];
-      
-      const errors = {};
-      requiredFields.forEach(field => {
-        if (!formData[field]) {
-          errors[field] = 'This field is required';
-        }
-      });
-
-      if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
-        toast.error('Please fill in all required fields');
-        return false;
+      if (!actionResponse?.actionId) {
+        console.error("Invalid action response:", actionResponse);
+        throw new Error("Invalid action response received");
       }
 
-      setValidationErrors({});
-      
-      let pdfBytes;
-      try {
-        pdfBytes = await fetchPdfTemplate();
-      } catch (error) {
-        console.error('Error loading PDF template:', error);
-        toast.error('Failed to load PDF template. Please try again.');
-        return false;
-      }
-      
-      let pdfDoc;
-      try {
-        pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
-      } catch (error) {
-        console.error('Error loading PDF document:', error);
-        toast.error('Failed to process PDF. The template may be corrupted.');
-        return false;
-      }
-      
-      const form = pdfDoc.getForm();
-      const fields = form.getFields();
-      
-      // Helper function to set text field with font size
-      const setTextField = (fieldName, value, fontSize = 10) => {
+      setActionRaised(true);
+      setExistingAction(actionResponse);
+
+      const updatedFormData = {
+        ...formData,
+        actionId: actionResponse.actionId
+      };
+
+      setFormData(updatedFormData);
+
+      console.log("Updating inspection with actionId:", actionResponse.actionId); // Debug log
+
+      if (currentCheckId) {
+        // First check if inspection exists
         try {
-          const field = form.getTextField(fieldName);
-          if (field) {
-            const stringValue = value !== null && value !== undefined ? String(value) : '';
-            field.setText(stringValue);
-            try {
-              if (field.setFontSize) {
-                field.setFontSize(fontSize);
-              }
-            } catch (e) {
-              console.warn(`Could not set font size for ${fieldName}:`, e);
-            }
-          } else {
-            console.warn(`Field not found: ${fieldName}`);
-          }
-        } catch (error) {
-          console.warn(`Error setting field ${fieldName}:`, error.message);
-        }
-      };
+          const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
 
-      // Format date as dd/mm/yyyy
-      const formatDateString = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      };
+          const inspectionPayload = {
+            ...updatedFormData,
+            checkId: currentCheckId,
+            actionId: actionResponse.actionId,
+            siteId: siteSelectedForGlobal?.siteId,
+            assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
+            client: updatedFormData.clientUser?.id || updatedFormData.client,
+            engineer: updatedFormData.engineer,
+            siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
+            type: 'Inspection',
+            subType: 'Disabled WC Alarm',
+            category: 'Disabled WC Alarm Certificate'
+          };
 
-      // Process address
-      const addressLines = (formData.address || '').split(',').map(s => s.trim());
-      
-      // Set manufacturer, model, and location from selected asset
-      setTextField('Manufacturer', formData.selectedAsset?.manufacturer || 'N/A');
-      setTextField('Model Number', formData.selectedAsset?.model || 'N/A');
-      setTextField('Location', `${formData.selectedAsset?.position || ''} ${formData.selectedAsset?.room || ''} ${formData.selectedAsset?.floor || ''}`.trim() || 'N/A');
-  
-      setTextField('Clients Name', formData.clientUser?.name || formData.client || 'N/A');
-      setTextField('Engineers Name', formData.user?.name || 'N/A');
-      
-      // Set dates
-      setTextField('on', formatDateString(formData.signedDate));
-      setTextField('on_2', formatDateString(formData.signedDate));
-      
-      // Set address fields with proper formatting
-      setTextField('AddressLine1', addressLines[0] || '');
-      setTextField('AddressLine2', addressLines[1] || '');
-      setTextField('city', addressLines[2] || '');
-      setTextField('postalCode', addressLines[3] || '');
-      setTextField('country', addressLines[4] || '');
-      
-      // Set other fields
-      setTextField('Date', formatDateString(formData.inspectionDate));
-      setTextField('siteContract', formData.siteContactUser?.name || 'N/A');
-      setTextField('contactNo', formData.siteContactNo || 'N/A');
-      setTextField('jobNo', formData.job || 'N/A');
-      setTextField('EngineerReport', formData.report || 'N/A');
-      
-      // Set test results
-      setTextField('PullSwitchCheck', formData.param1 === 'Pass' ? 'Yes' : 'No');
-      setTextField('ResetPointCheck', formData.param2 === 'Pass' ? 'Yes' : 'No');
-      setTextField('OverDoorCheck', formData.param3 === 'Pass' ? 'Yes' : 'No');
-      setTextField('OverDoorSound', formData.param4 === 'Pass' ? 'Yes' : 'No');
-      setTextField('ControlPointCheck', formData.param5 === 'Pass' ? 'Yes' : 'No');
-      setTextField('PassFail', formData.param6 || '');
-      
-      form.flatten();
-      
-      const pdfBytesSaved = await pdfDoc.save();
-      const blob = new Blob([pdfBytesSaved], { type: 'application/pdf' });
-      setGeneratedPdfBlob(blob);
-      
-      // Generate file name with timestamp to ensure uniqueness
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `DisabledWCAlarmCertificate.pdf`;
-      
-      // Upload to server
-      try {
-        const uploadSuccess = await uploadPdfToServer(blob, fileName);
-        if (uploadSuccess) {
-          setShowPdfButton(true);
-          return true;
-        } else {
-          throw new Error('Failed to upload PDF to server');
-        }
-      } catch (error) {
-        console.error('Error uploading PDF:', error);
-        toast.error('Failed to upload PDF. Please try again.');
-        return false;
-      }
-      
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error(error.message || 'Failed to generate PDF');
-      return false;
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
-
-  const fetchFolderStructure = async (siteId) => {
-    try {
-      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
-      
-      if (parentFoldersResponse?.parentFolders?.length > 0) {
-        const logBooksFolder = parentFoldersResponse.parentFolders.find(
-          folder => folder.name.trim() === 'Log Books'
-        );
-
-        if (logBooksFolder) {
-          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
-          
-          if (logBooksResponse?.document?.childFolders) {
-            const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
-              folder => folder.name.trim() === 'Plant and Equipment'
+          if (!existingInspections || existingInspections.length === 0) {
+            // Create new inspection if none exists
+            await post(
+                `/api/site-check/generic-inspection`,
+                inspectionPayload
             );
-
-            if (plantAndEquipmentFolder) {
-              const plantAndEquipmentResponse = await get(
-                `/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`
-              );
-
-              if (plantAndEquipmentResponse?.document?.childFolders) {
-                const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
-                  folder => folder.name.trim() === 'Miscellaneous Service Documents' || 
-                           folder.name.trim() === 'Miscellaneous Service'
-                );
-
-                if (miscellaneousFolder) {
-                  const miscResponse = await get(
-                    `/api/document/parent/${miscellaneousFolder.id}/folders?siteId=${siteId}`
-                  );
-
-                  if (miscResponse?.document?.childFolders) {
-                    const disabledWCAlarmFolder = miscResponse.document.childFolders.find(
-                      folder => folder.name.trim() === 'Disabled WC Alarm' || 
-                               folder.name.trim() === 'Disabled WC Alarm Testing'
-                    );
-
-                    setFolderIds({
-                      logBooks: logBooksFolder.id,
-                      plantAndEquipment: plantAndEquipmentFolder.id,
-                      miscellaneousService: miscellaneousFolder.id,
-                      disabledWCAlarm: disabledWCAlarmFolder?.id || null
-                    });
-
-                    return disabledWCAlarmFolder?.id || null;
-                  }
-                }
-              }
-            }
+          } else {
+            // Update existing inspection
+            await put(
+                `/api/site-check/generic-inspection/${currentCheckId}`,
+                inspectionPayload
+            );
           }
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching folder structure:', error);
 
-      return null;
-    }
-  };
-
-  // Function to get the highest file version for a given file name in a folder
-  const getHighestFileVersion = async (folderId, fileName) => {
-    try {
-      const siteId = siteSelectedForGlobal?.siteId;
-      if (!siteId) {
-        console.warn('No site ID available for file version check');
-        return 1;
-      }
-      
-      console.log('Fetching files from folder:', folderId, 'for site:', siteId);
-      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-      const files = response?.document?.files || [];
-      
-      console.log('Files in folder:', files);
-      
-      if (files.length > 0) {
-        // Filter files with the same base name (without extension)
-        const baseName = fileName.split('.')[0];
-        console.log('Looking for files starting with:', baseName);
-        
-        const matchingFiles = files.filter(file => 
-          file.name && file.name.startsWith(baseName)
-        );
-        
-        console.log('Matching files:', matchingFiles);
-        
-        if (matchingFiles.length > 0) {
-          // Get the highest version number
-          const versions = matchingFiles.map(f => f.fileVersion || 1);
-          const maxVersion = Math.max(...versions);
-          console.log('Current versions:', versions, 'Max version:', maxVersion, 'Next version:', maxVersion + 1);
-          return maxVersion + 1;
-        }
-      }
-      console.log('No matching files found, using version 1');
-      return 1; // Default to 1 if no matching files found
-    } catch (error) {
-      console.error('Error checking file versions:', error);
-      return 1; // Default to 1 if there's an error
-    }
-  };
-
-  // Function to check if a file exists in the folder
-  const checkFileExists = async (folderId, fileName) => {
-    try {
-      const siteId = siteSelectedForGlobal?.siteId;
-      if (!siteId || !folderId) return { exists: false, file: null };
-      
-      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-      const files = response?.document?.files || [];
-      
-      // Find file with the same base name (without extension)
-      const baseName = fileName.split('.')[0];
-      const existingFile = files.find(file => 
-        file.name && file.name.startsWith(baseName)
-      );
-      
-      return {
-        exists: !!existingFile,
-        file: existingFile || null
-      };
-    } catch (error) {
-      console.error('Error checking file existence:', error);
-      return { exists: false, file: null };
-    }
-  };
-
-  // Helper function to upload PDF to the server
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
-    try {
-      setIsUploading(true);
-      
-      // First save a local copy
-      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-      if (!savedLocally) {
-        throw new Error('Failed to save PDF locally');
-      }
-      
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      
-      // Use the disabledWCAlarm folder ID if available, otherwise fall back to logBooks
-      const targetFolderId = folderIds.disabledWCAlarm || folderIds.logBooks;
-      
-      if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
-      }
-      
-      // Check if file exists
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      
-      // Create FormData for both cases
-      const formData = new FormData();
-      const now = new Date();
-      const formattedDate = now.toISOString().replace('T', ' ').split('.')[0];
-      
-      if (exists && existingFile) {
-        // File exists, use the new version upload endpoint
-        formData.append('file', pdfFile);  // Single file for new version
-        
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formattedDate,
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `DWC-${new Date().getTime()}`,
-            note: 'Disabled WC Alarm Certificate'
-          }]
-        };
-        
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        
-        const response = await axios({
-          method: 'put',
-          url: '/api/document/file/newVersion/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return true;
-        }
-      } else {
-        // New file upload
-        formData.append('files', pdfFile);
-        
-        // Get the next version number
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-        
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            originalFileName: fileName,
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formattedDate,
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `DWC-${new Date().getTime()}`,
-            note: 'Disabled WC Alarm Certificate'
-          }]
-        };
-        
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        
-        const response = await axios({
-          method: 'post',
-          url: '/api/document/files/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (response.data) {
-          toast.success('PDF uploaded successfully!');
-          return true;
+          toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
+        } catch (error) {
+          console.error("Error handling inspection record:", error);
+          throw error;
         }
       }
     } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
-    } finally {
-      setIsUploading(false);
+      console.error("Error handling risk assessment completion:", error);
+      toast.error("Failed to process action completion");
     }
-  };
-
-  const filteredAssets =
-    siteAssets?.filter(
-      (asset) =>
-        asset.category === "Electrical" &&
-        asset.subCategory === "Distress Alarm" &&
-        asset.subCategory2 === "Disabled WC Alarm"
-    ) || [];
-
-  const handleAssetSelect = (event, newValue) => {
-    setFormData((prev) => ({
-      ...prev,
-      assetId: newValue ? newValue.assetId : "",
-    }));
   };
 
   const handleInputChange = (e) => {
@@ -692,101 +508,435 @@ const DisabledWCAlarmCertificate = ({
     }));
   };
 
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (isLoading || isGeneratingPDF) {
-      console.log('Submit prevented: Already processing');
-      return;
-    }
-    
+  const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
-      if (!formData.assetId) {
-        toast.error("Please select an asset first");
-        return;
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      return true;
+    } catch (error) {
+      console.error('Error saving PDF locally:', error);
+      return false;
+    }
+  };
+
+  const getHighestFileVersion = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId) {
+        console.warn('No site ID available for file version check');
+        return 1;
       }
-      
-      // Validate required fields
-      const requiredFields = [
-        'address', 'siteContact', 'inspectionDate', 'assetId',
-        'param1', 'param2', 'param3', 'param4', 'param5', 'param6', 'engineer'
-      ];
-      
-      const errors = {};
-      requiredFields.forEach(field => {
-        if (!formData[field]) {
-          errors[field] = 'This field is required';
+
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+
+      if (files.length > 0) {
+        const baseName = fileName.split('.')[0];
+        const matchingFiles = files.filter(file =>
+            file.name && file.name.startsWith(baseName)
+        );
+
+        if (matchingFiles.length > 0) {
+          const versions = matchingFiles.map(f => f.fileVersion || 1);
+          const maxVersion = Math.max(...versions);
+          return maxVersion + 1;
+        }
+      }
+      return 1;
+    } catch (error) {
+      console.error('Error checking file versions:', error);
+      return 1;
+    }
+  };
+
+  const handleAssetSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue || null,
+    }));
+  };
+
+  const checkFileExists = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId || !folderId) return { exists: false, file: null };
+
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      const baseName = fileName.split('.')[0];
+      const existingFile = files.find(file =>
+          file.name && file.name.startsWith(baseName)
+      );
+
+      return {
+        exists: !!existingFile,
+        file: existingFile || null
+      };
+    } catch (error) {
+      console.error('Error checking file existence:', error);
+      return { exists: false, file: null };
+    }
+  };
+
+  const dateFormat = (date) => {
+    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  }
+
+  const uploadPdfToServer = async (pdfBlob, fileName) => {
+    try {
+      setIsUploading(true);
+      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+      if (!savedLocally) {
+        throw new Error('Failed to save PDF locally');
+      }
+
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const targetFolderId = folderIds.disabledWCAlarm || folderIds.logBooks;
+
+      if (!targetFolderId) {
+        throw new Error('Could not determine target folder for PDF upload');
+      }
+
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+      const formData = new FormData();
+
+      if (exists && existingFile) {
+        formData.append('file', pdfFile);
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: existingFile.fileVersion + 1,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                .toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `DWC-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        const response = await axios({
+          method: 'put',
+          url: '/api/document/file/newVersion/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+          return true;
+        }
+      } else {
+        formData.append('files', pdfFile);
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                .toISOString().replace('T', ' ').split('.')[0],
+            note: 'Disabled WC Alarm Certificate',
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            originalFileName: fileName,
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `DWC-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        const response = await axios({
+          method: 'post',
+          url: '/api/document/files/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          return true;
+        }
+      }
+
+      throw new Error('Upload failed: No response data');
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const generatePDF = async (uploadToServer = true) => {
+    try {
+      setIsGeneratingPDF(true);
+
+      if (!PDFLib) {
+        PDFLib = await import('pdf-lib');
+      }
+
+      const pdfBytes = await fetchPdfTemplate();
+      const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+      const form = pdfDoc.getForm();
+
+      // Debug: Log all field names
+      console.log('PDF Form Fields:');
+      form.getFields().forEach((field, i) => {
+        try {
+          const name = field.getName();
+          const type = field.constructor.name;
+          console.log(`${i + 1}. ${name} (${type})`);
+        } catch (error) {
+          console.warn('Error getting field info:', error);
         }
       });
 
-      if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
-        toast.error('Please fill in all required fields');
-        return;
-      }
-      
-      setValidationErrors({});
-      setIsLoading(true);
-
-      const dataToSave = {
-        ...formData,
-        assetId: formData.assetId,
-        siteId: siteSelectedForGlobal?.siteId,
-        checkId,
-        subType: 'Disabled WC Alarm',
-        category: 'Disabled WC Alarm Certificate',
-        inspectionDate: formData.inspectionDate || new Date().toISOString(),
-        job: formData.job,
-        engineer: loggedInUserData?.id,
-        signedDate: formData.signedDate || new Date().toISOString(),
-        submittedDate: new Date().toISOString(),
-        report: formData.report,
-        param1: formData.param1, // pull switch check
-        param2: formData.param2, // reset point check
-        param3: formData.param3, // over door light check
-        param4: formData.param4, // over door sounder check
-        param5: formData.param5, // control point / intercom check
-        param6: formData.param6, // pass/fail check
+      const setTextField = (fieldName, value, fontSize = 10) => {
+        try {
+          const field = form.getTextField(fieldName);
+          if (field) {
+            field.setText(value || '');
+            try {
+              if (field.setFontSize) {
+                field.setFontSize(fontSize);
+              }
+            } catch (e) {
+              console.warn(`Could not set font size for ${fieldName}:`, e);
+            }
+          }
+        } catch (error) {
+          console.warn(`Error setting text field ${fieldName}:`, error);
+        }
       };
 
-      // First save the form data
-      const response = await post("/api/site-check/generic-inspection", dataToSave);
-      
-      // Update form data with the response data to ensure we have the latest data
-      if (response) {
-        setFormData(prev => ({
-          ...prev,
-          ...response,
-          // Ensure we keep the selected asset
-          selectedAsset: prev.selectedAsset
-        }));
-      }
-      
-      // Generate and upload PDF
-      try {
-        setIsGeneratingPDF(true);
-        const pdfGenerated = await generatePdf();
-        
-        if (pdfGenerated) {
-          toast.success("Disabled WC Alarm Test report saved and PDF generated successfully");
-          setIsSubmitted(true);
-          setSubmissionSuccess(true);
-        } else {
-          throw new Error("Failed to generate PDF");
+      const setCheckbox = (fieldName, isChecked) => {
+        try {
+          const field = form.getCheckBox(fieldName);
+          if (field) {
+            field.check(isChecked);
+          }
+        } catch (error) {
+          console.warn(`Error setting checkbox ${fieldName}:`, error);
         }
-      } catch (pdfError) {
-        console.error('PDF generation/upload error:', pdfError);
-        //toast.error("Report saved, but there was an error generating/uploading the PDF");
-        // Still mark as submitted even if PDF generation fails
-        setIsSubmitted(true);
-        setSubmissionSuccess(true);
+      };
+
+      const smallFont = 8;
+      const mediumFont = 10;
+
+      // Address and contact information
+      const addressLines = (formData.address || '').split(',');
+      setTextField('AddressLine1', addressLines[0] || '', smallFont);
+      setTextField('AddressLine2', addressLines[1] || '', smallFont);
+      setTextField('city', addressLines[2] || '');
+      setTextField('postalCode', addressLines[3] || '', smallFont);
+      setTextField('country', addressLines[4] || '', smallFont);
+
+
+      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      setTextField('siteContact', formData.siteContactUser?.name || '', smallFont);
+      setTextField('contactNo', formData.siteContactNo || '', smallFont);
+      setTextField('jobNo', formData.job || '', smallFont);
+
+      const equipmentDetailsLocation = [
+        selectedAsset.floor,
+        selectedAsset.room,
+        selectedAsset.position,
+        selectedAsset.assetName
+      ].filter(Boolean).join(' - ');
+
+      // Equipment information
+      setTextField('Manufacturer', selectedAsset?.manufacturer || '', mediumFont);
+      setTextField('Model Number', selectedAsset?.model || '', mediumFont);
+      setTextField('Location', equipmentDetailsLocation, mediumFont);
+
+      // Test results
+      setTextField('PullSwitchCheck', formData.param1 === 'Pass' ? 'Yes' : 'No', mediumFont);
+      setTextField('ResetPointCheck', formData.param2 === 'Pass' ? 'Yes' : 'No', mediumFont);
+      setTextField('OverDoorCheck', formData.param3 === 'Pass' ? 'Yes' : 'No', mediumFont);
+      setTextField('OverDoorSound', formData.param4 === 'Pass' ? 'Yes' : 'No', mediumFont);
+      setTextField('ControlPointCheck', formData.param5 === 'Pass' ? 'Yes' : 'No', mediumFont);
+      setTextField('PassFail', formData.param6 || '', mediumFont);
+
+      // Report
+      setTextField('EngineerReport', formData.report || '', mediumFont);
+
+      // Signatures
+      const clientName = formData.clientUser?.name || formData.client || '';
+      const engineerName = formData.user?.name || '';
+
+      setTextField('Clients Name', clientName, mediumFont);
+      setTextField('Engineers Name', engineerName, mediumFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+
+      // Flatten and save
+      form.flatten();
+      const pdfBytesModified = await pdfDoc.save();
+      const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
+      const fileName = `DisabledWCAlarmCertificate_${formData.selectedAsset?.assetName || 'report'}.pdf`;
+
+      setGeneratedPdfBlob(blob);
+      setShowPdfButton(true);
+
+      if (uploadToServer) {
+        await uploadPdfToServer(blob, fileName);
       }
+
+      toast.success('PDF generated successfully!');
+      return { success: true, fileName };
+
     } catch (error) {
-      console.error('Form submission error:', error);
-      toast.error(error.response?.data?.message || error.message || "Failed to save report");
-      throw error; // Re-throw to allow caller to handle the error
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+      return { success: false, error: error.message };
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('Form submitted');
+
+    if (isLoading) {
+      console.log('Submit prevented: Already loading');
+      return;
+    }
+
+    // Validation checks
+    const hasFailures = [
+      formData.param6
+    ].some(val => val === "Fail");
+
+    if (hasFailures && !actionRaised) {
+      toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+
+    if (!isFormEditable) {
+      console.log('Submit prevented: Form is not editable');
+      return;
+    }
+
+    // Form validation
+    const errors = {};
+    if (!formData.param1) errors.param1 = "Please select one option";
+    if (!formData.param2) errors.param2 = "Please select one option";
+    if (!formData.param3) errors.param3 = "Please select one option";
+    if (!formData.param4) errors.param4 = "Please select one option";
+    if (!formData.param5) errors.param5 = "Please select one option";
+    if (!formData.param6) errors.param6 = "Please select one option";
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors({});
+    setIsLoading(true);
+
+    try {
+      const effectiveCheckId = currentCheckId || checkId;
+
+      if (!effectiveCheckId) {
+        throw new Error('No inspection check found. Please refresh the page and try again.');
+      }
+
+      // First update the site check status
+      const statusPayload = {
+        checkId: parseInt(effectiveCheckId, 10),
+        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        type: 'Inspection',
+        subType: 'Plant and Equipment Inspection',
+        category: 'Disabled WC Alarm Certificate',
+        status: 'Done',
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+      };
+
+      const statusResponse = await put(
+          `/api/site-check/${effectiveCheckId}`,
+          statusPayload
+      );
+
+      if (![200, 204].includes(statusResponse?.status)) {
+        throw new Error('Failed to update site check status');
+      }
+
+      console.log('Site check status updated successfully:', statusResponse.data);
+      setCheckStatus('Done');
+      setIsFormEditable(false);
+
+      // Then update the generic inspection record
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        assetId: formData.selectedAsset?.assetId || formData.assetId,
+        client: formData.clientUser?.id || formData.client,
+        engineer: formData.engineer,
+        siteContact: formData.siteContactUser?.id || formData.siteContact,
+        type: 'Inspection',
+        subType: 'Disabled WC Alarm',
+        category: 'Disabled WC Alarm Certificate',
+        checkId: effectiveCheckId,
+        actionId: formData.actionId,
+      };
+
+      const saveResponse = await put(
+          `/api/site-check/generic-inspection/${effectiveCheckId}`,
+          inspectionPayload
+      );
+
+      if (![200, 204].includes(saveResponse?.status)) {
+        throw new Error('Failed to save inspection data');
+      }
+
+      console.log('Inspection data saved successfully:', saveResponse.data);
+
+      // Generate PDF
+      const pdfResult = await generatePDF(true);
+      if (!pdfResult.success) {
+        throw new Error(pdfResult.error || "Failed to generate PDF");
+      }
+
+      toast.success("Disabled WC Alarm report saved and PDF generated successfully!");
+      setShowPdfButton(true);
+      setIsSubmitted(true);
+      setSubmissionSuccess(true);
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      toast.error(error.message || 'Failed to submit form');
     } finally {
       setIsLoading(false);
     }
@@ -795,626 +945,766 @@ const DisabledWCAlarmCertificate = ({
   const renderClientNameField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
+          users?.filter((user) =>
+              user.taggedSites?.some(
+                  (site) => site.id === siteSelectedForGlobal?.siteId
+              )
+          ) || [];
 
       return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={formData.clientUser || null} // Use the stored clientUser
-          onChange={(event, newValue) => {
-            setFormData((prev) => ({
-              ...prev,
-              client: newValue?.id || "",
-              clientUser: newValue || null,
-            }));
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              style={{
-                height: "40px",
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                },
-                "& .MuiAutocomplete-input": {
-                  padding: "8.5px 4px !important",
-                },
+          <Autocomplete
+              options={filteredUsers}
+              getOptionLabel={(user) => user.name}
+              value={formData.clientUser || formData.siteContactUser || null}
+              onChange={(event, newValue) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  client: newValue?.id || "",
+                  clientUser: newValue || null,
+                  siteContact: newValue?.id || "",
+                  siteContactNo: newValue?.phone || "",
+                  siteContactUser: newValue || null,
+                }));
               }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
-          disabled={isSubmitted}
-        />
+              renderInput={(params) => (
+                  <TextField
+                      {...params}
+                      variant="outlined"
+                      required
+                      disabled={isSubmitted}
+                      style={{
+                        height: "40px",
+                        "& .MuiOutlinedInput-root": {
+                          height: "40px",
+                        },
+                        "& .MuiAutocomplete-input": {
+                          padding: "8.5px 4px !important",
+                        },
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          height: "40px",
+                          padding: "0 5px",
+                        },
+                      }}
+                  />
+              )}
+              disabled={isSubmitted}
+          />
       );
     }
     return (
-      <input
-        type="text"
-        className="form-control"
-        name="clientName"
-        value={formData.clientUser?.name || ""}
-        onChange={(e) => {
-          setFormData((prev) => ({
-            ...prev,
-            client: e.target.value,
-            clientNameText: e.target.value,
-          }));
-        }}
-        required
-        disabled={isSubmitted}
-      />
+        <input
+            type="text"
+            className="form-control"
+            name="clientName"
+            value={
+                formData.clientUser?.name || formData.siteContactUser?.name || ""
+            }
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                client: e.target.value,
+                clientNameText: e.target.value,
+                siteContact: e.target.value,
+                siteContactName: e.target.value,
+              }));
+            }}
+            required
+            disabled={isSubmitted}
+        />
     );
   };
 
   const renderSiteContactField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
+          users?.filter((user) =>
+              user.taggedSites?.some(
+                  (site) => site.id === siteSelectedForGlobal?.siteId
+              )
+          ) || [];
 
       return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || null}
-          onChange={(event, newValue) => {
-            setFormData((prev) => ({
-              ...prev,
-              siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
-              siteContactUser: newValue || null,
-              // Autopopulate client name when site contact is selected
-              client: newValue?.id || "",
-              clientUser: newValue || null,
-            }));
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              style={{
-                height: "40px",
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                },
-                "& .MuiAutocomplete-input": {
-                  padding: "8.5px 4px !important",
-                },
+          <Autocomplete
+              options={filteredUsers}
+              getOptionLabel={(user) => user.name}
+              value={formData.siteContactUser || formData.clientUser || null}
+              onChange={(event, newValue) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  siteContact: newValue?.id || "",
+                  siteContactNo: newValue?.phone || "",
+                  siteContactUser: newValue || null,
+                  client: newValue?.id || "",
+                  clientUser: newValue || null,
+                }));
               }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
-          disabled={isSubmitted}
-        />
+              renderInput={(params) => (
+                  <TextField
+                      {...params}
+                      variant="outlined"
+                      required
+                      disabled={isSubmitted}
+                      style={{
+                        height: "40px",
+                        "& .MuiOutlinedInput-root": {
+                          height: "40px",
+                        },
+                        "& .MuiAutocomplete-input": {
+                          padding: "8.5px 4px !important",
+                        },
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          height: "40px",
+                          padding: "0 5px",
+                        },
+                      }}
+                  />
+              )}
+              disabled={isSubmitted}
+          />
       );
     }
     return (
-      <input
-        type="text"
-        className="form-control"
-        name="siteContact"
-        value={formData.siteContactUser?.name || ""}
-        onChange={(e) => {
-          setFormData((prev) => ({
-            ...prev,
-            siteContact: e.target.value,
-            siteContactName: e.target.value,
-          }));
-        }}
-        required
-        disabled={isSubmitted}
-      />
+        <input
+            type="text"
+            className="form-control"
+            name="siteContact"
+            value={
+                formData.siteContactUser?.name || formData.clientUser?.name || ""
+            }
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                siteContact: e.target.value,
+                siteContactName: e.target.value,
+                client: e.target.value,
+                clientNameText: e.target.value,
+              }));
+            }}
+            required
+            disabled={isSubmitted}
+        />
     );
   };
 
-  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
+  const filteredAssets =
+      siteAssets?.filter(
+          (asset) =>
+              asset.category === "Electrical" &&
+              asset.subCategory === "Distress Alarm" &&
+              asset.subCategory2 === "Disabled WC Alarm"
+      ) || [];
+
   return (
-    <div className="container mt-4 mb-5">
-      <div className="header text-center bg-light p-4 mb-4 rounded">
-        <h4 className="mb-0">Disabled WC Alarm Certificate</h4>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="row mb-4">
-          <div className="col-md-6">
-            <div className="mb-3 d-flex">
-              <label
-                className="form-label"
-                style={{ fontWeight: "bold", marginRight: "20px" }}
-              >
-                Address
-              </label>
-              <textarea
-                className="form-control"
-                rows={3}
-                name="address"
-                value={formData.address || ""}
-                disabled
-                style={{
-                  width: "300px",
-                  height: "150px",
-                  overflowY: "auto",
-                  whiteSpace: "pre-wrap",
-                  wordWrap: "break-word",
-                  backgroundColor: "#f8f9fa",
-                  fontWeight: "normal",
-                  fontSize: "15px",
-                }}
-              />
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="mb-3">
-              <label className="form-label">Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="date"
-                value={formatDate(formData.inspectionDate)}
-                onChange={handleInputChange}
-                required
-                style={{
-                  height: "40px",
-                  padding: "0 10px",
-                  width: "100%",
-                }}
-                disabled={isSubmitted && !canEditSubmittedReport}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Site Contact</label>
-              {renderSiteContactField()}
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="mb-3">
-              <label className="form-label">Site Contact No.</label>
-              <input
-                type="text"
-                className="form-control"
-                name="siteContactNo"
-                value={formData.siteContactNo}
-                onChange={handleInputChange}
-                disabled={isSubmitted && !canEditSubmittedReport}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Job No.</label>
-              <input
-                type="text"
-                className="form-control"
-                name="job"
-                value={formData.job}
-                onChange={handleInputChange}
-                disabled={isSubmitted && !canEditSubmittedReport}
-              />
-            </div>
-          </div>
+      <div className="container mt-4 mb-5">
+        <div className="header text-center bg-light p-4 mb-4 rounded d-flex justify-content-between align-items-center">
+          <h4 className="mb-0">Disabled WC Alarm Certificate</h4>
         </div>
+        {!isFormEditable && (
+            <div className="alert alert-warning" role="alert">
+              <i className="bi bi-exclamation-triangle-fill me-2"></i>
+              This form is read-only because the check has been marked as completed.
+            </div>
+        )}
 
-        <div className="card mb-4">
-          <div className="card-header">
-            <h5 className="mb-0">Device Information</h5>
-          </div>
-          <div className="card-body">
-            <div className="row mb-4">
-              <div className="col-md-12">
-                <Autocomplete
-                  disabled={isSubmitted && !canEditSubmittedReport}
-                  options={filteredAssets}
-                  getOptionLabel={(option) =>
-                    `${option.assetId} - ${option.assetName} (${
-                      option.position || "NA"
-                    } > ${option.floor || "NA"} > ${option.room || "NA"})`
-                  }
-                  value={selectedAsset} // Use the computed selectedAsset
-                  onChange={handleAssetSelect}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Select a Disabled WC Alarm Device"
-                      variant="outlined"
-                      placeholder="Search devices..."
-                    />
-                  )}
-                  sx={{ width: "100%" }}
+        <form onSubmit={handleSubmit}>
+          <div className="row mb-4">
+            <div className="col-md-6">
+              <div className="mb-3 d-flex">
+                <label
+                    className="form-label"
+                    style={{ fontWeight: "bold", marginRight: "20px" }}
+                >
+                  Address
+                </label>
+                <textarea
+                    className="form-control"
+                    rows={3}
+                    name="address"
+                    value={formData.address || ""}
+                    disabled
+                    style={{
+                      width: "300px",
+                      height: "150px",
+                      overflowY: "auto",
+                      whiteSpace: "pre-wrap",
+                      wordWrap: "break-word",
+                      backgroundColor: "#f8f9fa",
+                      fontWeight: "normal",
+                      fontSize: "15px",
+                    }}
                 />
               </div>
             </div>
-
-            {selectedAsset && (
-              <div className="row">
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Manufacturer</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="manufacturer"
-                      value={selectedAsset.manufacturer}
-                      onChange={handleInputChange}
-                      required
-                      disabled
-                    />
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Model Number</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="model"
-                      value={selectedAsset.model}
-                      onChange={handleInputChange}
-                      required
-                      disabled
-                    />
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Position</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="position"
-                      value={selectedAsset.position}
-                      onChange={handleInputChange}
-                      required
-                      disabled
-                    />
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Floor</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="floor"
-                      value={selectedAsset.floor}
-                      onChange={handleInputChange}
-                      required
-                      disabled
-                    />
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="mb-3">
-                    <label className="form-label">Room</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="room"
-                      value={selectedAsset.room}
-                      onChange={handleInputChange}
-                      required
-                      disabled
-                    />
-                  </div>
-                </div>
+            <div className="col-md-3">
+              <div className="mb-3">
+                <label className="form-label">Date</label>
+                <input
+                    type="date"
+                    className="form-control"
+                    name="inspectionDate"
+                    value={formatDate(formData.inspectionDate)}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      height: "40px",
+                      padding: "0 10px",
+                      width: "100%",
+                    }}
+                    disabled={isSubmitted}
+                />
               </div>
-            )}
-          </div>
-        </div>
-
-        {/*  Engineers Comments Section */}
-        <div className="card mb-4">
-          <div className="card-header">
-            <h5 className="mb-0">Engineers Comments</h5>
-          </div>
-          <div className="card-body">
-            <div className="mb-3">
-              <TextField
-                multiline
-                rows={16}
-                fullWidth
-                variant="outlined"
-                value={formData.report || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    report: e.target.value,
-                  })
-                }
-                style={{ height: "400px" }}
-                disabled={isSubmitted && !canEditSubmittedReport}
-              />
+              <div className="mb-3">
+                <label className="form-label">Site Contact</label>
+                {renderSiteContactField()}
+              </div>
+            </div>
+            <div className="col-md-3">
+              <div className="mb-3">
+                <label className="form-label">Site Contact No.</label>
+                <input
+                    type="text"
+                    className="form-control"
+                    name="siteContactNo"
+                    value={formData.siteContactNo}
+                    onChange={handleInputChange}
+                    disabled={isSubmitted}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Job No.</label>
+                <input
+                    type="text"
+                    className="form-control"
+                    name="job"
+                    value={formData.job}
+                    onChange={handleInputChange}
+                    disabled={isSubmitted}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mb-4">
-          <div className="card-body">
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <tbody>
+          <div className="card mb-4">
+            <div className="card-header">
+              <h5 className="mb-0">Device Information</h5>
+            </div>
+            <div className="card-body">
+              <div className="row mb-4">
+                <div className="col-md-12">
+                  <Autocomplete
+                      disabled={isSubmitted}
+                      options={filteredAssets}
+                      getOptionLabel={(option) =>
+                          `${option.assetId} - ${option.assetName} (${
+                              option.position || "NA"
+                          } > ${option.floor || "NA"} > ${option.room || "NA"})`
+                      }
+                      value={selectedAsset}
+                      onChange={handleAssetSelect}
+                      renderInput={(params) => (
+                          <TextField
+                              {...params}
+                              label="Select a Disabled WC Alarm Device"
+                              variant="outlined"
+                              placeholder="Search devices..."
+                          />
+                      )}
+                      sx={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+
+              {formData.selectedAsset && (
+                  <div className="row">
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Manufacturer</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="manufacturer"
+                            value={selectedAsset.manufacturer}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Model Number</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="modelNumber"
+                            value={selectedAsset.model}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Position</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="position"
+                            value={selectedAsset.position}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Floor</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="floor"
+                            value={selectedAsset.floor}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Room</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="room"
+                            value={selectedAsset.room}
+                            onChange={handleInputChange}
+                            required
+                            disabled
+                        />
+                      </div>
+                    </div>
+                  </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card mb-4">
+            <div className="card-header">
+              <h5 className="mb-0">Engineers Report</h5>
+            </div>
+            <div className="card-body">
+              <div className="mb-3">
+                <TextField
+                    multiline
+                    rows={16}
+                    fullWidth
+                    variant="outlined"
+                    value={formData.report || ""}
+                    onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          report: e.target.value,
+                        })
+                    }
+                    style={{ height: "400px" }}
+                    disabled={isSubmitted}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table table-bordered">
+                  <tbody>
                   <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
                       Pull Switch Check
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
                       Reset Point Check
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
                       Over Door Light Check
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <select
-                        className="form-select"
-                        value={formData.param1}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            param1: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted && !canEditSubmittedReport}
+                          className={`form-select ${
+                              validationErrors.param1 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param1}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param1: e.target.value,
+                            });
+                            if (validationErrors.param1) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param1;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param1 && (
+                          <div className="invalid-feedback">
+                            {validationErrors.param1}
+                          </div>
+                      )}
                     </td>
                     <td>
                       <select
-                        className="form-select"
-                        value={formData.param2}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            param2: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted && !canEditSubmittedReport}
+                          className={`form-select ${
+                              validationErrors.param2 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param2}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param2: e.target.value,
+                            });
+                            if (validationErrors.param2) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param2;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param2 && (
+                          <div className="invalid-feedback">
+                            {validationErrors.param2}
+                          </div>
+                      )}
                     </td>
                     <td>
                       <select
-                        className="form-select"
-                        value={formData.param3}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            param3: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted && !canEditSubmittedReport}
+                          className={`form-select ${
+                              validationErrors.param3 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param3}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param3: e.target.value,
+                            });
+                            if (validationErrors.param3) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param3;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param3 && (
+                          <div className="invalid-feedback">
+                            {validationErrors.param3}
+                          </div>
+                      )}
                     </td>
                   </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="mb-4">
-          <div className="card-body">
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <tbody>
+
+          <div className="mb-4">
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table table-bordered">
+                  <tbody>
                   <tr>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Over Door Sounder Check{" "}
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Over Door Sounder Check
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
-                      Control Point / Intercom Check{" "}
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
+                      Control Point / Intercom Check
                     </td>
-                    <td
-                      style={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        width: "400px",
-                      }}
-                    >
+                    <td style={{ textAlign: "center", fontWeight: "bold" }}>
                       Pass/Fail
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <select
-                        className="form-select"
-                        value={formData.param4}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            param4: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted && !canEditSubmittedReport}
+                          className={`form-select ${
+                              validationErrors.param4 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param4}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param4: e.target.value,
+                            });
+                            if (validationErrors.param4) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param4;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param4 && (
+                          <div className="invalid-feedback">
+                            {validationErrors.param4}
+                          </div>
+                      )}
                     </td>
                     <td>
                       <select
-                        className="form-select"
-                        value={formData.param5}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            param5: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted && !canEditSubmittedReport}
+                          className={`form-select ${
+                              validationErrors.param5 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param5}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param5: e.target.value,
+                            });
+                            if (validationErrors.param5) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param5;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
                         <option value="Fail">No</option>
                       </select>
+                      {validationErrors.param5 && (
+                          <div className="invalid-feedback">
+                            {validationErrors.param5}
+                          </div>
+                      )}
                     </td>
                     <td>
                       <select
-                        className="form-select"
-                        value={formData.param6}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            param6: e.target.value,
-                          })
-                        }
-                        disabled={isSubmitted && !canEditSubmittedReport}
+                          className={`form-select ${
+                              validationErrors.param6 ? "is-invalid" : ""
+                          }`}
+                          value={formData.param6}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              param6: e.target.value,
+                            });
+                            if (validationErrors.param6) {
+                              setValidationErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors.param6;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Pass</option>
                         <option value="Fail">Fail</option>
                       </select>
+                      {validationErrors.param6 && (
+                          <div className="invalid-feedback">
+                            {validationErrors.param6}
+                          </div>
+                      )}
                     </td>
                   </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="row mt-4">
-          <div className="col-md-6">
-            <div className="mb-3">
-              <label className="form-label fw-bold">Client's Name</label>
-              {renderClientNameField()}
-            </div>
 
-            <div className="mb-3">
-              <label className="form-label">Date</label>
-              <input
-                type="date"
-                className="form-control"
-                value={formatDate(formData.signedDate)}
-                onChange={handleInputChange}
-                required
-                style={{
-                  height: "40px",
-                  padding: "0 10px",
-                  width: "100%",
-                }}
-                disabled={isSubmitted && !canEditSubmittedReport}
-              />
+          {showRiskAssessment && (
+              <div className="card mb-4">
+                <div className="card-header">
+                  <h5 className="mb-0">Risk Assessment</h5>
+                  {existingAction && (
+                      <span className="badge bg-success ms-2">
+                  Action #{existingAction.actionId} - {existingAction.status}
+                </span>
+                  )}
+                </div>
+                <div className="card-body">
+                  {existingAction ? (
+                      <div className="existing-action">
+                        <div className="row">
+                          <div className="col-md-6">
+                            <p><strong>Observation:</strong> {existingAction.observation}</p>
+                            <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                            <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                          </div>
+                          <div className="col-md-6">
+                            <p><strong>Description: </strong> {existingAction.desc}</p>
+                            <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                            <p><strong>Status:</strong> {existingAction.status}</p>
+                          </div>
+                        </div>
+                        {existingAction.comments && (
+                            <div className="mt-3">
+                              <h6>Comments:</h6>
+                              <p>{existingAction.comments}</p>
+                            </div>
+                        )}
+                      </div>
+                  ) : (
+                      <RiskScoreCard
+                          desc={`Inspection - Plant and Equipment Inspection - Disabled WC Alarm Certificate`}
+                          siteId={siteSelectedForGlobal?.siteId}
+                          assignedTo={loggedInUserData?.id}
+                          createdBy={loggedInUserData?.id}
+                          onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                          actionRaised={actionRaised}
+                      />
+                  )}
+                </div>
+              </div>
+          )}
+
+          <div className="row mt-4">
+            <div className="col-md-6">
+              <div className="mb-3">
+                <label className="form-label fw-bold">Client's Name</label>
+                {renderClientNameField()}
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Date</label>
+                <input
+                    type="date"
+                    className="form-control"
+                    name="signedDate"
+                    value={formatDate(formData.signedDate)}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      height: "40px",
+                      padding: "0 10px",
+                      width: "100%",
+                    }}
+                    disabled={isSubmitted}
+                />
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="mb-3">
+                <label className="form-label fw-bold">Engineer's Name</label>
+                <input
+                    type="text"
+                    className="form-control"
+                    name="engineer name"
+                    readOnly
+                    value={formData.user.name}
+                    required
+                    disabled
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Date</label>
+                <input
+                    type="date"
+                    className="form-control"
+                    name="signedDate"
+                    value={formatDate(formData.signedDate)}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isSubmitted}
+                    style={{
+                      height: "40px",
+                      padding: "0 10px",
+                      width: "100%",
+                    }}
+                />
+              </div>
             </div>
           </div>
-          <div className="col-md-6">
-            <div className="mb-3">
-              <label className="form-label fw-bold">Engineer's Name</label>
-              <input
-                type="text"
-                className="form-control"
-                name="engineerName"
-                value={formData.user.name || ""}
-                onChange={handleInputChange}
-                required
-                readOnly
-                disabled={isSubmitted && !canEditSubmittedReport}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="engineerDate"
-                value={formatDate(formData.signedDate)}
-                onChange={handleInputChange}
-                required
-                disabled={isSubmitted && !canEditSubmittedReport}
-                style={{
-                  height: "40px",
-                  padding: "0 10px",
-                  width: "100%",
-                }}
-              />
-            </div>
+
+          <div className="mt-4 print-hide">
+            {!isSubmitted ? (
+                <div className="d-flex justify-content-between mt-3">
+                  <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => window.history.back()}
+                  >
+                    Back
+                  </button>
+                  <div>
+                    {isFormEditable && (
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={
+                                isLoading ||
+                                isGeneratingPDF ||
+                                (showRiskAssessment && !actionRaised)
+                            }
+                        >
+                          {isLoading ? 'Submitting...' : 'Submit Report'}
+                        </button>
+                    )}
+                  </div>
+                </div>
+            ) : (
+                <div className="text-center">
+                  <div className="alert alert-success mb-4">
+                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                  </div>
+                </div>
+            )}
           </div>
-        </div>
+        </form>
 
-        <div className="d-flex justify-content-end gap-2 mt-4 print-hide">
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            onClick={() => window.history.back()}
-          >
-            {isSubmitted ? 'Back' : 'Cancel'}
-          </button>
-
-          <button 
-            type="submit" 
-            className="btn btn-primary"
-            disabled={isLoading || isGeneratingPDF}
-          >
-            {isLoading || isGeneratingPDF ? 'Processing...' : 'Submit Report'}
-          </button>
-        </div>
-
-        {submissionSuccess && (
-          <div className="alert alert-success mt-4 print-hide">
-            Report submitted successfully on{" "}
-            {new Date().toISOString().split("T")[0]}
-          </div>
-        )}
-      </form>
-
-      <style>{`
+        <style>{`
+        .is-invalid {
+          border-color: #dc3545 !important;
+        }
+        .invalid-feedback {
+          display: block;
+          width: 100%;
+          margin-top: .25rem;
+          font-size: .875em;
+          color: #dc3545;
+        }
         @media print {
           .print-hide {
             display: none !important;
@@ -1429,7 +1719,7 @@ const DisabledWCAlarmCertificate = ({
           }
         }
       `}</style>
-    </div>
+      </div>
   );
 };
 
