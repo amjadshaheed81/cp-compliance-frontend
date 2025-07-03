@@ -131,6 +131,9 @@ const AirConditioning = ({
     position: { x: 0, y: 0 },
   });
 
+  const selectedAsset = siteAssets.find(
+      (asset) => asset.assetId === formData.assetId
+  );
   const handleMouseEnter = (e, content) => {
     if (!content) return;
     setPopup({
@@ -335,29 +338,52 @@ const AirConditioning = ({
     // Enhance the status check in your fetchSiteCheckData function
     const fetchSiteCheckData = async () => {
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
-          if (response && response.length > 0) {
-            const airConditioningCheck = response.find(
-                check => check.type === 'Inspection' && check.subType === 'Plant and Equipment Inspection' && check.category === 'Air Conditioning Service'
+        if (!siteSelectedForGlobal?.siteId) return;
+
+        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        if (response && response.length > 0) {
+          // First try to find the exact checkId from URL
+          let airConditioningCheck = checkId
+              ? response.find(check => check.checkId === parseInt(checkId, 10))
+              : null;
+
+          // If not found by checkId, find first matching type
+          if (!airConditioningCheck) {
+            airConditioningCheck = response.find(check =>
+                check.type === 'Inspection' &&
+                check.subType === 'Plant and Equipment Inspection' &&
+                check.category === 'Air Conditioning Service'
             );
+          }
 
-            if (airConditioningCheck) {
-              setCurrentCheckId(airConditioningCheck.checkId);
-              setCheckStatus(airConditioningCheck.status);
-              const isDone = airConditioningCheck.status === 'Done';
-              setIsFormEditable(!isDone);
-              setIsSubmitted(isDone); // Explicitly set isSubmitted
+          if (airConditioningCheck) {
+            console.log('Found check:', {
+              checkId: airConditioningCheck.checkId,
+              requestedCheckId: checkId,
+              matchType: airConditioningCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
+            });
 
-              if (isDone) {
-                setShowPdfButton(true); // Show PDF button for completed checks
-              }
-            }
+            setCurrentCheckId(airConditioningCheck.checkId);
+            setCheckStatus(airConditioningCheck.status);
+
+            // Set form editability based on status
+            const isDone = airConditioningCheck.status === 'Done';
+            setIsFormEditable(!isDone);
+            setIsSubmitted(isDone);
+            setShowPdfButton(isDone);
+          } else {
+            // If no matching check found, default to editable
+            console.log('No matching check found, using checkId from URL:', checkId);
+            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+            setIsFormEditable(true);
+            setIsSubmitted(false);
+            setShowPdfButton(false);
           }
         }
       } catch (error) {
         console.error('Error fetching site check data:', error);
         toast.error('Failed to load site check status');
+        setIsFormEditable(true);
       }
     };
 
@@ -371,11 +397,9 @@ const AirConditioning = ({
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-
-          await fetchInspectionData();
           await fetchFolderStructure(siteSelectedForGlobal.siteId);
-
           await fetchSiteCheckData();
+          await fetchInspectionData();
 
           if (formData.actionId) {
             const action = await fetchActionById(formData.actionId);
@@ -431,6 +455,7 @@ const AirConditioning = ({
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
+    checkId,  // Add checkId to dependencies
   ]);
 
   useEffect(() => {
@@ -567,6 +592,13 @@ const AirConditioning = ({
     }
   };
 
+  const handleAssetSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue || null,
+    }));
+  };
   const checkFileExists = async (folderId, fileName) => {
     try {
       const siteId = siteSelectedForGlobal?.siteId;
@@ -774,17 +806,18 @@ const AirConditioning = ({
 
 
       const equipmentDetailsLocation = [
-        formData.floor,
-        formData.room,
-        formData.position,
-        formData.assetName
+        selectedAsset.floor,
+        selectedAsset.room,
+        selectedAsset.position,
+        selectedAsset.assetName
       ].filter(Boolean).join(' - ');
 
+      console.log( "selected asset data",equipmentDetailsLocation);
       // Equipment information
       setTextField('Manufacturer', formData.manufacturer || '', mediumFont);
       setTextField('Model Number', formData.modelNumber || '', mediumFont);
       setTextField('Serial Number', formData.serialNumber || '', mediumFont);
-      setTextField('Equipment Details Location', equipmentDetailsLocation || '', mediumFont);
+      setTextField('Equipment Details  Location', equipmentDetailsLocation || '', mediumFont);
 
 
       const mapPassFailToYesNo = (value) => {
@@ -805,16 +838,17 @@ const AirConditioning = ({
       setTextField('Temperature Checks', mapPassFailToYesNo(formData.param10) || '', mediumFont);
 
 
+
       // Materials used
-      setTextField('OFN', formData.param1Remark || '', smallFont);
-      setTextField('Welding', formData.param2Remark || '', smallFont);
-      setTextField('Refridgerant', formData.param3Remark || '', smallFont);
-      setTextField('Reclaim Cylinder', formData.param4Remark || '', smallFont);
-      setTextField('Cleaning Chemicals', formData.param5Remark || '', smallFont);
-      setTextField('Air Spray', formData.param6Remark || '', smallFont);
+      setTextField('OFN', formData.param1Remark || '', mediumFont);
+      setTextField('Welding', formData.param2Remark || '', mediumFont);
+      setTextField('Refridgerant', formData.param3Remark || '', mediumFont);
+      setTextField('Reclaim Cylinder', formData.param4Remark || '', mediumFont);
+      setTextField('Cleaning Chemicals', formData.param5Remark || '', mediumFont);
+      setTextField('Air Spray', formData.param6Remark || '', mediumFont);
 
       // Report
-      setTextField('Engineers Report', formData.report || '', smallFont);
+      setTextField('Engineers Report', formData.report || '', mediumFont);
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
@@ -826,7 +860,7 @@ const AirConditioning = ({
       setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Flatten and save
-      form.flatten();
+     form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
       const fileName = `AirConditioningReport_${formData.selectedAsset.assetName}.pdf`;
@@ -910,8 +944,8 @@ const AirConditioning = ({
         checkId: parseInt(effectiveCheckId, 10),
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
-        subType: 'Mechanical',
-        category: 'Air Conditioning',
+        subType: 'Plant and Equipment Inspection',
+        category: 'Air Conditioning Service',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
@@ -1136,20 +1170,6 @@ const AirConditioning = ({
               asset.subCategory2 === "Air Conditioning Unit (Indoor)"
       ) || [];
 
-  const handleAssetSelect = (event, newValue) => {
-    setFormData((prev) => ({
-      ...prev,
-      assetId: newValue ? newValue.assetId : "",
-      selectedAsset: newValue,
-      assetName: newValue ? newValue.assetName : "",
-      manufacturer: newValue ? newValue.manufacturer : "",
-      modelNumber: newValue ? newValue.model : "",
-      position: newValue ? newValue.position : "",
-      floor: newValue ? newValue.floor : "",
-      room: newValue ? newValue.room : "",
-      serialNumber: newValue ? newValue.serialNumber : "",
-    }));
-  };
 
   return (
       <div className="container mt-4 mb-5">
@@ -1256,7 +1276,7 @@ const AirConditioning = ({
                               option.position || "NA"
                           } > ${option.floor || "NA"} > ${option.room || "NA"})`
                       }
-                      value={formData.selectedAsset}
+                      value={selectedAsset}
                       onChange={handleAssetSelect}
                       renderInput={(params) => (
                           <TextField
@@ -1280,7 +1300,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="manufacturer"
-                            value={formData.manufacturer}
+                            value={selectedAsset.manufacturer}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1294,7 +1314,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="modelNumber"
-                            value={formData.modelNumber}
+                            value={selectedAsset.model}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1308,7 +1328,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="serialNumber"
-                            value={formData.serialNumber}
+                            value={selectedAsset.serialNumber}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1336,7 +1356,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="position"
-                            value={formData.position}
+                            value={selectedAsset.position}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1350,7 +1370,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="floor"
-                            value={formData.floor}
+                            value={selectedAsset.floor}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1364,7 +1384,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="room"
-                            value={formData.room}
+                            value={selectedAsset.room}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1902,7 +1922,7 @@ const AirConditioning = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service - `}
+                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service`}
                             siteId={siteSelectedForGlobal?.siteId}
                             assignedTo={loggedInUserData?.id}
                             createdBy={loggedInUserData?.id}
