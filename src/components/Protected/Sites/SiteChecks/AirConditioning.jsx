@@ -317,7 +317,7 @@ const AirConditioning = ({
                 setFolderIds({
                   logBooks: logBooksFolder.id,
                   EnvironmentalLogBook: EnvironmentalLogBookFolder.id,
-                  AirConditioningServiceAndMaintenanceRecords: airConditioningFolder?.id || null
+                  airConditioning: airConditioningFolder?.id || null
                 });
 
                 return airConditioningFolder?.id || null;
@@ -814,9 +814,9 @@ const AirConditioning = ({
 
       console.log( "selected asset data",equipmentDetailsLocation);
       // Equipment information
-      setTextField('Manufacturer', formData.manufacturer || '', mediumFont);
-      setTextField('Model Number', formData.modelNumber || '', mediumFont);
-      setTextField('Serial Number', formData.serialNumber || '', mediumFont);
+      setTextField('Manufacturer', selectedAsset.manufacturer || '', mediumFont);
+      setTextField('Model Number', selectedAsset.model || '', mediumFont);
+      setTextField('Serial Number', selectedAsset.serialNumber || '', mediumFont);
       setTextField('Equipment Details  Location', equipmentDetailsLocation || '', mediumFont);
 
 
