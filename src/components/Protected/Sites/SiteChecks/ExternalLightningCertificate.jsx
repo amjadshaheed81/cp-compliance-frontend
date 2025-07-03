@@ -322,27 +322,52 @@ const ExternalLightningCertificate = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
-          if (response && response.length > 0) {
-            const externalLightingCheck = response.find(
-                check => check.type === 'Inspection' && check.subType === 'Electrical' && check.category === 'External Lighting Testing'
+        if (!siteSelectedForGlobal?.siteId) return;
+
+        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        if (response && response.length > 0) {
+          // First try to find the exact checkId from URL
+          let externalLightingCheck = checkId
+              ? response.find(check => check.checkId === parseInt(checkId, 10))
+              : null;
+
+          // If not found by checkId, find first matching type
+          if (!externalLightingCheck) {
+            externalLightingCheck = response.find(check =>
+                check.type === 'Inspection' &&
+                check.subType === 'Electrical' &&
+                check.category === 'External Lighting Testing'
             );
+          }
 
-            if (externalLightingCheck) {
-              setCurrentCheckId(externalLightingCheck.checkId);
-              setCheckStatus(externalLightingCheck.status);
-              setIsFormEditable(externalLightingCheck.status === 'Open');
+          if (externalLightingCheck) {
+            console.log('Found check:', {
+              checkId: externalLightingCheck.checkId,
+              requestedCheckId: checkId,
+              matchType: externalLightingCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
+            });
 
-              if (externalLightingCheck.status === 'Done') {
-                setIsSubmitted(true);
-              }
-            }
+            setCurrentCheckId(externalLightingCheck.checkId);
+            setCheckStatus(externalLightingCheck.status);
+
+            // Set form editability based on status
+            const isDone = externalLightingCheck.status === 'Done';
+            setIsFormEditable(!isDone);
+            setIsSubmitted(isDone);
+            setShowPdfButton(isDone);
+          } else {
+            // If no matching check found, default to editable
+            console.log('No matching check found, using checkId from URL:', checkId);
+            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+            setIsFormEditable(true);
+            setIsSubmitted(false);
+            setShowPdfButton(false);
           }
         }
       } catch (error) {
         console.error('Error fetching site check data:', error);
         toast.error('Failed to load site check status');
+        setIsFormEditable(true);
       }
     };
 
@@ -356,10 +381,10 @@ const ExternalLightningCertificate = ({
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
           await fetchFolderStructure(siteSelectedForGlobal.siteId);
-
+          await fetchSiteCheckData();
           await fetchInspectionData();
 
-          await fetchSiteCheckData();
+
 
           if (formData.actionId) {
             const action = await fetchActionById(formData.actionId);
@@ -1172,7 +1197,7 @@ const ExternalLightningCertificate = ({
         <div className="header text-center bg-light p-4 mb-4 rounded d-flex justify-content-between align-items-center">
           <h4 className="mb-0">External Lighting Service Report</h4>
         </div>
-        {isFormEditable && (
+        {!isFormEditable && (
             <div className="alert alert-warning" role="alert">
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               This form is read-only because the check has been marked as completed.
@@ -1660,7 +1685,7 @@ const ExternalLightningCertificate = ({
                     Back
                   </button>
                   <div>
-                    {isFormEditable && !actionRaised &&(
+                    {isFormEditable &&(
                         <button
                             type="submit"
                             className="btn btn-primary"
@@ -1668,7 +1693,7 @@ const ExternalLightningCertificate = ({
                                 !isFormEditable ||
                                 isLoading ||
                                 isGeneratingPDF ||
-                                (formData.param4 === "Fail" && !actionRaised)
+                                (showRiskAssessment && !actionRaised)
                             }
                         >
                           {isLoading ? 'Submitting...' : 'Submit Report'}
