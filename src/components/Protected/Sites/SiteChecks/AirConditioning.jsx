@@ -113,7 +113,7 @@ const AirConditioning = ({
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     EnvironmentalLogBook: null,
-    AirConditioningServiceAndMaintenanceRecords: null
+    airConditioning: null
   });
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
