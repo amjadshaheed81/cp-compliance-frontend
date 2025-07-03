@@ -1603,11 +1603,11 @@ const ExternalLightningCertificate = ({
                             <RiskScoreCard
                                 desc={`Inspection - Electrical - External Lightning Testing - ${formatDate(formData.inspectionDate)}`}
                                 siteId={siteSelectedForGlobal?.siteId}
-                                assignedTo={loggedInUserData?.id}
                                 createdBy={loggedInUserData?.id}
+                                taggedAsset={''}
                                 onRiskAssessmentComplete={handleRiskAssessmentComplete}
                                 actionRaised={actionRaised}
-                            />
+                             />
                         )}
                       </div>
                     </div>

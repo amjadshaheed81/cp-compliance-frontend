@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { get, post } from "../../../../api";
+import { get, post, put } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -14,6 +14,8 @@ import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/MicrowaveOvenCertificate.pdf';
+import RiskScoreCard from "./RiskScoreCard";
+import {useNavigate} from "react-router-dom";
 
 const fetchPdfTemplate = async () => {
   try {
@@ -100,7 +102,17 @@ const MicroWaveOvenCertificate = ({
     electricalManagement: null,
     microwaveOvenTesting: null
   });
-  
+
+  const [checkStatus, setCheckStatus] = useState('Open');
+  const [isFormEditable, setIsFormEditable] = useState(true);
+  const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [actionRaised, setActionRaised] = useState(false);
+  const [existingAction, setExistingAction] = useState(null);
+  const navigate = useNavigate();
+
+
+
   // Fetch assets when component mounts or when site selection changes
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -128,6 +140,63 @@ const MicroWaveOvenCertificate = ({
     }));
   };
 
+
+  useEffect(() => {
+    const showRisk = [
+      formData.param3
+    ].some(val => val === "Fail");
+    setShowRiskAssessment(showRisk);
+    if (!showRisk) {
+      setActionRaised(false);
+    }
+  }, [formData.param3]);
+
+  const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+      if (!actionResponse?.actionId) {
+        throw new Error("Invalid action response received");
+      }
+
+      setActionRaised(true);
+      setExistingAction(actionResponse);
+
+      const updatedFormData = {
+        ...formData,
+        actionId: actionResponse.actionId
+      };
+
+      setFormData(updatedFormData);
+
+      if (currentCheckId) {
+        const inspectionPayload = {
+          ...updatedFormData,
+          checkId: currentCheckId,
+          actionId: actionResponse.actionId,
+          siteId: siteSelectedForGlobal?.siteId,
+          assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
+          client: updatedFormData.clientUser?.id || updatedFormData.client,
+          engineer: updatedFormData.engineer,
+          siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
+          type: 'Inspection',
+          subType: 'Microwave Oven',
+          category: 'Microwave Oven Certificate'
+        };
+
+        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+
+        if (!existingInspections || existingInspections.length === 0) {
+          await post(`/api/site-check/generic-inspection`, inspectionPayload);
+        } else {
+          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
+        }
+
+        toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
+      }
+    } catch (error) {
+      console.error("Error handling risk assessment completion:", error);
+      toast.error("Failed to process action completion");
+    }
+  };
   const fetchFolderStructure = async (siteId) => {
     try {
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -174,7 +243,9 @@ const MicroWaveOvenCertificate = ({
       return null;
     }
   };
-
+  const selectedAsset = siteAssets.find(
+      (asset) => asset.assetId === formData.assetId
+  );
   const checkFileExists = async (folderId, fileName) => {
     try {
       const siteId = siteSelectedForGlobal?.siteId;
@@ -624,13 +695,56 @@ const MicroWaveOvenCertificate = ({
     };
     
     initializeData();
+
+    // Add this to your useEffect for initial data loading
+    const fetchSiteCheckData = async () => {
+      try {
+        if (!siteSelectedForGlobal?.siteId) return;
+
+        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        if (response && response.length > 0) {
+          let microwaveCheck = checkId
+              ? response.find(check => check.checkId === parseInt(checkId, 10))
+              : null;
+
+          if (!microwaveCheck) {
+            microwaveCheck = response.find(check =>
+                check.type === 'Inspection' &&
+                check.subType === 'Plant and Equipment Inspection' &&
+                check.category === 'Microwave Oven Certificate'
+            );
+          }
+
+          if (microwaveCheck) {
+            setCurrentCheckId(microwaveCheck.checkId);
+            setCheckStatus(microwaveCheck.status);
+            const isDone = microwaveCheck.status === 'Done';
+            setIsFormEditable(!isDone);
+            setIsSubmitted(isDone);
+            setShowPdfButton(isDone);
+          } else {
+            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+            setIsFormEditable(true);
+            setIsSubmitted(false);
+            setShowPdfButton(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching site check data:', error);
+        toast.error('Failed to load site check status');
+        setIsFormEditable(true);
+      }
+    };
+
+
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
         if (siteSelectedForGlobal?.siteId) {
           await getSiteAssets(siteSelectedForGlobal?.siteId);
           await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-
+          await fetchSiteCheckData();
           await fetchInspectionData();
 
           const currentSite = sites.find(
@@ -690,60 +804,89 @@ const MicroWaveOvenCertificate = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation checks
+    const hasFailures = [formData.param3].some(val => val === "Fail");
+    if (hasFailures && !actionRaised) {
+      toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+
+    if (!isFormEditable) return;
+
+    // Form validation
+    const errors = {};
+    if (!formData.param1) errors.param1 = "Please select one option";
+    if (!formData.param2) errors.param2 = "Please select one option";
+    if (!formData.param3) errors.param3 = "Please select one option";
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors({});
+    setIsLoading(true);
+
     try {
-      if (!formData.assetId) {
-        toast.error("Please select an asset first");
-        return;
+      const effectiveCheckId = currentCheckId || checkId;
+      if (!effectiveCheckId) {
+        throw new Error('No inspection check found');
       }
 
-      const dataToSave = {
-        ...formData,
-        assetId: formData.assetId,
-        siteId: siteSelectedForGlobal?.siteId,
-        checkId,
-        subType,
-        inspectionDate: formData.inspectionDate || new Date().toISOString(),
-        job: formData.job,
-        engineer: loggedInUserData?.id,
-        signedDate: formData.signedDate || new Date().toISOString(),
-        submittedDate: new Date().toISOString(),
-        report: formData.report,
-        param1: formData.param1, // emission level check
-        param2: formData.param2, // interlock check
-        param3: formData.param3, // pass or fail
+      // Update site check status
+      const statusPayload = {
+        checkId: parseInt(effectiveCheckId, 10),
+        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        type: 'Inspection',
+        subType: 'Plant and Equipment Inspection',
+        category: 'Microwave Oven Certificate',
+        status: 'Done',
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
-      // First save the form data
-      const response = await post("/api/site-check/generic-inspection", dataToSave);
-      setIsSubmitted(true);
-      
-      // After successful save, generate and save the PDF
-      try {
-        // Generate the PDF and get the blob
-        const pdfBlob = await generatePdf(true);
-        if (!pdfBlob) {
-          throw new Error('Failed to generate PDF');
-        }
+      await put(`/api/site-check/${effectiveCheckId}`, statusPayload);
+      setCheckStatus('Done');
+      setIsFormEditable(false);
 
-        // Create a file name for the PDF
-        const fileName = `MicrowaveOvenCertificate.pdf`;
-        
-        // Upload the PDF to the server
-        const uploadSuccess = await uploadPdfToServer(pdfBlob, fileName);
-        
-        if (uploadSuccess) {
-          toast.success("Report saved and PDF uploaded successfully!");
-        } else {
-          throw new Error('PDF upload failed');
-        }
-      } catch (pdfError) {
-        console.error("Error in PDF generation/upload:", pdfError);
-        //toast.warning("Report saved, but there was an error with the PDF: " + (pdfError.message || 'Unknown error'));
+      // Update inspection record
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        assetId: formData.selectedAsset?.assetId || formData.assetId,
+        client: formData.clientUser?.id || formData.client,
+        engineer: formData.engineer,
+        siteContact: formData.siteContactUser?.id || formData.siteContact,
+        type: 'Inspection',
+        subType: 'Microwave Oven',
+        category: 'Microwave Oven Certificate',
+        checkId: effectiveCheckId,
+        actionId: formData.actionId,
+      };
+
+      await put(`/api/site-check/generic-inspection/${effectiveCheckId}`, inspectionPayload);
+
+      // Generate PDF
+      const pdfResult = await generatePdf(true);
+      if (!pdfResult.success) {
+        throw new Error(pdfResult.error || "Failed to generate PDF");
       }
-      
+
+      toast.success("Microwave Oven report saved and PDF generated successfully!");
+      setShowPdfButton(true);
+      setIsSubmitted(true);
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 1500);
+
     } catch (error) {
-      toast.error("Failed to save report");
-      console.error(error);
+      console.error('Error in form submission:', error);
+      toast.error(error.message || 'Failed to submit form');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1199,6 +1342,51 @@ const MicroWaveOvenCertificate = ({
                 </tbody>
               </table>
             </div>
+            {showRiskAssessment && (
+                <div className="card mb-4">
+                  <div className="card-header">
+                    <h5 className="mb-0">Risk Assessment</h5>
+                    {existingAction && (
+                        <span className="badge bg-success ms-2">
+          Action #{existingAction.actionId} - {existingAction.status}
+        </span>
+                    )}
+                  </div>
+                  <div className="card-body">
+                    {existingAction ? (
+                        <div className="existing-action">
+                          <div className="row">
+                            <div className="col-md-6">
+                              <p><strong>Observation:</strong> {existingAction.observation}</p>
+                              <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                              <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                            </div>
+                            <div className="col-md-6">
+                              <p><strong>Description: </strong> {existingAction.desc}</p>
+                              <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                              <p><strong>Status:</strong> {existingAction.status}</p>
+                            </div>
+                          </div>
+                          {existingAction.comments && (
+                              <div className="mt-3">
+                                <h6>Comments:</h6>
+                                <p>{existingAction.comments}</p>
+                              </div>
+                          )}
+                        </div>
+                    ) : (
+                        <RiskScoreCard
+                            desc={`Inspection - Plant and Equipment Inspection - Microwave Oven Certificate`}
+                            siteId={siteSelectedForGlobal?.siteId}
+                            createdBy={loggedInUserData?.id}
+                            taggedAsset={formData?.selectedAsset?.assetId}
+                            onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                            actionRaised={actionRaised}
+                        />
+                    )}
+                  </div>
+                </div>
+            )}
           </div>
         </div>
         <div className="row mt-4">
@@ -1259,28 +1447,37 @@ const MicroWaveOvenCertificate = ({
           </div>
         </div>
 
-        {!isSubmitted && (
-          <div className="d-flex justify-content-end gap-2 mt-4 print-hide">
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </button>
-
-            <button type="submit" className="btn btn-primary">
-              Submit Report
-            </button>
-          </div>
-        )}
-
-        {isSubmitted && (
-          <div className="row mt-4">
-            <div className="col-12 text-center">
-              {/* PDF generation is now handled automatically on form submission */}
+        {!isSubmitted ? (
+            <div className="d-flex justify-content-between mt-3">
+              <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => window.history.back()}
+              >
+                Back
+              </button>
+              <div>
+                {isFormEditable && (
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={
+                            isLoading ||
+                            isGeneratingPDF ||
+                            (showRiskAssessment && !actionRaised)
+                        }
+                    >
+                      {isLoading ? 'Submitting...' : 'Submit Report'}
+                    </button>
+                )}
+              </div>
             </div>
-          </div>
+        ) : (
+            <div className="text-center">
+              <div className="alert alert-success mb-4">
+                Report submitted successfully on {new Date().toISOString().split("T")[0]}
+              </div>
+            </div>
         )}
       </form>
       

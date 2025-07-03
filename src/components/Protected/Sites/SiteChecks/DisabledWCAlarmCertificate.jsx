@@ -701,6 +701,7 @@ const DisabledWCAlarmCertificate = ({
 
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+      const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
       const form = pdfDoc.getForm();
 
       // Debug: Log all field names
@@ -715,13 +716,14 @@ const DisabledWCAlarmCertificate = ({
         }
       });
 
-      const setTextField = (fieldName, value, fontSize = 10) => {
+      const setTextField = (fieldName, value, fontSize = 5) => {
         try {
           const field = form.getTextField(fieldName);
           if (field) {
             field.setText(value || '');
             try {
               if (field.setFontSize) {
+                field.updateAppearances(helveticaFont);
                 field.setFontSize(fontSize);
               }
             } catch (e) {
@@ -744,6 +746,7 @@ const DisabledWCAlarmCertificate = ({
         }
       };
 
+
       const smallFont = 8;
       const mediumFont = 10;
 
@@ -751,10 +754,9 @@ const DisabledWCAlarmCertificate = ({
       const addressLines = (formData.address || '').split(',');
       setTextField('AddressLine1', addressLines[0] || '', smallFont);
       setTextField('AddressLine2', addressLines[1] || '', smallFont);
-      setTextField('city', addressLines[2] || '');
+      setTextField('city', addressLines[2] || '', smallFont);
       setTextField('postalCode', addressLines[3] || '', smallFont);
       setTextField('country', addressLines[4] || '', smallFont);
-
 
       setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
       setTextField('siteContact', formData.siteContactUser?.name || '', smallFont);
@@ -1590,8 +1592,8 @@ const DisabledWCAlarmCertificate = ({
                       <RiskScoreCard
                           desc={`Inspection - Plant and Equipment Inspection - Disabled WC Alarm Certificate`}
                           siteId={siteSelectedForGlobal?.siteId}
-                          assignedTo={loggedInUserData?.id}
                           createdBy={loggedInUserData?.id}
+                          taggedAsset={selectedAsset.assetId}
                           onRiskAssessmentComplete={handleRiskAssessmentComplete}
                           actionRaised={actionRaised}
                       />

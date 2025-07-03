@@ -1924,8 +1924,8 @@ const AirConditioning = ({
                         <RiskScoreCard
                             desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service`}
                             siteId={siteSelectedForGlobal?.siteId}
-                            assignedTo={loggedInUserData?.id}
                             createdBy={loggedInUserData?.id}
+                            taggedAsset={selectedAsset.assetId}
                             onRiskAssessmentComplete={handleRiskAssessmentComplete}
                             actionRaised={actionRaised}
                         />
