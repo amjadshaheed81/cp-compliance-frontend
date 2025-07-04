@@ -1490,22 +1490,6 @@ const FanExtract = ({
                     </div>
                 </div>
 
-                <div className="mb-4">
-                    <div className="card-body">
-                        <div className="mb-3">
-                            <label className="form-label fw-bold">Materials Used</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={formData.param1Remark}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, param1Remark: e.target.value })
-                                }
-                                disabled={isSubmitted}
-                            />
-                        </div>
-                    </div>
-                </div>
 
                 {showRiskAssessment && (
                     <div className="card mb-4">
