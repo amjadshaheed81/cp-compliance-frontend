@@ -44,6 +44,7 @@ import AirConditioning from "./AirConditioning";
 import VentilationReport from "./VentilationReport";
 import WaterChlorination from "./WaterChlorination";
 import GasInspection from "./GasInspection";
+import FierDamper from "./FierDamper";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -211,7 +212,13 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Extract Fan Cleaning"
     ) {
       setStep("inspection-fan-extract");
-    } else if (
+    }else if(
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Passive Fier"
+    ){
+      setStep("inspection-fier-damper")
+    }
+    else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Plant and Equipment Inspection" &&
       siteCheck.category === "Air Conditioning Service"
@@ -569,6 +576,17 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 />
               </Item>
             )}
+            {step === "inspection-fier-damper" && (
+                <Item>
+                  <FierDamper
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
             {step === "inspection-electrical-microwave-oven" && (
               <Item>
                 <MicroWaveOvenCertificate
@@ -772,21 +790,21 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             )}
 
             <Grid sm={12}>
-              <button
-                style={{
-                  width: "200px",
-                  marginBottom: "20px",
-                  margin: "10px",
-                  float: "right",
-                }}
-                className="btn btn-primary btn-light"
-                onClick={() => {
-                  handlePrint();
-                }}
-                id="lklkl1"
-              >
-                <PrintIcon /> Print PDF Report
-              </button>
+              {/*<button*/}
+              {/*  style={{*/}
+              {/*    width: "200px",*/}
+              {/*    marginBottom: "20px",*/}
+              {/*    margin: "10px",*/}
+              {/*    float: "right",*/}
+              {/*  }}*/}
+              {/*  className="btn btn-primary btn-light"*/}
+              {/*  onClick={() => {*/}
+              {/*    handlePrint();*/}
+              {/*  }}*/}
+              {/*  id="lklkl1"*/}
+              {/*>*/}
+              {/*  <PrintIcon /> Print PDF Report*/}
+              {/*</button>*/}
               <button
                 style={{
                   width: "150px",
