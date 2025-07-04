@@ -166,7 +166,7 @@ const VentilationReport = ({
           floor: mostRecentItem.floor || prev.floor,
           room: mostRecentItem.room || prev.room,
           serialNo: mostRecentItem.serialNo || prev.serialNo,
-          engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
+          report: mostRecentItem.report || prev.report,
           param1: mostRecentItem.param1 || prev.param1,
           param2: mostRecentItem.param2 || prev.param2,
           param3: mostRecentItem.param2 || prev.param2,
