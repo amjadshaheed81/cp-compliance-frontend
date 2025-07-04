@@ -74,7 +74,7 @@ const VentilationReport = ({
     floor: "",
     room: "",
     serialNo: "",
-    engineersReport: "",
+    report: "",
     param1: "",// Job Complete
     param2: "",// parts required
     param3: "",// filters cleaned
@@ -742,7 +742,7 @@ const VentilationReport = ({
       //setTextField('Materials Used', formData.materialsUsed || '', mediumFont);
 
       // Report
-      setTextField('engineerReport', formData.engineersReport || '', mediumFont);
+      setTextField('engineerReport', formData.report || '', mediumFont);
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
@@ -1288,11 +1288,11 @@ const VentilationReport = ({
                     rows={16}
                     fullWidth
                     variant="outlined"
-                    value={formData.engineersReport || ""}
+                    value={formData.report || ""}
                     onChange={(e) =>
                         setFormData({
                           ...formData,
-                          engineersReport: e.target.value,
+                          report: e.target.value,
                         })
                     }
                     style={{ height: "400px" }}
