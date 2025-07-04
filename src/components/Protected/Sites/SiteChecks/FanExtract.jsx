@@ -79,7 +79,6 @@ const FanExtract = ({
         param3: "", // bladesCleaned
         param4: "", // internalLouvreCleaned
         param5: "", // electricalConnectionCheck
-        param1Remark: "", // materialsUsed
         client: "",
         user: loggedInUserData || {},
         engineer: loggedInUserData?.id || "",
@@ -723,9 +722,9 @@ const FanExtract = ({
             ].filter(Boolean).join(' - ');
 
             // Equipment information
-            setTextField('Manufacturer', selectedAsset.manufacturer || '', mediumFont);
-            setTextField('Model Number', selectedAsset.model || '', mediumFont);
-            setTextField('deatils',  equipmentDetailsLocation || '', mediumFont);
+            setTextField('Manufacturer', selectedAsset.manufacturer || '', smallFont);
+            setTextField('Model Number', selectedAsset.model || '', smallFont);
+            setTextField('details',  equipmentDetailsLocation || '', smallFont);
 
             const mapPassFailToYesNo = (value) => {
                 if (value === "Pass") return "Yes";
@@ -741,7 +740,7 @@ const FanExtract = ({
             setTextField('connectionCheck', mapPassFailToYesNo(formData.param5) || '', mediumFont);
 
             // Materials used
-            setTextField('Materials Used', formData.param1Remark || '', mediumFont);
+            //setTextField('Materials Used', formData.param1Remark || '', mediumFont);
 
             // Report
             setTextField('Engineers Report', formData.report || '', mediumFont);
