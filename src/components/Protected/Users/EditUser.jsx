@@ -22,7 +22,7 @@ import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
-import { get } from "../../../api";
+import {get, uploadPhoto} from "../../../api";
 import { MenuProps } from "./AddUser";
 import Tooltip from "@mui/material/Tooltip";
 
@@ -122,6 +122,7 @@ const ViewUsers = ({
     setShowEditModal(false);
     reset();
     setTagSite([]);
+    setSignatureUrl(null);
   };
 
   const [isLoading, setIsLoading] = useState(false);
@@ -129,6 +130,10 @@ const ViewUsers = ({
   const [selectedCompany, setSelectedCompany] = useState();
   const [tagSite, setTagSite] = useState([]);
   const [showSiteSelection, setShowSiteSelection] = useState(false);
+  const [signatureUrl, setSignatureUrl] = useState(selectedUser?.signature || null);
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [signatureFile, setSignatureFile] = useState(null);
+
 
   const getSiteName = (siteId) => {
     const site = sites.find((s) => s.siteId === siteId);
@@ -161,6 +166,7 @@ const ViewUsers = ({
         : []
     );
     setSelectedCompany(selectedUser?.companyId);
+    setSignatureUrl(selectedUser?.signature || null); // Add this line
     getSites(loggedInUserData);
     getCompanies();
   }, []);
@@ -181,6 +187,16 @@ const ViewUsers = ({
     setTagSite(selectedSites);
   };
 
+  const handleSignatureChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Create a preview URL for the image
+    const previewUrl = URL.createObjectURL(file);
+    setSignatureUrl(previewUrl);
+    setSignatureFile(file);
+  };
+
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -190,6 +206,7 @@ const ViewUsers = ({
       email: formJson?.email ? String(formJson?.email).toLowerCase() : "",
       phone: formJson?.phone || "",
       role: formJson?.role || "",
+      signature: signatureFile || "",
       userType: formJson?.userType || "",
       defaultSiteId:
         formJson?.userType === "Internal" ? selectedUser?.defaultSiteId : "",
@@ -490,6 +507,61 @@ const ViewUsers = ({
                         id="isCompany"
                         {...register("isCompany")}
                       />
+                    </div>
+                  </div>
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label>Upload Signature</label>
+                      <div>
+                        <input
+                            type="file"
+                            id="signatureUpload"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleSignatureChange}
+                        />
+                        <label htmlFor="signatureUpload">
+                          <Button
+                              variant="outlined"
+                              component="span"
+                              fullWidth
+                              disabled={isUploadingSignature}
+                              sx={{
+                                color: "#808080",
+                                borderColor: "#d1d1d1",
+                                textTransform: "none",
+                                fontWeight: 400,
+                                fontSize: "1rem",
+                                "&:hover": {
+                                  borderColor: "#d1d1d1",
+                                  backgroundColor: "#f9f9f9",
+                                },
+                              }}
+                          >
+                            {isUploadingSignature ? (
+                                <CircularProgress size={24} />
+                            ) : signatureUrl ? (
+                                "Signature Uploaded"
+                            ) : (
+                                "Upload Signature"
+                            )}
+                          </Button>
+                        </label>
+                      </div>
+                      {signatureUrl && (
+                          <Box mt={1}>
+                            <img
+                                src={signatureUrl}
+                                alt="Signature"
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '100px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '4px'
+                                }}
+                            />
+                          </Box>
+                      )}
                     </div>
                   </div>
 

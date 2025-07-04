@@ -214,9 +214,10 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       setStep("inspection-fan-extract");
     }else if(
         siteCheck.type === "Inspection" &&
-        siteCheck.subType === "Passive Fier"
+        siteCheck.subType === "Passive Fire" &&
+        siteCheck.category === "Passive Fire - Fire Damper Inspection"
     ){
-      setStep("inspection-fier-damper")
+      setStep("inspection-fire-damper")
     }
     else if (
       siteCheck.type === "Inspection" &&
@@ -576,7 +577,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                 />
               </Item>
             )}
-            {step === "inspection-fier-damper" && (
+            {step === "inspection-fire-damper" && (
                 <Item>
                   <FierDamper
                       checkId={checkId}

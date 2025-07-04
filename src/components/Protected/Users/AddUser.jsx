@@ -14,7 +14,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import { getSites, addUser, addUserTagSite } from "../../../store/thunk/site";
-import { get } from "../../../api";
+import { get, uploadPhoto } from "../../../api";
 import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
@@ -116,6 +116,7 @@ const AddUser = ({
     setShowAddModal(false);
     reset();
     setTagSite([]);
+    setSignatureUrl(null);
   };
 
   const [isLoading, setIsLoading] = useState(false);
@@ -123,6 +124,8 @@ const AddUser = ({
   const [tagSite, setTagSite] = useState([]);
   const [showSiteSelection, setShowSiteSelection] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [signatureUrl, setSignatureUrl] = useState(null); // State for signature URL
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false); // Loading state for
 
   const {
     register,
@@ -151,6 +154,31 @@ const AddUser = ({
     setCompanies(response);
   };
 
+  const handleSignatureUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploadingSignature(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await uploadPhoto(formData);
+      if (response?.url) {
+        setSignatureUrl(response.url);
+        toast.success('Signature uploaded successfully');
+      } else {
+        toast.error('Failed to upload signature');
+      }
+    } catch (error) {
+      console.error('Error uploading signature:', error);
+      toast.error('Error uploading signature');
+    } finally {
+      setIsUploadingSignature(false);
+      event.target.value = ''; // Reset file input
+    }
+  };
+
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -169,6 +197,7 @@ const AddUser = ({
       gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       status: formJson?.status || "",
       licenseId: loggedInUserData?.licenseId,
+      signature: signatureUrl || "",
     };
 
     setIsLoading(true);
@@ -206,6 +235,8 @@ const AddUser = ({
   const handleSaveSelectedSites = (selectedSites) => {
     setTagSite(selectedSites);
   };
+
+
 
   const getSiteName = (siteId) => {
     const site = sites.find((s) => s.siteId === siteId);
@@ -401,6 +432,62 @@ const AddUser = ({
                         id="isCompany"
                         {...register("isCompany")}
                       />
+                    </div>
+                  </div>
+                  {/* Add the signature upload section here */}
+                  <div className="col-md-4 mt-2">
+                    <div className="form-group">
+                      <label>Upload Signature</label>
+                      <div>
+                        <input
+                            type="file"
+                            id="signatureUpload"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleSignatureUpload}
+                        />
+                        <label htmlFor="signatureUpload">
+                          <Button
+                              variant="outlined"
+                              component="span"
+                              fullWidth
+                              disabled={isUploadingSignature}
+                              sx={{
+                                color: "#808080",
+                                borderColor: "#d1d1d1",
+                                textTransform: "none",
+                                fontWeight: 400,
+                                fontSize: "1rem",
+                                "&:hover": {
+                                  borderColor: "#d1d1d1",
+                                  backgroundColor: "#f9f9f9",
+                                },
+                              }}
+                          >
+                            {isUploadingSignature ? (
+                                <CircularProgress size={24} />
+                            ) : signatureUrl ? (
+                                "Signature Uploaded"
+                            ) : (
+                                "Upload Signature"
+                            )}
+                          </Button>
+                        </label>
+                      </div>
+                      {signatureUrl && (
+                          <Box mt={1}>
+                            <img
+                                src={signatureUrl}
+                                alt="Signature"
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '100px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '4px'
+                                }}
+                            />
+                          </Box>
+                      )}
                     </div>
                   </div>
                   {values?.isCompany && (
