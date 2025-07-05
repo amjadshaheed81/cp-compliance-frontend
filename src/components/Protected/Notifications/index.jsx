@@ -78,7 +78,7 @@ const Notifications = ({ siteSelectedForGlobal, loggedInUserData }) => {
       <div className="content">
         <Header />
         <div className="container-fluid">
-          <BreadCrumHeader header={"Notifications - " + siteSelectedForGlobal?.siteName} page={"Notifications"} />
+          <BreadCrumHeader header={"Notifications"} page={"Notifications"} />
           <Box
             sx={{
               flexGrow: 1,
