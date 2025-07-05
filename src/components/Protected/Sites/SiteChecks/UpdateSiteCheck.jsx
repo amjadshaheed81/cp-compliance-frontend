@@ -23,6 +23,13 @@ import html2pdf from 'html2pdf.js';
 import "./Print.css"
 import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
+import EmergencyLightingInspectionForm from "./EmergencyLightingInspectionForm";
+import ExternalLightningCertificate from "./ExternalLightningCertificate";
+import MicroWaveOvenCertificate from "./MicroWaveOvenCertificate";
+import DisabledWCAlarmCertificate from "./DisabledWCAlarmCertificate";
+import FanExtract from "./FanExtract";
+import AirConditioning from "./AirConditioning";
+import VentilationReport from "./VentilationReport";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -116,9 +123,50 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
   const getSiteChecks = async () => {
     const siteCheck = await get("/api/site-check/check-id/" + checkId);
-    if (siteCheck.type === "Inspection") {
-      setStep("inspection-electrical")
-    } else if (siteCheck.type === "Assessment" ) {
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Emergency Lighting to meet BS5266"
+    ) {
+      setStep("inspection-electrical-emergency");
+    } else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Electrical" &&
+        siteCheck.category === "External Lighting Testing"
+    ) {
+      setStep("inspection-electrical-lightning");
+    } else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Electrical" &&
+        siteCheck.category === "Microwave Oven Testing"
+    ) {
+      setStep("inspection-electrical-microwave-oven");
+    } else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Electrical" &&
+        siteCheck.category === "WC Alarm Testing"
+    ) {
+      setStep("inspection-electrical-wc-alarm");
+    }else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Extract Fan Cleaning"
+    ) {
+      setStep("inspection-fan-extract");
+    }
+    else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Air Conditioning Service"
+    ) {
+      setStep("inspection-air-conditioning");
+    } else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Ventilation System(s) Servicing"
+    ) {
+      setStep("inspection-ventilation-report");
+    }
+    else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck?.subType === "Monthly Audit") {
       setStep("audit-question")
@@ -392,8 +440,81 @@ autoComplete="off"
               </Grid>
 
             </Grid></Item>
-            {step === "inspection-electrical" && <Item><InspectionElectricalFault checkId={checkId} sasToken={sasToken} siteCheck={siteCheck} leadUserID={siteCheck?.leadUserID} /></Item>}
-            {step === "inspection-electrical" && <Item><InspectionElectricalCertificate checkId={checkId} sasToken={sasToken} siteCheck={siteCheck} leadUserID={siteCheck?.leadUserID} /></Item>}
+            {step === "inspection-electrical-emergency" && (
+                <Item>
+                  <EmergencyLightingInspectionForm
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      leadUserID={siteCheck?.leadUserID}
+                      siteCheck={siteCheck}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-electrical-lightning" && (
+                <Item>
+                  <ExternalLightningCertificate
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-electrical-microwave-oven" && (
+                <Item>
+                  <MicroWaveOvenCertificate
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-electrical-wc-alarm" && (
+                <DisabledWCAlarmCertificate
+                    checkId={checkId}
+                    sasToken={sasToken}
+                    subType={siteCheck?.subType}
+                    category={siteCheck?.category}
+                    leadUserID={siteCheck?.leadUserID}
+                />
+            )}
+            {step === "inspection-fan-extract" && (
+                <Item>
+                  <FanExtract
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-air-conditioning" && (
+                <Item>
+                  <AirConditioning
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-ventilation-report" && (
+                <Item>
+                  <VentilationReport
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck?.subType} leadUserID={siteCheck?.leadUserID}/></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} leadUserID={siteCheck?.leadUserID}/></Item>}
             {step === "audit-question"  && <Item><Audit checkId={checkId} sasToken={sasToken}  subType={siteCheck?.subType} leadUserID={siteCheck?.leadUserID}/></Item>}
