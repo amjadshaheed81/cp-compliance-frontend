@@ -444,7 +444,7 @@ const ExternalLightningCertificate = ({
   ]);
 
   useEffect(() => {
-    if (formData.param4 === "Fail" || formData.param4 === "No") {
+    if (formData.param4 === "Fail") {
       setShowRiskAssessment(true);
     } else {
       setShowRiskAssessment(false);
