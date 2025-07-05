@@ -293,7 +293,7 @@ const AirConditioning = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+            folder => folder.name.trim() === '6 - Log Books'
         );
 
         if (logBooksFolder) {
@@ -311,7 +311,7 @@ const AirConditioning = ({
 
               if (environmentalResponse?.document?.childFolders) {
                 const airConditioningFolder = environmentalResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Air Conditioning Service & Maintenance Records'
+                    folder => folder.name === 'Air Conditioning Service & Maintenance Records'
                 );
 
                 setFolderIds({

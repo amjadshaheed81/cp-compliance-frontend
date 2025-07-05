@@ -246,7 +246,7 @@ const FanExtract = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+            folder => folder.name.trim() === '6 - Log Books'
         );
 
         if (logBooksFolder) {
@@ -254,7 +254,7 @@ const FanExtract = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name === ' Plant and Equipment'
+                folder => folder.name === 'Plant and Equipment'
             );
 
             if (EnvironmentalLogBookFolder) {
@@ -264,7 +264,7 @@ const FanExtract = ({
 
               if (environmentalResponse?.document?.childFolders) {
                 const extractFanFolder = environmentalResponse.document.childFolders.find(
-                    folder => folder.name === ' Plant and Equipment : Extract Fan Cleaning'
+                    folder => folder.name === 'Extract Fan Cleaning'
                 );
 
                 setFolderIds({
