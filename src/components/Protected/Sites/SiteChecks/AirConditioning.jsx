@@ -229,7 +229,7 @@ const AirConditioning = ({
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
-      toast.error("Failed to load inspection data");
+      //toast.error("Failed to load inspection data");
     }
   };
   const fetchActionById = async (id) => {

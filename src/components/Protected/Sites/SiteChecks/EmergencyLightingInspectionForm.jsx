@@ -839,7 +839,7 @@ const EmergencyLightingInspectionForm = ({
         setCompleted(true);
       }
     } catch (error) {
-      toast.error("Failed to load inspection data");
+      //toast.error("Failed to load inspection data");
       console.error("Inspection load error:", error);
     }
   };
