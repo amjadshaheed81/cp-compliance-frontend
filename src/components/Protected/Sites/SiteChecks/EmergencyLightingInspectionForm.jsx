@@ -3,11 +3,13 @@ import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { get, post, uploadSiteCheckDoc } from "../../../../api";
+import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
 import { getSiteAssets, getUsers } from "../../../../store/thunk/site";
 import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/EmergencyLighting.pdf';
+import RiskScoreCard from "./RiskScoreCard";
+import {formatDate} from "../../../../utils/dateFormat";
 
 const EmergencyLightingInspectionForm = ({
   checkId,
@@ -81,6 +83,12 @@ const EmergencyLightingInspectionForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const users = useSelector((state) => state.site.users || []);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [actionRaised, setActionRaised] = useState(false);
+  const [existingAction, setExistingAction] = useState(null);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [isFormEditable, setIsFormEditable] = useState(true);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   // Helper function to fetch PDF as ArrayBuffer
   const fetchPdfTemplate = async () => {
@@ -116,9 +124,19 @@ const EmergencyLightingInspectionForm = ({
         console.error('No response received');
         return null;
       }
+
+      const inspectionDetails = {
+        checkId: response.checkId,
+        siteId: response.siteId,
+        type: response.type,
+        subType: response.subType,
+        category: response.category,
+        dueDate: response.dueDate,
+        status: response.status
+      };
       
       console.log('Fetched inspection data:', response);
-      return response; // Return the entire response object
+      return inspectionDetails; // Return the entire response object
     } catch (error) {
       console.error('Error fetching inspection details:', {
         message: error.message,
@@ -127,6 +145,97 @@ const EmergencyLightingInspectionForm = ({
         url: error.config?.url
       });
       return null;
+    }
+  };
+
+
+  const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+      if (!actionResponse?.actionId) {
+        throw new Error("Invalid action response received");
+      }
+
+      setActionRaised(true);
+      setExistingAction(actionResponse);
+
+      // Update form data with the action ID
+      setFormData(prev => ({
+        ...prev,
+        actionId: actionResponse.actionId
+      }));
+
+      toast.success(`Action #${actionResponse.actionId} raised successfully`);
+    } catch (error) {
+      console.error("Error handling risk assessment completion:", error);
+      toast.error("Failed to process action completion");
+    }
+  };
+
+  useEffect(() => {
+    // Check if any of the first 5 checks have `satisfactory: false`
+    const hasUnsatisfactoryChecks = formData.inspectionChecks
+        .slice(0, 5) // Only consider the first 5 checks
+        .some(check => check.satisfactory === false); // Only check `satisfactory`, not `checkSelected`
+
+    setShowRiskAssessment(hasUnsatisfactoryChecks);
+
+    // Reset actionRaised if no unsatisfactory checks
+    if (!hasUnsatisfactoryChecks) {
+      setActionRaised(false);
+    }
+  }, [formData.inspectionChecks]);
+
+  const fetchActionById = async (id) => {
+    try {
+      if (!id) return null;
+      const response = await get(`/api/site/actions/id/${id}`);
+      return response;
+    } catch (error) {
+      console.error("Error fetching action:", error);
+      return null;
+    }
+  };
+  const fetchExistingActions = async () => {
+    try {
+      // If we already have an actionId in formData, use that
+      if (formData.actionId) {
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+          return;
+        }
+      }
+
+      if (!siteSelectedForGlobal?.siteId) return;
+
+      // Fetch all actions for the site and find relevant ones
+      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      if (response && response.length > 0) {
+        const relevantActions = response.filter(action =>
+            action.desc.includes('Emergency Lighting') ||
+            action.type === 'Inspection'
+        );
+
+        if (relevantActions.length > 0) {
+          const mostRecentAction = relevantActions.sort((a, b) =>
+              new Date(b.createdAt) - new Date(a.createdAt)
+          )[0];
+
+          setExistingAction(mostRecentAction);
+          setActionRaised(true);
+
+          // Update formData with the actionId if not already set
+          if (mostRecentAction.actionId && !formData.actionId) {
+            setFormData(prev => ({
+              ...prev,
+              actionId: mostRecentAction.actionId
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching existing actions:", error);
     }
   };
 
@@ -191,7 +300,7 @@ const EmergencyLightingInspectionForm = ({
         'Name': f.name,
         'Type': f.type
       })));
-      
+
       // Helper function to set text fields
       const setTextField = (fieldName, value, fontSize = 10) => {
         try {
@@ -303,7 +412,7 @@ const EmergencyLightingInspectionForm = ({
       // Inspector Details
       const inspector = users.find(u => u.id === loggedInUserData?.id);
       setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
-      setTextField('position', inspector?.role || '');
+      setTextField('position', loggedInUserData?.role || '');
       
       // Handle signature image
       if (loggedInUserData?.signature) {
@@ -390,6 +499,7 @@ const EmergencyLightingInspectionForm = ({
           return { exists: false, file: null };
         }
       };
+
 
       // Helper function to get the highest file version
       const getHighestFileVersion = async (folderId, fileName) => {
@@ -797,6 +907,7 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
+
   const getInspection = async () => {
     try {
       const apiData = await get(
@@ -804,7 +915,20 @@ const EmergencyLightingInspectionForm = ({
       );
       // if (data && data.length > 0) {
       //  const apiData = data[0];
+
+
       if (apiData) {
+
+        let existingAction = null;
+        if (apiData.actionId) {
+          existingAction = await fetchActionById(apiData.actionId);
+          if (existingAction) {
+            setExistingAction(existingAction);
+            setActionRaised(true);
+          }
+        }
+
+
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
@@ -825,7 +949,7 @@ const EmergencyLightingInspectionForm = ({
                 check: defaultCheck.check, // Always keep the original check text
               }))
             : prev.inspectionChecks,
-
+            actionId: apiData?.actionId || prev.actionId,
           // Merge simple fields
           additionalComments:
             apiData?.additionalComments || prev.additionalComments,
@@ -836,24 +960,60 @@ const EmergencyLightingInspectionForm = ({
           user: apiData?.inspectionByUser || prev.user,
         }));
 
+        const details = await fetchInspectionDetails(checkId);
+        setInspectionDetails(details);
+
         setCompleted(true);
       }
     } catch (error) {
-      toast.error("Failed to load inspection data");
+      //toast.error("Failed to load inspection data");
       console.error("Inspection load error:", error);
     }
   };
 
+  const fetchCheckStatus = async () => {
+    try {
+      if (!checkId) return;
+
+      const response = await get(`api/site-check/check-id/${checkId}`);
+      if (response) {
+        const isDone = response.status === 'Done';
+        setIsFormEditable(!isDone);
+        setIsSubmitted(isDone);
+
+        // Store inspection details if needed
+        if (isDone) {
+          setInspectionDetails({
+            type: response.type,
+            subType: response.subType,
+            category: response.category
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching check status:', error);
+    }
+  };
+
   useEffect(() => {
-    getUsers();
-    if (siteSelectedForGlobal?.siteId) {
-      fetchFolderStructure(siteSelectedForGlobal.siteId);
-    }
-    getInspection();
-    if (siteSelectedForGlobal?.siteId) {
-      getSiteAssets(siteSelectedForGlobal.siteId);
-    }
-  }, [siteSelectedForGlobal?.siteId]);
+    const fetchData = async () => {
+      getUsers();
+      if (siteSelectedForGlobal?.siteId) {
+        await fetchFolderStructure(siteSelectedForGlobal.siteId);
+      }
+
+      await getInspection();
+      await fetchCheckStatus();
+      await fetchExistingActions();
+
+      if (siteSelectedForGlobal?.siteId) {
+        getSiteAssets(siteSelectedForGlobal.siteId);
+      }
+    };
+
+    fetchData();
+  }, [siteSelectedForGlobal?.siteId]);gg
+
 
   useEffect(() => {
     if (license?.companyName) {
@@ -1002,58 +1162,79 @@ const EmergencyLightingInspectionForm = ({
     }));
   };
 
+
   const submitInspection = async (e) => {
     e.preventDefault();
-    
-    // Generate PDF first
-    try {
-      await generatePDF();
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      // toast.error('Failed to generate PDF, but continuing with form submission');
-    }
-    if (formData.files.length > FILE_VALIDATION_CONFIG.MAX_FILE_COUNT) {
-      toast.error(
-        `Maximum ${FILE_VALIDATION_CONFIG.MAX_FILE_COUNT} files allowed.`
-      );
+
+    // Check if form is editable
+    if (!isFormEditable) {
+      toast.error("This form is completed and cannot be modified");
       return;
     }
 
-    const totalSize = formData.files.reduce((sum, file) => sum + file.size, 0);
-    if (totalSize > FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE) {
-      toast.error(
-        `Total file size exceeds ${
-          FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024
-        }MB limit.`
-      );
+    // Risk assessment validation
+    if (showRiskAssessment && !actionRaised) {
+      toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+
+    // Risk assessment validation (only checks `satisfactory: false`)
+    const hasUnsatisfactoryChecks = formData.inspectionChecks
+        .slice(0, 5)
+        .some(check => check.satisfactory === false);
+
+    if (hasUnsatisfactoryChecks && !actionRaised) {
+      toast.error("Please complete the risk assessment for unsatisfactory checks");
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // First update the site check status
+      const statusPayload = {
+        checkId: parseInt(checkId, 10),
+        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        type: 'Inspection',
+        subType: 'Emergency Lighting',
+        category: inspectionDetails?.category || 'Emergency Lighting',
+        status: 'Done',
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+      };
+
+      const statusResponse = await put(
+          `/api/site-check/${checkId}`,
+          statusPayload
+      );
+
+      if (![200, 204].includes(statusResponse?.status)) {
+        throw new Error('Failed to update site check status');
+      }
+
+      // Then submit the inspection data
       const payload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId || "",
         checkId,
         inspectionBy: loggedInUserData?.id,
+        actionId: formData.actionId
       };
 
-      // Upload file if exists
+      // Upload files if any
       const certificateUrls = [];
       if (formData.files.length > 0) {
         try {
-          // Upload all files in parallel
           const uploadPromises = formData.files.map((file) =>
-            uploadSiteCheckDoc({
-              file,
-              siteId: siteSelectedForGlobal?.siteId,
-              folderName: "EmergencyLighting",
-            })
+              uploadSiteCheckDoc({
+                file,
+                siteId: siteSelectedForGlobal?.siteId,
+                folderName: "EmergencyLighting",
+              })
           );
-
           certificateUrls.push(...(await Promise.all(uploadPromises)));
-          payload.certificateUrls = certificateUrls; // Changed from certificateUrl to certificateUrls (array)
+          payload.certificateUrls = certificateUrls;
         } catch (uploadError) {
           console.error("File upload failed:", uploadError);
           toast.error("File upload failed");
@@ -1064,38 +1245,25 @@ const EmergencyLightingInspectionForm = ({
       // Submit inspection data
       await post("/api/site-check/emergency-lighting", payload);
 
-      // Create action item
-      // if (siteSelectedForGlobal?.siteId && \oggedInUserData?.id) {
-      //   const actionData = {
-      //     type: "Inspection",
-      //     status: "Reported",
-      //     observation: "Emergency Lighting Inspection",
-      //     desc: `${siteCheck?.type || "Emergency Lighting"} - ${moment().format(
-      //       "DD/MM/YYYY"
-      //     )}`,
-      //     requiredAction: "Review inspection results",
-      //     riskScore: calculateRiskScore(),
-      //     dueDate: new Date(),
-      //     createdAt: new Date(),
-      //     siteId: siteSelectedForGlobal.siteId,
-      //     userId: loggedInUserData.id,
-      //     actionImage: certificateUrls,
-      //     taggedAsset: formData.siteAssetId,
-      //   };
-
-      //   await put("/api/site/actions", actionData);
-      // }
+      // Generate PDF
+      try {
+        await generatePDF();
+      } catch (error) {
+        console.error('PDF generation failed:', error);
+        toast.error('Failed to generate PDF');
+      }
 
       toast.success("Inspection submitted successfully");
       setCompleted(true);
+      setIsFormEditable(false);
+
     } catch (error) {
       console.error("Submission error:", error);
-      toast.error("Failed to submit inspection");
+      toast.error(error.message || "Failed to submit inspection");
     } finally {
       setIsLoading(false);
     }
   };
-
   const calculateRiskScore = () => {
     // Implement your risk score calculation logic here
     // Example: Count unsatisfactory checks
@@ -1111,6 +1279,13 @@ const EmergencyLightingInspectionForm = ({
         <h4>Emergency Lighting Inspection & Test Certificate</h4>
         <small>BS5266-1: 2011</small>
       </div>
+
+      {!isFormEditable && (
+          <div className="alert alert-warning" role="alert">
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            This form is read-only because the check has been marked as completed.
+          </div>
+      )}
       <div className="card-body">
         <form onSubmit={submitInspection}>
           {/* Warning Section */}
@@ -1376,6 +1551,53 @@ const EmergencyLightingInspectionForm = ({
             </tbody>
           </table>
 
+
+          {showRiskAssessment && (
+              <div className="card mb-4">
+                <div className="card-header">
+                  <h5 className="mb-0">Risk Assessment</h5>
+                  {existingAction && (
+                      <span className="badge bg-success ms-2">
+          Action #{existingAction.actionId} - {existingAction.status}
+        </span>
+                  )}
+                </div>
+                <div className="card-body">
+                  {existingAction ? (
+                      <div className="existing-action">
+                        <div className="row">
+                          <div className="col-md-6">
+                            <p><strong>Observation:</strong> {existingAction.observation}</p>
+                            <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                            <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                          </div>
+                          <div className="col-md-6">
+                            <p><strong>Description: </strong> {existingAction.desc}</p>
+                            <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                            <p><strong>Status:</strong> {existingAction.status}</p>
+                          </div>
+                        </div>
+                        {existingAction.comments && (
+                            <div className="mt-3">
+                              <h6>Comments:</h6>
+                              <p>{existingAction.comments}</p>
+                            </div>
+                        )}
+                      </div>
+                  ) : (
+                      <RiskScoreCard
+                          desc={`${inspectionDetails?.type || 'Inspection'} - ${inspectionDetails?.subType || ''} - ${inspectionDetails?.category || ''}`}
+                          siteId={siteSelectedForGlobal?.siteId}
+                          createdBy={loggedInUserData?.id}
+                          taggedAsset={''}
+                          onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                          actionRaised={actionRaised}
+                      />
+                  )}
+                </div>
+              </div>
+          )}
+
           {/* Additional Comments Section */}
           <h5 className="mb-1">Additional Comments & Deviations</h5>
           <p
@@ -1485,6 +1707,7 @@ const EmergencyLightingInspectionForm = ({
                   dateFormat="dd/MM/yyyy"
                   wrapperClassName="w-100"
                   required
+                  disabled={!isFormEditable}
                 />
               </div>
             </div>
@@ -1492,13 +1715,25 @@ const EmergencyLightingInspectionForm = ({
 
           <div className="d-flex justify-content-end">
             <div className="d-flex gap-2">
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isLoading}
-              >
-                {isLoading ? "Submitting..." : "Submit Inspection"}
-              </button>
+              {!isSubmitted ? (
+                  <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={
+                          isLoading ||
+                          isGeneratingPDF ||
+                          (showRiskAssessment && !actionRaised) ||
+                          !isFormEditable
+                      }
+                  >
+                    {isLoading ? 'Submitting...' :
+                        isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
+                  </button>
+              ) : (
+                  <div className="alert alert-success">
+                    Inspection submitted successfully on {formatDate(formData.inspectionDate)}
+                  </div>
+              )}
             </div>
           </div>
         </form>

@@ -298,13 +298,13 @@ const FanExtract = ({
                         ? response.find(check => check.checkId === parseInt(checkId, 10))
                         : null;
 
-                    if (!extractFanCheck) {
-                        extractFanCheck = response.find(check =>
-                            check.type === 'Inspection' &&
-                            check.subType === 'Plant and Equipment Inspection' &&
-                            check.category === 'Extract Fan'
-                        );
-                    }
+                    // if (!extractFanCheck) {
+                    //     extractFanCheck = response.find(check =>
+                    //         check.type === 'Inspection' &&
+                    //         check.subType === 'Plant and Equipment Inspection' &&
+                    //         check.category === 'Extract Fan'
+                    //     );
+                    // }
 
                     if (extractFanCheck) {
                         setCurrentCheckId(extractFanCheck.checkId);

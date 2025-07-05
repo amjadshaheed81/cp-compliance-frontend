@@ -126,15 +126,32 @@ const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser }) => {
                     {selectedUser?.status || "--"}
                   </span>
                 </li>
+                  {selectedUser?.signature && (
+                      <li className="list-group-item d-flex justify-content-between align-items-center">
+                          Signature
+                          <div
+                              className="border rounded bg-white d-flex align-items-center"
+                              style={{ height: "38px", padding: "2px" }}
+                          >
+                          <img
+                              width="100%"
+                              height="100%"
+                              style={{ objectFit: "contain" }}
+                              src={selectedUser?.signature}
+                              alt="Signature"
+                          />
+                      </div>
+                          </li>
+                      )}
               </ul>
             </Fragment>
           )}
         </DialogContent>
-        {!isLoading && (
-          <DialogActions>
-            <Button onClick={handleClose}>Close</Button>
-          </DialogActions>
-        )}
+          {!isLoading && (
+              <DialogActions>
+                  <Button onClick={handleClose}>Close</Button>
+              </DialogActions>
+          )}
       </Dialog>
     </React.Fragment>
   );

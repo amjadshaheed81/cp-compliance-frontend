@@ -311,13 +311,13 @@ const DisabledWCAlarmCertificate = ({
               : null;
 
           // If not found by checkId, find first matching type
-          if (!disabledWCCheck) {
-            disabledWCCheck = response.find(check =>
-                check.type === 'Inspection' &&
-                check.subType === 'Plant and Equipment Inspection' &&
-                check.category === 'Disabled WC Alarm Certificate'
-            );
-          }
+          // if (!disabledWCCheck) {
+          //   disabledWCCheck = response.find(check =>
+          //       check.type === 'Inspection' &&
+          //       check.subType === 'Plant and Equipment Inspection' &&
+          //       check.category === 'Disabled WC Alarm Certificate'
+          //   );
+          // }
 
           if (disabledWCCheck) {
             console.log('Found check:', {

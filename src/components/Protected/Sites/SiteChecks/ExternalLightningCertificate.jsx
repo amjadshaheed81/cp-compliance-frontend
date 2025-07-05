@@ -332,13 +332,13 @@ const ExternalLightningCertificate = ({
               : null;
 
           // If not found by checkId, find first matching type
-          if (!externalLightingCheck) {
-            externalLightingCheck = response.find(check =>
-                check.type === 'Inspection' &&
-                check.subType === 'Electrical' &&
-                check.category === 'External Lighting Testing'
-            );
-          }
+          // if (!externalLightingCheck) {
+          //   externalLightingCheck = response.find(check =>
+          //       check.type === 'Inspection' &&
+          //       check.subType === 'Electrical' &&
+          //       check.category === 'External Lighting Testing'
+          //   );
+          // }
 
           if (externalLightingCheck) {
             console.log('Found check:', {

@@ -75,10 +75,10 @@ const FierDamper = ({
         room: "",
         serialNo: "",
         report: "",
-        param1: "",// Job Complete
-        param2: "",// parts required
-        param3: "",// filters cleaned
-        param4: "", // electrical connection check
+        param1: "",// Operational
+        param2: "",// Conditional
+        param3: "",// Damper with in fier barrier
+        param4: "", // Fire Barrier Correction Required
         client: "",
         user: loggedInUserData || {},
         engineer: loggedInUserData?.id || "",

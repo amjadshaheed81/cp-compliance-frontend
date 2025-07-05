@@ -21,6 +21,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.7",
     "bowser": "^2.11.0",
+    "browser-image-compression": "^2.0.2",
     "chart.js": "^4.4.2",
     "cp-compliance": "file:",
     "d3": "^7.9.0",

@@ -348,13 +348,13 @@ const AirConditioning = ({
               : null;
 
           // If not found by checkId, find first matching type
-          if (!airConditioningCheck) {
-            airConditioningCheck = response.find(check =>
-                check.type === 'Inspection' &&
-                check.subType === 'Plant and Equipment Inspection' &&
-                check.category === 'Air Conditioning Service'
-            );
-          }
+          // if (!airConditioningCheck) {
+          //   airConditioningCheck = response.find(check =>
+          //       check.type === 'Inspection' &&
+          //       check.subType === 'Plant and Equipment Inspection' &&
+          //       check.category === 'Air Conditioning Service'
+          //   );
+          // }
 
           if (airConditioningCheck) {
             console.log('Found check:', {
