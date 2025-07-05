@@ -19,6 +19,8 @@ import { toast } from "react-toastify";
 import { Validation } from "../../../Constant/Validation";
 import { InputError } from "../../common/InputError";
 import { ROLE } from "../../../Constant/Role";
+import imageCompression from 'browser-image-compression';
+
 
 // Site Selection Dialog Component
 const SiteSelectionDialog = ({
@@ -126,6 +128,9 @@ const AddUser = ({
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [signatureUrl, setSignatureUrl] = useState(null); // State for signature URL
   const [isUploadingSignature, setIsUploadingSignature] = useState(false); // Loading state for
+  const [signatureFile, setSignatureFile] = useState(null);
+
+
 
   const {
     register,
@@ -154,31 +159,45 @@ const AddUser = ({
     setCompanies(response);
   };
 
-  const handleSignatureUpload = async (event) => {
+  const handleSignatureChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setIsUploadingSignature(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    // 🚫 Reject files >5MB
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Signature must be ≤2MB");
+      return;
+    }
 
-      const response = await uploadPhoto(formData);
-      if (response?.url) {
-        setSignatureUrl(response.url);
-        toast.success('Signature uploaded successfully');
-      } else {
-        toast.error('Failed to upload signature');
+    setIsUploadingSignature(true);
+
+    try {
+      let finalFile = file;
+
+      // ⚡ Compress if >1MB (adjust threshold as needed)
+      if (file.size > 1 * 1024 * 1024) {
+        finalFile = await imageCompression(file, {
+          maxSizeMB: 1,           // Target max size (1MB)
+          maxWidthOrHeight: 800,  // Resize if too large
+          useWebWorker: true,     // Faster compression
+          fileType: "image/jpeg", // Use JPEG for smaller size (or "image/png")
+        });
       }
+
+      // Convert to Base64 for preview + DB storage
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSignatureUrl(e.target.result); // For preview
+        setSignatureFile(e.target.result); // For DB (Base64 string)
+      };
+      reader.readAsDataURL(finalFile);
+
     } catch (error) {
-      console.error('Error uploading signature:', error);
-      toast.error('Error uploading signature');
+      toast.error("Error compressing signature");
     } finally {
       setIsUploadingSignature(false);
-      event.target.value = ''; // Reset file input
     }
   };
-
   const submitUser = async (formJson) => {
     formJson.company = selectedCompany;
     const data = {
@@ -197,7 +216,7 @@ const AddUser = ({
       gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
       status: formJson?.status || "",
       licenseId: loggedInUserData?.licenseId,
-      signature: signatureUrl || "",
+      signature: signatureFile || selectedUser?.signature || null, // Send Base64 string
     };
 
     setIsLoading(true);
@@ -444,7 +463,7 @@ const AddUser = ({
                             id="signatureUpload"
                             accept="image/*"
                             style={{ display: 'none' }}
-                            onChange={handleSignatureUpload}
+                            onChange={handleSignatureChange}
                         />
                         <label htmlFor="signatureUpload">
                           <Button
@@ -456,12 +475,7 @@ const AddUser = ({
                                 color: "#808080",
                                 borderColor: "#d1d1d1",
                                 textTransform: "none",
-                                fontWeight: 400,
-                                fontSize: "1rem",
-                                "&:hover": {
-                                  borderColor: "#d1d1d1",
-                                  backgroundColor: "#f9f9f9",
-                                },
+                                "&:hover": { borderColor: "#d1d1d1" },
                               }}
                           >
                             {isUploadingSignature ? (
@@ -469,7 +483,7 @@ const AddUser = ({
                             ) : signatureUrl ? (
                                 "Signature Uploaded"
                             ) : (
-                                "Upload Signature"
+                                "Upload Signature (Max 2MB)"
                             )}
                           </Button>
                         </label>
@@ -478,14 +492,16 @@ const AddUser = ({
                           <Box mt={1}>
                             <img
                                 src={signatureUrl}
-                                alt="Signature"
+                                alt="Signature Preview"
                                 style={{
                                   maxWidth: '100%',
                                   maxHeight: '100px',
-                                  border: '1px solid #ddd',
-                                  borderRadius: '4px'
+                                  border: '1px solid #ddd'
                                 }}
                             />
+                            <Box fontSize={12} color="text.secondary" mt={0.5}>
+                              {signatureFile?.length && `Size: ${Math.round(signatureFile.length / 1024)}KB`}
+                            </Box>
                           </Box>
                       )}
                     </div>

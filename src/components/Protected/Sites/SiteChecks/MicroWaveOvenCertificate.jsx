@@ -276,13 +276,13 @@ const MicroWaveOvenCertificate = ({
               ? response.find(check => check.checkId === parseInt(checkId, 10))
               : null;
 
-          if (!microwaveCheck) {
-            microwaveCheck = response.find(check =>
-                check.type === 'Inspection' &&
-                check.subType === 'Plant and Equipment Inspection' &&
-                check.category === 'Microwave Oven Certificate'
-            );
-          }
+          // if (!microwaveCheck) {
+          //   microwaveCheck = response.find(check =>
+          //       check.type === 'Inspection' &&
+          //       check.subType === 'Plant and Equipment Inspection' &&
+          //       check.category === 'Microwave Oven Certificate'
+          //   );
+          // }
 
           if (microwaveCheck) {
             console.log('Found check:', {

@@ -9,7 +9,7 @@ import { connect } from "react-redux";
 import moment from "moment";
 import TagSites from "./TagSites";
 
-const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser,sasToken }) => {
+const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser }) => {
   const handleClose = () => setShowViewModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSiteTagModal, setShowSiteTagModal] = useState(false);
@@ -137,7 +137,7 @@ const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser,sasToken }) =
                               width="100%"
                               height="100%"
                               style={{ objectFit: "contain" }}
-                              src={selectedUser?.signature + "?" + sasToken}
+                              src={selectedUser?.signature}
                               alt="Signature"
                           />
                       </div>

@@ -297,13 +297,13 @@ const VentilationReport = ({
               ? response.find(check => check.checkId === parseInt(checkId, 10))
               : null;
 
-          if (!ventilationCheck) {
-            ventilationCheck = response.find(check =>
-                check.type === 'Inspection' &&
-                check.subType === 'Plant and Equipment Inspection' &&
-                check.category === 'Ventilation'
-            );
-          }
+          // if (!ventilationCheck) {
+          //   ventilationCheck = response.find(check =>
+          //       check.type === 'Inspection' &&
+          //       check.subType === 'Plant and Equipment Inspection' &&
+          //       check.category === 'Ventilation'
+          //   );
+          // }
 
           if (ventilationCheck) {
             setCurrentCheckId(ventilationCheck.checkId);
