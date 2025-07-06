@@ -171,7 +171,7 @@ const DisabledWCAlarmCertificate = ({
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
-      toast.error("Failed to load inspection data");
+      //toast.error("Failed to load inspection data");
     }
   };
 
@@ -241,7 +241,7 @@ const DisabledWCAlarmCertificate = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+            folder => folder.name.trim() === '6 - Log Books'
         );
 
         if (logBooksFolder) {
@@ -259,8 +259,7 @@ const DisabledWCAlarmCertificate = ({
 
               if (plantAndEquipmentResponse?.document?.childFolders) {
                 const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Miscellaneous Service Documents' ||
-                        folder.name.trim() === 'Miscellaneous Service'
+                    folder => folder.name.trim() === 'Miscellaneous Service Documents'
                 );
 
                 if (miscellaneousFolder) {
@@ -436,7 +435,7 @@ const DisabledWCAlarmCertificate = ({
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      console.log("Action response received:", actionResponse); // Debug log
+      console.log("Action response received:", actionResponse);
 
       if (!actionResponse?.actionId) {
         console.error("Invalid action response:", actionResponse);
@@ -453,7 +452,7 @@ const DisabledWCAlarmCertificate = ({
 
       setFormData(updatedFormData);
 
-      console.log("Updating inspection with actionId:", actionResponse.actionId); // Debug log
+      console.log("Updating inspection with actionId:", actionResponse.actionId);
 
       if (currentCheckId) {
         // First check if inspection exists
@@ -499,6 +498,7 @@ const DisabledWCAlarmCertificate = ({
       toast.error("Failed to process action completion");
     }
   };
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -862,15 +862,19 @@ const DisabledWCAlarmCertificate = ({
     setIsLoading(true);
 
     try {
-      const effectiveCheckId = currentCheckId || checkId;
-
-      if (!effectiveCheckId) {
-        throw new Error('No inspection check found. Please refresh the page and try again.');
+      // First check if we have an existing inspection
+      let existingInspection = null;
+      if (currentCheckId) {
+        try {
+          const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+          existingInspection = inspections?.length > 0 ? inspections[0] : null;
+        } catch (error) {
+          console.error('Error checking for existing inspection:', error);
+        }
       }
 
-      // First update the site check status
+      // First update or create the site check status
       const statusPayload = {
-        checkId: parseInt(effectiveCheckId, 10),
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
         subType: 'Plant and Equipment Inspection',
@@ -881,12 +885,26 @@ const DisabledWCAlarmCertificate = ({
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
-      const statusResponse = await put(
-          `/api/site-check/${effectiveCheckId}`,
-          statusPayload
-      );
+      let statusResponse;
+      if (currentCheckId) {
+        // Update existing check
+        statusPayload.checkId = parseInt(currentCheckId, 10);
+        statusResponse = await put(
+            `/api/site-check/${currentCheckId}`,
+            statusPayload
+        );
+      } else {
+        // Create new check
+        statusResponse = await post(
+            `/api/site-check`,
+            statusPayload
+        );
+        if (statusResponse?.checkId) {
+          setCurrentCheckId(statusResponse.checkId);
+        }
+      }
 
-      if (![200, 204].includes(statusResponse?.status)) {
+      if (![200, 201, 204].includes(statusResponse?.status)) {
         throw new Error('Failed to update site check status');
       }
 
@@ -894,7 +912,7 @@ const DisabledWCAlarmCertificate = ({
       setCheckStatus('Done');
       setIsFormEditable(false);
 
-      // Then update the generic inspection record
+      // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
@@ -905,16 +923,26 @@ const DisabledWCAlarmCertificate = ({
         type: 'Inspection',
         subType: 'Disabled WC Alarm',
         category: 'Disabled WC Alarm Certificate',
-        checkId: effectiveCheckId,
+        checkId: currentCheckId || statusResponse?.checkId,
         actionId: formData.actionId,
       };
 
-      const saveResponse = await put(
-          `/api/site-check/generic-inspection/${effectiveCheckId}`,
-          inspectionPayload
-      );
+      let saveResponse;
+      if (existingInspection) {
+        // Update existing inspection
+        saveResponse = await put(
+            `/api/site-check/generic-inspection/${currentCheckId}`,
+            inspectionPayload
+        );
+      } else {
+        // Create new inspection
+        saveResponse = await post(
+            `/api/site-check/generic-inspection`,
+            inspectionPayload
+        );
+      }
 
-      if (![200, 204].includes(saveResponse?.status)) {
+      if (![200, 201, 204].includes(saveResponse?.status)) {
         throw new Error('Failed to save inspection data');
       }
 
@@ -943,6 +971,7 @@ const DisabledWCAlarmCertificate = ({
       setIsLoading(false);
     }
   };
+
 
   const renderClientNameField = () => {
     if (isInternalUserTaggedWithSite) {
