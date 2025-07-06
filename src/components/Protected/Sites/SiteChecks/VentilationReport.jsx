@@ -183,7 +183,7 @@ const VentilationReport = ({
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
-      toast.error("Failed to load inspection data");
+      //toast.error("Failed to load inspection data");
     }
   };
 
@@ -245,7 +245,7 @@ const VentilationReport = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+            folder => folder.name.trim() === '6 - Log Books'
         );
 
         if (logBooksFolder) {
@@ -253,7 +253,7 @@ const VentilationReport = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name === ' Plant and Equipment'
+                folder => folder.name === 'Plant and Equipment'
             );
 
             if (EnvironmentalLogBookFolder) {
@@ -408,7 +408,10 @@ const VentilationReport = ({
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
+      console.log("Action response received:", actionResponse);
+
       if (!actionResponse?.actionId) {
+        console.error("Invalid action response:", actionResponse);
         throw new Error("Invalid action response received");
       }
 
@@ -422,7 +425,10 @@ const VentilationReport = ({
 
       setFormData(updatedFormData);
 
+      console.log("Updating inspection with actionId:", actionResponse.actionId);
+
       if (currentCheckId) {
+        // First check if inspection exists
         try {
           const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
 
@@ -436,16 +442,18 @@ const VentilationReport = ({
             engineer: updatedFormData.engineer,
             siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
             type: 'Inspection',
-            subType: 'Ventilation',
-            category: 'Ventilation'
+            subType: 'Air Conditioning',
+            category: 'Air Conditioning Service'
           };
 
           if (!existingInspections || existingInspections.length === 0) {
+            // Create new inspection if none exists
             await post(
                 `/api/site-check/generic-inspection`,
                 inspectionPayload
             );
           } else {
+            // Update existing inspection
             await put(
                 `/api/site-check/generic-inspection/${currentCheckId}`,
                 inspectionPayload
@@ -818,15 +826,19 @@ const VentilationReport = ({
     setIsLoading(true);
 
     try {
-      const effectiveCheckId = currentCheckId || checkId;
-
-      if (!effectiveCheckId) {
-        throw new Error('No inspection check found. Please refresh the page and try again.');
+      // First check if we have an existing inspection
+      let existingInspection = null;
+      if (currentCheckId) {
+        try {
+          const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+          existingInspection = inspections?.length > 0 ? inspections[0] : null;
+        } catch (error) {
+          console.error('Error checking for existing inspection:', error);
+        }
       }
 
       // First update the site check status
       const statusPayload = {
-        checkId: parseInt(effectiveCheckId, 10),
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
         subType: 'Plant and Equipment Inspection',
@@ -837,10 +849,24 @@ const VentilationReport = ({
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
-      const statusResponse = await put(
-          `/api/site-check/${effectiveCheckId}`,
-          statusPayload
-      );
+      let statusResponse;
+      if (currentCheckId) {
+        // Update existing check
+        statusPayload.checkId = parseInt(currentCheckId, 10);
+        statusResponse = await put(
+            `/api/site-check/${currentCheckId}`,
+            statusPayload
+        );
+      } else {
+        // Create new check
+        statusResponse = await post(
+            `/api/site-check`,
+            statusPayload
+        );
+        if (statusResponse?.checkId) {
+          setCurrentCheckId(statusResponse.checkId);
+        }
+      }
 
       if (![200, 204].includes(statusResponse?.status)) {
         throw new Error('Failed to update site check status');
@@ -860,15 +886,24 @@ const VentilationReport = ({
         type: 'Inspection',
         subType: 'Ventilation',
         category: 'Ventilation',
-        checkId: effectiveCheckId,
+        checkId: currentCheckId || statusResponse?.checkId || '',
         actionId: formData.actionId,
       };
 
-      const saveResponse = await put(
-          `/api/site-check/generic-inspection/${effectiveCheckId}`,
-          inspectionPayload
-      );
-
+      let saveResponse;
+      if (existingInspection) {
+        // Update existing inspection
+        saveResponse = await put(
+            `/api/site-check/generic-inspection/${currentCheckId}`,
+            inspectionPayload
+        );
+      } else {
+        // Create new inspection
+        saveResponse = await post(
+            `/api/site-check/generic-inspection`,
+            inspectionPayload
+        );
+      }
       if (![200, 204].includes(saveResponse?.status)) {
         throw new Error('Failed to save inspection data');
       }
