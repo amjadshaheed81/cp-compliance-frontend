@@ -245,7 +245,7 @@ const VentilationReport = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === '6 - Log Books'
+            folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
@@ -253,7 +253,7 @@ const VentilationReport = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name === 'Plant and Equipment'
+                folder => folder.name === ' Plant and Equipment'
             );
 
             if (EnvironmentalLogBookFolder) {

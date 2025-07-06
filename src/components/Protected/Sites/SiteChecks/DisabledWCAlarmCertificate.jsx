@@ -241,7 +241,7 @@ const DisabledWCAlarmCertificate = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === '6 - Log Books'
+            folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
@@ -249,7 +249,7 @@ const DisabledWCAlarmCertificate = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Plant and Equipment'
+                folder => folder.name.trim() === ' Plant and Equipment'
             );
 
             if (plantAndEquipmentFolder) {
@@ -259,7 +259,7 @@ const DisabledWCAlarmCertificate = ({
 
               if (plantAndEquipmentResponse?.document?.childFolders) {
                 const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Miscellaneous Service Documents'
+                    folder => folder.name.trim() === ' Miscellaneous Service Documents'
                 );
 
                 if (miscellaneousFolder) {
