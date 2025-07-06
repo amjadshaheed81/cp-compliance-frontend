@@ -148,6 +148,7 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
+  //console.log("lis -->", license)
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
@@ -170,7 +171,7 @@ const EmergencyLightingInspectionForm = ({
       toast.error("Failed to process action completion");
     }
   };
-
+//console.log("------>>>",loggedInUserData)
   useEffect(() => {
     // Check if any of the first 5 checks have `satisfactory: false`
     const hasUnsatisfactoryChecks = formData.inspectionChecks
@@ -342,10 +343,13 @@ const EmergencyLightingInspectionForm = ({
       
       setTextField('Name', license?.companyName || '');
       
-      const addressLines = (formData.installationAddress || '').split(',');
-      setTextField('Address', addressLines[0] || '');
-      setTextField('Address_2', addressLines[1] || '');
-      setTextField('Address_3', addressLines.slice(2).join(', ') || '');
+      setTextField('Address', license?.companyAddress || '');
+
+      setTextField('Name_2', loggedInUserData?.companyName || '');
+      setTextField('Address_2', formData?.installationAddress || '');
+
+      setTextField('InspectionTest', loggedInUserData?.companyName || '');
+      setTextField('Address_3', formData?.installationAddress || '');
       
       setTextField('Type', formData.bsiCategoryType || '');
       setTextField('Mode', formData.bsiCategoryMode || '');
@@ -614,7 +618,7 @@ const EmergencyLightingInspectionForm = ({
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF: ' + error.message);
+      //toast.error('Failed to generate PDF: ' + error.message);
       throw error;
     } finally {
       setIsGeneratingPDF(false);
@@ -767,7 +771,6 @@ const EmergencyLightingInspectionForm = ({
       return 1;
     }
   };
-
   // Function to save PDF to local storage
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
@@ -1237,7 +1240,7 @@ const EmergencyLightingInspectionForm = ({
           payload.certificateUrls = certificateUrls;
         } catch (uploadError) {
           console.error("File upload failed:", uploadError);
-          toast.error("File upload failed");
+          //toast.error("File upload failed");
           return;
         }
       }
@@ -1250,7 +1253,7 @@ const EmergencyLightingInspectionForm = ({
         await generatePDF();
       } catch (error) {
         console.error('PDF generation failed:', error);
-        toast.error('Failed to generate PDF');
+        //toast.error('Failed to generate PDF');
       }
 
       toast.success("Inspection submitted successfully");
