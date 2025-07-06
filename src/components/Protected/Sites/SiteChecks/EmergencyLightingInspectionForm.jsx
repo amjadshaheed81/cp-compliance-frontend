@@ -1012,7 +1012,7 @@ const EmergencyLightingInspectionForm = ({
     };
 
     fetchData();
-  }, [siteSelectedForGlobal?.siteId]);gg
+  }, [siteSelectedForGlobal?.siteId]);
 
 
   useEffect(() => {
