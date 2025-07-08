@@ -88,7 +88,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData2.type
     );
     setsubtypeoptions(
-      lovtypes?.map((l) => l.lovValue)
+      lovtypes
+        ?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {
             return -1; // a comes before b
@@ -105,8 +106,17 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const lovtypes = await get(
       "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData.subType
     );
+    const filteredCategories =
+      formData.subType === "Emergency Lighting to meet BS5266"
+        ? lovtypes?.filter(
+            (l) =>
+              l.lovValue !==
+              "Emergency Lighting (systems less than 3 years old) 6 monthly 1 hour discharge testing"
+          )
+        : lovtypes;
     setcatoptions(
-      lovtypes?.map((l) => l.lovValue)
+      filteredCategories
+        ?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {
             return -1; // a comes before b
@@ -124,7 +134,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData.type
     );
     setsubtypeoptions2(
-      lovtypes?.map((l) => l.lovValue)
+      lovtypes
+        ?.map((l) => l.lovValue)
         ?.sort((a, b) => {
           if (a < b) {
             return -1; // a comes before b
@@ -166,7 +177,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     let dueDateValue = formData?.dueDate;
     if (name === "repeatFrequency") {
       // If repeatFrequency is set and dueDate is not provided
-      const startDate = formData?.startDate ? new Date(formData?.startDate) : "";
+      const startDate = formData?.startDate
+        ? new Date(formData?.startDate)
+        : "";
 
       switch (value) {
         case "Daily":
@@ -177,6 +190,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
           break;
         case "Monthly":
           dueDateValue = new Date(startDate.setMonth(startDate.getMonth() + 1));
+          break;
+        case "6-Monthly":
+          dueDateValue = new Date(startDate.setMonth(startDate.getMonth() + 6));
           break;
         case "Yearly":
           dueDateValue = new Date(
@@ -407,6 +423,12 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setIsLoading(true);
     event.preventDefault();
     const form = event.target;
+
+    if (!formData.startDate) {
+      toast.error("Start Date is required!");
+      setIsLoading(false);
+      return;
+    }
     if (!form.checkValidity()) {
       setIsLoading(false);
       form.reportValidity();
@@ -420,7 +442,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     body.startDate = body?.startDate ? new Date(body.startDate) : "";
     const sitecheckres = await post("/api/site-check/", body);
     body.checkId = sitecheckres?.data?.checkId;
-    if(body.startDate) {
+    if (body.startDate) {
       setCalenderEvents(body);
     }
     await getSiteChecks();
@@ -520,9 +542,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         ></i>
                         <input
                           type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
                           placeholder="Search"
                           name="searchField"
                           style={{ paddingLeft: "20%" }}
@@ -875,6 +897,13 @@ autoComplete="off"
                                   startDate.setMonth(startDate.getMonth() + 1)
                                 );
                                 break;
+
+                              case "6-Monthly":
+                                dueDateValue = new Date(
+                                    startDate.setMonth(startDate.getMonth() + 6)
+                                );
+                                break;
+
                               case "Yearly":
                                 dueDateValue = new Date(
                                   startDate.setFullYear(
@@ -886,22 +915,27 @@ autoComplete="off"
                                 break;
                             }
 
-                            dueDateValue =  dueDateValue ? dueDateValue.toISOString() : ""; // Convert to ISO string
+                            dueDateValue = dueDateValue
+                              ? dueDateValue.toISOString()
+                              : ""; // Convert to ISO string
                           }
 
                           setFormData({
                             ...formData,
                             dueDate: dueDateValue, // Set the calculated dueDate
-                            startDate: date ? new Date(
-                              date.getTime() - date.getTimezoneOffset() * 60000
-                            ).toISOString() : "",
+                            startDate: date
+                              ? new Date(
+                                  date.getTime() -
+                                    date.getTimezoneOffset() * 60000
+                                ).toISOString()
+                              : "",
                           });
                         }}
                       />
                     </div>
                   </Grid>
                   <Grid sm={4}>
-                    <div style={{ margin: "10px" }}>
+                    {/* <div style={{ margin: "10px" }}>
                       <DatePicker
                         label="Due Date"
                         value={formData?.dueDate}
@@ -914,7 +948,7 @@ autoComplete="off"
                           });
                         }}
                       />
-                    </div>
+                    </div> */}
                   </Grid>
                   <Grid sm={4}>
                     <div style={{ margin: "10px" }}>
@@ -968,9 +1002,11 @@ autoComplete="off"
                           <div ref={params.InputProps.ref}>
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               {...params.inputProps}
                               required
                               className="form-control"
@@ -1034,9 +1070,11 @@ autoComplete="off"
                           <div ref={params.InputProps.ref}>
                             <input
                               type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
                               {...params.inputProps}
                               required
                               className="form-control"
@@ -1062,12 +1100,14 @@ autoComplete="off"
                           className="form-control form-select"
                           id="repeatFrequency"
                           onChange={handleInputChange}
+                          disabled={!formData?.startDate}
                           value={formData?.repeatFrequency}
                         >
                           <option value="None">None</option>
                           <option value="Daily">Daily</option>
                           <option value="Weekly">Weekly</option>
                           <option value="Monthly">Monthly</option>
+                          <option value="6-Monthly">6 Monthly</option>
                           <option value="Yearly">Yearly</option>
                         </select>
                       </div>
