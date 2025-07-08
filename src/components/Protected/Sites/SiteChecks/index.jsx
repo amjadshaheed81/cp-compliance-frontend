@@ -191,6 +191,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
         case "Monthly":
           dueDateValue = new Date(startDate.setMonth(startDate.getMonth() + 1));
           break;
+        case "6-Monthly":
+          dueDateValue = new Date(startDate.setMonth(startDate.getMonth() + 6));
+          break;
         case "Yearly":
           dueDateValue = new Date(
             startDate.setFullYear(startDate.getFullYear() + 1)
@@ -894,6 +897,13 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                   startDate.setMonth(startDate.getMonth() + 1)
                                 );
                                 break;
+
+                              case "6-Monthly":
+                                dueDateValue = new Date(
+                                    startDate.setMonth(startDate.getMonth() + 6)
+                                );
+                                break;
+
                               case "Yearly":
                                 dueDateValue = new Date(
                                   startDate.setFullYear(
@@ -1097,6 +1107,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           <option value="Daily">Daily</option>
                           <option value="Weekly">Weekly</option>
                           <option value="Monthly">Monthly</option>
+                          <option value="6-Monthly">6 Monthly</option>
                           <option value="Yearly">Yearly</option>
                         </select>
                       </div>
