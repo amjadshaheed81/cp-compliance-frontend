@@ -252,7 +252,7 @@ const EmergencyLightingInspectionForm = ({
       const form = pdfDoc.getForm();
 
       // Set form fields
-      const setTextField = (fieldName, value, fontSize = 10) => {
+      const setTextField = (fieldName, value, fontSize = 8) => {
         try {
           const field = form.getTextField(fieldName);
           if (field) {
@@ -294,7 +294,7 @@ const EmergencyLightingInspectionForm = ({
       setTextField('Name_2', loggedInUserData?.companyName || '');
       setTextField('Address_2', formData?.installationAddress || '');
       setTextField('InspectionTest', loggedInUserData?.companyName || '');
-      setTextField('Address_3', formData?.installationAddress || '');
+      setTextField('Address_3', loggedInUserData?.companyAddress || '');
       setTextField('Type', formData.bsiCategoryType || '');
       setTextField('Mode', formData.bsiCategoryMode || '');
       setTextField('Facilities', formData.bsiCategoryFacilities || '');
@@ -371,7 +371,7 @@ const EmergencyLightingInspectionForm = ({
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
       const siteName = siteSelectedForGlobal?.name || 'emergency-lighting';
-      const fileName = `EmergencyLightingInspection.pdf`;
+      const fileName = `EmergencyLightingInspection- ${inspectionDetails.category}.pdf`;
 
       const savedLocally = await savePdfToLocal(blob, fileName);
       if (!savedLocally) {
@@ -477,103 +477,76 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
-  // Function to map category text to folder name
+  // Preserve exact folder names but make matching more robust
   const getFolderNameFromCategory = (category) => {
-    const normalizedCategory = (category || '').trim().toLowerCase();
-
-    // Weekly testing pattern
-    if (normalizedCategory.includes('weekly') ||
-        normalizedCategory.includes('flick') ||
-        /weekly.*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - Weekly \'Flick\' Testing';
+    // Keep original folder names exactly as they appear in the system
+    switch(category) {
+      case 'Emergency Lighting - weekly testing to meet BS5266':
+        return 'Emergency Lighting - Weekly \'Flick\' Testing'; // Exact match
+      case 'Emergency Lighting - monthly testing to meet BS5266':
+        return ' Emergency Lighting - Monthly Testing'; // Note: Keep leading space
+      case 'Emergency Lighting (systems more than 3 years old) 12 monthly Full discharge testing':
+        return 'Emergency Lighting - 12 Monthly Testing';
+      default:
+        return 'Emergency Lighting - Monthly Testing'; // Default fallback
     }
-    // 6 monthly testing pattern
-    else if (normalizedCategory.includes('6 monthly') ||
-        normalizedCategory.includes('six monthly') ||
-        /6.*monthly.*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - 6 Monthly Testing';
-    }
-    // Monthly testing pattern (1 monthly)
-    else if (normalizedCategory.includes('monthly testing') ||
-        normalizedCategory.includes('1 monthly') ||
-        /1.*monthly.*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - Monthly Testing';
-    }
-    // 12 monthly/annual testing pattern
-    else if (normalizedCategory.includes('12 monthly') ||
-        normalizedCategory.includes('annual') ||
-        normalizedCategory.includes('yearly') ||
-        /(12.*monthly|annual).*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - 12 Monthly Testing';
-    }
-    // Systems more than 3 years old
-    else if (normalizedCategory.includes('more than 3 years') ||
-        normalizedCategory.includes('systems more than 3 years')) {
-      return 'Emergency Lighting - 12 Monthly Testing';
-    }
-    // Default fallback
-    return 'Emergency Lighting - Monthly Testing';
   };
 
-  // Function to fetch folder structure
   const fetchFolderStructure = async (siteId, category) => {
     try {
+      // 1. Get parent folders
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
 
-      if (parentFoldersResponse?.parentFolders?.length > 0) {
-        const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
-        );
+      // 2. Find 'Log Books' (exact match including spaces)
+      const logBooksFolder = parentFoldersResponse.parentFolders.find(
+          folder => folder.name === 'Log Books' // Exact match
+      );
 
-        if (logBooksFolder) {
-          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+      // 3. Find 'Fire Log Book'
+      const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+      const fireLogBookFolder = logBooksResponse.document.childFolders.find(
+          folder => folder.name === 'Fire Log Book' // Exact match
+      );
 
-          if (logBooksResponse?.document?.childFolders) {
-            const fireLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Fire Log Book'
-            );
+      // 4. Find 'Emergency Lighting to meet BS5266'
+      const fireLogBookResponse = await get(`/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`);
+      const emergencyLightingFolder = fireLogBookResponse.document.childFolders.find(
+          folder => folder.name === 'Emergency Lighting to meet BS5266' // Exact match
+      );
 
-            if (fireLogBookFolder) {
-              const fireLogBookResponse = await get(
-                  `/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`
-              );
+      // 5. Find target subfolder (using exact names)
+      const targetFolderName = getFolderNameFromCategory(category);
+      const emergencyLightingResponse = await get(`/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`);
 
-              if (fireLogBookResponse?.document?.childFolders) {
-                const emergencyLightingFolder = fireLogBookResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Emergency Lighting to meet BS5266'
-                );
+      console.log('Searching for exact folder name:', targetFolderName);
+      console.log('Available subfolders:',
+          emergencyLightingResponse.document.childFolders.map(f => f.name));
 
-                if (emergencyLightingFolder) {
-                  const emergencyLightingResponse = await get(
-                      `/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`
-                  );
+      const targetFolder = emergencyLightingResponse.document.childFolders.find(
+          folder => folder.name === targetFolderName // Exact match
+      );
 
-                  if (emergencyLightingResponse?.document?.childFolders) {
-                    const targetFolderName = getFolderNameFromCategory(category);
-                    const targetFolder = emergencyLightingResponse.document.childFolders.find(
-                        folder => folder.name.trim() === targetFolderName
-                    );
-
-                    const newFolderIds = {
-                      logBooks: logBooksFolder.id,
-                      fireLogBook: fireLogBookFolder.id,
-                      emergencyLighting: emergencyLightingFolder.id,
-                      monthlyTesting: targetFolder?.id || emergencyLightingFolder.id
-                    };
-
-                    setFolderIds(newFolderIds);
-
-                    return newFolderIds.monthlyTesting;
-                  }
-                }
-              }
-            }
-          }
-        }
+      if (!targetFolder) {
+        console.warn(`Exact folder "${targetFolderName}" not found, using parent folder instead`);
       }
-      return null;
+
+      const newFolderIds = {
+        logBooks: logBooksFolder.id,
+        fireLogBook: fireLogBookFolder.id,
+        emergencyLighting: emergencyLightingFolder.id,
+        monthlyTesting: targetFolder?.id || emergencyLightingFolder.id // Fallback
+      };
+
+      console.log('Final folder IDs:', newFolderIds);
+      setFolderIds(newFolderIds);
+      return newFolderIds.monthlyTesting;
+
     } catch (error) {
-      console.error('Error fetching folder structure:', error);
+      console.error('Error in folder structure lookup:', {
+        error: error.message,
+        siteId,
+        category
+      });
       return null;
     }
   };
@@ -1141,7 +1114,7 @@ const EmergencyLightingInspectionForm = ({
                         wordWrap: "break-word",
                         fontWeight: "normal",
                       }}
-                      value={formData?.installationAddress || ""}
+                      value={loggedInUserData?.companyAddress || ""}
                       required
                       disabled
                   />
