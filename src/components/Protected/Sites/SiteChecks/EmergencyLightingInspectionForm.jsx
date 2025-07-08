@@ -148,7 +148,7 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
-  //console.log("lis -->", license)
+  //console.log("loggedInUserData -->", loggedInUserData)
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
