@@ -12,14 +12,15 @@ import RiskScoreCard from "./RiskScoreCard";
 import {formatDate} from "../../../../utils/dateFormat";
 
 const EmergencyLightingInspectionForm = ({
-  checkId,
-  sasToken,
-  siteAssets = [],
-  getSiteAssets,
-  siteSelectedForGlobal = {},
-  loggedInUserData = {},
-  siteCheck = {},
-}) => {
+                                           checkId,
+                                           sasToken,
+                                           siteAssets = [],
+                                           getSiteAssets,
+                                           siteSelectedForGlobal = {},
+                                           loggedInUserData = {},
+                                           siteCheck = {},
+                                           onCheckCreated // New callback prop
+                                         }) => {
   // Add folder IDs state
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
@@ -56,7 +57,7 @@ const EmergencyLightingInspectionForm = ({
       {
         check: 4,
         checkQ:
-          "Luminaires functioning correctly & have lasted the duration of the test",
+            "Luminaires functioning correctly & have lasted the duration of the test",
         satisfactory: false,
         checkSelected: false,
         remarks: "",
@@ -64,7 +65,7 @@ const EmergencyLightingInspectionForm = ({
       {
         check: 5,
         checkQ:
-          "All luminaires switched over & charging LED's lit on completion of test",
+            "All luminaires switched over & charging LED's lit on completion of test",
         satisfactory: false,
         checkSelected: false,
         remarks: "",
@@ -72,7 +73,6 @@ const EmergencyLightingInspectionForm = ({
     ],
     additionalComments: "",
     allFittingsPassed: false,
-
     siteAssetId: "",
     files: [],
     user: loggedInUserData,
@@ -89,7 +89,8 @@ const EmergencyLightingInspectionForm = ({
   const [inspectionDetails, setInspectionDetails] = useState(null);
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
+  const [isNewCheck, setIsNewCheck] = useState(!checkId); // Track if this is a new check
+
   // Helper function to fetch PDF as ArrayBuffer
   const fetchPdfTemplate = async () => {
     try {
@@ -97,29 +98,29 @@ const EmergencyLightingInspectionForm = ({
       if (!response.ok) {
         throw new Error('Failed to load PDF template: ' + response.statusText);
       }
-      
+
       const arrayBuffer = await response.arrayBuffer();
       const header = new Uint8Array(arrayBuffer, 0, 5);
       const headerStr = String.fromCharCode.apply(null, header);
-      
+
       if (headerStr !== '%PDF-') {
         throw new Error('Invalid PDF file: Missing PDF header');
       }
-      
+
       return arrayBuffer;
     } catch (error) {
       console.error('Error loading PDF template:', error);
       throw new Error('Failed to load PDF template: ' + error.message);
     }
   };
-  
+
   // Function to fetch inspection details
   const fetchInspectionDetails = async (checkId) => {
     try {
       console.log(`Fetching inspection details for checkId: ${checkId}`);
       const response = await get(`/api/site-check/check-id/${checkId}`);
       console.log('API Response:', response);
-      
+
       if (!response) {
         console.error('No response received');
         return null;
@@ -134,9 +135,9 @@ const EmergencyLightingInspectionForm = ({
         dueDate: response.dueDate,
         status: response.status
       };
-      
-      console.log('Fetched inspection data:', response);
-      return inspectionDetails; // Return the entire response object
+
+      console.log('Fetched inspection data:', inspectionDetails);
+      return inspectionDetails;
     } catch (error) {
       console.error('Error fetching inspection details:', {
         message: error.message,
@@ -148,8 +149,6 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
-  //console.log("loggedInUserData -->", loggedInUserData)
-
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
       if (!actionResponse?.actionId) {
@@ -159,7 +158,6 @@ const EmergencyLightingInspectionForm = ({
       setActionRaised(true);
       setExistingAction(actionResponse);
 
-      // Update form data with the action ID
       setFormData(prev => ({
         ...prev,
         actionId: actionResponse.actionId
@@ -171,16 +169,14 @@ const EmergencyLightingInspectionForm = ({
       toast.error("Failed to process action completion");
     }
   };
-//console.log("------>>>",loggedInUserData)
+
   useEffect(() => {
-    // Check if any of the first 5 checks have `satisfactory: false`
     const hasUnsatisfactoryChecks = formData.inspectionChecks
-        .slice(0, 5) // Only consider the first 5 checks
-        .some(check => check.satisfactory === false); // Only check `satisfactory`, not `checkSelected`
+        .slice(0, 5)
+        .some(check => check.satisfactory === false);
 
     setShowRiskAssessment(hasUnsatisfactoryChecks);
 
-    // Reset actionRaised if no unsatisfactory checks
     if (!hasUnsatisfactoryChecks) {
       setActionRaised(false);
     }
@@ -196,9 +192,9 @@ const EmergencyLightingInspectionForm = ({
       return null;
     }
   };
+
   const fetchExistingActions = async () => {
     try {
-      // If we already have an actionId in formData, use that
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
         if (action) {
@@ -210,7 +206,6 @@ const EmergencyLightingInspectionForm = ({
 
       if (!siteSelectedForGlobal?.siteId) return;
 
-      // Fetch all actions for the site and find relevant ones
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
@@ -226,7 +221,6 @@ const EmergencyLightingInspectionForm = ({
           setExistingAction(mostRecentAction);
           setActionRaised(true);
 
-          // Update formData with the actionId if not already set
           if (mostRecentAction.actionId && !formData.actionId) {
             setFormData(prev => ({
               ...prev,
@@ -244,65 +238,20 @@ const EmergencyLightingInspectionForm = ({
   const generatePDF = async () => {
     try {
       setIsGeneratingPDF(true);
-      
-      // Fetch inspection details to get the category
+
       let inspectionDetails = null;
       if (checkId) {
         inspectionDetails = await fetchInspectionDetails(checkId);
         console.log('Fetched inspection details:', inspectionDetails);
       }
-      
-      // Dynamically import pdf-lib
+
       const { PDFDocument, rgb } = await import('pdf-lib');
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFDocument.load(pdfBytes);
-      
-      const form = pdfDoc.getForm();
-      
-      // Log all fields for debugging
-      const fields = form.getFields();
-      console.log('=== PDF Form Fields ===');
-      const fieldNames = [];
-      const checkboxes = [];
-      
-      // First pass: Collect all fields
-      fields.forEach((field, index) => {
-        try {
-          const name = field.getName();
-          const type = field.constructor.name;
-          fieldNames.push({ name, type });
-          
-          if (type.includes('PDFCheckBox')) {
-            checkboxes.push({ index, name, type });
-          }
-          
-          console.log(`[${index}] Field: ${name}, Type: ${type}`);
-        } catch (error) {
-          console.warn('Error getting field name:', error);
-        }
-      });
-      
-      // Log checkboxes in a more readable format
-      console.log('=== Checkbox Fields ===');
-      console.table(checkboxes.map((cb, i) => ({
-        'Index': i,
-        'Field Index': cb.index,
-        'Name': cb.name,
-        'Type': cb.type
-      })));
-      
-      // Log field names that might be related to our form
-      const relevantFields = fieldNames.filter(f => 
-        f.name.match(/CheckBox|Remarks|Name|Address|Date|Type|Mode|Facilities|Duration|AdditionalComments|Engineer|position|Image_af_image|Monthly|InspectionTest/i)
-      );
-      console.log('=== Relevant Form Fields ===');
-      console.table(relevantFields.map((f, i) => ({
-        'Index': i,
-        'Name': f.name,
-        'Type': f.type
-      })));
 
-      // Helper function to set text fields
+      const form = pdfDoc.getForm();
+
+      // Set form fields
       const setTextField = (fieldName, value, fontSize = 10) => {
         try {
           const field = form.getTextField(fieldName);
@@ -322,8 +271,7 @@ const EmergencyLightingInspectionForm = ({
           console.warn(`Error setting field ${fieldName}:`, error.message);
         }
       };
-      
-      // Helper function to set checkboxes using check() and uncheck() methods
+
       const setCheckbox = (fieldName, isChecked) => {
         try {
           const field = form.getCheckBox(fieldName);
@@ -340,93 +288,63 @@ const EmergencyLightingInspectionForm = ({
           console.warn(`Error setting checkbox ${fieldName}:`, error.message);
         }
       };
-      
-      setTextField('Name', license?.companyName || '');
-      
-      setTextField('Address', license?.companyAddress || '');
 
+      setTextField('Name', license?.companyName || '');
+      setTextField('Address', license?.companyAddress || '');
       setTextField('Name_2', loggedInUserData?.companyName || '');
       setTextField('Address_2', formData?.installationAddress || '');
-
       setTextField('InspectionTest', loggedInUserData?.companyName || '');
       setTextField('Address_3', formData?.installationAddress || '');
-      
       setTextField('Type', formData.bsiCategoryType || '');
       setTextField('Mode', formData.bsiCategoryMode || '');
       setTextField('Facilities', formData.bsiCategoryFacilities || '');
       setTextField('Duration', formData.bsiCategoryDuration || '');
-      
-      const formattedDate = formData.inspectionDate 
-        ? new Date(formData.inspectionDate).toLocaleDateString('en-GB') 
-        : '';
+
+      const formattedDate = formData.inspectionDate
+          ? new Date(formData.inspectionDate).toLocaleDateString('en-GB')
+          : '';
       setTextField('Date', formattedDate);
-      
-      console.log('Inspection Checks:', formData.inspectionChecks);
-      
 
+      // Process inspection checks
       for (let i = 1; i <= 10; i++) {
         setCheckbox(`CheckBox${i}`, false);
       }
-      
 
-      
-      // First, clear all checkboxes
-      for (let i = 1; i <= 10; i++) {
-        setCheckbox(`CheckBox${i}`, false);
-      }
-      
-      // Process each inspection check and map to the correct checkbox
       formData.inspectionChecks.forEach((check, index) => {
         if (!check) return;
-        
-        // For the first 5 items, map to the left column checkboxes (1-5)
+
         if (index < 5) {
           const checkboxName = `CheckBox${index + 1}`;
-          console.log(`Processing check ${index} (${check.checkQ}):`, {
-            checkboxName,
-            status: check.satisfactory === true ? 'Satisfactory' : 
-                   check.satisfactory === false ? 'Unsatisfactory' : 'N/A'
-          });
-          
-          // Set the left checkbox if the item is marked
+
           if (check.satisfactory !== undefined) {
             setCheckbox(checkboxName, true);
-            console.log(`Marking ${checkboxName} as checked`);
           }
-          
-          // Set the corresponding right checkbox if satisfactory is true
+
           if (check.satisfactory === true) {
-            const rightCheckboxName = `CheckBox${index + 6}`; // Map to 6-10
-            console.log(`Marking ${rightCheckboxName} as Satisfactory`);
+            const rightCheckboxName = `CheckBox${index + 6}`;
             setCheckbox(rightCheckboxName, true);
           }
-          
-          // Set remarks
+
           const remarksField = `Remarks${index + 1}`;
           if (check.remarks) {
-            console.log(`Setting ${remarksField} to:`, check.remarks);
             setTextField(remarksField, check.remarks);
           }
         }
       });
-      
-      // Additional Comments
+
       setTextField('AdditionalComments', formData.additionalComments || '');
-      
-      // Inspector Details
+
       const inspector = users.find(u => u.id === loggedInUserData?.id);
       setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
       setTextField('position', loggedInUserData?.role || '');
-      
-      // Handle signature image
+
       if (loggedInUserData?.signature) {
         try {
           const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
           const signatureResponse = await fetch(signatureUrl);
           const signatureImageBytes = await signatureResponse.arrayBuffer();
           const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
-          
-          // Get the signature field and set the image
+
           const signatureField = form.getButton('Image_af_image');
           if (signatureField) {
             signatureField.setImage(signatureImage);
@@ -435,111 +353,47 @@ const EmergencyLightingInspectionForm = ({
           console.warn('Error setting signature image:', error);
         }
       }
-      
-      // Set the Monthly field with the category from API response
+
       const categoryText = inspectionDetails?.category || 'N/A';
-      console.log('Setting Monthly field with category:', categoryText);
       setTextField('Monthly', categoryText);
-      
-      // Fetch folder structure based on category
+
       await fetchFolderStructure(siteSelectedForGlobal?.siteId, categoryText);
-      
-      // Set default value for test performed checkbox
-      setCheckbox('InspectionTest', true);  // Test performed checkbox
-      
-      // Flatten the form to make it read-only
+
+      setCheckbox('InspectionTest', true);
+
       try {
         form.flatten();
       } catch (error) {
         console.warn('Error flattening form:', error.message);
       }
-      
-      // Save the modified PDF
+
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      
-      // Generate filename
+
       const siteName = siteSelectedForGlobal?.name || 'emergency-lighting';
-      const dateStr = new Date().toISOString().split('T')[0];
       const fileName = `EmergencyLightingInspection.pdf`;
-      
-      // Upload to server if needed
+
       const savedLocally = await savePdfToLocal(blob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
       }
-      
+
       const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
-      
-      // Use the monthlyTesting folder ID if available, otherwise fall back to emergencyLighting folder
-      const targetFolderId = folderIds.monthlyTesting || folderIds.emergencyLighting || 
-                           folderIds.fireLogBook || folderIds.logBooks;
-      
+
+      const targetFolderId = folderIds.monthlyTesting || folderIds.emergencyLighting ||
+          folderIds.fireLogBook || folderIds.logBooks;
+
       if (!targetFolderId) {
         throw new Error('Could not determine target folder for PDF upload');
       }
-      
-      // Helper function to check if file exists and get its details
-      const checkFileExists = async (folderId, fileName) => {
-        try {
-          const siteId = siteSelectedForGlobal?.siteId;
-          if (!siteId || !folderId) return { exists: false, file: null };
-          
-          const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-          const files = response?.document?.files || [];
-          
-          // Find file with the same base name (without extension)
-          const baseName = fileName.split('.')[0];
-          const existingFile = files.find(file => 
-            file.name && file.name.startsWith(baseName)
-          );
-          
-          return {
-            exists: !!existingFile,
-            file: existingFile || null
-          };
-        } catch (error) {
-          console.error('Error checking file existence:', error);
-          return { exists: false, file: null };
-        }
-      };
 
-
-      // Helper function to get the highest file version
-      const getHighestFileVersion = async (folderId, fileName) => {
-        try {
-          const siteId = siteSelectedForGlobal?.siteId;
-          if (!siteId || !folderId) return 1;
-          
-          const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-          const files = response?.document?.files || [];
-          
-          // Find matching files (same base name)
-          const baseName = fileName.split('.')[0];
-          const matchingFiles = files.filter(file => 
-            file.name && file.name.startsWith(baseName)
-          );
-          
-          if (matchingFiles.length > 0) {
-            const versions = matchingFiles.map(f => f.fileVersion || 1);
-            return Math.max(...versions) + 1;
-          }
-          return 1;
-        } catch (error) {
-          console.error('Error checking file versions:', error);
-          return 1;
-        }
-      };
-
-      // Check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      
+
       const uploadFormData = new FormData();
-      
+
       if (exists && existingFile) {
-        // File exists, use the new version upload endpoint
         uploadFormData.append('file', pdfFile);
-        
+
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -550,36 +404,35 @@ const EmergencyLightingInspectionForm = ({
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
             expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
+                .toISOString().replace('T', ' ').split('.')[0],
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
           }]
         };
-        
+
         uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
-        
+
         const response = await axios.put(
-          '/api/document/file/newVersion/upload',
-          uploadFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            '/api/document/file/newVersion/upload',
+            uploadFormData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
             }
-          }
         );
-        
+
         if (response.data) {
           toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
           return { success: true, data: response.data };
         }
       } else {
-        // File doesn't exist, use the regular upload endpoint
         uploadFormData.append('files', pdfFile);
-        
+
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-        
+
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -589,110 +442,116 @@ const EmergencyLightingInspectionForm = ({
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
             expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
+                .toISOString().replace('T', ' ').split('.')[0],
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
           }]
         };
-        
+
         uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
-        
+
         const response = await axios.post(
-          '/api/document/files/upload',
-          uploadFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            '/api/document/files/upload',
+            uploadFormData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
             }
-          }
         );
-        
+
         if (response.data) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
           return { success: true, data: response.data };
         }
       }
-      
+
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      //toast.error('Failed to generate PDF: ' + error.message);
       throw error;
     } finally {
       setIsGeneratingPDF(false);
     }
   };
-  
+
   // Function to map category text to folder name
   const getFolderNameFromCategory = (category) => {
-    // Trim any whitespace from the category text
-    const normalizedCategory = (category || '').trim();
-    
-    // Check for weekly testing pattern (case insensitive)
-    if (/weekly.*testing/i.test(normalizedCategory)) {
+    const normalizedCategory = (category || '').trim().toLowerCase();
+
+    // Weekly testing pattern
+    if (normalizedCategory.includes('weekly') ||
+        normalizedCategory.includes('flick') ||
+        /weekly.*testing/i.test(normalizedCategory)) {
       return 'Emergency Lighting - Weekly \'Flick\' Testing';
     }
-    // Check for 6 monthly testing pattern (case insensitive)
-    else if (/6.*monthly.*testing/i.test(normalizedCategory)) {
+    // 6 monthly testing pattern
+    else if (normalizedCategory.includes('6 monthly') ||
+        normalizedCategory.includes('six monthly') ||
+        /6.*monthly.*testing/i.test(normalizedCategory)) {
       return 'Emergency Lighting - 6 Monthly Testing';
     }
-    // Check for 6 monthly testing pattern (case insensitive)
-    else if (/1.*monthly.*testing/i.test(normalizedCategory)) {
-      return ' Emergency Lighting - Monthly Testing';
+    // Monthly testing pattern (1 monthly)
+    else if (normalizedCategory.includes('monthly testing') ||
+        normalizedCategory.includes('1 monthly') ||
+        /1.*monthly.*testing/i.test(normalizedCategory)) {
+      return 'Emergency Lighting - Monthly Testing';
     }
-    // Check for 12 monthly/annual testing pattern (case insensitive)
-    else if (/(12.*monthly|annual).*testing/i.test(normalizedCategory)) {
+    // 12 monthly/annual testing pattern
+    else if (normalizedCategory.includes('12 monthly') ||
+        normalizedCategory.includes('annual') ||
+        normalizedCategory.includes('yearly') ||
+        /(12.*monthly|annual).*testing/i.test(normalizedCategory)) {
       return 'Emergency Lighting - 12 Monthly Testing';
     }
-    // Default to monthly testing if no specific pattern matches
+    // Systems more than 3 years old
+    else if (normalizedCategory.includes('more than 3 years') ||
+        normalizedCategory.includes('systems more than 3 years')) {
+      return 'Emergency Lighting - 12 Monthly Testing';
+    }
+    // Default fallback
     return 'Emergency Lighting - Monthly Testing';
   };
 
   // Function to fetch folder structure
   const fetchFolderStructure = async (siteId, category) => {
     try {
-      // First, get all parent folders for the site
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
-      
+
       if (parentFoldersResponse?.parentFolders?.length > 0) {
-        // Find the Log Books folder
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-          folder => folder.name.trim() === 'Log Books'
+            folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
           const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
-          
+
           if (logBooksResponse?.document?.childFolders) {
             const fireLogBookFolder = logBooksResponse.document.childFolders.find(
-              folder => folder.name.trim() === 'Fire Log Book'
+                folder => folder.name.trim() === 'Fire Log Book'
             );
 
             if (fireLogBookFolder) {
-              // Get the contents of Fire Log Book folder
               const fireLogBookResponse = await get(
-                `/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`
+                  `/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`
               );
 
               if (fireLogBookResponse?.document?.childFolders) {
-                // Find the Emergency Lighting to meet BS5266 folder
                 const emergencyLightingFolder = fireLogBookResponse.document.childFolders.find(
-                  folder => folder.name.trim() === 'Emergency Lighting to meet BS5266'
+                    folder => folder.name.trim() === 'Emergency Lighting to meet BS5266'
                 );
 
                 if (emergencyLightingFolder) {
-                  // Get the contents of Emergency Lighting to meet BS5266 folder
                   const emergencyLightingResponse = await get(
-                    `/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`
+                      `/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`
                   );
 
                   if (emergencyLightingResponse?.document?.childFolders) {
-                    // Find the target folder based on category
                     const targetFolderName = getFolderNameFromCategory(category);
                     const targetFolder = emergencyLightingResponse.document.childFolders.find(
-                      folder => folder.name.trim() === targetFolderName
+                        folder => folder.name.trim() === targetFolderName
                     );
 
                     const newFolderIds = {
@@ -715,7 +574,6 @@ const EmergencyLightingInspectionForm = ({
       return null;
     } catch (error) {
       console.error('Error fetching folder structure:', error);
-      // toast.error('Failed to load document folders');
       return null;
     }
   };
@@ -725,16 +583,15 @@ const EmergencyLightingInspectionForm = ({
     try {
       const siteId = siteSelectedForGlobal?.siteId;
       if (!siteId || !folderId) return { exists: false, file: null };
-      
+
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
-      
-      // Find file with the same base name (without extension)
+
       const baseName = fileName.split('.')[0];
-      const existingFile = files.find(file => 
-        file.name && file.name.startsWith(baseName)
+      const existingFile = files.find(file =>
+          file.name && file.name.startsWith(baseName)
       );
-      
+
       return {
         exists: !!existingFile,
         file: existingFile || null
@@ -750,16 +607,15 @@ const EmergencyLightingInspectionForm = ({
     try {
       const siteId = siteSelectedForGlobal?.siteId;
       if (!siteId || !folderId) return 1;
-      
+
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
-      
-      // Find matching files (same base name)
+
       const baseName = fileName.split('.')[0];
-      const matchingFiles = files.filter(file => 
-        file.name && file.name.startsWith(baseName)
+      const matchingFiles = files.filter(file =>
+          file.name && file.name.startsWith(baseName)
       );
-      
+
       if (matchingFiles.length > 0) {
         const versions = matchingFiles.map(f => f.fileVersion || 1);
         const maxVersion = Math.max(...versions);
@@ -771,25 +627,18 @@ const EmergencyLightingInspectionForm = ({
       return 1;
     }
   };
+
   // Function to save PDF to local storage
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
-      // Create a blob URL
       const blobUrl = URL.createObjectURL(pdfBlob);
-      
-      // Create a temporary anchor element
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = fileName;
-      
-      // Append to body and trigger click
       document.body.appendChild(a);
       a.click();
-      
-      // Clean up
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-      
       return true;
     } catch (error) {
       console.error('Error saving PDF locally:', error);
@@ -797,131 +646,13 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
-  // Helper function to upload PDF to the server
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
-    try {
-      setIsUploading(true);
-      
-      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-      if (!savedLocally) {
-        throw new Error('Failed to save PDF locally');
-      }
-      
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      
-      // Use the monthlyTesting folder ID if available, otherwise fall back to emergencyLighting folder
-      const targetFolderId = folderIds.monthlyTesting || folderIds.emergencyLighting || 
-                           folderIds.fireLogBook || folderIds.logBooks;
-      
-      if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
-      }
-      
-      // Check if file exists
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      
-      const formData = new FormData();
-      
-      if (exists && existingFile) {
-        // File exists, use the new version upload endpoint
-        formData.append('file', pdfFile);
-        
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id,
-            reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
-          }]
-        };
-        
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        
-        const response = await axios.put(
-          '/api/document/file/newVersion/upload',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
-        );
-        
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return true;
-        }
-      } else {
-        // File doesn't exist, use the regular upload endpoint
-        formData.append('files', pdfFile);
-        
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-        
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            originalFileName: fileName,
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id,
-            reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
-          }]
-        };
-        
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        
-        const response = await axios.post(
-          '/api/document/files/upload',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
-        );
-        
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
-        }
-      }
-      
-      throw new Error('Upload failed: No response data');
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-
   const getInspection = async () => {
     try {
       const apiData = await get(
-        "/api/site-check/emergency-lighting/" + checkId
+          "/api/site-check/emergency-lighting/" + checkId
       );
-      // if (data && data.length > 0) {
-      //  const apiData = data[0];
-
 
       if (apiData) {
-
         let existingAction = null;
         if (apiData.actionId) {
           existingAction = await fetchActionById(apiData.actionId);
@@ -931,33 +662,31 @@ const EmergencyLightingInspectionForm = ({
           }
         }
 
-
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
           installationName: apiData?.installationName || prev.installationName,
           installationAddress:
-            apiData?.installationAddress || prev.installationAddress,
+              apiData?.installationAddress || prev.installationAddress,
           bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
           bsiCategoryMode: apiData?.bsiCategoryMode || prev.bsiCategoryMode,
           bsiCategoryFacilities:
-            apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
+              apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
           bsiCategoryDuration:
-            apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
+              apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
           inspectionDate: apiData?.inspectionDate || prev.inspectionDate,
           inspectionChecks: apiData?.inspectionChecks?.length
-            ? prev.inspectionChecks.map((defaultCheck, index) => ({
+              ? prev.inspectionChecks.map((defaultCheck, index) => ({
                 ...defaultCheck,
                 ...(apiData.inspectionChecks[index] || {}),
-                check: defaultCheck.check, // Always keep the original check text
+                check: defaultCheck.check,
               }))
-            : prev.inspectionChecks,
-            actionId: apiData?.actionId || prev.actionId,
-          // Merge simple fields
+              : prev.inspectionChecks,
+          actionId: apiData?.actionId || prev.actionId,
           additionalComments:
-            apiData?.additionalComments || prev.additionalComments,
+              apiData?.additionalComments || prev.additionalComments,
           allFittingsPassed:
-            apiData?.allFittingsPassed || prev.allFittingsPassed,
+              apiData?.allFittingsPassed || prev.allFittingsPassed,
           siteAssetId: apiData?.siteAssetId || prev.siteAssetId,
           file: apiData?.file || prev.files,
           user: apiData?.inspectionByUser || prev.user,
@@ -969,7 +698,6 @@ const EmergencyLightingInspectionForm = ({
         setCompleted(true);
       }
     } catch (error) {
-      //toast.error("Failed to load inspection data");
       console.error("Inspection load error:", error);
     }
   };
@@ -984,7 +712,6 @@ const EmergencyLightingInspectionForm = ({
         setIsFormEditable(!isDone);
         setIsSubmitted(isDone);
 
-        // Store inspection details if needed
         if (isDone) {
           setInspectionDetails({
             type: response.type,
@@ -1005,8 +732,11 @@ const EmergencyLightingInspectionForm = ({
         await fetchFolderStructure(siteSelectedForGlobal.siteId);
       }
 
-      await getInspection();
-      await fetchCheckStatus();
+      if (checkId) {
+        await getInspection();
+        await fetchCheckStatus();
+      }
+
       await fetchExistingActions();
 
       if (siteSelectedForGlobal?.siteId) {
@@ -1015,8 +745,7 @@ const EmergencyLightingInspectionForm = ({
     };
 
     fetchData();
-  }, [siteSelectedForGlobal?.siteId]);
-
+  }, [siteSelectedForGlobal?.siteId, checkId]);
 
   useEffect(() => {
     if (license?.companyName) {
@@ -1025,10 +754,11 @@ const EmergencyLightingInspectionForm = ({
         installationName: license.companyName,
       }));
     }
+
     if (!siteSelectedForGlobal.siteId) {
       return;
     }
-    console.log("siteSelectedForGlobal", siteSelectedForGlobal);
+
     const addressParts = [
       siteSelectedForGlobal.address1,
       siteSelectedForGlobal.address2,
@@ -1048,7 +778,7 @@ const EmergencyLightingInspectionForm = ({
 
   const handleInputChange = (e, field) => {
     const value =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+        e.target.type === "checkbox" ? e.target.checked : e.target.value;
 
     setFormData((prev) => ({
       ...prev,
@@ -1066,17 +796,16 @@ const EmergencyLightingInspectionForm = ({
   };
 
   const FILE_VALIDATION_CONFIG = {
-    MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB per file
-    MAX_TOTAL_SIZE: 100 * 1024 * 1024, // 100MB total
+    MAX_FILE_SIZE: 10 * 1024 * 1024,
+    MAX_TOTAL_SIZE: 100 * 1024 * 1024,
     ALLOWED_TYPES: ["image/jpeg", "image/png", "application/pdf"],
-    MAX_FILE_COUNT: 10, // Maximum number of files allowed
+    MAX_FILE_COUNT: 10,
   };
 
   const validateFiles = (newFiles, existingFiles = []) => {
-    // Check if adding new files would exceed max count
     if (
-      newFiles.length + existingFiles.length >
-      FILE_VALIDATION_CONFIG.MAX_FILE_COUNT
+        newFiles.length + existingFiles.length >
+        FILE_VALIDATION_CONFIG.MAX_FILE_COUNT
     ) {
       return {
         isValid: false,
@@ -1084,9 +813,8 @@ const EmergencyLightingInspectionForm = ({
       };
     }
 
-    // Check for invalid file types
     const invalidFiles = newFiles.filter(
-      (file) => !FILE_VALIDATION_CONFIG.ALLOWED_TYPES.includes(file.type)
+        (file) => !FILE_VALIDATION_CONFIG.ALLOWED_TYPES.includes(file.type)
     );
     if (invalidFiles.length > 0) {
       return {
@@ -1095,32 +823,30 @@ const EmergencyLightingInspectionForm = ({
       };
     }
 
-    // Check for oversized files
     const oversizedFiles = newFiles.filter(
-      (file) => file.size > FILE_VALIDATION_CONFIG.MAX_FILE_SIZE
+        (file) => file.size > FILE_VALIDATION_CONFIG.MAX_FILE_SIZE
     );
     if (oversizedFiles.length > 0) {
       return {
         isValid: false,
         error: `Some files exceed the maximum size of ${
-          FILE_VALIDATION_CONFIG.MAX_FILE_SIZE / 1024 / 1024
+            FILE_VALIDATION_CONFIG.MAX_FILE_SIZE / 1024 / 1024
         }MB.`,
       };
     }
 
-    // Check total size limit
     const currentTotalSize = existingFiles.reduce(
-      (sum, file) => sum + file.size,
-      0
+        (sum, file) => sum + file.size,
+        0
     );
     const newTotalSize =
-      currentTotalSize + newFiles.reduce((sum, file) => sum + file.size, 0);
+        currentTotalSize + newFiles.reduce((sum, file) => sum + file.size, 0);
 
     if (newTotalSize > FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE) {
       return {
         isValid: false,
         error: `Total size exceeds ${
-          FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024
+            FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024
         }MB limit.`,
       };
     }
@@ -1139,7 +865,6 @@ const EmergencyLightingInspectionForm = ({
       return;
     }
 
-    // If validation passes, update state
     setFormData((prev) => ({
       ...prev,
       files: [...prev.files, ...selectedFiles],
@@ -1147,6 +872,7 @@ const EmergencyLightingInspectionForm = ({
 
     e.target.value = "";
   };
+
   const handleFileDelete = (index) => {
     setFormData((prev) => {
       const updatedFiles = [...prev.files];
@@ -1165,23 +891,19 @@ const EmergencyLightingInspectionForm = ({
     }));
   };
 
-
   const submitInspection = async (e) => {
     e.preventDefault();
 
-    // Check if form is editable
     if (!isFormEditable) {
       toast.error("This form is completed and cannot be modified");
       return;
     }
 
-    // Risk assessment validation
     if (showRiskAssessment && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
       return;
     }
 
-    // Risk assessment validation (only checks `satisfactory: false`)
     const hasUnsatisfactoryChecks = formData.inspectionChecks
         .slice(0, 5)
         .some(check => check.satisfactory === false);
@@ -1194,9 +916,8 @@ const EmergencyLightingInspectionForm = ({
     setIsLoading(true);
 
     try {
-      // First update the site check status
+      // First create or update the site check record
       const statusPayload = {
-        checkId: parseInt(checkId, 10),
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
         subType: 'Emergency Lighting',
@@ -1207,12 +928,27 @@ const EmergencyLightingInspectionForm = ({
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
-      const statusResponse = await put(
-          `/api/site-check/${checkId}`,
-          statusPayload
-      );
+      let statusResponse;
+      let actualCheckId = checkId;
 
-      if (![200, 204].includes(statusResponse?.status)) {
+      if (isNewCheck) {
+        // Create new check
+        statusResponse = await post('/api/site-check', statusPayload);
+        if (statusResponse?.checkId) {
+          actualCheckId = statusResponse.checkId;
+          setIsNewCheck(false);
+          if (onCheckCreated) {
+            onCheckCreated(actualCheckId);
+          }
+        } else {
+          throw new Error('Failed to create new check - no checkId returned');
+        }
+      } else {
+        // Update existing check
+        statusResponse = await put(`/api/site-check/${checkId}`, statusPayload);
+      }
+
+      if (![200, 201, 204].includes(statusResponse?.status)) {
         throw new Error('Failed to update site check status');
       }
 
@@ -1220,7 +956,7 @@ const EmergencyLightingInspectionForm = ({
       const payload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId || "",
-        checkId,
+        checkId: actualCheckId,
         inspectionBy: loggedInUserData?.id,
         actionId: formData.actionId
       };
@@ -1240,25 +976,30 @@ const EmergencyLightingInspectionForm = ({
           payload.certificateUrls = certificateUrls;
         } catch (uploadError) {
           console.error("File upload failed:", uploadError);
-          //toast.error("File upload failed");
+          toast.error("File upload failed");
           return;
         }
       }
 
-      // Submit inspection data
-      await post("/api/site-check/emergency-lighting", payload);
+      // Submit inspection data - use POST for new, PUT for existing
+      if (formData.id) {
+        await put("/api/site-check/emergency-lighting", payload);
+      } else {
+        await post("/api/site-check/emergency-lighting", payload);
+      }
 
       // Generate PDF
       try {
         await generatePDF();
       } catch (error) {
         console.error('PDF generation failed:', error);
-        //toast.error('Failed to generate PDF');
+        toast.error('Failed to generate PDF');
       }
 
       toast.success("Inspection submitted successfully");
       setCompleted(true);
       setIsFormEditable(false);
+      setIsSubmitted(true);
 
     } catch (error) {
       console.error("Submission error:", error);
@@ -1267,481 +1008,485 @@ const EmergencyLightingInspectionForm = ({
       setIsLoading(false);
     }
   };
+
   const calculateRiskScore = () => {
-    // Implement your risk score calculation logic here
-    // Example: Count unsatisfactory checks
     const unsatisfactoryCount = formData.inspectionChecks.filter(
-      (check) => check.checkSelected && !check.satisfactory
+        (check) => check.checkSelected && !check.satisfactory
     ).length;
-    return unsatisfactoryCount * 5; 
+    return unsatisfactoryCount * 5;
   };
 
   return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white">
-        <h4>Emergency Lighting Inspection & Test Certificate</h4>
-        <small>BS5266-1: 2011</small>
-      </div>
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white">
+          <h4>Emergency Lighting Inspection & Test Certificate</h4>
+          <small>BS5266-1: 2011</small>
+        </div>
 
-      {!isFormEditable && (
-          <div className="alert alert-warning" role="alert">
-            <i className="bi bi-exclamation-triangle-fill me-2"></i>
-            This form is read-only because the check has been marked as completed.
-          </div>
-      )}
-      <div className="card-body">
-        <form onSubmit={submitInspection}>
-          {/* Warning Section */}
-          <div className="alert text-danger mb-4">
-            <b>WARNING</b>{" "}
-            <strong>
-              – Full duration tests involve discharging the batteries, so the
-              emergency lighting system will not be fully functional until the
-              batteries have had time to recharge. For this reason, always carry
-              out testing at times of minimal risk, or only test alternate
-              luminaries at one time.
-            </strong>
-          </div>
+        {!isFormEditable && (
+            <div className="alert alert-warning" role="alert">
+              <i className="bi bi-exclamation-triangle-fill me-2"></i>
+              This form is read-only because the check has been marked as completed.
+            </div>
+        )}
+        <div className="card-body">
+          <form onSubmit={submitInspection}>
+            {/* Warning Section */}
+            <div className="alert text-danger mb-4">
+              <b>WARNING</b>{" "}
+              <strong>
+                – Full duration tests involve discharging the batteries, so the
+                emergency lighting system will not be fully functional until the
+                batteries have had time to recharge. For this reason, always carry
+                out testing at times of minimal risk, or only test alternate
+                luminaries at one time.
+              </strong>
+            </div>
 
-          {/* Client Details Section */}
-          <h5 className="mb-3">Details of the Client</h5>
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label className="form-label">Name</label>
-                <input
-                  disabled
-                  type="text"
-                  style={{ height: "80px" }}
-                  className="form-control"
-                  value={license?.companyName}
-                />
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label className="form-label">Address</label>
-                <textarea
-                  disabled
-                  rows={3}
-                  className="form-control"
-                  value={license?.companyAddress}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Installation Details Section */}
-          <h5 className="mb-3">Details of the Installation</h5>
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label htmlFor="installationName" className="form-label">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  style={{ height: "80px" }}
-                  className="form-control"
-                  value={formData?.installationName || ""}
-                  disabled
-                  required
-                />
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label htmlFor="installationAddress" className="form-label">
-                  Address
-                </label>
-                <textarea
-                  rows={3}
-                  className="form-control"
-                  style={{
-                    overflowY: "auto",
-                    whiteSpace: "pre-wrap",
-                    wordWrap: "break-word",
-                    fontWeight: "normal",
-                  }}
-                  value={formData?.installationAddress || ""}
-                  required
-                  disabled
-                />
-              </div>
-            </div>
-          </div>
-          <h5 className="mb-3">Summary of Installation</h5>
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label htmlFor="installationName" className="form-label">
-                  Inspection and Test Carried out by :
-                </label>
-                <input
-                  type="text"
-                  style={{ height: "80px" }}
-                  className="form-control"
-                  value={loggedInUserData?.companyName}
-                  disabled
-                  required
-                />
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="mb-3">
-                <label htmlFor="installationAddress" className="form-label">
-                  Address
-                </label>
-                <textarea
-                  rows={3}
-                  className="form-control"
-                  style={{
-                    overflowY: "auto",
-                    whiteSpace: "pre-wrap",
-                    wordWrap: "break-word",
-                    fontWeight: "normal",
-                  }}
-                  value={formData?.installationAddress || ""}
-                  required
-                  disabled
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* BSI Installation Category Section */}
-          <h5 className="mb-3">BSI Installation Category</h5>
-          <div className="row mb-3">
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="bsiCategoryType" className="form-label">
-                  Type
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData?.bsiCategoryType || ""}
-                  onChange={(e) => handleInputChange(e, "bsiCategoryType")}
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="bsiCategoryMode" className="form-label">
-                  Mode
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData?.bsiCategoryMode || ""}
-                  onChange={(e) => handleInputChange(e, "bsiCategoryMode")}
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="bsiCategoryFacilities" className="form-label">
-                  Facilities
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData?.bsiCategoryFacilities || ""}
-                  onChange={(e) =>
-                    handleInputChange(e, "bsiCategoryFacilities")
-                  }
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="bsiCategoryDuration" className="form-label">
-                  Duration
-                </label>
-                <select
-                  className="form-select"
-                  value={formData?.bsiCategoryDuration || ""}
-                  onChange={(e) => handleInputChange(e, "bsiCategoryDuration")}
-                >
-                  <option value="">Select</option>
-                  <option value="30">30 minutes</option>
-                  <option value="60">60 minutes</option>
-                  <option value="120">120 minutes</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Inspection Checks Section */}
-          <h5 className="mb-3">Inspection & Test Carried Out By:</h5>
-          <table className="table table-striped table-bordered mb-4">
-            <thead>
-              <tr>
-                <th style={{ width: "60%" }}>Check</th>
-                <th style={{ width: "20%" }}>Satisfactory</th>
-                <th style={{ width: "20%" }}>Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {formData?.inspectionChecks?.map((check, index) => (
-                <tr key={index}>
-                  <td>
-                    <div className="form-check">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={check?.checkSelected || ""}
-                        onChange={(e) =>
-                          handleCheckChange(
-                            index,
-                            "checkSelected",
-                            e.target.checked
-                          )
-                        }
-                      />
-                      <label className="form-check-label">
-                        {check?.checkQ || ""}
-                      </label>
-                    </div>
-                  </td>
-                  <td className="text-center">
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={check?.satisfactory || ""}
-                      onChange={(e) =>
-                        handleCheckChange(
-                          index,
-                          "satisfactory",
-                          e.target.checked
-                        )
-                      }
-                    />
-                  </td>
-                  <td style={{ position: "relative" }}>
-                    <input
+            {/* Client Details Section */}
+            <h5 className="mb-3">Details of the Client</h5>
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label className="form-label">Name</label>
+                  <input
+                      disabled
                       type="text"
+                      style={{ height: "80px" }}
                       className="form-control"
-                      value={check?.remarks || ""}
-                      onChange={(e) =>
-                        handleCheckChange(index, "remarks", e.target.value)
-                      }
-                      onMouseEnter={() => setHoveredRemarksIndex(index)}
-                      onMouseLeave={() => setHoveredRemarksIndex(null)}
-                      placeholder="Enter remarks..."
-                    />
-                    {hoveredRemarksIndex === index && check.remarks && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: "-40px",
-                          zIndex: 1000,
-                          fontSize: "15px",
-                          backgroundColor: "#fff",
-                          border: "1px solid #ddd",
-                          padding: "28px",
-                          borderRadius: "4px",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        {check.remarks}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-
-          {showRiskAssessment && (
-              <div className="card mb-4">
-                <div className="card-header">
-                  <h5 className="mb-0">Risk Assessment</h5>
-                  {existingAction && (
-                      <span className="badge bg-success ms-2">
-          Action #{existingAction.actionId} - {existingAction.status}
-        </span>
-                  )}
-                </div>
-                <div className="card-body">
-                  {existingAction ? (
-                      <div className="existing-action">
-                        <div className="row">
-                          <div className="col-md-6">
-                            <p><strong>Observation:</strong> {existingAction.observation}</p>
-                            <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
-                            <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
-                          </div>
-                          <div className="col-md-6">
-                            <p><strong>Description: </strong> {existingAction.desc}</p>
-                            <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
-                            <p><strong>Status:</strong> {existingAction.status}</p>
-                          </div>
-                        </div>
-                        {existingAction.comments && (
-                            <div className="mt-3">
-                              <h6>Comments:</h6>
-                              <p>{existingAction.comments}</p>
-                            </div>
-                        )}
-                      </div>
-                  ) : (
-                      <RiskScoreCard
-                          desc={`${inspectionDetails?.type || 'Inspection'} - ${inspectionDetails?.subType || ''} - ${inspectionDetails?.category || ''}`}
-                          siteId={siteSelectedForGlobal?.siteId}
-                          createdBy={loggedInUserData?.id}
-                          taggedAsset={''}
-                          onRiskAssessmentComplete={handleRiskAssessmentComplete}
-                          actionRaised={actionRaised}
-                      />
-                  )}
+                      value={license?.companyName}
+                  />
                 </div>
               </div>
-          )}
-
-          {/* Additional Comments Section */}
-          <h5 className="mb-1">Additional Comments & Deviations</h5>
-          <p
-            className="mb-2"
-            style={{
-              fontSize: "12px",
-              fontWeight: "normal",
-              color: "#7b7b7b",
-            }}
-          >
-            Please provide as much information as possible on luminaire failures
-            & deviations including locations, luminaire types, make & model
-            numbers
-          </p>
-          <div className="mb-4">
-            <textarea
-              rows={8}
-              className="form-control"
-              value={formData?.additionalComments || ""}
-              onChange={(e) => handleInputChange(e, "additionalComments")}
-              placeholder="Please provide Information"
-            />
-          </div>
-
-          {/* File Upload Section */}
-          {/* File Upload Section */}
-          {/*  */}
-
-          {/* Certification Statement */}
-          <div className="border p-3 mb-4 bg-light">
-            <p>
-              We hereby certify that the emergency lighting system installation
-              at the above premises has been inspected and tested by us in
-              accordance with BS 5266-1: 2011, and to the best of our knowledge
-              and belief, the installation complies at the time of inspection
-              and testing with the recommendations given in BS 5266. Emergency
-              lighting Part 1:2011. Code of practice for the Emergency lighting
-              of premises, published by the BSI for a category (stated above)
-              except as stated in the deviations above.
-            </p>
-          </div>
-
-          {/* Inspector Details Section */}
-          <h5 className="mb-3">For the Inspection & Test of the system:</h5>
-          <div className="row mb-3">
-            {/* Name */}
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="inspector.name" className="form-label">
-                  Name
-                </label>
-                <input
-                  disabled
-                  type="text"
-                  className="form-control"
-                  value={formData.user?.name || ""}
-                />
-              </div>
-            </div>
-
-            {/* Position */}
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="inspector.position" className="form-label">
-                  Position
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData.user?.role || ""}
-                  disabled
-                />
-              </div>
-            </div>
-
-            {/* Signature */}
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="inspector.signature" className="form-label">
-                  Signature
-                </label>
-                <div
-                  className="border rounded bg-white d-flex align-items-center"
-                  style={{ height: "38px", padding: "2px" }}
-                >
-                  <img
-                    width="100%"
-                    height="100%"
-                    style={{ objectFit: "contain" }}
-                    src={formData.user?.signature + "?" + sasToken}
-                    alt="Signature"
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label className="form-label">Address</label>
+                  <textarea
+                      disabled
+                      rows={3}
+                      className="form-control"
+                      value={license?.companyAddress}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Date */}
-            <div className="col-md-3">
-              <div className="mb-3">
-                <label htmlFor="inspector.date" className="form-label">
-                  Date
-                </label>
-                <DatePicker
-                  selected={formData.inspectionDate || ""}
-                  onChange={handleDateChange}
-                  className="form-control"
-                  dateFormat="dd/MM/yyyy"
-                  wrapperClassName="w-100"
-                  required
-                  disabled={!isFormEditable}
-                />
+            {/* Installation Details Section */}
+            <h5 className="mb-3">Details of the Installation</h5>
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="installationName" className="form-label">
+                    Name
+                  </label>
+                  <input
+                      type="text"
+                      style={{ height: "80px" }}
+                      className="form-control"
+                      value={formData?.installationName || ""}
+                      disabled
+                      required
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="installationAddress" className="form-label">
+                    Address
+                  </label>
+                  <textarea
+                      rows={3}
+                      className="form-control"
+                      style={{
+                        overflowY: "auto",
+                        whiteSpace: "pre-wrap",
+                        wordWrap: "break-word",
+                        fontWeight: "normal",
+                      }}
+                      value={formData?.installationAddress || ""}
+                      required
+                      disabled
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="d-flex justify-content-end">
-            <div className="d-flex gap-2">
-              {!isSubmitted ? (
-                  <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={
-                          isLoading ||
-                          isGeneratingPDF ||
-                          (showRiskAssessment && !actionRaised) ||
-                          !isFormEditable
-                      }
-                  >
-                    {isLoading ? 'Submitting...' :
-                        isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
-                  </button>
-              ) : (
-                  <div className="alert alert-success">
-                    Inspection submitted successfully on {formatDate(formData.inspectionDate)}
-                  </div>
-              )}
+            <h5 className="mb-3">Summary of Installation</h5>
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="installationName" className="form-label">
+                    Inspection and Test Carried out by :
+                  </label>
+                  <input
+                      type="text"
+                      style={{ height: "80px" }}
+                      className="form-control"
+                      value={loggedInUserData?.companyName}
+                      disabled
+                      required
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="installationAddress" className="form-label">
+                    Address
+                  </label>
+                  <textarea
+                      rows={3}
+                      className="form-control"
+                      style={{
+                        overflowY: "auto",
+                        whiteSpace: "pre-wrap",
+                        wordWrap: "break-word",
+                        fontWeight: "normal",
+                      }}
+                      value={formData?.installationAddress || ""}
+                      required
+                      disabled
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        </form>
+
+            {/* BSI Installation Category Section */}
+            <h5 className="mb-3">BSI Installation Category</h5>
+            <div className="row mb-3">
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="bsiCategoryType" className="form-label">
+                    Type
+                  </label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData?.bsiCategoryType || ""}
+                      onChange={(e) => handleInputChange(e, "bsiCategoryType")}
+                      disabled={!isFormEditable}
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="bsiCategoryMode" className="form-label">
+                    Mode
+                  </label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData?.bsiCategoryMode || ""}
+                      onChange={(e) => handleInputChange(e, "bsiCategoryMode")}
+                      disabled={!isFormEditable}
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="bsiCategoryFacilities" className="form-label">
+                    Facilities
+                  </label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData?.bsiCategoryFacilities || ""}
+                      onChange={(e) =>
+                          handleInputChange(e, "bsiCategoryFacilities")
+                      }
+                      disabled={!isFormEditable}
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="bsiCategoryDuration" className="form-label">
+                    Duration
+                  </label>
+                  <select
+                      className="form-select"
+                      value={formData?.bsiCategoryDuration || ""}
+                      onChange={(e) => handleInputChange(e, "bsiCategoryDuration")}
+                      disabled={!isFormEditable}
+                  >
+                    <option value="">Select</option>
+                    <option value="30">30 minutes</option>
+                    <option value="60">60 minutes</option>
+                    <option value="120">120 minutes</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Inspection Checks Section */}
+            <h5 className="mb-3">Inspection & Test Carried Out By:</h5>
+            <table className="table table-striped table-bordered mb-4">
+              <thead>
+              <tr>
+                <th style={{ width: "60%" }}>Check</th>
+                <th style={{ width: "20%" }}>Satisfactory</th>
+                <th style={{ width: "20%" }}>Remarks</th>
+              </tr>
+              </thead>
+              <tbody>
+              {formData?.inspectionChecks?.map((check, index) => (
+                  <tr key={index}>
+                    <td>
+                      <div className="form-check">
+                        <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={check?.checkSelected || ""}
+                            onChange={(e) =>
+                                handleCheckChange(
+                                    index,
+                                    "checkSelected",
+                                    e.target.checked
+                                )
+                            }
+                            disabled={!isFormEditable}
+                        />
+                        <label className="form-check-label">
+                          {check?.checkQ || ""}
+                        </label>
+                      </div>
+                    </td>
+                    <td className="text-center">
+                      <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={check?.satisfactory || ""}
+                          onChange={(e) =>
+                              handleCheckChange(
+                                  index,
+                                  "satisfactory",
+                                  e.target.checked
+                              )
+                          }
+                          disabled={!isFormEditable}
+                      />
+                    </td>
+                    <td style={{ position: "relative" }}>
+                      <input
+                          type="text"
+                          className="form-control"
+                          value={check?.remarks || ""}
+                          onChange={(e) =>
+                              handleCheckChange(index, "remarks", e.target.value)
+                          }
+                          onMouseEnter={() => setHoveredRemarksIndex(index)}
+                          onMouseLeave={() => setHoveredRemarksIndex(null)}
+                          placeholder="Enter remarks..."
+                          disabled={!isFormEditable}
+                      />
+                      {hoveredRemarksIndex === index && check.remarks && (
+                          <div
+                              style={{
+                                position: "absolute",
+                                top: "100%",
+                                left: "-40px",
+                                zIndex: 1000,
+                                fontSize: "15px",
+                                backgroundColor: "#fff",
+                                border: "1px solid #ddd",
+                                padding: "28px",
+                                borderRadius: "4px",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                              }}
+                          >
+                            {check.remarks}
+                          </div>
+                      )}
+                    </td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+
+
+            {showRiskAssessment && (
+                <div className="card mb-4">
+                  <div className="card-header">
+                    <h5 className="mb-0">Risk Assessment</h5>
+                    {existingAction && (
+                        <span className="badge bg-success ms-2">
+          Action #{existingAction.actionId} - {existingAction.status}
+        </span>
+                    )}
+                  </div>
+                  <div className="card-body">
+                    {existingAction ? (
+                        <div className="existing-action">
+                          <div className="row">
+                            <div className="col-md-6">
+                              <p><strong>Observation:</strong> {existingAction.observation}</p>
+                              <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                              <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                            </div>
+                            <div className="col-md-6">
+                              <p><strong>Description: </strong> {existingAction.desc}</p>
+                              <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                              <p><strong>Status:</strong> {existingAction.status}</p>
+                            </div>
+                          </div>
+                          {existingAction.comments && (
+                              <div className="mt-3">
+                                <h6>Comments:</h6>
+                                <p>{existingAction.comments}</p>
+                              </div>
+                          )}
+                        </div>
+                    ) : (
+                        <RiskScoreCard
+                            desc={`${inspectionDetails?.type || 'Inspection'} - ${inspectionDetails?.subType || ''} - ${inspectionDetails?.category || ''}`}
+                            siteId={siteSelectedForGlobal?.siteId}
+                            createdBy={loggedInUserData?.id}
+                            taggedAsset={''}
+                            onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                            actionRaised={actionRaised}
+                            disabled={!isFormEditable}
+                        />
+                    )}
+                  </div>
+                </div>
+            )}
+
+            {/* Additional Comments Section */}
+            <h5 className="mb-1">Additional Comments & Deviations</h5>
+            <p
+                className="mb-2"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: "normal",
+                  color: "#7b7b7b",
+                }}
+            >
+              Please provide as much information as possible on luminaire failures
+              & deviations including locations, luminaire types, make & model
+              numbers
+            </p>
+            <div className="mb-4">
+            <textarea
+                rows={8}
+                className="form-control"
+                value={formData?.additionalComments || ""}
+                onChange={(e) => handleInputChange(e, "additionalComments")}
+                placeholder="Please provide Information"
+                disabled={!isFormEditable}
+            />
+            </div>
+
+            {/* Certification Statement */}
+            <div className="border p-3 mb-4 bg-light">
+              <p>
+                We hereby certify that the emergency lighting system installation
+                at the above premises has been inspected and tested by us in
+                accordance with BS 5266-1: 2011, and to the best of our knowledge
+                and belief, the installation complies at the time of inspection
+                and testing with the recommendations given in BS 5266. Emergency
+                lighting Part 1:2011. Code of practice for the Emergency lighting
+                of premises, published by the BSI for a category (stated above)
+                except as stated in the deviations above.
+              </p>
+            </div>
+
+            {/* Inspector Details Section */}
+            <h5 className="mb-3">For the Inspection & Test of the system:</h5>
+            <div className="row mb-3">
+              {/* Name */}
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="inspector.name" className="form-label">
+                    Name
+                  </label>
+                  <input
+                      disabled
+                      type="text"
+                      className="form-control"
+                      value={formData.user?.name || ""}
+                  />
+                </div>
+              </div>
+
+              {/* Position */}
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="inspector.position" className="form-label">
+                    Position
+                  </label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData.user?.role || ""}
+                      disabled
+                  />
+                </div>
+              </div>
+
+              {/* Signature */}
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="inspector.signature" className="form-label">
+                    Signature
+                  </label>
+                  <div
+                      className="border rounded bg-white d-flex align-items-center"
+                      style={{ height: "38px", padding: "2px" }}
+                  >
+                    <img
+                        width="100%"
+                        height="100%"
+                        style={{ objectFit: "contain" }}
+                        src={formData.user?.signature + "?" + sasToken}
+                        alt="Signature"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="col-md-3">
+                <div className="mb-3">
+                  <label htmlFor="inspector.date" className="form-label">
+                    Date
+                  </label>
+                  <DatePicker
+                      selected={formData.inspectionDate || ""}
+                      onChange={handleDateChange}
+                      className="form-control"
+                      dateFormat="dd/MM/yyyy"
+                      wrapperClassName="w-100"
+                      required
+                      disabled={!isFormEditable}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="d-flex justify-content-end">
+              <div className="d-flex gap-2">
+                {!isSubmitted ? (
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={
+                            isLoading ||
+                            isGeneratingPDF ||
+                            (showRiskAssessment && !actionRaised) ||
+                            !isFormEditable
+                        }
+                    >
+                      {isLoading ? 'Submitting...' :
+                          isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
+                    </button>
+                ) : (
+                    <div className="alert alert-success">
+                      Inspection submitted successfully on {formatDate(formData.inspectionDate)}
+                    </div>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
   );
 };
 
@@ -1753,5 +1498,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default connect(mapStateToProps, { getSiteAssets, getUsers })(
-  EmergencyLightingInspectionForm
+    EmergencyLightingInspectionForm
 );
