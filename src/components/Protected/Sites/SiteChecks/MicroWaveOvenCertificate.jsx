@@ -131,7 +131,7 @@ const MicroWaveOvenCertificate = ({
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
-            action.desc.includes('Microwave Oven') ||
+            action.desc.includes('Microwave Oven') &&
             action.type === 'Inspection'
         );
 

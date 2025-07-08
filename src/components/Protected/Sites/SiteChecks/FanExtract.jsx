@@ -215,7 +215,7 @@ const FanExtract = ({
             const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
             if (response && response.length > 0) {
                 const relevantActions = response.filter(action =>
-                    action.desc.includes('Extract Fan') ||
+                    action.desc.includes('Extract Fan') &&
                     action.type === 'Inspection'
                 );
 

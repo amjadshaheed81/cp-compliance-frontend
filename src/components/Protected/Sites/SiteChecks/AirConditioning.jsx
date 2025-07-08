@@ -262,7 +262,7 @@ const AirConditioning = ({
       if (response && response.length > 0) {
         // Find actions related to this inspection
         const relevantActions = response.filter(action =>
-            action.desc.includes('Air Conditioning') ||
+            action.desc.includes('Air Conditioning') &&
             action.type === 'Inspection'
         );
 

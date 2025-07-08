@@ -238,7 +238,7 @@ const ExternalLightningCertificate = ({
       if (response && response.length > 0) {
         // Filter actions related to this inspection
         const relevantActions = response.filter(action =>
-            action.desc.includes('External Lighting Testing') ||
+            action.desc.includes('External Lighting Testing') &&
             action.type === 'Inspection'
         );
 

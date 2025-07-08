@@ -209,7 +209,7 @@ const DisabledWCAlarmCertificate = ({
       if (response && response.length > 0) {
         // Find actions related to this inspection
         const relevantActions = response.filter(action =>
-            action.desc.includes('Disabled WC Alarm') ||
+            action.desc.includes('Disabled WC Alarm') &&
             action.type === 'Inspection'
         );
 

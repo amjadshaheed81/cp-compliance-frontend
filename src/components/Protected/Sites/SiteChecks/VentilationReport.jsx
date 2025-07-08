@@ -214,7 +214,7 @@ const VentilationReport = ({
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
-            action.desc.includes('Ventilation') ||
+            action.desc.includes('Ventilation') &&
             action.type === 'Inspection'
         );
 

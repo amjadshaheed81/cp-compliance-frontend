@@ -209,7 +209,7 @@ const EmergencyLightingInspectionForm = ({
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
-            action.desc.includes('Emergency Lighting') ||
+            action.desc.includes('Emergency Lighting to meet BS5266') &&
             action.type === 'Inspection'
         );
 
