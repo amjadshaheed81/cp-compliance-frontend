@@ -1045,6 +1045,14 @@ const ExternalLightningCertificate = ({
         throw new Error('Failed to save inspection data');
       }
 
+      if (formData.actionId) {
+      const action = await fetchActionById(formData.actionId);
+      if (action) {
+        setExistingAction(action);
+        setActionRaised(true);
+      }
+    }
+
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
