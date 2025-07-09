@@ -155,18 +155,49 @@ const EmergencyLightingInspectionForm = ({
         throw new Error("Invalid action response received");
       }
 
-      setActionRaised(true);
-      setExistingAction(actionResponse);
+      // Verify the new action has our current checkId
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction || verifiedAction.checkId !== checkId) {
+        throw new Error("Action was not properly linked to this inspection");
+      }
 
+      setExistingAction(verifiedAction);
+      setActionRaised(true);
+
+      // Update form data
       setFormData(prev => ({
         ...prev,
-        actionId: actionResponse.actionId
+        actionId: verifiedAction.actionId
       }));
 
-      toast.success(`Action #${actionResponse.actionId} raised successfully`);
+      // Update inspection record
+      if (checkId) {
+        const inspectionPayload = {
+          ...formData,
+          checkId: checkId,
+          siteId: siteSelectedForGlobal?.siteId,
+          actionId: verifiedAction.actionId,
+          inspectionBy: loggedInUserData?.id
+        };
+
+        // Update or create inspection record
+        const existingInspections = await get(`/api/site-check/emergency-lighting/${checkId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/emergency-lighting`, inspectionPayload);
+        } else {
+          await post(`/api/site-check/emergency-lighting`, inspectionPayload);
+        }
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
+      }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error("Failed to process action completion");
+      toast.error(error.message || "Failed to process action completion");
+
+      // Rollback state changes if the operation failed
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
     }
   };
 
@@ -177,10 +208,11 @@ const EmergencyLightingInspectionForm = ({
 
     setShowRiskAssessment(hasUnsatisfactoryChecks);
 
-    if (!hasUnsatisfactoryChecks) {
-      setActionRaised(false);
-    }
-  }, [formData.inspectionChecks]);
+    // Update actionRaised state based on existing action
+    const isActionValid = existingAction && existingAction.checkId === checkId;
+    setActionRaised(isActionValid);
+  }, [formData.inspectionChecks, checkId, existingAction]);
+
 
   const fetchActionById = async (id) => {
     try {
@@ -195,25 +227,31 @@ const EmergencyLightingInspectionForm = ({
 
   const fetchExistingActions = async () => {
     try {
+      // First check if we have an actionId in form data
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
-        if (action) {
+        // Only consider this action if its checkId matches current checkId
+        if (action && action.checkId === checkId) {
           setExistingAction(action);
           setActionRaised(true);
           return;
         }
+        // If checkId doesn't match, clear the actionId from form data
+        setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId) return;
+      // Now look for other actions specifically for this checkId
+      if (!siteSelectedForGlobal?.siteId || !checkId) return;
 
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
+        // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
-            action.desc.includes('Emergency Lighting to meet BS5266') &&
-            action.type === 'Inspection'
+            action.checkId === checkId
         );
 
         if (relevantActions.length > 0) {
+          // Get the most recent action for this checkId
           const mostRecentAction = relevantActions.sort((a, b) =>
               new Date(b.createdAt) - new Date(a.createdAt)
           )[0];
@@ -221,19 +259,17 @@ const EmergencyLightingInspectionForm = ({
           setExistingAction(mostRecentAction);
           setActionRaised(true);
 
-          if (mostRecentAction.actionId && !formData.actionId) {
-            setFormData(prev => ({
-              ...prev,
-              actionId: mostRecentAction.actionId
-            }));
-          }
+          // Update formData with the actionId
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
         }
       }
     } catch (error) {
       console.error("Error fetching existing actions:", error);
     }
   };
-
   // Function to generate PDF
   const generatePDF = async () => {
     try {
@@ -496,53 +532,66 @@ const EmergencyLightingInspectionForm = ({
     try {
       // 1. Get parent folders
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+      if (!parentFoldersResponse?.parentFolders) {
+        throw new Error('No parent folders found');
+      }
 
-      // 2. Find 'Log Books' (exact match including spaces)
+      // 2. Find Log Books (exact match)
       const logBooksFolder = parentFoldersResponse.parentFolders.find(
-          folder => folder.name === 'Log Books' // Exact match
+          f => f.name === 'Log Books'
       );
+      if (!logBooksFolder) throw new Error('Log Books folder not found');
 
-      // 3. Find 'Fire Log Book'
-      const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
-      const fireLogBookFolder = logBooksResponse.document.childFolders.find(
-          folder => folder.name === 'Fire Log Book' // Exact match
+      // 3. Get Fire Log Book children
+      const logBooksChildren = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+      const fireLogBookFolder = logBooksChildren?.document?.childFolders?.find(
+          f => f.name === 'Fire Log Book'
       );
+      if (!fireLogBookFolder) throw new Error('Fire Log Book folder not found');
 
-      // 4. Find 'Emergency Lighting to meet BS5266'
-      const fireLogBookResponse = await get(`/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`);
-      const emergencyLightingFolder = fireLogBookResponse.document.childFolders.find(
-          folder => folder.name === 'Emergency Lighting to meet BS5266' // Exact match
+      // 4. Get Emergency Lighting children
+      const fireLogChildren = await get(`/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`);
+      const emergencyLightingFolder = fireLogChildren?.document?.childFolders?.find(
+          f => f.name === 'Emergency Lighting to meet BS5266'
       );
+      if (!emergencyLightingFolder) throw new Error('Emergency Lighting folder not found');
 
-      // 5. Find target subfolder (using exact names)
+      // 5. Get target subfolder (CRITICAL FIX)
       const targetFolderName = getFolderNameFromCategory(category);
-      const emergencyLightingResponse = await get(`/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`);
+      const lightingChildren = await get(`/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`);
 
-      console.log('Searching for exact folder name:', targetFolderName);
+      console.log('Searching for:', targetFolderName);
       console.log('Available subfolders:',
-          emergencyLightingResponse.document.childFolders.map(f => f.name));
+          lightingChildren?.document?.childFolders?.map(f => `${f.name} (${f.id})`) || []);
 
-      const targetFolder = emergencyLightingResponse.document.childFolders.find(
-          folder => folder.name === targetFolderName // Exact match
+      // Find the EXACT matching subfolder
+      const targetFolder = lightingChildren?.document?.childFolders?.find(
+          f => f.name === targetFolderName
       );
 
       if (!targetFolder) {
-        console.warn(`Exact folder "${targetFolderName}" not found, using parent folder instead`);
+        console.warn(`Exact subfolder "${targetFolderName}" not found, using parent folder`);
       }
 
+      // FINAL FOLDER ID ASSIGNMENT (FIXED)
       const newFolderIds = {
         logBooks: logBooksFolder.id,
         fireLogBook: fireLogBookFolder.id,
         emergencyLighting: emergencyLightingFolder.id,
-        monthlyTesting: targetFolder?.id || emergencyLightingFolder.id // Fallback
+        monthlyTesting: targetFolder?.id || null // Don't fallback to parent ID
       };
 
       console.log('Final folder IDs:', newFolderIds);
+
+      if (!newFolderIds.monthlyTesting) {
+        throw new Error(`Target subfolder "${targetFolderName}" not found`);
+      }
+
       setFolderIds(newFolderIds);
       return newFolderIds.monthlyTesting;
 
     } catch (error) {
-      console.error('Error in folder structure lookup:', {
+      console.error('Folder structure error:', {
         error: error.message,
         siteId,
         category
@@ -1274,19 +1323,18 @@ const EmergencyLightingInspectionForm = ({
               </tbody>
             </table>
 
-
             {showRiskAssessment && (
                 <div className="card mb-4">
                   <div className="card-header">
                     <h5 className="mb-0">Risk Assessment</h5>
-                    {existingAction && (
+                    {existingAction?.checkId === checkId && (
                         <span className="badge bg-success ms-2">
           Action #{existingAction.actionId} - {existingAction.status}
         </span>
                     )}
                   </div>
                   <div className="card-body">
-                    {existingAction ? (
+                    {existingAction?.checkId === checkId ? (
                         <div className="existing-action">
                           <div className="row">
                             <div className="col-md-6">
@@ -1309,10 +1357,10 @@ const EmergencyLightingInspectionForm = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`${inspectionDetails?.type || 'Inspection'} - ${inspectionDetails?.subType || ''} - ${inspectionDetails?.category || ''}`}
+                            desc={`Emergency Lighting Inspection - ${inspectionDetails?.category || ''}`}
                             siteId={siteSelectedForGlobal?.siteId}
+                            checkId={checkId}
                             createdBy={loggedInUserData?.id}
-                            taggedAsset={''}
                             onRiskAssessmentComplete={handleRiskAssessmentComplete}
                             actionRaised={actionRaised}
                             disabled={!isFormEditable}

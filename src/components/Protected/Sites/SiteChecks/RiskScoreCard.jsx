@@ -15,6 +15,7 @@ const RiskScoreCard = ({
                            disabled = false,
                            onRiskAssessmentComplete,
                            siteId,
+                           checkId,
                            taggedAsset,
                            createdBy,
                            actionRaised,
@@ -83,6 +84,7 @@ const RiskScoreCard = ({
         try {
             const payload = {
                 siteId,
+                checkId,
                 desc: `${desc} - ${moment(new Date()).format("DD/MM/YYYY")}`,
                 observation: riskData.observation.trim(),
                 requiredAction: riskData.requiredAction.trim(),
