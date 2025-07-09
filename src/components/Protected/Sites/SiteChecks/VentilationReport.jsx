@@ -1572,7 +1572,7 @@ const VentilationReport = ({
                       </div>
                   ) : (
                       <RiskScoreCard
-                          desc={`Ventilation Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
+                          desc={`Inspection - Plant and Equipment Inspection - Ventilation Report Service`}
                           siteId={siteSelectedForGlobal?.siteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}

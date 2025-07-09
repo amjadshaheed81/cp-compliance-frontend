@@ -1642,7 +1642,7 @@ const DisabledWCAlarmCertificate = ({
                       </div>
                   ) : (
                       <RiskScoreCard
-                          desc={`Disabled WC Alarm Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
+                          desc={`Inspection - Electrical - Disabled WC Alarm Inspection`}
                           siteId={siteSelectedForGlobal?.siteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}

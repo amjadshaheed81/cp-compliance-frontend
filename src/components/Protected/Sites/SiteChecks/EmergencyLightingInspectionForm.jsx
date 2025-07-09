@@ -3,11 +3,13 @@ import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { get, post, uploadSiteCheckDoc } from "../../../../api";
+import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
 import { getSiteAssets, getUsers } from "../../../../store/thunk/site";
 import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/EmergencyLighting.pdf';
+import RiskScoreCard from "./RiskScoreCard";
+import {formatDate} from "../../../../utils/dateFormat";
 
 const EmergencyLightingInspectionForm = ({
                                            checkId,
@@ -17,6 +19,7 @@ const EmergencyLightingInspectionForm = ({
                                            siteSelectedForGlobal = {},
                                            loggedInUserData = {},
                                            siteCheck = {},
+                                           onCheckCreated // New callback prop
                                          }) => {
   // Add folder IDs state
   const [folderIds, setFolderIds] = useState({
@@ -70,7 +73,6 @@ const EmergencyLightingInspectionForm = ({
     ],
     additionalComments: "",
     allFittingsPassed: false,
-
     siteAssetId: "",
     files: [],
     user: loggedInUserData,
@@ -81,6 +83,13 @@ const EmergencyLightingInspectionForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const users = useSelector((state) => state.site.users || []);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [actionRaised, setActionRaised] = useState(false);
+  const [existingAction, setExistingAction] = useState(null);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [isFormEditable, setIsFormEditable] = useState(true);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isNewCheck, setIsNewCheck] = useState(!checkId); // Track if this is a new check
 
   // Helper function to fetch PDF as ArrayBuffer
   const fetchPdfTemplate = async () => {
@@ -117,8 +126,18 @@ const EmergencyLightingInspectionForm = ({
         return null;
       }
 
-      console.log('Fetched inspection data:', response);
-      return response; // Return the entire response object
+      const inspectionDetails = {
+        checkId: response.checkId,
+        siteId: response.siteId,
+        type: response.type,
+        subType: response.subType,
+        category: response.category,
+        dueDate: response.dueDate,
+        status: response.status
+      };
+
+      console.log('Fetched inspection data:', inspectionDetails);
+      return inspectionDetails;
     } catch (error) {
       console.error('Error fetching inspection details:', {
         message: error.message,
@@ -130,70 +149,146 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
+  const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+      if (!actionResponse?.actionId) {
+        throw new Error("Invalid action response received");
+      }
+
+      // Verify the new action has our current checkId
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction || verifiedAction.checkId !== checkId) {
+        throw new Error("Action was not properly linked to this inspection");
+      }
+
+      setExistingAction(verifiedAction);
+      setActionRaised(true);
+
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
+
+      // Update inspection record
+      if (checkId) {
+        const inspectionPayload = {
+          ...formData,
+          checkId: checkId,
+          siteId: siteSelectedForGlobal?.siteId,
+          actionId: verifiedAction.actionId,
+          inspectionBy: loggedInUserData?.id
+        };
+
+        // Update or create inspection record
+        const existingInspections = await get(`/api/site-check/emergency-lighting/${checkId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/emergency-lighting`, inspectionPayload);
+        } else {
+          await post(`/api/site-check/emergency-lighting`, inspectionPayload);
+        }
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
+      }
+    } catch (error) {
+      console.error("Error handling risk assessment completion:", error);
+      toast.error(error.message || "Failed to process action completion");
+
+      // Rollback state changes if the operation failed
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
+    }
+  };
+
+  useEffect(() => {
+    const hasUnsatisfactoryChecks = formData.inspectionChecks
+        .slice(0, 5)
+        .some(check => check.satisfactory === false);
+
+    setShowRiskAssessment(hasUnsatisfactoryChecks);
+
+    // Update actionRaised state based on existing action
+    const isActionValid = existingAction && existingAction.checkId === checkId;
+    setActionRaised(isActionValid);
+  }, [formData.inspectionChecks, checkId, existingAction]);
+
+
+  const fetchActionById = async (id) => {
+    try {
+      if (!id) return null;
+      const response = await get(`/api/site/actions/id/${id}`);
+      return response;
+    } catch (error) {
+      console.error("Error fetching action:", error);
+      return null;
+    }
+  };
+
+  const fetchExistingActions = async () => {
+    try {
+      // First check if we have an actionId in form data
+      if (formData.actionId) {
+        const action = await fetchActionById(formData.actionId);
+        // Only consider this action if its checkId matches current checkId
+        if (action && action.checkId === checkId) {
+          setExistingAction(action);
+          setActionRaised(true);
+          return;
+        }
+        // If checkId doesn't match, clear the actionId from form data
+        setFormData(prev => ({ ...prev, actionId: null }));
+      }
+
+      // Now look for other actions specifically for this checkId
+      if (!siteSelectedForGlobal?.siteId || !checkId) return;
+
+      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      if (response && response.length > 0) {
+        // Only consider actions with exact checkId match
+        const relevantActions = response.filter(action =>
+            action.checkId === checkId
+        );
+
+        if (relevantActions.length > 0) {
+          // Get the most recent action for this checkId
+          const mostRecentAction = relevantActions.sort((a, b) =>
+              new Date(b.createdAt) - new Date(a.createdAt)
+          )[0];
+
+          setExistingAction(mostRecentAction);
+          setActionRaised(true);
+
+          // Update formData with the actionId
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching existing actions:", error);
+    }
+  };
   // Function to generate PDF
   const generatePDF = async () => {
     try {
       setIsGeneratingPDF(true);
 
-      // Fetch inspection details to get the category
       let inspectionDetails = null;
       if (checkId) {
         inspectionDetails = await fetchInspectionDetails(checkId);
         console.log('Fetched inspection details:', inspectionDetails);
       }
 
-      // Dynamically import pdf-lib
       const { PDFDocument, rgb } = await import('pdf-lib');
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFDocument.load(pdfBytes);
 
       const form = pdfDoc.getForm();
 
-      // Log all fields for debugging
-      const fields = form.getFields();
-      console.log('=== PDF Form Fields ===');
-      const fieldNames = [];
-      const checkboxes = [];
-
-      // First pass: Collect all fields
-      fields.forEach((field, index) => {
-        try {
-          const name = field.getName();
-          const type = field.constructor.name;
-          fieldNames.push({ name, type });
-
-          if (type.includes('PDFCheckBox')) {
-            checkboxes.push({ index, name, type });
-          }
-
-          console.log(`[${index}] Field: ${name}, Type: ${type}`);
-        } catch (error) {
-          console.warn('Error getting field name:', error);
-        }
-      });
-
-      // Log checkboxes in a more readable format
-      console.log('=== Checkbox Fields ===');
-      console.table(checkboxes.map((cb, i) => ({
-        'Index': i,
-        'Field Index': cb.index,
-        'Name': cb.name,
-        'Type': cb.type
-      })));
-
-      // Log field names that might be related to our form
-      const relevantFields = fieldNames.filter(f =>
-          f.name.match(/CheckBox|Remarks|Name|Address|Date|Type|Mode|Facilities|Duration|AdditionalComments|Engineer|position|Image_af_image|Monthly|InspectionTest/i)
-      );
-      console.log('=== Relevant Form Fields ===');
-      console.table(relevantFields.map((f, i) => ({
-        'Index': i,
-        'Name': f.name,
-        'Type': f.type
-      })));
-
-      // Helper function to set text fields
-      const setTextField = (fieldName, value, fontSize = 10) => {
+      // Set form fields
+      const setTextField = (fieldName, value, fontSize = 8) => {
         try {
           const field = form.getTextField(fieldName);
           if (field) {
@@ -213,7 +308,6 @@ const EmergencyLightingInspectionForm = ({
         }
       };
 
-      // Helper function to set checkboxes using check() and uncheck() methods
       const setCheckbox = (fieldName, isChecked) => {
         try {
           const field = form.getCheckBox(fieldName);
@@ -232,12 +326,11 @@ const EmergencyLightingInspectionForm = ({
       };
 
       setTextField('Name', license?.companyName || '');
-
-      const addressLines = (formData.installationAddress || '').split(',');
-      setTextField('Address', addressLines[0] || '');
-      setTextField('Address_2', addressLines[1] || '');
-      setTextField('Address_3', addressLines.slice(2).join(', ') || '');
-
+      setTextField('Address', license?.companyAddress || '');
+      setTextField('Name_2', loggedInUserData?.companyName || '');
+      setTextField('Address_2', formData?.installationAddress || '');
+      setTextField('InspectionTest', loggedInUserData?.companyName || '');
+      setTextField('Address_3', loggedInUserData?.companyAddress || '');
       setTextField('Type', formData.bsiCategoryType || '');
       setTextField('Mode', formData.bsiCategoryMode || '');
       setTextField('Facilities', formData.bsiCategoryFacilities || '');
@@ -248,64 +341,39 @@ const EmergencyLightingInspectionForm = ({
           : '';
       setTextField('Date', formattedDate);
 
-      console.log('Inspection Checks:', formData.inspectionChecks);
-
-
+      // Process inspection checks
       for (let i = 1; i <= 10; i++) {
         setCheckbox(`CheckBox${i}`, false);
       }
 
-
-
-      // First, clear all checkboxes
-      for (let i = 1; i <= 10; i++) {
-        setCheckbox(`CheckBox${i}`, false);
-      }
-
-      // Process each inspection check and map to the correct checkbox
       formData.inspectionChecks.forEach((check, index) => {
         if (!check) return;
 
-        // For the first 5 items, map to the left column checkboxes (1-5)
         if (index < 5) {
           const checkboxName = `CheckBox${index + 1}`;
-          console.log(`Processing check ${index} (${check.checkQ}):`, {
-            checkboxName,
-            status: check.satisfactory === true ? 'Satisfactory' :
-                check.satisfactory === false ? 'Unsatisfactory' : 'N/A'
-          });
 
-          // Set the left checkbox if the item is marked
           if (check.satisfactory !== undefined) {
             setCheckbox(checkboxName, true);
-            console.log(`Marking ${checkboxName} as checked`);
           }
 
-          // Set the corresponding right checkbox if satisfactory is true
           if (check.satisfactory === true) {
-            const rightCheckboxName = `CheckBox${index + 6}`; // Map to 6-10
-            console.log(`Marking ${rightCheckboxName} as Satisfactory`);
+            const rightCheckboxName = `CheckBox${index + 6}`;
             setCheckbox(rightCheckboxName, true);
           }
 
-          // Set remarks
           const remarksField = `Remarks${index + 1}`;
           if (check.remarks) {
-            console.log(`Setting ${remarksField} to:`, check.remarks);
             setTextField(remarksField, check.remarks);
           }
         }
       });
 
-      // Additional Comments
       setTextField('AdditionalComments', formData.additionalComments || '');
 
-      // Inspector Details
       const inspector = users.find(u => u.id === loggedInUserData?.id);
       setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
-      setTextField('position', inspector?.role || '');
+      setTextField('position', loggedInUserData?.role || '');
 
-      // Handle signature image
       if (loggedInUserData?.signature) {
         try {
           const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
@@ -313,7 +381,6 @@ const EmergencyLightingInspectionForm = ({
           const signatureImageBytes = await signatureResponse.arrayBuffer();
           const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
-          // Get the signature field and set the image
           const signatureField = form.getButton('Image_af_image');
           if (signatureField) {
             signatureField.setImage(signatureImage);
@@ -323,34 +390,25 @@ const EmergencyLightingInspectionForm = ({
         }
       }
 
-      // Set the Monthly field with the category from API response
       const categoryText = inspectionDetails?.category || 'N/A';
-      console.log('Setting Monthly field with category:', categoryText);
       setTextField('Monthly', categoryText);
 
-      // Fetch folder structure based on category
       await fetchFolderStructure(siteSelectedForGlobal?.siteId, categoryText);
 
-      // Set default value for test performed checkbox
-      setCheckbox('InspectionTest', true);  // Test performed checkbox
+      setCheckbox('InspectionTest', true);
 
-      // Flatten the form to make it read-only
       try {
         form.flatten();
       } catch (error) {
         console.warn('Error flattening form:', error.message);
       }
 
-      // Save the modified PDF
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
-      // Generate filename
       const siteName = siteSelectedForGlobal?.name || 'emergency-lighting';
-      const dateStr = new Date().toISOString().split('T')[0];
-      const fileName = `EmergencyLightingInspection.pdf`;
+      const fileName = `EmergencyLightingInspection- ${inspectionDetails.category}.pdf`;
 
-      // Upload to server if needed
       const savedLocally = await savePdfToLocal(blob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -358,7 +416,6 @@ const EmergencyLightingInspectionForm = ({
 
       const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
 
-      // Use the monthlyTesting folder ID if available, otherwise fall back to emergencyLighting folder
       const targetFolderId = folderIds.monthlyTesting || folderIds.emergencyLighting ||
           folderIds.fireLogBook || folderIds.logBooks;
 
@@ -366,64 +423,11 @@ const EmergencyLightingInspectionForm = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
 
-      // Helper function to check if file exists and get its details
-      const checkFileExists = async (folderId, fileName) => {
-        try {
-          const siteId = siteSelectedForGlobal?.siteId;
-          if (!siteId || !folderId) return { exists: false, file: null };
-
-          const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-          const files = response?.document?.files || [];
-
-          // Find file with the same base name (without extension)
-          const baseName = fileName.split('.')[0];
-          const existingFile = files.find(file =>
-              file.name && file.name.startsWith(baseName)
-          );
-
-          return {
-            exists: !!existingFile,
-            file: existingFile || null
-          };
-        } catch (error) {
-          console.error('Error checking file existence:', error);
-          return { exists: false, file: null };
-        }
-      };
-
-      // Helper function to get the highest file version
-      const getHighestFileVersion = async (folderId, fileName) => {
-        try {
-          const siteId = siteSelectedForGlobal?.siteId;
-          if (!siteId || !folderId) return 1;
-
-          const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-          const files = response?.document?.files || [];
-
-          // Find matching files (same base name)
-          const baseName = fileName.split('.')[0];
-          const matchingFiles = files.filter(file =>
-              file.name && file.name.startsWith(baseName)
-          );
-
-          if (matchingFiles.length > 0) {
-            const versions = matchingFiles.map(f => f.fileVersion || 1);
-            return Math.max(...versions) + 1;
-          }
-          return 1;
-        } catch (error) {
-          console.error('Error checking file versions:', error);
-          return 1;
-        }
-      };
-
-      // Check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
 
       const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        // File exists, use the new version upload endpoint
         uploadFormData.append('file', pdfFile);
 
         const documentRequestString = {
@@ -461,7 +465,6 @@ const EmergencyLightingInspectionForm = ({
           return { success: true, data: response.data };
         }
       } else {
-        // File doesn't exist, use the regular upload endpoint
         uploadFormData.append('files', pdfFile);
 
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
@@ -504,104 +507,114 @@ const EmergencyLightingInspectionForm = ({
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF: ' + error.message);
       throw error;
     } finally {
       setIsGeneratingPDF(false);
     }
   };
 
-  // Function to map category text to folder name
-  const getFolderNameFromCategory = (category) => {
-    // Trim any whitespace from the category text
-    const normalizedCategory = (category || '').trim();
-
-    // Check for weekly testing pattern (case insensitive)
-    if (/weekly.*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - Weekly \'Flick\' Testing';
-    }
-    // Check for 6 monthly testing pattern (case insensitive)
-    else if (/6.*monthly.*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - 6 Monthly Testing';
-    }
-    // Check for 6 monthly testing pattern (case insensitive)
-    else if (/1.*monthly.*testing/i.test(normalizedCategory)) {
-      return ' Emergency Lighting - Monthly Testing';
-    }
-    // Check for 12 monthly/annual testing pattern (case insensitive)
-    else if (/(12.*monthly|annual).*testing/i.test(normalizedCategory)) {
-      return 'Emergency Lighting - 12 Monthly Testing';
-    }
-    // Default to monthly testing if no specific pattern matches
-    return 'Emergency Lighting - Monthly Testing';
-  };
-
-  // Function to fetch folder structure
-  const fetchFolderStructure = async (siteId, category) => {
-    try {
-      // First, get all parent folders for the site
-      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
-
-      if (parentFoldersResponse?.parentFolders?.length > 0) {
-        // Find the Log Books folder
-        const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === '6 - Log Books'
-        );
-
-        if (logBooksFolder) {
-          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
-
-          if (logBooksResponse?.document?.childFolders) {
-            const fireLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Fire Log Book'
-            );
-
-            if (fireLogBookFolder) {
-              // Get the contents of Fire Log Book folder
-              const fireLogBookResponse = await get(
-                  `/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`
-              );
-
-              if (fireLogBookResponse?.document?.childFolders) {
-                // Find the Emergency Lighting to meet BS5266 folder
-                const emergencyLightingFolder = fireLogBookResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Emergency Lighting to meet BS5266'
-                );
-
-                if (emergencyLightingFolder) {
-                  // Get the contents of Emergency Lighting to meet BS5266 folder
-                  const emergencyLightingResponse = await get(
-                      `/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`
-                  );
-
-                  if (emergencyLightingResponse?.document?.childFolders) {
-                    // Find the target folder based on category
-                    const targetFolderName = getFolderNameFromCategory(category);
-                    const targetFolder = emergencyLightingResponse.document.childFolders.find(
-                        folder => folder.name.trim() === targetFolderName
-                    );
-
-                    const newFolderIds = {
-                      logBooks: logBooksFolder.id,
-                      fireLogBook: fireLogBookFolder.id,
-                      emergencyLighting: emergencyLightingFolder.id,
-                      monthlyTesting: targetFolder?.id || emergencyLightingFolder.id
-                    };
-
-                    setFolderIds(newFolderIds);
-
-                    return newFolderIds.monthlyTesting;
-                  }
-                }
-              }
-            }
-          }
+  useEffect(() => {
+    // This effect ensures we have the latest action data when formData.actionId changes
+    const fetchActionData = async () => {
+      if (formData.actionId) {
+        console.log('Action ID changed, fetching action:', formData.actionId);
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        } else {
+          setExistingAction(null);
+          setActionRaised(false);
         }
       }
-      return null;
+    };
+
+    fetchActionData();
+  }, [formData.actionId]);
+
+  // Preserve exact folder names but make matching more robust
+  const getFolderNameFromCategory = (category) => {
+    // Keep original folder names exactly as they appear in the system
+    switch(category) {
+      case 'Emergency Lighting - weekly testing to meet BS5266':
+        return 'Emergency Lighting - Weekly \'Flick\' Testing'; // Exact match
+      case 'Emergency Lighting - monthly testing to meet BS5266':
+        return ' Emergency Lighting - Monthly Testing'; // Note: Keep leading space
+      case 'Emergency Lighting (systems more than 3 years old) 12 monthly Full discharge testing':
+        return 'Emergency Lighting - 12 Monthly Testing';
+      default:
+        return 'Emergency Lighting - Monthly Testing'; // Default fallback
+    }
+  };
+
+  const fetchFolderStructure = async (siteId, category) => {
+    try {
+      // 1. Get parent folders
+      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+      if (!parentFoldersResponse?.parentFolders) {
+        throw new Error('No parent folders found');
+      }
+
+      // 2. Find Log Books (exact match)
+      const logBooksFolder = parentFoldersResponse.parentFolders.find(
+          f => f.name === '6 - Log Books'
+      );
+      if (!logBooksFolder) throw new Error('Log Books folder not found');
+
+      // 3. Get Fire Log Book children
+      const logBooksChildren = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+      const fireLogBookFolder = logBooksChildren?.document?.childFolders?.find(
+          f => f.name === 'Fire Log Book'
+      );
+      if (!fireLogBookFolder) throw new Error('Fire Log Book folder not found');
+
+      // 4. Get Emergency Lighting children
+      const fireLogChildren = await get(`/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`);
+      const emergencyLightingFolder = fireLogChildren?.document?.childFolders?.find(
+          f => f.name === 'Emergency Lighting to meet BS5266'
+      );
+      if (!emergencyLightingFolder) throw new Error('Emergency Lighting folder not found');
+
+      // 5. Get target subfolder (CRITICAL FIX)
+      const targetFolderName = getFolderNameFromCategory(category);
+      const lightingChildren = await get(`/api/document/parent/${emergencyLightingFolder.id}/folders?siteId=${siteId}`);
+
+      console.log('Searching for:', targetFolderName);
+      console.log('Available subfolders:',
+          lightingChildren?.document?.childFolders?.map(f => `${f.name} (${f.id})`) || []);
+
+      // Find the EXACT matching subfolder
+      const targetFolder = lightingChildren?.document?.childFolders?.find(
+          f => f.name === targetFolderName
+      );
+
+      if (!targetFolder) {
+        console.warn(`Exact subfolder "${targetFolderName}" not found, using parent folder`);
+      }
+
+      // FINAL FOLDER ID ASSIGNMENT (FIXED)
+      const newFolderIds = {
+        logBooks: logBooksFolder.id,
+        fireLogBook: fireLogBookFolder.id,
+        emergencyLighting: emergencyLightingFolder.id,
+        monthlyTesting: targetFolder?.id || null // Don't fallback to parent ID
+      };
+
+      console.log('Final folder IDs:', newFolderIds);
+
+      if (!newFolderIds.monthlyTesting) {
+        throw new Error(`Target subfolder "${targetFolderName}" not found`);
+      }
+
+      setFolderIds(newFolderIds);
+      return newFolderIds.monthlyTesting;
+
     } catch (error) {
-      console.error('Error fetching folder structure:', error);
-      // toast.error('Failed to load document folders');
+      console.error('Folder structure error:', {
+        error: error.message,
+        siteId,
+        category
+      });
       return null;
     }
   };
@@ -615,7 +628,6 @@ const EmergencyLightingInspectionForm = ({
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
 
-      // Find file with the same base name (without extension)
       const baseName = fileName.split('.')[0];
       const existingFile = files.find(file =>
           file.name && file.name.startsWith(baseName)
@@ -640,7 +652,6 @@ const EmergencyLightingInspectionForm = ({
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
 
-      // Find matching files (same base name)
       const baseName = fileName.split('.')[0];
       const matchingFiles = files.filter(file =>
           file.name && file.name.startsWith(baseName)
@@ -661,139 +672,18 @@ const EmergencyLightingInspectionForm = ({
   // Function to save PDF to local storage
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
-      // Create a blob URL
       const blobUrl = URL.createObjectURL(pdfBlob);
-
-      // Create a temporary anchor element
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = fileName;
-
-      // Append to body and trigger click
       document.body.appendChild(a);
       a.click();
-
-      // Clean up
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-
       return true;
     } catch (error) {
       console.error('Error saving PDF locally:', error);
       return false;
-    }
-  };
-
-  // Helper function to upload PDF to the server
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
-    try {
-      setIsUploading(true);
-
-      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-      if (!savedLocally) {
-        throw new Error('Failed to save PDF locally');
-      }
-
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-      // Use the monthlyTesting folder ID if available, otherwise fall back to emergencyLighting folder
-      const targetFolderId = folderIds.monthlyTesting || folderIds.emergencyLighting ||
-          folderIds.fireLogBook || folderIds.logBooks;
-
-      if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
-      }
-
-      // Check if file exists
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-
-      const formData = new FormData();
-
-      if (exists && existingFile) {
-        // File exists, use the new version upload endpoint
-        formData.append('file', pdfFile);
-
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id,
-            reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
-          }]
-        };
-
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-
-        const response = await axios.put(
-            '/api/document/file/newVersion/upload',
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return true;
-        }
-      } else {
-        // File doesn't exist, use the regular upload endpoint
-        formData.append('files', pdfFile);
-
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            originalFileName: fileName,
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id,
-            reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
-          }]
-        };
-
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-
-        const response = await axios.post(
-            '/api/document/files/upload',
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
-        }
-      }
-
-      throw new Error('Upload failed: No response data');
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -802,9 +692,17 @@ const EmergencyLightingInspectionForm = ({
       const apiData = await get(
           "/api/site-check/emergency-lighting/" + checkId
       );
-      // if (data && data.length > 0) {
-      //  const apiData = data[0];
+
       if (apiData) {
+        let existingAction = null;
+        if (apiData.actionId) {
+          existingAction = await fetchActionById(apiData.actionId);
+          if (existingAction) {
+            setExistingAction(existingAction);
+            setActionRaised(true);
+          }
+        }
+
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
@@ -822,11 +720,10 @@ const EmergencyLightingInspectionForm = ({
               ? prev.inspectionChecks.map((defaultCheck, index) => ({
                 ...defaultCheck,
                 ...(apiData.inspectionChecks[index] || {}),
-                check: defaultCheck.check, // Always keep the original check text
+                check: defaultCheck.check,
               }))
               : prev.inspectionChecks,
-
-          // Merge simple fields
+          actionId: apiData?.actionId || prev.actionId,
           additionalComments:
               apiData?.additionalComments || prev.additionalComments,
           allFittingsPassed:
@@ -836,24 +733,60 @@ const EmergencyLightingInspectionForm = ({
           user: apiData?.inspectionByUser || prev.user,
         }));
 
+        const details = await fetchInspectionDetails(checkId);
+        setInspectionDetails(details);
+
         setCompleted(true);
       }
     } catch (error) {
-      //toast.error("Failed to load inspection data");
       console.error("Inspection load error:", error);
     }
   };
 
+  const fetchCheckStatus = async () => {
+    try {
+      if (!checkId) return;
+
+      const response = await get(`api/site-check/check-id/${checkId}`);
+      if (response) {
+        const isDone = response.status === 'Done';
+        setIsFormEditable(!isDone);
+        setIsSubmitted(isDone);
+
+        if (isDone) {
+          setInspectionDetails({
+            type: response.type,
+            subType: response.subType,
+            category: response.category
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching check status:', error);
+    }
+  };
+
   useEffect(() => {
-    getUsers();
-    if (siteSelectedForGlobal?.siteId) {
-      fetchFolderStructure(siteSelectedForGlobal.siteId);
-    }
-    getInspection();
-    if (siteSelectedForGlobal?.siteId) {
-      getSiteAssets(siteSelectedForGlobal.siteId);
-    }
-  }, [siteSelectedForGlobal?.siteId]);
+    const fetchData = async () => {
+      getUsers();
+      if (siteSelectedForGlobal?.siteId) {
+        await fetchFolderStructure(siteSelectedForGlobal.siteId);
+      }
+
+      if (checkId) {
+        await getInspection();
+        await fetchCheckStatus();
+      }
+
+      await fetchExistingActions();
+
+      if (siteSelectedForGlobal?.siteId) {
+        getSiteAssets(siteSelectedForGlobal.siteId);
+      }
+    };
+
+    fetchData();
+  }, [siteSelectedForGlobal?.siteId, checkId]);
 
   useEffect(() => {
     if (license?.companyName) {
@@ -862,10 +795,11 @@ const EmergencyLightingInspectionForm = ({
         installationName: license.companyName,
       }));
     }
+
     if (!siteSelectedForGlobal.siteId) {
       return;
     }
-    console.log("siteSelectedForGlobal", siteSelectedForGlobal);
+
     const addressParts = [
       siteSelectedForGlobal.address1,
       siteSelectedForGlobal.address2,
@@ -903,14 +837,13 @@ const EmergencyLightingInspectionForm = ({
   };
 
   const FILE_VALIDATION_CONFIG = {
-    MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB per file
-    MAX_TOTAL_SIZE: 100 * 1024 * 1024, // 100MB total
+    MAX_FILE_SIZE: 10 * 1024 * 1024,
+    MAX_TOTAL_SIZE: 100 * 1024 * 1024,
     ALLOWED_TYPES: ["image/jpeg", "image/png", "application/pdf"],
-    MAX_FILE_COUNT: 10, // Maximum number of files allowed
+    MAX_FILE_COUNT: 10,
   };
 
   const validateFiles = (newFiles, existingFiles = []) => {
-    // Check if adding new files would exceed max count
     if (
         newFiles.length + existingFiles.length >
         FILE_VALIDATION_CONFIG.MAX_FILE_COUNT
@@ -921,7 +854,6 @@ const EmergencyLightingInspectionForm = ({
       };
     }
 
-    // Check for invalid file types
     const invalidFiles = newFiles.filter(
         (file) => !FILE_VALIDATION_CONFIG.ALLOWED_TYPES.includes(file.type)
     );
@@ -932,7 +864,6 @@ const EmergencyLightingInspectionForm = ({
       };
     }
 
-    // Check for oversized files
     const oversizedFiles = newFiles.filter(
         (file) => file.size > FILE_VALIDATION_CONFIG.MAX_FILE_SIZE
     );
@@ -945,7 +876,6 @@ const EmergencyLightingInspectionForm = ({
       };
     }
 
-    // Check total size limit
     const currentTotalSize = existingFiles.reduce(
         (sum, file) => sum + file.size,
         0
@@ -976,7 +906,6 @@ const EmergencyLightingInspectionForm = ({
       return;
     }
 
-    // If validation passes, update state
     setFormData((prev) => ({
       ...prev,
       files: [...prev.files, ...selectedFiles],
@@ -984,6 +913,7 @@ const EmergencyLightingInspectionForm = ({
 
     e.target.value = "";
   };
+
   const handleFileDelete = (index) => {
     setFormData((prev) => {
       const updatedFiles = [...prev.files];
@@ -1005,45 +935,77 @@ const EmergencyLightingInspectionForm = ({
   const submitInspection = async (e) => {
     e.preventDefault();
 
-    // Generate PDF first
-    try {
-      await generatePDF();
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      // toast.error('Failed to generate PDF, but continuing with form submission');
-    }
-    if (formData.files.length > FILE_VALIDATION_CONFIG.MAX_FILE_COUNT) {
-      toast.error(
-          `Maximum ${FILE_VALIDATION_CONFIG.MAX_FILE_COUNT} files allowed.`
-      );
+    if (!isFormEditable) {
+      toast.error("This form is completed and cannot be modified");
       return;
     }
 
-    const totalSize = formData.files.reduce((sum, file) => sum + file.size, 0);
-    if (totalSize > FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE) {
-      toast.error(
-          `Total file size exceeds ${
-              FILE_VALIDATION_CONFIG.MAX_TOTAL_SIZE / 1024 / 1024
-          }MB limit.`
-      );
+    if (showRiskAssessment && !actionRaised) {
+      toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+
+    const hasUnsatisfactoryChecks = formData.inspectionChecks
+        .slice(0, 5)
+        .some(check => check.satisfactory === false);
+
+    if (hasUnsatisfactoryChecks && !actionRaised) {
+      toast.error("Please complete the risk assessment for unsatisfactory checks");
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // First create or update the site check record
+      const statusPayload = {
+        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        type: 'Inspection',
+        subType: 'Emergency Lighting',
+        category: inspectionDetails?.category || 'Emergency Lighting',
+        status: 'Done',
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+      };
+
+      let statusResponse;
+      let actualCheckId = checkId;
+
+      if (isNewCheck) {
+        // Create new check
+        statusResponse = await post('/api/site-check', statusPayload);
+        if (statusResponse?.checkId) {
+          actualCheckId = statusResponse.checkId;
+          setIsNewCheck(false);
+          if (onCheckCreated) {
+            onCheckCreated(actualCheckId);
+          }
+        } else {
+          throw new Error('Failed to create new check - no checkId returned');
+        }
+      } else {
+        // Update existing check
+        statusResponse = await put(`/api/site-check/${checkId}`, statusPayload);
+      }
+
+      if (![200, 201, 204].includes(statusResponse?.status)) {
+        throw new Error('Failed to update site check status');
+      }
+
+      // Then submit the inspection data
       const payload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId || "",
-        checkId,
+        checkId: actualCheckId,
         inspectionBy: loggedInUserData?.id,
+        actionId: formData.actionId
       };
 
-      // Upload file if exists
+      // Upload files if any
       const certificateUrls = [];
       if (formData.files.length > 0) {
         try {
-          // Upload all files in parallel
           const uploadPromises = formData.files.map((file) =>
               uploadSiteCheckDoc({
                 file,
@@ -1051,9 +1013,8 @@ const EmergencyLightingInspectionForm = ({
                 folderName: "EmergencyLighting",
               })
           );
-
           certificateUrls.push(...(await Promise.all(uploadPromises)));
-          payload.certificateUrls = certificateUrls; // Changed from certificateUrl to certificateUrls (array)
+          payload.certificateUrls = certificateUrls;
         } catch (uploadError) {
           console.error("File upload failed:", uploadError);
           toast.error("File upload failed");
@@ -1061,44 +1022,35 @@ const EmergencyLightingInspectionForm = ({
         }
       }
 
-      // Submit inspection data
-      await post("/api/site-check/emergency-lighting", payload);
+      // Submit inspection data - use POST for new, PUT for existing
+      if (formData.id) {
+        await put("/api/site-check/emergency-lighting", payload);
+      } else {
+        await post("/api/site-check/emergency-lighting", payload);
+      }
 
-      // Create action item
-      // if (siteSelectedForGlobal?.siteId && \oggedInUserData?.id) {
-      //   const actionData = {
-      //     type: "Inspection",
-      //     status: "Reported",
-      //     observation: "Emergency Lighting Inspection",
-      //     desc: `${siteCheck?.type || "Emergency Lighting"} - ${moment().format(
-      //       "DD/MM/YYYY"
-      //     )}`,
-      //     requiredAction: "Review inspection results",
-      //     riskScore: calculateRiskScore(),
-      //     dueDate: new Date(),
-      //     createdAt: new Date(),
-      //     siteId: siteSelectedForGlobal.siteId,
-      //     userId: loggedInUserData.id,
-      //     actionImage: certificateUrls,
-      //     taggedAsset: formData.siteAssetId,
-      //   };
-
-      //   await put("/api/site/actions", actionData);
-      // }
+      // Generate PDF
+      try {
+        await generatePDF();
+      } catch (error) {
+        console.error('PDF generation failed:', error);
+        toast.error('Failed to generate PDF');
+      }
 
       toast.success("Inspection submitted successfully");
       setCompleted(true);
+      setIsFormEditable(false);
+      setIsSubmitted(true);
+
     } catch (error) {
       console.error("Submission error:", error);
-      toast.error("Failed to submit inspection");
+      toast.error(error.message || "Failed to submit inspection");
     } finally {
       setIsLoading(false);
     }
   };
 
   const calculateRiskScore = () => {
-    // Implement your risk score calculation logic here
-    // Example: Count unsatisfactory checks
     const unsatisfactoryCount = formData.inspectionChecks.filter(
         (check) => check.checkSelected && !check.satisfactory
     ).length;
@@ -1111,6 +1063,13 @@ const EmergencyLightingInspectionForm = ({
           <h4>Emergency Lighting Inspection & Test Certificate</h4>
           <small>BS5266-1: 2011</small>
         </div>
+
+        {!isFormEditable && (
+            <div className="alert alert-warning" role="alert">
+              <i className="bi bi-exclamation-triangle-fill me-2"></i>
+              This form is read-only because the check has been marked as completed.
+            </div>
+        )}
         <div className="card-body">
           <form onSubmit={submitInspection}>
             {/* Warning Section */}
@@ -1223,7 +1182,7 @@ const EmergencyLightingInspectionForm = ({
                         wordWrap: "break-word",
                         fontWeight: "normal",
                       }}
-                      value={formData?.installationAddress || ""}
+                      value={loggedInUserData?.companyAddress || ""}
                       required
                       disabled
                   />
@@ -1244,6 +1203,7 @@ const EmergencyLightingInspectionForm = ({
                       className="form-control"
                       value={formData?.bsiCategoryType || ""}
                       onChange={(e) => handleInputChange(e, "bsiCategoryType")}
+                      disabled={!isFormEditable}
                   />
                 </div>
               </div>
@@ -1257,6 +1217,7 @@ const EmergencyLightingInspectionForm = ({
                       className="form-control"
                       value={formData?.bsiCategoryMode || ""}
                       onChange={(e) => handleInputChange(e, "bsiCategoryMode")}
+                      disabled={!isFormEditable}
                   />
                 </div>
               </div>
@@ -1272,6 +1233,7 @@ const EmergencyLightingInspectionForm = ({
                       onChange={(e) =>
                           handleInputChange(e, "bsiCategoryFacilities")
                       }
+                      disabled={!isFormEditable}
                   />
                 </div>
               </div>
@@ -1284,6 +1246,7 @@ const EmergencyLightingInspectionForm = ({
                       className="form-select"
                       value={formData?.bsiCategoryDuration || ""}
                       onChange={(e) => handleInputChange(e, "bsiCategoryDuration")}
+                      disabled={!isFormEditable}
                   >
                     <option value="">Select</option>
                     <option value="30">30 minutes</option>
@@ -1320,6 +1283,7 @@ const EmergencyLightingInspectionForm = ({
                                     e.target.checked
                                 )
                             }
+                            disabled={!isFormEditable}
                         />
                         <label className="form-check-label">
                           {check?.checkQ || ""}
@@ -1338,6 +1302,7 @@ const EmergencyLightingInspectionForm = ({
                                   e.target.checked
                               )
                           }
+                          disabled={!isFormEditable}
                       />
                     </td>
                     <td style={{ position: "relative" }}>
@@ -1351,6 +1316,7 @@ const EmergencyLightingInspectionForm = ({
                           onMouseEnter={() => setHoveredRemarksIndex(index)}
                           onMouseLeave={() => setHoveredRemarksIndex(null)}
                           placeholder="Enter remarks..."
+                          disabled={!isFormEditable}
                       />
                       {hoveredRemarksIndex === index && check.remarks && (
                           <div
@@ -1376,6 +1342,53 @@ const EmergencyLightingInspectionForm = ({
               </tbody>
             </table>
 
+            {showRiskAssessment && (
+                <div className="card mb-4">
+                  <div className="card-header">
+                    <h5 className="mb-0">Risk Assessment</h5>
+                    {existingAction?.checkId === checkId && (
+                        <span className="badge bg-success ms-2">
+          Action #{existingAction.actionId} - {existingAction.status}
+        </span>
+                    )}
+                  </div>
+                  <div className="card-body">
+                    {existingAction?.checkId === checkId ? (
+                        <div className="existing-action">
+                          <div className="row">
+                            <div className="col-md-6">
+                              <p><strong>Observation:</strong> {existingAction.observation}</p>
+                              <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                              <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                            </div>
+                            <div className="col-md-6">
+                              <p><strong>Description: </strong> {existingAction.desc}</p>
+                              <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                              <p><strong>Status:</strong> {existingAction.status}</p>
+                            </div>
+                          </div>
+                          {existingAction.comments && (
+                              <div className="mt-3">
+                                <h6>Comments:</h6>
+                                <p>{existingAction.comments}</p>
+                              </div>
+                          )}
+                        </div>
+                    ) : (
+                        <RiskScoreCard
+                            desc={`Inspection - Emergency Lighting to meet BS5266 - ${inspectionDetails?.category || ''}`}
+                            siteId={siteSelectedForGlobal?.siteId}
+                            checkId={checkId}
+                            createdBy={loggedInUserData?.id}
+                            onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                            actionRaised={actionRaised}
+                            disabled={!isFormEditable}
+                        />
+                    )}
+                  </div>
+                </div>
+            )}
+
             {/* Additional Comments Section */}
             <h5 className="mb-1">Additional Comments & Deviations</h5>
             <p
@@ -1397,12 +1410,9 @@ const EmergencyLightingInspectionForm = ({
                 value={formData?.additionalComments || ""}
                 onChange={(e) => handleInputChange(e, "additionalComments")}
                 placeholder="Please provide Information"
+                disabled={!isFormEditable}
             />
             </div>
-
-            {/* File Upload Section */}
-            {/* File Upload Section */}
-            {/*  */}
 
             {/* Certification Statement */}
             <div className="border p-3 mb-4 bg-light">
@@ -1485,6 +1495,7 @@ const EmergencyLightingInspectionForm = ({
                       dateFormat="dd/MM/yyyy"
                       wrapperClassName="w-100"
                       required
+                      disabled={!isFormEditable}
                   />
                 </div>
               </div>
@@ -1492,13 +1503,25 @@ const EmergencyLightingInspectionForm = ({
 
             <div className="d-flex justify-content-end">
               <div className="d-flex gap-2">
-                <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={isLoading}
-                >
-                  {isLoading ? "Submitting..." : "Submit Inspection"}
-                </button>
+                {!isSubmitted ? (
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={
+                            isLoading ||
+                            isGeneratingPDF ||
+                            (showRiskAssessment && !actionRaised) ||
+                            !isFormEditable
+                        }
+                    >
+                      {isLoading ? 'Submitting...' :
+                          isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
+                    </button>
+                ) : (
+                    <div className="alert alert-success">
+                      Inspection submitted successfully on {formatDate(formData.inspectionDate)}
+                    </div>
+                )}
               </div>
             </div>
           </form>
