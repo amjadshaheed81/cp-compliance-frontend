@@ -245,28 +245,31 @@ const AirConditioning = ({
 
   const fetchExistingActions = async () => {
     try {
-      // If we already have an actionId in form data, use that
+      // First check if we have an actionId in form data
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
-        if (action) {
+        // Only consider this action if its checkId matches currentCheckId
+        if (action && action.checkId === currentCheckId) {
           setExistingAction(action);
           setActionRaised(true);
           return;
         }
+        // If checkId doesn't match, clear the actionId from form data
+        setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      // Otherwise look for related actions
-      if (!siteSelectedForGlobal?.siteId) return;
+      // Now look for other actions specifically for this checkId
+      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
 
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
-        // Find actions related to this inspection
+        // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
-            action.desc.includes('Air Conditioning') ||
-            action.type === 'Inspection'
+            action.checkId === currentCheckId
         );
 
         if (relevantActions.length > 0) {
+          // Get the most recent action for this checkId
           const mostRecentAction = relevantActions.sort((a, b) =>
               new Date(b.createdAt) - new Date(a.createdAt)
           )[0];
@@ -274,19 +277,18 @@ const AirConditioning = ({
           setExistingAction(mostRecentAction);
           setActionRaised(true);
 
-          // Update formData with the actionId if not already set
-          if (mostRecentAction.actionId && !formData.actionId) {
-            setFormData(prev => ({
-              ...prev,
-              actionId: mostRecentAction.actionId
-            }));
-          }
+          // Update formData with the actionId
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
         }
       }
     } catch (error) {
       console.error("Error fetching existing actions:", error);
     }
   };
+
   const fetchFolderStructure = async (siteId) => {
     try {
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -458,82 +460,106 @@ const AirConditioning = ({
     checkId,  // Add checkId to dependencies
   ]);
 
-  useEffect(() => {
-    // Only show risk assessment if Parts Required (param2) is "Yes" (Pass)
-    const showRisk = formData.param2 === "Pass";
-    setShowRiskAssessment(showRisk);
 
-    if (!showRisk) {
-      setActionRaised(false);
-    }
-  }, [formData.param2]);
+  useEffect(() => {
+    const shouldShowRiskAssessment = formData.param2 === "Pass"
+
+    setShowRiskAssessment(shouldShowRiskAssessment);
+    // Update actionRaised state based on existing action
+    const isActionValid = existingAction && existingAction.checkId === currentCheckId;
+    setActionRaised(isActionValid);
+  }, [formData.param2, currentCheckId]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      console.log("Action response received:", actionResponse);
-
       if (!actionResponse?.actionId) {
-        console.error("Invalid action response:", actionResponse);
         throw new Error("Invalid action response received");
       }
 
+      // Verify the new action has our current checkId
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
+        throw new Error("Action was not properly linked to this inspection");
+      }
+
+      setExistingAction(verifiedAction);
       setActionRaised(true);
-      setExistingAction(actionResponse);
 
-      const updatedFormData = {
-        ...formData,
-        actionId: actionResponse.actionId
-      };
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
 
-      setFormData(updatedFormData);
-
-      console.log("Updating inspection with actionId:", actionResponse.actionId);
-
+      // Update inspection record
       if (currentCheckId) {
-        // First check if inspection exists
-        try {
-          const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        const inspectionPayload = {
+          address: formData.address,
+          assetId: formData.selectedAsset?.assetId || formData.assetId,
+          siteContact: formData.siteContactUser?.id || formData.siteContact,
+          inspectionDate: formData.inspectionDate,
+          siteContactNo: formData.siteContactNo,
+          job: formData.job,
+          manufacturer: formData.manufacturer,
+          modelNumber: formData.modelNumber,
+          position: formData.position,
+          floor: formData.floor,
+          room: formData.room,
+          assetName: formData.assetName,
+          serialNumber: formData.serialNumber,
+          report: formData.report,
+          param1: formData.param1,
+          param2: formData.param2,
+          param3: formData.param3,
+          param4: formData.param4,
+          param5: formData.param5,
+          param6: formData.param6,
+          param7: formData.param7,
+          param8: formData.param8,
+          param9: formData.param9,
+          param10: formData.param10,
+          param1Remark: formData.param1Remark,
+          param2Remark: formData.param2Remark,
+          param3Remark: formData.param3Remark,
+          param4Remark: formData.param4Remark,
+          param5Remark: formData.param5Remark,
+          param6Remark: formData.param6Remark,
+          client: formData.clientUser?.id || formData.client,
+          engineer: formData.engineer,
+          user: formData.user,
+          selectedAsset: formData.selectedAsset,
+          signedDate: formData.signedDate,
+          clientUser: formData.clientUser,
+          siteContactUser: formData.siteContactUser,
+          actionId: verifiedAction.actionId,
+          checkId: currentCheckId,
+          siteId: siteSelectedForGlobal?.siteId,
+          type: 'Inspection',
+          subType: 'Air Conditioning',
+          category: 'Air Conditioning Service',
+          // Include any other relevant fields from your formData
+        };
 
-          const inspectionPayload = {
-            ...updatedFormData,
-            checkId: currentCheckId,
-            actionId: actionResponse.actionId,
-            siteId: siteSelectedForGlobal?.siteId,
-            assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
-            client: updatedFormData.clientUser?.id || updatedFormData.client,
-            engineer: updatedFormData.engineer,
-            siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
-            type: 'Inspection',
-            subType: 'Air Conditioning',
-            category: 'Air Conditioning Service'
-          };
-
-          if (!existingInspections || existingInspections.length === 0) {
-            // Create new inspection if none exists
-            await post(
-                `/api/site-check/generic-inspection`,
-                inspectionPayload
-            );
-          } else {
-            // Update existing inspection
-            await put(
-                `/api/site-check/generic-inspection/${currentCheckId}`,
-                inspectionPayload
-            );
-          }
-
-          toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
-        } catch (error) {
-          console.error("Error handling inspection record:", error);
-          throw error;
+        // Update or create inspection record
+        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
+        } else {
+          await post(`/api/site-check/generic-inspection`, inspectionPayload);
         }
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error("Failed to process action completion");
+      toast.error(error.message || "Failed to process action completion");
+
+      // Rollback state changes if the operation failed
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
     }
   };
-
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -1920,14 +1946,14 @@ const AirConditioning = ({
                 <div className="card mb-4">
                   <div className="card-header">
                     <h5 className="mb-0">Risk Assessment</h5>
-                    {existingAction && (
+                    {existingAction?.checkId === currentCheckId && (
                         <span className="badge bg-success ms-2">
           Action #{existingAction.actionId} - {existingAction.status}
         </span>
                     )}
                   </div>
                   <div className="card-body">
-                    {existingAction ? (
+                    {existingAction?.checkId === currentCheckId ? (
                         <div className="existing-action">
                           <div className="row">
                             <div className="col-md-6">
@@ -1950,12 +1976,14 @@ const AirConditioning = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service`}
+                            desc={`Air Conditioning Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
                             siteId={siteSelectedForGlobal?.siteId}
+                            checkId={currentCheckId}
                             createdBy={loggedInUserData?.id}
-                            taggedAsset={selectedAsset.assetId}
+                            taggedAsset={selectedAsset?.assetId}
                             onRiskAssessmentComplete={handleRiskAssessmentComplete}
                             actionRaised={actionRaised}
+                            disabled={isSubmitted}
                         />
                     )}
                   </div>
