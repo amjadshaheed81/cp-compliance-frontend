@@ -337,7 +337,6 @@ const AirConditioning = ({
   };
 
   useEffect(() => {
-    // This effect ensures we have the latest action data when formData.actionId changes
     const fetchActionData = async () => {
       if (formData.actionId) {
         console.log('Action ID changed, fetching action:', formData.actionId);
@@ -354,6 +353,7 @@ const AirConditioning = ({
 
     fetchActionData();
   }, [formData.actionId]);
+
 
   useEffect(() => {
     // Enhance the status check in your fetchSiteCheckData function
