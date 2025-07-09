@@ -1240,7 +1240,7 @@ const AirConditioning = ({
           (asset) =>
               asset.category === "Mechanical" &&
               asset.subCategory === "Air Conditioning" &&
-              asset.subCategory2 === "Air Conditioning Unit (Indoor)"
+              (asset.subCategory2 === "Air Conditioning Unit (Indoor)" || asset.subCategory2 === "Air Conditioning Unit (Outdoor)")
       ) || [];
 
 
