@@ -117,25 +117,31 @@ const MicroWaveOvenCertificate = ({
 
   const fetchExistingActions = async () => {
     try {
+      // First check if we have an actionId in form data
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
-        if (action) {
+        // Only consider this action if its checkId matches currentCheckId
+        if (action && action.checkId === currentCheckId) {
           setExistingAction(action);
           setActionRaised(true);
           return;
         }
+        // If checkId doesn't match, clear the actionId from form data
+        setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId) return;
+      // Now look for other actions specifically for this checkId
+      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
 
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
+        // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
-            action.desc.includes('Microwave Oven') ||
-            action.type === 'Inspection'
+            action.checkId === currentCheckId
         );
 
         if (relevantActions.length > 0) {
+          // Get the most recent action for this checkId
           const mostRecentAction = relevantActions.sort((a, b) =>
               new Date(b.createdAt) - new Date(a.createdAt)
           )[0];
@@ -143,19 +149,17 @@ const MicroWaveOvenCertificate = ({
           setExistingAction(mostRecentAction);
           setActionRaised(true);
 
-          if (mostRecentAction.actionId && !formData.actionId) {
-            setFormData(prev => ({
-              ...prev,
-              actionId: mostRecentAction.actionId
-            }));
-          }
+          // Update formData with the actionId
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
         }
       }
     } catch (error) {
       console.error("Error fetching existing actions:", error);
     }
   };
-
   const fetchInspectionData = async () => {
     try {
       if (!checkId) return;
@@ -224,7 +228,7 @@ const MicroWaveOvenCertificate = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === '6 - Log Books'
+            folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
@@ -380,78 +384,81 @@ const MicroWaveOvenCertificate = ({
   ]);
 
   useEffect(() => {
-    const showRisk = [
-      formData.param3
-    ].some(val => val === "Fail");
-    setShowRiskAssessment(showRisk);
-    if (!showRisk) {
-      setActionRaised(false);
-    }
-  }, [formData.param3]);
+    const shouldShowRiskAssessment = formData.param3 === "Fail";
+    setShowRiskAssessment(shouldShowRiskAssessment);
+
+    // Update actionRaised state based on existing action
+    const isActionValid = existingAction && existingAction.checkId === currentCheckId;
+    setActionRaised(isActionValid);
+  }, [formData.param3, currentCheckId, existingAction]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      console.log("Action response received:", actionResponse);
-
       if (!actionResponse?.actionId) {
-        console.error("Invalid action response:", actionResponse);
         throw new Error("Invalid action response received");
       }
 
+      // Verify the new action has our current checkId
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
+        throw new Error("Action was not properly linked to this inspection");
+      }
+
+      setExistingAction(verifiedAction);
       setActionRaised(true);
-      setExistingAction(actionResponse);
 
-      const updatedFormData = {
-        ...formData,
-        actionId: actionResponse.actionId
-      };
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
 
-      setFormData(updatedFormData);
-
-      console.log("Updating inspection with actionId:", actionResponse.actionId);
-
+      // Update inspection record
       if (currentCheckId) {
-        // First check if inspection exists
-        try {
-          const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        const inspectionPayload = {
+          address: formData.address,
+          assetId: formData.selectedAsset?.assetId || formData.assetId,
+          siteContact: formData.siteContactUser?.id || formData.siteContact,
+          inspectionDate: formData.inspectionDate,
+          siteContactNo: formData.siteContactNo,
+          job: formData.job,
+          report: formData.report,
+          param1: formData.param1,
+          param2: formData.param2,
+          param3: formData.param3,
+          client: formData.clientUser?.id || formData.client,
+          engineer: formData.engineer,
+          user: formData.user,
+          selectedAsset: formData.selectedAsset,
+          signedDate: formData.signedDate,
+          clientUser: formData.clientUser,
+          siteContactUser: formData.siteContactUser,
+          actionId: verifiedAction.actionId,
+          checkId: currentCheckId,
+          siteId: siteSelectedForGlobal?.siteId,
+          type: 'Inspection',
+          subType: 'Microwave Oven',
+          category: 'Microwave Oven Certificate',
+        };
 
-          const inspectionPayload = {
-            ...updatedFormData,
-            checkId: currentCheckId,
-            actionId: actionResponse.actionId,
-            siteId: siteSelectedForGlobal?.siteId,
-            assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
-            client: updatedFormData.clientUser?.id || updatedFormData.client,
-            engineer: updatedFormData.engineer,
-            siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
-            type: 'Inspection',
-            subType: 'Microwave Oven',
-            category: 'Microwave Oven Certificate'
-          };
-
-          if (!existingInspections || existingInspections.length === 0) {
-            // Create new inspection if none exists
-            await post(
-                `/api/site-check/generic-inspection`,
-                inspectionPayload
-            );
-          } else {
-            // Update existing inspection
-            await put(
-                `/api/site-check/generic-inspection/${currentCheckId}`,
-                inspectionPayload
-            );
-          }
-
-          toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
-        } catch (error) {
-          console.error("Error handling inspection record:", error);
-          throw error;
+        // Update or create inspection record
+        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
+        } else {
+          await post(`/api/site-check/generic-inspection`, inspectionPayload);
         }
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error("Failed to process action completion");
+      toast.error(error.message || "Failed to process action completion");
+
+      // Rollback state changes if the operation failed
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
     }
   };
 
@@ -798,19 +805,21 @@ const MicroWaveOvenCertificate = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted');
+    console.log('=== Form Submission Started ===');
 
     if (isLoading) {
       console.log('Submit prevented: Already loading');
       return;
     }
 
-    // Validation checks
-    const hasFailures = [
-      formData.param3
-    ].some(val => val === "Fail");
+    // Enhanced validation checks with logging
+    console.log('Validating form data...');
+    const hasFailures = formData.param3 === "Fail";
+    console.log('Has failures:', hasFailures);
+    console.log('Action raised:', actionRaised);
 
     if (hasFailures && !actionRaised) {
+      console.log('Validation failed: Risk assessment required but not completed');
       toast.error("Please complete the risk assessment before submitting");
       return;
     }
@@ -820,34 +829,50 @@ const MicroWaveOvenCertificate = ({
       return;
     }
 
-    // Form validation
+    // Form validation with detailed logging
+    console.log('Running field validations...');
     const errors = {};
-    if (!formData.param1) errors.param1 = "Please select emission level check result";
-    if (!formData.param2) errors.param2 = "Please select interlock check result";
-    if (!formData.param3) errors.param3 = "Please select pass/fail result";
-    if (!formData.selectedAsset) errors.asset = "Please select a microwave oven";
+    if (!formData.param1) {
+      errors.param1 = "Please select emission level check result";
+      console.log('Validation error: param1 missing');
+    }
+    if (!formData.param2) {
+      errors.param2 = "Please select interlock check result";
+      console.log('Validation error: param2 missing');
+    }
+    if (!formData.param3) {
+      errors.param3 = "Please select pass/fail result";
+      console.log('Validation error: param3 missing');
+    }
 
     if (Object.keys(errors).length > 0) {
+      console.log('Validation errors found:', errors);
       setValidationErrors(errors);
       return;
     }
 
     setValidationErrors({});
     setIsLoading(true);
+    console.log('All validations passed, proceeding with submission...');
 
     try {
+      // Debug: Log current form data
+      console.log('Current form data:', JSON.stringify(formData, null, 2));
+
       // First check if we have an existing inspection
+      console.log('Checking for existing inspection...');
       let existingInspection = null;
       if (currentCheckId) {
         try {
           const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+          console.log('Existing inspections:', inspections);
           existingInspection = inspections?.length > 0 ? inspections[0] : null;
         } catch (error) {
           console.error('Error checking for existing inspection:', error);
         }
       }
 
-      // First update or create the site check status
+      // Site check status payload
       const statusPayload = {
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
@@ -858,39 +883,43 @@ const MicroWaveOvenCertificate = ({
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
+      console.log('Status payload:', statusPayload);
 
+      // Update or create site check status
       let statusResponse;
       if (currentCheckId) {
-        // Update existing check
+        console.log('Updating existing check with ID:', currentCheckId);
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
             `/api/site-check/${currentCheckId}`,
             statusPayload
         );
       } else {
-        // Create new check
+        console.log('Creating new check');
         statusResponse = await post(
             `/api/site-check`,
             statusPayload
         );
         if (statusResponse?.checkId) {
+          console.log('New check created with ID:', statusResponse.checkId);
           setCurrentCheckId(statusResponse.checkId);
         }
       }
 
+      console.log('Status response:', statusResponse);
       if (![200, 201, 204].includes(statusResponse?.status)) {
         throw new Error('Failed to update site check status');
       }
 
-      console.log('Site check status updated successfully:', statusResponse.data);
+      console.log('Site check status updated successfully');
       setCheckStatus('Done');
       setIsFormEditable(false);
 
-      // Then update or create the generic inspection record
+      // Prepare inspection payload
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
-        assetId: formData.selectedAsset?.assetId || formData.assetId,
+        assetId: formData.selectedAsset?.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
@@ -900,34 +929,46 @@ const MicroWaveOvenCertificate = ({
         checkId: currentCheckId || statusResponse?.checkId,
         actionId: formData.actionId,
       };
+      console.log('Inspection payload:', inspectionPayload);
 
+      // Save inspection data
       let saveResponse;
       if (existingInspection) {
-        // Update existing inspection
+        console.log('Updating existing inspection');
         saveResponse = await put(
             `/api/site-check/generic-inspection/${currentCheckId}`,
             inspectionPayload
         );
       } else {
-        // Create new inspection
+        console.log('Creating new inspection');
         saveResponse = await post(
             `/api/site-check/generic-inspection`,
             inspectionPayload
         );
       }
 
+      console.log('Save response:', saveResponse);
       if (![200, 201, 204].includes(saveResponse?.status)) {
         throw new Error('Failed to save inspection data');
       }
 
-      console.log('Inspection data saved successfully:', saveResponse.data);
+      console.log('Inspection data saved successfully');
 
-      // Generate PDF
-      const pdfResult = await generatePDF(true);
+      // Generate PDF - with test mode
+      console.log('Generating PDF...');
+      const testPdfResult = await generatePDF(false); // First generate without upload for testing
+      if (!testPdfResult.success) {
+        console.error('PDF generation test failed:', testPdfResult.error);
+        throw new Error(testPdfResult.error || "Failed to generate PDF");
+      }
+      console.log('PDF generation test successful, now uploading...');
+
+      const pdfResult = await generatePDF(true); // Now generate with upload
       if (!pdfResult.success) {
-        throw new Error(pdfResult.error || "Failed to generate PDF");
+        throw new Error(pdfResult.error || "Failed to generate and upload PDF");
       }
 
+      console.log('PDF generated and uploaded successfully');
       toast.success("Microwave Oven report saved and PDF generated successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
@@ -938,11 +979,12 @@ const MicroWaveOvenCertificate = ({
       }, 1500);
 
     } catch (error) {
-      console.error('Error in form submission:', error);
+      console.error('=== Submission Error ===', error);
       console.error('Error details:', error.response?.data || error.message);
       toast.error(error.message || 'Failed to submit form');
     } finally {
       setIsLoading(false);
+      console.log('=== Form Submission Completed ===');
     }
   };
 
@@ -1094,7 +1136,6 @@ const MicroWaveOvenCertificate = ({
     );
   };
 
-  const canEditSubmittedReport = loggedInUserData?.role === "Admin";
 
   return (
       <div className="container mt-4 mb-5">
@@ -1152,7 +1193,7 @@ const MicroWaveOvenCertificate = ({
                       padding: "0 10px",
                       width: "100%",
                     }}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                 />
               </div>
               <div className="mb-3">
@@ -1169,7 +1210,7 @@ const MicroWaveOvenCertificate = ({
                     name="siteContactNo"
                     value={formData.siteContactNo}
                     onChange={handleInputChange}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                 />
               </div>
               <div className="mb-3">
@@ -1180,7 +1221,7 @@ const MicroWaveOvenCertificate = ({
                     name="job"
                     value={formData.job}
                     onChange={handleInputChange}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                 />
               </div>
             </div>
@@ -1194,7 +1235,7 @@ const MicroWaveOvenCertificate = ({
               <div className="row mb-4">
                 <div className="col-md-12">
                   <Autocomplete
-                      disabled={isSubmitted && !canEditSubmittedReport}
+                      disabled={isSubmitted}
                       options={filteredAssets}
                       getOptionLabel={(option) =>
                           `${option.assetId} - ${option.assetName} (${
@@ -1320,7 +1361,7 @@ const MicroWaveOvenCertificate = ({
                         })
                     }
                     style={{ height: "400px" }}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                 />
               </div>
             </div>
@@ -1362,7 +1403,7 @@ const MicroWaveOvenCertificate = ({
                               });
                             }
                           }}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
@@ -1393,7 +1434,7 @@ const MicroWaveOvenCertificate = ({
                               });
                             }
                           }}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Yes</option>
@@ -1424,7 +1465,7 @@ const MicroWaveOvenCertificate = ({
                               });
                             }
                           }}
-                          disabled={isSubmitted && !canEditSubmittedReport}
+                          disabled={isSubmitted}
                       >
                         <option value="">Select</option>
                         <option value="Pass">Pass</option>
@@ -1447,14 +1488,14 @@ const MicroWaveOvenCertificate = ({
               <div className="card mb-4">
                 <div className="card-header">
                   <h5 className="mb-0">Risk Assessment</h5>
-                  {existingAction && (
+                  {existingAction?.checkId === currentCheckId && (
                       <span className="badge bg-success ms-2">
-                  Action #{existingAction.actionId} - {existingAction.status}
-                </span>
+            Action #{existingAction.actionId} - {existingAction.status}
+          </span>
                   )}
                 </div>
                 <div className="card-body">
-                  {existingAction ? (
+                  {existingAction?.checkId === currentCheckId ? (
                       <div className="existing-action">
                         <div className="row">
                           <div className="col-md-6">
@@ -1477,12 +1518,14 @@ const MicroWaveOvenCertificate = ({
                       </div>
                   ) : (
                       <RiskScoreCard
-                          desc={`Inspection - Plant and Equipment Inspection - Microwave Oven Certificate`}
+                          desc={`Microwave Oven Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
                           siteId={siteSelectedForGlobal?.siteId}
+                          checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
                           onRiskAssessmentComplete={handleRiskAssessmentComplete}
                           actionRaised={actionRaised}
+                          disabled={isSubmitted }
                       />
                   )}
                 </div>
@@ -1510,7 +1553,7 @@ const MicroWaveOvenCertificate = ({
                       padding: "0 10px",
                       width: "100%",
                     }}
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                 />
               </div>
             </div>
@@ -1536,7 +1579,7 @@ const MicroWaveOvenCertificate = ({
                     value={formatDate(formData.signedDate)}
                     onChange={handleInputChange}
                     required
-                    disabled={isSubmitted && !canEditSubmittedReport}
+                    disabled={isSubmitted}
                     style={{
                       height: "40px",
                       padding: "0 10px",

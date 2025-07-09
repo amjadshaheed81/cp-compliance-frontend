@@ -219,31 +219,34 @@ const ExternalLightningCertificate = ({
   };
 
 // Modify the fetchExistingActions function to use the specific endpoint when we have an actionId
+
   const fetchExistingActions = async () => {
     try {
-      // If we already have an actionId in formData, use the specific endpoint
+      // First check if we have an actionId in form data
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
-        if (action) {
+        // Only consider this action if its checkId matches currentCheckId
+        if (action && action.checkId === currentCheckId) {
           setExistingAction(action);
           setActionRaised(true);
           return;
         }
+        // If checkId doesn't match, clear the actionId from form data
+        setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      // Fallback to the general endpoint if no actionId or if specific fetch failed
-      if (!siteSelectedForGlobal?.siteId) return;
+      // Now look for other actions specifically for this checkId
+      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
 
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
-        // Filter actions related to this inspection
+        // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
-            action.desc.includes('External Lighting Testing') ||
-            action.type === 'Inspection'
+            action.checkId === currentCheckId
         );
 
         if (relevantActions.length > 0) {
-          // Sort by date descending and get the most recent
+          // Get the most recent action for this checkId
           const mostRecentAction = relevantActions.sort((a, b) =>
               new Date(b.createdAt) - new Date(a.createdAt)
           )[0];
@@ -251,13 +254,11 @@ const ExternalLightningCertificate = ({
           setExistingAction(mostRecentAction);
           setActionRaised(true);
 
-          // Update formData with the actionId if it exists
-          if (mostRecentAction.actionId && !formData.actionId) {
-            setFormData(prev => ({
-              ...prev,
-              actionId: mostRecentAction.actionId
-            }));
-          }
+          // Update formData with the actionId
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
         }
       }
     } catch (error) {
@@ -318,6 +319,24 @@ const ExternalLightningCertificate = ({
       return null;
     }
   };
+  useEffect(() => {
+    // This effect ensures we have the latest action data when formData.actionId changes
+    const fetchActionData = async () => {
+      if (formData.actionId) {
+        console.log('Action ID changed, fetching action:', formData.actionId);
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        } else {
+          setExistingAction(null);
+          setActionRaised(false);
+        }
+      }
+    };
+
+    fetchActionData();
+  }, [formData.actionId]);
 
   useEffect(() => {
     const fetchSiteCheckData = async () => {
@@ -444,79 +463,89 @@ const ExternalLightningCertificate = ({
   ]);
 
   useEffect(() => {
-    if (formData.param4 === "Fail") {
-      setShowRiskAssessment(true);
-    } else {
-      setShowRiskAssessment(false);
-      setActionRaised(false);
-    }
-  }, [formData.param4]);
+    // Only show risk assessment if any check is "Fail"
+    const showRisk = formData.param4 === "Fail";
+    setShowRiskAssessment(showRisk);
+
+    // Update actionRaised state based on existing action
+    const isActionValid = existingAction && existingAction.checkId === currentCheckId;
+    setActionRaised(isActionValid);
+  }, [formData.param4, currentCheckId, existingAction]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
-      console.log("Action response received:", actionResponse);
-
       if (!actionResponse?.actionId) {
-        console.error("Invalid action response:", actionResponse);
         throw new Error("Invalid action response received");
       }
 
+      // Verify the new action has our current checkId
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
+        throw new Error("Action was not properly linked to this inspection");
+      }
+
+      setExistingAction(verifiedAction);
       setActionRaised(true);
-      setExistingAction(actionResponse);
 
-      const updatedFormData = {
-        ...formData,
-        actionId: actionResponse.actionId
-      };
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
 
-      setFormData(updatedFormData);
-
-      console.log("Updating inspection with actionId:", actionResponse.actionId);
-
+      // Update inspection record
       if (currentCheckId) {
-        // First check if inspection exists
-        try {
-          const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        const inspectionPayload = {
+          address: formData.address,
+          assetId: formData.selectedAsset?.assetId || formData.assetId,
+          siteContact: formData.siteContactUser?.id || formData.siteContact,
+          inspectionDate: formData.inspectionDate,
+          siteContactNo: formData.siteContactNo,
+          job: formData.job,
+          report: formData.report,
+          param1: formData.param1,
+          param2: formData.param2,
+          param3: formData.param3,
+          param4: formData.param4,
+          param1Remark: formData.param1Remark,
+          param2Remark: formData.param2Remark,
+          param3Remark: formData.param3Remark,
+          client: formData.clientUser?.id || formData.client,
+          engineer: formData.engineer,
+          user: formData.user,
+          selectedAsset: formData.selectedAsset,
+          signedDate: formData.signedDate,
+          clientUser: formData.clientUser,
+          siteContactUser: formData.siteContactUser,
+          actionId: verifiedAction.actionId,
+          checkId: currentCheckId,
+          siteId: siteSelectedForGlobal?.siteId,
+          type: 'Inspection',
+          subType: 'External Lighting',
+          category: 'External Lighting Certificate',
+        };
 
-          const inspectionPayload = {
-            ...updatedFormData,
-            checkId: currentCheckId,
-            actionId: actionResponse.actionId,
-            siteId: siteSelectedForGlobal?.siteId,
-            assetId: updatedFormData.selectedAsset?.assetId || updatedFormData.assetId,
-            client: updatedFormData.clientUser?.id || updatedFormData.client,
-            engineer: updatedFormData.engineer,
-            siteContact: updatedFormData.siteContactUser?.id || updatedFormData.siteContact,
-            type: 'Inspection',
-            subType: 'External Lighting',
-            category: 'External Lighting Certificate'
-          };
-
-          if (!existingInspections || existingInspections.length === 0) {
-            // Create new inspection if none exists
-            await post(
-                `/api/site-check/generic-inspection`,
-                inspectionPayload
-            );
-          } else {
-            // Update existing inspection
-            await put(
-                `/api/site-check/generic-inspection/${currentCheckId}`,
-                inspectionPayload
-            );
-          }
-
-          toast.success(`Action #${actionResponse.actionId} raised and linked successfully`);
-        } catch (error) {
-          console.error("Error handling inspection record:", error);
-          throw error;
+        // Update or create inspection record
+        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
+        } else {
+          await post(`/api/site-check/generic-inspection`, inspectionPayload);
         }
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error("Failed to process action completion");
+      toast.error(error.message || "Failed to process action completion");
+
+      // Rollback state changes if the operation failed
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
     }
   };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -1032,6 +1061,14 @@ const ExternalLightningCertificate = ({
 
       if (![200, 201, 204].includes(saveResponse?.status)) {
         throw new Error('Failed to save inspection data');
+      }
+
+      if (formData.actionId) {
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        }
       }
 
       console.log('Inspection data saved successfully:', saveResponse.data);
@@ -1588,14 +1625,14 @@ const ExternalLightningCertificate = ({
                     <div className="card mb-4">
                       <div className="card-header">
                         <h5 className="mb-0">Risk Assessment</h5>
-                        {existingAction && (
+                        {existingAction?.checkId === currentCheckId && (
                             <span className="badge bg-success ms-2">
           Action #{existingAction.actionId} - {existingAction.status}
         </span>
                         )}
                       </div>
                       <div className="card-body">
-                        {existingAction ? (
+                        {existingAction?.checkId === currentCheckId ? (
                             <div className="existing-action">
                               <div className="row">
                                 <div className="col-md-6">
@@ -1604,7 +1641,7 @@ const ExternalLightningCertificate = ({
                                   <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
                                 </div>
                                 <div className="col-md-6">
-                                  <p><strong>Desc :</strong> {existingAction.desc}</p>
+                                  <p><strong>Description: </strong> {existingAction.desc}</p>
                                   <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
                                   <p><strong>Status:</strong> {existingAction.status}</p>
                                 </div>
@@ -1618,12 +1655,13 @@ const ExternalLightningCertificate = ({
                             </div>
                         ) : (
                             <RiskScoreCard
-                                desc={`Inspection - Electrical - External Lightning Testing - ${formatDate(formData.inspectionDate)}`}
+                                desc={`External Lighting Inspection - ${formatDate(formData.inspectionDate)}`}
                                 siteId={siteSelectedForGlobal?.siteId}
+                                checkId={currentCheckId}
                                 createdBy={loggedInUserData?.id}
-                                taggedAsset={''}
                                 onRiskAssessmentComplete={handleRiskAssessmentComplete}
                                 actionRaised={actionRaised}
+                                disabled={isSubmitted}
                             />
                         )}
                       </div>
