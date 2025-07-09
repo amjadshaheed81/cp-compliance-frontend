@@ -1656,7 +1656,7 @@ const ExternalLightningCertificate = ({
                             </div>
                         ) : (
                             <RiskScoreCard
-                                desc={`External Lighting Inspection - ${formatDate(formData.inspectionDate)}`}
+                                desc={`Inspection - Electrical - External Lighting Inspection`}
                                 siteId={siteSelectedForGlobal?.siteId}
                                 checkId={currentCheckId}
                                 createdBy={loggedInUserData?.id}

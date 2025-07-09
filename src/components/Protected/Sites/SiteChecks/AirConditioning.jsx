@@ -1995,7 +1995,7 @@ const AirConditioning = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`Air Conditioning Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
+                            desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Inspection `}
                             siteId={siteSelectedForGlobal?.siteId}
                             checkId={currentCheckId}
                             createdBy={loggedInUserData?.id}

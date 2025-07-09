@@ -1376,7 +1376,7 @@ const EmergencyLightingInspectionForm = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`Emergency Lighting Inspection - ${inspectionDetails?.category || ''}`}
+                            desc={`Inspection - Emergency Lighting to meet BS5266 - ${inspectionDetails?.category || ''}`}
                             siteId={siteSelectedForGlobal?.siteId}
                             checkId={checkId}
                             createdBy={loggedInUserData?.id}
