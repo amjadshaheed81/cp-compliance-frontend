@@ -328,7 +328,7 @@ const EmergencyLightingInspectionForm = ({
       setTextField('Name', license?.companyName || '');
       setTextField('Address', license?.companyAddress || '');
       setTextField('Name_2', loggedInUserData?.companyName || '');
-      setTextField('Address_2', formData?.installationAddress || '');
+      setTextField('Address_2', formData.installationAddress || '');
       setTextField('InspectionTest', loggedInUserData?.companyName || '');
       setTextField('Address_3', loggedInUserData?.companyAddress || '');
       setTextField('Type', formData.bsiCategoryType || '');
