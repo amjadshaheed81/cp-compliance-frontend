@@ -261,10 +261,26 @@ const ExternalLightningCertificate = ({
         }));
       }
     }
-  } catch (error) {
-    console.error("Error fetching existing actions:", error);
-  }
-};
+
+  useEffect(() => {
+    // This effect ensures we have the latest action data when formData.actionId changes
+    const fetchActionData = async () => {
+      if (formData.actionId) {
+        console.log('Action ID changed, fetching action:', formData.actionId);
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        } else {
+          setExistingAction(null);
+          setActionRaised(false);
+        }
+      }
+    };
+
+    fetchActionData();
+  }, [formData.actionId]);
+
 
   const fetchFolderStructure = async (siteId) => {
     try {
