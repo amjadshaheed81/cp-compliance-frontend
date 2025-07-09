@@ -220,67 +220,51 @@ const ExternalLightningCertificate = ({
 
 // Modify the fetchExistingActions function to use the specific endpoint when we have an actionId
 
- const fetchExistingActions = async () => {
-  try {
-    // First check if we have an actionId in form data
-    if (formData.actionId) {
-      const action = await fetchActionById(formData.actionId);
-      // Only consider this action if its checkId matches currentCheckId
-      if (action && action.checkId === currentCheckId) {
-        setExistingAction(action);
-        setActionRaised(true);
-        return;
-      }
-      // If checkId doesn't match, clear the actionId from form data
-      setFormData(prev => ({ ...prev, actionId: null }));
-    }
-
-    // Now look for other actions specifically for this checkId
-    if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
-
-    const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
-    if (response && response.length > 0) {
-      // Only consider actions with exact checkId match
-      const relevantActions = response.filter(action =>
-          action.checkId === currentCheckId
-      );
-
-      if (relevantActions.length > 0) {
-        // Get the most recent action for this checkId
-        const mostRecentAction = relevantActions.sort((a, b) =>
-            new Date(b.createdAt) - new Date(a.createdAt)
-        )[0];
-
-        setExistingAction(mostRecentAction);
-        setActionRaised(true);
-
-        // Update formData with the actionId
-        setFormData(prev => ({
-          ...prev,
-          actionId: mostRecentAction.actionId
-        }));
-      }
-    }
-
-  useEffect(() => {
-    // This effect ensures we have the latest action data when formData.actionId changes
-    const fetchActionData = async () => {
+  const fetchExistingActions = async () => {
+    try {
+      // First check if we have an actionId in form data
       if (formData.actionId) {
-        console.log('Action ID changed, fetching action:', formData.actionId);
         const action = await fetchActionById(formData.actionId);
-        if (action) {
+        // Only consider this action if its checkId matches currentCheckId
+        if (action && action.checkId === currentCheckId) {
           setExistingAction(action);
           setActionRaised(true);
-        } else {
-          setExistingAction(null);
-          setActionRaised(false);
+          return;
+        }
+        // If checkId doesn't match, clear the actionId from form data
+        setFormData(prev => ({ ...prev, actionId: null }));
+      }
+
+      // Now look for other actions specifically for this checkId
+      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+
+      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      if (response && response.length > 0) {
+        // Only consider actions with exact checkId match
+        const relevantActions = response.filter(action =>
+            action.checkId === currentCheckId
+        );
+
+        if (relevantActions.length > 0) {
+          // Get the most recent action for this checkId
+          const mostRecentAction = relevantActions.sort((a, b) =>
+              new Date(b.createdAt) - new Date(a.createdAt)
+          )[0];
+
+          setExistingAction(mostRecentAction);
+          setActionRaised(true);
+
+          // Update formData with the actionId
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
         }
       }
-    };
-
-    fetchActionData();
-  }, [formData.actionId]);
-
+    } catch (error) {
+      console.error("Error fetching existing actions:", error);
+    }
+  };
 
   const fetchFolderStructure = async (siteId) => {
     try {
@@ -335,6 +319,25 @@ const ExternalLightningCertificate = ({
       return null;
     }
   };
+
+  useEffect(() => {
+    // This effect ensures we have the latest action data when formData.actionId changes
+    const fetchActionData = async () => {
+      if (formData.actionId) {
+        console.log('Action ID changed, fetching action:', formData.actionId);
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        } else {
+          setExistingAction(null);
+          setActionRaised(false);
+        }
+      }
+    };
+
+    fetchActionData();
+  }, [formData.actionId]);
 
   useEffect(() => {
     const fetchSiteCheckData = async () => {
@@ -1062,12 +1065,12 @@ const ExternalLightningCertificate = ({
       }
 
       if (formData.actionId) {
-      const action = await fetchActionById(formData.actionId);
-      if (action) {
-        setExistingAction(action);
-        setActionRaised(true);
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        }
       }
-    }
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
@@ -1620,51 +1623,51 @@ const ExternalLightningCertificate = ({
                 </table>
 
                 {showRiskAssessment && (
-  <div className="card mb-4">
-    <div className="card-header">
-      <h5 className="mb-0">Risk Assessment</h5>
-      {existingAction?.checkId === currentCheckId && (
-        <span className="badge bg-success ms-2">
+                    <div className="card mb-4">
+                      <div className="card-header">
+                        <h5 className="mb-0">Risk Assessment</h5>
+                        {existingAction?.checkId === currentCheckId && (
+                            <span className="badge bg-success ms-2">
           Action #{existingAction.actionId} - {existingAction.status}
         </span>
-      )}
-    </div>
-    <div className="card-body">
-      {existingAction?.checkId === currentCheckId ? (
-        <div className="existing-action">
-          <div className="row">
-            <div className="col-md-6">
-              <p><strong>Observation:</strong> {existingAction.observation}</p>
-              <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
-              <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
-            </div>
-            <div className="col-md-6">
-              <p><strong>Description: </strong> {existingAction.desc}</p>
-              <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
-              <p><strong>Status:</strong> {existingAction.status}</p>
-            </div>
-          </div>
-          {existingAction.comments && (
-            <div className="mt-3">
-              <h6>Comments:</h6>
-              <p>{existingAction.comments}</p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <RiskScoreCard
-          desc={`External Lighting Inspection - ${formatDate(formData.inspectionDate)}`}
-          siteId={siteSelectedForGlobal?.siteId}
-          checkId={currentCheckId}
-          createdBy={loggedInUserData?.id}
-          onRiskAssessmentComplete={handleRiskAssessmentComplete}
-          actionRaised={actionRaised}
-          disabled={isSubmitted}
-        />
-      )}
-    </div>
-  </div>
-)}
+                        )}
+                      </div>
+                      <div className="card-body">
+                        {existingAction?.checkId === currentCheckId ? (
+                            <div className="existing-action">
+                              <div className="row">
+                                <div className="col-md-6">
+                                  <p><strong>Observation:</strong> {existingAction.observation}</p>
+                                  <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                                  <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                                </div>
+                                <div className="col-md-6">
+                                  <p><strong>Description: </strong> {existingAction.desc}</p>
+                                  <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                                  <p><strong>Status:</strong> {existingAction.status}</p>
+                                </div>
+                              </div>
+                              {existingAction.comments && (
+                                  <div className="mt-3">
+                                    <h6>Comments:</h6>
+                                    <p>{existingAction.comments}</p>
+                                  </div>
+                              )}
+                            </div>
+                        ) : (
+                            <RiskScoreCard
+                                desc={`External Lighting Inspection - ${formatDate(formData.inspectionDate)}`}
+                                siteId={siteSelectedForGlobal?.siteId}
+                                checkId={currentCheckId}
+                                createdBy={loggedInUserData?.id}
+                                onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                                actionRaised={actionRaised}
+                                disabled={isSubmitted}
+                            />
+                        )}
+                      </div>
+                    </div>
+                )}
               </div>
             </div>
           </div>
