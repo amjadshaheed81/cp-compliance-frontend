@@ -270,6 +270,25 @@ const MicroWaveOvenCertificate = ({
   };
 
   useEffect(() => {
+    // This effect ensures we have the latest action data when formData.actionId changes
+    const fetchActionData = async () => {
+      if (formData.actionId) {
+        console.log('Action ID changed, fetching action:', formData.actionId);
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        } else {
+          setExistingAction(null);
+          setActionRaised(false);
+        }
+      }
+    };
+
+    fetchActionData();
+  }, [formData.actionId])
+
+  useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
         if (!siteSelectedForGlobal?.siteId) return;
@@ -832,7 +851,6 @@ const MicroWaveOvenCertificate = ({
     if (!formData.param1) errors.param1 = "Please select emission level check result";
     if (!formData.param2) errors.param2 = "Please select interlock check result";
     if (!formData.param3) errors.param3 = "Please select pass/fail result";
-    if (!formData.selectedAsset) errors.asset = "Please select a microwave oven";
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -897,7 +915,7 @@ const MicroWaveOvenCertificate = ({
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
-        assetId: formData.selectedAsset?.assetId || formData.assetId,
+        assetId: formData.selectedAsset?.assetId || formData.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
