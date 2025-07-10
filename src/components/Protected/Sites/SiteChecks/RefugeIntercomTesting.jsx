@@ -1479,7 +1479,7 @@ const RefugeIntercomTesting = ({
                       </div>
                   ) : (
                       <RiskScoreCard
-                          desc={`Inspection - Electrical - Refuge Intercom Testing`}
+                          desc={`Inspection - Fire Alarm to meet BS5839 - Refuge Intercom Testing`}
                           siteId={siteSelectedForGlobal?.siteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
