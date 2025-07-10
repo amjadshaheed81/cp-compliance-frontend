@@ -29,6 +29,7 @@ const EmergencyLightingInspectionForm = ({
     monthlyTesting: null
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
   const license = JSON.parse(localStorage.getItem("license"));
 
   const [formData, setFormData] = useState({
@@ -148,7 +149,58 @@ const EmergencyLightingInspectionForm = ({
       return null;
     }
   };
-  const currentCheckId = checkId;
+
+  // const handleRiskAssessmentComplete = async (actionResponse) => {
+  //   try {
+  //     if (!actionResponse?.actionId) {
+  //       throw new Error("Invalid action response received");
+  //     }
+  //
+  //     // Verify the new action has our current checkId
+  //     const verifiedAction = await fetchActionById(actionResponse.actionId);
+  //     if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
+  //       throw new Error("Action was not properly linked to this inspection");
+  //     }
+  //
+  //     setExistingAction(verifiedAction);
+  //     setActionRaised(true);
+  //
+  //     // Update form data
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       actionId: verifiedAction.actionId
+  //     }));
+  //
+  //     // Update inspection record
+  //     if (checkId) {
+  //       const inspectionPayload = {
+  //         ...formData,
+  //         checkId: checkId,
+  //         siteId: siteSelectedForGlobal?.siteId,
+  //         actionId: verifiedAction.actionId,
+  //       };
+  //
+  //       // Update or create inspection record
+  //       const existingInspections = await get(`/api/site-check/emergency-lighting/${checkId}`);
+  //       console.log('-->',existingInspections);
+  //       if (existingInspections?.length > 0) {
+  //         await put(`/api/site-check/emergency-lighting/${checkId}`, inspectionPayload);
+  //       } else {
+  //         await post(`/api/site-check/emergency-lighting`, inspectionPayload);
+  //       }
+  //
+  //       toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error handling risk assessment completion:", error);
+  //     toast.error(error.message || "Failed to process action completion");
+  //
+  //     // Rollback state changes if the operation failed
+  //     setActionRaised(false);
+  //     setExistingAction(null);
+  //     setFormData(prev => ({ ...prev, actionId: null }));
+  //   }
+  // };
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
@@ -156,63 +208,86 @@ const EmergencyLightingInspectionForm = ({
         throw new Error("Invalid action response received");
       }
 
-      // Verify the new action has our current checkId
+      // Verify the action exists
       const verifiedAction = await fetchActionById(actionResponse.actionId);
-      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
-        throw new Error("Action was not properly linked to this inspection");
+      if (!verifiedAction) {
+        throw new Error("Failed to verify created action");
       }
 
+      // Update the action with checkId if we have one
+      if (currentCheckId && !verifiedAction.checkId) {
+        await put(`/api/site/actions/${verifiedAction.actionId}`, {
+          ...verifiedAction,
+          checkId: currentCheckId
+        });
+        verifiedAction.checkId = currentCheckId; // Update local copy
+      }
+
+      // Update all relevant states
       setExistingAction(verifiedAction);
       setActionRaised(true);
-
-      // Update form data
       setFormData(prev => ({
         ...prev,
         actionId: verifiedAction.actionId
       }));
 
-      // Update inspection record
-      if (checkId) {
-        const inspectionPayload = {
-          ...formData,
-          checkId: checkId,
-          siteId: siteSelectedForGlobal?.siteId,
-          actionId: verifiedAction.actionId,
-        };
+      // Force re-render of risk assessment section
+      setShowRiskAssessment(true);
 
-        // Update or create inspection record
-        const existingInspections = await get(`/api/site-check/emergency-lighting/${checkId}`);
+      // Save the inspection data with the actionId
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        checkId: currentCheckId,
+        actionId: verifiedAction.actionId,
+        inspectionBy: loggedInUserData.id,
+        type: 'Inspection',
+        subType: 'Emergency Lighting',
+        category: inspectionDetails?.category || 'Emergency Lighting'
+      };
+
+      if (currentCheckId) {
+        const existingInspections = await get(`/api/site-check/emergency-lighting/${currentCheckId}`);
         if (existingInspections?.length > 0) {
-          await put(`/api/site-check/emergency-lighting/${checkId}`, inspectionPayload);
+          await put(`/api/site-check/emergency-lighting/${currentCheckId}`, inspectionPayload);
         } else {
           await post(`/api/site-check/emergency-lighting`, inspectionPayload);
         }
-
-        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
+
+      toast.success(`Action #${verifiedAction.actionId} successfully created and linked`);
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
       toast.error(error.message || "Failed to process action completion");
-
-      // Rollback state changes if the operation failed
       setActionRaised(false);
       setExistingAction(null);
       setFormData(prev => ({ ...prev, actionId: null }));
     }
   };
 
+  // useEffect(() => {
+  //   const hasUnsatisfactoryChecks = formData.inspectionChecks
+  //       .slice(0, 5)
+  //       .some(check => check.satisfactory === false);
+  //
+  //   setShowRiskAssessment(hasUnsatisfactoryChecks);
+  //
+  //   // Update actionRaised state based on existing action
+  //   const isActionValid = existingAction && existingAction.checkId === checkId;
+  //   setActionRaised(isActionValid);
+  // }, [formData.inspectionChecks, checkId, existingAction]);
+
   useEffect(() => {
     const hasUnsatisfactoryChecks = formData.inspectionChecks
         .slice(0, 5)
         .some(check => check.satisfactory === false);
 
+    const isActionValid = existingAction &&
+        (Number(existingAction.checkId) === Number(currentCheckId));
+
     setShowRiskAssessment(hasUnsatisfactoryChecks);
-
-    // Update actionRaised state based on existing action
-    const isActionValid = existingAction && existingAction.checkId === checkId;
     setActionRaised(isActionValid);
-  }, [formData.inspectionChecks, checkId, existingAction]);
-
+  }, [formData.inspectionChecks, currentCheckId, existingAction]);
 
   const fetchActionById = async (id) => {
     try {
@@ -231,7 +306,7 @@ const EmergencyLightingInspectionForm = ({
       if (formData.actionId) {
         const action = await fetchActionById(formData.actionId);
         // Only consider this action if its checkId matches current checkId
-        if (action && action.checkId === checkId) {
+        if (action && Number(action.checkId) === Number(currentCheckId)) {
           setExistingAction(action);
           setActionRaised(true);
           return;
@@ -241,13 +316,13 @@ const EmergencyLightingInspectionForm = ({
       }
 
       // Now look for other actions specifically for this checkId
-      if (!siteSelectedForGlobal?.siteId || !checkId) return;
+      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
 
       const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
-            action.checkId === checkId
+            Number(action.checkId) === Number(currentCheckId)
         );
 
         if (relevantActions.length > 0) {
@@ -407,7 +482,7 @@ const EmergencyLightingInspectionForm = ({
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
       const siteName = siteSelectedForGlobal?.name || 'emergency-lighting';
-      const fileName = `EmergencyLightingInspection- ${inspectionDetails.category}.pdf`;
+      const fileName = `EmergencyLightingInspection- ${inspectionDetails?.category || ''}.pdf`;
 
       const savedLocally = await savePdfToLocal(blob, fileName);
       if (!savedLocally) {
@@ -512,6 +587,8 @@ const EmergencyLightingInspectionForm = ({
       setIsGeneratingPDF(false);
     }
   };
+
+
 
   useEffect(() => {
     // This effect ensures we have the latest action data when formData.actionId changes
@@ -689,9 +766,7 @@ const EmergencyLightingInspectionForm = ({
 
   const getInspection = async () => {
     try {
-      const apiData = await get(
-          "/api/site-check/emergency-lighting/" + checkId
-      );
+      const apiData = await get("/api/site-check/emergency-lighting/" + checkId);
 
       if (apiData) {
         let existingAction = null;
@@ -703,31 +778,36 @@ const EmergencyLightingInspectionForm = ({
           }
         }
 
+        // Create a map of checks from API data for easier lookup
+        const apiChecksMap = {};
+        apiData.inspectionChecks?.forEach(check => {
+          apiChecksMap[check.check] = check;
+        });
+
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
           installationName: apiData?.installationName || prev.installationName,
-          installationAddress:
-              apiData?.installationAddress || prev.installationAddress,
+          installationAddress: apiData?.installationAddress || prev.installationAddress,
           bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
           bsiCategoryMode: apiData?.bsiCategoryMode || prev.bsiCategoryMode,
-          bsiCategoryFacilities:
-              apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
-          bsiCategoryDuration:
-              apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
+          bsiCategoryFacilities: apiData?.bsiCategoryFacilities || prev.bsiCategoryFacilities,
+          bsiCategoryDuration: apiData?.bsiCategoryDuration || prev.bsiCategoryDuration,
           inspectionDate: apiData?.inspectionDate || prev.inspectionDate,
-          inspectionChecks: apiData?.inspectionChecks?.length
-              ? prev.inspectionChecks.map((defaultCheck, index) => ({
-                ...defaultCheck,
-                ...(apiData.inspectionChecks[index] || {}),
-                check: defaultCheck.check,
-              }))
-              : prev.inspectionChecks,
+          inspectionChecks: prev.inspectionChecks.map(defaultCheck => {
+            // Find matching check in API data
+            const apiCheck = apiChecksMap[defaultCheck.check];
+
+            return {
+              ...defaultCheck, // Start with default values
+              ...(apiCheck || {}), // Override with API values if they exist
+              check: apiCheck?.check || defaultCheck.check, // Preserve check value from either source
+              checkQ: defaultCheck.checkQ // Always keep the default question text
+            };
+          }),
           actionId: apiData?.actionId || prev.actionId,
-          additionalComments:
-              apiData?.additionalComments || prev.additionalComments,
-          allFittingsPassed:
-              apiData?.allFittingsPassed || prev.allFittingsPassed,
+          additionalComments: apiData?.additionalComments || prev.additionalComments,
+          allFittingsPassed: apiData?.allFittingsPassed || prev.allFittingsPassed,
           siteAssetId: apiData?.siteAssetId || prev.siteAssetId,
           file: apiData?.file || prev.files,
           user: apiData?.inspectionByUser || prev.user,
@@ -742,7 +822,6 @@ const EmergencyLightingInspectionForm = ({
       console.error("Inspection load error:", error);
     }
   };
-
   const fetchCheckStatus = async () => {
     try {
       if (!checkId) return;
@@ -765,6 +844,18 @@ const EmergencyLightingInspectionForm = ({
       console.error('Error fetching check status:', error);
     }
   };
+  useEffect(() => {
+    const syncActionState = async () => {
+      if (formData.actionId) {
+        const action = await fetchActionById(formData.actionId);
+        if (action) {
+          setExistingAction(action);
+          setActionRaised(true);
+        }
+      }
+    };
+    syncActionState();
+  }, [formData.actionId]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -940,110 +1031,112 @@ const EmergencyLightingInspectionForm = ({
       return;
     }
 
-    if (showRiskAssessment && !actionRaised) {
-      toast.error("Please complete the risk assessment before submitting");
-      return;
-    }
-
     const hasUnsatisfactoryChecks = formData.inspectionChecks
         .slice(0, 5)
         .some(check => check.satisfactory === false);
 
     if (hasUnsatisfactoryChecks && !actionRaised) {
-      toast.error("Please complete the risk assessment for unsatisfactory checks");
+      toast.error("Please complete the risk assessment before submitting");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // First create or update the site check record
+      // 1. Create/Update site check record
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        siteId: siteSelectedForGlobal?.siteId,
         type: 'Inspection',
         subType: 'Emergency Lighting',
         category: inspectionDetails?.category || 'Emergency Lighting',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
-        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+        startDate: new Date().toISOString(),
+        leadUserID: loggedInUserData?.id,
+        assistantUserID: loggedInUserData?.id
       };
 
-      let statusResponse;
-      let actualCheckId = checkId;
+      let checkIdToUse = currentCheckId;
 
-      if (isNewCheck) {
-        // Create new check
-        statusResponse = await post('/api/site-check', statusPayload);
-        if (statusResponse?.checkId) {
-          actualCheckId = statusResponse.checkId;
-          setIsNewCheck(false);
-          if (onCheckCreated) {
-            onCheckCreated(actualCheckId);
-          }
-        } else {
-          throw new Error('Failed to create new check - no checkId returned');
-        }
-      } else {
-        // Update existing check
-        statusResponse = await put(`/api/site-check/${checkId}`, statusPayload);
+      // Handle check creation/update
+      const statusResponse = checkIdToUse
+          ? await put(`/api/site-check/${checkIdToUse}`, statusPayload)
+          : await post('/api/site-check', statusPayload);
+
+      if (!checkIdToUse && statusResponse?.checkId) {
+        checkIdToUse = statusResponse.checkId;
+        setCurrentCheckId(checkIdToUse);
       }
 
-      if (![200, 201, 204].includes(statusResponse?.status)) {
-        throw new Error('Failed to update site check status');
-      }
-
-      // Then submit the inspection data
-      const payload = {
+      // 2. Prepare and submit inspection data
+      const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId || "",
-        checkId: actualCheckId,
+        siteId: siteSelectedForGlobal?.siteId,
+        checkId: checkIdToUse,
         inspectionBy: loggedInUserData?.id,
-        actionId: formData.actionId
+        actionId: existingAction?.actionId || formData.actionId
       };
 
-      // Upload files if any
-      const certificateUrls = [];
-      if (formData.files.length > 0) {
-        try {
-          const uploadPromises = formData.files.map((file) =>
-              uploadSiteCheckDoc({
-                file,
-                siteId: siteSelectedForGlobal?.siteId,
-                folderName: "EmergencyLighting",
-              })
-          );
-          certificateUrls.push(...(await Promise.all(uploadPromises)));
-          payload.certificateUrls = certificateUrls;
-        } catch (uploadError) {
-          console.error("File upload failed:", uploadError);
-          toast.error("File upload failed");
-          return;
-        }
-      }
-
-      // Submit inspection data - use POST for new, PUT for existing
+      // Save inspection data first
+      let inspectionResponse;
       if (formData.id) {
-        await put("/api/site-check/emergency-lighting", payload);
+        inspectionResponse = await put(
+            `/api/site-check/emergency-lighting/${formData.id}`,
+            inspectionPayload
+        );
       } else {
-        await post("/api/site-check/emergency-lighting", payload);
+        inspectionResponse = await post(
+            "/api/site-check/emergency-lighting",
+            inspectionPayload
+        );
       }
 
-      // Generate PDF
+      // Verify the inspection was saved successfully
+      if (!inspectionResponse) {
+        throw new Error("Failed to save inspection data - no response received");
+      }
+
+      // Update the form data with the response if this was a new inspection
+      if (!formData.id && inspectionResponse.id) {
+        setFormData(prev => ({
+          ...prev,
+          id: inspectionResponse.id
+        }));
+      }
+
+      // 3. Generate and upload PDF
       try {
-        await generatePDF();
-      } catch (error) {
-        console.error('PDF generation failed:', error);
-        toast.error('Failed to generate PDF');
+        const pdfResult = await generatePDF();
+        if (!pdfResult?.success) {
+          throw new Error("PDF generation failed");
+        }
+      } catch (pdfError) {
+        console.error('PDF generation failed:', pdfError);
+        toast.warning('Inspection saved but PDF generation failed');
       }
 
+      // 4. Refresh action data if we have one
+      if (inspectionPayload.actionId) {
+        const updatedAction = await fetchActionById(inspectionPayload.actionId);
+        setExistingAction(updatedAction);
+      }
+
+      // 5. Final state updates
       toast.success("Inspection submitted successfully");
-      setCompleted(true);
-      setIsFormEditable(false);
       setIsSubmitted(true);
+      setIsFormEditable(false);
+      setCompleted(true);
+
+      // Call the callback if this was a new check
+      if (onCheckCreated && isNewCheck) {
+        onCheckCreated(checkIdToUse);
+      }
 
     } catch (error) {
-      console.error("Submission error:", error);
+      console.error("Submission error:", {
+        error: error.message,
+        stack: error.stack,
+        response: error.response?.data
+      });
       toast.error(error.message || "Failed to submit inspection");
     } finally {
       setIsLoading(false);
@@ -1346,14 +1439,14 @@ const EmergencyLightingInspectionForm = ({
                 <div className="card mb-4">
                   <div className="card-header">
                     <h5 className="mb-0">Risk Assessment</h5>
-                    {existingAction?.checkId === checkId && (
+                    {existingAction && Number(existingAction.checkId) === Number(currentCheckId) && (
                         <span className="badge bg-success ms-2">
           Action #{existingAction.actionId} - {existingAction.status}
         </span>
                     )}
                   </div>
                   <div className="card-body">
-                    {existingAction?.checkId === checkId ? (
+                    {existingAction && Number(existingAction.checkId) === Number(currentCheckId) ? (
                         <div className="existing-action">
                           <div className="row">
                             <div className="col-md-6">
@@ -1378,7 +1471,7 @@ const EmergencyLightingInspectionForm = ({
                         <RiskScoreCard
                             desc={`Inspection - Emergency Lighting to meet BS5266 - ${inspectionDetails?.category || ''}`}
                             siteId={siteSelectedForGlobal?.siteId}
-                            checkId={checkId}
+                            checkId={currentCheckId}
                             createdBy={loggedInUserData?.id}
                             onRiskAssessmentComplete={handleRiskAssessmentComplete}
                             actionRaised={actionRaised}
@@ -1388,7 +1481,6 @@ const EmergencyLightingInspectionForm = ({
                   </div>
                 </div>
             )}
-
             {/* Additional Comments Section */}
             <h5 className="mb-1">Additional Comments & Deviations</h5>
             <p
