@@ -148,6 +148,7 @@ const EmergencyLightingInspectionForm = ({
       return null;
     }
   };
+  const currentCheckId = checkId;
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
@@ -157,7 +158,7 @@ const EmergencyLightingInspectionForm = ({
 
       // Verify the new action has our current checkId
       const verifiedAction = await fetchActionById(actionResponse.actionId);
-      if (!verifiedAction || verifiedAction.checkId !== checkId) {
+      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
         throw new Error("Action was not properly linked to this inspection");
       }
 
@@ -177,13 +178,12 @@ const EmergencyLightingInspectionForm = ({
           checkId: checkId,
           siteId: siteSelectedForGlobal?.siteId,
           actionId: verifiedAction.actionId,
-          inspectionBy: loggedInUserData?.id
         };
 
         // Update or create inspection record
         const existingInspections = await get(`/api/site-check/emergency-lighting/${checkId}`);
         if (existingInspections?.length > 0) {
-          await put(`/api/site-check/emergency-lighting`, inspectionPayload);
+          await put(`/api/site-check/emergency-lighting/${checkId}`, inspectionPayload);
         } else {
           await post(`/api/site-check/emergency-lighting`, inspectionPayload);
         }
@@ -530,7 +530,7 @@ const EmergencyLightingInspectionForm = ({
     };
 
     fetchActionData();
-  }, [formData.actionId]);
+  }, [formData.actionId],checkId);
 
   // Preserve exact folder names but make matching more robust
   const getFolderNameFromCategory = (category) => {
@@ -1376,7 +1376,7 @@ const EmergencyLightingInspectionForm = ({
                         </div>
                     ) : (
                         <RiskScoreCard
-                            desc={`Emergency Lighting Inspection - ${inspectionDetails?.category || ''}`}
+                            desc={`Inspection - Emergency Lighting to meet BS5266 - ${inspectionDetails?.category || ''}`}
                             siteId={siteSelectedForGlobal?.siteId}
                             checkId={checkId}
                             createdBy={loggedInUserData?.id}

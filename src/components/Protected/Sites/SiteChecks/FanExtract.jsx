@@ -1600,7 +1600,7 @@ const FanExtract = ({
                                 </div>
                             ) : (
                                 <RiskScoreCard
-                                    desc={`Extract Fan Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
+                                    desc={`Inspection - Plant and Equipment Inspection - Extract Fan Inspection `}
                                     siteId={siteSelectedForGlobal?.siteId}
                                     checkId={currentCheckId}
                                     createdBy={loggedInUserData?.id}

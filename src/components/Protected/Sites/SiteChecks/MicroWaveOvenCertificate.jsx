@@ -1501,7 +1501,7 @@ const MicroWaveOvenCertificate = ({
                       </div>
                   ) : (
                       <RiskScoreCard
-                          desc={`Microwave Oven Inspection - ${selectedAsset?.assetName || 'Unknown Asset'}`}
+                          desc={`Inspection - Electrical - Microwave Oven Inspection`}
                           siteId={siteSelectedForGlobal?.siteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
