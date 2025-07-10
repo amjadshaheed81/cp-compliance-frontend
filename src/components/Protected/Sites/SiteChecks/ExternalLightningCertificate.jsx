@@ -337,7 +337,7 @@ const ExternalLightningCertificate = ({
     };
 
     fetchActionData();
-  }, [formData.actionId]);
+  }, [formData.actionId],checkId);
 
   useEffect(() => {
     const fetchSiteCheckData = async () => {
