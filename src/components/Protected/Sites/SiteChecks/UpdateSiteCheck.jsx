@@ -30,6 +30,10 @@ import DisabledWCAlarmCertificate from "./DisabledWCAlarmCertificate";
 import FanExtract from "./FanExtract";
 import AirConditioning from "./AirConditioning";
 import VentilationReport from "./VentilationReport";
+import SounderAudibilty from "./SounderAudibility";
+import RefugeIntercomTesting from "./RefugeIntercomTesting";
+
+
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -166,6 +170,19 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
     ) {
       setStep("inspection-ventilation-report");
     }
+      else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Fire Alarm to meet BS5839" &&
+      siteCheck.category === "Fire Alarm Sounder Audibilty"
+    ) {
+      setStep("inspection-sounder-audibilty");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Fire Alarm to meet BS5839" &&
+      siteCheck.category === "Refuge Intercom Testing & Inspection"
+    ) {
+      setStep("inspection-refuge-intercom-testing");
+    } 
     else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck?.subType === "Monthly Audit") {
@@ -514,6 +531,28 @@ autoComplete="off"
                       leadUserID={siteCheck?.leadUserID}
                   />
                 </Item>
+            )}
+            {step === "inspection-sounder-audibilty" && (
+              <Item>
+                <SounderAudibilty
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
+            )}
+            {step === "inspection-refuge-intercom-testing" && (
+              <Item>
+                <RefugeIntercomTesting
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
             )}
             {step === "assessment-fire-risk" && <Item><AssessmentFireRisk checkId={checkId} sasToken={sasToken} subType={siteCheck?.subType} leadUserID={siteCheck?.leadUserID}/></Item>}
             {step === "audit-unit-maintenance-periodic" && <Item><AuditUnitPeriodic checkId={checkId} sasToken={sasToken} leadUserID={siteCheck?.leadUserID}/></Item>}
