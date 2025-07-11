@@ -614,7 +614,7 @@ const EmergencyLightingInspectionForm = ({
     // Keep original folder names exactly as they appear in the system
     switch(category) {
       case 'Emergency Lighting - weekly testing to meet BS5266':
-        return 'Emergency Lighting - Weekly \'Flick\' Testing'; // Exact match
+        return 'Emergency Lighting - Weekly (Flick) Testing'; // Exact match
       case 'Emergency Lighting - monthly testing to meet BS5266':
         return ' Emergency Lighting - Monthly Testing'; // Note: Keep leading space
       case 'Emergency Lighting (systems more than 3 years old) 12 monthly Full discharge testing':
