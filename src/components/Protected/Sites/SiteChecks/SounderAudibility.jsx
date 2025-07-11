@@ -1152,8 +1152,8 @@ const SounderAudibilityForm = ({
                 <input
                     type="text"
                     className="form-control"
-                    name="jobNo"
-                    value={formData.jobNo}
+                    name="job"
+                    value={formData.job}
                     onChange={handleInputChange}
                     disabled={isSubmitted}
                 />
