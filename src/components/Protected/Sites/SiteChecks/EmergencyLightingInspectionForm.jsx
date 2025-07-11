@@ -350,19 +350,19 @@ const EmergencyLightingInspectionForm = ({
     try {
       setIsGeneratingPDF(true);
 
+      // Ensure we have inspection details
       let inspectionDetails = null;
-      if (checkId) {
-        inspectionDetails = await fetchInspectionDetails(checkId);
-        console.log('Fetched inspection details:', inspectionDetails);
+      if (currentCheckId) {
+        inspectionDetails = await fetchInspectionDetails(currentCheckId);
       }
 
+      // Generate PDF content
       const { PDFDocument, rgb } = await import('pdf-lib');
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFDocument.load(pdfBytes);
-
       const form = pdfDoc.getForm();
 
-      // Set form fields
+      // Helper functions for setting form fields
       const setTextField = (fieldName, value, fontSize = 8) => {
         try {
           const field = form.getTextField(fieldName);
@@ -400,17 +400,25 @@ const EmergencyLightingInspectionForm = ({
         }
       };
 
+      // Set client information
       setTextField('Name', license?.companyName || '');
       setTextField('Address', license?.companyAddress || '');
-      setTextField('Name_2', loggedInUserData?.companyName || '');
+
+      // Set installation information
+      setTextField('Name_2', formData.installationName || '');
       setTextField('Address_2', formData.installationAddress || '');
+
+      // Set inspection company info
       setTextField('InspectionTest', loggedInUserData?.companyName || '');
       setTextField('Address_3', loggedInUserData?.companyAddress || '');
+
+      // Set BSI category details
       setTextField('Type', formData.bsiCategoryType || '');
       setTextField('Mode', formData.bsiCategoryMode || '');
       setTextField('Facilities', formData.bsiCategoryFacilities || '');
       setTextField('Duration', formData.bsiCategoryDuration || '');
 
+      // Set inspection date
       const formattedDate = formData.inspectionDate
           ? new Date(formData.inspectionDate).toLocaleDateString('en-GB')
           : '';
@@ -418,24 +426,25 @@ const EmergencyLightingInspectionForm = ({
 
       // Process inspection checks
       for (let i = 1; i <= 10; i++) {
-        setCheckbox(`CheckBox${i}`, false);
+        setCheckbox(`CheckBox${i}`, false); // Reset all checkboxes first
       }
 
       formData.inspectionChecks.forEach((check, index) => {
-        if (!check) return;
-
-        if (index < 5) {
+        if (index < 5) { // We only have 5 checks in our form
           const checkboxName = `CheckBox${index + 1}`;
 
-          if (check.satisfactory !== undefined) {
-            setCheckbox(checkboxName, true);
+          // Mark as checked if the check was performed
+          if (check.checkSelected !== undefined) {
+            setCheckbox(checkboxName, check.checkSelected);
           }
 
+          // Mark the right column if satisfactory
           if (check.satisfactory === true) {
             const rightCheckboxName = `CheckBox${index + 6}`;
             setCheckbox(rightCheckboxName, true);
           }
 
+          // Set remarks if they exist
           const remarksField = `Remarks${index + 1}`;
           if (check.remarks) {
             setTextField(remarksField, check.remarks);
@@ -443,12 +452,15 @@ const EmergencyLightingInspectionForm = ({
         }
       });
 
+      // Set additional comments
       setTextField('AdditionalComments', formData.additionalComments || '');
 
+      // Set inspector details
       const inspector = users.find(u => u.id === loggedInUserData?.id);
       setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
       setTextField('position', loggedInUserData?.role || '');
 
+      // Add signature if available
       if (loggedInUserData?.signature) {
         try {
           const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
@@ -465,129 +477,50 @@ const EmergencyLightingInspectionForm = ({
         }
       }
 
-      const categoryText = inspectionDetails?.category || 'N/A';
+      // Set the inspection category in the footer
+      const categoryText = inspectionDetails?.category || 'Emergency Lighting';
       setTextField('Monthly', categoryText);
 
-      await fetchFolderStructure(siteSelectedForGlobal?.siteId, categoryText);
-
-      setCheckbox('InspectionTest', true);
-
+      // Flatten the form to make it non-editable
       try {
         form.flatten();
       } catch (error) {
         console.warn('Error flattening form:', error.message);
       }
 
+      // Save the modified PDF
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
-      const siteName = siteSelectedForGlobal?.name || 'emergency-lighting';
-      const fileName = `EmergencyLightingInspection- ${inspectionDetails?.category || ''}.pdf`;
+      // Generate filename
+      const fileName = `EmergencyLightingInspection_${siteSelectedForGlobal?.name || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
+      // Save locally first
       const savedLocally = await savePdfToLocal(blob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
       }
 
-      const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+      // Upload to server
+      const uploadSuccess = await uploadPdfToServer(
+          blob,
+          fileName,
+          inspectionDetails?.category || 'Emergency Lighting'
+      );
 
-      const targetFolderId = folderIds.monthlyTesting || folderIds.emergencyLighting ||
-          folderIds.fireLogBook || folderIds.logBooks;
-
-      if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
+      if (!uploadSuccess) {
+        throw new Error('PDF upload to server failed');
       }
 
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-
-      const uploadFormData = new FormData();
-
-      if (exists && existingFile) {
-        uploadFormData.append('file', pdfFile);
-
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: (existingFile.fileVersion || 1) + 1,
-            siteId: siteSelectedForGlobal?.siteId,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id,
-            reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
-          }]
-        };
-
-        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
-
-        const response = await axios.put(
-            '/api/document/file/newVersion/upload',
-            uploadFormData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return { success: true, data: response.data };
-        }
-      } else {
-        uploadFormData.append('files', pdfFile);
-
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            originalFileName: fileName,
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id,
-            reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
-          }]
-        };
-
-        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
-
-        const response = await axios.post(
-            '/api/document/files/upload',
-            uploadFormData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-        );
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return { success: true, data: response.data };
-        }
-      }
-
-      throw new Error('Upload failed: No response data');
+      return { success: true, fileName };
     } catch (error) {
       console.error('Error generating PDF:', error);
-      throw error;
+      toast.error('Failed to generate PDF: ' + error.message);
+      return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
     }
   };
-
 
 
   useEffect(() => {
@@ -763,6 +696,119 @@ const EmergencyLightingInspectionForm = ({
       return false;
     }
   };
+
+  const uploadPdfToServer = async (pdfBlob, fileName, category) => {
+    try {
+      setIsUploading(true);
+
+      // First save locally
+      await savePdfToLocal(pdfBlob, fileName);
+
+      // Ensure we have the latest folder structure
+      const targetFolderId = await fetchFolderStructure(siteSelectedForGlobal?.siteId, category);
+      if (!targetFolderId) {
+        throw new Error('Could not determine target folder for PDF upload');
+      }
+
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const formData = new FormData();
+
+      // Helper function to format date for backend
+      const formatDateForBackend = (date) => {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+      };
+
+      // Check if file exists
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+
+      if (exists && existingFile) {
+        // Update existing file
+        formData.append('file', pdfFile);
+
+        const documentRequest = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: (existingFile.fileVersion || 1) + 1,
+            siteId: siteSelectedForGlobal?.siteId,
+            issueDate: formatDateForBackend(new Date()),
+            expiryDate: formatDateForBackend(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+            uploaderUserId: loggedInUserData?.id,
+            reviewerUserId: loggedInUserData?.id,
+            referenceNumber: `EL-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequest));
+
+        const response = await axios.put(
+            '/api/document/file/newVersion/upload',
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
+            }
+        );
+
+        if (response.data) {
+          toast.success(`PDF updated successfully as version ${documentRequest.files[0].fileVersion}`);
+          return true;
+        }
+      } else {
+        // Create new file
+        formData.append('files', pdfFile);
+
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+
+        const documentRequest = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            originalFileName: fileName,
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId,
+            issueDate: formatDateForBackend(new Date()),
+            expiryDate: formatDateForBackend(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+            uploaderUserId: loggedInUserData?.id,
+            reviewerUserId: loggedInUserData?.id,
+            referenceNumber: `EL-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequest));
+
+        const response = await axios.post(
+            '/api/document/files/upload',
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
+            }
+        );
+
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${fileVersion}`);
+          return true;
+        }
+      }
+
+      throw new Error('Upload failed: No response data');
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast.error('Failed to upload PDF: ' + error.message);
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
 
   const getInspection = async () => {
     try {
@@ -1031,6 +1077,7 @@ const EmergencyLightingInspectionForm = ({
       return;
     }
 
+    // Validate form
     const hasUnsatisfactoryChecks = formData.inspectionChecks
         .slice(0, 5)
         .some(check => check.satisfactory === false);
@@ -1043,12 +1090,16 @@ const EmergencyLightingInspectionForm = ({
     setIsLoading(true);
 
     try {
-      // 1. Create/Update site check record
+      // 1. First ensure we have the folder structure loaded
+      const category = inspectionDetails?.category || 'Emergency Lighting';
+      await fetchFolderStructure(siteSelectedForGlobal?.siteId, category);
+
+      // 2. Create/Update site check record
       const statusPayload = {
         siteId: siteSelectedForGlobal?.siteId,
         type: 'Inspection',
         subType: 'Emergency Lighting',
-        category: inspectionDetails?.category || 'Emergency Lighting',
+        category: category,
         status: 'Done',
         startDate: new Date().toISOString(),
         leadUserID: loggedInUserData?.id,
@@ -1056,8 +1107,6 @@ const EmergencyLightingInspectionForm = ({
       };
 
       let checkIdToUse = currentCheckId;
-
-      // Handle check creation/update
       const statusResponse = checkIdToUse
           ? await put(`/api/site-check/${checkIdToUse}`, statusPayload)
           : await post('/api/site-check', statusPayload);
@@ -1067,7 +1116,7 @@ const EmergencyLightingInspectionForm = ({
         setCurrentCheckId(checkIdToUse);
       }
 
-      // 2. Prepare and submit inspection data
+      // 3. Save inspection data
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
@@ -1076,67 +1125,27 @@ const EmergencyLightingInspectionForm = ({
         actionId: existingAction?.actionId || formData.actionId
       };
 
-      // Save inspection data first
-      let inspectionResponse;
-      if (formData.id) {
-        inspectionResponse = await put(
-            `/api/site-check/emergency-lighting/${formData.id}`,
-            inspectionPayload
-        );
-      } else {
-        inspectionResponse = await post(
-            "/api/site-check/emergency-lighting",
-            inspectionPayload
-        );
+      const inspectionResponse = formData.id
+          ? await put(`/api/site-check/emergency-lighting/${formData.id}`, inspectionPayload)
+          : await post("/api/site-check/emergency-lighting", inspectionPayload);
+
+      // 4. Generate and upload PDF
+      const pdfResult = await generatePDF();
+      if (!pdfResult.success) {
+        throw new Error("PDF generation/upload failed");
       }
 
-      // Verify the inspection was saved successfully
-      if (!inspectionResponse) {
-        throw new Error("Failed to save inspection data - no response received");
-      }
-
-      // Update the form data with the response if this was a new inspection
-      if (!formData.id && inspectionResponse.id) {
-        setFormData(prev => ({
-          ...prev,
-          id: inspectionResponse.id
-        }));
-      }
-
-      // 3. Generate and upload PDF
-      try {
-        const pdfResult = await generatePDF();
-        if (!pdfResult?.success) {
-          throw new Error("PDF generation failed");
-        }
-      } catch (pdfError) {
-        console.error('PDF generation failed:', pdfError);
-        toast.warning('Inspection saved but PDF generation failed');
-      }
-
-      // 4. Refresh action data if we have one
-      if (inspectionPayload.actionId) {
-        const updatedAction = await fetchActionById(inspectionPayload.actionId);
-        setExistingAction(updatedAction);
-      }
-
-      // 5. Final state updates
+      // 5. Update state
       toast.success("Inspection submitted successfully");
       setIsSubmitted(true);
       setIsFormEditable(false);
-      setCompleted(true);
 
-      // Call the callback if this was a new check
       if (onCheckCreated && isNewCheck) {
         onCheckCreated(checkIdToUse);
       }
 
     } catch (error) {
-      console.error("Submission error:", {
-        error: error.message,
-        stack: error.stack,
-        response: error.response?.data
-      });
+      console.error("Submission error:", error);
       toast.error(error.message || "Failed to submit inspection");
     } finally {
       setIsLoading(false);
