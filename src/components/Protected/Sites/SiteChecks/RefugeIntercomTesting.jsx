@@ -740,9 +740,9 @@ const RefugeIntercomTesting = ({
       setTextField('Location', equipmentDetailsLocation, smallFont);
 
       // Test results
-      setTextField('Outstation Operational', formData.param1 === 'Pass' ? 'Yes' : 'No', smallFont);
-      setTextField('Intercom Sound Test', formData.param2 === 'Pass' ? 'Yes' : 'No', smallFont);
-      setTextField('Sounder Test', formData.param3 === 'Pass' ? 'Yes' : 'No', smallFont);
+      setTextField('Outstation Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', smallFont);
+      setTextField('Intercom Sound Test', formData.param2 === 'Pass' ? 'Pass' : 'Fail', smallFont);
+      setTextField('Sounder Test', formData.param3 === 'Pass' ? 'Pass' : 'Fail', smallFont);
 
       // Report
       setTextField('Engineers Report', formData.report || '', smallFont);
