@@ -113,7 +113,7 @@ const SounderAudibilityForm = ({
 
   // Check if user is internal and tagged with selected site
   const isInternalUserTaggedWithSite =
-      loggedInUserData?.userType === "Internal" &&
+      (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
       loggedInUserData?.taggedSites?.some(
           (site) => site.id === siteSelectedForGlobal?.siteId
       );
