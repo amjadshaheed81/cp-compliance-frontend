@@ -1522,8 +1522,8 @@ const CctvAlarmCertificate = ({
                             disabled={isSubmitted}
                         >
                           <option value="">Select</option>
-                          <option value="Pass">Yes</option>
-                          <option value="Fail">No</option>
+                          <option value="Pass">Pass</option>
+                          <option value="Fail">Fail</option>
                         </select>
                         {validationErrors.param3 && (
                             <div className="invalid-feedback">
@@ -1562,8 +1562,8 @@ const CctvAlarmCertificate = ({
                             disabled={isSubmitted}
                         >
                           <option value="">Select</option>
-                          <option value="Pass">Yes</option>
-                          <option value="Fail">No</option>
+                          <option value="Pass">Pass</option>
+                          <option value="Fail">Fail</option>
                         </select>
                         {validationErrors.param4 && (
                             <div className="invalid-feedback">
@@ -1604,8 +1604,8 @@ const CctvAlarmCertificate = ({
                             disabled={isSubmitted}
                         >
                           <option value="">Select</option>
-                          <option value="Pass">Yes</option>
-                          <option value="Fail">No</option>
+                          <option value="Pass">Pass</option>
+                          <option value="Fail">Fail</option>
                         </select>
                         {validationErrors.param5 && (
                             <div className="invalid-feedback">
@@ -1646,8 +1646,8 @@ const CctvAlarmCertificate = ({
                             disabled={isSubmitted}
                         >
                           <option value="">Select</option>
-                          <option value="Pass">Yes</option>
-                          <option value="Fail">No</option>
+                          <option value="Pass">Pass</option>
+                          <option value="Fail">Fail</option>
                         </select>
                         {validationErrors.param6 && (
                             <div className="invalid-feedback">
