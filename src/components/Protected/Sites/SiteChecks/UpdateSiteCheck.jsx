@@ -176,7 +176,22 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Fire Alarm Sounder Audibilty"
     ) {
       setStep("inspection-sounder-audibilty");
+    }
+else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Intruder Alarm" &&
+      siteCheck.category === "CCTV Servicing & Inspection"
+    ) {
+      setStep("inspection-cctv-intruder-alarm");
     } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Intruder Alarm" &&
+      siteCheck.category === "Intruder Alarm Servicing & Inspection"
+    ) {
+      setStep("inspection-intruder-alarm");
+    }
+
+ else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Fire Alarm to meet BS5839" &&
       siteCheck.category === "Refuge Intercom Testing & Inspection"
