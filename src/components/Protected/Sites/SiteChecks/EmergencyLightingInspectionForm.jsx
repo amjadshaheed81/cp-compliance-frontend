@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
@@ -10,6 +10,7 @@ import axios from 'axios';
 import pdfTemplate from './pdf/EmergencyLighting.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import {formatDate} from "../../../../utils/dateFormat";
+import {Autocomplete, TextField} from "@mui/material";
 
 const EmergencyLightingInspectionForm = ({
                                            checkId,
@@ -74,7 +75,8 @@ const EmergencyLightingInspectionForm = ({
     ],
     additionalComments: "",
     allFittingsPassed: false,
-    siteAssetId: "",
+    assetId: "",
+    selectedAsset: null,
     files: [],
     user: loggedInUserData,
   });
@@ -114,7 +116,9 @@ const EmergencyLightingInspectionForm = ({
       throw new Error('Failed to load PDF template: ' + error.message);
     }
   };
-
+  const selectedAsset = siteAssets.find(
+      (asset) => asset.assetId === formData.assetId
+  );
   // Function to fetch inspection details
   const fetchInspectionDetails = async (checkId) => {
     try {
@@ -833,6 +837,7 @@ const EmergencyLightingInspectionForm = ({
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
+          selectedAsset,
           installationName: apiData?.installationName || prev.installationName,
           installationAddress: apiData?.installationAddress || prev.installationAddress,
           bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
@@ -854,7 +859,7 @@ const EmergencyLightingInspectionForm = ({
           actionId: apiData?.actionId || prev.actionId,
           additionalComments: apiData?.additionalComments || prev.additionalComments,
           allFittingsPassed: apiData?.allFittingsPassed || prev.allFittingsPassed,
-          siteAssetId: apiData?.siteAssetId || prev.siteAssetId,
+          assetId: apiData?.selectedAsset?.assetId || prev.assetId,
           file: apiData?.file || prev.files,
           user: apiData?.inspectionByUser || prev.user,
         }));
@@ -963,6 +968,18 @@ const EmergencyLightingInspectionForm = ({
       [field]: value,
     }));
   };
+
+  const handleAssetSelect = (event, newValue) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedAsset: newValue,
+      assetId: newValue?.assetId || ""
+    }));
+  };
+  const filteredAssets = siteAssets.filter(asset =>
+      asset.category === "Electrical" &&
+      asset.subCategory === "Emergency Lighting Installation"
+  );
 
   const handleCheckChange = (index, field, value) => {
     const updatedChecks = [...formData.inspectionChecks];
@@ -1119,6 +1136,7 @@ const EmergencyLightingInspectionForm = ({
       // 3. Save inspection data
       const inspectionPayload = {
         ...formData,
+        assetId:selectedAsset.assetId || '',
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse,
         inspectionBy: loggedInUserData?.id,
@@ -1354,6 +1372,7 @@ const EmergencyLightingInspectionForm = ({
                     <option value="30">30 minutes</option>
                     <option value="60">60 minutes</option>
                     <option value="120">120 minutes</option>
+                    <option value="180">180 minutes</option>
                   </select>
                 </div>
               </div>
@@ -1443,6 +1462,108 @@ const EmergencyLightingInspectionForm = ({
               ))}
               </tbody>
             </table>
+
+            <div className="row mb-4">
+              <div className="col-md-12">
+                <label className="form-label">Select Emergency Lighting Asset</label>
+                <Autocomplete
+                    disabled={!isFormEditable}
+                    options={filteredAssets}
+                    getOptionLabel={(option) =>
+                        `${option.assetId} - ${option.assetName} (${
+                            option.position || "NA"
+                        } > ${option.floor || "NA"} > ${option.room || "NA"})`
+                    }
+                    value={formData.selectedAsset}
+                    onChange={handleAssetSelect}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Select an Emergency Lighting Asset"
+                            variant="outlined"
+                            placeholder="Search devices..."
+                        />
+                    )}
+                    sx={{ width: "100%" }}
+                />
+              </div>
+            </div>
+
+
+            {formData.selectedAsset && (
+                <div className="row">
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label className="form-label">Panel Manufacturer</label>
+                      <input
+                          type="text"
+                          className="form-control"
+                          name="manufacturer"
+                          value={selectedAsset.manufacturer || ""}
+                          onChange={handleInputChange}
+                          required
+                          disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label className="form-label">Panel Model Number</label>
+                      <input
+                          type="text"
+                          className="form-control"
+                          name="model"
+                          value={selectedAsset.model || ""}
+                          onChange={handleInputChange}
+                          required
+                          disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label className="form-label">Position</label>
+                      <input
+                          type="text"
+                          className="form-control"
+                          name="position"
+                          value={selectedAsset.position || ""}
+                          onChange={handleInputChange}
+                          required
+                          disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label className="form-label">Floor</label>
+                      <input
+                          type="text"
+                          className="form-control"
+                          name="floor"
+                          value={selectedAsset.floor || ""}
+                          onChange={handleInputChange}
+                          required
+                          disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label className="form-label">Room</label>
+                      <input
+                          type="text"
+                          className="form-control"
+                          name="room"
+                          value={selectedAsset.room || ""}
+                          onChange={handleInputChange}
+                          required
+                          disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+            )}
 
             {showRiskAssessment && (
                 <div className="card mb-4">
