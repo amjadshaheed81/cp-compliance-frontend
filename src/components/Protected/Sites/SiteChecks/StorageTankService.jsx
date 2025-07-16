@@ -54,7 +54,7 @@ const StorageTankService = ({
                               subType,
                               category,
                               getSiteDetailsById,
-    siteDetailsById,
+                              siteDetailsById,
                               siteAssets,
                               getSiteAssets,
                               users,
