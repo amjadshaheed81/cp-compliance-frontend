@@ -10,7 +10,7 @@ import axios from 'axios';
 import pdfTemplate from './pdf/EmergencyLighting.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import {formatDate} from "../../../../utils/dateFormat";
-import {Autocomplete, TextField} from "@mui/material";
+import {Autocomplete, Chip, TextField} from "@mui/material";
 
 const EmergencyLightingInspectionForm = ({
                                            checkId,
@@ -75,8 +75,8 @@ const EmergencyLightingInspectionForm = ({
     ],
     additionalComments: "",
     allFittingsPassed: false,
-    assetId: "",
-    selectedAsset: null,
+    assetIds: [],
+    selectedAssets: [],
     files: [],
     user: loggedInUserData,
   });
@@ -972,14 +972,19 @@ const EmergencyLightingInspectionForm = ({
   const handleAssetSelect = (event, newValue) => {
     setFormData(prev => ({
       ...prev,
-      selectedAsset: newValue,
-      assetId: newValue?.assetId || ""
+      selectedAssets: newValue,
+      assetIds: newValue.map(asset => asset.assetId)
     }));
   };
-  const filteredAssets = siteAssets.filter(asset =>
-      asset.category === "Electrical" &&
-      asset.subCategory === "Emergency Lighting Installation"
-  );
+
+  // Remove a selected asset
+  const handleRemoveAsset = (assetId) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedAssets: prev.selectedAssets.filter(asset => asset.assetId !== assetId),
+      assetIds: prev.assetIds.filter(id => id !== assetId)
+    }));
+  };
 
   const handleCheckChange = (index, field, value) => {
     const updatedChecks = [...formData.inspectionChecks];
@@ -1067,7 +1072,12 @@ const EmergencyLightingInspectionForm = ({
 
     e.target.value = "";
   };
-
+  const filteredAssets =
+      siteAssets?.filter(
+          (asset) =>
+              asset.category === "Electrical" &&
+              asset.subCategory === "Emergency Lightning Installation",
+      ) || [];
   const handleFileDelete = (index) => {
     setFormData((prev) => {
       const updatedFiles = [...prev.files];
@@ -1465,8 +1475,9 @@ const EmergencyLightingInspectionForm = ({
 
             <div className="row mb-4">
               <div className="col-md-12">
-                <label className="form-label">Select Emergency Lighting Asset</label>
+                <label className="form-label">Select Emergency Lighting Assets</label>
                 <Autocomplete
+                    multiple
                     disabled={!isFormEditable}
                     options={filteredAssets}
                     getOptionLabel={(option) =>
@@ -1474,96 +1485,32 @@ const EmergencyLightingInspectionForm = ({
                             option.position || "NA"
                         } > ${option.floor || "NA"} > ${option.room || "NA"})`
                     }
-                    value={formData.selectedAsset}
+                    value={formData.selectedAssets}
                     onChange={handleAssetSelect}
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label="Select an Emergency Lighting Asset"
+                            label="Select Emergency Lighting Assets"
                             variant="outlined"
                             placeholder="Search devices..."
                         />
                     )}
+                    renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                            <Chip
+                                key={option.assetId}
+                                label={`${option.assetId} - ${option.assetName}`}
+                                onDelete={() => handleRemoveAsset(option.assetId)}
+                                {...getTagProps({ index })}
+                            />
+                        ))
+                    }
                     sx={{ width: "100%" }}
                 />
               </div>
             </div>
 
 
-            {formData.selectedAsset && (
-                <div className="row">
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Panel Manufacturer</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="manufacturer"
-                          value={selectedAsset.manufacturer || ""}
-                          onChange={handleInputChange}
-                          required
-                          disabled
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Panel Model Number</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="model"
-                          value={selectedAsset.model || ""}
-                          onChange={handleInputChange}
-                          required
-                          disabled
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Position</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="position"
-                          value={selectedAsset.position || ""}
-                          onChange={handleInputChange}
-                          required
-                          disabled
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Floor</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="floor"
-                          value={selectedAsset.floor || ""}
-                          onChange={handleInputChange}
-                          required
-                          disabled
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Room</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="room"
-                          value={selectedAsset.room || ""}
-                          onChange={handleInputChange}
-                          required
-                          disabled
-                      />
-                    </div>
-                  </div>
-                </div>
-            )}
 
             {showRiskAssessment && (
                 <div className="card mb-4">
@@ -1602,6 +1549,7 @@ const EmergencyLightingInspectionForm = ({
                             desc={`Inspection - Emergency Lighting to meet BS5266 - ${inspectionDetails?.category || ''}`}
                             siteId={siteSelectedForGlobal?.siteId}
                             checkId={currentCheckId}
+                            taggedAsset={formData.assetIds}
                             createdBy={loggedInUserData?.id}
                             onRiskAssessmentComplete={handleRiskAssessmentComplete}
                             actionRaised={actionRaised}
