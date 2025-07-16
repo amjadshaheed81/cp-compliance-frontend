@@ -1072,12 +1072,15 @@ const EmergencyLightingInspectionForm = ({
 
     e.target.value = "";
   };
-  const filteredAssets =
-      siteAssets?.filter(
-          (asset) =>
-              asset.category === "Electrical" &&
-              asset.subCategory === "Emergency Lightning Installation",
-      ) || [];
+  const filteredAssets = React.useMemo(() => {
+    return siteAssets?.filter(
+        (asset) =>
+            asset.category === "Electrical" &&
+            asset.subCategory === "Emergency Lighting Installation"
+    ) || [];
+  }, [siteAssets]);
+
+
   const handleFileDelete = (index) => {
     setFormData((prev) => {
       const updatedFiles = [...prev.files];
@@ -1146,7 +1149,7 @@ const EmergencyLightingInspectionForm = ({
       // 3. Save inspection data
       const inspectionPayload = {
         ...formData,
-        assetId:selectedAsset.assetId || '',
+        assetId: formData.assetIds || [],
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse,
         inspectionBy: loggedInUserData?.id,
@@ -1476,36 +1479,85 @@ const EmergencyLightingInspectionForm = ({
             <div className="row mb-4">
               <div className="col-md-12">
                 <label className="form-label">Select Emergency Lighting Assets</label>
+                <div className="d-flex align-items-center mb-2">
+                  <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          selectedAssets: filteredAssets,
+                          assetIds: filteredAssets.map(asset => asset.assetId)
+                        }));
+                      }}
+                      disabled={!isFormEditable}
+                  >
+                    Select All
+                  </button>
+                  <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          selectedAssets: [],
+                          assetIds: []
+                        }));
+                      }}
+                      disabled={!isFormEditable}
+                  >
+                    Clear All
+                  </button>
+                </div>
                 <Autocomplete
                     multiple
                     disabled={!isFormEditable}
                     options={filteredAssets}
                     getOptionLabel={(option) =>
-                        `${option.assetId} - ${option.assetName} (${
-                            option.position || "NA"
-                        } > ${option.floor || "NA"} > ${option.room || "NA"})`
+                        `${option.assetId}`
                     }
                     value={formData.selectedAssets}
                     onChange={handleAssetSelect}
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label="Select Emergency Lighting Assets"
+                            label="Search and select assets"
                             variant="outlined"
-                            placeholder="Search devices..."
+                            placeholder="Type to search..."
                         />
                     )}
-                    renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                            <Chip
-                                key={option.assetId}
-                                label={`${option.assetId} - ${option.assetName}`}
-                                onDelete={() => handleRemoveAsset(option.assetId)}
-                                {...getTagProps({ index })}
+                    renderTags={(value, getTagProps) => (
+                        <div className="d-flex flex-wrap gap-1">
+                          {value.map((option, index) => (
+                              <Chip
+                                  key={option.assetId}
+                                  label={`${option.assetId} - ${option.assetName}`}
+                                  onDelete={() => handleRemoveAsset(option.assetId)}
+                                  {...getTagProps({ index })}
+                              />
+                          ))}
+                        </div>
+                    )}
+                    renderOption={(props, option, { selected }) => (
+                        <li {...props}>
+                          <div className="d-flex align-items-center">
+                            <input
+                                type="checkbox"
+                                checked={selected}
+                                className="form-check-input me-2"
+                                readOnly
                             />
-                        ))
-                    }
+                            <span>
+              {option.assetId} - {option.assetName}
+            </span>
+                          </div>
+                        </li>
+                    )}
                     sx={{ width: "100%" }}
+                    isOptionEqualToValue={(option, value) =>
+                        option.assetId === value.assetId
+                    }
+                    disableCloseOnSelect
                 />
               </div>
             </div>
@@ -1549,7 +1601,7 @@ const EmergencyLightingInspectionForm = ({
                             desc={`Inspection - Emergency Lighting to meet BS5266 - ${inspectionDetails?.category || ''}`}
                             siteId={siteSelectedForGlobal?.siteId}
                             checkId={currentCheckId}
-                            taggedAsset={formData.assetIds}
+                            taggedAsset={formData.assetIds.toString()}
                             createdBy={loggedInUserData?.id}
                             onRiskAssessmentComplete={handleRiskAssessmentComplete}
                             actionRaised={actionRaised}
@@ -1695,6 +1747,31 @@ const EmergencyLightingInspectionForm = ({
               </div>
             </div>
           </form>
+          <style>
+            {`
+            /* For the chips container */
+.d-flex.flex-wrap.gap-1 {
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+/* For the options list */
+.MuiAutocomplete-option {
+  padding: 8px 16px;
+}
+
+/* For the checkbox alignment */
+.d-flex.align-items-center {
+  align-items: center;
+}
+
+/* For the select/clear buttons */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+            `}
+          </style>
         </div>
       </div>
   );
