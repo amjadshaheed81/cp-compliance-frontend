@@ -40,6 +40,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
   const [managerList, setManagerList] = useState([]);
+  const [assetIdMap, setAssetIdMap] = useState({});
+
   const navigate = useNavigate();
   const goTo = (link) => {
     navigate(link);
@@ -503,6 +505,42 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     return moment(date, "YYYY-MM-DD").add("days", daysToAdd);
   };
 
+  const fetchInspectionData = async (checkId, type, subType) => {
+    try {
+      let apiEndpoint;
+
+      // Special case for Emergency Lighting
+      if (type === "Inspection" && subType === "Emergency Lighting to meet BS5266") {
+        apiEndpoint = `/api/site-check/emergency-lighting/${checkId}`;
+      } else {
+        apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
+      }
+
+      const inspectionData = await get(apiEndpoint);
+
+      // Handle different response structures
+      let assetId;
+      if (type === "Inspection" && subType === "Emergency Lighting to meet BS5266") {
+        // Emergency Lighting response is a single object
+        assetId = inspectionData?.assetId;
+      } else {
+        // Generic inspection returns an array
+        const mostRecentItem = inspectionData?.[inspectionData.length - 1];
+        assetId = mostRecentItem?.assetId;
+      }
+
+      if (assetId) {
+        setAssetIdMap(prev => ({
+          ...prev,
+          [checkId]: assetId
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching inspection data for check ${checkId}:`, error);
+    }
+  };
+
+// Modify getSiteChecks to pass type and subType
   const getSiteChecks = async () => {
     if (!site?.siteId) {
       toast.error("Please select site from site search to proceed....");
@@ -510,6 +548,13 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     }
     setIsLoading(true);
     const siteChecks = await get("/api/site-check/site/" + site?.siteId);
+
+    // Fetch inspection data for all checks
+    const inspectionPromises = siteChecks.map(check =>
+        fetchInspectionData(check.checkId, check.type, check.subType)
+    );
+    await Promise.all(inspectionPromises);
+
     setFilteredSiteChecks(siteChecks);
     setSiteChecks(siteChecks);
     setIsLoading(false);
@@ -640,6 +685,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                     <tr>
                       <th scope="col">Type</th>
                       <th scope="col">Sub-Type</th>
+                      <th scope="col">Assets Id</th>
                       <th scope="col">Summary</th>
                       <th scope="col">Lead</th>
                       <th scope="col">Risk Score</th>
@@ -682,6 +728,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           <tr key={action?.id}>
                             <th scope="col">{action?.type}</th>
                             <th scope="col">{action?.subType}</th>
+                            <th scope="col">{assetIdMap[action.checkId] || '-'}</th>
                             <th scope="col">{action?.category}</th>
                             <th scope="col" style={{ width: "250px" }}>
                               {leanName}
