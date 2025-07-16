@@ -834,10 +834,22 @@ const EmergencyLightingInspectionForm = ({
           apiChecksMap[check.check] = check;
         });
 
+        // Map asset IDs to full asset objects
+        const selectedAssets = [];
+        if (apiData.assetId && apiData.assetId.length > 0 && siteAssets.length > 0) {
+          apiData.assetId.forEach(id => {
+            const asset = siteAssets.find(a => a.assetId === id);
+            if (asset) {
+              selectedAssets.push(asset);
+            }
+          });
+        }
+
         setFormData((prev) => ({
           ...prev,
           id: apiData?.id || prev.id,
-          selectedAsset,
+          selectedAssets: selectedAssets, // Set the mapped assets
+          assetIds: selectedAssets.map(asset => asset.assetId), // Set the IDs
           installationName: apiData?.installationName || prev.installationName,
           installationAddress: apiData?.installationAddress || prev.installationAddress,
           bsiCategoryType: apiData?.bsiCategoryType || prev.bsiCategoryType,
@@ -859,7 +871,6 @@ const EmergencyLightingInspectionForm = ({
           actionId: apiData?.actionId || prev.actionId,
           additionalComments: apiData?.additionalComments || prev.additionalComments,
           allFittingsPassed: apiData?.allFittingsPassed || prev.allFittingsPassed,
-          assetId: apiData?.selectedAsset?.assetId || prev.assetId,
           file: apiData?.file || prev.files,
           user: apiData?.inspectionByUser || prev.user,
         }));
@@ -873,6 +884,8 @@ const EmergencyLightingInspectionForm = ({
       console.error("Inspection load error:", error);
     }
   };
+
+
   const fetchCheckStatus = async () => {
     try {
       if (!checkId) return;
