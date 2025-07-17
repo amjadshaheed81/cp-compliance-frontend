@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { post, put, get, uploadSiteCheckDoc } from "../../../../api";
+import {post, put, get, uploadSiteCheckDoc, uploadPhoto} from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -64,25 +64,29 @@ const StorageTankService = ({
                             }) => {
   const [formData, setFormData] = useState({
     address: "",
+    assetId:"",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    inspectionDate: new Date().toISOString().split("T")[0],
     siteContactNo: "",
-    jobNo: "",
+    job: "",
     manufacturer: "",
-    modelNumber: "",
-    tankSize: "",
+    model: "",
+    param1Remark: "",//tankSize: ""
+    param2Remark:"",
+    param3Remark:"",
+    param4Remark:"",
+    param5Remark:"",
     position: "",
     floor: "",
     room: "",
-    engineersReport: "",
-    jobComplete: "",
-    partsRequired: "",
-    sounderTest: "",
+    report: "",
+    param1: "", //jobComplete: "",
+    param2: "",//partsRequired: "",
     clientName: "",
-    engineerName: loggedInUserData?.name || "",
+    user: loggedInUserData || {},
+    engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    signedDate: new Date().toISOString().split("T")[0],
     clientUser: null,
     siteContactUser: null,
     actionId: null,
@@ -91,13 +95,15 @@ const StorageTankService = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const [uploadedPhotos, setUploadedPhotos] = useState([]);
-  const [photoPreviews, setPhotoPreviews] = useState([]);
+
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showPdfButton, setShowPdfButton] = useState(false);
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+
+  const [uploadedPhotos, setUploadedPhotos] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
@@ -149,6 +155,8 @@ const StorageTankService = ({
         await getUsers();
       }
 
+
+
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
@@ -176,18 +184,30 @@ const StorageTankService = ({
           }
         }
 
+        // Load saved photos if they exist
+        if (mostRecentItem.photos && mostRecentItem.photos.length > 0) {
+          const photoPreviews = mostRecentItem.photos.map(photo => ({
+            url: photo.url,
+            previewUrl: photo.url, // Using URL directly for preview
+            fileName: photo.fileName,
+            documentId: photo.documentId
+          }));
+          setUploadedPhotos(photoPreviews);
+          setPhotoPreviews(photoPreviews.map(p => p.previewUrl));
+        }
+
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          date: mostRecentItem.date || prev.date,
+          signedDate: mostRecentItem.signedDate || prev.signedDate,
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
-          jobNo: mostRecentItem.jobNo || prev.jobNo,
-          engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
-          jobComplete: mostRecentItem.jobComplete || prev.jobComplete,
-          partsRequired: mostRecentItem.partsRequired || prev.partsRequired,
-          sounderTest: mostRecentItem.sounderTest || prev.sounderTest,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || prev.report,
+          param1: mostRecentItem.param1 || prev.param1,
+          param2: mostRecentItem.param2 || prev.param2,
+          param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
           client: mostRecentItem.client || "",
           engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
           user: engineerUser || loggedInUserData || prev.user,
@@ -204,6 +224,7 @@ const StorageTankService = ({
       toast.error("Failed to load inspection data");
     }
   };
+
 
   const fetchActionById = async (id) => {
     try {
@@ -254,6 +275,10 @@ const StorageTankService = ({
       console.error("Error fetching existing actions:", error);
     }
   };
+
+  const selectedAsset = siteAssets.find(
+      (asset) => asset.assetId === formData.assetId
+  );
 
   const fetchFolderStructure = async (siteId) => {
     try {
@@ -417,14 +442,12 @@ const StorageTankService = ({
   ]);
 
   useEffect(() => {
-    const shouldShowRiskAssessment = ["jobComplete", "partsRequired", "sounderTest"].some(
-        param => formData[param] === "Fail"
-    );
+    const shouldShowRiskAssessment = formData.param2 === "Pass";
     setShowRiskAssessment(shouldShowRiskAssessment);
 
     const isActionValid = existingAction && existingAction.checkId === currentCheckId;
     setActionRaised(isActionValid);
-  }, [formData.jobComplete, formData.partsRequired, formData.sounderTest, currentCheckId, existingAction]);
+  }, [formData.param2, currentCheckId, existingAction]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
@@ -450,13 +473,12 @@ const StorageTankService = ({
           address: formData.address,
           assetId: formData.selectedAsset?.assetId || formData.assetId,
           siteContact: formData.siteContactUser?.id || formData.siteContact,
-          date: formData.date,
+          inspectionDate: formData.inspectionDate,
           siteContactNo: formData.siteContactNo,
-          jobNo: formData.jobNo,
-          engineersReport: formData.engineersReport,
-          jobComplete: formData.jobComplete,
-          partsRequired: formData.partsRequired,
-          sounderTest: formData.sounderTest,
+          job: formData.job,
+          report: formData.report,
+          param1: formData.param2,
+          param2: formData.param2,
           client: formData.clientUser?.id || formData.client,
           engineer: formData.engineer,
           user: formData.user,
@@ -554,7 +576,7 @@ const StorageTankService = ({
         ...prev,
         selectedAsset: newValue,
         manufacturer: newValue.manufacturer || "",
-        modelNumber: newValue.model || "",
+        model: newValue.model || "",
         position: newValue.position || "",
         floor: newValue.floor || "",
         room: newValue.room || "",
@@ -565,7 +587,7 @@ const StorageTankService = ({
         ...prev,
         selectedAsset: null,
         manufacturer: "",
-        modelNumber: "",
+        model: "",
         position: "",
         floor: "",
         room: "",
@@ -603,10 +625,9 @@ const StorageTankService = ({
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
-      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-      if (!savedLocally) {
-        throw new Error('Failed to save PDF locally');
-      }
+
+      // Save locally first
+      await savePdfToLocal(pdfBlob, fileName);
 
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
       const targetFolderId = folderIds.storageTankService || folderIds.logBooks;
@@ -615,85 +636,51 @@ const StorageTankService = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
 
+      // Check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
       const formData = new FormData();
 
-      if (exists && existingFile) {
-        formData.append('file', pdfFile);
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `StorageTank-${new Date().getTime()}`
-          }]
-        };
+      const documentRequest = {
+        folderId: targetFolderId,
+        files: [{
+          name: fileName.split('.')[0],
+          originalFileName: fileName,
+          fileVersion: exists ? existingFile.fileVersion + 1 : 1,
+          siteId: siteSelectedForGlobal?.siteId || 0,
+          uploaderUserId: loggedInUserData?.id || 0,
+          reviewerUserId: loggedInUserData?.id || 0,
+          issueDate: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+          expiryDate: moment(new Date()).add(1, "years").format("YYYY-MM-DD HH:mm:ss"),
+          ...(exists && { id: existingFile.id })
+        }]
+      };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        const response = await axios({
-          method: 'put',
-          url: '/api/document/file/newVersion/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
-        });
+      formData.append(exists ? 'file' : 'files', pdfFile);
+      formData.append('documentRequestString', JSON.stringify(documentRequest));
 
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-          return true;
+      const url = exists
+          ? '/api/document/file/newVersion/upload'
+          : '/api/document/files/upload';
+
+      const response = await axios({
+        method: exists ? 'put' : 'post',
+        url,
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-      } else {
-        formData.append('files', pdfFile);
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+      });
 
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            note: 'Storage Tank Service Certificate',
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            originalFileName: fileName,
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `StorageTank-${new Date().getTime()}`
-          }]
-        };
-
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        const response = await axios({
-          method: 'post',
-          url: '/api/document/files/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
-        }
+      if (response.data) {
+        toast.success(`PDF uploaded successfully as version ${documentRequest.files[0].fileVersion}!`);
+        return true;
       }
 
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
+      toast.error(`PDF upload failed: ${error.response?.data?.message || error.message}`);
       return false;
     } finally {
       setIsUploading(false);
@@ -765,35 +752,73 @@ const StorageTankService = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.date), smallFont);
+      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
-      setTextField('Job No', formData.jobNo || '', smallFont);
+      setTextField('Job No', formData.job || '', smallFont);
+
+      const equipmentDetailsLocation = [
+        formData?.selectedAsset.floor,
+        formData?.selectedAsset.room,
+        formData?.selectedAsset.position,
+        formData?.selectedAsset.assetName
+      ].filter(Boolean).join(' - ');
 
       // Equipment information
-      setTextField('Manufacturer', formData.manufacturer || '', smallFont);
-      setTextField('Model Number', formData.modelNumber || '', smallFont);
-      setTextField('Tank Size', formData.tankSize || '', smallFont);
-      setTextField('Position', formData.position || '', smallFont);
-      setTextField('Floor', formData.floor || '', smallFont);
-      setTextField('Room', formData.room || '', smallFont);
+      setTextField('Manufacturer',  formData?.selectedAsset?.manufacturer || '', smallFont);
+      setTextField('Location', equipmentDetailsLocation, smallFont);
+      setTextField('Tank Size', formData.param1Remark || '', smallFont);
+
 
       // Test results
-      setTextField('Job Complete', formData.jobComplete === 'Pass' ? 'Yes' : 'No', smallFont);
-      setTextField('Parts Required', formData.partsRequired === 'Pass' ? 'Yes' : 'No', smallFont);
-      setTextField('Sounder Test', formData.sounderTest === 'Pass' ? 'Pass' : 'Fail', smallFont);
+      setTextField('Job Complete', formData.param1 === 'Pass' ? 'Yes' : 'No', smallFont);
+      setTextField('Parts Required', formData.param2 === 'Pass' ? 'Yes' : 'No', smallFont);
 
       // Report
       setTextField('Engineers Report', formData.engineersReport || '', smallFont);
 
       // Signatures
-      const clientName = formData.clientUser?.name || formData.clientName || '';
+      const clientName = formData.clientUser?.name || formData.client || '';
       const engineerName = formData.user?.name || '';
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', dateFormat(formData.clientDate), smallFont);
-      setTextField('on_2', dateFormat(formData.engineerDate), smallFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+
+
+      for (let i = 0; i < Math.min(uploadedPhotos.length, 4); i++) {
+        try {
+          const photo = uploadedPhotos[i];
+          let imageBytes;
+
+          // Try to get the image data from URL
+          const response = await fetch(photo.url);
+          imageBytes = await response.arrayBuffer();
+
+          let image;
+          if (photo.fileName.toLowerCase().endsWith('.png')) {
+            image = await pdfDoc.embedPng(imageBytes);
+          } else {
+            image = await pdfDoc.embedJpg(imageBytes);
+          }
+
+          // Get the image field (image1, image2, etc.)
+          const imageField = form.getButton(`image${i + 1}`);
+          if (imageField) {
+            // Scale image to fit while maintaining aspect ratio
+            const { width, height } = imageField.getRectangle();
+            const imageDims = image.scaleToFit(width, height);
+            imageField.setImage(image, {
+              ...imageDims,
+              x: 0,
+              y: 0,
+            });
+          }
+        } catch (error) {
+          console.error(`Error embedding image ${i + 1}:`, error);
+        }
+      }
 
       // Flatten and save
       form.flatten();
@@ -846,48 +871,55 @@ const StorageTankService = ({
 
     try {
       const uploadPromises = files.map(async (file) => {
-        // Create preview URL
-        const previewUrl = URL.createObjectURL(file);
+        try {
+          const previewUrl = URL.createObjectURL(file);
 
-        // Upload the file
-        const reqData = {
-          siteId: siteSelectedForGlobal?.siteId,
-          file,
-          folderName: "storage-tank-photos",
-        };
+          // Prepare the upload request data
+          const uploadData = {
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            file: file,
+            folderName: 'StorageTankServicePhotos',
+            fileName: `StorageTankPhoto_${uuidv4().substring(0, 8)}_${file.name}`,
+            uploaderUserId: loggedInUserData?.id || 0
+          };
 
-        const uploadResponse = await uploadSiteCheckDoc(reqData);
+          // Use the uploadSiteCheckDoc function
+          const response = await uploadSiteCheckDoc(uploadData);
 
-        return {
-          url: uploadResponse.url,
-          previewUrl,
-          fileName: file.name,
-        };
+          if (!response?.url) {
+            throw new Error('Upload failed: No URL returned');
+          }
+
+          return {
+            url: response.url,
+            previewUrl,
+            fileName: file.name,
+            documentId: response.documentId || uuidv4()
+          };
+        } catch (error) {
+          console.error(`Error uploading ${file.name}:`, error);
+          throw error;
+        }
       });
 
       const uploadedFiles = await Promise.all(uploadPromises);
+      const newPhotos = [...uploadedPhotos, ...uploadedFiles].slice(0, 4);
 
-      // Update state with new photos
-      setUploadedPhotos((prev) => [...prev, ...uploadedFiles]);
-      setPhotoPreviews((prev) => [
-        ...prev,
-        ...uploadedFiles.map((f) => f.previewUrl),
-      ]);
+      // Update the form data with image URLs in the corresponding parameters
+      const updatedFormData = { ...formData };
+      newPhotos.forEach((photo, index) => {
+        const paramKey = `param${index + 2}Remark`; // param2Remark, param3Remark, etc.
+        updatedFormData[paramKey] = photo.url;
+      });
 
-      // Add image references to comments
-      const imageTags = uploadedFiles
-          .map((file) => `\n[img:${file.fileName}](${file.url})`)
-          .join("");
-
-      setFormData((prev) => ({
-        ...prev,
-        engineersReport: prev.engineersReport + imageTags,
-      }));
+      setFormData(updatedFormData);
+      setUploadedPhotos(newPhotos);
+      setPhotoPreviews(newPhotos.map(p => p.previewUrl));
 
       toast.success("Photos uploaded successfully");
     } catch (error) {
       console.error("Error uploading photos:", error);
-      toast.error("Failed to upload some photos");
+      toast.error("Failed to upload photos: " + (error.response?.data?.message || error.message));
     } finally {
       setUploadingPhotos(false);
     }
@@ -897,16 +929,15 @@ const StorageTankService = ({
     const updatedPhotos = [...uploadedPhotos];
     const removedPhoto = updatedPhotos.splice(index, 1)[0];
 
-    // Remove the photo reference from comments
-    const photoRef = `[img:${removedPhoto.fileName}](${removedPhoto.url})`;
-    const updatedComments = formData.engineersReport.replace(photoRef, "");
+    // Clear the corresponding parameter
+    const paramKey = `param${index + 2}Remark`;
+    setFormData(prev => ({
+      ...prev,
+      [paramKey]: ""
+    }));
 
     setUploadedPhotos(updatedPhotos);
     setPhotoPreviews(updatedPhotos.map((p) => p.previewUrl));
-    setFormData((prev) => ({
-      ...prev,
-      engineersReport: updatedComments,
-    }));
 
     // Revoke the object URL to free memory
     URL.revokeObjectURL(removedPhoto.previewUrl);
@@ -922,9 +953,8 @@ const StorageTankService = ({
     }
 
     // Validation checks
-    const hasFailures = ["jobComplete", "partsRequired", "sounderTest"].some(
-        val => formData[val] === "Fail"
-    );
+    const hasFailures = formData.param1 === "Fail" || formData.param2 === "Fail";
+
 
     if (hasFailures && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
@@ -938,9 +968,8 @@ const StorageTankService = ({
 
     // Form validation
     const errors = {};
-    if (!formData.jobComplete) errors.jobComplete = "Please select one option";
-    if (!formData.partsRequired) errors.partsRequired = "Please select one option";
-    if (!formData.sounderTest) errors.sounderTest = "Please select one option";
+    if (!formData.param1) errors.param1 = "Please select one option";
+    if (!formData.param2) errors.param2 = "Please select one option";
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -1014,6 +1043,11 @@ const StorageTankService = ({
         category: 'Storage Tank Service',
         checkId: currentCheckId || statusResponse?.checkId,
         actionId: formData.actionId,
+        photos: uploadedPhotos.map(photo => ({
+          url: photo.url,
+          fileName: photo.fileName,
+          documentId: photo.documentId
+        }))
       };
 
       let saveResponse;
@@ -1264,8 +1298,7 @@ const StorageTankService = ({
                 <input
                     type="date"
                     className="form-control"
-                    name="date"
-                    value={formatDate(formData.date)}
+                    value={formatDate(formData.inspectionDate)}
                     onChange={handleInputChange}
                     required
                     style={{
@@ -1298,8 +1331,8 @@ const StorageTankService = ({
                 <input
                     type="text"
                     className="form-control"
-                    name="jobNo"
-                    value={formData.jobNo}
+                    name="job"
+                    value={formData.job}
                     onChange={handleInputChange}
                     disabled={isSubmitted}
                 />
@@ -1346,7 +1379,7 @@ const StorageTankService = ({
                             type="text"
                             className="form-control"
                             name="manufacturer"
-                            value={formData.manufacturer}
+                            value={selectedAsset?.manufacturer}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1360,7 +1393,7 @@ const StorageTankService = ({
                             type="text"
                             className="form-control"
                             name="modelNumber"
-                            value={formData.modelNumber}
+                            value={selectedAsset?.model}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1374,7 +1407,7 @@ const StorageTankService = ({
                             type="text"
                             className="form-control"
                             name="position"
-                            value={formData.position}
+                            value={selectedAsset?.position}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1388,7 +1421,7 @@ const StorageTankService = ({
                             type="text"
                             className="form-control"
                             name="floor"
-                            value={formData.floor}
+                            value={selectedAsset?.floor}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1402,7 +1435,7 @@ const StorageTankService = ({
                             type="text"
                             className="form-control"
                             name="room"
-                            value={formData.room}
+                            value={selectedAsset?.room}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1415,10 +1448,13 @@ const StorageTankService = ({
                         <input
                             type="text"
                             className="form-control"
-                            name="tankSize"
-                            value={formData.tankSize}
-                            onChange={handleInputChange}
-                            required
+                            value={formData.param1Remark}
+                            onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  param1Remark: e.target.value,
+                                })
+                            }
                             disabled={isSubmitted}
                         />
                       </div>
@@ -1439,17 +1475,21 @@ const StorageTankService = ({
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     style={{ display: "none" }}
-                    disabled={isSubmitted || uploadingPhotos}
+                    disabled={isSubmitted || uploadingPhotos || photoPreviews.length >= 4}
                 />
                 <label htmlFor="photo-upload" className="btn btn-sm btn-primary">
                   {uploadingPhotos ? (
                       <span>Uploading...</span>
                   ) : (
                       <>
-                        <InsertPhotoIcon fontSize="small" /> Add Photos
+                        <InsertPhotoIcon fontSize="small" />
+                        Add Photos ({photoPreviews.length}/4)
                       </>
                   )}
                 </label>
+                {photoPreviews.length >= 4 && (
+                    <span className="ms-2 text-danger">Maximum photos reached</span>
+                )}
               </div>
             </div>
             <div className="card-body">
@@ -1460,11 +1500,11 @@ const StorageTankService = ({
                     fullWidth
                     variant="outlined"
                     placeholder="---------------------------------------- Write your report below this line ----------------------------------------"
-                    value={formData.engineersReport || ""}
+                    value={formData.report || ""}
                     onChange={(e) =>
                         setFormData({
                           ...formData,
-                          engineersReport: e.target.value,
+                          report: e.target.value,
                         })
                     }
                     style={{ height: "400px" }}
@@ -1475,7 +1515,7 @@ const StorageTankService = ({
               {/* Photo Previews */}
               {photoPreviews.length > 0 && (
                   <div className="mt-3">
-                    <h6>Uploaded Photos:</h6>
+                    <h6>Uploaded Photos ({photoPreviews.length}/4):</h6>
                     <div className="d-flex flex-wrap gap-2">
                       {photoPreviews.map((preview, index) => (
                           <div
@@ -1491,6 +1531,10 @@ const StorageTankService = ({
                                   width: "100%",
                                   height: "100%",
                                   objectFit: "cover",
+                                }}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = '/path/to/placeholder/image.png';
                                 }}
                             />
                             {!isSubmitted && (
@@ -1522,18 +1566,18 @@ const StorageTankService = ({
                         <label className="form-label">Job Complete</label>
                         <select
                             className={`form-select ${
-                                validationErrors.jobComplete ? "is-invalid" : ""
+                                validationErrors.param1 ? "is-invalid" : ""
                             }`}
-                            value={formData.jobComplete}
+                            value={formData.param1}
                             onChange={(e) => {
                               setFormData({
                                 ...formData,
-                                jobComplete: e.target.value,
+                                param1: e.target.value,
                               });
-                              if (validationErrors.jobComplete) {
+                              if (validationErrors.param1) {
                                 setValidationErrors((prev) => {
                                   const newErrors = { ...prev };
-                                  delete newErrors.jobComplete;
+                                  delete newErrors.param1;
                                   return newErrors;
                                 });
                               }
@@ -1544,9 +1588,9 @@ const StorageTankService = ({
                           <option value="Pass">Yes</option>
                           <option value="Fail">No</option>
                         </select>
-                        {validationErrors.jobComplete && (
+                        {validationErrors.param1 && (
                             <div className="invalid-feedback">
-                              {validationErrors.jobComplete}
+                              {validationErrors.param1}
                             </div>
                         )}
                       </div>
@@ -1556,18 +1600,18 @@ const StorageTankService = ({
                         <label className="form-label">Parts Required</label>
                         <select
                             className={`form-select ${
-                                validationErrors.partsRequired ? "is-invalid" : ""
+                                validationErrors.param2 ? "is-invalid" : ""
                             }`}
-                            value={formData.partsRequired}
+                            value={formData.param2}
                             onChange={(e) => {
                               setFormData({
                                 ...formData,
-                                partsRequired: e.target.value,
+                                param2: e.target.value,
                               });
-                              if (validationErrors.partsRequired) {
+                              if (validationErrors.param2) {
                                 setValidationErrors((prev) => {
                                   const newErrors = { ...prev };
-                                  delete newErrors.partsRequired;
+                                  delete newErrors.param2;
                                   return newErrors;
                                 });
                               }
@@ -1578,50 +1622,15 @@ const StorageTankService = ({
                           <option value="Pass">Yes</option>
                           <option value="Fail">No</option>
                         </select>
-                        {validationErrors.partsRequired && (
+                        {validationErrors.param2 && (
                             <div className="invalid-feedback">
-                              {validationErrors.partsRequired}
+                              {validationErrors.param2}
                             </div>
                         )}
                       </div>
                     </td>
                   </tr>
-                  <tr>
-                    <td colSpan="2">
-                      <div className="mb-3">
-                        <label className="form-label">Sounder Test</label>
-                        <select
-                            className={`form-select ${
-                                validationErrors.sounderTest ? "is-invalid" : ""
-                            }`}
-                            value={formData.sounderTest}
-                            onChange={(e) => {
-                              setFormData({
-                                ...formData,
-                                sounderTest: e.target.value,
-                              });
-                              if (validationErrors.sounderTest) {
-                                setValidationErrors((prev) => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.sounderTest;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            disabled={isSubmitted}
-                        >
-                          <option value="">Select</option>
-                          <option value="Pass">Pass</option>
-                          <option value="Fail">Fail</option>
-                        </select>
-                        {validationErrors.sounderTest && (
-                            <div className="invalid-feedback">
-                              {validationErrors.sounderTest}
-                            </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+
                   </tbody>
                 </table>
               </div>
@@ -1688,8 +1697,7 @@ const StorageTankService = ({
                 <input
                     type="date"
                     className="form-control"
-                    name="clientDate"
-                    value={formatDate(formData.clientDate)}
+                    value={formatDate(formData.signedDate)}
                     onChange={handleInputChange}
                     required
                     style={{
@@ -1707,12 +1715,11 @@ const StorageTankService = ({
                 <input
                     type="text"
                     className="form-control"
-                    name="engineerName"
-                    value={formData.engineerName}
+                    value={formData.user?.name}
                     onChange={handleInputChange}
                     required
                     readOnly
-                    disabled={isSubmitted}
+                    disabled
                 />
               </div>
               <div className="mb-3">
@@ -1720,8 +1727,7 @@ const StorageTankService = ({
                 <input
                     type="date"
                     className="form-control"
-                    name="engineerDate"
-                    value={formatDate(formData.engineerDate)}
+                    value={formatDate(formData.signedDate)}
                     onChange={handleInputChange}
                     required
                     disabled={isSubmitted}
