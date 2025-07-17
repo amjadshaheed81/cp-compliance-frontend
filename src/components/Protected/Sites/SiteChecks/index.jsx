@@ -506,28 +506,15 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
 
    const fetchInspectionData = async (checkId, type, subType) => {
-    try {
-      let apiEndpoint;
-
-      // Special case for Emergency Lighting
-      if (type === "Inspection" && subType === "Emergency Lighting to meet BS5266") {
-        apiEndpoint = `/api/site-check/emergency-lighting/${checkId}`;
-      } else {
-        apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
-      }
+      let apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
 
       const inspectionData = await get(apiEndpoint);
 
-      // Handle different response structures
       let assetId;
-      if (type === "Inspection" && subType === "Emergency Lighting to meet BS5266") {
-        // Emergency Lighting response is a single object
-        assetId = inspectionData?.assetId;
-      } else {
-        // Generic inspection returns an array
+      // Generic inspection returns an array
         const mostRecentItem = inspectionData?.[inspectionData.length - 1];
         assetId = mostRecentItem?.assetId;
-      }
+
 
       if (assetId) {
         setAssetIdMap(prev => ({
@@ -535,9 +522,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
           [checkId]: assetId
         }));
       }
-    } catch (error) {
-      console.error(`Error fetching inspection data for check ${checkId}:`, error);
-    }
   };
 
 // Modify getSiteChecks to pass type and subType
