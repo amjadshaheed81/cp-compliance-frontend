@@ -342,26 +342,80 @@ const ShowerHeadCertificate = ({
         try {
             setState(prev => ({ ...prev, isUploading: true }));
 
-            // First save locally
+            // First save the PDF locally
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
             if (!savedLocally) {
                 throw new Error('Failed to save PDF locally');
             }
 
-            // Rest of your upload logic...
             const targetFolderId = state.folderIds.storageTankService || state.folderIds.logBooks;
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
             }
 
-            // ... rest of your existing upload code
+            const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+            const formData = new FormData();
+            const fileVersion = exists && existingFile
+                ? existingFile.fileVersion + 1
+                : await getHighestFileVersion(targetFolderId, fileName);
+
+            const documentRequest = {
+                folderId: targetFolderId,
+                files: [{
+                    ...(exists && existingFile ? { id: existingFile.id } : {}),
+                    name: fileName.split('.')[0],
+                    originalFileName: fileName,
+                    fileVersion,
+                    siteId: siteSelectedForGlobal?.siteId || 0,
+                    issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+                    expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                        .toISOString().replace('T', ' ').split('.')[0],
+                    uploaderUserId: loggedInUserData?.id || 0,
+                    reviewerUserId: loggedInUserData?.id || 0,
+                    referenceNumber: `SHC-${new Date().getTime()}`
+                }]
+            };
+
+            formData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+            formData.append('documentRequestString', JSON.stringify(documentRequest));
+
+            const method = exists ? 'put' : 'post';
+            const url = exists
+                ? '/api/document/file/newVersion/upload'
+                : '/api/document/files/upload';
+
+            const response = await axios({
+                method,
+                url,
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    ...(exists ? {} : { 'Accept': 'application/json' })
+                }
+            });
+
+            if (response.data) {
+                toast.success(`PDF ${exists ? 'updated' : 'uploaded'} successfully as version ${fileVersion}!`);
+                return true;
+            }
+
+            throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
+            toast.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
             return false;
         } finally {
             setState(prev => ({ ...prev, isUploading: false }));
         }
-    }, [savePdfToLocal, state.folderIds, siteSelectedForGlobal, loggedInUserData]);
+    }, [
+        savePdfToLocal,
+        checkFileExists,
+        getHighestFileVersion,
+        loggedInUserData,
+        siteSelectedForGlobal,
+        state.folderIds
+    ]);
 
     const generatePDF = useCallback(async (uploadToServer = true) => {
         try {
