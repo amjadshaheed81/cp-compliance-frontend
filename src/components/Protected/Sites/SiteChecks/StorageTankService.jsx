@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import {post, put, get, uploadSiteCheckDoc, uploadPhoto} from "../../../../api";
+import {post, put, get, uploadSiteCheckDoc, getSasToken} from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -49,7 +49,6 @@ const fetchPdfTemplate = async () => {
 };
 
 const StorageTankService = ({
-                              sasToken,
                               checkId,
                               subType,
                               category,
@@ -104,6 +103,8 @@ const StorageTankService = ({
 
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
+  const [sasToken, setSasToken] = useState('');
+
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
@@ -174,6 +175,23 @@ const StorageTankService = ({
             (user) => user.id === mostRecentItem.siteContact
         );
 
+        const photosFromParams = [];
+        for (let i = 2; i <= 5; i++) {
+          const photoUrl = mostRecentItem[`param${i}Remark`];
+          if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
+            photosFromParams.push({
+              url: photoUrl,
+              previewUrl: photoUrl,
+              fileName: photoUrl.split('/').pop(),
+              documentId: uuidv4() // Generate a new ID since we don't have the original
+            });
+          }
+        }
+
+        if (photosFromParams.length > 0) {
+          setUploadedPhotos(photosFromParams);
+          setPhotoPreviews(photosFromParams.map(p => p.previewUrl));
+        }
         // Fetch action data if actionId exists
         let existingAction = null;
         if (mostRecentItem.actionId) {
@@ -224,6 +242,18 @@ const StorageTankService = ({
       toast.error("Failed to load inspection data");
     }
   };
+
+  useEffect(() => {
+    const fetchSasToken = async () => {
+      try {
+        const token = await getSasToken();
+        setSasToken(token);
+      } catch (error) {
+        console.error('Failed to fetch SAS token:', error);
+      }
+    };
+    fetchSasToken();
+  }, []);
 
 
   const fetchActionById = async (id) => {
@@ -294,7 +324,7 @@ const StorageTankService = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Mechanical Services'
+                folder => folder.name.trim() === 'Water Log Book'
             );
 
             if (plantAndEquipmentFolder) {
@@ -304,7 +334,7 @@ const StorageTankService = ({
 
               if (plantAndEquipmentResponse?.document?.childFolders) {
                 const waterServicesFolder = plantAndEquipmentResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Water Services'
+                    folder => folder.name.trim() === 'Service & Maintenance'
                 );
 
                 if (waterServicesFolder) {
@@ -314,7 +344,7 @@ const StorageTankService = ({
 
                   if (waterResponse?.document?.childFolders) {
                     const storageTankFolder = waterResponse.document.childFolders.find(
-                        folder => folder.name.trim() === 'Storage Tank Service & Maintenance'
+                        folder => folder.name.trim() === 'Visual Inspection of Storage Tank'
                     );
 
                     setFolderIds({
@@ -792,8 +822,21 @@ const StorageTankService = ({
           const photo = uploadedPhotos[i];
           let imageBytes;
 
-          // Try to get the image data from URL
-          const response = await fetch(photo.url);
+          // Fetch image with SAS token
+          const imageUrl = photo.url.includes('?')
+              ? photo.url
+              : `${photo.url}?${sasToken}`;
+
+          const response = await fetch(imageUrl, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+          }
+
           imageBytes = await response.arrayBuffer();
 
           let image;
@@ -803,10 +846,8 @@ const StorageTankService = ({
             image = await pdfDoc.embedJpg(imageBytes);
           }
 
-          // Get the image field (image1, image2, etc.)
           const imageField = form.getButton(`image${i + 1}`);
           if (imageField) {
-            // Scale image to fit while maintaining aspect ratio
             const { width, height } = imageField.getRectangle();
             const imageDims = image.scaleToFit(width, height);
             imageField.setImage(image, {
@@ -817,6 +858,24 @@ const StorageTankService = ({
           }
         } catch (error) {
           console.error(`Error embedding image ${i + 1}:`, error);
+          // Optionally embed a placeholder image if the original fails
+          try {
+            const placeholderResponse = await fetch('/placeholder-image.png');
+            const placeholderBytes = await placeholderResponse.arrayBuffer();
+            const placeholderImage = await pdfDoc.embedPng(placeholderBytes);
+            const imageField = form.getButton(`image${i + 1}`);
+            if (imageField) {
+              const { width, height } = imageField.getRectangle();
+              const imageDims = placeholderImage.scaleToFit(width, height);
+              imageField.setImage(placeholderImage, {
+                ...imageDims,
+                x: 0,
+                y: 0,
+              });
+            }
+          } catch (placeholderError) {
+            console.error('Failed to embed placeholder image:', placeholderError);
+          }
         }
       }
 
@@ -863,6 +922,7 @@ const StorageTankService = ({
     fetchActionData();
   }, [formData.actionId]);
 
+
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -874,27 +934,25 @@ const StorageTankService = ({
         try {
           const previewUrl = URL.createObjectURL(file);
 
-          // Prepare the upload request data
-          const uploadData = {
+          // Upload the file
+          const response = await uploadSiteCheckDoc({
             siteId: siteSelectedForGlobal?.siteId || 0,
-            file: file,
-            folderName: 'StorageTankServicePhotos',
-            fileName: `StorageTankPhoto_${uuidv4().substring(0, 8)}_${file.name}`,
-            uploaderUserId: loggedInUserData?.id || 0
-          };
+            file: file
+          });
 
-          // Use the uploadSiteCheckDoc function
-          const response = await uploadSiteCheckDoc(uploadData);
+          // Get SAS token if not already available
+          const token = sasToken || await getSasToken();
 
-          if (!response?.url) {
-            throw new Error('Upload failed: No URL returned');
-          }
+          // Construct URL with SAS token
+          const imageUrl = response?.url
+              ? `${response.url}?${token}`
+              : `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}?${token}`;
 
           return {
-            url: response.url,
-            previewUrl,
+            url: imageUrl,
+            previewUrl: previewUrl,
             fileName: file.name,
-            documentId: response.documentId || uuidv4()
+            documentId: response?.documentId || uuidv4()
           };
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
@@ -905,21 +963,12 @@ const StorageTankService = ({
       const uploadedFiles = await Promise.all(uploadPromises);
       const newPhotos = [...uploadedPhotos, ...uploadedFiles].slice(0, 4);
 
-      // Update the form data with image URLs in the corresponding parameters
-      const updatedFormData = { ...formData };
-      newPhotos.forEach((photo, index) => {
-        const paramKey = `param${index + 2}Remark`; // param2Remark, param3Remark, etc.
-        updatedFormData[paramKey] = photo.url;
-      });
-
-      setFormData(updatedFormData);
       setUploadedPhotos(newPhotos);
       setPhotoPreviews(newPhotos.map(p => p.previewUrl));
-
-      toast.success("Photos uploaded successfully");
+      toast.success("Photos uploaded successfully!");
     } catch (error) {
-      console.error("Error uploading photos:", error);
-      toast.error("Failed to upload photos: " + (error.response?.data?.message || error.message));
+      console.error("Photo upload error:", error);
+      toast.error(error.message || 'Upload failed');
     } finally {
       setUploadingPhotos(false);
     }
@@ -953,7 +1002,7 @@ const StorageTankService = ({
     }
 
     // Validation checks
-    const hasFailures = formData.param1 === "Fail" || formData.param2 === "Fail";
+    const hasFailures = formData.param2 === "Pass";
 
 
     if (hasFailures && !actionRaised) {
@@ -1475,9 +1524,16 @@ const StorageTankService = ({
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     style={{ display: "none" }}
-                    disabled={isSubmitted || uploadingPhotos || photoPreviews.length >= 4}
+                    disabled={isSubmitted || uploadingPhotos || photoPreviews.length >= 4 || !isFormEditable}
                 />
-                <label htmlFor="photo-upload" className="btn btn-sm btn-primary">
+                <label
+                    htmlFor="photo-upload"
+                    className={`btn btn-sm btn-primary ${(isSubmitted || !isFormEditable || photoPreviews.length >= 4) ? 'disabled' : ''}`}
+                    style={{
+                      cursor: (isSubmitted || !isFormEditable || photoPreviews.length >= 4) ? 'not-allowed' : 'pointer',
+                      opacity: (isSubmitted || !isFormEditable || photoPreviews.length >= 4) ? 0.6 : 1
+                    }}
+                >
                   {uploadingPhotos ? (
                       <span>Uploading...</span>
                   ) : (
@@ -1513,45 +1569,36 @@ const StorageTankService = ({
               </div>
 
               {/* Photo Previews */}
-              {photoPreviews.length > 0 && (
-                  <div className="mt-3">
-                    <h6>Uploaded Photos ({photoPreviews.length}/4):</h6>
-                    <div className="d-flex flex-wrap gap-2">
-                      {photoPreviews.map((preview, index) => (
-                          <div
-                              key={index}
-                              className="position-relative"
-                              style={{ width: "100px", height: "100px" }}
-                          >
-                            <img
-                                src={preview}
-                                alt={`Preview ${index}`}
-                                className="img-thumbnail"
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = '/path/to/placeholder/image.png';
-                                }}
-                            />
-                            {!isSubmitted && (
-                                <button
-                                    type="button"
-                                    className="position-absolute top-0 end-0 btn btn-sm btn-danger"
-                                    onClick={() => handleRemovePhoto(index)}
-                                    style={{ padding: "0.1rem 0.3rem" }}
-                                >
-                                  ×
-                                </button>
-                            )}
-                          </div>
-                      ))}
-                    </div>
+              {photoPreviews.map((preview, index) => (
+                  <div key={index} className="position-relative" style={{ width: "100px", height: "100px", display: 'inline-block', marginRight: '10px' }}>
+                    <img
+                        src={uploadedPhotos[index]?.url
+                            ? `${uploadedPhotos[index].url}${uploadedPhotos[index].url.includes('?') ? '&' : '?'}${sasToken}`
+                            : preview}
+                        alt={`Preview ${index}`}
+                        className="img-thumbnail"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/placeholder-image.png';
+                        }}
+                    />
+                    {isFormEditable && !isSubmitted && (
+                        <button
+                            type="button"
+                            className="position-absolute top-0 end-0 btn btn-sm btn-danger"
+                            onClick={() => handleRemovePhoto(index)}
+                            style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
+                        >
+                          ×
+                        </button>
+                    )}
                   </div>
-              )}
+              ))}
             </div>
           </div>
 

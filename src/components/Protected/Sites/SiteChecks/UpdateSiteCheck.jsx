@@ -45,6 +45,7 @@ import VentilationReport from "./VentilationReport";
 import WaterChlorination from "./WaterChlorination";
 import GasInspection from "./GasInspection";
 import FierDamper from "./FierDamper";
+import ShowerHeadCertificate from "./ShowerHeadCertificate";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -237,7 +238,13 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Gas Safety Annual Inspection"
     ) {
       setStep("inspection-gas");
-    } else if (siteCheck.type === "Assessment") {
+    }else if(
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Periodic Shower Head Cleaning"){
+      setStep("shower-head")
+    }
+    else if (siteCheck.type === "Assessment") {
       setStep("assessment-fire-risk");
     } else if (
       siteCheck.type === "Audit" &&
@@ -700,6 +707,16 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "inspection-ventilation-report" && (
               <Item>
                 <VentilationReport
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
+            )}{step === "shower-head" && (
+              <Item>
+                <ShowerHeadCertificate
                   checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}
