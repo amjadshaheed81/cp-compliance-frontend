@@ -403,7 +403,7 @@ const ShowerHeadCertificate = ({
             throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
-            toast.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
+            toast.error(`Failed to upload} PDF: ${error.message}`);
             return false;
         } finally {
             setState(prev => ({ ...prev, isUploading: false }));
