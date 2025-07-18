@@ -338,87 +338,92 @@ const ShowerHeadCertificate = ({
         }
     }, [siteSelectedForGlobal]);
 
-    const uploadPdfToServer = useCallback(async (pdfBlob, fileName) => {
-        let exists;
-        try {
-            setState(prev => ({ ...prev, isUploading: true }));
-            // First save the PDF locally
-            const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-            if (!savedLocally) {
-                throw new Error('Failed to save PDF locally');
-            }
-
-            const targetFolderId = state.folderIds.storageTankService || state.folderIds.logBooks;
-            if (!targetFolderId) {
-                throw new Error('Could not determine target folder for PDF upload');
-            }
-
-            const fileCheck = await checkFileExists(targetFolderId, fileName);
-            exists = fileCheck.exists; // Set the value here
-            const existingFile = fileCheck.file;
-            const formData = new FormData();
-            const fileVersion = exists && existingFile
-                ? existingFile.fileVersion + 1
-                : await getHighestFileVersion(targetFolderId, fileName);
-
-            const documentRequest = {
-                folderId: targetFolderId,
-                files: [{
-                    ...(exists && existingFile ? { id: existingFile.id } : {}),
-                    name: fileName.split('.')[0],
-                    originalFileName: fileName,
-                    fileVersion,
-                    siteId: siteSelectedForGlobal?.siteId || 0,
-                    issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                    expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                        .toISOString().replace('T', ' ').split('.')[0],
-                    uploaderUserId: loggedInUserData?.id || 0,
-                    reviewerUserId: loggedInUserData?.id || 0,
-                    referenceNumber: `SHC-${new Date().getTime()}`
-                }]
-            };
-
-            // Key change here - use 'file' instead of 'files' for the file part
-            formData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
-            formData.append('documentRequestString', JSON.stringify(documentRequest));
-
-            const method = exists ? 'put' : 'post';
-            const url = exists
-                ? '/api/document/file/newVersion/upload'
-                : '/api/document/files/upload';
-
-            const response = await axios({
-                method,
-                url,
-                data: formData,
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    ...(exists ? {} : { 'Accept': 'application/json' })
-                }
-            });
-
-            if (response.data) {
-                toast.success(`PDF ${exists ? 'updated' : 'uploaded'} successfully as version ${fileVersion}!`);
-                return true;
-            }
-
-            throw new Error('Upload failed: No response data');
-        } catch (error) {
-            console.error('Error uploading PDF:', error);
-            console.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
-            return false;
-        } finally {
-            setState(prev => ({ ...prev, isUploading: false }));
+   const uploadPdfToServer = useCallback(async (pdfBlob, fileName) => {
+    let exists;
+    try {
+        setState(prev => ({ ...prev, isUploading: true }));
+        // First save the PDF locally
+        const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+        if (!savedLocally) {
+            throw new Error('Failed to save PDF locally');
         }
-    }, [
-        savePdfToLocal,
-        checkFileExists,
-        getHighestFileVersion,
-        loggedInUserData,
-        siteSelectedForGlobal,
-        state.folderIds
-    ]);
+
+        const targetFolderId = state.folderIds.storageTankService || state.folderIds.logBooks;
+        if (!targetFolderId) {
+            throw new Error('Could not determine target folder for PDF upload');
+        }
+
+        const fileCheck = await checkFileExists(targetFolderId, fileName);
+        exists = fileCheck.exists;
+        const existingFile = fileCheck.file;
+        const formData = new FormData();
+
+        const fileVersion = exists && existingFile
+            ? existingFile.fileVersion + 1
+            : await getHighestFileVersion(targetFolderId, fileName);
+
+        const documentRequest = {
+            folderId: targetFolderId,
+            files: [{
+                ...(exists && existingFile ? { id: existingFile.id } : {}),
+                name: fileName.split('.')[0],
+                originalFileName: fileName,
+                fileVersion,
+                siteId: siteSelectedForGlobal?.siteId || 0,
+                issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+                expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                    .toISOString().replace('T', ' ').split('.')[0],
+                uploaderUserId: loggedInUserData?.id || 0,
+                reviewerUserId: loggedInUserData?.id || 0,
+                referenceNumber: `SHC-${new Date().getTime()}`
+            }]
+        };
+
+        // KEY FIX: Use 'files' for POST and 'file' for PUT
+        if (exists) {
+            formData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+        } else {
+            formData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+        }
+        
+        formData.append('documentRequestString', JSON.stringify(documentRequest));
+
+        const method = exists ? 'put' : 'post';
+        const url = exists
+            ? '/api/document/file/newVersion/upload'
+            : '/api/document/files/upload';
+
+        const response = await axios({
+            method,
+            url,
+            data: formData,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.data) {
+            toast.success(`PDF ${exists ? 'updated' : 'uploaded'} successfully as version ${fileVersion}!`);
+            return true;
+        }
+
+        throw new Error('Upload failed: No response data');
+    } catch (error) {
+        console.error('Error uploading PDF:', error);
+        console.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
+        return false;
+    } finally {
+        setState(prev => ({ ...prev, isUploading: false }));
+    }
+}, [
+    savePdfToLocal,
+    checkFileExists,
+    getHighestFileVersion,
+    loggedInUserData,
+    siteSelectedForGlobal,
+    state.folderIds
+]);
 
     const generatePDF = useCallback(async (uploadToServer = true) => {
         try {
@@ -676,51 +681,70 @@ const ShowerHeadCertificate = ({
         users.length
     ]);
 
-    const handleRiskAssessmentComplete = useCallback(async (actionResponse) => {
-        try {
-            if (!actionResponse?.actionId) {
-                // No action was created, which is fine since it's optional
-                return;
-            }
+    const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+        if (!actionResponse?.actionId) {
+            // No action was created, which is fine since it's optional
+            return;
+        }
 
-            const verifiedAction = await fetchActionById(actionResponse.actionId);
-            if (!verifiedAction) {
-                throw new Error("Action verification failed");
-            }
+        // Verify the action exists
+        const verifiedAction = await fetchActionById(actionResponse.actionId);
+        if (!verifiedAction) {
+            throw new Error("Failed to verify created action");
+        }
 
-            // Update state with the verified action
-            setState(prev => ({
-                ...prev,
-                existingAction: verifiedAction,
-                actionRaised: true
-            }));
+        // Update the action with checkId if we have one
+        if (state.currentCheckId && !verifiedAction.checkId) {
+            await put(`/api/site/actions/${verifiedAction.actionId}`, {
+                ...verifiedAction,
+                checkId: state.currentCheckId
+            });
+            verifiedAction.checkId = state.currentCheckId; // Update local copy
+        }
 
-            setFormData(prev => ({
-                ...prev,
-                actionId: verifiedAction.actionId
-            }));
+        // Update all relevant states
+        setState(prev => ({
+            ...prev,
+            existingAction: verifiedAction,
+            actionRaised: true
+        }));
+        setFormData(prev => ({
+            ...prev,
+            actionId: verifiedAction.actionId
+        }));
 
-            // Only update if we have a check ID
-            if (state.currentCheckId) {
-                const inspectionPayload = {
-                    ...formData,
-                    actionId: verifiedAction.actionId,
-                };
+        // Save the inspection data with the actionId
+        const inspectionPayload = {
+            ...formData,
+            siteId: siteSelectedForGlobal?.siteId,
+            checkId: state.currentCheckId,
+            actionId: verifiedAction.actionId,
+            type: 'Maintenance',
+            subType: 'Cleaning',
+            category: 'Shower Head Cleaning'
+        };
 
-                if (state.currentCheckId) {
+        if (state.currentCheckId) {
+            try {
+                // Try to create first
+                await post(`/api/site-check/generic-inspection`, inspectionPayload);
+            } catch (error) {
+                if (error.response?.status === 409) { // Conflict - already exists
                     await put(`/api/site-check/generic-inspection/${state.currentCheckId}`, inspectionPayload);
+                } else {
+                    throw error;
                 }
             }
-
-            toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
-        } catch (error) {
-            console.error("Error handling risk assessment completion:", error);
-            // Don't show error if it's just that no action was created
-            if (error.message !== "No action was created") {
-                toast.error(error.message || "Failed to process action");
-            }
         }
-    }, [fetchActionById, formData, state.currentCheckId]);
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
+    } catch (error) {
+        console.error("Error handling risk assessment completion:", error);
+        toast.error(error.message || "Failed to process action");
+    }
+};
+
 
     // Render functions
     const renderClientNameField = () => {
