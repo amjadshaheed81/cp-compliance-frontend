@@ -339,9 +339,9 @@ const ShowerHeadCertificate = ({
     }, [siteSelectedForGlobal]);
 
     const uploadPdfToServer = useCallback(async (pdfBlob, fileName) => {
+        let exists;
         try {
             setState(prev => ({ ...prev, isUploading: true }));
-
             // First save the PDF locally
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
             if (!savedLocally) {
@@ -353,7 +353,9 @@ const ShowerHeadCertificate = ({
                 throw new Error('Could not determine target folder for PDF upload');
             }
 
-            const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+            const fileCheck = await checkFileExists(targetFolderId, fileName);
+            exists = fileCheck.exists; // Set the value here
+            const existingFile = fileCheck.file;
             const formData = new FormData();
             const fileVersion = exists && existingFile
                 ? existingFile.fileVersion + 1
@@ -376,7 +378,8 @@ const ShowerHeadCertificate = ({
                 }]
             };
 
-            formData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+            // Key change here - use 'file' instead of 'files' for the file part
+            formData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
             formData.append('documentRequestString', JSON.stringify(documentRequest));
 
             const method = exists ? 'put' : 'post';
@@ -403,7 +406,7 @@ const ShowerHeadCertificate = ({
             throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
-            toast.error(`Failed to upload} PDF: ${error.message}`);
+            console.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
             return false;
         } finally {
             setState(prev => ({ ...prev, isUploading: false }));
