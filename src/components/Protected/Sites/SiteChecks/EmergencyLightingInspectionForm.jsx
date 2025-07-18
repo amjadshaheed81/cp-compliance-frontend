@@ -513,7 +513,7 @@ const EmergencyLightingInspectionForm = ({
       );
 
       if (!uploadSuccess) {
-        throw new Error('PDF upload to server failed');
+        console.error('PDF upload to server failed');
       }
 
       return { success: true, fileName };
@@ -802,8 +802,6 @@ const EmergencyLightingInspectionForm = ({
           return true;
         }
       }
-
-      throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
       toast.error('Failed to upload PDF: ' + error.message);
@@ -1176,7 +1174,7 @@ const EmergencyLightingInspectionForm = ({
       // 4. Generate and upload PDF
       const pdfResult = await generatePDF();
       if (!pdfResult.success) {
-        throw new Error("PDF generation/upload failed");
+        console.error("PDF generation/upload failed");
       }
 
       // 5. Update state
