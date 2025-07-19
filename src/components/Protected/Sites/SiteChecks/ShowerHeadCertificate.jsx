@@ -488,7 +488,7 @@ const ShowerHeadCertificate = ({
 
             const pdfBytesModified = await pdfDoc.save();
             const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-            const fileName = `ShowerHeadCleaningCertificate_${formattedDate}.pdf`;
+            const fileName = `ShowerHeadCleaningCertificate_${selectedAsset?.assetName || formattedDate}.pdf`;
 
             setState(prev => ({ ...prev, generatedPdfBlob: blob }));
 
