@@ -37,10 +37,14 @@ const WaterChlorinationCertificate = ({
   loggedInUserData,
 }) => {
   const license = JSON.parse(localStorage.getItem("license"));
-  
+
 
   // State initialization
   const [tankCapacity, setTankCapacity] = useState("");
+  const getDefaultReportTemplate = (capacity) => `Carried out a clean and chlorination in line with Health & Safety HSE L8 and BS6700-2006 to the system described above from Cold Water Storage Tank distribution pipework through to all hot, cold and mixer water outlets through ought the building. The tank was thoroughly cleaned to remove bacteria and sterilised. A sterilant contact period of one (12) hour was allowed in order to comply. 
+On completion of the contact period the tank and system was flushed and refiled with fresh incoming MCW and placed into service 
+The capacity of the tank is ${capacity} litres`;
+
   const [formData, setFormData] = useState({
     site: "",
     clientAddress: license?.companyAddress || "",
@@ -48,7 +52,7 @@ const WaterChlorinationCertificate = ({
     date: new Date().toISOString().split("T")[0],
     siteContactNo: "",
     job: "",
-    report: "",
+    report: "" || getDefaultReportTemplate(tankCapacity),
     clientName: "",
     engineerName: loggedInUserData?.name || "",
     param5Remark: loggedInUserData?.signature || "",
@@ -94,27 +98,10 @@ const WaterChlorinationCertificate = ({
 
 
 
-  const defaultReportTemplate = `Carried out a clean and chlorination in line with Health & Safety HSE L8 and BS6700-2006 to the system described above from Cold Water Storage Tank distribution pipework through to all hot, cold and mixer water outlets through ought the building. The tank was thoroughly cleaned to remove bacteria and sterilised. A sterilant contact period of one (12) hour was allowed in order to comply. 
-On completion of the contact period the tank and system was flushed and refiled with fresh incoming MCW and placed into service 
-The capacity of the tank is ${tankCapacity} litres`;
-  
-  
-  
-  // Memoized values
-  const selectedAsset = React.useMemo(
-    () => siteAssets.find((asset) => asset.assetId === formData.assetId),
-    [siteAssets, formData.assetId]
-  );
 
-  const filteredAssets = React.useMemo(
-    () =>
-      siteAssets?.filter(
-        (asset) =>
-          asset.category === "Mechanical" &&
-          asset.subCategory === "Water Services"
-      ) || [],
-    [siteAssets]
-  );
+  
+
+
 
   // Event handlers
   
@@ -177,6 +164,12 @@ The capacity of the tank is ${tankCapacity} litres`;
           chlorinationService: chlorinationFolder?.id || null,
         },
       }));
+      console.log("Folder structure fetched successfully:", {
+        logBooks: logBooksFolder.id,
+        plantAndEquipment: plantAndEquipmentFolder.id,
+        waterServices: waterServicesFolder.id,
+        chlorinationService: chlorinationFolder?.id || null,
+      });
 
       return chlorinationFolder?.id || null;
     } catch (error) {
@@ -379,6 +372,7 @@ The capacity of the tank is ${tankCapacity} litres`;
 
   const uploadPdfToServer = useCallback(
     async (pdfBlob, fileName) => {
+      let exists;
       try {
         setState((prev) => ({ ...prev, isUploading: true }));
 
@@ -388,41 +382,99 @@ The capacity of the tank is ${tankCapacity} litres`;
           throw new Error("Failed to save PDF locally");
         }
 
-        const targetFolderId =
-          state.folderIds.chlorinationService || state.folderIds.logBooks;
+        const targetFolderId = state.folderIds.chlorinationService || state.folderIds.logBooks;
         if (!targetFolderId) {
           throw new Error("Could not determine target folder for PDF upload");
         }
 
-        const version = await getHighestFileVersion(targetFolderId, fileName);
-        const fileExists = await checkFileExists(targetFolderId, fileName);
+        // Check if file exists and get current version
+        const fileCheck = await checkFileExists(targetFolderId, fileName);
+        exists = fileCheck.exists;
+        const existingFile = fileCheck.file;
 
+        const fileVersion = exists && existingFile
+          ? existingFile.fileVersion + 1
+          : await getHighestFileVersion(targetFolderId, fileName);
+
+        // Prepare form data with comprehensive metadata
         const formData = new FormData();
-        formData.append("file", pdfBlob, fileName);
-        formData.append("siteId", siteSelectedForGlobal.siteId);
-        formData.append("parentId", targetFolderId);
-        formData.append("fileVersion", version);
-        formData.append("createdBy", loggedInUserData.id);
-        formData.append("modifiedBy", loggedInUserData.id);
+        formData.append(
+          exists ? "file" : "files",
+          new File([pdfBlob], fileName, { type: "application/pdf" })
+        );
 
-        if (fileExists.exists) {
-          await put(`/api/document/${fileExists.file.id}`, formData);
-        } else {
-          await post("/api/document", formData);
+        // Add document metadata as JSON string
+        const documentRequest = {
+          folderId: targetFolderId,
+          files: [{
+            ...(exists && existingFile ? { id: existingFile.id } : {}),
+            name: fileName.split(".")[0],
+            originalFileName: fileName,
+            fileVersion,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: new Date().toISOString().replace("T", " ").split(".")[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace("T", " ").split(".")[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `SHC-${new Date().getTime()}`
+          }]
+        };
+        formData.append("documentRequestString", JSON.stringify(documentRequest));
+
+        // Make API request
+        const method = exists ? "put" : "post";
+        const url = exists
+          ? "/api/document/file/newVersion/upload"
+          : "/api/document/files/upload";
+
+        const response = await axios({
+          method,
+          url,
+          data: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        });
+
+        if (response.data) {
+          toast.success(`PDF ${exists ? "updated" : "uploaded"} successfully as version ${fileVersion}!`);
+          return true;
         }
 
-        return true;
+        throw new Error("Upload failed: No response data");
       } catch (error) {
-        console.error("Error uploading PDF:", error);
+        console.error(`Error ${exists ? "updating" : "uploading"} PDF:`, error);
+        toast.error(`Failed to ${exists ? "update" : "upload"} PDF`);
         return false;
       } finally {
         setState((prev) => ({ ...prev, isUploading: false }));
       }
     },
-    [savePdfToLocal, state.folderIds, siteSelectedForGlobal, loggedInUserData]
+    [
+      savePdfToLocal,
+      checkFileExists,
+      getHighestFileVersion,
+      loggedInUserData,
+      siteSelectedForGlobal,
+      state.folderIds
+    ]
   );
 
-  console.log('clientAddress', formData.clientAddress);
+  //console.log('site data -->', formData.site);
+
+  const handleTankCapacityChange = (e) => {
+    const capacity = e.target.value;
+    setTankCapacity(capacity);
+    setFormData(prev => ({
+      ...prev,
+      param6Remark: capacity,
+      report: getDefaultReportTemplate(capacity)
+    }));
+  };
+
+  console.log('report template -->', formData.report);
   const generatePDF = useCallback(
     async (uploadToServer = true) => {
       try {
@@ -460,23 +512,7 @@ The capacity of the tank is ${tankCapacity} litres`;
         const formattedDate = formatDateString(formData.date);
         const engineer = users?.find((u) => u.id === formData.engineer);
 
-        const setMultilineTextField = (baseFieldName, text) => {
-        if (!text) return;
-        
-        const lines = text.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-          const fieldName = `${baseFieldName}${i > 0 ? `_${i + 1}` : ''}`;
-          try {
-            const field = form.getTextField(fieldName);
-            if (field) {
-              field.setText(lines[i] || "");
-              if (field.setFontSize) field.setFontSize(8);
-            }
-          } catch (error) {
-            console.warn(`Error setting field ${fieldName}:`, error.message);
-          }
-        }
-      };
+
 
         // Set form fields
         // const addressLines = (formData.address || "").split(",");
@@ -485,16 +521,15 @@ The capacity of the tank is ${tankCapacity} litres`;
         // setTextField("Address_3", addressLines[2] || "", 8);
         // setTextField("Address_4", addressLines[3] || "", 8);
 
-        setTextField("Date", formattedDate, 8);
-        setMultilineTextField("Client", license.companyAddress || "", 8);
-        setTextField("Site", formData.site || "", 8);
-        
+        setTextField("Date", formattedDate, 10);
+        setTextField("client", license.companyAddress || "", 10);
+        setTextField("site", formData.site || "", 10);
 
         // Work details
         setTextField(
-          "default",
-          formData.report || "",
-          8
+          "default", // Make sure this matches the exact field name in your PDF
+          formData.report || getDefaultReportTemplate(formData.param6Remark || tankCapacity),
+          10
         );
 
         // Chlorination details
@@ -533,7 +568,7 @@ The capacity of the tank is ${tankCapacity} litres`;
           const signatureImageBytes = await signatureResponse.arrayBuffer();
           const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
-          const signatureField = form.getButton('Signature_af_image');
+          const signatureField = form.getButton('signature_af_image');
           if (signatureField) {
             signatureField.setImage(signatureImage);
           }
@@ -583,11 +618,10 @@ The capacity of the tank is ${tankCapacity} litres`;
     e.preventDefault();
     if (state.isLoading) return;
 
-    setState((prev) => ({ ...prev, isLoading: true }));
+    setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-
-      const finalReport = defaultReportTemplate.replace('${tankCapacity}', tankCapacity);
+      const finalReport = getDefaultReportTemplate(tankCapacity);
       const statusPayload = {
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: "Maintenance",
@@ -609,7 +643,7 @@ The capacity of the tank is ${tankCapacity} litres`;
       } else {
         statusResponse = await post(`/api/site-check`, statusPayload);
         if (statusResponse?.checkId) {
-          setState((prev) => ({
+          setState(prev => ({
             ...prev,
             currentCheckId: statusResponse.checkId,
           }));
@@ -631,12 +665,24 @@ The capacity of the tank is ${tankCapacity} litres`;
         actionId: formData.actionId || null,
       };
 
-      if (state.currentCheckId && formData.actionId) {
-        await put(
-          `/api/site-check/generic-inspection/${state.currentCheckId}`,
-          chlorinationPayload
-        );
+      // Determine whether to PUT or POST based on checkId presence
+      if (state.currentCheckId) {
+        // If we have checkId, try to update existing record
+        try {
+          await put(
+            `/api/site-check/generic-inspection/${state.currentCheckId}`,
+            chlorinationPayload
+          );
+        } catch (error) {
+          if (error.response?.status === 404) {
+            // If not found, create new
+            await post(`/api/site-check/generic-inspection`, chlorinationPayload);
+          } else {
+            throw error;
+          }
+        }
       } else {
+        // No checkId, create new
         await post(`/api/site-check/generic-inspection`, chlorinationPayload);
       }
 
@@ -646,7 +692,7 @@ The capacity of the tank is ${tankCapacity} litres`;
       }
 
       toast.success("Water chlorination certificate saved successfully!");
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         showPdfButton: true,
         isSubmitted: true,
@@ -657,7 +703,7 @@ The capacity of the tank is ${tankCapacity} litres`;
       console.error("Error in form submission:", error);
       toast.error(error.message || "Failed to submit form");
     } finally {
-      setState((prev) => ({ ...prev, isLoading: false }));
+      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -743,55 +789,69 @@ The capacity of the tank is ${tankCapacity} litres`;
     users.length,
   ]);
 
-  const handleRiskAssessmentComplete = useCallback(
-    async (actionResponse) => {
-      try {
-        if (!actionResponse?.actionId) {
-          return;
-        }
+  const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+      if (!actionResponse?.actionId) {
+        // No action was created, which is fine since it's optional
+        return;
+      }
 
-        const verifiedAction = await fetchActionById(actionResponse.actionId);
-        if (!verifiedAction) {
-          throw new Error("Action verification failed");
-        }
+      // Verify the action exists
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction) {
+        throw new Error("Failed to verify created action");
+      }
 
-        setState((prev) => ({
-          ...prev,
-          existingAction: verifiedAction,
-          actionRaised: true,
-        }));
+      // Update the action with checkId if we have one
+      if (state.currentCheckId && !verifiedAction.checkId) {
+        await put(`/api/site/actions/${verifiedAction.actionId}`, {
+          ...verifiedAction,
+          checkId: state.currentCheckId
+        });
+        verifiedAction.checkId = state.currentCheckId; // Update local copy
+      }
 
-        setFormData((prev) => ({
-          ...prev,
-          actionId: verifiedAction.actionId,
-        }));
+      // Update all relevant states
+      setState(prev => ({
+        ...prev,
+        existingAction: verifiedAction,
+        actionRaised: true
+      }));
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
 
-        if (state.currentCheckId) {
-          const inspectionPayload = {
-            ...formData,
-            actionId: verifiedAction.actionId,
-          };
+      // Save the inspection data with the actionId
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        checkId: state.currentCheckId,
+        actionId: verifiedAction.actionId,
+        type: 'Maintenance',
+        subType: 'Chlorination',
+        category: 'Water Chlorination'
+      };
 
-          if (state.currentCheckId) {
-            await put(
-              `/api/site-check/generic-inspection/${state.currentCheckId}`,
-              inspectionPayload
-            );
+      if (state.currentCheckId) {
+        try {
+          // Try to create first
+          await post(`/api/site-check/generic-inspection`, inspectionPayload);
+        } catch (error) {
+          if (error.response?.status === 409) { // Conflict - already exists
+            await put(`/api/site-check/generic-inspection/${state.currentCheckId}`, inspectionPayload);
+          } else {
+            throw error;
           }
         }
-
-        toast.success(
-          `Action #${verifiedAction.actionId} successfully linked to inspection`
-        );
-      } catch (error) {
-        console.error("Error handling risk assessment completion:", error);
-        if (error.message !== "No action was created") {
-          toast.error(error.message || "Failed to process action");
-        }
       }
-    },
-    [fetchActionById, formData, state.currentCheckId]
-  );
+
+      toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
+    } catch (error) {
+      console.error("Error handling risk assessment completion:", error);
+      toast.error(error.message || "Failed to process action");
+    }
+  };
 
   // Render functions
   const renderClientNameField = () => {
@@ -1025,7 +1085,7 @@ The capacity of the tank is ${tankCapacity} litres`;
             type="text"
             className="form-control"
             value={tankCapacity}
-            onChange={(e) => setTankCapacity(e.target.value)}
+                    onChange={handleTankCapacityChange}
             disabled={state.isSubmitted}
           />
         </div>
@@ -1035,7 +1095,7 @@ The capacity of the tank is ${tankCapacity} litres`;
         rows={16}
         fullWidth
         variant="outlined"
-        value={formData.report || defaultReportTemplate}
+                value={formData.report || getDefaultReportTemplate(tankCapacity)}
         onChange={(e) =>
           setFormData({
             ...formData,
