@@ -64,6 +64,7 @@ The capacity of the tank is ${capacity} litres`;
     param3Remark: "", //contactPeriod: "",
     param4Remark: "", //finalSystemAnalysis: "",
     param6Remark: tankCapacity || "",
+    param7Remark: "", //systemDescription: "",
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     clientUser: null,
@@ -99,12 +100,12 @@ The capacity of the tank is ${capacity} litres`;
 
 
 
-  
+
 
 
 
   // Event handlers
-  
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -524,6 +525,7 @@ The capacity of the tank is ${capacity} litres`;
         setTextField("Date", formattedDate, 10);
         setTextField("client", license.companyAddress || "", 10);
         setTextField("site", formData.site || "", 10);
+        setTextField("system", formData.param7Remark || "", 10);
 
         // Work details
         setTextField(
@@ -562,20 +564,20 @@ The capacity of the tank is ${capacity} litres`;
         // );
 
         if (loggedInUserData?.signature) {
-        try {
-          const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
-          const signatureResponse = await fetch(signatureUrl);
-          const signatureImageBytes = await signatureResponse.arrayBuffer();
-          const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+          try {
+            const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
+            const signatureResponse = await fetch(signatureUrl);
+            const signatureImageBytes = await signatureResponse.arrayBuffer();
+            const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
-          const signatureField = form.getButton('signature_af_image');
-          if (signatureField) {
-            signatureField.setImage(signatureImage);
+            const signatureField = form.getButton('signature_af_image');
+            if (signatureField) {
+              signatureField.setImage(signatureImage);
+            }
+          } catch (error) {
+            console.warn('Error setting signature image:', error);
           }
-        } catch (error) {
-          console.warn('Error setting signature image:', error);
         }
-      }
 
         try {
           form.flatten();
@@ -672,13 +674,13 @@ The capacity of the tank is ${capacity} litres`;
           `/api/site-check/generic-inspection/${state.currentCheckId}`,
           chlorinationPayload
         );
-                  } else {
-                    // Otherwise do POST (create new)
-                    await post(
-                      `/api/site-check/generic-inspection`,
-                      chlorinationPayload
-                    );
-                  }
+      } else {
+        // Otherwise do POST (create new)
+        await post(
+          `/api/site-check/generic-inspection`,
+          chlorinationPayload
+        );
+      }
 
 
       const pdfResult = await generatePDF(true);
@@ -849,137 +851,7 @@ The capacity of the tank is ${capacity} litres`;
   };
 
   // Render functions
-  const renderClientNameField = () => {
-    if (isInternalUserTaggedWithSite) {
-      const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
 
-      return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={formData.clientUser || formData.siteContactUser || null}
-          onChange={(event, newValue) => {
-            setFormData((prev) => ({
-              ...prev,
-              clientName: newValue?.name || "",
-              clientUser: newValue || null,
-              siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
-              siteContactUser: newValue || null,
-            }));
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              disabled={state.isSubmitted}
-              style={{ height: "40px" }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
-          disabled={state.isSubmitted}
-        />
-      );
-    }
-    return (
-      <input
-        type="text"
-        className="form-control"
-        name="clientName"
-        value={
-          formData.clientUser?.name || formData.siteContactUser?.name || ""
-        }
-        onChange={(e) => {
-          setFormData((prev) => ({
-            ...prev,
-            clientName: e.target.value,
-            clientUser: { name: e.target.value },
-            siteContact: e.target.value,
-            siteContactUser: { name: e.target.value },
-          }));
-        }}
-        required
-        disabled={state.isSubmitted}
-      />
-    );
-  };
-
-  const renderSiteContactField = () => {
-    if (isInternalUserTaggedWithSite) {
-      const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
-
-      return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || formData.clientUser || null}
-          onChange={(event, newValue) => {
-            setFormData((prev) => ({
-              ...prev,
-              siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
-              siteContactUser: newValue || null,
-              clientName: newValue?.name || "",
-              clientUser: newValue || null,
-            }));
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              disabled={state.isSubmitted}
-              style={{ height: "40px" }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
-          disabled={state.isSubmitted}
-        />
-      );
-    }
-    return (
-      <input
-        type="text"
-        className="form-control"
-        name="siteContact"
-        value={
-          formData.siteContactUser?.name || formData.clientUser?.name || ""
-        }
-        onChange={(e) => {
-          setFormData((prev) => ({
-            ...prev,
-            siteContact: e.target.value,
-            siteContactUser: { name: e.target.value },
-            clientName: e.target.value,
-            clientUser: { name: e.target.value },
-          }));
-        }}
-        required
-        disabled={state.isSubmitted}
-      />
-    );
-  };
 
   return (
     <div className="container mt-4 mb-5">
@@ -1065,44 +937,59 @@ The capacity of the tank is ${capacity} litres`;
           </div>
         </div>
 
-       
+
+        <div className="col-md-6">
+          <div className="mb-3">
+            <label className="form-label">Details of System</label>
+            <input
+              type="text"
+              className="form-control"
+              name="param7Remark"
+              value={formData.param7Remark}
+              onChange={handleInputChange}
+              disabled={state.isSubmitted}
+            />
+          </div>
+        </div>
+
+
 
         <div className="card mb-4">
-  <div className="card-header">
-    <h5 className="mb-0">Details of Work Carried Out</h5>
-  </div>
-  <div className="card-body">
-    <div className="mb-3">
-      <div className="row mb-3">
-        <div className="col-md-3">
-          <label className="form-label">Tank Capacity (litres)</label>
-          <input
-            type="text"
-            className="form-control"
-            value={tankCapacity}
+          <div className="card-header">
+            <h5 className="mb-0">Details of Work Carried Out</h5>
+          </div>
+          <div className="card-body">
+            <div className="mb-3">
+              <div className="row mb-3">
+                <div className="col-md-3">
+                  <label className="form-label">Tank Capacity (litres)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={tankCapacity}
                     onChange={handleTankCapacityChange}
-            disabled={state.isSubmitted}
-          />
-        </div>
-      </div>
-      <TextField
-        multiline
-        rows={16}
-        fullWidth
-        variant="outlined"
+                    disabled={state.isSubmitted}
+                  />
+                </div>
+              </div>
+              <TextField
+                multiline
+                rows={16}
+                fullWidth
+                variant="outlined"
                 value={formData.report || getDefaultReportTemplate(tankCapacity)}
-        onChange={(e) =>
-          setFormData({
-            ...formData,
-            report: e.target.value,
-          })
-        }
-        style={{ height: "400px" }}
-        disabled={state.isSubmitted}
-      />
-    </div>
-  </div>
-</div>
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    report: e.target.value,
+                  })
+                }
+                style={{ height: "400px" }}
+                disabled={state.isSubmitted}
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="card mb-4">
           <div className="card-header">
@@ -1116,7 +1003,7 @@ The capacity of the tank is ${capacity} litres`;
                   <input
                     type="text"
                     className="form-control"
-                      name="param1Remark"
+                    name="param1Remark"
                     value={formData.param1Remark}
                     onChange={handleInputChange}
                     disabled={state.isSubmitted}
@@ -1249,7 +1136,7 @@ The capacity of the tank is ${capacity} litres`;
                 disabled
               />
             </div>
-       
+
           </div>
           <div className="col-md-2">
             <div className="mb-3">
