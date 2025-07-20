@@ -665,26 +665,21 @@ The capacity of the tank is ${capacity} litres`;
         actionId: formData.actionId || null,
       };
 
-      // Determine whether to PUT or POST based on checkId presence
-      if (state.currentCheckId) {
-        // If we have checkId, try to update existing record
-        try {
-          await put(
-            `/api/site-check/generic-inspection/${state.currentCheckId}`,
-            chlorinationPayload
-          );
-        } catch (error) {
-          if (error.response?.status === 404) {
-            // If not found, create new
-            await post(`/api/site-check/generic-inspection`, chlorinationPayload);
-          } else {
-            throw error;
-          }
-        }
-      } else {
-        // No checkId, create new
-        await post(`/api/site-check/generic-inspection`, chlorinationPayload);
-      }
+      // Determine whether to PUT or POST based on actionId presence
+      if (state.currentCheckId && formData.actionId) {
+        // If we have both checkId and actionId, do PUT (update existing)
+        await put(
+          `/api/site-check/generic-inspection/${state.currentCheckId}`,
+          chlorinationPayload
+        );
+                  } else {
+                    // Otherwise do POST (create new)
+                    await post(
+                      `/api/site-check/generic-inspection`,
+                      chlorinationPayload
+                    );
+                  }
+
 
       const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
