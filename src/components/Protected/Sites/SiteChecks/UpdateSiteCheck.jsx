@@ -547,7 +547,6 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   sasToken={sasToken}
                   leadUserID={siteCheck?.leadUserID}
                   siteCheck={siteCheck}
-                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
@@ -714,7 +713,8 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
-            )}{step === "shower-head" && (
+            )}
+            {step === "shower-head" && (
               <Item>
                 <ShowerHeadCertificate
                   checkId={checkId}
