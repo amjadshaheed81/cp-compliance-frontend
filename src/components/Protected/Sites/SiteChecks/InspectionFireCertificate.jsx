@@ -117,7 +117,7 @@ const InspectionFireCertificate = ({
     installationName: "",
     installationAddress: "",
     inspectionBy: loggedInUserData?.id,
-    batteryCount: null,
+    batteryCount: "",
     batteryVoltage: "",
     batteryCapacity: "",
     batteryVented: false,
@@ -405,6 +405,8 @@ const InspectionFireCertificate = ({
       // Set false alarm information
       setTextField('FalseAlarmsCount', formData.falseAlarmsCount || '');
       setTextField('FalseAlarmsRate', formData.falseAlarmsRate || '');
+      setTextField('details', inspectionDetails?.category || '');
+
 
       // Set system condition
       setCheckbox('SystemConditionSatisfactory', formData.systemCondition === 'satisfactory');
