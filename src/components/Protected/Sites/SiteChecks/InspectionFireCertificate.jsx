@@ -111,6 +111,8 @@ const InspectionFireCertificate = ({
       },
     ],
     additionalComments: "",
+    additionalComments1: "",
+    additionalComments2: "",
     inspectionDate: new Date(),
     installationName: "",
     installationAddress: "",
@@ -410,11 +412,13 @@ const InspectionFireCertificate = ({
 
       // Set additional comments
       setTextField('AdditionalComments', formData.additionalComments || '');
+      setTextField('AdditionalComments1', formData.additionalComments1 || '');
+      setTextField('AdditionalComments2', formData.additionalComments2 || '');
 
       // Set inspector details
       const inspector = users.find(u => u.id === loggedInUserData?.id);
       setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
-      setTextField('position', loggedInUserData?.role || '');
+      setTextField('Position', loggedInUserData?.role || '');
 
       // Add signature if available
       if (loggedInUserData?.signature) {
@@ -774,6 +778,8 @@ const InspectionFireCertificate = ({
           }),
           actionId: apiData?.actionId || prev.actionId,
           additionalComments: apiData?.additionalComments || prev.additionalComments,
+          additionalComments1: apiData?.additionalComments1 || prev.additionalComments1,
+          additionalComments2: apiData?.additionalComments2 || prev.additionalComments2,
           batteryTestResults: apiData?.batteryTestResults || prev.batteryTestResults,
           files: apiData?.files || prev.files,
           user: apiData?.inspectionByUser || prev.user,
@@ -955,7 +961,13 @@ const InspectionFireCertificate = ({
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse,
         inspectionBy: loggedInUserData?.id,
-        actionId: existingAction?.actionId || formData.actionId
+        actionId: existingAction?.actionId || formData.actionId,
+        batteryTestResults: formData.batteryTestResults.map(result => ({
+          batteryIdentifier: result.batteryIdentifier,
+          voltage: result.voltage,
+          charge: result.charge,
+          installedDate: result.installedDate
+        }))
       };
 
       const inspectionResponse = formData.id
@@ -1069,8 +1081,8 @@ const InspectionFireCertificate = ({
                 <input
                   type="text"
                   className="form-control"
-                  value={formData.extentOfSystem}
-                  onChange={(e) => handleInputChange(e, "extentOfSystem")}
+                  value={formData.additionalComments1 || ""}
+                  onChange={(e) => handleInputChange(e, "additionalComments1")}
                   disabled={!isFormEditable}
                   required
                 />
@@ -1084,8 +1096,8 @@ const InspectionFireCertificate = ({
                 <input
                   type="text"
                   className="form-control"
-                  value={formData.variationsFromBS5839}
-                  onChange={(e) => handleInputChange(e, "variationsFromBS5839")}
+                  value={formData.additionalComments2 || ""}
+                  onChange={(e) => handleInputChange(e, "additionalComments2")}
                   disabled={!isFormEditable}
                   required
                 />
