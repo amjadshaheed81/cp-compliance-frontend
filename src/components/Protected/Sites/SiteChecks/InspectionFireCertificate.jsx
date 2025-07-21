@@ -219,11 +219,11 @@ const InspectionFireCertificate = ({
       };
 
       if (currentCheckId) {
-        const existingInspections = await get(`/api/site-check/fire-alarm/${currentCheckId}`);
+        const existingInspections = await get(`/api/site-check/fire-alarm-inspection/${currentCheckId}`);
         if (existingInspections?.length > 0) {
-          await put(`/api/site-check/fire-alarm/${currentCheckId}`, inspectionPayload);
+          await put(`/api/site-check/fire-alarm-inspection/${currentCheckId}`, inspectionPayload);
         } else {
-          await post(`/api/site-check/fire-alarm`, inspectionPayload);
+          await post(`/api/site-check/fire-alarm-inspection`, inspectionPayload);
         }
       }
 
@@ -237,16 +237,18 @@ const InspectionFireCertificate = ({
     }
   };
 
+  // Replace the existing useEffect that controls showRiskAssessment
   useEffect(() => {
-    const hasUnsatisfactoryChecks = formData.inspectionChecks
-      .some(check => check.checkSelected && !check.satisfactory);
+
+    const hasAdditionalComments = formData.additionalComments.trim().length > 0;
 
     const isActionValid = existingAction &&
       (Number(existingAction.checkId) === Number(currentCheckId));
 
-    setShowRiskAssessment(hasUnsatisfactoryChecks);
+    setShowRiskAssessment(hasAdditionalComments);
     setActionRaised(isActionValid);
-  }, [formData.inspectionChecks, currentCheckId, existingAction]);
+  }, [formData.additionalComments, currentCheckId, existingAction]);
+
 
   const fetchActionById = async (id) => {
     try {
@@ -309,7 +311,7 @@ const InspectionFireCertificate = ({
       }
 
       // Generate PDF content
-      const { PDFDocument, rgb } = await import('pdf-lib');
+      const { PDFDocument } = await import('pdf-lib');
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
@@ -422,7 +424,7 @@ const InspectionFireCertificate = ({
           const signatureImageBytes = await signatureResponse.arrayBuffer();
           const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
-          const signatureField = form.getButton('Image_af_image');
+          const signatureField = form.getButton('signature_af_image');
           if (signatureField) {
             signatureField.setImage(signatureImage);
           }
@@ -732,7 +734,7 @@ const InspectionFireCertificate = ({
 
   const getInspection = async () => {
     try {
-      const apiData = await get(`/api/site-check/fire-alarm/${checkId}`);
+      const apiData = await get(`/api/site-check/fire-alarm-inspection/${checkId}`);
 
       if (apiData) {
         let existingAction = null;
@@ -898,12 +900,7 @@ const InspectionFireCertificate = ({
     setFormData(prev => ({ ...prev, inspectionDate: date || new Date() }));
   };
 
-  const calculateRiskScore = () => {
-    const unsatisfactoryCount = formData.inspectionChecks.filter(
-      (check) => check.checkSelected && !check.satisfactory
-    ).length;
-    return unsatisfactoryCount * 5;
-  };
+
 
   const submitInspection = async (e) => {
     e.preventDefault();
@@ -918,10 +915,11 @@ const InspectionFireCertificate = ({
       return;
     }
 
-    const hasUnsatisfactoryChecks = formData.inspectionChecks
-      .some(check => check.checkSelected && !check.satisfactory);
 
-    if (hasUnsatisfactoryChecks && !actionRaised) {
+
+    const hasAdditionalComments = formData.additionalComments.trim().length > 0;
+
+    if (hasAdditionalComments && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
       return;
     }
@@ -961,8 +959,8 @@ const InspectionFireCertificate = ({
       };
 
       const inspectionResponse = formData.id
-        ? await put(`/api/site-check/fire-alarm/${formData.id}`, inspectionPayload)
-        : await post("/api/site-check/fire-alarm", inspectionPayload);
+        ? await put(`/api/site-check/fire-alarm-inspection/${formData.id}`, inspectionPayload)
+        : await post("/api/site-check/fire-alarm-inspection", inspectionPayload);
 
       // 3. Generate and upload PDF
       const pdfResult = await generatePDF();
@@ -1168,53 +1166,7 @@ const InspectionFireCertificate = ({
             </tbody>
           </table>
 
-          {/* Risk Assessment Section */}
-          {showRiskAssessment && (
-            <div className="card mb-4">
-              <div className="card-header">
-                <h5 className="mb-0">Risk Assessment</h5>
-                {existingAction && Number(existingAction.checkId) === Number(currentCheckId) && (
-                  <span className="badge bg-success ms-2">
-                    Action #{existingAction.actionId} - {existingAction.status}
-                  </span>
-                )}
-              </div>
-              <div className="card-body">
-                {existingAction && Number(existingAction.checkId) === Number(currentCheckId) ? (
-                  <div className="existing-action">
-                    <div className="row">
-                      <div className="col-md-6">
-                        <p><strong>Observation:</strong> {existingAction.observation}</p>
-                        <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
-                        <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
-                      </div>
-                      <div className="col-md-6">
-                        <p><strong>Description: </strong> {existingAction.desc}</p>
-                        <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
-                        <p><strong>Status:</strong> {existingAction.status}</p>
-                      </div>
-                    </div>
-                    {existingAction.comments && (
-                      <div className="mt-3">
-                        <h6>Comments:</h6>
-                        <p>{existingAction.comments}</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <RiskScoreCard
-                    desc={`Inspection - Fire Alarm to meet BS5839 - ${inspectionDetails?.category || ''}`}
-                    siteId={siteSelectedForGlobal?.siteId}
-                    checkId={currentCheckId}
-                    createdBy={loggedInUserData?.id}
-                    onRiskAssessmentComplete={handleRiskAssessmentComplete}
-                    actionRaised={actionRaised}
-                    disabled={!isFormEditable}
-                  />
-                )}
-              </div>
-            </div>
-          )}
+
 
           {/* Battery Information Section */}
           <div className="card mb-4">
@@ -1408,6 +1360,54 @@ const InspectionFireCertificate = ({
               disabled={!isFormEditable}
             />
           </div>
+
+          {/* Risk Assessment Section */}
+          {showRiskAssessment && (
+            <div className="card mb-4">
+              <div className="card-header">
+                <h5 className="mb-0">Risk Assessment</h5>
+                {existingAction && Number(existingAction.checkId) === Number(currentCheckId) && (
+                  <span className="badge bg-success ms-2">
+                    Action #{existingAction.actionId} - {existingAction.status}
+                  </span>
+                )}
+              </div>
+              <div className="card-body">
+                {existingAction && Number(existingAction.checkId) === Number(currentCheckId) ? (
+                  <div className="existing-action">
+                    <div className="row">
+                      <div className="col-md-6">
+                        <p><strong>Observation:</strong> {existingAction.observation}</p>
+                        <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                        <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                      </div>
+                      <div className="col-md-6">
+                        <p><strong>Description: </strong> {existingAction.desc}</p>
+                        <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                        <p><strong>Status:</strong> {existingAction.status}</p>
+                      </div>
+                    </div>
+                    {existingAction.comments && (
+                      <div className="mt-3">
+                        <h6>Comments:</h6>
+                        <p>{existingAction.comments}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <RiskScoreCard
+                    desc={`Inspection - Fire Alarm to meet BS5839 - ${inspectionDetails?.category || ''}`}
+                    siteId={siteSelectedForGlobal?.siteId}
+                    checkId={currentCheckId}
+                    createdBy={loggedInUserData?.id}
+                    onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                    actionRaised={actionRaised}
+                    disabled={!isFormEditable}
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* System Condition Section */}
           <div className="border p-3 mb-4 bg-light">
