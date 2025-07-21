@@ -32,6 +32,9 @@ import AirConditioning from "./AirConditioning";
 import VentilationReport from "./VentilationReport";
 import SounderAudibilty from "./SounderAudibility";
 import RefugeIntercomTesting from "./RefugeIntercomTesting";
+import WaterChlorination from "./WaterChlorination";
+import ShowerHeadCertificate from "./ShowerHeadCertificate";
+
 
 
 
@@ -197,7 +200,19 @@ else if (
       siteCheck.category === "Refuge Intercom Testing & Inspection"
     ) {
       setStep("inspection-refuge-intercom-testing");
+    }else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Legionella" &&
+      siteCheck.category === "Water - Storage System Chlorination"
+    ) {
+      setStep("inspection-water-chlorination");
+    }else if(
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Periodic Shower Head Cleaning"){
+      setStep("shower-head")
     } 
+   
     else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
     } else if (siteCheck.type === "Audit" && siteCheck?.subType === "Monthly Audit") {
@@ -504,6 +519,29 @@ autoComplete="off"
                       leadUserID={siteCheck?.leadUserID}
                   />
                 </Item>
+            )}
+            {step === "inspection-water-chlorination" && (
+              <Item>
+                <WaterChlorination
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
+            )}
+
+ {step === "shower-head" && (
+              <Item>
+                <ShowerHeadCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
             )}
             {step === "inspection-electrical-wc-alarm" && (
                 <DisabledWCAlarmCertificate
