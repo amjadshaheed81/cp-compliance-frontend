@@ -121,7 +121,7 @@ const ShowerHeadCertificate = ({
             const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
 
             const logBooksFolder = parentFoldersResponse?.parentFolders?.find(
-                folder => folder.name.trim() === 'Log Books'
+                folder => folder.name.trim() === '6 - Log Books'
             );
 
             if (!logBooksFolder) return null;
@@ -146,7 +146,7 @@ const ShowerHeadCertificate = ({
                 `/api/document/parent/${waterServicesFolder.id}/folders?siteId=${siteId}`
             );
             const storageTankFolder = waterResponse?.document?.childFolders?.find(
-                folder => folder.name.trim() === 'Shower Head Cleaning'
+                folder => folder.name.trim() === 'Water : Periodic Shower Head Cleaning'
             );
 
             setState(prev => ({
