@@ -365,7 +365,7 @@ const InspectionFireCertificate = ({
       setTextField('Address_2', formData.installationAddress || '');
 
       // Set inspection company info
-      setTextField('InspectionTest', loggedInUserData?.companyName || '');
+      setTextField('inspectionTest', loggedInUserData?.companyName || '');
       setTextField('Address_3', loggedInUserData?.companyAddress || '');
 
       // Set inspection date
@@ -411,9 +411,9 @@ const InspectionFireCertificate = ({
       setCheckbox('SystemConditionUnsatisfactory', formData.systemCondition === 'unsatisfactory');
 
       // Set additional comments
-      setTextField('AdditionalComments', formData.additionalComments || '');
-      setTextField('AdditionalComments1', formData.additionalComments1 || '');
-      setTextField('AdditionalComments2', formData.additionalComments2 || '');
+      setTextField('additionalComments', formData.additionalComments || '');
+      setTextField('additionalComments1', formData.additionalComments1 || '');
+      setTextField('additionalComments2', formData.additionalComments2 || '');
 
       // Set inspector details
       const inspector = users.find(u => u.id === loggedInUserData?.id);
