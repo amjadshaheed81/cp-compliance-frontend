@@ -78,6 +78,8 @@ const ShowerHeadCertificate = ({
     const sites = useSelector((state) => state.site.sites);
     const navigate = useNavigate();
     const isInternalUserTaggedWithSite = true;
+    const [inspectionDetails, setInspectionDetails] = useState(null);
+
 
     // Memoized values
     const selectedAsset = React.useMemo(() =>
@@ -237,6 +239,19 @@ const ShowerHeadCertificate = ({
                     isSubmitted: isDone,
                     showPdfButton: isDone
                 }));
+
+                // Set inspection details here
+                const inspectionDetails = {
+                    checkId: showerHeadCheck.checkId,
+                    siteId: showerHeadCheck.siteId,
+                    type: showerHeadCheck.type,
+                    subType: showerHeadCheck.subType,
+                    category: showerHeadCheck.category,
+                    dueDate: showerHeadCheck.dueDate,
+                    status: showerHeadCheck.status
+                };
+                console.log('Setting inspection details:', inspectionDetails);
+                setInspectionDetails(inspectionDetails);
             } else {
                 setState(prev => ({
                     ...prev,
@@ -294,6 +309,12 @@ const ShowerHeadCertificate = ({
             return false;
         }
     }, []);
+
+    
+    const formatDateForBackend = (date) => {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+    };
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
         try {
@@ -371,8 +392,7 @@ const ShowerHeadCertificate = ({
                 fileVersion,
                 siteId: siteSelectedForGlobal?.siteId || 0,
                 issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                    .toISOString().replace('T', ' ').split('.')[0],
+                expiryDate: formatDateForBackend(inspectionDetails.dueDate),
                 uploaderUserId: loggedInUserData?.id || 0,
                 reviewerUserId: loggedInUserData?.id || 0,
                 referenceNumber: `SHC-${new Date().getTime()}`
