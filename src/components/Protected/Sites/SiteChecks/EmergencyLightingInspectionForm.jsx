@@ -497,7 +497,7 @@ const EmergencyLightingInspectionForm = ({
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
       // Generate filename
-      const fileName = `EmergencyLightingInspection_${siteSelectedForGlobal?.name || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `EmergencyLightingInspection_${inspectionDetails?.category || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
       // Save locally first
       const savedLocally = await savePdfToLocal(blob, fileName);
