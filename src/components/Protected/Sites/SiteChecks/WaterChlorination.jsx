@@ -239,6 +239,64 @@ The capacity of the tank is ${capacity} litres`;
     state.currentCheckId,
   ]);
 
+  const fetchInspectionData = useCallback(async () => {
+    try {
+      if (!state.currentCheckId) return;
+
+      // Fetch inspection data for this checkId
+      const apiData = await get(`/api/site-check/generic-inspection/${state.currentCheckId}`);
+
+      if (apiData && apiData.length > 0) {
+        const mostRecentItem = apiData[apiData.length - 1];
+
+        // Find related users
+        const clientUser = users.find(user => user.id === mostRecentItem.client);
+        const siteContactUser = users.find(user => user.id === mostRecentItem.siteContact);
+
+        // Fetch action data if actionId exists
+        let existingAction = null;
+        if (mostRecentItem.actionId) {
+          existingAction = await fetchActionById(mostRecentItem.actionId);
+        }
+
+        // Update form data with fetched values
+        setFormData(prev => ({
+          ...prev,
+          site: mostRecentItem.site || prev.site,
+          clientAddress: mostRecentItem.clientAddress || license?.companyAddress || "",
+          siteContact: mostRecentItem.siteContact || prev.siteContact,
+          date: mostRecentItem.date || prev.date,
+          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          job: mostRecentItem.job || prev.job,
+          report: mostRecentItem.report || getDefaultReportTemplate(mostRecentItem.param6Remark || tankCapacity),
+          clientName: mostRecentItem.clientName || prev.clientName,
+          engineerName: mostRecentItem.engineerName || loggedInUserData?.name || "",
+          param5Remark: mostRecentItem.param5Remark || loggedInUserData?.signature || "",
+          param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
+          param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
+          param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+          param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
+          param6Remark: mostRecentItem.param6Remark || tankCapacity,
+          param7Remark: mostRecentItem.param7Remark || prev.param7Remark,
+          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          clientUser: clientUser || null,
+          siteContactUser: siteContactUser || null,
+          actionId: mostRecentItem.actionId || null
+        }));
+
+        // Update state with action info
+        setState(prev => ({
+          ...prev,
+          existingAction,
+          actionRaised: !!existingAction
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching inspection data:", error);
+      toast.error("Failed to load inspection data");
+    }
+  }, [state.currentCheckId, users, fetchActionById, loggedInUserData, tankCapacity]);
+
   const fetchSiteCheckData = useCallback(async () => {
     try {
       if (!siteSelectedForGlobal?.siteId) return;
@@ -715,6 +773,7 @@ The capacity of the tank is ${capacity} litres`;
             getSiteDetailsById(siteSelectedForGlobal.siteId),
             fetchFolderStructure(siteSelectedForGlobal.siteId),
             fetchSiteCheckData(),
+            fetchInspectionData(),
           ]);
 
           if (isInternalUserTaggedWithSite && users.length === 0) {
