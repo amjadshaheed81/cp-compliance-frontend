@@ -449,7 +449,7 @@ const InspectionFireCertificate = ({
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
       // Generate filename
-      const fileName = `FireAlarmInspection_${siteSelectedForGlobal?.name || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `FireAlarmInspection_${inspectionDetails?.category || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
       // Save locally first
       await savePdfToLocal(blob, fileName);
