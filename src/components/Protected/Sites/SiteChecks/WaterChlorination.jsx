@@ -96,11 +96,7 @@ The capacity of the tank is ${capacity} litres`;
   const sites = useSelector((state) => state.site.sites);
   const navigate = useNavigate();
   const isInternalUserTaggedWithSite = true;
-
-
-
-
-
+  const [inspectionDetails, setInspectionDetails] = useState(null);
 
 
 
@@ -308,6 +304,7 @@ The capacity of the tank is ${capacity} litres`;
         ? response?.find((check) => check.checkId === parseInt(checkId, 10))
         : null;
 
+
       if (chlorinationCheck) {
         const isDone = chlorinationCheck.status === "Done";
         setState((prev) => ({
@@ -318,6 +315,19 @@ The capacity of the tank is ${capacity} litres`;
           isSubmitted: isDone,
           showPdfButton: isDone,
         }));
+
+        // Set inspection details here
+        const inspectionDetails = {
+          checkId: chlorinationCheck.checkId,
+          siteId: chlorinationCheck.siteId,
+          type: chlorinationCheck.type,
+          subType: chlorinationCheck.subType,
+          category: chlorinationCheck.category,
+          dueDate: chlorinationCheck.dueDate,
+          status: chlorinationCheck.status
+        };
+        console.log('Setting inspection details:', inspectionDetails);
+        setInspectionDetails(inspectionDetails);
       } else {
         setState((prev) => ({
           ...prev,
@@ -461,6 +471,10 @@ The capacity of the tank is ${capacity} litres`;
           exists ? "file" : "files",
           new File([pdfBlob], fileName, { type: "application/pdf" })
         );
+        const formatDateForBackend = (date) => {
+          const d = new Date(date);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        };
 
         // Add document metadata as JSON string
         const documentRequest = {
@@ -472,8 +486,7 @@ The capacity of the tank is ${capacity} litres`;
             fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace("T", " ").split(".")[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace("T", " ").split(".")[0],
+            expiryDate: formatDateForBackend(inspectionDetails.dueDate),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SHC-${new Date().getTime()}`

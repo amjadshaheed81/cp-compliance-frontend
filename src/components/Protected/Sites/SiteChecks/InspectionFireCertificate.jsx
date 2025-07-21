@@ -618,7 +618,7 @@ const InspectionFireCertificate = ({
             fileVersion: (existingFile.fileVersion || 1) + 1,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: formatDateForBackend(new Date()),
-            expiryDate: formatDateForBackend(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+            expiryDate: formatDateForBackend(inspectionDetails.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `FA-${new Date().getTime()}`
@@ -656,7 +656,7 @@ const InspectionFireCertificate = ({
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: formatDateForBackend(new Date()),
-            expiryDate: formatDateForBackend(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+            expiryDate: formatDateForBackend(inspectionDetails.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `FA-${new Date().getTime()}`
