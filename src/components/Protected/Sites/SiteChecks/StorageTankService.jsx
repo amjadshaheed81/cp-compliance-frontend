@@ -714,6 +714,38 @@ const StorageTankService = ({
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
       const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
       const form = pdfDoc.getForm();
+      // Universal image embedding function
+      const embedUniversalImage = async (imageBytes) => {
+        try {
+          // Try PNG first
+          return await pdfDoc.embedPng(imageBytes);
+        } catch (pngError) {
+          console.log('Not a PNG, trying JPEG...');
+          try {
+            // Try JPEG next
+            return await pdfDoc.embedJpg(imageBytes);
+          } catch (jpgError) {
+            console.log('Not a JPEG, trying fallback methods...');
+            try {
+              // As a last resort, try converting to PNG
+              const imageBlob = new Blob([imageBytes]);
+              const img = await createImageBitmap(imageBlob);
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              const pngDataUrl = canvas.toDataURL('image/png');
+              const pngResponse = await fetch(pngDataUrl);
+              const pngBytes = await pngResponse.arrayBuffer();
+              return await pdfDoc.embedPng(pngBytes);
+            } catch (finalError) {
+              console.error('All image embedding attempts failed:', finalError);
+              throw new Error('Could not embed image in any supported format');
+            }
+          }
+        }
+      };
 
       const setTextField = (fieldName, value, fontSize = 5) => {
         try {
@@ -787,43 +819,56 @@ const StorageTankService = ({
 
       for (const { pdfField, formField } of imageFields) {
         const imageUrl = formData[formField];
-        if (imageUrl) {
-          try {
-            const cleanUrl = imageUrl.split('?')[0];
-            const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
+        if (!imageUrl) {
+          console.log(`No image URL found for ${formField}`);
+          continue;
+        }
 
-            console.log(`Fetching image from: ${imageUrlWithToken}`);
-            const imageResponse = await fetch(imageUrlWithToken);
+        try {
+          // Clean URL and add SAS token
+          const cleanUrl = imageUrl.split('?')[0];
+          const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
+          console.log(`Processing image from: ${imageUrlWithToken}`);
 
-            if (!imageResponse.ok) {
-              console.warn(`Failed to fetch image for ${formField}`);
-              continue;
-            }
+          // Fetch image with timeout
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-            const imageBytes = await imageResponse.arrayBuffer();
-            const isPng = imageUrl.toLowerCase().endsWith('.png');
+          const imageResponse = await fetch(imageUrlWithToken, {
+            signal: controller.signal
+          });
+          clearTimeout(timeout);
 
-            let image;
-            if (isPng) {
-              image = await pdfDoc.embedPng(imageBytes);
-            } else {
-              image = await pdfDoc.embedJpg(imageBytes);
-            }
-
-            try {
-              const imageField = form.getButton(pdfField);
-              if (imageField) {
-                console.log(`Setting image for field: ${pdfField}`);
-                imageField.setImage(image);
-              } else {
-                console.warn(`PDF field ${pdfField} not found`);
-              }
-            } catch (error) {
-              console.warn(`Error setting image for field ${pdfField}:`, error);
-            }
-          } catch (error) {
-            console.error(`Error embedding ${formField} image:`, error);
+          if (!imageResponse.ok) {
+            console.error(`HTTP error for ${formField}: ${imageResponse.status}`);
+            continue;
           }
+
+          const imageBytes = await imageResponse.arrayBuffer();
+
+          // Verify we have actual image data
+          if (imageBytes.byteLength < 100) {
+            console.error(`Image too small or corrupted for ${formField}`);
+            continue;
+          }
+
+          // Universal embedding
+          const image = await embedUniversalImage(imageBytes);
+          console.log(`Successfully embedded image for ${formField}`);
+
+          // Set image in PDF field
+          const imageField = form.getButton(pdfField);
+          if (!imageField) {
+            console.error(`PDF field ${pdfField} not found`);
+            continue;
+          }
+
+          imageField.setImage(image);
+          console.log(`Image set in field ${pdfField}`);
+
+        } catch (error) {
+          console.error(`Error processing ${formField} image:`, error);
+          // Continue with next image even if one fails
         }
       }
 
