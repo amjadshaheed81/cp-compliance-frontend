@@ -550,9 +550,10 @@ const StorageTankService = ({
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
-
-      // Save locally first
-      await savePdfToLocal(pdfBlob, fileName);
+      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+      if (!savedLocally) {
+        throw new Error('Failed to save PDF locally');
+      }
 
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
       const targetFolderId = folderIds.storageTankService || folderIds.logBooks;
@@ -561,46 +562,143 @@ const StorageTankService = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
 
+      // First check if file exists
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
       const formData = new FormData();
-      const documentRequest = {
-        folderId: targetFolderId,
-        files: [{
-          name: fileName.split('.')[0],
-          originalFileName: fileName,
-          fileVersion: 1,
-          siteId: siteSelectedForGlobal?.siteId || 0,
-          uploaderUserId: loggedInUserData?.id || 0,
-          reviewerUserId: loggedInUserData?.id || 0,
-          issueDate: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-          expiryDate: moment(inspectionDetails?.duedate).format("YYYY-MM-DD HH:mm:ss"),
-        }]
-      };
 
-      formData.append('files', pdfFile);
-      formData.append('documentRequestString', JSON.stringify(documentRequest));
+      if (exists && existingFile) {
+        formData.append('file', pdfFile);
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: existingFile.fileVersion + 1, // Increment version
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `SAR-${new Date().getTime()}`
+          }]
+        };
 
-      const response = await axios({
-        method: 'post',
-        url: '/api/document/files/upload',
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        const response = await axios({
+          method: 'put',
+          url: '/api/document/file/newVersion/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
+          return true;
         }
-      });
+      } else {
+        formData.append('files', pdfFile);
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
-      if (response.data) {
-        toast.success('PDF uploaded successfully!');
-        return true;
+        const documentRequestString = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toISOString().replace('T', ' ').split('.')[0],
+            note: 'Storage Tank Service Report',
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            originalFileName: fileName,
+            uploaderUserId: loggedInUserData?.id || 0,
+            reviewerUserId: loggedInUserData?.id || 0,
+            referenceNumber: `SAR-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        const response = await axios({
+          method: 'post',
+          url: '/api/document/files/upload',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          return true;
+        }
       }
 
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      toast.error(`PDF upload failed: ${error.response?.data?.message || error.message}`);
       return false;
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Helper function to check if file exists
+  const checkFileExists = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId || !folderId) return { exists: false, file: null };
+
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+      const baseName = fileName.split('.')[0];
+      const existingFile = files.find(file =>
+        file.name && file.name.startsWith(baseName)
+      );
+
+      return {
+        exists: !!existingFile,
+        file: existingFile || null
+      };
+    } catch (error) {
+      console.error('Error checking file existence:', error);
+      return { exists: false, file: null };
+    }
+  };
+
+  // Helper function to get highest version of similar files
+  const getHighestFileVersion = async (folderId, fileName) => {
+    try {
+      const siteId = siteSelectedForGlobal?.siteId;
+      if (!siteId) {
+        console.warn('No site ID available for file version check');
+        return 1;
+      }
+
+      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const files = response?.document?.files || [];
+
+      if (files.length > 0) {
+        const baseName = fileName.split('.')[0];
+        const matchingFiles = files.filter(file =>
+          file.name && file.name.startsWith(baseName)
+        );
+
+        if (matchingFiles.length > 0) {
+          const versions = matchingFiles.map(f => f.fileVersion || 1);
+          const maxVersion = Math.max(...versions);
+          return maxVersion + 1;
+        }
+      }
+      return 1;
+    } catch (error) {
+      console.error('Error checking file versions:', error);
+      return 1;
     }
   };
 
@@ -659,8 +757,8 @@ const StorageTankService = ({
       ].filter(Boolean).join(' - ') : 'Not specified';
 
       // Equipment information
-      setTextField('Manufacturer', formData.selectedAsset?.manufacturer || '', smallFont);
-      setTextField('Location', equipmentDetailsLocation, smallFont);
+      setTextField('Tank Manufacturer', formData.selectedAsset?.manufacturer || '', smallFont);
+      setTextField('Tank Location', equipmentDetailsLocation, smallFont);
       setTextField('Tank Size', formData.param1Remark || '', smallFont);
 
       // Test results
@@ -1381,7 +1479,7 @@ const StorageTankService = ({
                 </div>
                 <div className="col-md-4">
                   <div className="mb-3">
-                    <label className="form-label">Tank Size</label>
+                    <label className="form-label">Tank Size (Liters)</label>
                     <input
                       type="text"
                       className="form-control"
