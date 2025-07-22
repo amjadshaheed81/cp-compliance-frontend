@@ -99,6 +99,8 @@ const StorageTankService = ({
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+
 
   const [sasToken, setSasToken] = useState('');
   const [folderIds, setFolderIds] = useState({
@@ -355,6 +357,20 @@ const StorageTankService = ({
             setIsFormEditable(!isDone);
             setIsSubmitted(isDone);
             setShowPdfButton(isDone);
+
+
+            // Set inspection details here
+            const inspectionDetails = {
+              checkId: storageTankCheck.checkId,
+              siteId: storageTankCheck.siteId,
+              type: storageTankCheck.type,
+              subType: storageTankCheck.subType,
+              category: storageTankCheck.category,
+              dueDate: storageTankCheck.dueDate,
+              status: storageTankCheck.status
+            };
+            console.log('Setting inspection details:', inspectionDetails);
+            setInspectionDetails(inspectionDetails);
           } else {
             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
             setIsFormEditable(true);
@@ -556,7 +572,7 @@ const StorageTankService = ({
           uploaderUserId: loggedInUserData?.id || 0,
           reviewerUserId: loggedInUserData?.id || 0,
           issueDate: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-          expiryDate: moment(new Date()).add(1, "years").format("YYYY-MM-DD HH:mm:ss"),
+          expiryDate: moment(inspectionDetails?.duedate).format("YYYY-MM-DD HH:mm:ss"),
         }]
       };
 
