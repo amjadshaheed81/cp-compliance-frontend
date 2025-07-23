@@ -129,6 +129,7 @@ const StorageTankService = ({
         const token = await getSasToken();
         setSasToken(token);
 
+
         // Update any existing photo URLs with new token
         setUploadedPhotos(prev => prev.map(photo => ({
           ...photo,
@@ -461,6 +462,8 @@ const StorageTankService = ({
     setActionRaised(isActionValid);
   }, [formData.param2, currentCheckId, existingAction]);
 
+
+
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
       if (!actionResponse?.actionId) {
@@ -514,6 +517,8 @@ const StorageTankService = ({
     }
   };
 
+
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -540,6 +545,17 @@ const StorageTankService = ({
       return false;
     }
   };
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null; // Handle missing date
+
+    // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
+    const date = new Date(dateString);
+
+    // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
+
+  console.log("-->", formatDateForBackend(inspectionDetails?.dueDate));
 
 
 
@@ -577,7 +593,7 @@ const StorageTankService = ({
             fileVersion: existingFile.fileVersion + 1, // Increment version
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: moment(inspectionDetails?.dueDate).format('DD/MM/YYYY'),
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
@@ -609,7 +625,7 @@ const StorageTankService = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: moment(inspectionDetails?.dueDate).format('DD/MM/YYYY'),
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             note: 'Storage Tank Service Report',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
