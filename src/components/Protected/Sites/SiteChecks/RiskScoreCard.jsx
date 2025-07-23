@@ -99,10 +99,10 @@ const RiskScoreCard = ({
                 createdBy,
                 taggedAsset,
                 dueDate: calculateDueDate(totalRiskScore).toISOString(),
-                images: images.map(img => ({ // Include images in payload
+                images: (images || []).filter(img => img?.url).map(img => ({
                     checkId: checkId,
                     responseId: img.responseId || null,
-                    url: img.url.split('?')[0], // Remove SAS token for storage
+                    imageUrl: img.url.split('?')[0], // Remove SAS token for storage
                     fileName: img.fileName || `action_image_${Date.now()}`,
                     documentId: img.documentId || uuidv4(),
                 })),
