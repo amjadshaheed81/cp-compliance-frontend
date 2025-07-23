@@ -16,7 +16,7 @@ import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
-import pdfTemplate from './pdf/VentilationTemplate.pdf';
+import pdfTemplate from './pdf/FIRE DAMPER INSPECTION.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 
@@ -107,8 +107,9 @@ const FireDamper = ({
     const [uploadedPhotos, setUploadedPhotos] = useState([]);
     const [folderIds, setFolderIds] = useState({
         logBooks: null,
-        EnvironmentalLogBook: null,
-        ventilation: null
+        plantAndEquipment: null,
+        miscellaneousService: null,
+        sounderAudibility: null
     });
     const [checkStatus, setCheckStatus] = useState('Open');
     const [isFormEditable, setIsFormEditable] = useState(true);
@@ -344,27 +345,40 @@ const FireDamper = ({
                     const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
 
                     if (logBooksResponse?.document?.childFolders) {
-                        const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
-                            folder => folder.name === ' Plant and Equipment'
+                        const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
+                            folder => folder.name.trim() === 'Fire Log Book'
                         );
 
-                        if (EnvironmentalLogBookFolder) {
-                            const environmentalResponse = await get(
-                                `/api/document/parent/${EnvironmentalLogBookFolder.id}/folders?siteId=${siteId}`
+                        if (plantAndEquipmentFolder) {
+                            const plantAndEquipmentResponse = await get(
+                                `/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`
                             );
 
-                            if (environmentalResponse?.document?.childFolders) {
-                                const ventilationFolder = environmentalResponse.document.childFolders.find(
-                                    folder => folder.name === 'Ventilation Maintenance Records'
+                            if (plantAndEquipmentResponse?.document?.childFolders) {
+                                const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
+                                    folder => folder.name.trim() === 'Fire Equipment (Other)'
+                                );
+
+                                if (miscellaneousFolder) {
+                                    const miscResponse = await get(
+                                        `/api/document/parent/${miscellaneousFolder.id}/folders?siteId=${siteId}`
+                                    );
+
+                                    if (miscResponse?.document?.childFolders) {
+                                        const sounderAudibilityFolder = miscResponse.document.childFolders.find(
+                                            folder => folder.name.trim() === 'Fire Damper Test'
                                 );
 
                                 setFolderIds({
                                     logBooks: logBooksFolder.id,
-                                    EnvironmentalLogBook: EnvironmentalLogBookFolder.id,
-                                    ventilation: ventilationFolder?.id || null
+                                    plantAndEquipment: plantAndEquipmentFolder.id,
+                                    miscellaneousService: miscellaneousFolder.id,
+                                    sounderAudibility: sounderAudibilityFolder?.id || null
                                 });
 
-                                return ventilationFolder?.id || null;
+                                        return sounderAudibilityFolder?.id || null;
+                                    }
+                                }
                             }
                         }
                     }
@@ -496,12 +510,12 @@ const FireDamper = ({
     ]);
 
     useEffect(() => {
-        const showRisk = formData.param2 === "Pass";
+        const showRisk = (formData.param1 === "Fail" && formData.param2 === "Fail" && formData.param3 === "Fail" && formData.param4 === "Pass");
         setShowRiskAssessment(showRisk);
 
         const isActionValid = existingAction && existingAction.checkId === currentCheckId;
         setActionRaised(isActionValid);
-    }, [formData.param2, currentCheckId, existingAction]);
+    }, [formData.param2, currentCheckId, existingAction, formData.param1, formData.param3, formData.param4]);
 
     const handleRiskAssessmentComplete = async (actionResponse) => {
         try {
@@ -800,8 +814,8 @@ const FireDamper = ({
 
 
             // Test results
-            setTextField('Operational', formData.param1 === 'Pass' ? 'Yes' : 'No', mediumFont);
-            setTextField('Condition', formData.param2 === 'Pass' ? 'Yes' : 'No', mediumFont);
+            setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
+            setTextField('Condition', formData.param2 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('DamperBarrier', formData.param3 === 'Pass' ? 'Yes' : 'No', mediumFont);
             setTextField('FireRequired', formData.param4 === 'Pass' ? 'Yes' : 'No', mediumFont);
             setTextField('DuctworkContamination', formData.param5 === 'Pass' ? 'Yes' : 'No', mediumFont);
@@ -993,6 +1007,14 @@ const FireDamper = ({
         }
     };
 
+    const allImages = [
+        formData.param2Remark ? { url: formData.param2Remark, paramKey: 'param2Remark' } : null,
+        formData.param3Remark ? { url: formData.param3Remark, paramKey: 'param3Remark' } : null,
+        formData.param4Remark ? { url: formData.param4Remark, paramKey: 'param4Remark' } : null,
+        formData.param5Remark ? { url: formData.param5Remark, paramKey: 'param5Remark' } : null,
+    ].filter(Boolean);
+
+
     const handleRemovePhoto = (index) => {
         const photoToRemove = uploadedPhotos[index];
 
@@ -1049,7 +1071,12 @@ const FireDamper = ({
         }
 
         // Validation checks
-        const hasFailures = formData.param2 === "Pass";
+        const hasFailures = (
+            formData.param1 === "Fail" &&
+            formData.param2 === "Fail" &&
+            formData.param3 === "Fail" &&
+            formData.param4 === "Pass"
+        );
 
         if (hasFailures && !actionRaised) {
             toast.error("Please complete the risk assessment before submitting");
@@ -1681,8 +1708,8 @@ const FireDamper = ({
                                                 disabled={isSubmitted}
                                             >
                                                 <option value="">Select</option>
-                                                <option value="Pass">Yes</option>
-                                                <option value="Fail">No</option>
+                                                <option value="Pass">Pass</option>
+                                                <option value="Fail">Fail</option>
                                             </select>
                                             {validationErrors.param1 && (
                                                 <div className="invalid-feedback">
@@ -1711,8 +1738,8 @@ const FireDamper = ({
                                                 disabled={isSubmitted}
                                             >
                                                 <option value="">Select</option>
-                                                <option value="Pass">Yes</option>
-                                                <option value="Fail">No</option>
+                                                <option value="Pass">Pass</option>
+                                                <option value="Fail">Fail</option>
                                             </select>
                                             {validationErrors.param2 && (
                                                 <div className="invalid-feedback">
@@ -1843,7 +1870,7 @@ const FireDamper = ({
                                 </div>
                             ) : (
                                 <RiskScoreCard
-                                    desc={`Inspection - Plant and Equipment Inspection - Ventilation`}
+                                        desc={`Inspection - Passive Fire - Fire Damper Inspection`}
                                     siteId={siteSelectedForGlobal?.siteId}
                                         checkId={currentCheckId}
                                     createdBy={loggedInUserData?.id}
@@ -1851,6 +1878,7 @@ const FireDamper = ({
                                     onRiskAssessmentComplete={handleRiskAssessmentComplete}
                                     actionRaised={actionRaised}
                                         disabled={isSubmitted}
+                                        images={allImages}
                                 />
                             )}
                         </div>
