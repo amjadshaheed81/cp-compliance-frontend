@@ -34,6 +34,8 @@ import SounderAudibilty from "./SounderAudibility";
 import RefugeIntercomTesting from "./RefugeIntercomTesting";
 import WaterChlorination from "./WaterChlorination";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
+import StorageTankService from "./StorageTankService";
+
 
 
 
@@ -211,7 +213,19 @@ else if (
         siteCheck.subType === "Legionella" &&
         siteCheck.category === "Periodic Shower Head Cleaning"){
       setStep("shower-head")
-    } 
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Legionella" &&
+      siteCheck.category === "Water - Visual Inspection of Storage Tank"
+    ) {
+      setStep("inspection-storage-tank");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Legionella" &&
+      siteCheck.category === "Water Heater Inspection & Service"
+    ) {
+      setStep("inspection-water-heater");
+    }
    
     else if (siteCheck.type === "Assessment" ) {
       setStep("assessment-fire-risk")
@@ -584,6 +598,18 @@ autoComplete="off"
                       leadUserID={siteCheck?.leadUserID}
                   />
                 </Item>
+            )}
+
+            {step === "inspection-storage-tank" && (
+              <Item>
+                <StorageTankService
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
             )}
             {step === "inspection-sounder-audibilty" && (
               <Item>
