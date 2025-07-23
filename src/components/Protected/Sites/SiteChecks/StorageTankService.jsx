@@ -577,8 +577,7 @@ const StorageTankService = ({
             fileVersion: existingFile.fileVersion + 1, // Increment version
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: moment(inspectionDetails?.dueDate).format('DD/MM/YYYY'),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
@@ -610,8 +609,7 @@ const StorageTankService = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: moment(inspectionDetails?.dueDate).format('DD/MM/YYYY'),
             note: 'Storage Tank Service Report',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
