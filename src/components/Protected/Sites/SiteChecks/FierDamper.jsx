@@ -222,10 +222,10 @@ const FireDamper = ({
 
                 // Load photos from parameters
                 const photosFromApi = [];
-                for (let i = 2; i <= 3; i++) {
+                for (let i = 2; i <= 5; i++) {
                     const paramKey = `param${i}Remark`;
                     const photoUrl = mostRecentItem[paramKey];
-                    if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
+                    if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('https')) {
                         photosFromApi.push({
                             url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
                             paramKey
@@ -264,8 +264,11 @@ const FireDamper = ({
                     param2: mostRecentItem.param2 || prev.param2,
                     param3: mostRecentItem.param3 || prev.param3,
                     param4: mostRecentItem.param4 || prev.param4,
+                    param5: mostRecentItem.param5 || prev.param5,
                     param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
                     param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+                    param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
+                    param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
                     client: mostRecentItem.client || "",
                     engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
                     user: engineerUser || loggedInUserData || prev.user,
@@ -600,6 +603,16 @@ const FireDamper = ({
         return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
     }
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null; // Handle missing date
+
+        // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
+        const date = new Date(dateString);
+
+        // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
     const uploadPdfToServer = async (pdfBlob, fileName) => {
         try {
             setIsUploading(true);
@@ -629,7 +642,7 @@ const FireDamper = ({
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: siteSelectedForGlobal?.siteId || 0,
                         issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                        expiryDate: moment(inspectionDetails?.dueDate).format('DD/MM/YYYY'),
+                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `FD-${new Date().getTime()}`
@@ -661,7 +674,7 @@ const FireDamper = ({
                     files: [{
                         name: fileName.split('.')[0],
                         issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                        expiryDate: moment(inspectionDetails?.dueDate).format('DD/MM/YYYY'),
+                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
                         note: 'Fire Damper Inspection Report',
                         fileVersion: fileVersion,
                         siteId: siteSelectedForGlobal?.siteId || 0,
@@ -998,6 +1011,8 @@ const FireDamper = ({
             }
 
             toast.success("Photos uploaded successfully!");
+            await fetchInspectionData();
+
         } catch (error) {
             console.error("Photo upload error:", error);
             toast.error(error.message || 'Upload failed');
@@ -1006,12 +1021,35 @@ const FireDamper = ({
         }
     };
 
-    const allImages = [
-        formData.param2Remark ? { url: formData.param2Remark, paramKey: 'param2Remark' } : null,
-        formData.param3Remark ? { url: formData.param3Remark, paramKey: 'param3Remark' } : null,
-        formData.param4Remark ? { url: formData.param4Remark, paramKey: 'param4Remark' } : null,
-        formData.param5Remark ? { url: formData.param5Remark, paramKey: 'param5Remark' } : null,
-    ].filter(Boolean);
+    const getAllImages = () => {
+        return [
+            formData.param2Remark ? {
+                url: formData.param2Remark.includes('?')
+                    ? formData.param2Remark
+                    : `${formData.param2Remark}?${sasToken}`,
+                paramKey: 'param2Remark'
+            } : null,
+            formData.param3Remark ? {
+                url: formData.param3Remark.includes('?')
+                    ? formData.param3Remark
+                    : `${formData.param3Remark}?${sasToken}`,
+                paramKey: 'param3Remark'
+            } : null,
+            formData.param4Remark ? {
+                url: formData.param4Remark.includes('?')
+                    ? formData.param4Remark
+                    : `${formData.param4Remark}?${sasToken}`,
+                paramKey: 'param4Remark'
+            } : null,
+            formData.param5Remark ? {
+                url: formData.param5Remark.includes('?')
+                    ? formData.param5Remark
+                    : `${formData.param5Remark}?${sasToken}`,
+                paramKey: 'param5Remark'
+            } : null,
+        ].filter(Boolean); // Remove null values
+    };
+    console.log('Passing images to RiskScoreCard:', getAllImages());
 
 
     const handleRemovePhoto = (index) => {
@@ -1877,7 +1915,7 @@ const FireDamper = ({
                                     onRiskAssessmentComplete={handleRiskAssessmentComplete}
                                     actionRaised={actionRaised}
                                         disabled={isSubmitted}
-                                        images={allImages}
+                                        images={getAllImages()}
                                 />
                             )}
                         </div>
