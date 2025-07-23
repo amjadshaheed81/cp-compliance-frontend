@@ -311,9 +311,14 @@ const ShowerHeadCertificate = ({
     }, []);
 
     
-    const formatDateForBackend = (date) => {
-        const d = new Date(date);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null; // Handle missing date
+
+        // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
+        const date = new Date(dateString);
+
+        // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
+        return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {

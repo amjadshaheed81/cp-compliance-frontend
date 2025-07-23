@@ -555,7 +555,7 @@ const StorageTankService = ({
     return date.toISOString().replace('T', ' ').split('.')[0];
   };
 
-  console.log("-->", formatDateForBackend(inspectionDetails?.dueDate));
+
 
 
 
