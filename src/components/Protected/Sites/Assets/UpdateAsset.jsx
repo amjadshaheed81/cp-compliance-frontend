@@ -106,6 +106,7 @@ const UpdateAsset = ({
   const [valuations, setValuations] = useState([]);
   const [valuationModified, setValuationModified] = useState(false);
 
+
   // useEffect(() => {
   //   const setFloorsData = async () => {
   //     if (siteLayout?.length > 0) {
@@ -407,6 +408,7 @@ const UpdateAsset = ({
     model: "",
     serialNumber: "",
     powerOutput: "",
+    damperSize: "",
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -451,6 +453,7 @@ const UpdateAsset = ({
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
       powerOutput: formData?.powerOutput,
+      damperSize: formData?.damperSize,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
@@ -1137,6 +1140,26 @@ const UpdateAsset = ({
                               />
                             </div>
                           </div>
+                        <div className="col-md-6">
+                          <div className="form-group mt-2">
+                            <label for="damperSize">Damper Size(mm)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="damperSize"
+                              name="damperSize"
+                              placeholder=""
+                              {...register("damperSize")}
+                            />
+                          </div>
+                        </div>
                           <div className="col-md-6 mt-2">
                             <label for="category">Category</label>
                             <select

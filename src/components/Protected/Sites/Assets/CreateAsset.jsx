@@ -116,6 +116,7 @@ const CreateAsset = ({
     model: "",
     serialNumber: "",
     powerOutput: "",
+    damperSize: "",
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -348,6 +349,26 @@ const CreateAsset = ({
                               name="powerOutput"
                               placeholder=""
                               {...register("powerOutput")}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-md-6 mt-2">
+                          <div className="form-group mt-2">
+                            <label for="damperSize">Damper Size(mm)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              autoComplete="off"
+                              readOnly
+                              onFocus={(e) =>
+                                e.target.removeAttribute("readonly")
+                              }
+                              className="form-control"
+                              id="damperSize"
+                              name="damperSize"
+                              placeholder=""
+                              {...register("damperSize")}
                             />
                           </div>
                         </div>

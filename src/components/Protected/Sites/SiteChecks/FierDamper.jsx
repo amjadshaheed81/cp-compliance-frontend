@@ -78,8 +78,7 @@ const FireDamper = ({
         param2: "",// Conditional
         param3: "",// Damper with in fier barrier
         param4: "", // Fire Barrier Correction Required
-        param5: "", // Ductwork Contamination
-        param1Remark: "", // damper size
+        param5: "", // Damper Size
         param2Remark: "", // image 1
         param3Remark: "", // image 2
         param4Remark: "", // image 3
@@ -810,7 +809,7 @@ const FireDamper = ({
 
             setTextField('Floor', selectedAsset.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset.subCategory3 || '', smallFont);
-            setTextField('Damper Size', formData.param1Remark || '', smallFont);
+            setTextField('Damper Size', selectedAsset.damperSize || '', smallFont);
 
 
             // Test results
@@ -1477,11 +1476,11 @@ const FireDamper = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            name="param1Remark"
-                                            value={formData.param1Remark}
+                                            name="damperSize"
+                                            value={selectedAsset.damperSize}
                                             onChange={handleInputChange}
                                             required
-                                            disabled={isSubmitted}
+                                            disabled
                                         />
                                     </div>
                                 </div>
