@@ -903,7 +903,7 @@ const FireDamper = ({
             setTextField('Damper Location', equipmentDetails || '', smallFont);
             setTextField('Floor', selectedAsset.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset.subCategory3 || '', smallFont);
-            setTextField('Damper Size', formData?.selectedAsset?.damperSize || '', smallFont);
+            setTextField('Damper Size', selectedAsset?.damperSize || '', smallFont);
 
             setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('Condition', formData.param2 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
@@ -1154,6 +1154,7 @@ const FireDamper = ({
             room: newValue?.room || "",
             serialNo: newValue?.serialNumber || "",
             assetId: newValue?.assetId || "",
+            damperSize: newValue?.damperSize || "" // Add this line
         }));
     };
 
