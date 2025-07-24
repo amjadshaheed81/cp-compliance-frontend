@@ -116,7 +116,7 @@ const CreateAsset = ({
     model: "",
     serialNumber: "",
     powerOutput: "",
-    damperSize: "",
+    damperSize: null,
     relatedAssetId: null,
     folderId: null,
     patItem: false,

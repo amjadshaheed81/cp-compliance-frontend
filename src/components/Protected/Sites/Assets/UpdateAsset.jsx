@@ -408,7 +408,7 @@ const UpdateAsset = ({
     model: "",
     serialNumber: "",
     powerOutput: "",
-    damperSize: "",
+    damperSize: null,
     relatedAssetId: null,
     folderId: null,
     patItem: false,
