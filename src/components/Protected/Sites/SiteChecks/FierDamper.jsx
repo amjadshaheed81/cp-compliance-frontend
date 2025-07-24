@@ -74,15 +74,15 @@ const FireDamper = ({
         room: "",
         serialNo: "",
         report: "",
-        param1: "",// Operational
-        param2: "",// Conditional
-        param3: "",// Damper with in fier barrier
+        param1: "", // Operational
+        param2: "", // Conditional
+        param3: "", // Damper with in fier barrier
         param4: "", // Fire Barrier Correction Required
         param5: "", // Damper Size
-        param2Remark: "", // image 1
-        param3Remark: "", // image 2
-        param4Remark: "", // image 3
-        param5Remark: "", // image 4
+        param2Remark: "", // Pre-inspection photo 1
+        param3remark: "", // Pre-inspection photo 2
+        param4Remark: "", // Post-inspection photo 1
+        param5Remark: "", // Post-inspection photo 2
         client: "",
         user: loggedInUserData || {},
         engineer: loggedInUserData?.id || "",
@@ -93,17 +93,20 @@ const FireDamper = ({
         actionId: null,
     });
 
+    const [uploadedPrePhotos, setUploadedPrePhotos] = useState([]);
+    const [uploadedPostPhotos, setUploadedPostPhotos] = useState([]);
+    const [uploadingPrePhotos, setUploadingPrePhotos] = useState(false);
+    const [uploadingPostPhotos, setUploadingPostPhotos] = useState(false);
+
     const sites = useSelector((state) => state.site.sites);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [uploadingPhotos, setUploadingPhotos] = useState(false);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [showPdfButton, setShowPdfButton] = useState(false);
     const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [inspectionDetails, setInspectionDetails] = useState(null);
     const [validationErrors, setValidationErrors] = useState({});
-    const [uploadedPhotos, setUploadedPhotos] = useState([]);
     const [folderIds, setFolderIds] = useState({
         logBooks: null,
         plantAndEquipment: null,
@@ -128,7 +131,12 @@ const FireDamper = ({
                 const token = await getSasToken();
                 setSasToken(token);
 
-                setUploadedPhotos(prev => prev.map(photo => ({
+                // Update photo URLs with SAS token
+                setUploadedPrePhotos(prev => prev.map(photo => ({
+                    ...photo,
+                    url: `${photo.url.split('?')[0]}?${token}`
+                })));
+                setUploadedPostPhotos(prev => prev.map(photo => ({
                     ...photo,
                     url: `${photo.url.split('?')[0]}?${token}`
                 })));
@@ -220,20 +228,37 @@ const FireDamper = ({
                     (user) => user.id === mostRecentItem.siteContact
                 );
 
-                // Load photos from parameters
-                const photosFromApi = [];
-                for (let i = 2; i <= 5; i++) {
-                    const paramKey = `param${i}Remark`;
-                    const photoUrl = mostRecentItem[paramKey];
-                    if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('https')) {
-                        photosFromApi.push({
-                            url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
-                            paramKey
-                        });
-                    }
+                // Load pre-inspection photos
+                const prePhotos = [];
+                if (mostRecentItem.param2Remark) {
+                    prePhotos.push({
+                        url: `${mostRecentItem.param2Remark}${mostRecentItem.param2Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        paramKey: 'param2Remark'
+                    });
                 }
+                if (mostRecentItem.param3remark) {
+                    prePhotos.push({
+                        url: `${mostRecentItem.param3remark}${mostRecentItem.param3remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        paramKey: 'param3remark'
+                    });
+                }
+                setUploadedPrePhotos(prePhotos);
 
-                setUploadedPhotos(photosFromApi);
+                // Load post-inspection photos
+                const postPhotos = [];
+                if (mostRecentItem.param4Remark) {
+                    postPhotos.push({
+                        url: `${mostRecentItem.param4Remark}${mostRecentItem.param4Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        paramKey: 'param4Remark'
+                    });
+                }
+                if (mostRecentItem.param5Remark) {
+                    postPhotos.push({
+                        url: `${mostRecentItem.param5Remark}${mostRecentItem.param5Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        paramKey: 'param5Remark'
+                    });
+                }
+                setUploadedPostPhotos(postPhotos);
 
                 // Fetch action data if actionId exists
                 let existingAction = null;
@@ -266,7 +291,7 @@ const FireDamper = ({
                     param4: mostRecentItem.param4 || prev.param4,
                     param5: mostRecentItem.param5 || prev.param5,
                     param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
-                    param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+                    param3remark: mostRecentItem.param3remark || prev.param3remark,
                     param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
                     param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
                     client: mostRecentItem.client || "",
@@ -284,7 +309,6 @@ const FireDamper = ({
             toast.error("Failed to load inspection data");
         }
     };
-
     const fetchActionById = async (id) => {
         try {
             if (!id) return null;
@@ -369,14 +393,14 @@ const FireDamper = ({
                                     if (miscResponse?.document?.childFolders) {
                                         const sounderAudibilityFolder = miscResponse.document.childFolders.find(
                                             folder => folder.name === 'Fire Damper Test'
-                                );
+                                        );
 
-                                setFolderIds({
-                                    logBooks: logBooksFolder.id,
-                                    plantAndEquipment: plantAndEquipmentFolder.id,
-                                    miscellaneousService: miscellaneousFolder.id,
-                                    sounderAudibility: sounderAudibilityFolder?.id || null
-                                });
+                                        setFolderIds({
+                                            logBooks: logBooksFolder.id,
+                                            plantAndEquipment: plantAndEquipmentFolder.id,
+                                            miscellaneousService: miscellaneousFolder.id,
+                                            sounderAudibility: sounderAudibilityFolder?.id || null
+                                        });
 
                                         console.log('Folder structure fetched successfully:', {
                                             logBooks: logBooksFolder.id,
@@ -526,6 +550,39 @@ const FireDamper = ({
         setActionRaised(isActionValid);
     }, [formData.param2, currentCheckId, existingAction, formData.param1, formData.param3, formData.param4]);
 
+    const dateFormat = (date) => {
+        return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+    }
+
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null; // Handle missing date
+
+        // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
+        const date = new Date(dateString);
+
+        // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
+    const savePdfToLocal = async (pdfBlob, fileName) => {
+        try {
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            return true;
+        } catch (error) {
+            console.error('Error saving PDF locally:', error);
+            return false;
+        }
+    };
+
     const handleRiskAssessmentComplete = async (actionResponse) => {
         try {
             if (!actionResponse?.actionId) {
@@ -579,47 +636,90 @@ const FireDamper = ({
         }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
-    };
+    const handlePrePhotoUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-    const savePdfToLocal = async (pdfBlob, fileName) => {
+        setUploadingPrePhotos(true);
+
         try {
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 100);
-            return true;
+            // Determine available parameters
+            const availableParams = [];
+            if (!formData.param2Remark) availableParams.push('param2Remark');
+            if (!formData.param3remark) availableParams.push('param3remark');
+
+            const filesToUpload = files.slice(0, availableParams.length);
+            const token = sasToken || await getSasToken();
+
+            const uploadResults = await Promise.all(
+                filesToUpload.map(async (file, index) => {
+                    const response = await uploadSiteCheckDoc({
+                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        file: file
+                    });
+
+                    const baseUrl = response?.url ||
+                        `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+
+                    // Always include SAS token in the stored URL
+                    const imageUrl = `${baseUrl}?${token}`;
+
+                    return {
+                        url: imageUrl,
+                        baseUrl: baseUrl, // Store without token for API if needed
+                        paramKey: availableParams[index],
+                        fileName: file.name,
+                        documentId: response?.documentId || uuidv4()
+                    };
+                })
+            );
+
+            // Update form data with URLs that include SAS tokens
+            const formUpdates = uploadResults.reduce((acc, photo) => {
+                acc[photo.paramKey] = photo.url; // Store WITH SAS token
+                return acc;
+            }, {});
+
+            setFormData(prev => ({
+                ...prev,
+                ...formUpdates
+            }));
+
+            // Update uploaded photos state
+            setUploadedPrePhotos(prev => [
+                ...prev,
+                ...uploadResults
+            ].slice(0, 2));
+
+            // Save to API
+            if (currentCheckId) {
+                const payload = {
+                    checkId: currentCheckId,
+                    siteId: siteSelectedForGlobal?.siteId,
+                    type: 'Inspection',
+                    subType: 'Fire Damper',
+                    category: 'Fire Damper Inspection',
+                    ...formUpdates
+                };
+
+                const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+                if (existingInspections?.length > 0) {
+                    await put(`/api/site-check/generic-inspection/${currentCheckId}`, payload);
+                } else {
+                    await post(`/api/site-check/generic-inspection`, payload);
+                }
+            }
+
+            toast.success("Pre-inspection photos uploaded successfully!");
+            await fetchInspectionData();
+
         } catch (error) {
-            console.error('Error saving PDF locally:', error);
-            return false;
+            console.error("Pre-photo upload error:", error);
+            toast.error(error.message || 'Upload failed');
+        } finally {
+            setUploadingPrePhotos(false);
         }
     };
-
-    const dateFormat = (date) => {
-        return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
-    }
-
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null; // Handle missing date
-
-        // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
-        const date = new Date(dateString);
-
-        // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const uploadPdfToServer = async (pdfBlob, fileName) => {
         try {
             setIsUploading(true);
@@ -629,7 +729,7 @@ const FireDamper = ({
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
             // CORRECTED: Use sounderAudibility folder which is the Fire Damper Test folder
-            const targetFolderId = folderIds.sounderAudibility || null; 
+            const targetFolderId = folderIds.sounderAudibility || null;
 
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
@@ -719,6 +819,8 @@ const FireDamper = ({
             setIsUploading(false);
         }
     };
+
+    //console.log('Selected Asset: -->', selectedAsset);
 
     const generatePDF = async (uploadToServer = true) => {
         try {
@@ -830,7 +932,7 @@ const FireDamper = ({
 
             setTextField('Floor', selectedAsset.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset.subCategory3 || '', smallFont);
-            setTextField('Damper Size', selectedAsset.damperSize || '', smallFont);
+            setTextField('Damper Size', formData?.selectedAsset?.damperSize || '', smallFont);
 
 
             // Test results
@@ -940,21 +1042,25 @@ const FireDamper = ({
         }
     };
 
-    const handlePhotoUpload = async (e) => {
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value,
+        }));
+    };
+
+    const handlePostPhotoUpload = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        setUploadingPhotos(true);
+        setUploadingPostPhotos(true);
 
         try {
             // Determine available parameters
             const availableParams = [];
-            for (let i = 2; i <= 5; i++) {
-                const paramKey = `param${i}Remark`;
-                if (!formData[paramKey]) {
-                    availableParams.push(paramKey);
-                }
-            }
+            if (!formData.param4Remark) availableParams.push('param4Remark');
+            if (!formData.param5Remark) availableParams.push('param5Remark');
 
             const filesToUpload = files.slice(0, availableParams.length);
             const token = sasToken || await getSasToken();
@@ -994,10 +1100,10 @@ const FireDamper = ({
             }));
 
             // Update uploaded photos state
-            setUploadedPhotos(prev => [
+            setUploadedPostPhotos(prev => [
                 ...prev,
                 ...uploadResults
-            ].slice(0, 4));
+            ].slice(0, 2));
 
             // Save to API
             if (currentCheckId) {
@@ -1005,8 +1111,8 @@ const FireDamper = ({
                     checkId: currentCheckId,
                     siteId: siteSelectedForGlobal?.siteId,
                     type: 'Inspection',
-                    subType: 'Storage Tank',
-                    category: 'Storage Tank Service',
+                    subType: 'Fire Damper',
+                    category: 'Fire Damper Inspection',
                     ...formUpdates
                 };
 
@@ -1018,52 +1124,21 @@ const FireDamper = ({
                 }
             }
 
-            toast.success("Photos uploaded successfully!");
+            toast.success("Post-inspection photos uploaded successfully!");
             await fetchInspectionData();
 
         } catch (error) {
-            console.error("Photo upload error:", error);
+            console.error("Post-photo upload error:", error);
             toast.error(error.message || 'Upload failed');
         } finally {
-            setUploadingPhotos(false);
+            setUploadingPostPhotos(false);
         }
     };
 
-    const getAllImages = () => {
-        return [
-            formData.param2Remark ? {
-                url: formData.param2Remark.includes('?')
-                    ? formData.param2Remark
-                    : `${formData.param2Remark}?${sasToken}`,
-                paramKey: 'param2Remark'
-            } : null,
-            formData.param3Remark ? {
-                url: formData.param3Remark.includes('?')
-                    ? formData.param3Remark
-                    : `${formData.param3Remark}?${sasToken}`,
-                paramKey: 'param3Remark'
-            } : null,
-            formData.param4Remark ? {
-                url: formData.param4Remark.includes('?')
-                    ? formData.param4Remark
-                    : `${formData.param4Remark}?${sasToken}`,
-                paramKey: 'param4Remark'
-            } : null,
-            formData.param5Remark ? {
-                url: formData.param5Remark.includes('?')
-                    ? formData.param5Remark
-                    : `${formData.param5Remark}?${sasToken}`,
-                paramKey: 'param5Remark'
-            } : null,
-        ].filter(Boolean); // Remove null values
-    };
-    console.log('Passing images to RiskScoreCard:', getAllImages());
+    const handleRemovePrePhoto = (index) => {
+        const photoToRemove = uploadedPrePhotos[index];
 
-
-    const handleRemovePhoto = (index) => {
-        const photoToRemove = uploadedPhotos[index];
-
-        setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+        setUploadedPrePhotos(prev => prev.filter((_, i) => i !== index));
 
         // Clear the corresponding parameter in formData
         if (photoToRemove.paramKey) {
@@ -1079,14 +1154,46 @@ const FireDamper = ({
                 checkId: currentCheckId,
                 siteId: siteSelectedForGlobal?.siteId,
                 type: 'Inspection',
-                subType: 'Ventilation',
-                category: 'Ventilation',
+                subType: 'Fire Damper',
+                category: 'Fire Damper Inspection',
                 [photoToRemove.paramKey]: ""
             };
 
             put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
                 .catch(error => {
-                    console.error("Error removing photo from API:", error);
+                    console.error("Error removing pre-photo from API:", error);
+                    toast.error("Failed to update photo in database");
+                });
+        }
+    };
+
+    const handleRemovePostPhoto = (index) => {
+        const photoToRemove = uploadedPostPhotos[index];
+
+        setUploadedPostPhotos(prev => prev.filter((_, i) => i !== index));
+
+        // Clear the corresponding parameter in formData
+        if (photoToRemove.paramKey) {
+            setFormData(prev => ({
+                ...prev,
+                [photoToRemove.paramKey]: ""
+            }));
+        }
+
+        // Update API if needed
+        if (currentCheckId && photoToRemove.paramKey) {
+            const payload = {
+                checkId: currentCheckId,
+                siteId: siteSelectedForGlobal?.siteId,
+                type: 'Inspection',
+                subType: 'Fire Damper',
+                category: 'Fire Damper Inspection',
+                [photoToRemove.paramKey]: ""
+            };
+
+            put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
+                .catch(error => {
+                    console.error("Error removing post-photo from API:", error);
                     toast.error("Failed to update photo in database");
                 });
         }
@@ -1253,155 +1360,6 @@ const FireDamper = ({
             setIsLoading(false);
         }
     };
-
-    const renderClientNameField = () => {
-        if (isInternalUserTaggedWithSite) {
-            const filteredUsers =
-                users?.filter((user) =>
-                    user.taggedSites?.some(
-                        (site) => site.id === siteSelectedForGlobal?.siteId
-                    )
-                ) || [];
-
-            return (
-                <Autocomplete
-                    options={filteredUsers}
-                    getOptionLabel={(user) => user.name}
-                    value={formData.clientUser || formData.siteContactUser || null}
-                    onChange={(event, newValue) => {
-                        setFormData((prev) => ({
-                            ...prev,
-                            client: newValue?.id || "",
-                            clientUser: newValue || null,
-                            siteContact: newValue?.id || "",
-                            siteContactNo: newValue?.phone || "",
-                            siteContactUser: newValue || null,
-                        }));
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            variant="outlined"
-                            required
-                            disabled={isSubmitted}
-                            style={{
-                                height: "40px",
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                },
-                                "& .MuiAutocomplete-input": {
-                                    padding: "8.5px 4px !important",
-                                },
-                            }}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                    padding: "0 5px",
-                                },
-                            }}
-                        />
-                    )}
-                    disabled={isSubmitted}
-                />
-            );
-        }
-        return (
-            <input
-                type="text"
-                className="form-control"
-                name="clientName"
-                value={
-                    formData.clientUser?.name || formData.siteContactUser?.name || ""
-                }
-                onChange={(e) => {
-                    setFormData({
-                        ...formData,
-                        client: e.target.value,
-                        clientNameText: e.target.value,
-                        siteContact: e.target.value,
-                        siteContactName: e.target.value,
-                    });
-                }}
-                required
-                disabled={isSubmitted}
-            />
-        );
-    };
-
-    const renderSiteContactField = () => {
-        if (isInternalUserTaggedWithSite) {
-            const filteredUsers =
-                users?.filter((user) =>
-                    user.taggedSites?.some(
-                        (site) => site.id === siteSelectedForGlobal?.siteId
-                    )
-                ) || [];
-
-            return (
-                <Autocomplete
-                    options={filteredUsers}
-                    getOptionLabel={(user) => user.name}
-                    value={formData.siteContactUser || formData.clientUser || null}
-                    onChange={(event, newValue) => {
-                        setFormData((prev) => ({
-                            ...prev,
-                            siteContact: newValue?.id || "",
-                            siteContactNo: newValue?.phone || "",
-                            siteContactUser: newValue || null,
-                            client: newValue?.id || "",
-                            clientUser: newValue || null,
-                        }));
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            variant="outlined"
-                            required
-                            disabled={isSubmitted}
-                            style={{
-                                height: "40px",
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                },
-                                "& .MuiAutocomplete-input": {
-                                    padding: "8.5px 4px !important",
-                                },
-                            }}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                    padding: "0 5px",
-                                },
-                            }}
-                        />
-                    )}
-                    disabled={isSubmitted}
-                />
-            );
-        }
-        return (
-            <input
-                type="text"
-                className="form-control"
-                name="siteContact"
-                value={
-                    formData.siteContactUser?.name || formData.clientUser?.name || ""
-                }
-                onChange={(e) => {
-                    setFormData({
-                        ...formData,
-                        siteContact: e.target.value,
-                        siteContactName: e.target.value,
-                        client: e.target.value,
-                        clientNameText: e.target.value,
-                    });
-                }}
-                required
-                disabled={isSubmitted}
-            />
-        );
-    };
-
     const filteredAssets =
         siteAssets?.filter(
             (asset) =>
@@ -1464,7 +1422,7 @@ const FireDamper = ({
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
-                                            label="Select a Ventilation Device"
+                                            label="Select a Fire Damper"
                                             variant="outlined"
                                             placeholder="Search devices..."
                                         />
@@ -1577,55 +1535,396 @@ const FireDamper = ({
                                         )}
                                     </div>
                                 </div>
-
                             </div>
                         )}
                     </div>
                 </div>
 
+                {/* Pre-Inspection Photos Section */}
                 <div className="card mb-4">
                     <div className="card-header d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">Engineers Report</h5>
+                        <h5 className="mb-0">Pre-Inspection Photos</h5>
                         <div>
                             <input
                                 type="file"
-                                id="photo-upload"
+                                id="pre-photo-upload"
                                 multiple
                                 accept="image/*"
-                                onChange={handlePhotoUpload}
+                                onChange={handlePrePhotoUpload}
                                 style={{ display: "none" }}
-                                disabled={isSubmitted || uploadingPhotos || uploadedPhotos.length >= 2 || !isFormEditable}
+                                disabled={isSubmitted || uploadingPrePhotos || uploadedPrePhotos.length >= 2 || !isFormEditable}
                             />
                             <label
-                                htmlFor="photo-upload"
-                                className={`btn btn-sm btn-primary ${(isSubmitted || !isFormEditable || uploadedPhotos.length >= 2) ? 'disabled' : ''}`}
+                                htmlFor="pre-photo-upload"
+                                className={`btn btn-sm btn-primary ${(isSubmitted || !isFormEditable || uploadedPrePhotos.length >= 2) ? 'disabled' : ''}`}
                                 style={{
-                                    cursor: (isSubmitted || !isFormEditable || uploadedPhotos.length >= 2) ? 'not-allowed' : 'pointer',
-                                    opacity: (isSubmitted || !isFormEditable || uploadedPhotos.length >= 2) ? 0.6 : 1
+                                    cursor: (isSubmitted || !isFormEditable || uploadedPrePhotos.length >= 2) ? 'not-allowed' : 'pointer',
+                                    opacity: (isSubmitted || !isFormEditable || uploadedPrePhotos.length >= 2) ? 0.6 : 1
                                 }}
                             >
-                                {uploadingPhotos ? (
+                                {uploadingPrePhotos ? (
                                     <span>Uploading...</span>
                                 ) : (
                                     <>
                                         <InsertPhotoIcon fontSize="small" />
-                                        Add Photos ({uploadedPhotos.length}/4)
+                                            Add Pre-Photos ({uploadedPrePhotos.length}/2)
                                     </>
                                 )}
                             </label>
-                            {uploadedPhotos.length >= 4 && (
-                                <span className="ms-2 text-danger">Maximum photos reached</span>
+                            {uploadedPrePhotos.length >= 2 && (
+                                <span className="ms-2 text-danger">Maximum pre-photos reached</span>
                             )}
                         </div>
                     </div>
                     <div className="card-body">
+                        <div className="photo-preview-container">
+                            {uploadedPrePhotos.map((photo, index) => {
+                                const imageUrl = photo.url.includes('?')
+                                    ? photo.url
+                                    : `${photo.url}?${sasToken}`;
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className="position-relative"
+                                        style={{
+                                            width: "150px",
+                                            height: "150px",
+                                            display: 'inline-block',
+                                            marginRight: '10px',
+                                            position: 'relative'
+                                        }}
+                                    >
+                                        <img
+                                            src={imageUrl}
+                                            alt={`Pre-inspection ${index + 1}`}
+                                            className="img-thumbnail"
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "cover",
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px'
+                                            }}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/placeholder-image.png';
+                                            }}
+                                            loading="lazy"
+                                        />
+
+                                        {isFormEditable && !isSubmitted && (
+                                            <button
+                                                type="button"
+                                                className="position-absolute top-0 end-0 btn btn-sm btn-danger"
+                                                onClick={() => handleRemovePrePhoto(index)}
+                                                style={{
+                                                    padding: '0.15rem 0.3rem',
+                                                    fontSize: '0.7rem',
+                                                    borderRadius: '50%',
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transform: 'translate(50%, -50%)'
+                                                }}
+                                                aria-label={`Remove pre-photo ${index + 1}`}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+
+                                        {photo.fileName && (
+                                            <div
+                                                className="position-absolute bottom-0 start-0 w-100 text-truncate px-1 bg-dark text-white"
+                                                style={{
+                                                    fontSize: '10px',
+                                                    opacity: '0.8',
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden'
+                                                }}
+                                                title={photo.fileName}
+                                            >
+                                                {photo.fileName}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Post-Inspection Photos Section */}
+                <div className="card mb-4">
+                    <div className="card-header d-flex justify-content-between align-items-center">
+                        <h5 className="mb-0">Post-Inspection Photos</h5>
+                        <div>
+                            <input
+                                type="file"
+                                id="post-photo-upload"
+                                multiple
+                                accept="image/*"
+                                onChange={handlePostPhotoUpload}
+                                style={{ display: "none" }}
+                                disabled={isSubmitted || uploadingPostPhotos || uploadedPostPhotos.length >= 2 || !isFormEditable}
+                            />
+                            <label
+                                htmlFor="post-photo-upload"
+                                className={`btn btn-sm btn-primary ${(isSubmitted || !isFormEditable || uploadedPostPhotos.length >= 2) ? 'disabled' : ''}`}
+                                style={{
+                                    cursor: (isSubmitted || !isFormEditable || uploadedPostPhotos.length >= 2) ? 'not-allowed' : 'pointer',
+                                    opacity: (isSubmitted || !isFormEditable || uploadedPostPhotos.length >= 2) ? 0.6 : 1
+                                }}
+                            >
+                                {uploadingPostPhotos ? (
+                                    <span>Uploading...</span>
+                                ) : (
+                                    <>
+                                        <InsertPhotoIcon fontSize="small" />
+                                        Add Post-Photos ({uploadedPostPhotos.length}/2)
+                                    </>
+                                )}
+                            </label>
+                            {uploadedPostPhotos.length >= 2 && (
+                                <span className="ms-2 text-danger">Maximum post-photos reached</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="card-body">
+                        <div className="photo-preview-container">
+                            {uploadedPostPhotos.map((photo, index) => {
+                                const imageUrl = photo.url.includes('?')
+                                    ? photo.url
+                                    : `${photo.url}?${sasToken}`;
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className="position-relative"
+                                        style={{
+                                            width: "150px",
+                                            height: "150px",
+                                            display: 'inline-block',
+                                            marginRight: '10px',
+                                            position: 'relative'
+                                        }}
+                                    >
+                                        <img
+                                            src={imageUrl}
+                                            alt={`Post-inspection ${index + 1}`}
+                                            className="img-thumbnail"
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "cover",
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px'
+                                            }}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/placeholder-image.png';
+                                            }}
+                                            loading="lazy"
+                                        />
+
+                                        {isFormEditable && !isSubmitted && (
+                                            <button
+                                                type="button"
+                                                className="position-absolute top-0 end-0 btn btn-sm btn-danger"
+                                                onClick={() => handleRemovePostPhoto(index)}
+                                                style={{
+                                                    padding: '0.15rem 0.3rem',
+                                                    fontSize: '0.7rem',
+                                                    borderRadius: '50%',
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transform: 'translate(50%, -50%)'
+                                                }}
+                                                aria-label={`Remove post-photo ${index + 1}`}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+
+                                        {photo.fileName && (
+                                            <div
+                                                className="position-absolute bottom-0 start-0 w-100 text-truncate px-1 bg-dark text-white"
+                                                style={{
+                                                    fontSize: '10px',
+                                                    opacity: '0.8',
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden'
+                                                }}
+                                                title={photo.fileName}
+                                            >
+                                                {photo.fileName}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Inspection Results Section */}
+                <div className="card mb-4">
+                    <div className="card-header">
+                        <h5 className="mb-0">Inspection Results</h5>
+                    </div>
+                    <div className="card-body">
+                        <div className="row">
+                            <div className="col-md-6">
+                                <div className="mb-3">
+                                    <label className="form-label">Operational</label>
+                                    <select
+                                        className={`form-select ${validationErrors.param1 ? "is-invalid" : ""}`}
+                                        value={formData.param1}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                param1: e.target.value,
+                                            });
+                                            if (validationErrors.param1) {
+                                                setValidationErrors((prev) => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.param1;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        disabled={isSubmitted}
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="Pass">Pass</option>
+                                        <option value="Fail">Fail</option>
+                                    </select>
+                                    {validationErrors.param1 && (
+                                        <div className="invalid-feedback">
+                                            {validationErrors.param1}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="mb-3">
+                                    <label className="form-label">Condition</label>
+                                    <select
+                                        className={`form-select ${validationErrors.param2 ? "is-invalid" : ""}`}
+                                        value={formData.param2}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                param2: e.target.value,
+                                            });
+                                            if (validationErrors.param2) {
+                                                setValidationErrors((prev) => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.param2;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        disabled={isSubmitted}
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="Pass">Pass</option>
+                                        <option value="Fail">Fail</option>
+                                    </select>
+                                    {validationErrors.param2 && (
+                                        <div className="invalid-feedback">
+                                            {validationErrors.param2}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="mb-3">
+                                    <label className="form-label">Damper Within Fire Barrier</label>
+                                    <select
+                                        className={`form-select ${validationErrors.param3 ? "is-invalid" : ""}`}
+                                        value={formData.param3}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                param3: e.target.value,
+                                            });
+                                            if (validationErrors.param3) {
+                                                setValidationErrors((prev) => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.param3;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        disabled={isSubmitted}
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="Pass">Yes</option>
+                                        <option value="Fail">No</option>
+                                    </select>
+                                    {validationErrors.param3 && (
+                                        <div className="invalid-feedback">
+                                            {validationErrors.param3}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="mb-3">
+                                    <label className="form-label">Fire Barrier Correction Required</label>
+                                    <select
+                                        className={`form-select ${validationErrors.param4 ? "is-invalid" : ""}`}
+                                        value={formData.param4}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                param4: e.target.value,
+                                            });
+                                            if (validationErrors.param4) {
+                                                setValidationErrors((prev) => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.param4;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        disabled={isSubmitted}
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="Pass">Yes</option>
+                                        <option value="Fail">No</option>
+                                    </select>
+                                    {validationErrors.param4 && (
+                                        <div className="invalid-feedback">
+                                            {validationErrors.param4}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                {/* Report Section */}
+                <div className="card mb-4">
+                    <div className="card-header">
+                        <h5 className="mb-0">Inspection Report</h5>
+                    </div>
+                    <div className="card-body">
                         <div className="mb-3">
-                            <TextField
-                                multiline
-                                rows={16}
-                                fullWidth
-                                variant="outlined"
-                                placeholder="---------------------------------------- Write your report below this line ----------------------------------------"
+                            <label className="form-label">Findings and Recommendations</label>
+                            <textarea
+                                className="form-control"
+                                rows="6"
+                                placeholder="Enter detailed inspection findings and recommendations..."
                                 value={formData.report || ""}
                                 onChange={(e) =>
                                     setFormData({
@@ -1633,250 +1932,8 @@ const FireDamper = ({
                                         report: e.target.value,
                                     })
                                 }
-                                style={{ height: "400px" }}
                                 disabled={isSubmitted}
                             />
-                        </div>
-
-                        {/* Photo Previews */}
-                        {uploadedPhotos.map((photo, index) => {
-                            // Ensure URL has SAS token but don't duplicate if already present
-                            const imageUrl = photo.url.includes('?')
-                                ? photo.url
-                                : `${photo.url}?${sasToken}`;
-
-                            return (
-                                <div
-                                    key={index}
-                                    className="position-relative"
-                                    style={{
-                                        width: "100px",
-                                        height: "100px",
-                                        display: 'inline-block',
-                                        marginRight: '10px',
-                                        position: 'relative'
-                                    }}
-                                >
-                                    <img
-                                        src={imageUrl}
-                                        alt={`Preview ${index}`}
-                                        className="img-thumbnail"
-                                        style={{
-                                            width: "100%",
-                                            height: "100%",
-                                            objectFit: "cover",
-                                            border: '1px solid #ddd',
-                                            borderRadius: '4px'
-                                        }}
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = '/placeholder-image.png';
-                                        }}
-                                        loading="lazy" // Add lazy loading for better performance
-                                    />
-
-                                    {isFormEditable && !isSubmitted && (
-                                        <button
-                                            type="button"
-                                            className="position-absolute top-0 end-0 btn btn-sm btn-danger"
-                                            onClick={() => handleRemovePhoto(index)}
-                                            style={{
-                                                padding: '0.15rem 0.3rem',
-                                                fontSize: '0.7rem',
-                                                borderRadius: '50%',
-                                                width: '20px',
-                                                height: '20px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                transform: 'translate(50%, -50%)'
-                                            }}
-                                            aria-label={`Remove photo ${index + 1}`}
-                                        >
-                                            ×
-                                        </button>
-                                    )}
-
-                                    {/* Optional: Add tooltip with filename */}
-                                    {photo.fileName && (
-                                        <div
-                                            className="position-absolute bottom-0 start-0 w-100 text-truncate px-1 bg-dark text-white"
-                                            style={{
-                                                fontSize: '10px',
-                                                opacity: '0.8',
-                                                textOverflow: 'ellipsis',
-                                                overflow: 'hidden'
-                                            }}
-                                            title={photo.fileName}
-                                        >
-                                            {photo.fileName}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="mb-4">
-                    <div className="card-body">
-                        <div className="table-responsive">
-                            <table className="table table-bordered">
-                                <tbody>
-                                    <tr>
-                                        <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                                            Operational
-                                        </td>
-                                        <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                                            Condition
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <select
-                                                className={`form-select ${validationErrors.param1 ? "is-invalid" : ""
-                                                    }`}
-                                                value={formData.param1}
-                                                onChange={(e) => {
-                                                    setFormData({
-                                                        ...formData,
-                                                        param1: e.target.value,
-                                                    });
-                                                    if (validationErrors.param1) {
-                                                        setValidationErrors((prev) => {
-                                                            const newErrors = { ...prev };
-                                                            delete newErrors.param1;
-                                                            return newErrors;
-                                                        });
-                                                    }
-                                                }}
-                                                disabled={isSubmitted}
-                                            >
-                                                <option value="">Select</option>
-                                                <option value="Pass">Pass</option>
-                                                <option value="Fail">Fail</option>
-                                            </select>
-                                            {validationErrors.param1 && (
-                                                <div className="invalid-feedback">
-                                                    {validationErrors.param1}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <select
-                                                className={`form-select ${validationErrors.param2 ? "is-invalid" : ""
-                                                    }`}
-                                                value={formData.param2}
-                                                onChange={(e) => {
-                                                    setFormData({
-                                                        ...formData,
-                                                        param2: e.target.value,
-                                                    });
-                                                    if (validationErrors.param2) {
-                                                        setValidationErrors((prev) => {
-                                                            const newErrors = { ...prev };
-                                                            delete newErrors.param2;
-                                                            return newErrors;
-                                                        });
-                                                    }
-                                                }}
-                                                disabled={isSubmitted}
-                                            >
-                                                <option value="">Select</option>
-                                                <option value="Pass">Pass</option>
-                                                <option value="Fail">Fail</option>
-                                            </select>
-                                            {validationErrors.param2 && (
-                                                <div className="invalid-feedback">
-                                                    {validationErrors.param2}
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mb-4">
-                    <div className="card-body">
-                        <div className="table-responsive">
-                            <table className="table table-bordered">
-                                <tbody>
-                                    <tr>
-                                        <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                                            Damper Within Fire Barrier
-                                        </td>
-                                        <td style={{ textAlign: "center", fontWeight: "bold" }}>
-                                            Fire Barrier
-                                            Correction Required
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <select
-                                                className={`form-select ${validationErrors.param3 ? "is-invalid" : ""
-                                                    }`}
-                                                value={formData.param3}
-                                                onChange={(e) => {
-                                                    setFormData({
-                                                        ...formData,
-                                                        param3: e.target.value,
-                                                    });
-                                                    if (validationErrors.param3) {
-                                                        setValidationErrors((prev) => {
-                                                            const newErrors = { ...prev };
-                                                            delete newErrors.param3;
-                                                            return newErrors;
-                                                        });
-                                                    }
-                                                }}
-                                                disabled={isSubmitted}
-                                            >
-                                                <option value="">Select</option>
-                                                <option value="Pass">Yes</option>
-                                                <option value="Fail">No</option>
-                                            </select>
-                                            {validationErrors.param3 && (
-                                                <div className="invalid-feedback">
-                                                    {validationErrors.param3}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <select
-                                                className={`form-select ${validationErrors.param4 ? "is-invalid" : ""
-                                                    }`}
-                                                value={formData.param4}
-                                                onChange={(e) => {
-                                                    setFormData({
-                                                        ...formData,
-                                                        param4: e.target.value,
-                                                    });
-                                                    if (validationErrors.param4) {
-                                                        setValidationErrors((prev) => {
-                                                            const newErrors = { ...prev };
-                                                            delete newErrors.param4;
-                                                            return newErrors;
-                                                        });
-                                                    }
-                                                }}
-                                                disabled={isSubmitted}
-                                            >
-                                                <option value="">Select</option>
-                                                <option value="Pass">Yes</option>
-                                                <option value="Fail">No</option>
-                                            </select>
-                                            {validationErrors.param4 && (
-                                                <div className="invalid-feedback">
-                                                    {validationErrors.param4}
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -1923,69 +1980,12 @@ const FireDamper = ({
                                     onRiskAssessmentComplete={handleRiskAssessmentComplete}
                                     actionRaised={actionRaised}
                                         disabled={isSubmitted}
-                                        images={getAllImages()}
+                                        images={[...uploadedPrePhotos, ...uploadedPostPhotos]}
                                 />
                             )}
                         </div>
                     </div>
                 )}
-
-                {/* <div className="row mt-4">
-                    <div className="col-md-6">
-                        <div className="mb-3">
-                            <label className="form-label fw-bold">Client's Name</label>
-                            {renderClientNameField()}
-                        </div>
-
-                        <div className="mb-3">
-                            <label className="form-label">Date</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="signedDate"
-                                value={formatDate(formData.signedDate)}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                    height: "40px",
-                                    padding: "0 10px",
-                                    width: "100%",
-                                }}
-                                disabled={isSubmitted}
-                            />
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="mb-3">
-                            <label className="form-label fw-bold">Engineer's Name</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={formData.user?.name}
-                                onChange={handleInputChange}
-                                required
-                                readOnly
-                                disabled
-                            />
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Date</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={formatDate(formData.signedDate)}
-                                onChange={handleInputChange}
-                                required
-                                disabled={isSubmitted}
-                                style={{
-                                    height: "40px",
-                                    padding: "0 10px",
-                                    width: "100%",
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div> */}
 
                 {!isSubmitted ? (
                     <div className="d-flex justify-content-between mt-3 print-hide">
@@ -2020,7 +2020,7 @@ const FireDamper = ({
                             {showPdfButton && generatedPdfBlob && (
                                 <button
                                     className="btn btn-success"
-                                    onClick={() => savePdfToLocal(generatedPdfBlob, `VentilationReport_${formData.selectedAsset?.assetName || 'report'}.pdf`)}
+                                    onClick={() => savePdfToLocal(generatedPdfBlob, `FireDamperReport_${formData.selectedAsset?.assetName || 'report'}.pdf`)}
                                 >
                                     Download PDF
                                 </button>
