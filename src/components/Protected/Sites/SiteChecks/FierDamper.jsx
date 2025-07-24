@@ -152,7 +152,6 @@ const FireDamper = ({
         (asset) => asset.assetId === formData.assetId
     );
 
-    // Helper function to get highest file version
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
             const siteId = siteSelectedForGlobal?.siteId;
@@ -180,7 +179,6 @@ const FireDamper = ({
         }
     };
 
-    // Helper function to check if file exists
     const checkFileExists = async (folderId, fileName) => {
         try {
             const siteId = siteSelectedForGlobal?.siteId;
@@ -228,37 +226,50 @@ const FireDamper = ({
                     (user) => user.id === mostRecentItem.siteContact
                 );
 
-                // Load pre-inspection photos
-                const prePhotos = [];
+                // Load pre-inspection photos without overwriting existing ones
+                const newPrePhotos = [];
                 if (mostRecentItem.param2Remark) {
-                    prePhotos.push({
+                    newPrePhotos.push({
                         url: `${mostRecentItem.param2Remark}${mostRecentItem.param2Remark.includes('?') ? '&' : '?'}${sasToken}`,
                         paramKey: 'param2Remark'
                     });
                 }
                 if (mostRecentItem.param3remark) {
-                    prePhotos.push({
+                    newPrePhotos.push({
                         url: `${mostRecentItem.param3remark}${mostRecentItem.param3remark.includes('?') ? '&' : '?'}${sasToken}`,
                         paramKey: 'param3remark'
                     });
                 }
-                setUploadedPrePhotos(prePhotos);
 
-                // Load post-inspection photos
-                const postPhotos = [];
+                // Load post-inspection photos without overwriting existing ones
+                const newPostPhotos = [];
                 if (mostRecentItem.param4Remark) {
-                    postPhotos.push({
+                    newPostPhotos.push({
                         url: `${mostRecentItem.param4Remark}${mostRecentItem.param4Remark.includes('?') ? '&' : '?'}${sasToken}`,
                         paramKey: 'param4Remark'
                     });
                 }
                 if (mostRecentItem.param5Remark) {
-                    postPhotos.push({
+                    newPostPhotos.push({
                         url: `${mostRecentItem.param5Remark}${mostRecentItem.param5Remark.includes('?') ? '&' : '?'}${sasToken}`,
                         paramKey: 'param5Remark'
                     });
                 }
-                setUploadedPostPhotos(postPhotos);
+
+                // Only update photos if we have new ones
+                if (newPrePhotos.length > 0) {
+                    setUploadedPrePhotos(prev => [
+                        ...prev.filter(p => !newPrePhotos.some(np => np.paramKey === p.paramKey)),
+                        ...newPrePhotos
+                    ]);
+                }
+
+                if (newPostPhotos.length > 0) {
+                    setUploadedPostPhotos(prev => [
+                        ...prev.filter(p => !newPostPhotos.some(np => np.paramKey === p.paramKey)),
+                        ...newPostPhotos
+                    ]);
+                }
 
                 // Fetch action data if actionId exists
                 let existingAction = null;
@@ -309,6 +320,7 @@ const FireDamper = ({
             toast.error("Failed to load inspection data");
         }
     };
+
     const fetchActionById = async (id) => {
         try {
             if (!id) return null;
@@ -402,13 +414,6 @@ const FireDamper = ({
                                             sounderAudibility: sounderAudibilityFolder?.id || null
                                         });
 
-                                        console.log('Folder structure fetched successfully:', {
-                                            logBooks: logBooksFolder.id,
-                                            plantAndEquipment: plantAndEquipmentFolder.id,
-                                            miscellaneousService: miscellaneousFolder.id,
-                                            sounderAudibility: sounderAudibilityFolder?.id || null
-                                        });
-
                                         return sounderAudibilityFolder?.id || null;
                                     }
                                 }
@@ -445,7 +450,6 @@ const FireDamper = ({
                         setIsSubmitted(isDone);
                         setShowPdfButton(isDone);
 
-                        // Set inspection details here
                         const inspectionDetails = {
                             checkId: ventilationCheck.checkId,
                             siteId: ventilationCheck.siteId,
@@ -455,7 +459,6 @@ const FireDamper = ({
                             dueDate: ventilationCheck.dueDate,
                             status: ventilationCheck.status
                         };
-                        console.log('Setting inspection details:', inspectionDetails);
                         setInspectionDetails(inspectionDetails);
                     } else {
                         setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
@@ -555,12 +558,8 @@ const FireDamper = ({
     }
 
     const formatDateForBackend = (dateString) => {
-        if (!dateString) return null; // Handle missing date
-
-        // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
+        if (!dateString) return null;
         const date = new Date(dateString);
-
-        // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
         return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
@@ -661,12 +660,11 @@ const FireDamper = ({
                     const baseUrl = response?.url ||
                         `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
 
-                    // Always include SAS token in the stored URL
                     const imageUrl = `${baseUrl}?${token}`;
 
                     return {
                         url: imageUrl,
-                        baseUrl: baseUrl, // Store without token for API if needed
+                        baseUrl: baseUrl,
                         paramKey: availableParams[index],
                         fileName: file.name,
                         documentId: response?.documentId || uuidv4()
@@ -674,24 +672,22 @@ const FireDamper = ({
                 })
             );
 
-            // Update form data with URLs that include SAS tokens
-            const formUpdates = uploadResults.reduce((acc, photo) => {
-                acc[photo.paramKey] = photo.url; // Store WITH SAS token
-                return acc;
-            }, {});
+            // Update form data with new pre-inspection photo URLs
+            const newFormData = {
+                ...formData,
+                param2Remark: uploadResults[0]?.url || formData.param2Remark,
+                param3remark: uploadResults[1]?.url || formData.param3remark
+            };
 
-            setFormData(prev => ({
-                ...prev,
-                ...formUpdates
-            }));
+            setFormData(newFormData);
 
-            // Update uploaded photos state
+            // Update pre-inspection photos state while preserving existing ones
             setUploadedPrePhotos(prev => [
-                ...prev,
+                ...prev.filter(photo => !uploadResults.some(newPhoto => newPhoto.paramKey === photo.paramKey)),
                 ...uploadResults
             ].slice(0, 2));
 
-            // Save to API
+            // Save to API - only update the pre-inspection fields
             if (currentCheckId) {
                 const payload = {
                     checkId: currentCheckId,
@@ -699,7 +695,8 @@ const FireDamper = ({
                     type: 'Inspection',
                     subType: 'Fire Damper',
                     category: 'Fire Damper Inspection',
-                    ...formUpdates
+                    param2Remark: newFormData.param2Remark,
+                    param3remark: newFormData.param3remark
                 };
 
                 const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
@@ -711,7 +708,6 @@ const FireDamper = ({
             }
 
             toast.success("Pre-inspection photos uploaded successfully!");
-            await fetchInspectionData();
 
         } catch (error) {
             console.error("Pre-photo upload error:", error);
@@ -720,22 +716,19 @@ const FireDamper = ({
             setUploadingPrePhotos(false);
         }
     };
+
     const uploadPdfToServer = async (pdfBlob, fileName) => {
         try {
             setIsUploading(true);
-
-            // Save locally first
             await savePdfToLocal(pdfBlob, fileName);
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            // CORRECTED: Use sounderAudibility folder which is the Fire Damper Test folder
             const targetFolderId = folderIds.sounderAudibility || null;
 
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
             }
 
-            // Check if file exists and get highest version
             const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
             const formData = new FormData();
 
@@ -820,8 +813,6 @@ const FireDamper = ({
         }
     };
 
-    //console.log('Selected Asset: -->', selectedAsset);
-
     const generatePDF = async (uploadToServer = true) => {
         try {
             setIsGeneratingPDF(true);
@@ -856,17 +847,14 @@ const FireDamper = ({
 
             const embedUniversalImage = async (imageBytes) => {
                 try {
-                    // Try PNG first
                     return await pdfDoc.embedPng(imageBytes);
                 } catch (pngError) {
                     console.log('Not a PNG, trying JPEG...');
                     try {
-                        // Try JPEG next
                         return await pdfDoc.embedJpg(imageBytes);
                     } catch (jpgError) {
                         console.log('Not a JPEG, trying fallback methods...');
                         try {
-                            // As a last resort, try converting to PNG
                             const imageBlob = new Blob([imageBytes]);
                             const img = await createImageBitmap(imageBlob);
                             const canvas = document.createElement('canvas');
@@ -900,22 +888,8 @@ const FireDamper = ({
             const smallFont = 8;
             const mediumFont = 10;
 
-            // Address and contact information
-            // const addressLines = (formData.address || '').split(',');
-            // setTextField('Address', addressLines[0] || '', smallFont);
-            // setTextField('Address_2', addressLines[1] || '', smallFont);
-            // setTextField('Address_3', addressLines[2] || '', smallFont);
-            // setTextField('Address_4', addressLines[3] || '', smallFont);
-
             setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
 
-            // setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
-
-            // setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
-
-            //setTextField('Job No', formData.job || '', smallFont);
-
-            // Safely handle equipment details when no asset is selected
             const equipmentDetails = formData.selectedAsset ? [
                 selectedAsset.position,
                 selectedAsset.manufacturer,
@@ -925,36 +899,20 @@ const FireDamper = ({
                 `Asset No-${formData.assetId}`,
             ].filter(Boolean).join(' - ') : 'Not specified';
 
-            // Equipment information
-
             setTextField('DamperNo', selectedAsset.deviceId || '', smallFont);
             setTextField('Damper Location', equipmentDetails || '', smallFont);
-
             setTextField('Floor', selectedAsset.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset.subCategory3 || '', smallFont);
             setTextField('Damper Size', formData?.selectedAsset?.damperSize || '', smallFont);
 
-
-            // Test results
             setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('Condition', formData.param2 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('DamperBarrier', formData.param3 === 'Pass' ? 'Yes' : 'No', mediumFont);
             setTextField('FireRequired', formData.param4 === 'Pass' ? 'Yes' : 'No', mediumFont);
             setTextField('DuctworkContamination', formData.param5 === 'Pass' ? 'Yes' : 'No', mediumFont);
 
-            // Report
             setTextField('report', formData.report || '', mediumFont);
 
-            // Signatures
-            // const clientName = formData.clientUser?.name || formData.client || '';
-            // const engineerName = formData.user?.name || '';
-
-            // setTextField('Clients Name', clientName, mediumFont);
-            // setTextField('Engineers Name', engineerName, mediumFont);
-            // setTextField('on', dateFormat(formData.signedDate), mediumFont);
-            // setTextField('on_2', dateFormat(formData.signedDate), mediumFont);
-
-            // Handle image embedding for PDF fields
             const imageFields = [
                 { pdfField: 'param2Remark_af_image', formField: 'param2Remark' },
                 { pdfField: 'param3Remark_af_image', formField: 'param3Remark' },
@@ -970,14 +928,12 @@ const FireDamper = ({
                 }
 
                 try {
-                    // Clean URL and add SAS token
                     const cleanUrl = imageUrl.split('?')[0];
                     const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
                     console.log(`Processing image from: ${imageUrlWithToken}`);
 
-                    // Fetch image with timeout
                     const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                    const timeout = setTimeout(() => controller.abort(), 10000);
 
                     const imageResponse = await fetch(imageUrlWithToken, {
                         signal: controller.signal
@@ -991,17 +947,14 @@ const FireDamper = ({
 
                     const imageBytes = await imageResponse.arrayBuffer();
 
-                    // Verify we have actual image data
                     if (imageBytes.byteLength < 100) {
                         console.error(`Image too small or corrupted for ${formField}`);
                         continue;
                     }
 
-                    // Universal embedding
                     const image = await embedUniversalImage(imageBytes);
                     console.log(`Successfully embedded image for ${formField}`);
 
-                    // Set image in PDF field
                     const imageField = form.getButton(pdfField);
                     if (!imageField) {
                         console.error(`PDF field ${pdfField} not found`);
@@ -1013,11 +966,9 @@ const FireDamper = ({
 
                 } catch (error) {
                     console.error(`Error processing ${formField} image:`, error);
-                    // Continue with next image even if one fails
                 }
             }
 
-            // Flatten and save
             form.flatten();
             const pdfBytesModified = await pdfDoc.save();
             const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
@@ -1075,12 +1026,11 @@ const FireDamper = ({
                     const baseUrl = response?.url ||
                         `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
 
-                    // Always include SAS token in the stored URL
                     const imageUrl = `${baseUrl}?${token}`;
 
                     return {
                         url: imageUrl,
-                        baseUrl: baseUrl, // Store without token for API if needed
+                        baseUrl: baseUrl,
                         paramKey: availableParams[index],
                         fileName: file.name,
                         documentId: response?.documentId || uuidv4()
@@ -1088,24 +1038,22 @@ const FireDamper = ({
                 })
             );
 
-            // Update form data with URLs that include SAS tokens
-            const formUpdates = uploadResults.reduce((acc, photo) => {
-                acc[photo.paramKey] = photo.url; // Store WITH SAS token
-                return acc;
-            }, {});
+            // Update form data with new post-inspection photo URLs
+            const newFormData = {
+                ...formData,
+                param4Remark: uploadResults[0]?.url || formData.param4Remark,
+                param5Remark: uploadResults[1]?.url || formData.param5Remark
+            };
 
-            setFormData(prev => ({
-                ...prev,
-                ...formUpdates
-            }));
+            setFormData(newFormData);
 
-            // Update uploaded photos state
+            // Update post-inspection photos state while preserving existing ones
             setUploadedPostPhotos(prev => [
-                ...prev,
+                ...prev.filter(photo => !uploadResults.some(newPhoto => newPhoto.paramKey === photo.paramKey)),
                 ...uploadResults
             ].slice(0, 2));
 
-            // Save to API
+            // Save to API - only update the post-inspection fields
             if (currentCheckId) {
                 const payload = {
                     checkId: currentCheckId,
@@ -1113,7 +1061,8 @@ const FireDamper = ({
                     type: 'Inspection',
                     subType: 'Fire Damper',
                     category: 'Fire Damper Inspection',
-                    ...formUpdates
+                    param4Remark: newFormData.param4Remark,
+                    param5Remark: newFormData.param5Remark
                 };
 
                 const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
@@ -1125,7 +1074,6 @@ const FireDamper = ({
             }
 
             toast.success("Post-inspection photos uploaded successfully!");
-            await fetchInspectionData();
 
         } catch (error) {
             console.error("Post-photo upload error:", error);
@@ -1140,7 +1088,6 @@ const FireDamper = ({
 
         setUploadedPrePhotos(prev => prev.filter((_, i) => i !== index));
 
-        // Clear the corresponding parameter in formData
         if (photoToRemove.paramKey) {
             setFormData(prev => ({
                 ...prev,
@@ -1148,7 +1095,6 @@ const FireDamper = ({
             }));
         }
 
-        // Update API if needed
         if (currentCheckId && photoToRemove.paramKey) {
             const payload = {
                 checkId: currentCheckId,
@@ -1172,7 +1118,6 @@ const FireDamper = ({
 
         setUploadedPostPhotos(prev => prev.filter((_, i) => i !== index));
 
-        // Clear the corresponding parameter in formData
         if (photoToRemove.paramKey) {
             setFormData(prev => ({
                 ...prev,
@@ -1180,7 +1125,6 @@ const FireDamper = ({
             }));
         }
 
-        // Update API if needed
         if (currentCheckId && photoToRemove.paramKey) {
             const payload = {
                 checkId: currentCheckId,
@@ -1222,7 +1166,6 @@ const FireDamper = ({
             return;
         }
 
-        // Validation checks
         const hasFailures = (
             formData.param1 === "Fail" &&
             formData.param2 === "Fail" &&
@@ -1240,7 +1183,6 @@ const FireDamper = ({
             return;
         }
 
-        // Form validation
         const errors = {};
 
         if (Object.keys(errors).length > 0) {
@@ -1252,7 +1194,6 @@ const FireDamper = ({
         setIsLoading(true);
 
         try {
-            // First check if we have an existing inspection
             let existingInspection = null;
             if (currentCheckId) {
                 try {
@@ -1263,7 +1204,6 @@ const FireDamper = ({
                 }
             }
 
-            // First update or create the site check status
             const statusPayload = {
                 siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
                 type: 'Inspection',
@@ -1277,14 +1217,12 @@ const FireDamper = ({
 
             let statusResponse;
             if (currentCheckId) {
-                // Update existing check
                 statusPayload.checkId = parseInt(currentCheckId, 10);
                 statusResponse = await put(
                     `/api/site-check/${currentCheckId}`,
                     statusPayload
                 );
             } else {
-                // Create new check
                 statusResponse = await post(
                     `/api/site-check`,
                     statusPayload
@@ -1302,7 +1240,6 @@ const FireDamper = ({
             setCheckStatus('Done');
             setIsFormEditable(false);
 
-            // Then update or create the generic inspection record
             const inspectionPayload = {
                 ...formData,
                 siteId: siteSelectedForGlobal?.siteId,
@@ -1319,13 +1256,11 @@ const FireDamper = ({
 
             let saveResponse;
             if (existingInspection) {
-                // Update existing inspection
                 saveResponse = await put(
                     `/api/site-check/generic-inspection/${currentCheckId}`,
                     inspectionPayload
                 );
             } else {
-                // Create new inspection
                 saveResponse = await post(
                     `/api/site-check/generic-inspection`,
                     inspectionPayload
@@ -1338,7 +1273,6 @@ const FireDamper = ({
 
             console.log('Inspection data saved successfully:', saveResponse.data);
 
-            // Generate PDF
             const pdfResult = await generatePDF(true);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
@@ -1360,6 +1294,7 @@ const FireDamper = ({
             setIsLoading(false);
         }
     };
+
     const filteredAssets =
         siteAssets?.filter(
             (asset) =>
@@ -1540,7 +1475,6 @@ const FireDamper = ({
                     </div>
                 </div>
 
-                {/* Pre-Inspection Photos Section */}
                 <div className="card mb-4">
                     <div className="card-header d-flex justify-content-between align-items-center">
                         <h5 className="mb-0">Pre-Inspection Photos</h5>
@@ -1656,7 +1590,6 @@ const FireDamper = ({
                     </div>
                 </div>
 
-                {/* Post-Inspection Photos Section */}
                 <div className="card mb-4">
                     <div className="card-header d-flex justify-content-between align-items-center">
                         <h5 className="mb-0">Post-Inspection Photos</h5>
@@ -1772,7 +1705,6 @@ const FireDamper = ({
                     </div>
                 </div>
 
-                {/* Inspection Results Section */}
                 <div className="card mb-4">
                     <div className="card-header">
                         <h5 className="mb-0">Inspection Results</h5>
@@ -1911,9 +1843,6 @@ const FireDamper = ({
                     </div>
                 </div>
 
-
-
-                {/* Report Section */}
                 <div className="card mb-4">
                     <div className="card-header">
                         <h5 className="mb-0">Inspection Report</h5>
