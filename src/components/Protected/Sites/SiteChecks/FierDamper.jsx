@@ -340,7 +340,7 @@ const FireDamper = ({
 
             if (parentFoldersResponse?.parentFolders?.length > 0) {
                 const logBooksFolder = parentFoldersResponse.parentFolders.find(
-                    folder => folder.name.trim() === 'Log Books'
+                    folder => folder.name === 'Log Books'
                 );
 
                 if (logBooksFolder) {
@@ -348,7 +348,7 @@ const FireDamper = ({
 
                     if (logBooksResponse?.document?.childFolders) {
                         const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
-                            folder => folder.name.trim() === 'Fire Log Book'
+                            folder => folder.name === 'Fire Log Book'
                         );
 
                         if (plantAndEquipmentFolder) {
@@ -358,7 +358,7 @@ const FireDamper = ({
 
                             if (plantAndEquipmentResponse?.document?.childFolders) {
                                 const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
-                                    folder => folder.name.trim() === 'Fire Equipment (Other)'
+                                    folder => folder.name === 'Fire Equipment (Other)'
                                 );
 
                                 if (miscellaneousFolder) {
@@ -368,7 +368,7 @@ const FireDamper = ({
 
                                     if (miscResponse?.document?.childFolders) {
                                         const sounderAudibilityFolder = miscResponse.document.childFolders.find(
-                                            folder => folder.name.trim() === 'Fire Damper Test'
+                                            folder => folder.name === 'Fire Damper Test'
                                 );
 
                                 setFolderIds({
@@ -377,6 +377,13 @@ const FireDamper = ({
                                     miscellaneousService: miscellaneousFolder.id,
                                     sounderAudibility: sounderAudibilityFolder?.id || null
                                 });
+
+                                        console.log('Folder structure fetched successfully:', {
+                                            logBooks: logBooksFolder.id,
+                                            plantAndEquipment: plantAndEquipmentFolder.id,
+                                            miscellaneousService: miscellaneousFolder.id,
+                                            sounderAudibility: sounderAudibilityFolder?.id || null
+                                        });
 
                                         return sounderAudibilityFolder?.id || null;
                                     }
@@ -621,7 +628,8 @@ const FireDamper = ({
             await savePdfToLocal(pdfBlob, fileName);
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            const targetFolderId = folderIds.ventilation || folderIds.logBooks;
+            // CORRECTED: Use sounderAudibility folder which is the Fire Damper Test folder
+            const targetFolderId = folderIds.sounderAudibility || null; 
 
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
