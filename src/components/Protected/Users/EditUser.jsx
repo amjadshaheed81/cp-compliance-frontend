@@ -22,7 +22,7 @@ import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
-import {get, uploadPhoto} from "../../../api";
+import { get, getSasToken, uploadSiteCheckDoc } from "../../../api";
 import { MenuProps } from "./AddUser";
 import Tooltip from "@mui/material/Tooltip";
 import imageCompression from 'browser-image-compression';
@@ -38,6 +38,7 @@ const SiteSelectionDialog = ({
 }) => {
   const [tempSelectedSites, setTempSelectedSites] = useState([]);
 
+
   useEffect(() => {
     if (open) {
       setTempSelectedSites(selectedSites);
@@ -51,6 +52,8 @@ const SiteSelectionDialog = ({
         : [...prev, siteId]
     );
   };
+
+
 
   const handleSelectAll = () => {
     if (tempSelectedSites.length === sites.length) {
@@ -135,6 +138,7 @@ const ViewUsers = ({
   const [signatureUrl, setSignatureUrl] = useState(selectedUser?.signature || null);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const [signatureFile, setSignatureFile] = useState(null);
+  const [sasToken, setSasToken] = useState(''); // Add this line
 
 
   const getSiteName = (siteId) => {
@@ -173,6 +177,20 @@ const ViewUsers = ({
     getCompanies();
   }, []);
 
+
+  useEffect(() => {
+    const fetchSasToken = async () => {
+      try {
+        const token = await getSasToken();
+        setSasToken(token);
+      } catch (error) {
+        console.error('Failed to fetch SAS token:', error);
+      }
+    };
+
+    fetchSasToken();
+  }, []);
+
   const getCompanies = async () => {
     const license = JSON.parse(localStorage.getItem("license"));
     const url = "/api/companies/all?licenseId=" + license?.licenseId;
@@ -193,7 +211,7 @@ const ViewUsers = ({
     const file = event.target.files[0];
     if (!file) return;
 
-    // 🚫 Reject files >5MB
+    // Reject files >2MB
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Signature must be ≤2MB");
       return;
@@ -204,26 +222,37 @@ const ViewUsers = ({
     try {
       let finalFile = file;
 
-      // ⚡ Compress if >1MB (adjust threshold as needed)
+      // Compress if >1MB
       if (file.size > 1 * 1024 * 1024) {
         finalFile = await imageCompression(file, {
-          maxSizeMB: 1,           // Target max size (1MB)
-          maxWidthOrHeight: 800,  // Resize if too large
-          useWebWorker: true,     // Faster compression
-          fileType: "image/jpeg", // Use JPEG for smaller size (or "image/png")
+          maxSizeMB: 1,
+          maxWidthOrHeight: 800,
+          useWebWorker: true,
+          fileType: "image/jpeg",
         });
       }
 
-      // Convert to Base64 for preview + DB storage
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSignatureUrl(e.target.result); // For preview
-        setSignatureFile(e.target.result); // For DB (Base64 string)
+      // Create temporary URL for preview
+      const previewUrl = URL.createObjectURL(finalFile);
+      setSignatureUrl(previewUrl);
+
+      // Prepare data for upload
+      const uploadData = {
+        file: finalFile,
+        siteId: loggedInUserData?.licenseId, // Using licenseId as context
+        userId: selectedUser?.id,
+        type: "user-signature"
       };
-      reader.readAsDataURL(finalFile);
+
+      // Upload the file using uploadSiteCheckDoc
+      const uploadedUrl = await uploadSiteCheckDoc(uploadData);
+
+      // Store the URL for later use
+      setSignatureFile(uploadedUrl);
 
     } catch (error) {
-      toast.error("Error compressing signature");
+      console.error("Error uploading signature:", error);
+      toast.error("Error uploading signature");
     } finally {
       setIsUploadingSignature(false);
     }
@@ -238,7 +267,7 @@ const ViewUsers = ({
       email: formJson?.email ? String(formJson?.email).toLowerCase() : "",
       phone: formJson?.phone || "",
       role: formJson?.role || "",
-      signature: signatureFile || selectedUser?.signature || null, // Send Base64 string
+      signature: signatureFile || selectedUser?.signature || null, // Use the uploaded URL
       userType: formJson?.userType || "",
       defaultSiteId:
         formJson?.userType === "Internal" ? selectedUser?.defaultSiteId : "",
@@ -280,6 +309,7 @@ const ViewUsers = ({
       setIsLoading(false);
     }
   };
+  ;
 
   const getSelectedValue = () => {
     const selectedValue =
@@ -575,22 +605,22 @@ const ViewUsers = ({
                           </Button>
                         </label>
                       </div>
-                      {signatureUrl && (
+                        {signatureUrl && (
                           <Box mt={1}>
                             <img
-                                src={signatureUrl}
-                                alt="Signature Preview"
-                                style={{
-                                  maxWidth: '100%',
-                                  maxHeight: '100px',
-                                  border: '1px solid #ddd'
-                                }}
+                              src={`${signatureUrl}?${sasToken}`}
+                              alt="Signature Preview"
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '100px',
+                                border: '1px solid #ddd'
+                              }}
                             />
                             <Box fontSize={12} color="text.secondary" mt={0.5}>
-                              {signatureFile?.length && `Size: ${Math.round(signatureFile.length / 1024)}KB`}
+                              {signatureFile && `Uploaded: ${signatureFile.split('/').pop()}`}
                             </Box>
                           </Box>
-                      )}
+                        )}
                     </div>
                   </div>
 

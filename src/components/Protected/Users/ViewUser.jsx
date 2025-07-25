@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Button, Box } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -8,11 +8,28 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { connect } from "react-redux";
 import moment from "moment";
 import TagSites from "./TagSites";
+import { getSasToken } from "../../../api";
 
-const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser }) => {
+
+const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser, }) => {
   const handleClose = () => setShowViewModal(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSiteTagModal, setShowSiteTagModal] = useState(false);
+  const [sasToken, setSasToken] = useState('');
+
+
+  useEffect(() => {
+    const fetchSasToken = async () => {
+      try {
+        const token = await getSasToken();
+        setSasToken(token);
+      } catch (error) {
+        console.error('Failed to fetch SAS token:', error);
+      }
+    };
+
+    fetchSasToken();
+  }, []);
 
   return (
     <React.Fragment>
@@ -137,7 +154,7 @@ const ViewUsers = ({ showViewModal, setShowViewModal, selectedUser }) => {
                               width="100%"
                               height="100%"
                               style={{ objectFit: "contain" }}
-                              src={selectedUser?.signature}
+                        src={selectedUser?.signature + "?" + sasToken}
                               alt="Signature"
                           />
                       </div>
