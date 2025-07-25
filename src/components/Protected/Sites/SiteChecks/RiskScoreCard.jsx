@@ -5,6 +5,7 @@ import { put } from "../../../../api";
 import moment from "moment";
 import PropTypes from "prop-types";
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 
 const RiskScoreCard = ({
                            consequence: initialConsequence,
@@ -19,6 +20,7 @@ const RiskScoreCard = ({
                            taggedAsset,
                            createdBy,
                            actionRaised,
+                           images = [],
                        }) => {
     const [riskData, setRiskData] = useState({
         consequence: initialConsequence || null,
@@ -97,6 +99,13 @@ const RiskScoreCard = ({
                 createdBy,
                 taggedAsset,
                 dueDate: calculateDueDate(totalRiskScore).toISOString(),
+                images: (images || []).filter(img => img?.url).map(img => ({
+                    checkId: checkId,
+                    responseId: img.responseId || null,
+                    imageUrl: img.url.split('?')[0], // Remove SAS token for storage
+                    fileName: img.fileName || `action_image_${Date.now()}`,
+                    documentId: img.documentId || uuidv4(),
+                })),
             };
 
             // Make the API call using axios
@@ -311,6 +320,14 @@ RiskScoreCard.propTypes = {
     observation: PropTypes.string,
     requiredAction: PropTypes.string,
     disabled: PropTypes.bool,
+    images: PropTypes.arrayOf(
+        PropTypes.shape({
+            url: PropTypes.string,
+            fileName: PropTypes.string,
+            documentId: PropTypes.string,
+            responseId: PropTypes.number,
+        })
+    ),
     onRiskAssessmentComplete: PropTypes.func,
     siteId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     createdBy: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,

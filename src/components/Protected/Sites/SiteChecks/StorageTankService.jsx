@@ -1174,6 +1174,35 @@ const StorageTankService = ({
     }
   };
 
+  const getAllImages = () => {
+    return [
+      formData.param2Remark ? {
+        url: formData.param2Remark.includes('?')
+            ? formData.param2Remark
+            : `${formData.param2Remark}?${sasToken}`,
+        paramKey: 'param2Remark'
+      } : null,
+      formData.param3Remark ? {
+        url: formData.param3Remark.includes('?')
+            ? formData.param3Remark
+            : `${formData.param3Remark}?${sasToken}`,
+        paramKey: 'param3Remark'
+      } : null,
+      formData.param4Remark ? {
+        url: formData.param4Remark.includes('?')
+            ? formData.param4Remark
+            : `${formData.param4Remark}?${sasToken}`,
+        paramKey: 'param4Remark'
+      } : null,
+      formData.param5Remark ? {
+        url: formData.param5Remark.includes('?')
+            ? formData.param5Remark
+            : `${formData.param5Remark}?${sasToken}`,
+        paramKey: 'param5Remark'
+      } : null,
+    ].filter(Boolean); // Remove null values
+  };
+
   const renderClientNameField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
@@ -1801,6 +1830,7 @@ const StorageTankService = ({
                   onRiskAssessmentComplete={handleRiskAssessmentComplete}
                   actionRaised={actionRaised}
                   disabled={isSubmitted}
+                  images={getAllImages()}
                 />
               )}
             </div>
