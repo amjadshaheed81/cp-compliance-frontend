@@ -116,6 +116,7 @@ const CreateAsset = ({
     model: "",
     serialNumber: "",
     powerOutput: "",
+    damperSize: null,
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -195,7 +196,7 @@ const CreateAsset = ({
                         <div className="row">
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="assetName">Asset Name</label>
+                              <label htmlFor="assetName">Asset Name</label>
                               <input
                                   type="text"
                                   autoComplete="off"
@@ -224,7 +225,7 @@ const CreateAsset = ({
                           </div>
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="manufacturer">Manufacturer</label>
+                              <label htmlFor="manufacturer">Manufacturer</label>
                               <input
                                   type="text"
                                   autoComplete="off"
@@ -243,7 +244,7 @@ const CreateAsset = ({
 
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="relatedAssetId">Related Asset</label>
+                              <label htmlFor="relatedAssetId">Related Asset</label>
                               <Autocomplete
                                   multiple
                                   onChange={(event, newValue) => {
@@ -297,7 +298,7 @@ const CreateAsset = ({
 
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="model">Model</label>
+                              <label htmlFor="model">Model</label>
                               <input
                                   type="text"
                                   autoComplete="off"
@@ -316,7 +317,7 @@ const CreateAsset = ({
 
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="serialNumber">Serial Number</label>
+                              <label htmlFor="serialNumber">Serial Number</label>
                               <input
                                   type="text"
                                   autoComplete="off"
@@ -335,7 +336,7 @@ const CreateAsset = ({
 
                           <div className="col-md-6 mt-2">
                             <div className="form-group mt-2">
-                              <label for="powerOutput">Power Output(KW)</label>
+                              <label htmlFor="powerOutput">Power Output(KW)</label>
                               <input
                                   type="text"
                                   autoComplete="off"
@@ -348,6 +349,26 @@ const CreateAsset = ({
                                   name="powerOutput"
                                   placeholder=""
                                   {...register("powerOutput")}
+                              />
+                            </div>
+                          </div>
+                          <div className="col-md-6 mt-2">
+                            <div className="form-group mt-2">
+                              <label htmlFor="damperSize">Damper Size(mm)</label>
+                              <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  className="form-control"
+                                  id="damperSize"
+                                  name="damperSize"
+                                  placeholder=""
+                                  {...register("damperSize")}
                               />
                             </div>
                           </div>
@@ -364,7 +385,7 @@ const CreateAsset = ({
                         </div>
                       </div>
                     </div>
-                    <div className="row" style={{ height: "auto" }}>
+                    <div className="row" style={{height: "auto"}}>
                       <div className="col-md-4 mt-2">
                         <label for="category">Category</label>
                         <select

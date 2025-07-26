@@ -407,6 +407,7 @@ const UpdateAsset = ({
     model: "",
     serialNumber: "",
     powerOutput: "",
+    damperSize: "",
     relatedAssetId: null,
     folderId: null,
     patItem: false,
@@ -451,6 +452,7 @@ const UpdateAsset = ({
       deviceId: formData?.deviceId,
       serialNumber: formData?.serialNumber,
       powerOutput: formData?.powerOutput,
+      damperSize: formData?.damperSize,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
       folderId: null,
       patItem: formData?.patItem,
@@ -1134,6 +1136,25 @@ const UpdateAsset = ({
                                   name="powerOutput"
                                   placeholder=""
                                   {...register("powerOutput")}
+                              />
+                            </div>
+                          </div>
+                          <div className="col-md-6">
+                            <div className="form-group mt-2">
+                              <label htmlFor="damperSize">Damper Size(mm)</label>
+                              <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                  }
+                                  disabled
+                                  className="form-control"
+                                  id="damperSize"
+                                  name="damperSize"
+                                  placeholder=""
+                                  {...register("damperSize")}
                               />
                             </div>
                           </div>
