@@ -35,6 +35,7 @@ import RefugeIntercomTesting from "./RefugeIntercomTesting";
 import WaterChlorination from "./WaterChlorination";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import StorageTankService from "./StorageTankService";
+import FireDamper from "./FireDamper";
 
 
 
@@ -195,7 +196,13 @@ else if (
     ) {
       setStep("inspection-intruder-alarm");
     }
-
+    else if(
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Passive Fire" &&
+        siteCheck.category === "Passive Fire - Fire Damper Inspection"
+    ){
+      setStep("inspection-fire-damper")
+    }
  else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Fire Alarm to meet BS5839" &&
@@ -565,6 +572,17 @@ autoComplete="off"
                     category={siteCheck?.category}
                     leadUserID={siteCheck?.leadUserID}
                 />
+            )}
+            {step === "inspection-fire-damper" && (
+                <Item>
+                  <FireDamper
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
             )}
             {step === "inspection-fan-extract" && (
                 <Item>
