@@ -16,7 +16,7 @@ import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
-import pdfTemplate from './pdf/FIRE DAMPER INSPECTION.pdf';
+import pdfTemplate from './pdf/FireDamper.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 
@@ -80,7 +80,7 @@ const FireDamper = ({
         param4: "", // Fire Barrier Correction Required
         param5: "", // Damper Size
         param2Remark: "", // Pre-inspection photo 1
-        param3remark: "", // Pre-inspection photo 2
+        param3Remark: "", // Pre-inspection photo 2
         param4Remark: "", // Post-inspection photo 1
         param5Remark: "", // Post-inspection photo 2
         client: "",
@@ -234,10 +234,10 @@ const FireDamper = ({
                         paramKey: 'param2Remark'
                     });
                 }
-                if (mostRecentItem.param3remark) {
+                if (mostRecentItem.param3Remark) {
                     newPrePhotos.push({
-                        url: `${mostRecentItem.param3remark}${mostRecentItem.param3remark.includes('?') ? '&' : '?'}${sasToken}`,
-                        paramKey: 'param3remark'
+                        url: `${mostRecentItem.param3Remark}${mostRecentItem.param3Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        paramKey: 'param3Remark'
                     });
                 }
 
@@ -302,7 +302,7 @@ const FireDamper = ({
                     param4: mostRecentItem.param4 || prev.param4,
                     param5: mostRecentItem.param5 || prev.param5,
                     param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
-                    param3remark: mostRecentItem.param3remark || prev.param3remark,
+                    param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
                     param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
                     param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
                     client: mostRecentItem.client || "",
@@ -645,7 +645,7 @@ const FireDamper = ({
             // Determine available parameters
             const availableParams = [];
             if (!formData.param2Remark) availableParams.push('param2Remark');
-            if (!formData.param3remark) availableParams.push('param3remark');
+            if (!formData.param3Remark) availableParams.push('param3Remark');
 
             const filesToUpload = files.slice(0, availableParams.length);
             const token = sasToken || await getSasToken();
@@ -676,7 +676,7 @@ const FireDamper = ({
             const newFormData = {
                 ...formData,
                 param2Remark: uploadResults[0]?.url || formData.param2Remark,
-                param3remark: uploadResults[1]?.url || formData.param3remark
+                param3Remark: uploadResults[1]?.url || formData.param3Remark
             };
 
             setFormData(newFormData);
@@ -696,7 +696,7 @@ const FireDamper = ({
                     subType: 'Fire Damper',
                     category: 'Fire Damper Inspection',
                     param2Remark: newFormData.param2Remark,
-                    param3remark: newFormData.param3remark
+                    param3Remark: newFormData.param3Remark
                 };
 
                 const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
@@ -903,7 +903,7 @@ const FireDamper = ({
             setTextField('Damper Location', equipmentDetails || '', smallFont);
             setTextField('Floor', selectedAsset.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset.subCategory3 || '', smallFont);
-            setTextField('Damper Size', selectedAsset?.damperSize || '', smallFont);
+            setTextField('Damper Size', selectedAsset?.damperSize.toString() || '', smallFont);
 
             setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('Condition', formData.param2 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
