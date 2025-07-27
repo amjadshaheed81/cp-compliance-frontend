@@ -36,6 +36,7 @@ import WaterChlorination from "./WaterChlorination";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import StorageTankService from "./StorageTankService";
 import FireDamper from "./FireDamper";
+import WaterHeaterCertificate from "./WaterHeaterCertificate";
 
 
 
@@ -209,7 +210,14 @@ else if (
       siteCheck.category === "Refuge Intercom Testing & Inspection"
     ) {
       setStep("inspection-refuge-intercom-testing");
-    }else if (
+    }
+    else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Water Heater Inspection & Service"
+    ) {
+      setStep("inspection-water-heater");
+    } else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Legionella" &&
       siteCheck.category === "Water - Storage System Chlorination"
@@ -591,6 +599,17 @@ autoComplete="off"
                       sasToken={sasToken}
                       subType={siteCheck?.subType}
                       category={siteCheck?.category}
+                      leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-water-heater" && (
+                <Item>
+                  <WaterHeaterCertificate
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      subType={siteCheck?.subType}
+                      category={siteCheck.category}
                       leadUserID={siteCheck?.leadUserID}
                   />
                 </Item>

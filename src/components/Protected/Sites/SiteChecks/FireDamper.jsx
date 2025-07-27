@@ -972,7 +972,7 @@ const FireDamper = ({
             form.flatten();
             const pdfBytesModified = await pdfDoc.save();
             const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-            const fileName = `FireDamper_${selectedAsset?.assetName || 'report'}_${moment().format('DD/MM/YYYY')}.pdf`;
+            const fileName = `FireDamper_${selectedAsset?.assetName || 'report'}.pdf`;
 
             setGeneratedPdfBlob(blob);
             setShowPdfButton(true);
