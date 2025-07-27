@@ -1140,24 +1140,23 @@ const UpdateAsset = ({
                             </div>
                           </div>
                           <div className="col-md-6">
-                            <div className="form-group mt-2">
-                              <label htmlFor="damperSize">Damper Size(mm)</label>
-                              <input
-                                  type="text"
-                                  autoComplete="off"
-                                  readOnly
-                                  onFocus={(e) =>
-                                      e.target.removeAttribute("readonly")
-                                  }
-                                  disabled
-                                  className="form-control"
-                                  id="damperSize"
-                                  name="damperSize"
-                                  placeholder=""
-                                  {...register("damperSize")}
-                              />
-                            </div>
-                          </div>
+  <div className="form-group mt-2">
+    <label for="damperSize">Damper Size(mm)</label>
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      autoComplete="off"
+      readOnly
+      onFocus={(e) => e.target.removeAttribute("readonly")}
+      className="form-control"
+      id="damperSize"
+      name="damperSize"
+      placeholder=""
+      {...register("damperSize")}
+    />
+  </div>
+</div>
                           <div className="col-md-6 mt-2">
                             <label for="category">Category</label>
                             <select
