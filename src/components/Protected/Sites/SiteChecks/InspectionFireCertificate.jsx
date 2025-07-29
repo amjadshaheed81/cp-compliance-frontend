@@ -528,8 +528,8 @@ const InspectionFireCertificate = ({
         return 'Fire Alarm -  Weekly Testing';
       case 'Fire Alarm - monthly testing to meet BS5839':
         return 'Fire Alarm - Monthly Testing';
-      case 'Fire Alarm - 6 Monthly Testing':
-        return 'Fire Alarm - 6 monthly testing to meet BS5839';
+      case 'Fire Alarm - 6 monthly testing to meet BS5839':
+        return 'Fire Alarm - 6 Monthly Testing';
       case 'Fire Alarm - 12 monthly testing to meet BS5839':
         return 'Fire Alarm - 12 Monthly Testing';
       default:
