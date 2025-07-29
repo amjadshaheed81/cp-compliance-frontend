@@ -445,7 +445,20 @@ const InspectionFireCertificate = ({
           const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
           const signatureResponse = await fetch(signatureUrl);
           const signatureImageBytes = await signatureResponse.arrayBuffer();
-          const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+
+          let signatureImage;
+
+          // Try PNG first, then JPG if that fails
+          try {
+            signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+          } catch (pngError) {
+            try {
+              signatureImage = await pdfDoc.embedJpg(signatureImageBytes);
+            } catch (jpgError) {
+              console.warn('Signature image is neither PNG nor JPG:', jpgError);
+              return;
+            }
+          }
 
           const signatureField = form.getButton('signature_af_image');
           if (signatureField) {
@@ -471,7 +484,7 @@ const InspectionFireCertificate = ({
       const fileName = `FireAlarmInspection_${inspectionDetails?.category || 'report'}.pdf`;
 
       // Save locally first
-      await savePdfToLocal(blob, fileName);
+      //await savePdfToLocal(blob, fileName);
 
       // Upload to server
       await uploadPdfToServer(
@@ -1303,6 +1316,7 @@ const InspectionFireCertificate = ({
                             type="number"
                             className="form-control"
                             step="0.1"
+                            min={0}
                             value={battery.voltage}
                             onChange={(e) => handleBatteryChange(index, "voltage", e.target.value)}
                             disabled={!isFormEditable}
@@ -1315,6 +1329,7 @@ const InspectionFireCertificate = ({
                             type="number"
                             className="form-control"
                             step="0.01"
+                            min={0}
                             value={battery.charge}
                             onChange={(e) => handleBatteryChange(index, "charge", e.target.value)}
                             disabled={!isFormEditable}
@@ -1346,6 +1361,7 @@ const InspectionFireCertificate = ({
                       During the past 12 months,{" "}
                       <input
                         type="number"
+                        min={0}
                         className="form-control d-inline"
                         style={{ width: "60px" }}
                         value={formData.falseAlarmsCount}
