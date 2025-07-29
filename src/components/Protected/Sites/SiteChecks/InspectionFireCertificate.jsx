@@ -4,9 +4,7 @@ import { toast } from "react-toastify";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getSiteAssets, getUsers } from "../../../../store/thunk/site";
-import { get, post, uploadSiteCheckDoc, put } from "../../../../api";
-import { Grid } from "@mui/material";
-import { saveAs } from 'file-saver';
+import { get, post, put } from "../../../../api";
 import axios from 'axios';
 import pdfTemplate from './pdf/Fire Alarm.pdf';
 import RiskScoreCard from "./RiskScoreCard";
@@ -117,15 +115,27 @@ const InspectionFireCertificate = ({
     installationName: "",
     installationAddress: "",
     inspectionBy: loggedInUserData?.id,
-    batteryCount: "",
+    batteryCount: 0,
     batteryVoltage: "",
     batteryCapacity: "",
     batteryVented: false,
     falseAlarmsCount: 0,
     falseAlarmsRate: "",
     systemCondition: "",
-    batteryTestResults: [],
-    files: [],
+    batteryTestResults: [
+      {
+        batteryIdentifier: "A",
+        voltage: "",
+        charge: "",
+        installedDate: null
+      },
+      {
+        batteryIdentifier: "B",
+        voltage: "",
+        charge: "",
+        installedDate: null
+      }
+    ], files: [],
     user: loggedInUserData,
     actionId: null,
   });
@@ -397,10 +407,17 @@ const InspectionFireCertificate = ({
       });
 
       // Set battery information
-      setTextField('BatteryCount', formData.batteryCount || '');
+      setTextField('BatteryCount', formData.batteryCount.toString() || '');
       setTextField('BatteryVoltage', formData.batteryVoltage || '');
       setTextField('BatteryCapacity', formData.batteryCapacity || '');
       setCheckbox('BatteryVented', formData.batteryVented);
+
+      formData.batteryTestResults.slice(0, formData.batteryCount).forEach((battery, index) => {
+        setTextField(`voltage${index + 1}`, battery.voltage || '');
+        setTextField(`charge${index + 1}`, battery.charge || '');
+        setTextField(`installedDate${index + 1}`,
+          battery.installedDate ? formatDate(battery.installedDate) : '');
+      });
 
       // Set false alarm information
       setTextField('FalseAlarmsCount', formData.falseAlarmsCount || '');
@@ -451,7 +468,7 @@ const InspectionFireCertificate = ({
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
       // Generate filename
-      const fileName = `FireAlarmInspection_${inspectionDetails?.category || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `FireAlarmInspection_${inspectionDetails?.category || 'report'}.pdf`;
 
       // Save locally first
       await savePdfToLocal(blob, fileName);
@@ -505,6 +522,15 @@ const InspectionFireCertificate = ({
       default:
         return 'Fire Alarm - Monthly Testing'; // Default fallback
     }
+  };
+
+  const handleBatteryChange = (index, field, value) => {
+    const updatedBatteries = [...formData.batteryTestResults];
+    updatedBatteries[index][field] = value;
+    setFormData(prev => ({
+      ...prev,
+      batteryTestResults: updatedBatteries
+    }));
   };
 
   // Fetch folder structure function
@@ -756,6 +782,17 @@ const InspectionFireCertificate = ({
             setActionRaised(true);
           }
         }
+        const batteryData = apiData.batteryTestResults || [];
+        const defaultBatteries = [
+          { batteryIdentifier: "A", voltage: "", charge: "", installedDate: null },
+          { batteryIdentifier: "B", voltage: "", charge: "", installedDate: null }
+        ];
+
+        const loadedBatteries = defaultBatteries.map((battery, index) => {
+          return batteryData[index] ? { ...battery, ...batteryData[index] } : battery;
+        });
+
+
 
         // Create a map of checks from API data for easier lookup
         const apiChecksMap = {};
@@ -768,7 +805,8 @@ const InspectionFireCertificate = ({
           id: apiData?.id || prev.id,
           installationName: apiData?.installationName || prev.installationName,
           installationAddress: apiData?.installationAddress || prev.installationAddress,
-          batteryCount: apiData?.batteryCount || prev.batteryCount,
+          batteryCount: Math.min(batteryData.length, 2), // Ensure max 2 batteries
+          batteryTestResults: loadedBatteries,
           batteryVoltage: apiData?.batteryVoltage || prev.batteryVoltage,
           batteryCapacity: apiData?.batteryCapacity || prev.batteryCapacity,
           batteryVented: apiData?.batteryVented || prev.batteryVented,
@@ -787,7 +825,6 @@ const InspectionFireCertificate = ({
           additionalComments: apiData?.additionalComments || prev.additionalComments,
           additionalComments1: apiData?.additionalComments1 || prev.additionalComments1,
           additionalComments2: apiData?.additionalComments2 || prev.additionalComments2,
-          batteryTestResults: apiData?.batteryTestResults || prev.batteryTestResults,
           files: apiData?.files || prev.files,
           user: apiData?.inspectionByUser || prev.user,
         }));
@@ -969,12 +1006,7 @@ const InspectionFireCertificate = ({
         checkId: checkIdToUse,
         inspectionBy: loggedInUserData?.id,
         actionId: existingAction?.actionId || formData.actionId,
-        batteryTestResults: formData.batteryTestResults.map(result => ({
-          batteryIdentifier: result.batteryIdentifier,
-          voltage: result.voltage,
-          charge: result.charge,
-          installedDate: result.installedDate
-        }))
+        batteryTestResults: formData.batteryTestResults.slice(0, formData.batteryCount)
       };
 
       const inspectionResponse = formData.id
@@ -1188,6 +1220,7 @@ const InspectionFireCertificate = ({
 
 
           {/* Battery Information Section */}
+          {/* Battery Information Section */}
           <div className="card mb-4">
             <div className="card-header bg-primary text-white">
               Battery Information
@@ -1198,29 +1231,22 @@ const InspectionFireCertificate = ({
                   <div className="form-group mb-3">
                     <label>No. of Batteries:</label>
                     <div className="input-group">
-                      <input
-                        type="number"
+                      <select
                         className="form-control"
-                        min="0"
-                        max="2"
-                        value={formData.batteryCount || ""}
+                        value={formData.batteryCount}
                         onChange={(e) => {
                           const count = parseInt(e.target.value) || 0;
                           setFormData(prev => ({
                             ...prev,
-                            batteryCount: count,
-                            batteryTestResults: Array(count).fill().map((_, i) =>
-                              prev.batteryTestResults[i] || {
-                                batteryIdentifier: String.fromCharCode(65 + i),
-                                voltage: "",
-                                charge: "",
-                                installedDate: null
-                              }
-                            )
+                            batteryCount: count
                           }));
                         }}
                         disabled={!isFormEditable}
-                      />
+                      >
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                      </select>
                       <span className="input-group-text">
                         (for more than 2, record results on a separate numbered page)
                       </span>
@@ -1235,7 +1261,7 @@ const InspectionFireCertificate = ({
                         type="number"
                         className="form-control"
                         step="0.1"
-                        value={formData.batteryVoltage || ""}
+                        value={formData.batteryVoltage}
                         onChange={(e) => handleInputChange(e, "batteryVoltage")}
                         disabled={!isFormEditable}
                       />
@@ -1250,7 +1276,7 @@ const InspectionFireCertificate = ({
                       <input
                         type="number"
                         className="form-control"
-                        value={formData.batteryCapacity || ""}
+                        value={formData.batteryCapacity}
                         onChange={(e) => handleInputChange(e, "batteryCapacity")}
                         disabled={!isFormEditable}
                       />
@@ -1266,7 +1292,7 @@ const InspectionFireCertificate = ({
               <div className="border-top pt-3">
                 <h5>Battery Load Test Results</h5>
 
-                {formData.batteryTestResults.map((battery, index) => (
+                {formData.batteryTestResults.slice(0, formData.batteryCount).map((battery, index) => (
                   <div key={index} className="row mb-3">
                     <div className="col-md-12">
                       <div className="d-flex align-items-center">
@@ -1278,14 +1304,7 @@ const InspectionFireCertificate = ({
                             className="form-control"
                             step="0.1"
                             value={battery.voltage}
-                            onChange={(e) => {
-                              const updatedResults = [...formData.batteryTestResults];
-                              updatedResults[index].voltage = e.target.value;
-                              setFormData(prev => ({
-                                ...prev,
-                                batteryTestResults: updatedResults
-                              }));
-                            }}
+                            onChange={(e) => handleBatteryChange(index, "voltage", e.target.value)}
                             disabled={!isFormEditable}
                           />
                           <span className="input-group-text">V</span>
@@ -1297,31 +1316,17 @@ const InspectionFireCertificate = ({
                             className="form-control"
                             step="0.01"
                             value={battery.charge}
-                            onChange={(e) => {
-                              const updatedResults = [...formData.batteryTestResults];
-                              updatedResults[index].charge = e.target.value;
-                              setFormData(prev => ({
-                                ...prev,
-                                batteryTestResults: updatedResults
-                              }));
-                            }}
+                            onChange={(e) => handleBatteryChange(index, "charge", e.target.value)}
                             disabled={!isFormEditable}
                           />
                           <span className="input-group-text">Ah</span>
                         </div>
-                        
+
                         <div className="input-group input-group-md me-2" style={{ width: "240px" }}>
                           <span className="input-group-text">Date Installed:</span>
                           <DatePicker
                             selected={battery.installedDate ? new Date(battery.installedDate) : null}
-                            onChange={(date) => {
-                              const updatedResults = [...formData.batteryTestResults];
-                              updatedResults[index].installedDate = date;
-                              setFormData(prev => ({
-                                ...prev,
-                                batteryTestResults: updatedResults
-                              }));
-                            }}
+                            onChange={(date) => handleBatteryChange(index, "installedDate", date)}
                             className="form-control"
                             dateFormat="dd/MM/yyyy"
                             disabled={!isFormEditable}
