@@ -470,9 +470,22 @@ const EmergencyLightingInspectionForm = ({
           const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
           const signatureResponse = await fetch(signatureUrl);
           const signatureImageBytes = await signatureResponse.arrayBuffer();
-          const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
-          const signatureField = form.getButton('Image_af_image');
+          let signatureImage;
+
+          // Try PNG first, then JPG if that fails
+          try {
+            signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+          } catch (pngError) {
+            try {
+              signatureImage = await pdfDoc.embedJpg(signatureImageBytes);
+            } catch (jpgError) {
+              console.warn('Signature image is neither PNG nor JPG:', jpgError);
+              return;
+            }
+          }
+
+          const signatureField = form.getButton('Image_af_image');;
           if (signatureField) {
             signatureField.setImage(signatureImage);
           }
