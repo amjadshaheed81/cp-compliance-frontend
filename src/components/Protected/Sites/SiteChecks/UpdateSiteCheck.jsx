@@ -46,6 +46,7 @@ import WaterChlorination from "./WaterChlorination";
 import GasInspection from "./GasInspection";
 import FierDamper from "./FierDamper";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
+import GasBoilerService from "./GasBoilerService";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -189,6 +190,12 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
       siteCheck.category === "Intruder Alarm Servicing & Inspection"
     ) {
       setStep("inspection-intruder-alarm");
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Gas" &&
+      siteCheck.category === "Boiler Service / Maintenance Checklist"
+    ) {
+      setStep("inspection-boiler-service");
     } else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Legionella" &&
@@ -597,6 +604,17 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             {step === "inspection-electrical-microwave-oven" && (
               <Item>
                 <MicroWaveOvenCertificate
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck?.category}
+                  leadUserID={siteCheck?.leadUserID}
+                />
+              </Item>
+            )}
+            {step === "inspection-boiler-service" && (
+              <Item>
+                <GasBoilerService
                   checkId={checkId}
                   sasToken={sasToken}
                   subType={siteCheck?.subType}

@@ -524,7 +524,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       }
   };
 
-// Modify getSiteChecks to pass type and subType
+
   const getSiteChecks = async () => {
     if (!site?.siteId) {
       toast.error("Please select site from site search to proceed....");
@@ -535,12 +535,31 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
     // Fetch inspection data for all checks
     const inspectionPromises = siteChecks.map(check =>
-        fetchInspectionData(check.checkId, check.type, check.subType)
+      fetchInspectionData(check.checkId, check.type, check.subType)
     );
     await Promise.all(inspectionPromises);
 
-    setFilteredSiteChecks(siteChecks);
-    setSiteChecks(siteChecks);
+    // Sort site checks:
+    // 1. First show checks with asset IDs (sorted numerically ascending)
+    // 2. Then show checks without asset IDs (maintain original order)
+    const sortedSiteChecks = [...siteChecks].sort((a, b) => {
+      const aAssetId = assetIdMap[a.checkId];
+      const bAssetId = assetIdMap[b.checkId];
+
+      // Both have asset IDs - compare numerically
+      if (aAssetId && bAssetId) {
+        return parseInt(aAssetId) - parseInt(bAssetId);
+      }
+      // Only a has asset ID - a comes first
+      if (aAssetId) return -1;
+      // Only b has asset ID - b comes first
+      if (bAssetId) return 1;
+      // Neither has asset ID - maintain original order
+      return 0;
+    });
+
+    setFilteredSiteChecks(sortedSiteChecks);
+    setSiteChecks(sortedSiteChecks);
     setIsLoading(false);
   };
 
@@ -712,7 +731,11 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           <tr key={action?.id}>
                             <th scope="col">{action?.type}</th>
                             <th scope="col">{action?.subType}</th>
-                            <th scope="col">{assetIdMap[action.checkId] || '-'}</th>
+                            <th scope="col">
+                              {assetIdMap[action.checkId]
+                                ? parseInt(assetIdMap[action.checkId]) // Display as number to show proper ordering
+                                : '-'}
+                            </th>
                             <th scope="col">{action?.category}</th>
                             <th scope="col" style={{ width: "250px" }}>
                               {leanName}
