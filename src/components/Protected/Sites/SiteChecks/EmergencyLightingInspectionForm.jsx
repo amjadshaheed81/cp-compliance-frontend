@@ -116,9 +116,9 @@ const EmergencyLightingInspectionForm = ({
       throw new Error('Failed to load PDF template: ' + error.message);
     }
   };
-  const selectedAsset = siteAssets.find(
-      (asset) => asset.assetId === formData.assetId
-  );
+  // const selectedAsset = siteAssets.find(
+  //     (asset) => asset.assetId === formData.assetId
+  // );
   // Function to fetch inspection details
   const fetchInspectionDetails = async (checkId) => {
     try {
@@ -153,58 +153,6 @@ const EmergencyLightingInspectionForm = ({
       return null;
     }
   };
-
-  // const handleRiskAssessmentComplete = async (actionResponse) => {
-  //   try {
-  //     if (!actionResponse?.actionId) {
-  //       throw new Error("Invalid action response received");
-  //     }
-  //
-  //     // Verify the new action has our current checkId
-  //     const verifiedAction = await fetchActionById(actionResponse.actionId);
-  //     if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
-  //       throw new Error("Action was not properly linked to this inspection");
-  //     }
-  //
-  //     setExistingAction(verifiedAction);
-  //     setActionRaised(true);
-  //
-  //     // Update form data
-  //     setFormData(prev => ({
-  //       ...prev,
-  //       actionId: verifiedAction.actionId
-  //     }));
-  //
-  //     // Update inspection record
-  //     if (checkId) {
-  //       const inspectionPayload = {
-  //         ...formData,
-  //         checkId: checkId,
-  //         siteId: siteSelectedForGlobal?.siteId,
-  //         actionId: verifiedAction.actionId,
-  //       };
-  //
-  //       // Update or create inspection record
-  //       const existingInspections = await get(`/api/site-check/emergency-lighting/${checkId}`);
-  //       console.log('-->',existingInspections);
-  //       if (existingInspections?.length > 0) {
-  //         await put(`/api/site-check/emergency-lighting/${checkId}`, inspectionPayload);
-  //       } else {
-  //         await post(`/api/site-check/emergency-lighting`, inspectionPayload);
-  //       }
-  //
-  //       toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error handling risk assessment completion:", error);
-  //     toast.error(error.message || "Failed to process action completion");
-  //
-  //     // Rollback state changes if the operation failed
-  //     setActionRaised(false);
-  //     setExistingAction(null);
-  //     setFormData(prev => ({ ...prev, actionId: null }));
-  //   }
-  // };
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {

@@ -11,9 +11,7 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
-import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
-import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/GasBoilerService.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
@@ -55,14 +53,16 @@ const GasBoilerService = ({
   siteSelectedForGlobal,
   loggedInUserData,
 }) => {
+  const license = JSON.parse(localStorage.getItem("license"));
+
   const [formData, setFormData] = useState({
     // Address and Business Details
-    inspectionAddress: "",
+    installationAddress: "",
     registeredBusinessName: "",
     registeredBusinessRegNo: "",
-    gasEngineerName: "",
+    gasEngineerName: loggedInUserData?.name || "",
     gasSafeRegNo: "",
-    companyName: "",
+    companyName: loggedInUserData?.companyName || "",
     companyAddress: "",
     postCode: "",
     rentedAccommodation: false,
@@ -152,25 +152,24 @@ const GasBoilerService = ({
   const navigate = useNavigate();
 
   const isInternalUserTaggedWithSite =
-    (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
+    (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer") &&
     loggedInUserData?.taggedSites?.some(
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
 
-  // Helper function to fetch SAS token for blob storage access
-  const fetchSasToken = async () => {
-    try {
-      const token = await getSasToken();
-      setSasToken(token);
-      // Update any existing photo URLs with new token
-      setUploadedPhotos(prev => prev.map(photo => ({
-        ...photo,
-        url: `${photo.url.split('?')[0]}?${token}`
-      })));
-    } catch (error) {
-      console.error('Failed to fetch SAS token:', error);
-    }
-  };
+  // const fetchSasToken = async () => {
+  //   try {
+  //     const token = await getSasToken();
+  //     setSasToken(token);
+  //     // Update any existing photo URLs with new token
+  //     setUploadedPhotos(prev => prev.map(photo => ({
+  //       ...photo,
+  //       url: `${photo.url.split('?')[0]}?${token}`
+  //     })));
+  //   } catch (error) {
+  //     console.error('Failed to fetch SAS token:', error);
+  //   }
+  // };
 
   // Effect to fetch inspection data when checkId changes
   useEffect(() => {
@@ -263,6 +262,64 @@ const GasBoilerService = ({
 
     fetchInspectionData();
   }, [checkId, siteAssets, users, sasToken]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Set company name from license if available
+      if (license?.companyName) {
+        setFormData((prev) => ({
+          ...prev,
+          installationName: license.companyName,
+        }));
+      }
+
+      // Return early if no site ID is selected
+      if (!siteSelectedForGlobal?.siteId) {
+        return;
+      }
+
+      try {
+        // Fetch complete site data from API
+        const fullSiteData = await get(`/api/site/site/${siteSelectedForGlobal.siteId}`);
+
+        // Construct address parts array, filtering out any undefined/empty values
+        const addressParts = [
+          fullSiteData.address1,
+          fullSiteData.address2,
+          fullSiteData.city,
+          fullSiteData.area,
+          fullSiteData.postCode,
+          fullSiteData.country // Now guaranteed to come from the API response
+        ].filter(part => part && part.trim() !== '');
+
+        // Join address parts with commas
+        const fullAddress = addressParts.join(", ");
+
+        // Update form data with the complete address
+        setFormData((prev) => ({
+          ...prev,
+          postCode: fullSiteData.postCode || "",
+          installationAddress: fullAddress,
+        }));
+
+        // // Optional: Log the address parts for debugging
+        // console.log('Complete address parts:', {
+        //   address1: fullSiteData.address1,
+        //   address2: fullSiteData.address2,
+        //   city: fullSiteData.city,
+        //   area: fullSiteData.area,
+        //   postCode: fullSiteData.postCode,
+        //   country: fullSiteData.country
+        // });
+
+      } catch (error) {
+        console.error('Error fetching site details:', error);
+        toast.error('Failed to load site address details');
+      }
+    };
+
+    fetchData();
+  }, [license?.companyName, siteSelectedForGlobal?.siteId]); // Added siteId to dependency array
 
   // Function to fetch action by ID
   const fetchActionById = async (id) => {
@@ -1068,7 +1125,7 @@ const GasBoilerService = ({
       };
 
       // Address and Business Details
-      setTextField('Inspection Address', formData.inspectionAddress);
+      setTextField('Inspection Address', formData.installationAddress);
       setTextField('Registered Business Name', formData.registeredBusinessName);
       setTextField('Reg No', formData.registeredBusinessRegNo);
       setTextField('Gas Engineer', formData.gasEngineerName);
@@ -1268,18 +1325,42 @@ const GasBoilerService = ({
           </div>
           <div className="card-body">
             <div className="row">
+              {/* Left Column - Inspection Address */}
               <div className="col-md-6">
+                <div className="mb-3">
+                  <label className="form-label">Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={license?.companyName}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    disabled
+                  />
+                </div>
                 <div className="mb-3">
                   <label className="form-label">Inspection Address</label>
                   <textarea
                     className="form-control"
                     rows={3}
-                    value={formData.inspectionAddress}
-                    onChange={(e) => setFormData({...formData, inspectionAddress: e.target.value})}
-                    disabled={isSubmitted}
+                    value={formData.installationAddress}
+                    onChange={(e) => setFormData({ ...formData, installationAddress: e.target.value })}
+                    disabled
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Post Code</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={formData.postCode}
+                    onChange={(e) => setFormData({ ...formData, postCode: e.target.value })}
+                    disabled
                   />
                 </div>
               </div>
+
+              {/* Right Column - Registered Business Details */}
               <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Registered Business Name</label>
@@ -1287,7 +1368,7 @@ const GasBoilerService = ({
                     type="text"
                     className="form-control"
                     value={formData.registeredBusinessName}
-                    onChange={(e) => setFormData({...formData, registeredBusinessName: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, registeredBusinessName: e.target.value })}
                     disabled={isSubmitted}
                   />
                 </div>
@@ -1297,67 +1378,62 @@ const GasBoilerService = ({
                     type="text"
                     className="form-control"
                     value={formData.registeredBusinessRegNo}
-                    onChange={(e) => setFormData({...formData, registeredBusinessRegNo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, registeredBusinessRegNo: e.target.value })}
                     disabled={isSubmitted}
                   />
                 </div>
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Gas Engineer Name</label>
                   <input
                     type="text"
                     className="form-control"
                     value={formData.gasEngineerName}
-                    onChange={(e) => setFormData({...formData, gasEngineerName: e.target.value})}
-                    disabled={isSubmitted}
+                    onChange={(e) => setFormData({ ...formData, gasEngineerName: e.target.value })}
+                    disabled
                   />
                 </div>
-              </div>
-              <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Gas Safe Registration No</label>
                   <input
                     type="text"
                     className="form-control"
                     value={formData.gasSafeRegNo}
-                    onChange={(e) => setFormData({...formData, gasSafeRegNo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, gasSafeRegNo: e.target.value })}
                     disabled={isSubmitted}
                   />
                 </div>
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Company Name</label>
                   <input
                     type="text"
                     className="form-control"
                     value={formData.companyName}
-                    onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                    disabled={isSubmitted}
+                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    disabled
                   />
                 </div>
-              </div>
-              <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Post Code</label>
                   <input
                     type="text"
                     className="form-control"
-                    value={formData.postCode}
-                    onChange={(e) => setFormData({...formData, postCode: e.target.value})}
-                    disabled={isSubmitted}
+                    value={loggedInUserData?.postCode}
+                    disabled
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Post Code</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={loggedInUserData?.companyAddress || ""}
+                    disabled
                   />
                 </div>
               </div>
             </div>
 
+            {/* Bottom Row - Rented Accommodation and Date/Time */}
             <div className="row">
               <div className="col-md-6">
                 <div className="mb-3 form-check">
@@ -1365,7 +1441,7 @@ const GasBoilerService = ({
                     type="checkbox"
                     className="form-check-input"
                     checked={formData.rentedAccommodation}
-                    onChange={(e) => setFormData({...formData, rentedAccommodation: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, rentedAccommodation: e.target.checked })}
                     disabled={isSubmitted}
                   />
                   <label className="form-check-label">Rented Accommodation</label>
@@ -1378,7 +1454,7 @@ const GasBoilerService = ({
                     type="datetime-local"
                     className="form-control"
                     value={formData.dateTimeOfIssue}
-                    onChange={(e) => setFormData({...formData, dateTimeOfIssue: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, dateTimeOfIssue: e.target.value })}
                     disabled={isSubmitted}
                   />
                 </div>
@@ -1391,7 +1467,7 @@ const GasBoilerService = ({
                 className="form-control"
                 rows={3}
                 value={formData.workDescription}
-                onChange={(e) => setFormData({...formData, workDescription: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, workDescription: e.target.value })}
                 disabled={isSubmitted}
               />
             </div>
