@@ -867,7 +867,11 @@ const InspectionFireCertificate = ({
           setInspectionDetails({
             type: response.type,
             subType: response.subType,
-            category: response.category
+            category: response.category,
+            dueDate: response.dueDate,
+            status: response.status,
+            checkId: response.checkId,
+            siteId: response.siteId,
           });
         }
       }
