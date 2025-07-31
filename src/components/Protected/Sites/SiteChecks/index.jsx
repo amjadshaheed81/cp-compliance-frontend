@@ -562,7 +562,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setSiteChecks(sortedSiteChecks);
     setIsLoading(false);
   };
-
   return (
     <Fragment>
       <SidebarNew />
