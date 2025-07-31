@@ -58,23 +58,14 @@ const GasBoilerService = ({
   const [formData, setFormData] = useState({
     // Address and Business Details
     installationAddress: "",
-    registeredBusinessName: "",
     registeredBusinessRegNo: "",
-    gasEngineerName: loggedInUserData?.name || "",
-    gasSafeRegNo: "",
-    companyName: loggedInUserData?.companyName || "",
-    companyAddress: "",
-    postCode: "",
-    rentedAccommodation: false,
+    rentedAccommodation: "",
     dateTimeOfIssue: new Date().toISOString().split("T")[0],
     workDescription: "",
     engineerSignature: "",
 
     // Appliance Details
-    applianceMake: "",
-    applianceType: "",
-    applianceModel: "",
-    applianceLocation: "",
+    assetId: "",
 
     // Appliance Checks
     heatExchanger: { checked: false, defect: "" },
@@ -119,7 +110,6 @@ const GasBoilerService = ({
     engineerSignatureDate: new Date().toISOString().split("T")[0],
 
     // Additional fields for functionality
-    assetId: "",
     selectedAsset: null,
     clientUser: null,
     siteContactUser: null,
@@ -157,19 +147,23 @@ const GasBoilerService = ({
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
 
-  // const fetchSasToken = async () => {
-  //   try {
-  //     const token = await getSasToken();
-  //     setSasToken(token);
-  //     // Update any existing photo URLs with new token
-  //     setUploadedPhotos(prev => prev.map(photo => ({
-  //       ...photo,
-  //       url: `${photo.url.split('?')[0]}?${token}`
-  //     })));
-  //   } catch (error) {
-  //     console.error('Failed to fetch SAS token:', error);
-  //   }
-  // };
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const token = await getSasToken();
+        setSasToken(token);
+      } catch (error) {
+        console.error('Failed to fetch SAS token:', error);
+      }
+    };
+
+    fetchToken();
+  }, []);
+
 
   // Effect to fetch inspection data when checkId changes
   useEffect(() => {
@@ -1304,6 +1298,14 @@ const GasBoilerService = ({
     );
   };
 
+  const filteredAssets =
+    siteAssets?.filter(
+      (asset) =>
+        asset.category === "Mechanical" &&
+        asset.subCategory === "Central Heating" &&
+        asset.subCategory2 === "Boiler"
+    ) || [];
+
   return (
     <div className="container mt-4 mb-5">
       <div className="header text-center bg-light p-4 mb-4 rounded d-flex justify-content-between align-items-center">
@@ -1363,16 +1365,6 @@ const GasBoilerService = ({
               {/* Right Column - Registered Business Details */}
               <div className="col-md-6">
                 <div className="mb-3">
-                  <label className="form-label">Registered Business Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.registeredBusinessName}
-                    onChange={(e) => setFormData({ ...formData, registeredBusinessName: e.target.value })}
-                    disabled={isSubmitted}
-                  />
-                </div>
-                <div className="mb-3">
                   <label className="form-label">Registration Number</label>
                   <input
                     type="text"
@@ -1387,8 +1379,7 @@ const GasBoilerService = ({
                   <input
                     type="text"
                     className="form-control"
-                    value={formData.gasEngineerName}
-                    onChange={(e) => setFormData({ ...formData, gasEngineerName: e.target.value })}
+                    value={loggedInUserData?.name || ""}
                     disabled
                   />
                 </div>
@@ -1397,9 +1388,8 @@ const GasBoilerService = ({
                   <input
                     type="text"
                     className="form-control"
-                    value={formData.gasSafeRegNo}
-                    onChange={(e) => setFormData({ ...formData, gasSafeRegNo: e.target.value })}
-                    disabled={isSubmitted}
+                    value={loggedInUserData?.gasSafetyRegNo || ""}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -1407,26 +1397,27 @@ const GasBoilerService = ({
                   <input
                     type="text"
                     className="form-control"
-                    value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    value={loggedInUserData?.companyName || ""}
                     disabled
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Post Code</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={loggedInUserData?.postCode}
-                    disabled
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Post Code</label>
+                  <label className="form-label">Company Address</label>
                   <input
                     type="text"
                     className="form-control"
                     value={loggedInUserData?.companyAddress || ""}
+                    disabled
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Post Code</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={
+                      loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0] || ""
+                    }
                     disabled
                   />
                 </div>
@@ -1436,15 +1427,16 @@ const GasBoilerService = ({
             {/* Bottom Row - Rented Accommodation and Date/Time */}
             <div className="row">
               <div className="col-md-6">
-                <div className="mb-3 form-check">
+                <div className="mb-3">
+                  <label className="form-label">Rented Accommodation</label>
+
                   <input
-                    type="checkbox"
-                    className="form-check-input"
-                    checked={formData.rentedAccommodation}
-                    onChange={(e) => setFormData({ ...formData, rentedAccommodation: e.target.checked })}
+                    type="text"
+                    className="form-control"
+                    value={formData.rentedAccommodation}
+                    onChange={(e) => setFormData({ ...formData, rentedAccommodation: e.target.value })}
                     disabled={isSubmitted}
                   />
-                  <label className="form-check-label">Rented Accommodation</label>
                 </div>
               </div>
               <div className="col-md-6">
@@ -1458,6 +1450,17 @@ const GasBoilerService = ({
                     disabled={isSubmitted}
                   />
                 </div>
+                <div className="mb-3">
+                  <label className="form-label">Signature</label>
+                  <br />
+                  <img
+                    width="200"
+                    height="50"
+                    style={{ border: "1px solid" }}
+                    src={loggedInUserData?.signature + "?" + sasToken}
+                    alt="Signature"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1465,7 +1468,7 @@ const GasBoilerService = ({
               <label className="form-label">Work Description</label>
               <textarea
                 className="form-control"
-                rows={3}
+                rows={5}
                 value={formData.workDescription}
                 onChange={(e) => setFormData({ ...formData, workDescription: e.target.value })}
                 disabled={isSubmitted}
@@ -1480,56 +1483,125 @@ const GasBoilerService = ({
             <h5 className="mb-0">Appliance Details</h5>
           </div>
           <div className="card-body">
-            <div className="row">
-              <div className="col-md-3">
-                <div className="mb-3">
-                  <label className="form-label">Make</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.applianceMake}
-                    onChange={(e) => setFormData({...formData, applianceMake: e.target.value})}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="mb-3">
-                  <label className="form-label">Type</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.applianceType}
-                    onChange={(e) => setFormData({...formData, applianceType: e.target.value})}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="mb-3">
-                  <label className="form-label">Model</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.applianceModel}
-                    onChange={(e) => setFormData({...formData, applianceModel: e.target.value})}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="mb-3">
-                  <label className="form-label">Location</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.applianceLocation}
-                    onChange={(e) => setFormData({...formData, applianceLocation: e.target.value})}
-                    disabled={isSubmitted}
-                  />
-                </div>
+            <div className="row mb-4">
+              <div className="col-md-12">
+                <Autocomplete
+                  disabled={isSubmitted}
+                  options={filteredAssets}
+                  getOptionLabel={(option) =>
+                    `${option.assetId} - ${option.assetName} (${option.position || "NA"
+                    } > ${option.floor || "NA"} > ${option.room || "NA"})`
+                  }
+                  value={formData.selectedAsset}
+                  onChange={handleAssetSelect}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select a Sounder Device"
+                      variant="outlined"
+                      placeholder="Search sounders..."
+                    />
+                  )}
+                  sx={{ width: "100%" }}
+                />
               </div>
             </div>
+
+            {formData.selectedAsset && (
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Manufacturer</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="manufacturer"
+                      value={selectedAsset.manufacturer}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Model Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="modelNumber"
+                      value={selectedAsset.model}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Asset ID</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={selectedAsset.assetId}
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formData.selectedAsset && (
+              <div className="row">
+                <div className="col-md-12">
+                  <div className="mb-3">
+                    <label className="form-label">Location</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={`${selectedAsset.assetName} - ${selectedAsset.manufacturer} , Asset No-${formData.assetId} - ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}`}
+                      readOnly
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {formData.selectedAsset && (
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Make</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="make"
+                      value={formData.make}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isSubmitted}
+
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Type</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="type"
+                      value={formData.type}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isSubmitted}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
