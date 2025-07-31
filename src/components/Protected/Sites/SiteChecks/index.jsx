@@ -505,63 +505,74 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     return moment(date, "YYYY-MM-DD").add("days", daysToAdd);
   };
 
-  const fetchInspectionData = async (checkId, type, subType) => {
-      let apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
-
-      const inspectionData = await get(apiEndpoint);
-
-      let assetId;
-      // Generic inspection returns an array
-        const mostRecentItem = inspectionData?.[inspectionData.length - 1];
-        assetId = mostRecentItem?.assetId;
-
-
-      if (assetId) {
-        setAssetIdMap(prev => ({
-          ...prev,
-          [checkId]: assetId
-        }));
-      }
-  };
-
-
   const getSiteChecks = async () => {
     if (!site?.siteId) {
       toast.error("Please select site from site search to proceed....");
       return;
     }
     setIsLoading(true);
-    const siteChecks = await get("/api/site-check/site/" + site?.siteId);
 
-    // Fetch inspection data for all checks
-    const inspectionPromises = siteChecks.map(check =>
-      fetchInspectionData(check.checkId, check.type, check.subType)
-    );
-    await Promise.all(inspectionPromises);
+    try {
+    // Get all site checks
+      const siteChecks = await get("/api/site-check/site/" + site?.siteId);
 
-    // Sort site checks:
-    // 1. First show checks with asset IDs (sorted numerically ascending)
-    // 2. Then show checks without asset IDs (maintain original order)
-    const sortedSiteChecks = [...siteChecks].sort((a, b) => {
-      const aAssetId = assetIdMap[a.checkId];
-      const bAssetId = assetIdMap[b.checkId];
+      // Create a map to store asset IDs
+      const newAssetIdMap = {};
 
-      // Both have asset IDs - compare numerically
-      if (aAssetId && bAssetId) {
-        return parseInt(aAssetId) - parseInt(bAssetId);
-      }
-      // Only a has asset ID - a comes first
-      if (aAssetId) return -1;
-      // Only b has asset ID - b comes first
-      if (bAssetId) return 1;
-      // Neither has asset ID - maintain original order
-      return 0;
-    });
+      // Fetch inspection data for all checks and populate the map
+      await Promise.all(siteChecks.map(async (check) => {
+        try {
+          const assetId = await fetchInspectionData(check.checkId, check.type, check.subType);
+          if (assetId) {
+            newAssetIdMap[check.checkId] = assetId;
+          }
+        } catch (error) {
+          console.error(`Error fetching inspection data for check ${check.checkId}:`, error);
+        }
+      }));
 
-    setFilteredSiteChecks(sortedSiteChecks);
-    setSiteChecks(sortedSiteChecks);
-    setIsLoading(false);
+      // Update the assetIdMap state first
+      setAssetIdMap(newAssetIdMap);
+
+      // Then sort the site checks using the updated map
+      const sortedSiteChecks = [...siteChecks].sort((a, b) => {
+        const aAssetId = newAssetIdMap[a.checkId];
+        const bAssetId = newAssetIdMap[b.checkId];
+
+        if (aAssetId && bAssetId) {
+          return parseInt(aAssetId) - parseInt(bAssetId);
+        }
+        if (aAssetId) return -1;
+        if (bAssetId) return 1;
+        return 0;
+      });
+
+      // Update both states at once
+      setFilteredSiteChecks(sortedSiteChecks);
+      setSiteChecks(sortedSiteChecks);
+    } catch (error) {
+      console.error("Error fetching site checks:", error);
+      toast.error("Failed to load site checks");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const fetchInspectionData = async (checkId, type, subType) => {
+    try {
+      let apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
+      const inspectionData = await get(apiEndpoint);
+
+      // Generic inspection returns an array
+      const mostRecentItem = inspectionData?.[inspectionData.length - 1];
+      return mostRecentItem?.assetId;
+    } catch (error) {
+      console.error(`Error fetching inspection for check ${checkId}:`, error);
+      return null;
+    }
+  };
+
+
   return (
     <Fragment>
       <SidebarNew />
