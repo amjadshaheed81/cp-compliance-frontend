@@ -87,31 +87,60 @@ const Summary = ({
   }, [siteSelectedForGlobal]);
 
   useEffect(() => {
-    const floorNodes =
-      siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
-    const roomNodes =
-      siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
-    setFloorNode(floorNodes);
-    setRoomNode(roomNodes);
+    if (!siteLayout) return;
 
-    // Check if there is a label parameter in the URL
+    // Get all floors (both interior and exterior)
+    const allFloors = siteLayout.filter((itm) => itm?.nodeType === "floor");
+
+    // Get all rooms
+    const allRooms = siteLayout.filter((itm) => itm?.nodeType === "room");
+
+    // Organize rooms by their parent floor
+    const organizedRooms = {};
+    allRooms.forEach(room => {
+      const parentFloorId = room.parentNode;
+      if (!organizedRooms[parentFloorId]) {
+        organizedRooms[parentFloorId] = [];
+      }
+      organizedRooms[parentFloorId].push(room);
+    });
+
+    // Attach rooms to their respective floors
+    const floorsWithRooms = allFloors.map(floor => ({
+      ...floor,
+      rooms: organizedRooms[floor.id] || []
+    }));
+
+    setFloorNode(floorsWithRooms);
+    setRoomNode(allRooms);
+
+    // Handle URL parameter for room selection
     const queryParams = new URLSearchParams(location.search);
     const label = queryParams.get("roomLabel");
 
     if (label) {
       const roomNumber = label; // Extract the part after '-'
-      const matchedRoom = roomNodes.find(
-        (room) => room.nodeName?.split(" ")[1] === roomNumber
+      // Find room by matching the exact name part after splitting
+      const matchedRoom = allRooms.find(
+          (room) => room.nodeName?.split(" ")[1] === roomNumber
       );
       if (matchedRoom) {
         setFormData((prevFormData) => ({
           ...prevFormData,
           room: matchedRoom?.nodeName,
         }));
+
+        // If you want to also set the correct floor based on the room's parent
+        const parentFloor = allFloors.find(f => f.id === matchedRoom.parentNode);
+        if (parentFloor) {
+          setFormData((prevFormData) => ({
+            ...prevFormData,
+            floor: parentFloor.nodeName,
+          }));
+        }
       }
     }
   }, [siteLayout, location.search]);
-
   const getCategory = async () => {
     const categoryList = await get("/api/lov/ASSET_CATEGORY");
     const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
@@ -163,7 +192,38 @@ const Summary = ({
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "category") {
+    if (name === "position") {
+      // When position changes, reset floor and room
+      const positionNode = siteLayout.find(node => node.nodeName === value);
+      const floors = siteLayout.filter(
+          node => node.nodeType === "floor" && node.parentNode === positionNode?.id
+      );
+
+      setFormData({
+        ...formData,
+        [name]: value,
+        floor: "",
+        room: ""
+      });
+      setFloorNode(floors);
+      setRoomNode([]);
+    }
+    else if (name === "floor") {
+      // When floor changes, reset room and update available rooms
+      const floor = floorNode.find(f => f.nodeName === value);
+      const rooms = siteLayout.filter(
+          node => node.nodeType === "room" && node.parentNode === floor?.id
+      );
+
+      setFormData({
+        ...formData,
+        [name]: value,
+        room: ""
+      });
+      setRoomNode(rooms);
+    }
+
+    else if (name === "category") {
       const subCategoryData = subCategory?.filter(
         (itm) => itm?.attribite1 === value
       );
@@ -215,6 +275,8 @@ const Summary = ({
     formData.subCategory2,
     formData.subCategory3,
     formData.location,
+    formData.floor,
+    formData.room,
     formData.manufacturer,
     formData.floor,
     formData.room,
@@ -907,86 +969,58 @@ const Summary = ({
             </div>
             <div className="col-md-4 col-sm-4 mt-2">
               <select
-                name="location"
-                className="form-control form-select"
-                id="location"
-                // onChange={handleInputChange}
-                value={formData?.location}
-                onChange={(e) => {
-                  const { name, value } = e.target;
-                  setFormData({
-                    ...formData,
-                    [name]: value,
-                    floor: "",
-                    room: "",
-                  });
-                  const node = siteLayout.filter(
-                    (site) => site.nodeName === value
-                  );
-                  const data = siteLayout.filter(
-                    (site) =>
-                      site.nodeType === "floor" &&
-                      site.parentNode === node?.[0]?.id
-                  );
-                  setFloorNode(data || []);
-                }}
+                  name="position"
+                  className="form-control form-select"
+                  id="position"
+                  onChange={handleInputChange}
+                  value={formData?.position}
               >
                 <option value="">Location</option>
-                <option value="Interior">Interior</option>
-                <option value="Exterior">Exterior</option>
-                {/* {locationFilter.map((site) => (
-                  <option value={site.location}>{site.location}</option>
-                ))} */}
+                {siteLayout
+                    ?.filter(node => node.nodeType === "type" || node.nodeType === "building")
+                    ?.map((node) => (
+                        <option key={node.id} value={node.nodeName}>
+                          {node.nodeName}
+                        </option>
+                    ))}
               </select>
             </div>
             <div
-              className="col-md-4 col-sm-4 mt-2"
-              style={{ display: formData?.location?.length > 0 ? "" : "none" }}
+                className="col-md-4 col-sm-4 mt-2"
+                style={{ display: formData?.position?.length > 0 ? "" : "none" }}
             >
               <select
-                name="floor"
-                className="form-control form-select"
-                id="floor"
-                // onChange={handleInputChange}
-                value={formData?.floor}
-                onChange={(e) => {
-                  const { name, value } = e.target;
-                  setFormData({
-                    ...formData,
-                    [name]: value,
-                    room: "",
-                  });
-                  const node = siteLayout.filter(
-                    (site) => site.nodeName === value
-                  );
-                  const data = siteLayout.filter(
-                    (site) =>
-                      site.nodeType === "room" &&
-                      site.parentNode === node?.[0]?.id
-                  );
-                  setRoomNode(data || []);
-                }}
+                  name="floor"
+                  className="form-control form-select"
+                  id="floor"
+                  onChange={handleInputChange}
+                  value={formData?.floor}
               >
                 <option value="">Floor</option>
-                {floorNode?.map((itm) => (
-                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                {floorNode?.map((floor) => (
+                    <option key={floor.id} value={floor.nodeName}>
+                      {floor.nodeName}
+                    </option>
                 ))}
               </select>
             </div>
+
             <div
-              className="col-md-4 col-sm-4 mt-2"
-              style={{ display: formData.floor?.length > 0 ? "" : "none" }}
+                className="col-md-4 col-sm-4 mt-2"
+                style={{ display: formData.floor?.length > 0 ? "" : "none" }}
             >
               <select
-                name="room"
-                className="form-control form-select"
-                id="room"
-                value={formData.room} // Set the selected value dynamically
-                onChange={handleInputChange}
+                  name="room"
+                  className="form-control form-select"
+                  id="room"
+                  value={formData.room}
+                  onChange={handleInputChange}
               >
                 <option value="">Room</option>
-                {roomNode?.map((itm) => (
-                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                {roomNode?.map((room) => (
+                    <option key={room.id} value={room.nodeName}>
+                      {room.nodeName}
+                    </option>
                 ))}
               </select>
             </div>
