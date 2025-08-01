@@ -7,10 +7,10 @@ import { QRCodeSVG } from "qrcode.react";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import {
-  deleteSiteAsset,
-  getSiteAssets,
-  getSiteLayout,
-  setLoaderForAssetsLanding,
+    deleteSiteAsset,
+    getSiteAssets,
+    getSiteLayout,
+    setLoaderForAssetsLanding,
 } from "../../../../store/thunk/site";
 import { get, put } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
@@ -43,16 +43,16 @@ const Summary = ({
   const [subCategory2List, setSubCategory2List] = useState([]);
   const [subCategory3List, setSubCategory3List] = useState([]);
 
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState({});
-  const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
-  const [showCloneModal, setShowCloneModal] = useState(false);
-  const [preActionsPerPage] = useState(50);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [floorNode, setFloorNode] = useState([]);
-  const [roomNode, setRoomNode] = useState([]);
-  const [showMultiEditModal, setShowMultiEditModal] = useState(false);
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [selectedAsset, setSelectedAsset] = useState({});
+    const [selectedAssetForClone, setSelectedAssetForClone] = useState({});
+    const [showCloneModal, setShowCloneModal] = useState(false);
+    const [preActionsPerPage] = useState(50);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [floorNode, setFloorNode] = useState([]);
+    const [roomNode, setRoomNode] = useState([]);
+    const [showMultiEditModal, setShowMultiEditModal] = useState(false);
 
   const location = useLocation();
   const indexOfLastPreAction = currentPage * preActionsPerPage;
@@ -86,13 +86,13 @@ const Summary = ({
     getDetails();
   }, [siteSelectedForGlobal]);
 
-  useEffect(() => {
-    if (!siteLayout) return;
+    useEffect(() => {
+        if (!siteLayout) return;
 
     // Get all floors (both interior and exterior)
-    const allFloors = siteLayout.filter((itm) => itm?.nodeType === "floor");
+        const allFloors = siteLayout.filter((itm) => itm?.nodeType === "floor");
 
-    // Get all rooms
+        // Get all rooms
     const allRooms = siteLayout.filter((itm) => itm?.nodeType === "room");
 
     // Organize rooms by their parent floor
@@ -115,12 +115,12 @@ const Summary = ({
     setRoomNode(allRooms);
 
     // Handle URL parameter for room selection
-    const queryParams = new URLSearchParams(location.search);
-    const label = queryParams.get("roomLabel");
+        const queryParams = new URLSearchParams(location.search);
+        const label = queryParams.get("roomLabel");
 
-    if (label) {
-      const roomNumber = label; // Extract the part after '-'
-      // Find room by matching the exact name part after splitting
+        if (label) {
+            const roomNumber = label; // Extract the part after '-'
+            // Find room by matching the exact name part after splitting
       const matchedRoom = allRooms.find(
           (room) => room.nodeName?.split(" ")[1] === roomNumber
       );
@@ -137,7 +137,7 @@ const Summary = ({
             ...prevFormData,
             floor: parentFloor.nodeName,
           }));
-        }
+                }
       }
     }
   }, [siteLayout, location.search]);
@@ -162,36 +162,36 @@ const Summary = ({
         }`,
       }));
 
-      // Use Promise.all to wait for state updates, then call searchAssets
-      Promise.all([
-        setFilteredSiteAssets(formattedAssets),
-        setSiteAssetsList(formattedAssets),
-      ]).then(() => {
-        searchAssets(); // Trigger search after both states are updated
-      });
-    }
-  }, [siteAssets]);
+            // Use Promise.all to wait for state updates, then call searchAssets
+            Promise.all([
+                setFilteredSiteAssets(formattedAssets),
+                setSiteAssetsList(formattedAssets),
+            ]).then(() => {
+                searchAssets(); // Trigger search after both states are updated
+            });
+        }
+    }, [siteAssets]);
 
-  const navigate = useNavigate();
-  const goTo = (link) => {
-    navigate(link);
-  };
-  const [formData, setFormData] = useState({
-    assetName: "",
-    manufacturer: "",
-    category: "",
-    subCategory: "",
-    subCategory2: "",
-    subCategory3: "",
-    location: "",
-    floor: "",
-    room: "",
-    powerOutput: "",
-  });
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const navigate = useNavigate();
+    const goTo = (link) => {
+        navigate(link);
+    };
+    const [formData, setFormData] = useState({
+        assetName: "",
+        manufacturer: "",
+        category: "",
+        subCategory: "",
+        subCategory2: "",
+        subCategory3: "",
+        location: "",
+        floor: "",
+        room: "",
+        powerOutput: "",
+    });
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
 
-    if (name === "position") {
+        if (name === "position") {
       // When position changes, reset floor and room
       const positionNode = siteLayout.find(node =>
           node.nodeType === "type" && node.nodeName === value
@@ -397,7 +397,6 @@ const Summary = ({
     }
   };
 
-
   //Multi Asset edit handlers
   // Add this helper function outside your component
   const handleFieldUpdate = (assetId, field, value) => {
@@ -430,26 +429,26 @@ const Summary = ({
     );
   };
 
-  const handleSaveMultiEdit = async () => {
-    try {
-      setIsLoading(true);
+    const handleSaveMultiEdit = async () => {
+        try {
+            setIsLoading(true);
 
-      // Prepare the update payload
-      const updatePayload = {
-        assets: selectedItems.map((item) => ({
-          assetId: item.assetId,
-          assetName: item.assetName,
-          manufacturer: item.manufacturer,
-          category: item.category,
-          subCategory: item.subCategory,
-          subCategory2: item.subCategory2,
-          subCategory3: item.subCategory3,
-          position: item.position,
-          floor: item.floor,
-          room: item.room,
-          powerOutput: item.powerOutput,
-        })),
-      };
+            // Prepare the update payload
+            const updatePayload = {
+                assets: selectedItems.map((item) => ({
+                    assetId: item.assetId,
+                    assetName: item.assetName,
+                    manufacturer: item.manufacturer,
+                    category: item.category,
+                    subCategory: item.subCategory,
+                    subCategory2: item.subCategory2,
+                    subCategory3: item.subCategory3,
+                    position: item.position,
+                    floor: item.floor,
+                    room: item.room,
+                    powerOutput: item.powerOutput,
+                })),
+            };
 
       // Send the bulk update request
       const response = await put(
@@ -458,24 +457,23 @@ const Summary = ({
           { headers: { "Content-Type": "application/json" } }
       );
 
-      if (response.status === 200 || response.status === 201) {
-        toast.success(`Successfully updated ${selectedItems.length} assets`);
-        getSiteAssets(siteSelectedForGlobal?.siteId);
+            if (response.status === 200 || response.status === 201) {
+                toast.success(`Successfully updated ${selectedItems.length} assets`);
+                getSiteAssets(siteSelectedForGlobal?.siteId);
 
-        // Reset selection and close modal
-        setSelectedItems([]);
-        setShowMultiEditModal(false);
-      } else {
-        throw new Error("Failed to update assets");
-      }
-    } catch (error) {
-      console.error("Asset update error:", error);
-      toast.error(`Error updating assets: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+                // Reset selection and close modal
+                setSelectedItems([]);
+                setShowMultiEditModal(false);
+            } else {
+                throw new Error("Failed to update assets");
+            }
+        } catch (error) {
+            console.error("Asset update error:", error);
+            toast.error(`Error updating assets: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
   return (
       <Fragment>
@@ -976,8 +974,8 @@ const Summary = ({
                     id="position"
                     onChange={handleInputChange}
                     value={formData?.position}
-                >
-                  <option value="">Location</option>
+                            >
+                                <option value="">Location</option>
                   {siteLayout
                       ?.filter(node =>
                           node.nodeType === "type" &&
@@ -1306,13 +1304,13 @@ const Summary = ({
 };
 
 const mapStateToProps = (state) => ({
-  siteAssets: state.site.siteAssets,
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
-  loggedInUserData: state.site.loggedInUserData,
-  siteLayout: state.site.siteLayout,
+    siteAssets: state.site.siteAssets,
+    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    loggedInUserData: state.site.loggedInUserData,
+    siteLayout: state.site.siteLayout,
 });
 export default connect(mapStateToProps, {
-  deleteSiteAsset,
-  getSiteAssets,
-  getSiteLayout,
+    deleteSiteAsset,
+    getSiteAssets,
+    getSiteLayout,
 })(Summary);
