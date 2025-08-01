@@ -37,6 +37,7 @@ import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import StorageTankService from "./StorageTankService";
 import FireDamper from "./FireDamper";
 import WaterHeaterCertificate from "./WaterHeaterCertificate";
+import InspectionFireCertificate from "./InspectionFireCertificate";
 
 
 
@@ -240,6 +241,11 @@ else if (
       siteCheck.category === "Water Heater Inspection & Service"
     ) {
       setStep("inspection-water-heater");
+    }else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Fire Alarm to meet BS5839"
+    ) {
+      setStep("inspection-fire-alarm");
     }
    
     else if (siteCheck.type === "Assessment" ) {
@@ -524,6 +530,16 @@ autoComplete="off"
                       leadUserID={siteCheck?.leadUserID}
                       siteCheck={siteCheck}
                       leadUserID={siteCheck?.leadUserID}
+                  />
+                </Item>
+            )}
+            {step === "inspection-fire-alarm" && (
+                <Item>
+                  <InspectionFireCertificate
+                      checkId={checkId}
+                      sasToken={sasToken}
+                      leadUserID={siteCheck?.leadUserID}
+                      siteCheck={siteCheck}
                   />
                 </Item>
             )}
