@@ -66,6 +66,8 @@ const GasBoilerService = ({
     // Appliance Details
     assetId: "",
     selectedAsset: null,
+    comments: "",
+    postCode: "",
 
     // Appliance Checks - Now as an array
     applianceChecks: [
@@ -139,8 +141,11 @@ const GasBoilerService = ({
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
-    gasBoilerService: null
+    miscellaneousService: null,
+    sounderAudibility: null
   });
+
+
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
@@ -150,10 +155,11 @@ const GasBoilerService = ({
   const navigate = useNavigate();
 
   const isInternalUserTaggedWithSite =
-    (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer") &&
     loggedInUserData?.taggedSites?.some(
       (site) => site.id === siteSelectedForGlobal?.siteId
     );
+
+  const isgasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
 
   const selectedAsset = siteAssets.find(
     (asset) => asset.assetId === formData.assetId
@@ -178,6 +184,10 @@ const GasBoilerService = ({
     const fetchInspectionData = async () => {
       try {
         if (!checkId) return;
+
+        if (isInternalUserTaggedWithSite && users.length === 0) {
+          await getUsers();
+        }
 
         const apiData = await get(`/api/site-check/gas-boiler-inspection/${checkId}`);
         if (apiData && apiData.length > 0) {
@@ -250,6 +260,7 @@ const GasBoilerService = ({
           installationName: license.companyName,
         }));
       }
+
 
       // Return early if no site ID is selected
       if (!siteSelectedForGlobal?.siteId) {
@@ -353,45 +364,51 @@ const GasBoilerService = ({
   // Function to fetch folder structure for document storage
   const fetchFolderStructure = async (siteId) => {
     try {
-      // First, get all parent folders for the site
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
-        // Find the Log Books folder
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
           folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
-          // Get the contents of Log Books folder
           const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
 
           if (logBooksResponse?.document?.childFolders) {
-            // Find the Electrical Management folder
-            const electricalManagementFolder = logBooksResponse.document.childFolders.find(
+            const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
               folder => folder.name.trim() === 'Plant and Equipment'
             );
 
-            if (electricalManagementFolder) {
-              // Get the contents of Electrical Management folder
-              const electricalResponse = await get(
-                `/api/document/parent/${electricalManagementFolder.id}/folders?siteId=${siteId}`
+            if (plantAndEquipmentFolder) {
+              const plantAndEquipmentResponse = await get(
+                `/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`
               );
 
-              if (electricalResponse?.document?.childFolders) {
-                // Find the External Lighting folder
-                const externalLightingFolder = electricalResponse.document.childFolders.find(
-                  folder => folder.name.trim() === 'Water Heater Inspection'
+              if (plantAndEquipmentResponse?.document?.childFolders) {
+                const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
+                  folder => folder.name.trim() === 'Miscellaneous Service'
                 );
 
-                // Update state with all found folder IDs
-                setFolderIds({
-                  logBooks: logBooksFolder.id,
-                  electricalManagement: electricalManagementFolder.id,
-                  externalLighting: externalLightingFolder?.id || null
-                });
+                if (miscellaneousFolder) {
+                  const miscResponse = await get(
+                    `/api/document/parent/${miscellaneousFolder.id}/folders?siteId=${siteId}`
+                  );
 
-                return externalLightingFolder?.id || null;
+                  if (miscResponse?.document?.childFolders) {
+                    const sounderAudibilityFolder = miscResponse.document.childFolders.find(
+                      folder => folder.name.trim() === 'Documents'
+                    );
+
+                    setFolderIds({
+                      logBooks: logBooksFolder.id,
+                      plantAndEquipment: plantAndEquipmentFolder.id,
+                      miscellaneousService: miscellaneousFolder.id,
+                      sounderAudibility: sounderAudibilityFolder?.id || null
+                    });
+
+                    return sounderAudibilityFolder?.id || null;
+                  }
+                }
               }
             }
           }
@@ -952,24 +969,47 @@ const GasBoilerService = ({
       setCheckboxFields(formData.applianceChecks, 'Appliance');
       setCheckboxFields(formData.safetyChecks, 'Safety');
 
+
       // Address and Business Details
-      setTextField('Inspection Address', formData.installationAddress);
-      setTextField('Reg No', formData.registeredBusinessRegNo);
-      setTextField('Gas Engineer', formData.gasEngineerName);
-      setTextField('Gas Safe Registered Engineer No', formData.gasSafeRegNo);
-      setTextField('Company', formData.companyName);
-      setTextField('Company Address', formData.companyAddress);
-      setTextField('Post Code', formData.postCode);
+      const addressLines = (formData.installationAddress || '').split(',');
+      setTextField('Address', addressLines[0] || '',);
+      setTextField('Address_2', addressLines[1] || '',);
+      setTextField('Address_3', addressLines[2] || '',);
+
+      setTextField('Name', license?.name || '',);
+
+
+      setTextField('Reg No', formData.registeredBusinessRegNo || '');
+      setTextField('Gas Engineer', loggedInUserData?.name || '');
+      setTextField('Gas Safe Registered Engineer No', loggedInUserData?.gasSafeRegNo || '');
+      setTextField('Company', loggedInUserData.companyName || '');
+      setTextField('Address', loggedInUserData?.companyAddress || '');
+      setTextField('Post Code', formData.postCode || '');
+      setTextField('postCode', loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0] || '');
       setCheckbox('Rented Accommodation', formData.rentedAccommodation);
-      setTextField('Date & Time of Issue', formatDate(formData.dateTimeOfIssue));
+      setTextField('Date  Time of Issue', formatDate(formData.dateTimeOfIssue));
       setTextField('Work Description', formData.workDescription);
-      setTextField('Engineers Signature', formData.engineerSignature);
 
       // Appliance Details
-      setTextField('Make', formData.applianceMake);
-      setTextField('Type', formData.applianceType);
-      setTextField('Model', formData.applianceModel);
-      setTextField('Location', formData.applianceLocation);
+      setTextField('Make', selectedAsset?.manufacturer || '');
+      setTextField('Type', selectedAsset?.subCategory2 || '');
+      setTextField('Model', selectedAsset?.model || '');
+
+
+      setTextField('Location', [
+        selectedAsset?.position,
+        selectedAsset?.floor,
+        selectedAsset?.room
+      ].filter(Boolean).join(' - ') || '');
+
+
+      const comment = (formData.comments || '').split(',');
+      setTextField('CommentsMake', comment[0] || '');
+      setTextField('CommentsType', comment[1] || '');
+      setTextField('CommentsModel', comment[2] || '');
+      setTextField('CommentsLocation', comment[3] || '');
+
+
 
       // Appliance Checks
       setCheckbox('Heat Exchanger_Yes', formData.heatExchanger.checked);
@@ -1264,6 +1304,7 @@ const GasBoilerService = ({
 
 
   const renderSiteContactField = () => {
+
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
         users?.filter((user) =>
@@ -1621,12 +1662,23 @@ const GasBoilerService = ({
                       type="text"
                       className="form-control"
                       name="type"
-                      value={formData.type}
+                      value={selectedAsset.subCategory2}
                       onChange={handleInputChange}
                       required
-                      disabled={isSubmitted}
+                      disabled
                     />
                   </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Comments</label>
+                  <textarea
+                    className="form-control"
+                    rows={4}
+                    value={formData.comments}
+                    onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+                    disabled={isSubmitted}
+                  />
                 </div>
               </div>
             )}
@@ -1897,7 +1949,7 @@ const GasBoilerService = ({
                   disabled={
                     isLoading ||
                     isGeneratingPDF ||
-                    (showRiskAssessment && !actionRaised)
+                    (showRiskAssessment && !actionRaised) || !isgasEngineer
                   }
                 >
                   {isLoading ? 'Submitting...' : 'Submit Report'}
