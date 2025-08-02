@@ -62,38 +62,49 @@ const GasBoilerService = ({
     rentedAccommodation: "",
     dateTimeOfIssue: new Date().toISOString().split("T")[0],
     workDescription: "",
-    engineerSignature: "",
-
+    engineer: loggedInUserData?.id || "",
     // Appliance Details
     assetId: "",
+    selectedAsset: null,
 
-    // Appliance Checks
-    heatExchanger: { checked: false, defect: "" },
-    burnerInjectors: { checked: false, defect: "" },
-    flamePicture: { checked: false, defect: "" },
-    ignition: { checked: false, defect: "" },
-    electrics: { checked: false, defect: "" },
-    controls: { checked: false, defect: "" },
-    leaksGasWater: { checked: false, defect: "" },
-    gasConnections: { checked: false, defect: "" },
-    seals: { checked: false, defect: "" },
-    pipework: { checked: false, defect: "" },
-    fans: { checked: false, defect: "" },
-    fireplace: { checked: false, defect: "" },
-    closurePlatePBS10Tape: { checked: false, defect: "" },
-    allowableLocation: { checked: false, defect: "" },
-    stability: { checked: false, defect: "" },
-    returnAirPlenum: { checked: false, defect: "" },
+    // Appliance Checks - Now as an array
+    applianceChecks: [
+      { id: 1, question: "Heat Exchanger", satisfactory: null, remarks: "" },
+      { id: 2, question: "Burner / Injectors", satisfactory: null, remarks: "" },
+      { id: 3, question: "Flame Picture", satisfactory: null, remarks: "" },
+      { id: 4, question: "Ignition", satisfactory: null, remarks: "" },
+      { id: 5, question: "Electrics", satisfactory: null, remarks: "" },
+      { id: 6, question: "Controls", satisfactory: null, remarks: "" },
+      { id: 7, question: "Leaks gas / water", satisfactory: null, remarks: "" },
+      { id: 8, question: "Gas connections", satisfactory: null, remarks: "" },
+      { id: 9, question: "Seals", satisfactory: null, remarks: "" },
+      { id: 10, question: "Pipework", satisfactory: null, remarks: "" },
+      { id: 11, question: "Fans", satisfactory: null, remarks: "" },
+      { id: 12, question: "Fireplace", satisfactory: null, remarks: "" },
+      { id: 13, question: "Closure plate & PBS10 tape", satisfactory: null, remarks: "" },
+      { id: 14, question: "Allowable location", satisfactory: null, remarks: "" },
+      { id: 15, question: "Stability", satisfactory: null, remarks: "" },
+      { id: 16, question: "Return air / Plenum", satisfactory: null, remarks: "" },
+    ],
 
-    // Safety Checks
-    ventilation: { checked: false, defect: "" },
-    flueTermination: { checked: false, defect: "" },
-    smokePelletFlueFlowTest: { checked: false, defect: "" },
-    smokeMatchFlueFlowTest: { checked: false, defect: "" },
-    workingPressure: { checked: false, defect: "" },
-    safetyDevice: { checked: false, defect: "" },
-    otherRegulations: { checked: false, defect: "" },
-    gasTightnessTestPerformed: { checked: false, result: "" },
+    // Safety Checks - Now as an array
+    safetyChecks: [
+      { id: 1, question: "Ventilation", satisfactory: null, remarks: "" },
+      { id: 2, question: "Flue Termination", satisfactory: null, remarks: "" },
+      { id: 3, question: "Smoke pellet flue flow test", satisfactory: null, remarks: "" },
+      { id: 4, question: "Smoke match flue flow test", satisfactory: null, remarks: "" },
+      { id: 5, question: "Working pressure", satisfactory: null, remarks: "" },
+      { id: 6, question: "Safety device", satisfactory: null, remarks: "" },
+      { id: 7, question: "Other (regulations etc)", satisfactory: null, remarks: "" },
+      {
+        id: 8,
+        question: "Gas tightness test performed",
+        satisfactory: null,
+        remarks: "",
+        result: "" // Additional field for this specific check
+      },
+    ],
+    actionId: null,
 
     // Findings
     isInstallationSafe: "",
@@ -104,17 +115,14 @@ const GasBoilerService = ({
     necessaryRemedialWork: "",
 
     // Signatures
-    customerName: "",
+    siteContact: "",
     customerSignatureDate: new Date().toISOString().split("T")[0],
     engineerName: loggedInUserData?.name || "",
     engineerSignatureDate: new Date().toISOString().split("T")[0],
 
     // Additional fields for functionality
-    selectedAsset: null,
     clientUser: null,
     siteContactUser: null,
-    actionId: null,
-    uploadedPhotos: [],
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -171,82 +179,58 @@ const GasBoilerService = ({
       try {
         if (!checkId) return;
 
-        if (isInternalUserTaggedWithSite && users.length === 0) {
-          await getUsers();
-        }
-
-        const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+        const apiData = await get(`/api/site-check/gas-boiler-inspection/${checkId}`);
         if (apiData && apiData.length > 0) {
-          const mostRecentItem = apiData[apiData.length - 1];
-          const selectedAsset = siteAssets.find(
-            (asset) => asset.assetId === mostRecentItem.assetId
-          );
+          const mostRecentItem = apiData[0]; // Assuming the first item is the most recent
 
-          const clientUser = users.find(
-            (user) => user.id === mostRecentItem.client
-          );
-          const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
-          );
-          const siteContactUser = users.find(
-            (user) => user.id === mostRecentItem.siteContact
-          );
 
-          // Load photos from parameters
-          const photosFromApi = [];
-          for (let i = 2; i <= 5; i++) {
-            const paramKey = `param${i}Remark`;
-            const photoUrl = mostRecentItem[paramKey];
-            if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
-              photosFromApi.push({
-                url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
-                paramKey
-              });
-            }
-          }
+          // Transform the API data back into our form structure
+          const transformedData = {
+            // Address and Business Details
+            installationAddress: mostRecentItem.installationAddress,
+            registeredBusinessRegNo: mostRecentItem.registeredBusinessRegNo,
+            rentedAccommodation: mostRecentItem.rentedAccommodation,
+            dateTimeOfIssue: mostRecentItem.dateTimeOfIssue,
+            workDescription: mostRecentItem.workDescription,
+            engineer: mostRecentItem.engineer,
 
-          setUploadedPhotos(photosFromApi);
+            // Appliance Details
+            assetId: mostRecentItem.assetId,
+            selectedAsset: siteAssets.find(asset => asset.assetId === mostRecentItem.assetId),
 
-          // Fetch action data if actionId exists
-          let existingAction = null;
-          if (mostRecentItem.actionId) {
-            existingAction = await fetchActionById(mostRecentItem.actionId);
-            if (existingAction) {
-              setExistingAction(existingAction);
-              setActionRaised(true);
-            }
-          }
+            // Appliance Checks
+            applianceChecks: mostRecentItem.applianceChecks || formData.applianceChecks.map(check => ({
+              ...check,
+              satisfactory: mostRecentItem[`applianceCheck${check.id}`]?.satisfactory,
+              remarks: mostRecentItem[`applianceCheck${check.id}`]?.remarks
+            })),
 
-          setFormData((prev) => ({
-            ...prev,
-            address: prev.address,
-            assetId: mostRecentItem.assetId || prev.assetId,
-            siteContact: mostRecentItem.siteContact || prev.siteContact,
-            signedDate: mostRecentItem.signedDate || prev.signedDate,
-            siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
-            jobNo: mostRecentItem.jobNo || prev.jobNo,
-            engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
-            param1: mostRecentItem.param1 || prev.param1,
-            param2: mostRecentItem.param2 || prev.param2,
-            param3: mostRecentItem.param3 || prev.param3,
-            param4: mostRecentItem.param4 || prev.param4,
-            param5: mostRecentItem.param5 || prev.param5,
-            param6: mostRecentItem.param6 || prev.param6,
-            param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
-            param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
-            param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
-            param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
-            param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
-            client: mostRecentItem.client || "",
-            engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-            user: engineerUser || loggedInUserData || prev.user,
-            selectedAsset: selectedAsset || prev.selectedAsset,
-            clientDate: mostRecentItem.clientDate || prev.clientDate,
-            engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
-            clientUser: clientUser || null,
-            siteContactUser: siteContactUser || null,
-            actionId: mostRecentItem.actionId || null,
-          }));
+            // Safety Checks
+            safetyChecks: mostRecentItem.safetyChecks || formData.safetyChecks.map(check => ({
+              ...check,
+              satisfactory: mostRecentItem[`safetyCheck${check.id}`]?.satisfactory,
+              remarks: mostRecentItem[`safetyCheck${check.id}`]?.remarks,
+              ...(check.id === 8 && { result: mostRecentItem.gasTightnessTestResult })
+            })),
+
+            // Findings
+            isInstallationSafe: mostRecentItem.isInstallationSafe,
+            warningNoticeRaised: mostRecentItem.warningNoticeRaised,
+            installedToStandard: mostRecentItem.installedToStandard,
+            necessaryRemedialWork: mostRecentItem.necessaryRemedialWork,
+
+            // Signatures
+            siteContact: mostRecentItem.siteContact,
+            customerSignatureDate: mostRecentItem.customerSignatureDate,
+            engineerName: mostRecentItem.engineerName,
+            engineerSignatureDate: mostRecentItem.engineerSignatureDate,
+
+            // Metadata
+            actionId: mostRecentItem.actionId
+          };
+
+          setFormData(transformedData);
+          setInspectionDetails(mostRecentItem);
         }
       } catch (error) {
         console.error("Error fetching inspection data:", error);
@@ -443,25 +427,63 @@ const GasBoilerService = ({
 
       if (currentCheckId) {
         const inspectionPayload = {
-          ...formData,
-          assetId: formData.selectedAsset?.assetId || formData.assetId,
-          siteContact: formData.siteContactUser?.id || formData.siteContact,
-          client: formData.clientUser?.id || formData.client,
+          // Address and Business Details
+          installationAddress: formData.installationAddress,
+          registeredBusinessRegNo: formData.registeredBusinessRegNo,
+          rentedAccommodation: formData.rentedAccommodation,
+          dateTimeOfIssue: formData.dateTimeOfIssue,
+          workDescription: formData.workDescription,
           engineer: formData.engineer,
-          user: formData.user,
-          actionId: verifiedAction.actionId,
-          checkId: currentCheckId,
+
+          // Appliance Details
+          assetId: formData.assetId,
+          manufacturer: formData.selectedAsset?.manufacturer || "",
+          model: formData.selectedAsset?.model || "",
+          location: `${formData.selectedAsset?.position}, ${formData.selectedAsset?.floor}, ${formData.selectedAsset?.room}`,
+
+          // Appliance Checks
+          applianceChecks: formData.applianceChecks.map(check => ({
+            id: check.id,
+            question: check.question,
+            satisfactory: check.satisfactory,
+            remarks: check.remarks
+          })),
+
+          // Safety Checks
+          safetyChecks: formData.safetyChecks.map(check => ({
+            id: check.id,
+            question: check.question,
+            satisfactory: check.satisfactory,
+            remarks: check.remarks,
+            ...(check.id === 8 && { result: check.result }) // Special field for gas tightness test
+          })),
+
+          // Findings
+          isInstallationSafe: formData.isInstallationSafe,
+          warningNoticeRaised: formData.warningNoticeRaised,
+          installedToStandard: formData.installedToStandard,
+          necessaryRemedialWork: formData.necessaryRemedialWork,
+
+          // Signatures
+          siteContact: formData.siteContact,
+          customerSignatureDate: formData.customerSignatureDate,
+          engineerName: formData.engineerName,
+          engineerSignatureDate: formData.engineerSignatureDate,
+
+          // Metadata
           siteId: siteSelectedForGlobal?.siteId,
-          type: 'Inspection',
-          subType: 'Water Heater',
-          category: 'Water Heater Service',
+          type: "Inspection",
+          subType: "Gas Boiler",
+          category: "Gas Boiler Service",
+          checkId: currentCheckId,
+          actionId: formData.actionId
         };
 
-        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+        const existingInspections = await get(`/api/site-check/gas-boiler-inspection/${currentCheckId}`);
         if (existingInspections?.length > 0) {
-          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
+          await put(`/api/site-check/gas-boiler-inspection/${currentCheckId}`, inspectionPayload);
         } else {
-          await post(`/api/site-check/generic-inspection`, inspectionPayload);
+          await post(`/api/site-check/gas-boiler-inspection`, inspectionPayload);
         }
 
         toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
@@ -667,121 +689,6 @@ const GasBoilerService = ({
     }
   };
 
-  // Handler for photo upload
-  const handlePhotoUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    setUploadingPhotos(true);
-
-    try {
-      // Determine available parameters
-      const availableParams = [];
-      for (let i = 2; i <= 5; i++) {
-        const paramKey = `param${i}Remark`;
-        if (!formData[paramKey]) {
-          availableParams.push(paramKey);
-        }
-      }
-
-      const filesToUpload = files.slice(0, availableParams.length);
-      const token = sasToken || await getSasToken();
-
-      const uploadResults = await Promise.all(
-        filesToUpload.map(async (file, index) => {
-          const response = await uploadSiteCheckDoc({
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            file: file
-          });
-
-          const baseUrl = response?.url ||
-            `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
-
-          const imageUrl = `${baseUrl}?${token}`;
-
-          return {
-            url: imageUrl,
-            baseUrl: baseUrl,
-            paramKey: availableParams[index],
-            fileName: file.name,
-            documentId: response?.documentId || uuidv4()
-          };
-        })
-      );
-
-      const formUpdates = uploadResults.reduce((acc, photo) => {
-        acc[photo.paramKey] = photo.url;
-        return acc;
-      }, {});
-
-      setFormData(prev => ({
-        ...prev,
-        ...formUpdates
-      }));
-
-      setUploadedPhotos(prev => [
-        ...prev,
-        ...uploadResults
-      ].slice(0, 4));
-
-      // Save to API
-      if (currentCheckId) {
-        const payload = {
-          checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
-          type: 'Inspection',
-          subType: 'Water Heater',
-          category: 'Water Heater Service',
-          ...formUpdates
-        };
-
-        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-        if (existingInspections?.length > 0) {
-          await put(`/api/site-check/generic-inspection/${currentCheckId}`, payload);
-        } else {
-          await post(`/api/site-check/generic-inspection`, payload);
-        }
-      }
-
-      toast.success("Photos uploaded successfully!");
-    } catch (error) {
-      console.error("Photo upload error:", error);
-      toast.error(error.message || 'Upload failed');
-    } finally {
-      setUploadingPhotos(false);
-    }
-  };
-
-  // Handler for removing photos
-  const handleRemovePhoto = (index) => {
-    const photoToRemove = uploadedPhotos[index];
-
-    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
-
-    if (photoToRemove.paramKey) {
-      setFormData(prev => ({
-        ...prev,
-        [photoToRemove.paramKey]: ""
-      }));
-    }
-
-    if (currentCheckId && photoToRemove.paramKey) {
-      const payload = {
-        checkId: currentCheckId,
-        siteId: siteSelectedForGlobal?.siteId,
-        type: 'Inspection',
-        subType: 'Water Heater',
-        category: 'Water Heater Service',
-        [photoToRemove.paramKey]: ""
-      };
-
-      put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
-        .catch(error => {
-          console.error("Error removing photo from API:", error);
-          toast.error("Failed to update photo in database");
-        });
-    }
-  };
 
   // Handler for asset selection
   const handleAssetSelect = (event, newValue) => {
@@ -833,7 +740,7 @@ const GasBoilerService = ({
       let existingInspection = null;
       if (currentCheckId) {
         try {
-          const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
+          const inspections = await get(`/api/site-check/gas-boiler-inspection/${currentCheckId}`);
           existingInspection = inspections?.length > 0 ? inspections[0] : null;
         } catch (error) {
           console.error('Error checking for existing inspection:', error);
@@ -842,9 +749,9 @@ const GasBoilerService = ({
 
       const statusPayload = {
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Water Heater',
-        category: 'Water Heater Service',
+        type: "Inspection",
+        subType: "Gas Boiler",
+        category: "Gas Boiler Service",
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
@@ -877,28 +784,65 @@ const GasBoilerService = ({
       setIsFormEditable(false);
 
       const inspectionPayload = {
-        ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
-        assetId: formData.selectedAsset?.assetId || formData.assetId || null,
-        client: formData.clientUser?.id || formData.client,
+        // Address and Business Details
+        installationAddress: formData.installationAddress,
+        registeredBusinessRegNo: formData.registeredBusinessRegNo,
+        rentedAccommodation: formData.rentedAccommodation,
+        dateTimeOfIssue: formData.dateTimeOfIssue,
+        workDescription: formData.workDescription,
         engineer: formData.engineer,
-        siteContact: formData.siteContactUser?.id || formData.siteContact,
-        type: 'Inspection',
-        subType: 'Water Heater',
-        category: 'Water Heater Service',
-        checkId: currentCheckId || statusResponse?.checkId,
-        actionId: formData.actionId,
+
+        // Appliance Details
+        assetId: formData.assetId,
+        manufacturer: formData.selectedAsset?.manufacturer || "",
+        model: formData.selectedAsset?.model || "",
+        location: `${formData.selectedAsset?.position}, ${formData.selectedAsset?.floor}, ${formData.selectedAsset?.room}`,
+
+        // Appliance Checks
+        applianceChecks: formData.applianceChecks.map(check => ({
+          id: check.id,
+          question: check.question,
+          satisfactory: check.satisfactory,
+          remarks: check.remarks
+        })),
+
+        // Safety Checks
+        safetyChecks: formData.safetyChecks.map(check => ({
+          id: check.id,
+          question: check.question,
+          satisfactory: check.satisfactory,
+          remarks: check.remarks,
+          ...(check.id === 8 && { result: check.result }) // Special field for gas tightness test
+        })),
+
+        // Findings
+        isInstallationSafe: formData.isInstallationSafe,
+        warningNoticeRaised: formData.warningNoticeRaised,
+        installedToStandard: formData.installedToStandard,
+        necessaryRemedialWork: formData.necessaryRemedialWork,
+
+        // Signatures
+        siteContact: formData.siteContact,
+        customerSignatureDate: formData.customerSignatureDate,
+        engineerName: formData.engineerName,
+        engineerSignatureDate: formData.engineerSignatureDate,
+
+        // Metadata
+        siteId: siteSelectedForGlobal?.siteId,
+
+        checkId: currentCheckId,
+        actionId: formData.actionId
       };
 
       let saveResponse;
       if (existingInspection) {
         saveResponse = await put(
-          `/api/site-check/generic-inspection/${currentCheckId}`,
+          `/api/site-check/gas-boiler-inspection/${currentCheckId}`,
           inspectionPayload
         );
       } else {
         saveResponse = await post(
-          `/api/site-check/generic-inspection`,
+          `/api/site-check/gas-boiler-inspection`,
           inspectionPayload
         );
       }
@@ -930,157 +874,6 @@ const GasBoilerService = ({
       setIsLoading(false);
     }
   };
-
-  // Function to render client name field based on user type
-  const renderClientNameField = () => {
-    if (isInternalUserTaggedWithSite) {
-      const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
-
-      return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={formData.clientUser || formData.siteContactUser || null}
-          onChange={(event, newValue) => {
-            setFormData((prev) => ({
-              ...prev,
-              client: newValue?.id || "",
-              clientUser: newValue || null,
-              siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
-              siteContactUser: newValue || null,
-            }));
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              disabled={isSubmitted}
-              style={{
-                height: "40px",
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                },
-                "& .MuiAutocomplete-input": {
-                  padding: "8.5px 4px !important",
-                },
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
-          disabled={isSubmitted}
-        />
-      );
-    }
-    return (
-      <input
-        type="text"
-        className="form-control"
-        name="clientName"
-        value={
-          formData.clientUser?.name || formData.siteContactUser?.name || ""
-        }
-        onChange={(e) => {
-          setFormData({
-            ...formData,
-            client: e.target.value,
-            clientNameText: e.target.value,
-            siteContact: e.target.value,
-            siteContactName: e.target.value,
-          });
-        }}
-        required
-        disabled={isSubmitted}
-      />
-    );
-  };
-
-  // Function to render site contact field based on user type
-  const renderSiteContactField = () => {
-    if (isInternalUserTaggedWithSite) {
-      const filteredUsers =
-        users?.filter((user) =>
-          user.taggedSites?.some(
-            (site) => site.id === siteSelectedForGlobal?.siteId
-          )
-        ) || [];
-
-      return (
-        <Autocomplete
-          options={filteredUsers}
-          getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || formData.clientUser || null}
-          onChange={(event, newValue) => {
-            setFormData((prev) => ({
-              ...prev,
-              siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
-              siteContactUser: newValue || null,
-              client: newValue?.id || "",
-              clientUser: newValue || null,
-            }));
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              required
-              disabled={isSubmitted}
-              style={{
-                height: "40px",
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                },
-                "& .MuiAutocomplete-input": {
-                  padding: "8.5px 4px !important",
-                },
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: "40px",
-                  padding: "0 5px",
-                },
-              }}
-            />
-          )}
-          disabled={isSubmitted}
-        />
-      );
-    }
-    return (
-      <input
-        type="text"
-        className="form-control"
-        name="siteContact"
-        value={
-          formData.siteContactUser?.name || formData.clientUser?.name || ""
-        }
-        onChange={(e) => {
-          setFormData({
-            ...formData,
-            siteContact: e.target.value,
-            siteContactName: e.target.value,
-            client: e.target.value,
-            clientNameText: e.target.value,
-          });
-        }}
-        required
-        disabled={isSubmitted}
-      />
-    );
-  };
-
   const generatePDF = async (uploadToServer = true) => {
     try {
       setIsGeneratingPDF(true);
@@ -1091,18 +884,27 @@ const GasBoilerService = ({
 
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
-      const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+      //const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
       const form = pdfDoc.getForm();
 
       // Helper function to set text fields
-      const setTextField = (fieldName, value) => {
+      const setTextField = (fieldName, value, fontSize = 8) => {
         try {
           const field = form.getTextField(fieldName);
           if (field) {
             field.setText(value || '');
+            try {
+              if (field.setFontSize) {
+                field.setFontSize(fontSize);
+              }
+            } catch (e) {
+              console.warn(`Could not set font size for ${fieldName}:`, e);
+            }
+          } else {
+            console.warn(`Field not found: ${fieldName}`);
           }
         } catch (error) {
-          console.warn(`Error setting text field ${fieldName}:`, error);
+          console.warn(`Error setting field ${fieldName}:`, error.message);
         }
       };
 
@@ -1118,9 +920,40 @@ const GasBoilerService = ({
         }
       };
 
+      // In the generatePDF function, update the checkbox setting logic:
+      const setCheckboxFields = (checks, prefix) => {
+        checks.forEach(check => {
+          const baseFieldName = `${prefix}_${check.id}`; // Simplified field name structure
+
+          // Clear all options first
+          setCheckbox(`${baseFieldName}_Yes`, false);
+          setCheckbox(`${baseFieldName}_No`, false);
+          setCheckbox(`${baseFieldName}_NA`, false);
+
+          // Set the appropriate checkbox based on satisfactory value
+          if (check.satisfactory === true) {
+            setCheckbox(`${baseFieldName}_Yes`, true);
+          } else if (check.satisfactory === false) {
+            setCheckbox(`${baseFieldName}_No`, true);
+          } else {
+            setCheckbox(`${baseFieldName}_NA`, true);
+          }
+
+          // Set remarks or result
+          if (check.id === 8) { // Special case for gas tightness test
+            setTextField(`${baseFieldName}_Result`, check.result || '');
+          } else {
+            setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
+          }
+        });
+      };
+
+      // Call with proper prefixes
+      setCheckboxFields(formData.applianceChecks, 'Appliance');
+      setCheckboxFields(formData.safetyChecks, 'Safety');
+
       // Address and Business Details
       setTextField('Inspection Address', formData.installationAddress);
-      setTextField('Registered Business Name', formData.registeredBusinessName);
       setTextField('Reg No', formData.registeredBusinessRegNo);
       setTextField('Gas Engineer', formData.gasEngineerName);
       setTextField('Gas Safe Registered Engineer No', formData.gasSafeRegNo);
@@ -1142,7 +975,7 @@ const GasBoilerService = ({
       setCheckbox('Heat Exchanger_Yes', formData.heatExchanger.checked);
       setCheckbox('Heat Exchanger_No', !formData.heatExchanger.checked);
       setTextField('Heat Exchanger_Defect', formData.heatExchanger.defect);
-      
+
       // Repeat for all appliance checks...
       setCheckbox('Burner / Injectors_Yes', formData.burnerInjectors.checked);
       setCheckbox('Burner / Injectors_No', !formData.burnerInjectors.checked);
@@ -1154,26 +987,61 @@ const GasBoilerService = ({
       setTextField('Ventilation_Defect', formData.ventilation.defect);
 
       // Findings
-      setCheckbox('Is the installation and appliance safe to use_Yes', formData.isInstallationSafe === 'Yes');
-      setCheckbox('Is the installation and appliance safe to use_No', formData.isInstallationSafe === 'No');
-      
-      setCheckbox('If No gas warning notice been raised_Yes', formData.warningNoticeRaised === 'Yes');
-      setCheckbox('If No gas warning notice been raised_No', formData.warningNoticeRaised === 'No');
-      
-      setCheckbox('Has the installation been carried out to the relevant standard_Yes', formData.installedToStandard === 'Yes');
-      setCheckbox('Has the installation been carried out to the relevant standard_No', formData.installedToStandard === 'No');
+      setCheckbox('check1', formData.isInstallationSafe === 'Yes');
+      setCheckbox('check2', formData.isInstallationSafe === 'No');
+
+      setCheckbox('check3', formData.warningNoticeRaised === 'Yes');
+      setCheckbox('check4', formData.warningNoticeRaised === 'No');
+
+      setCheckbox('check5', formData.installedToStandard === 'Yes');
+      setCheckbox('check6', formData.installedToStandard === 'No');
 
       // Remedial Work
-      setTextField('Necessary remedial work required', formData.necessaryRemedialWork);
+      const remedialWork = (formData.necessaryRemedialWork || '').split(',');
+      setTextField('remedialWork', remedialWork[0] || '');
+      setTextField('remedialWork2', remedialWork[1] || '');
+      setTextField('remedialWork3', remedialWork[2] || '');
+      setTextField('remedialWork4', remedialWork[3] || '');
+      setTextField('remedialWork5', remedialWork[4] || '');
+      setTextField('remedialWork6', remedialWork[5] || '');
 
       // Signatures
-      setTextField('Customer Signature', formData.customerName);
-      setTextField('Customer Print Name', formData.customerName);
-      setTextField('Customer Date', formatDate(formData.customerSignatureDate));
-      
-      setTextField('Engineers Signature', formData.engineerName);
-      setTextField('Engineer Print Name', formData.engineerName);
-      setTextField('Engineer Date', formatDate(formData.engineerSignatureDate));
+      // setTextField('Customer Signature', formData.customerName);
+      setTextField('Print Name', formData.customerName);
+      setTextField('Date', formatDate(formData.customerSignatureDate));
+
+
+      setTextField('Print Name_2', formData.engineerName);
+      setTextField('Date_2', formatDate(formData.engineerSignatureDate));
+
+      if (loggedInUserData?.signature) {
+        try {
+          const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
+          const signatureResponse = await fetch(signatureUrl);
+          const signatureImageBytes = await signatureResponse.arrayBuffer();
+
+          let signatureImage;
+
+          // Try PNG first, then JPG if that fails
+          try {
+            signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+          } catch (pngError) {
+            try {
+              signatureImage = await pdfDoc.embedJpg(signatureImageBytes);
+            } catch (jpgError) {
+              console.warn('Signature image is neither PNG nor JPG:', jpgError);
+              return;
+            }
+          }
+
+          const signatureField = form.getButton('signature_af_image');
+          if (signatureField) {
+            signatureField.setImage(signatureImage);
+          }
+        } catch (error) {
+          console.warn('Error setting signature image:', error);
+        }
+      }
 
       // Flatten and save
       form.flatten();
@@ -1199,6 +1067,102 @@ const GasBoilerService = ({
       setIsGeneratingPDF(false);
     }
   };
+
+
+  const CheckRow = ({ check, onCheckChange, disabled, prefix }) => {
+    const handleRadioChange = (value) => {
+      onCheckChange(check.id, value, check.remarks || check.result || "");
+    };
+
+    const handleRemarksChange = (e) => {
+      onCheckChange(check.id, check.satisfactory, e.target.value);
+    };
+
+    return (
+      <tr>
+        <td>{check.question}</td>
+        <td>
+          <input
+            type="radio"
+            name={`${prefix}-check-${check.id}`}  // Add prefix here
+            checked={check.satisfactory === true}
+            onChange={() => handleRadioChange(true)}
+            disabled={disabled}
+          />
+        </td>
+        <td>
+          <input
+            type="radio"
+            name={`${prefix}-check-${check.id}`}  // Add prefix here
+            checked={check.satisfactory === false}
+            onChange={() => handleRadioChange(false)}
+            disabled={disabled}
+          />
+        </td>
+        <td>
+          <input
+            type="radio"
+            name={`${prefix}-check-${check.id}`}  // Add prefix here
+            checked={check.satisfactory === null}
+            onChange={() => handleRadioChange(null)}
+            disabled={disabled}
+          />
+        </td>
+        <td>
+          {check.id === 8 ? (
+            <select
+              className="form-control"
+              value={check.result}
+              onChange={handleRemarksChange}
+              disabled={disabled}
+            >
+              <option value="">Select Result</option>
+              <option value="Pass">Pass</option>
+              <option value="Fail">Fail</option>
+            </select>
+          ) : (
+            <input
+              type="text"
+              className="form-control"
+              value={check.remarks}
+              onChange={handleRemarksChange}
+              disabled={disabled}
+            />
+          )}
+        </td>
+      </tr>
+    );
+  };
+
+
+  const handleApplianceCheckChange = (id, satisfactory, remarksOrResult = "") => {
+    setFormData(prev => {
+      const updatedChecks = prev.applianceChecks.map(check => {
+        if (check.id === id) {
+          return { ...check, satisfactory, remarks: remarksOrResult };
+        }
+        return check;
+      });
+      return { ...prev, applianceChecks: updatedChecks };
+    });
+  };
+
+  const handleSafetyCheckChange = (id, satisfactory, remarksOrResult = "") => {
+    setFormData(prev => {
+      const updatedChecks = prev.safetyChecks.map(check => {
+        if (check.id === id) {
+          if (id === 8) { // Gas tightness test
+            return { ...check, satisfactory, result: remarksOrResult };
+          }
+          return { ...check, satisfactory, remarks: remarksOrResult };
+        }
+        return check;
+      });
+      return { ...prev, safetyChecks: updatedChecks };
+    });
+  };
+
+
 
   const handleCheckboxChange = (field, isChecked) => {
     setFormData(prev => ({
@@ -1295,6 +1259,72 @@ const GasBoilerService = ({
           />
         </td>
       </tr>
+    );
+  };
+
+
+  const renderSiteContactField = () => {
+    if (isInternalUserTaggedWithSite) {
+      const filteredUsers =
+        users?.filter((user) =>
+          user.taggedSites?.some(
+            (site) => site.id === siteSelectedForGlobal?.siteId
+          )
+        ) || [];
+
+      return (
+        <Autocomplete
+          options={filteredUsers}
+          getOptionLabel={(user) => user.name}
+          value={formData.siteContactUser || formData.clientUser || null}
+          onChange={(event, newValue) => {
+            setFormData((prev) => ({
+              ...prev,
+              siteContact: newValue?.id || "",
+              siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
+              client: newValue?.id || "",
+              clientUser: newValue || null,
+              clientName: newValue?.name || "",
+            }));
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              required
+              disabled={isSubmitted}
+              style={{
+                height: "40px",
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                },
+                "& .MuiAutocomplete-input": {
+                  padding: "8.5px 4px !important",
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                  padding: "0 5px",
+                },
+              }}
+            />
+          )}
+          disabled={isSubmitted}
+        />
+      );
+    }
+    return (
+      <input
+        type="text"
+        className="form-control"
+        name="siteContact"
+        value={formData.siteContact}
+        onChange={handleInputChange}
+        required
+        disabled={isSubmitted}
+      />
     );
   };
 
@@ -1577,11 +1607,9 @@ const GasBoilerService = ({
                     <input
                       type="text"
                       className="form-control"
-                      name="make"
-                      value={formData.make}
-                      onChange={handleInputChange}
+                      value={selectedAsset.manufacturer}
                       required
-                      disabled={isSubmitted}
+                      disabled
 
                     />
                   </div>
@@ -1623,22 +1651,15 @@ const GasBoilerService = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {renderCheckboxRow("Heat Exchanger", "heatExchanger")}
-                  {renderCheckboxRow("Burner / Injectors", "burnerInjectors")}
-                  {renderCheckboxRow("Flame Picture", "flamePicture")}
-                  {renderCheckboxRow("Ignition", "ignition")}
-                  {renderCheckboxRow("Electrics", "electrics")}
-                  {renderCheckboxRow("Controls", "controls")}
-                  {renderCheckboxRow("Leaks gas / water", "leaksGasWater")}
-                  {renderCheckboxRow("Gas connections", "gasConnections")}
-                  {renderCheckboxRow("Seals", "seals")}
-                  {renderCheckboxRow("Pipework", "pipework")}
-                  {renderCheckboxRow("Fans", "fans")}
-                  {renderCheckboxRow("Fireplace", "fireplace")}
-                  {renderCheckboxRow("Closure plate & PBS10 tape", "closurePlatePBS10Tape")}
-                  {renderCheckboxRow("Allowable location", "allowableLocation")}
-                  {renderCheckboxRow("Stability", "stability")}
-                  {renderCheckboxRow("Return air / Plenum", "returnAirPlenum")}
+                  {formData.applianceChecks.map(check => (
+                    <CheckRow
+                      key={`appliance-${check.id}`}
+                      check={check}
+                      onCheckChange={handleApplianceCheckChange}
+                      disabled={isSubmitted}
+                      prefix="appliance"  // Add this
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1663,68 +1684,15 @@ const GasBoilerService = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {renderSafetyCheckboxRow("Ventilation", "ventilation")}
-                  {renderSafetyCheckboxRow("Flue Termination", "flueTermination")}
-                  {renderSafetyCheckboxRow("Smoke pellet flue flow test", "smokePelletFlueFlowTest")}
-                  {renderSafetyCheckboxRow("Smoke match flue flow test", "smokeMatchFlueFlowTest")}
-                  {renderSafetyCheckboxRow("Working pressure", "workingPressure")}
-                  {renderSafetyCheckboxRow("Safety device", "safetyDevice")}
-                  {renderSafetyCheckboxRow("Other (regulations etc)", "otherRegulations")}
-                  <tr>
-                    <td>Gas tightness test performed</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={formData.gasTightnessTestPerformed.checked}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          gasTightnessTestPerformed: {
-                            ...formData.gasTightnessTestPerformed,
-                            checked: e.target.checked
-                          }
-                        })}
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={!formData.gasTightnessTestPerformed.checked}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          gasTightnessTestPerformed: {
-                            ...formData.gasTightnessTestPerformed,
-                            checked: !e.target.checked
-                          }
-                        })}
-                        disabled={isSubmitted}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        disabled
-                      />
-                    </td>
-                    <td>
-                      <select
-                        className="form-control"
-                        value={formData.gasTightnessTestPerformed.result}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          gasTightnessTestPerformed: {
-                            ...formData.gasTightnessTestPerformed,
-                            result: e.target.value
-                          }
-                        })}
-                        disabled={isSubmitted}
-                      >
-                        <option value="">Select Result</option>
-                        <option value="Pass">Pass</option>
-                        <option value="Fail">Fail</option>
-                      </select>
-                    </td>
-                  </tr>
+                  {formData.safetyChecks.map(check => (
+                    <CheckRow
+                      key={`safety-${check.id}`}
+                      check={check}
+                      onCheckChange={handleSafetyCheckChange}
+                      disabled={isSubmitted}
+                      prefix="safety"  // Add this
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1824,13 +1792,7 @@ const GasBoilerService = ({
               <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Customer Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.customerName}
-                    onChange={(e) => setFormData({...formData, customerName: e.target.value})}
-                    disabled={isSubmitted}
-                  />
+                  {renderSiteContactField()}
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Customer Signature Date</label>
