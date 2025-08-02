@@ -54,22 +54,21 @@ const GasBoilerService = ({
   loggedInUserData,
 }) => {
   const license = JSON.parse(localStorage.getItem("license"));
+  const [sasToken, setSasToken] = useState('');
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    // Address and Business Details
     installationAddress: "",
     registeredBusinessRegNo: "",
     rentedAccommodation: "",
     dateTimeOfIssue: new Date().toISOString().split("T")[0],
     workDescription: "",
     engineer: loggedInUserData?.id || "",
-    // Appliance Details
     assetId: "",
     selectedAsset: null,
     comments: "",
     postCode: "",
 
-    // Appliance Checks - Now as an array
     applianceChecks: [
       { id: 1, question: "Heat Exchanger", satisfactory: null, remarks: "" },
       { id: 2, question: "Burner / Injectors", satisfactory: null, remarks: "" },
@@ -89,7 +88,6 @@ const GasBoilerService = ({
       { id: 16, question: "Return air / Plenum", satisfactory: null, remarks: "" },
     ],
 
-    // Safety Checks - Now as an array
     safetyChecks: [
       { id: 1, question: "Ventilation", satisfactory: null, remarks: "" },
       { id: 2, question: "Flue Termination", satisfactory: null, remarks: "" },
@@ -98,66 +96,42 @@ const GasBoilerService = ({
       { id: 5, question: "Working pressure", satisfactory: null, remarks: "" },
       { id: 6, question: "Safety device", satisfactory: null, remarks: "" },
       { id: 7, question: "Other (regulations etc)", satisfactory: null, remarks: "" },
-      {
-        id: 8,
-        question: "Gas tightness test performed",
-        satisfactory: null,
-        remarks: "",
-        result: "" // Additional field for this specific check
-      },
+      { id: 8, question: "Gas tightness test performed", satisfactory: null, remarks: "", result: "" },
     ],
     actionId: null,
 
-    // Findings
     isInstallationSafe: "",
     warningNoticeRaised: "",
     installedToStandard: "",
-
-    // Remedial Work
     necessaryRemedialWork: "",
 
-    // Signatures
     siteContact: "",
     customerSignatureDate: new Date().toISOString().split("T")[0],
     engineerName: loggedInUserData?.name || "",
     engineerSignatureDate: new Date().toISOString().split("T")[0],
-
-    // Additional fields for functionality
-    clientUser: null,
-    siteContactUser: null,
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showPdfButton, setShowPdfButton] = useState(false);
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [uploadedPhotos, setUploadedPhotos] = useState([]);
-  const [inspectionDetails, setInspectionDetails] = useState(null);
-  const [sasToken, setSasToken] = useState('');
-  const [folderIds, setFolderIds] = useState({
-    logBooks: null,
-    plantAndEquipment: null,
-    miscellaneousService: null,
-    sounderAudibility: null
-  });
-
-
-  const [checkStatus, setCheckStatus] = useState('Open');
-  const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [isFormEditable, setIsFormEditable] = useState(true);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
-  const navigate = useNavigate();
+  const [folderIds, setFolderIds] = useState({
+    logBooks: null,
+    plantAndEquipment: null,
+    gasServices: null,
+    boilerService: null
+  });
 
-  const isInternalUserTaggedWithSite =
-    loggedInUserData?.taggedSites?.some(
-      (site) => site.id === siteSelectedForGlobal?.siteId
-    );
+  const isInternalUserTaggedWithSite = loggedInUserData?.taggedSites?.some(
+    (site) => site.id === siteSelectedForGlobal?.siteId
+  );
 
   const isgasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
 
@@ -178,8 +152,6 @@ const GasBoilerService = ({
     fetchToken();
   }, []);
 
-
-  // Effect to fetch inspection data when checkId changes
   useEffect(() => {
     const fetchInspectionData = async () => {
       try {
@@ -191,56 +163,45 @@ const GasBoilerService = ({
 
         const apiData = await get(`/api/site-check/gas-boiler-inspection/${checkId}`);
         if (apiData && apiData.length > 0) {
-          const mostRecentItem = apiData[0]; // Assuming the first item is the most recent
+          const mostRecentItem = apiData[0];
 
-
-          // Transform the API data back into our form structure
           const transformedData = {
-            // Address and Business Details
             installationAddress: mostRecentItem.installationAddress,
             registeredBusinessRegNo: mostRecentItem.registeredBusinessRegNo,
             rentedAccommodation: mostRecentItem.rentedAccommodation,
             dateTimeOfIssue: mostRecentItem.dateTimeOfIssue,
             workDescription: mostRecentItem.workDescription,
             engineer: mostRecentItem.engineer,
-
-            // Appliance Details
             assetId: mostRecentItem.assetId,
             selectedAsset: siteAssets.find(asset => asset.assetId === mostRecentItem.assetId),
-
-            // Appliance Checks
             applianceChecks: mostRecentItem.applianceChecks || formData.applianceChecks.map(check => ({
               ...check,
               satisfactory: mostRecentItem[`applianceCheck${check.id}`]?.satisfactory,
               remarks: mostRecentItem[`applianceCheck${check.id}`]?.remarks
             })),
-
-            // Safety Checks
             safetyChecks: mostRecentItem.safetyChecks || formData.safetyChecks.map(check => ({
               ...check,
               satisfactory: mostRecentItem[`safetyCheck${check.id}`]?.satisfactory,
               remarks: mostRecentItem[`safetyCheck${check.id}`]?.remarks,
               ...(check.id === 8 && { result: mostRecentItem.gasTightnessTestResult })
             })),
-
-            // Findings
             isInstallationSafe: mostRecentItem.isInstallationSafe,
             warningNoticeRaised: mostRecentItem.warningNoticeRaised,
             installedToStandard: mostRecentItem.installedToStandard,
             necessaryRemedialWork: mostRecentItem.necessaryRemedialWork,
-
-            // Signatures
             siteContact: mostRecentItem.siteContact,
             customerSignatureDate: mostRecentItem.customerSignatureDate,
             engineerName: mostRecentItem.engineerName,
             engineerSignatureDate: mostRecentItem.engineerSignatureDate,
-
-            // Metadata
             actionId: mostRecentItem.actionId
           };
 
           setFormData(transformedData);
-          setInspectionDetails(mostRecentItem);
+          if (mostRecentItem.actionId) {
+            const action = await fetchActionById(mostRecentItem.actionId);
+            setExistingAction(action);
+            setActionRaised(true);
+          }
         }
       } catch (error) {
         console.error("Error fetching inspection data:", error);
@@ -253,54 +214,37 @@ const GasBoilerService = ({
 
   useEffect(() => {
     const fetchData = async () => {
-      // Set company name from license if available
       if (license?.companyName) {
-        setFormData((prev) => ({
+        setFormData(prev => ({
           ...prev,
           installationName: license.companyName,
         }));
       }
 
-
-      // Return early if no site ID is selected
       if (!siteSelectedForGlobal?.siteId) {
         return;
       }
 
       try {
-        // Fetch complete site data from API
         const fullSiteData = await get(`/api/site/site/${siteSelectedForGlobal.siteId}`);
-
-        // Construct address parts array, filtering out any undefined/empty values
         const addressParts = [
           fullSiteData.address1,
           fullSiteData.address2,
           fullSiteData.city,
           fullSiteData.area,
           fullSiteData.postCode,
-          fullSiteData.country // Now guaranteed to come from the API response
+          fullSiteData.country
         ].filter(part => part && part.trim() !== '');
 
-        // Join address parts with commas
         const fullAddress = addressParts.join(", ");
 
-        // Update form data with the complete address
-        setFormData((prev) => ({
+        setFormData(prev => ({
           ...prev,
           postCode: fullSiteData.postCode || "",
           installationAddress: fullAddress,
         }));
 
-        // // Optional: Log the address parts for debugging
-        // console.log('Complete address parts:', {
-        //   address1: fullSiteData.address1,
-        //   address2: fullSiteData.address2,
-        //   city: fullSiteData.city,
-        //   area: fullSiteData.area,
-        //   postCode: fullSiteData.postCode,
-        //   country: fullSiteData.country
-        // });
-
+        await fetchFolderStructure(siteSelectedForGlobal.siteId);
       } catch (error) {
         console.error('Error fetching site details:', error);
         toast.error('Failed to load site address details');
@@ -308,9 +252,49 @@ const GasBoilerService = ({
     };
 
     fetchData();
-  }, [license?.companyName, siteSelectedForGlobal?.siteId]); // Added siteId to dependency array
+  }, [license?.companyName, siteSelectedForGlobal?.siteId]);
 
-  // Function to fetch action by ID
+  useEffect(() => {
+    const needsRiskAssessment = formData.isInstallationSafe === "No";
+    setShowRiskAssessment(needsRiskAssessment);
+
+    if (!needsRiskAssessment && existingAction) {
+      setShowRiskAssessment(true);
+    }
+  }, [formData.isInstallationSafe, existingAction]);
+
+  useEffect(() => {
+    const fetchActions = async () => {
+      if (!currentCheckId) return;
+
+      try {
+        const response = await get(`/api/site/actions/${siteSelectedForGlobal?.siteId}`);
+        if (response && response.length > 0) {
+          const relevantActions = response.filter(
+            action => action.checkId === currentCheckId
+          );
+
+          if (relevantActions.length > 0) {
+            const mostRecent = relevantActions.sort((a, b) =>
+              new Date(b.createdAt) - new Date(a.createdAt)
+            )[0];
+
+            setExistingAction(mostRecent);
+            setActionRaised(true);
+            setFormData(prev => ({
+              ...prev,
+              actionId: mostRecent.actionId
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching actions:", error);
+      }
+    };
+
+    fetchActions();
+  }, [currentCheckId, siteSelectedForGlobal?.siteId]);
+
   const fetchActionById = async (id) => {
     try {
       if (!id) return null;
@@ -322,337 +306,52 @@ const GasBoilerService = ({
     }
   };
 
-  // Function to fetch existing actions for the current check
-  const fetchExistingActions = async () => {
-    try {
-      if (formData.actionId) {
-        const action = await fetchActionById(formData.actionId);
-        if (action && action.checkId === currentCheckId) {
-          setExistingAction(action);
-          setActionRaised(true);
-          return;
-        }
-        setFormData(prev => ({ ...prev, actionId: null }));
-      }
-
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
-
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
-      if (response && response.length > 0) {
-        const relevantActions = response.filter(action =>
-          action.checkId === currentCheckId
-        );
-
-        if (relevantActions.length > 0) {
-          const mostRecentAction = relevantActions.sort((a, b) =>
-            new Date(b.createdAt) - new Date(a.createdAt)
-          )[0];
-
-          setExistingAction(mostRecentAction);
-          setActionRaised(true);
-          setFormData(prev => ({
-            ...prev,
-            actionId: mostRecentAction.actionId
-          }));
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching existing actions:", error);
-    }
-  };
-
-  // Function to fetch folder structure for document storage
   const fetchFolderStructure = async (siteId) => {
     try {
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
-
-      if (parentFoldersResponse?.parentFolders?.length > 0) {
-        const logBooksFolder = parentFoldersResponse.parentFolders.find(
-          folder => folder.name.trim() === 'Log Books'
-        );
-
-        if (logBooksFolder) {
-          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
-
-          if (logBooksResponse?.document?.childFolders) {
-            const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
-              folder => folder.name.trim() === 'Plant and Equipment'
-            );
-
-            if (plantAndEquipmentFolder) {
-              const plantAndEquipmentResponse = await get(
-                `/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`
-              );
-
-              if (plantAndEquipmentResponse?.document?.childFolders) {
-                const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
-                  folder => folder.name.trim() === 'Miscellaneous Service'
-                );
-
-                if (miscellaneousFolder) {
-                  const miscResponse = await get(
-                    `/api/document/parent/${miscellaneousFolder.id}/folders?siteId=${siteId}`
-                  );
-
-                  if (miscResponse?.document?.childFolders) {
-                    const sounderAudibilityFolder = miscResponse.document.childFolders.find(
-                      folder => folder.name.trim() === 'Documents'
-                    );
-
-                    setFolderIds({
-                      logBooks: logBooksFolder.id,
-                      plantAndEquipment: plantAndEquipmentFolder.id,
-                      miscellaneousService: miscellaneousFolder.id,
-                      sounderAudibility: sounderAudibilityFolder?.id || null
-                    });
-
-                    return sounderAudibilityFolder?.id || null;
-                  }
-                }
-              }
-            }
-          }
-        }
+      if (!parentFoldersResponse?.parentFolders) {
+        throw new Error('No parent folders found');
       }
-      return null;
+
+      const logBooksFolder = parentFoldersResponse.parentFolders.find(
+        f => f.name.trim() === 'Log Books'
+      );
+      if (!logBooksFolder) throw new Error('Log Books folder not found');
+
+      const logBooksChildren = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+      const plantAndEquipmentFolder = logBooksChildren?.document?.childFolders?.find(
+        f => f.name.trim() === 'Plant and Equipment'
+      );
+      if (!plantAndEquipmentFolder) throw new Error('Plant and Equipment folder not found');
+
+      const plantChildren = await get(`/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`);
+      const gasServicesFolder = plantChildren?.document?.childFolders?.find(
+        f => f.name.trim() === 'Miscellaneous Service Documents'
+      );
+      if (!gasServicesFolder) throw new Error('Miscellaneous Service folder not found');
+
+      const gasChildren = await get(`/api/document/parent/${gasServicesFolder.id}/folders?siteId=${siteId}`);
+      const boilerServiceFolder = gasChildren?.document?.childFolders?.find(
+        f => f.name.trim() === 'Documents'
+      );
+
+      const newFolderIds = {
+        logBooks: logBooksFolder.id,
+        plantAndEquipment: plantAndEquipmentFolder.id,
+        gasServices: gasServicesFolder.id,
+        boilerService: boilerServiceFolder?.id || null
+      };
+
+      setFolderIds(newFolderIds);
+      return newFolderIds.boilerService;
+
     } catch (error) {
-      console.error('Error fetching folder structure:', error);
+      console.error('Folder structure error:', error);
       toast.error('Failed to load document folders');
       return null;
     }
   };
 
-  // Handler for risk assessment completion
-  const handleRiskAssessmentComplete = async (actionResponse) => {
-    try {
-      if (!actionResponse?.actionId) {
-        throw new Error("Invalid action response received");
-      }
-
-      const verifiedAction = await fetchActionById(actionResponse.actionId);
-      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
-        throw new Error("Action was not properly linked to this inspection");
-      }
-
-      setExistingAction(verifiedAction);
-      setActionRaised(true);
-
-      setFormData(prev => ({
-        ...prev,
-        actionId: verifiedAction.actionId
-      }));
-
-      if (currentCheckId) {
-        const inspectionPayload = {
-          // Address and Business Details
-          installationAddress: formData.installationAddress,
-          registeredBusinessRegNo: formData.registeredBusinessRegNo,
-          rentedAccommodation: formData.rentedAccommodation,
-          dateTimeOfIssue: formData.dateTimeOfIssue,
-          workDescription: formData.workDescription,
-          engineer: formData.engineer,
-
-          // Appliance Details
-          assetId: formData.assetId,
-          manufacturer: formData.selectedAsset?.manufacturer || "",
-          model: formData.selectedAsset?.model || "",
-          location: `${formData.selectedAsset?.position}, ${formData.selectedAsset?.floor}, ${formData.selectedAsset?.room}`,
-
-          // Appliance Checks
-          applianceChecks: formData.applianceChecks.map(check => ({
-            id: check.id,
-            question: check.question,
-            satisfactory: check.satisfactory,
-            remarks: check.remarks
-          })),
-
-          // Safety Checks
-          safetyChecks: formData.safetyChecks.map(check => ({
-            id: check.id,
-            question: check.question,
-            satisfactory: check.satisfactory,
-            remarks: check.remarks,
-            ...(check.id === 8 && { result: check.result }) // Special field for gas tightness test
-          })),
-
-          // Findings
-          isInstallationSafe: formData.isInstallationSafe,
-          warningNoticeRaised: formData.warningNoticeRaised,
-          installedToStandard: formData.installedToStandard,
-          necessaryRemedialWork: formData.necessaryRemedialWork,
-
-          // Signatures
-          siteContact: formData.siteContact,
-          customerSignatureDate: formData.customerSignatureDate,
-          engineerName: formData.engineerName,
-          engineerSignatureDate: formData.engineerSignatureDate,
-
-          // Metadata
-          siteId: siteSelectedForGlobal?.siteId,
-          type: "Inspection",
-          subType: "Gas Boiler",
-          category: "Gas Boiler Service",
-          checkId: currentCheckId,
-          actionId: formData.actionId
-        };
-
-        const existingInspections = await get(`/api/site-check/gas-boiler-inspection/${currentCheckId}`);
-        if (existingInspections?.length > 0) {
-          await put(`/api/site-check/gas-boiler-inspection/${currentCheckId}`, inspectionPayload);
-        } else {
-          await post(`/api/site-check/gas-boiler-inspection`, inspectionPayload);
-        }
-
-        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
-      }
-    } catch (error) {
-      console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
-      setActionRaised(false);
-      setExistingAction(null);
-      setFormData(prev => ({ ...prev, actionId: null }));
-    }
-  };
-
-  // Generic input change handler
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  // Function to save PDF locally
-  const savePdfToLocal = async (pdfBlob, fileName) => {
-    try {
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      return true;
-    } catch (error) {
-      console.error('Error saving PDF locally:', error);
-      return false;
-    }
-  };
-  const formatDateForBackend = (dateString) => {
-    if (!dateString) return null; // Handle missing date
-
-    // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
-    const date = new Date(dateString);
-
-    // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
-    return date.toISOString().replace('T', ' ').split('.')[0];
-  };
-
-  // Function to upload PDF to server
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
-    try {
-      setIsUploading(true);
-      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-      if (!savedLocally) {
-        throw new Error('Failed to save PDF locally');
-      }
-
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const targetFolderId = folderIds.externalLighting;
-
-      if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
-      }
-
-      // First check if file exists
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
-
-      if (exists && existingFile) {
-        formData.append('file', pdfFile);
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `WHR-${new Date().getTime()}`
-          }]
-        };
-
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        const response = await axios({
-          method: 'put',
-          url: '/api/document/file/newVersion/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
-        });
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return true;
-        }
-      } else {
-        formData.append('files', pdfFile);
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
-            note: 'Water Heater Service Report',
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            originalFileName: fileName,
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `WHR-${new Date().getTime()}`
-          }]
-        };
-
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        const response = await axios({
-          method: 'post',
-          url: '/api/document/files/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
-        }
-      }
-
-      throw new Error('Upload failed: No response data');
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Function to check if file exists
   const checkFileExists = async (folderId, fileName) => {
     try {
       const siteId = siteSelectedForGlobal?.siteId;
@@ -675,29 +374,21 @@ const GasBoilerService = ({
     }
   };
 
-  // Function to get highest file version
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
       const siteId = siteSelectedForGlobal?.siteId;
-      if (!siteId) {
-        console.warn('No site ID available for file version check');
-        return 1;
-      }
+      if (!siteId || !folderId) return 1;
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
+      const baseName = fileName.split('.')[0];
+      const matchingFiles = files.filter(file =>
+        file.name && file.name.startsWith(baseName)
+      );
 
-      if (files.length > 0) {
-        const baseName = fileName.split('.')[0];
-        const matchingFiles = files.filter(file =>
-          file.name && file.name.startsWith(baseName)
-        );
-
-        if (matchingFiles.length > 0) {
-          const versions = matchingFiles.map(f => f.fileVersion || 1);
-          const maxVersion = Math.max(...versions);
-          return maxVersion + 1;
-        }
+      if (matchingFiles.length > 0) {
+        const versions = matchingFiles.map(f => f.fileVersion || 1);
+        return Math.max(...versions) + 1;
       }
       return 1;
     } catch (error) {
@@ -706,226 +397,145 @@ const GasBoilerService = ({
     }
   };
 
-
-  // Handler for asset selection
-  const handleAssetSelect = (event, newValue) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedAsset: newValue || null,
-      manufacturer: newValue?.manufacturer || "",
-      modelNumber: newValue?.model || "",
-      position: newValue?.position || "",
-      floor: newValue?.floor || "",
-      room: newValue?.room || "",
-      assetId: newValue?.assetId || "",
-    }));
-  };
-
-  // Form submission handler
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('Form submitted');
-
-    if (isLoading) {
-      console.log('Submit prevented: Already loading');
-      return;
-    }
-
-    const hasFailures = formData.param2 === "Pass" && formData.param4 === "Fail" && formData.param5 === "Pass";
-
-    if (hasFailures && !actionRaised) {
-      toast.error("Please complete the risk assessment before submitting");
-      return;
-    }
-
-    if (!isFormEditable) {
-      console.log('Submit prevented: Form is not editable');
-      return;
-    }
-
-    const errors = {};
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
-
-    setValidationErrors({});
-    setIsLoading(true);
-
+  const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
-      let existingInspection = null;
-      if (currentCheckId) {
-        try {
-          const inspections = await get(`/api/site-check/gas-boiler-inspection/${currentCheckId}`);
-          existingInspection = inspections?.length > 0 ? inspections[0] : null;
-        } catch (error) {
-          console.error('Error checking for existing inspection:', error);
-        }
-      }
-
-      const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: "Inspection",
-        subType: "Gas Boiler",
-        category: "Gas Boiler Service",
-        status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
-        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
-      };
-
-      let statusResponse;
-      if (currentCheckId) {
-        statusPayload.checkId = parseInt(currentCheckId, 10);
-        statusResponse = await put(
-          `/api/site-check/${currentCheckId}`,
-          statusPayload
-        );
-      } else {
-        statusResponse = await post(
-          `/api/site-check`,
-          statusPayload
-        );
-        if (statusResponse?.checkId) {
-          setCurrentCheckId(statusResponse.checkId);
-        }
-      }
-
-      if (![200, 201, 204].includes(statusResponse?.status)) {
-        throw new Error('Failed to update site check status');
-      }
-
-      console.log('Site check status updated successfully:', statusResponse.data);
-      setCheckStatus('Done');
-      setIsFormEditable(false);
-
-      const inspectionPayload = {
-        // Address and Business Details
-        installationAddress: formData.installationAddress,
-        registeredBusinessRegNo: formData.registeredBusinessRegNo,
-        rentedAccommodation: formData.rentedAccommodation,
-        dateTimeOfIssue: formData.dateTimeOfIssue,
-        workDescription: formData.workDescription,
-        engineer: formData.engineer,
-
-        // Appliance Details
-        assetId: formData.assetId,
-        manufacturer: formData.selectedAsset?.manufacturer || "",
-        model: formData.selectedAsset?.model || "",
-        location: `${formData.selectedAsset?.position}, ${formData.selectedAsset?.floor}, ${formData.selectedAsset?.room}`,
-
-        // Appliance Checks
-        applianceChecks: formData.applianceChecks.map(check => ({
-          id: check.id,
-          question: check.question,
-          satisfactory: check.satisfactory,
-          remarks: check.remarks
-        })),
-
-        // Safety Checks
-        safetyChecks: formData.safetyChecks.map(check => ({
-          id: check.id,
-          question: check.question,
-          satisfactory: check.satisfactory,
-          remarks: check.remarks,
-          ...(check.id === 8 && { result: check.result }) // Special field for gas tightness test
-        })),
-
-        // Findings
-        isInstallationSafe: formData.isInstallationSafe,
-        warningNoticeRaised: formData.warningNoticeRaised,
-        installedToStandard: formData.installedToStandard,
-        necessaryRemedialWork: formData.necessaryRemedialWork,
-
-        // Signatures
-        siteContact: formData.siteContact,
-        customerSignatureDate: formData.customerSignatureDate,
-        engineerName: formData.engineerName,
-        engineerSignatureDate: formData.engineerSignatureDate,
-
-        // Metadata
-        siteId: siteSelectedForGlobal?.siteId,
-
-        checkId: currentCheckId,
-        actionId: formData.actionId
-      };
-
-      let saveResponse;
-      if (existingInspection) {
-        saveResponse = await put(
-          `/api/site-check/gas-boiler-inspection/${currentCheckId}`,
-          inspectionPayload
-        );
-      } else {
-        saveResponse = await post(
-          `/api/site-check/gas-boiler-inspection`,
-          inspectionPayload
-        );
-      }
-
-      if (![200, 201, 204].includes(saveResponse?.status)) {
-        throw new Error('Failed to save inspection data');
-      }
-
-      console.log('Inspection data saved successfully:', saveResponse.data);
-
-      const pdfResult = await generatePDF(true);
-      if (!pdfResult.success) {
-        throw new Error(pdfResult.error || "Failed to generate PDF");
-      }
-
-      toast.success("Water Heater Service report saved and PDF generated successfully!");
-      setShowPdfButton(true);
-      setIsSubmitted(true);
-
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
       setTimeout(() => {
-        navigate(-1);
-      }, 1500);
-
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      return true;
     } catch (error) {
-      console.error('Error in form submission:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      toast.error(error.message || 'Failed to submit form');
-    } finally {
-      setIsLoading(false);
+      console.error('Error saving PDF locally:', error);
+      return false;
     }
   };
+
+  const uploadPdfToServer = async (pdfBlob, fileName) => {
+    try {
+      setIsUploading(true);
+      await savePdfToLocal(pdfBlob, fileName);
+
+      const targetFolderId = folderIds.boilerService || await fetchFolderStructure(siteSelectedForGlobal?.siteId);
+      if (!targetFolderId) {
+        throw new Error('Could not determine target folder for PDF upload');
+      }
+
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const formData = new FormData();
+
+      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+
+      if (exists && existingFile) {
+        formData.append('file', pdfFile);
+        const documentRequest = {
+          folderId: targetFolderId,
+          files: [{
+            id: existingFile.id,
+            name: fileName,
+            originalFileName: fileName,
+            fileVersion: existingFile.fileVersion + 1,
+            siteId: siteSelectedForGlobal?.siteId,
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id,
+            reviewerUserId: loggedInUserData?.id,
+            referenceNumber: `GBS-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequest));
+        const response = await axios.put(
+          '/api/document/file/newVersion/upload',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+
+        if (response.data) {
+          toast.success(`PDF updated successfully as version ${documentRequest.files[0].fileVersion}`);
+          return true;
+        }
+      } else {
+        formData.append('files', pdfFile);
+        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+
+        const documentRequest = {
+          folderId: targetFolderId,
+          files: [{
+            name: fileName.split('.')[0],
+            originalFileName: fileName,
+            fileVersion: fileVersion,
+            siteId: siteSelectedForGlobal?.siteId,
+            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+            uploaderUserId: loggedInUserData?.id,
+            reviewerUserId: loggedInUserData?.id,
+            referenceNumber: `GBS-${new Date().getTime()}`
+          }]
+        };
+
+        formData.append('documentRequestString', JSON.stringify(documentRequest));
+        const response = await axios.post(
+          '/api/document/files/upload',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+
+        if (response.data) {
+          toast.success(`PDF uploaded successfully as version ${fileVersion}`);
+          return true;
+        }
+      }
+      throw new Error('Upload failed: No response data');
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast.error('Failed to upload PDF: ' + error.message);
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const generatePDF = async (uploadToServer = true) => {
     try {
       setIsGeneratingPDF(true);
-
       if (!PDFLib) {
         PDFLib = await import('pdf-lib');
       }
 
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
-      //const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
       const form = pdfDoc.getForm();
 
-      // Helper function to set text fields
       const setTextField = (fieldName, value, fontSize = 8) => {
         try {
           const field = form.getTextField(fieldName);
           if (field) {
             field.setText(value || '');
-            try {
-              if (field.setFontSize) {
-                field.setFontSize(fontSize);
-              }
-            } catch (e) {
-              console.warn(`Could not set font size for ${fieldName}:`, e);
+            if (field.setFontSize) {
+              field.setFontSize(fontSize);
             }
-          } else {
-            console.warn(`Field not found: ${fieldName}`);
           }
         } catch (error) {
           console.warn(`Error setting field ${fieldName}:`, error.message);
         }
       };
 
-      // Helper function to set checkbox fields
       const setCheckbox = (fieldName, isChecked) => {
         try {
           const field = form.getCheckBox(fieldName);
@@ -937,48 +547,13 @@ const GasBoilerService = ({
         }
       };
 
-      // In the generatePDF function, update the checkbox setting logic:
-      const setCheckboxFields = (checks, prefix) => {
-        checks.forEach(check => {
-          const baseFieldName = `${prefix}_${check.id}`; // Simplified field name structure
-
-          // Clear all options first
-          setCheckbox(`${baseFieldName}_Yes`, false);
-          setCheckbox(`${baseFieldName}_No`, false);
-          setCheckbox(`${baseFieldName}_NA`, false);
-
-          // Set the appropriate checkbox based on satisfactory value
-          if (check.satisfactory === true) {
-            setCheckbox(`${baseFieldName}_Yes`, true);
-          } else if (check.satisfactory === false) {
-            setCheckbox(`${baseFieldName}_No`, true);
-          } else {
-            setCheckbox(`${baseFieldName}_NA`, true);
-          }
-
-          // Set remarks or result
-          if (check.id === 8) { // Special case for gas tightness test
-            setTextField(`${baseFieldName}_Result`, check.result || '');
-          } else {
-            setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
-          }
-        });
-      };
-
-      // Call with proper prefixes
-      setCheckboxFields(formData.applianceChecks, 'Appliance');
-      setCheckboxFields(formData.safetyChecks, 'Safety');
-
-
-      // Address and Business Details
+      // Set form data in PDF
       const addressLines = (formData.installationAddress || '').split(',');
-      setTextField('Address', addressLines[0] || '',);
-      setTextField('Address_2', addressLines[1] || '',);
-      setTextField('Address_3', addressLines[2] || '',);
+      setTextField('Address', addressLines[0] || '');
+      setTextField('Address_2', addressLines[1] || '');
+      setTextField('Address_3', addressLines[2] || '');
 
-      setTextField('Name', license?.name || '',);
-
-
+      setTextField('Name', license?.name || '');
       setTextField('Reg No', formData.registeredBusinessRegNo || '');
       setTextField('Gas Engineer', loggedInUserData?.name || '');
       setTextField('Gas Safe Registered Engineer No', loggedInUserData?.gasSafeRegNo || '');
@@ -994,14 +569,11 @@ const GasBoilerService = ({
       setTextField('Make', selectedAsset?.manufacturer || '');
       setTextField('Type', selectedAsset?.subCategory2 || '');
       setTextField('Model', selectedAsset?.model || '');
-
-
       setTextField('Location', [
         selectedAsset?.position,
         selectedAsset?.floor,
         selectedAsset?.room
       ].filter(Boolean).join(' - ') || '');
-
 
       const comment = (formData.comments || '').split(',');
       setTextField('CommentsMake', comment[0] || '');
@@ -1009,30 +581,33 @@ const GasBoilerService = ({
       setTextField('CommentsModel', comment[2] || '');
       setTextField('CommentsLocation', comment[3] || '');
 
-
-
       // Appliance Checks
-      setCheckbox('Heat Exchanger_Yes', formData.heatExchanger.checked);
-      setCheckbox('Heat Exchanger_No', !formData.heatExchanger.checked);
-      setTextField('Heat Exchanger_Defect', formData.heatExchanger.defect);
-
-      // Repeat for all appliance checks...
-      setCheckbox('Burner / Injectors_Yes', formData.burnerInjectors.checked);
-      setCheckbox('Burner / Injectors_No', !formData.burnerInjectors.checked);
-      setTextField('Burner / Injectors_Defect', formData.burnerInjectors.defect);
+      formData.applianceChecks.forEach(check => {
+        const baseFieldName = `Appliance_${check.id}`;
+        setCheckbox(`${baseFieldName}_Yes`, check.satisfactory === true);
+        setCheckbox(`${baseFieldName}_No`, check.satisfactory === false);
+        setCheckbox(`${baseFieldName}_NA`, check.satisfactory === null);
+        setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
+      });
 
       // Safety Checks
-      setCheckbox('Ventilation_Yes', formData.ventilation.checked);
-      setCheckbox('Ventilation_No', !formData.ventilation.checked);
-      setTextField('Ventilation_Defect', formData.ventilation.defect);
+      formData.safetyChecks.forEach(check => {
+        const baseFieldName = `Safety_${check.id}`;
+        setCheckbox(`${baseFieldName}_Yes`, check.satisfactory === true);
+        setCheckbox(`${baseFieldName}_No`, check.satisfactory === false);
+        setCheckbox(`${baseFieldName}_NA`, check.satisfactory === null);
+        if (check.id === 8) {
+          setTextField(`${baseFieldName}_Result`, check.result || '');
+        } else {
+          setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
+        }
+      });
 
       // Findings
       setCheckbox('check1', formData.isInstallationSafe === 'Yes');
       setCheckbox('check2', formData.isInstallationSafe === 'No');
-
       setCheckbox('check3', formData.warningNoticeRaised === 'Yes');
       setCheckbox('check4', formData.warningNoticeRaised === 'No');
-
       setCheckbox('check5', formData.installedToStandard === 'Yes');
       setCheckbox('check6', formData.installedToStandard === 'No');
 
@@ -1046,11 +621,8 @@ const GasBoilerService = ({
       setTextField('remedialWork6', remedialWork[5] || '');
 
       // Signatures
-      // setTextField('Customer Signature', formData.customerName);
-      setTextField('Print Name', formData.customerName);
+      setTextField('Print Name', formData.siteContact);
       setTextField('Date', formatDate(formData.customerSignatureDate));
-
-
       setTextField('Print Name_2', formData.engineerName);
       setTextField('Date_2', formatDate(formData.engineerSignatureDate));
 
@@ -1061,8 +633,6 @@ const GasBoilerService = ({
           const signatureImageBytes = await signatureResponse.arrayBuffer();
 
           let signatureImage;
-
-          // Try PNG first, then JPG if that fails
           try {
             signatureImage = await pdfDoc.embedPng(signatureImageBytes);
           } catch (pngError) {
@@ -1083,11 +653,10 @@ const GasBoilerService = ({
         }
       }
 
-      // Flatten and save
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `GasBoilerServiceCertificate_${formData.applianceMake || 'report'}.pdf`;
+      const fileName = `GasBoilerService_${siteSelectedForGlobal?.siteId || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
@@ -1096,22 +665,174 @@ const GasBoilerService = ({
         await uploadPdfToServer(blob, fileName);
       }
 
-      toast.success('PDF generated successfully!');
       return { success: true, fileName };
-
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
       return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
     }
   };
 
+  const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+      if (!actionResponse?.actionId) {
+        throw new Error("Invalid action response received");
+      }
+
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction) {
+        throw new Error("Failed to verify created action");
+      }
+
+      if (currentCheckId && !verifiedAction.checkId) {
+        await put(`/api/site/actions/${verifiedAction.actionId}`, {
+          ...verifiedAction,
+          checkId: currentCheckId
+        });
+        verifiedAction.checkId = currentCheckId;
+      }
+
+      setExistingAction(verifiedAction);
+      setActionRaised(true);
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
+
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        checkId: currentCheckId,
+        actionId: verifiedAction.actionId,
+        type: 'Inspection',
+        subType: 'Gas Boiler',
+        category: 'Gas Boiler Service'
+      };
+
+      if (currentCheckId) {
+        await put(`/api/site-check/gas-boiler-inspection/${currentCheckId}`, inspectionPayload);
+      }
+
+      toast.success(`Action #${verifiedAction.actionId} successfully created and linked`);
+    } catch (error) {
+      console.error("Error handling risk assessment completion:", error);
+      toast.error(error.message || "Failed to process action completion");
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleAssetSelect = (event, newValue) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedAsset: newValue || null,
+      manufacturer: newValue?.manufacturer || "",
+      modelNumber: newValue?.model || "",
+      position: newValue?.position || "",
+      floor: newValue?.floor || "",
+      room: newValue?.room || "",
+      assetId: newValue?.assetId || "",
+    }));
+  };
+
+  const handleApplianceCheckChange = (id, satisfactory, remarks = "") => {
+    setFormData(prev => {
+      const updatedChecks = prev.applianceChecks.map(check => {
+        if (check.id === id) {
+          return { ...check, satisfactory, remarks };
+        }
+        return check;
+      });
+      return { ...prev, applianceChecks: updatedChecks };
+    });
+  };
+
+  const handleSafetyCheckChange = (id, satisfactory, remarksOrResult = "") => {
+    setFormData(prev => {
+      const updatedChecks = prev.safetyChecks.map(check => {
+        if (check.id === id) {
+          if (id === 8) {
+            return { ...check, satisfactory, result: remarksOrResult };
+          }
+          return { ...check, satisfactory, remarks: remarksOrResult };
+        }
+        return check;
+      });
+      return { ...prev, safetyChecks: updatedChecks };
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isLoading || !isFormEditable) return;
+
+    if (formData.isInstallationSafe === "No" && !actionRaised) {
+      toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const statusPayload = {
+        siteId: siteSelectedForGlobal?.siteId,
+        type: 'Inspection',
+        subType: 'Gas Boiler',
+        category: 'Gas Boiler Service',
+        status: 'Done',
+        startDate: new Date().toISOString(),
+        leadUserID: loggedInUserData?.id,
+        assistantUserID: loggedInUserData?.id
+      };
+
+      let checkIdToUse = currentCheckId;
+      const statusResponse = checkIdToUse
+        ? await put(`/api/site-check/${checkIdToUse}`, statusPayload)
+        : await post('/api/site-check', statusPayload);
+
+      if (!checkIdToUse && statusResponse?.checkId) {
+        checkIdToUse = statusResponse.checkId;
+        setCurrentCheckId(checkIdToUse);
+      }
+
+      const inspectionPayload = {
+        ...formData,
+        siteId: siteSelectedForGlobal?.siteId,
+        checkId: checkIdToUse,
+        actionId: existingAction?.actionId || formData.actionId
+      };
+
+      const inspectionResponse = checkIdToUse
+        ? await put(`/api/site-check/gas-boiler-inspection/${checkIdToUse}`, inspectionPayload)
+        : await post("/api/site-check/gas-boiler-inspection", inspectionPayload);
+
+      const pdfResult = await generatePDF(true);
+      if (!pdfResult.success) {
+        console.error("PDF generation/upload failed");
+      }
+
+      toast.success("Inspection submitted successfully");
+      setIsSubmitted(true);
+      setIsFormEditable(false);
+
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error(error.message || "Failed to submit inspection");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const CheckRow = ({ check, onCheckChange, disabled, prefix }) => {
     const handleRadioChange = (value) => {
-      onCheckChange(check.id, value, check.remarks || check.result || "");
+      onCheckChange(check.id, value, check.id === 8 ? check.result : check.remarks);
     };
 
     const handleRemarksChange = (e) => {
@@ -1124,7 +845,7 @@ const GasBoilerService = ({
         <td>
           <input
             type="radio"
-            name={`${prefix}-check-${check.id}`}  // Add prefix here
+            name={`${prefix}-check-${check.id}`}
             checked={check.satisfactory === true}
             onChange={() => handleRadioChange(true)}
             disabled={disabled}
@@ -1133,7 +854,7 @@ const GasBoilerService = ({
         <td>
           <input
             type="radio"
-            name={`${prefix}-check-${check.id}`}  // Add prefix here
+            name={`${prefix}-check-${check.id}`}
             checked={check.satisfactory === false}
             onChange={() => handleRadioChange(false)}
             disabled={disabled}
@@ -1142,7 +863,7 @@ const GasBoilerService = ({
         <td>
           <input
             type="radio"
-            name={`${prefix}-check-${check.id}`}  // Add prefix here
+            name={`${prefix}-check-${check.id}`}
             checked={check.satisfactory === null}
             onChange={() => handleRadioChange(null)}
             disabled={disabled}
@@ -1161,150 +882,20 @@ const GasBoilerService = ({
               <option value="Fail">Fail</option>
             </select>
           ) : (
-            <input
-              type="text"
-              className="form-control"
-              value={check.remarks}
-              onChange={handleRemarksChange}
-              disabled={disabled}
-            />
+              <input
+                type="text"
+                className="form-control"
+                value={check.remarks}
+                onChange={handleRemarksChange}
+                disabled={disabled}
+              />
           )}
         </td>
       </tr>
     );
   };
 
-
-  const handleApplianceCheckChange = (id, satisfactory, remarksOrResult = "") => {
-    setFormData(prev => {
-      const updatedChecks = prev.applianceChecks.map(check => {
-        if (check.id === id) {
-          return { ...check, satisfactory, remarks: remarksOrResult };
-        }
-        return check;
-      });
-      return { ...prev, applianceChecks: updatedChecks };
-    });
-  };
-
-  const handleSafetyCheckChange = (id, satisfactory, remarksOrResult = "") => {
-    setFormData(prev => {
-      const updatedChecks = prev.safetyChecks.map(check => {
-        if (check.id === id) {
-          if (id === 8) { // Gas tightness test
-            return { ...check, satisfactory, result: remarksOrResult };
-          }
-          return { ...check, satisfactory, remarks: remarksOrResult };
-        }
-        return check;
-      });
-      return { ...prev, safetyChecks: updatedChecks };
-    });
-  };
-
-
-
-  const handleCheckboxChange = (field, isChecked) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        checked: isChecked
-      }
-    }));
-  };
-
-  const handleDefectChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        defect: value
-      }
-    }));
-  };
-
-  const renderCheckboxRow = (label, fieldName) => {
-    return (
-      <tr>
-        <td>{label}</td>
-        <td>
-          <input
-            type="checkbox"
-            checked={formData[fieldName].checked}
-            onChange={(e) => handleCheckboxChange(fieldName, e.target.checked)}
-            disabled={isSubmitted}
-          />
-        </td>
-        <td>
-          <input
-            type="checkbox"
-            checked={!formData[fieldName].checked}
-            onChange={(e) => handleCheckboxChange(fieldName, !e.target.checked)}
-            disabled={isSubmitted}
-          />
-        </td>
-        <td>
-          <input
-            type="checkbox"
-            disabled
-          />
-        </td>
-        <td>
-          <input
-            type="text"
-            className="form-control"
-            value={formData[fieldName].defect}
-            onChange={(e) => handleDefectChange(fieldName, e.target.value)}
-            disabled={isSubmitted}
-          />
-        </td>
-      </tr>
-    );
-  };
-
-  const renderSafetyCheckboxRow = (label, fieldName) => {
-    return (
-      <tr>
-        <td>{label}</td>
-        <td>
-          <input
-            type="checkbox"
-            checked={formData[fieldName].checked}
-            onChange={(e) => handleCheckboxChange(fieldName, e.target.checked)}
-            disabled={isSubmitted}
-          />
-        </td>
-        <td>
-          <input
-            type="checkbox"
-            checked={!formData[fieldName].checked}
-            onChange={(e) => handleCheckboxChange(fieldName, !e.target.checked)}
-            disabled={isSubmitted}
-          />
-        </td>
-        <td>
-          <input
-            type="checkbox"
-            disabled
-          />
-        </td>
-        <td>
-          <input
-            type="text"
-            className="form-control"
-            value={formData[fieldName].defect}
-            onChange={(e) => handleDefectChange(fieldName, e.target.value)}
-            disabled={isSubmitted}
-          />
-        </td>
-      </tr>
-    );
-  };
-
-
   const renderSiteContactField = () => {
-
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
         users?.filter((user) =>
@@ -1317,16 +908,12 @@ const GasBoilerService = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || formData.clientUser || null}
+          value={formData.siteContactUser || null}
           onChange={(event, newValue) => {
-            setFormData((prev) => ({
+            setFormData(prev => ({
               ...prev,
               siteContact: newValue?.id || "",
-              siteContactNo: newValue?.phone || "",
               siteContactUser: newValue || null,
-              client: newValue?.id || "",
-              clientUser: newValue || null,
-              clientName: newValue?.name || "",
             }));
           }}
           renderInput={(params) => (
@@ -1398,7 +985,6 @@ const GasBoilerService = ({
           </div>
           <div className="card-body">
             <div className="row">
-              {/* Left Column - Inspection Address */}
               <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Name</label>
@@ -1406,7 +992,6 @@ const GasBoilerService = ({
                     type="text"
                     className="form-control"
                     value={license?.companyName}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     disabled
                   />
                 </div>
@@ -1416,24 +1001,19 @@ const GasBoilerService = ({
                     className="form-control"
                     rows={3}
                     value={formData.installationAddress}
-                    onChange={(e) => setFormData({ ...formData, installationAddress: e.target.value })}
                     disabled
                   />
                 </div>
-
                 <div className="mb-3">
                   <label className="form-label">Post Code</label>
                   <input
                     type="text"
                     className="form-control"
                     value={formData.postCode}
-                    onChange={(e) => setFormData({ ...formData, postCode: e.target.value })}
                     disabled
                   />
                 </div>
               </div>
-
-              {/* Right Column - Registered Business Details */}
               <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Registration Number</label>
@@ -1459,7 +1039,7 @@ const GasBoilerService = ({
                   <input
                     type="text"
                     className="form-control"
-                    value={loggedInUserData?.gasSafetyRegNo || ""}
+                    value={loggedInUserData?.gasSafeRegNo || ""}
                     disabled
                   />
                 </div>
@@ -1495,12 +1075,10 @@ const GasBoilerService = ({
               </div>
             </div>
 
-            {/* Bottom Row - Rented Accommodation and Date/Time */}
             <div className="row">
               <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Rented Accommodation</label>
-
                   <input
                     type="text"
                     className="form-control"
@@ -1568,9 +1146,9 @@ const GasBoilerService = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Sounder Device"
+                      label="Select a Boiler"
                       variant="outlined"
-                      placeholder="Search sounders..."
+                      placeholder="Search boilers..."
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -1588,8 +1166,6 @@ const GasBoilerService = ({
                       className="form-control"
                       name="manufacturer"
                       value={selectedAsset.manufacturer}
-                      onChange={handleInputChange}
-                      required
                       disabled
                     />
                   </div>
@@ -1602,8 +1178,6 @@ const GasBoilerService = ({
                       className="form-control"
                       name="modelNumber"
                       value={selectedAsset.model}
-                      onChange={handleInputChange}
-                      required
                       disabled
                     />
                   </div>
@@ -1631,14 +1205,12 @@ const GasBoilerService = ({
                       type="text"
                       className="form-control"
                       value={`${selectedAsset.assetName} - ${selectedAsset.manufacturer} , Asset No-${formData.assetId} - ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}`}
-                      readOnly
                       disabled
                     />
                   </div>
                 </div>
               </div>
             )}
-
 
             {formData.selectedAsset && (
               <div className="row">
@@ -1649,9 +1221,7 @@ const GasBoilerService = ({
                       type="text"
                       className="form-control"
                       value={selectedAsset.manufacturer}
-                      required
                       disabled
-
                     />
                   </div>
                 </div>
@@ -1663,8 +1233,6 @@ const GasBoilerService = ({
                       className="form-control"
                       name="type"
                       value={selectedAsset.subCategory2}
-                      onChange={handleInputChange}
-                      required
                       disabled
                     />
                   </div>
@@ -1709,7 +1277,7 @@ const GasBoilerService = ({
                       check={check}
                       onCheckChange={handleApplianceCheckChange}
                       disabled={isSubmitted}
-                      prefix="appliance"  // Add this
+                      prefix="appliance"
                     />
                   ))}
                 </tbody>
@@ -1742,7 +1310,7 @@ const GasBoilerService = ({
                       check={check}
                       onCheckChange={handleSafetyCheckChange}
                       disabled={isSubmitted}
-                      prefix="safety"  // Add this
+                      prefix="safety"
                     />
                   ))}
                 </tbody>
@@ -1766,7 +1334,7 @@ const GasBoilerService = ({
                       <input
                         type="checkbox"
                         checked={formData.isInstallationSafe === 'Yes'}
-                        onChange={() => setFormData({...formData, isInstallationSafe: 'Yes'})}
+                        onChange={() => setFormData({ ...formData, isInstallationSafe: 'Yes' })}
                         disabled={isSubmitted}
                       /> Yes
                     </td>
@@ -1774,7 +1342,7 @@ const GasBoilerService = ({
                       <input
                         type="checkbox"
                         checked={formData.isInstallationSafe === 'No'}
-                        onChange={() => setFormData({...formData, isInstallationSafe: 'No'})}
+                        onChange={() => setFormData({ ...formData, isInstallationSafe: 'No' })}
                         disabled={isSubmitted}
                       /> No
                     </td>
@@ -1785,7 +1353,7 @@ const GasBoilerService = ({
                       <input
                         type="checkbox"
                         checked={formData.warningNoticeRaised === 'Yes'}
-                        onChange={() => setFormData({...formData, warningNoticeRaised: 'Yes'})}
+                        onChange={() => setFormData({ ...formData, warningNoticeRaised: 'Yes' })}
                         disabled={isSubmitted}
                       /> Yes
                     </td>
@@ -1793,7 +1361,7 @@ const GasBoilerService = ({
                       <input
                         type="checkbox"
                         checked={formData.warningNoticeRaised === 'No'}
-                        onChange={() => setFormData({...formData, warningNoticeRaised: 'No'})}
+                        onChange={() => setFormData({ ...formData, warningNoticeRaised: 'No' })}
                         disabled={isSubmitted}
                       /> No
                     </td>
@@ -1804,7 +1372,7 @@ const GasBoilerService = ({
                       <input
                         type="checkbox"
                         checked={formData.installedToStandard === 'Yes'}
-                        onChange={() => setFormData({...formData, installedToStandard: 'Yes'})}
+                        onChange={() => setFormData({ ...formData, installedToStandard: 'Yes' })}
                         disabled={isSubmitted}
                       /> Yes
                     </td>
@@ -1812,7 +1380,7 @@ const GasBoilerService = ({
                       <input
                         type="checkbox"
                         checked={formData.installedToStandard === 'No'}
-                        onChange={() => setFormData({...formData, installedToStandard: 'No'})}
+                        onChange={() => setFormData({ ...formData, installedToStandard: 'No' })}
                         disabled={isSubmitted}
                       /> No
                     </td>
@@ -1827,7 +1395,7 @@ const GasBoilerService = ({
                 className="form-control"
                 rows={3}
                 value={formData.necessaryRemedialWork}
-                onChange={(e) => setFormData({...formData, necessaryRemedialWork: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, necessaryRemedialWork: e.target.value })}
                 disabled={isSubmitted}
               />
             </div>
@@ -1852,7 +1420,7 @@ const GasBoilerService = ({
                     type="date"
                     className="form-control"
                     value={formatDate(formData.customerSignatureDate)}
-                    onChange={(e) => setFormData({...formData, customerSignatureDate: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, customerSignatureDate: e.target.value })}
                     disabled={isSubmitted}
                   />
                 </div>
@@ -1864,7 +1432,6 @@ const GasBoilerService = ({
                     type="text"
                     className="form-control"
                     value={formData.engineerName}
-                    onChange={(e) => setFormData({...formData, engineerName: e.target.value})}
                     disabled
                   />
                 </div>
@@ -1874,7 +1441,7 @@ const GasBoilerService = ({
                     type="date"
                     className="form-control"
                     value={formatDate(formData.engineerSignatureDate)}
-                    onChange={(e) => setFormData({...formData, engineerSignatureDate: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, engineerSignatureDate: e.target.value })}
                     disabled={isSubmitted}
                   />
                 </div>
@@ -1887,14 +1454,14 @@ const GasBoilerService = ({
           <div className="card mb-4">
             <div className="card-header">
               <h5 className="mb-0">Risk Assessment</h5>
-              {existingAction?.checkId === currentCheckId && (
+              {existingAction && (
                 <span className="badge bg-success ms-2">
                   Action #{existingAction.actionId} - {existingAction.status}
                 </span>
               )}
             </div>
             <div className="card-body">
-              {existingAction?.checkId === currentCheckId ? (
+              {existingAction ? (
                 <div className="existing-action">
                   <div className="row">
                     <div className="col-md-6">
@@ -1924,8 +1491,7 @@ const GasBoilerService = ({
                   taggedAsset={formData.selectedAsset?.assetId}
                   onRiskAssessmentComplete={handleRiskAssessmentComplete}
                   actionRaised={actionRaised}
-                  disabled={isSubmitted}
-                  images={''}
+                    disabled={isSubmitted}
                 />
               )}
             </div>
@@ -1965,7 +1531,7 @@ const GasBoilerService = ({
             {showPdfButton && generatedPdfBlob && (
               <button
                 className="btn btn-success"
-                onClick={() => savePdfToLocal(generatedPdfBlob, `GasBoilerServiceCertificate_${formData.applianceMake || 'report'}.pdf`)}
+                  onClick={() => savePdfToLocal(generatedPdfBlob, `GasBoilerService_${siteSelectedForGlobal?.siteId}_${new Date().toISOString().split('T')[0]}.pdf`)}
               >
                 Download PDF
               </button>
