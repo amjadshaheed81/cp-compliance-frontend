@@ -9,7 +9,7 @@ import {
   getSites,
   getUsers,
 } from "../../../../store/thunk/site";
-import { Autocomplete, TextField } from "@mui/material";
+import { Autocomplete, FormControlLabel, MenuItem, Radio, Select, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import pdfTemplate from './pdf/GasBoilerService.pdf';
@@ -742,32 +742,7 @@ const GasBoilerService = ({
     }));
   };
 
-  const handleApplianceCheckChange = (id, satisfactory, remarks = "") => {
-    setFormData(prev => {
-      const updatedChecks = prev.applianceChecks.map(check => {
-        if (check.id === id) {
-          return { ...check, satisfactory, remarks };
-        }
-        return check;
-      });
-      return { ...prev, applianceChecks: updatedChecks };
-    });
-  };
 
-  const handleSafetyCheckChange = (id, satisfactory, remarksOrResult = "") => {
-    setFormData(prev => {
-      const updatedChecks = prev.safetyChecks.map(check => {
-        if (check.id === id) {
-          if (id === 8) {
-            return { ...check, satisfactory, result: remarksOrResult };
-          }
-          return { ...check, satisfactory, remarks: remarksOrResult };
-        }
-        return check;
-      });
-      return { ...prev, safetyChecks: updatedChecks };
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -830,70 +805,130 @@ const GasBoilerService = ({
     }
   };
 
-  const CheckRow = ({ check, onCheckChange, disabled, prefix }) => {
+  // Update the CheckRow component like this:
+  const CheckRow = ({ check, onCheckChange, disabled, prefix, index }) => {
     const handleRadioChange = (value) => {
-      onCheckChange(check.id, value, check.id === 8 ? check.result : check.remarks);
+      onCheckChange(
+        index,
+        'satisfactory',
+        value
+      );
     };
 
     const handleRemarksChange = (e) => {
-      onCheckChange(check.id, check.satisfactory, e.target.value);
+      onCheckChange(
+        index,
+        'remarks',
+        e.target.value
+      );
+    };
+
+    const handleResultChange = (e) => {
+      onCheckChange(
+        index,
+        'result',
+        e.target.value
+      );
     };
 
     return (
       <tr>
         <td>{check.question}</td>
         <td>
-          <input
-            type="radio"
-            name={`${prefix}-check-${check.id}`}
-            checked={check.satisfactory === true}
-            onChange={() => handleRadioChange(true)}
-            disabled={disabled}
+          <FormControlLabel
+            control={
+              <Radio
+                checked={check.satisfactory === true}
+                onChange={() => handleRadioChange(true)}
+                disabled={disabled}
+                name={`${prefix}-check-${check.id}-yes`}
+              />
+            }
+            label=""
           />
         </td>
         <td>
-          <input
-            type="radio"
-            name={`${prefix}-check-${check.id}`}
-            checked={check.satisfactory === false}
-            onChange={() => handleRadioChange(false)}
-            disabled={disabled}
+          <FormControlLabel
+            control={
+              <Radio
+                checked={check.satisfactory === false}
+                onChange={() => handleRadioChange(false)}
+                disabled={disabled}
+                name={`${prefix}-check-${check.id}-no`}
+              />
+            }
+            label=""
           />
         </td>
         <td>
-          <input
-            type="radio"
-            name={`${prefix}-check-${check.id}`}
-            checked={check.satisfactory === null}
-            onChange={() => handleRadioChange(null)}
-            disabled={disabled}
+          <FormControlLabel
+            control={
+              <Radio
+                checked={check.satisfactory === null}
+                onChange={() => handleRadioChange(null)}
+                disabled={disabled}
+                name={`${prefix}-check-${check.id}-na`}
+              />
+            }
+            label=""
           />
         </td>
         <td>
-          {check.id === 8 ? (
-            <select
-              className="form-control"
-              value={check.result}
-              onChange={handleRemarksChange}
+          {prefix === 'safety' && check.id === 8 ? (
+            <Select
+              value={check.result || ""}
+              onChange={handleResultChange}
               disabled={disabled}
+              size="small"
+              fullWidth
             >
-              <option value="">Select Result</option>
-              <option value="Pass">Pass</option>
-              <option value="Fail">Fail</option>
-            </select>
+              <MenuItem value="">Select Result</MenuItem>
+              <MenuItem value="Pass">Pass</MenuItem>
+              <MenuItem value="Fail">Fail</MenuItem>
+            </Select>
           ) : (
-              <input
-                type="text"
-                className="form-control"
-                value={check.remarks}
+              <TextField
+                value={check.remarks || ""}
                 onChange={handleRemarksChange}
                 disabled={disabled}
+                size="small"
+                fullWidth
+                variant="outlined"
               />
           )}
         </td>
       </tr>
     );
   };
+
+  const handleApplianceCheckChange = (index, field, value) => {
+    setFormData(prev => {
+      const updatedChecks = [...prev.applianceChecks];
+      updatedChecks[index] = {
+        ...updatedChecks[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        applianceChecks: updatedChecks
+      };
+    });
+  };
+
+  const handleSafetyCheckChange = (index, field, value) => {
+    setFormData(prev => {
+      const updatedChecks = [...prev.safetyChecks];
+      updatedChecks[index] = {
+        ...updatedChecks[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        safetyChecks: updatedChecks
+      };
+    });
+  };
+
 
   const renderSiteContactField = () => {
     if (isInternalUserTaggedWithSite) {
@@ -1039,7 +1074,7 @@ const GasBoilerService = ({
                   <input
                     type="text"
                     className="form-control"
-                    value={loggedInUserData?.gasSafeRegNo || ""}
+                    value={loggedInUserData?.gasSafetyRegNo || ""}
                     disabled
                   />
                 </div>
@@ -1271,13 +1306,14 @@ const GasBoilerService = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.applianceChecks.map(check => (
+                  {formData.applianceChecks.map((check, index) => (
                     <CheckRow
                       key={`appliance-${check.id}`}
                       check={check}
                       onCheckChange={handleApplianceCheckChange}
                       disabled={isSubmitted}
                       prefix="appliance"
+                      index={index}
                     />
                   ))}
                 </tbody>
@@ -1304,13 +1340,14 @@ const GasBoilerService = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.safetyChecks.map(check => (
+                  {formData.safetyChecks.map((check, index) => (
                     <CheckRow
                       key={`safety-${check.id}`}
                       check={check}
                       onCheckChange={handleSafetyCheckChange}
                       disabled={isSubmitted}
                       prefix="safety"
+                      index={index}
                     />
                   ))}
                 </tbody>
