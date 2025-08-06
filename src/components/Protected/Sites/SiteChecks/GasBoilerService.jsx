@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { post, put, get, uploadSiteCheckDoc, getSasToken } from "../../../../api";
@@ -39,6 +39,111 @@ const fetchPdfTemplate = async () => {
     throw new Error('Failed to load PDF template: ' + error.message);
   }
 };
+
+const ApplianceCheckRow = React.memo(({ check, disabled, onChange }) => {
+  return (
+    <tr>
+      <td>{check.question}</td>
+      <td>
+        <input
+          type="radio"
+          name={`appliance-${check.id}-satisfactory`}
+          checked={check.satisfactory === true}
+          onChange={() => onChange(check.id, 'satisfactory', true)}
+          disabled={disabled}
+        />
+      </td>
+      <td>
+        <input
+          type="radio"
+          name={`appliance-${check.id}-satisfactory`}
+          checked={check.satisfactory === false}
+          onChange={() => onChange(check.id, 'satisfactory', false)}
+          disabled={disabled}
+        />
+      </td>
+      <td>
+        <input
+          type="radio"
+          name={`appliance-${check.id}-satisfactory`}
+          checked={check.satisfactory === null}
+          onChange={() => onChange(check.id, 'satisfactory', null)}
+          disabled={disabled}
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          className="form-control"
+          value={check.remarks || ""}
+          onChange={(e) => onChange(check.id, 'remarks', e.target.value)}
+          disabled={disabled}
+        />
+      </td>
+    </tr>
+  );
+});
+
+const SafetyCheckRow = React.memo(({ check, disabled, onChange }) => {
+  const handleChange = (field, value) => {
+    onChange(check.id, field, value);
+  };
+
+  return (
+    <tr>
+      <td>{check.question}</td>
+      <td>
+        <input
+          type="radio"
+          name={`safety-${check.id}-satisfactory`}
+          checked={check.satisfactory === true}
+          onChange={() => handleChange('satisfactory', true)}
+          disabled={disabled}
+        />
+      </td>
+      <td>
+        <input
+          type="radio"
+          name={`safety-${check.id}-satisfactory`}
+          checked={check.satisfactory === false}
+          onChange={() => handleChange('satisfactory', false)}
+          disabled={disabled}
+        />
+      </td>
+      <td>
+        <input
+          type="radio"
+          name={`safety-${check.id}-satisfactory`}
+          checked={check.satisfactory === null}
+          onChange={() => handleChange('satisfactory', null)}
+          disabled={disabled}
+        />
+      </td>
+      <td>
+        {check.id === 8 ? (
+          <select
+            className="form-control"
+            value={check.result || ""}
+            onChange={(e) => handleChange('result', e.target.value)}
+            disabled={disabled}
+          >
+            <option value="">Select Result</option>
+            <option value="Pass">Pass</option>
+            <option value="Fail">Fail</option>
+          </select>
+        ) : (
+          <input
+            type="text"
+            className="form-control"
+            value={check.remarks || ""}
+            onChange={(e) => handleChange('remarks', e.target.value)}
+            disabled={disabled}
+          />
+        )}
+      </td>
+    </tr>
+  );
+});
 
 const GasBoilerService = ({
   checkId,
@@ -174,17 +279,21 @@ const GasBoilerService = ({
             engineer: mostRecentItem.engineer,
             assetId: mostRecentItem.assetId,
             selectedAsset: siteAssets.find(asset => asset.assetId === mostRecentItem.assetId),
-            applianceChecks: mostRecentItem.applianceChecks || formData.applianceChecks.map(check => ({
-              ...check,
-              satisfactory: mostRecentItem[`applianceCheck${check.id}`]?.satisfactory,
-              remarks: mostRecentItem[`applianceCheck${check.id}`]?.remarks
-            })),
-            safetyChecks: mostRecentItem.safetyChecks || formData.safetyChecks.map(check => ({
-              ...check,
-              satisfactory: mostRecentItem[`safetyCheck${check.id}`]?.satisfactory,
-              remarks: mostRecentItem[`safetyCheck${check.id}`]?.remarks,
-              ...(check.id === 8 && { result: mostRecentItem.gasTightnessTestResult })
-            })),
+            applianceChecks: mostRecentItem.applianceChecks
+              ? mostRecentItem.applianceChecks.map(check => ({ ...check }))
+              : formData.applianceChecks.map(check => ({
+                ...check,
+                satisfactory: mostRecentItem[`applianceCheck${check.id}`]?.satisfactory,
+                remarks: mostRecentItem[`applianceCheck${check.id}`]?.remarks
+              })),
+            safetyChecks: mostRecentItem.safetyChecks
+              ? mostRecentItem.safetyChecks.map(check => ({ ...check }))
+              : formData.safetyChecks.map(check => ({
+                ...check,
+                satisfactory: mostRecentItem[`safetyCheck${check.id}`]?.satisfactory,
+                remarks: mostRecentItem[`safetyCheck${check.id}`]?.remarks,
+                ...(check.id === 8 && { result: mostRecentItem.gasTightnessTestResult })
+              })),
             isInstallationSafe: mostRecentItem.isInstallationSafe,
             warningNoticeRaised: mostRecentItem.warningNoticeRaised,
             installedToStandard: mostRecentItem.installedToStandard,
@@ -806,128 +915,30 @@ const GasBoilerService = ({
   };
 
   // Update the CheckRow component like this:
-  const CheckRow = ({ check, onCheckChange, disabled, prefix, index }) => {
-    const handleRadioChange = (value) => {
-      onCheckChange(
-        index,
-        'satisfactory',
-        value
-      );
-    };
 
-    const handleRemarksChange = (e) => {
-      onCheckChange(
-        index,
-        'remarks',
-        e.target.value
-      );
-    };
 
-    const handleResultChange = (e) => {
-      onCheckChange(
-        index,
-        'result',
-        e.target.value
-      );
-    };
+  const handleApplianceCheckChange = useCallback((id, field, value) => {
+    setFormData(prevState => ({
+      ...prevState,
+      applianceChecks: prevState.applianceChecks.map(check =>
+        check.id === id
+          ? { ...check, [field]: value }
+          : check
+      )
+    }));
+  }, []);
 
-    return (
-      <tr>
-        <td>{check.question}</td>
-        <td>
-          <FormControlLabel
-            control={
-              <Radio
-                checked={check.satisfactory === true}
-                onChange={() => handleRadioChange(true)}
-                disabled={disabled}
-                name={`${prefix}-check-${check.id}-yes`}
-              />
-            }
-            label=""
-          />
-        </td>
-        <td>
-          <FormControlLabel
-            control={
-              <Radio
-                checked={check.satisfactory === false}
-                onChange={() => handleRadioChange(false)}
-                disabled={disabled}
-                name={`${prefix}-check-${check.id}-no`}
-              />
-            }
-            label=""
-          />
-        </td>
-        <td>
-          <FormControlLabel
-            control={
-              <Radio
-                checked={check.satisfactory === null}
-                onChange={() => handleRadioChange(null)}
-                disabled={disabled}
-                name={`${prefix}-check-${check.id}-na`}
-              />
-            }
-            label=""
-          />
-        </td>
-        <td>
-          {prefix === 'safety' && check.id === 8 ? (
-            <Select
-              value={check.result || ""}
-              onChange={handleResultChange}
-              disabled={disabled}
-              size="small"
-              fullWidth
-            >
-              <MenuItem value="">Select Result</MenuItem>
-              <MenuItem value="Pass">Pass</MenuItem>
-              <MenuItem value="Fail">Fail</MenuItem>
-            </Select>
-          ) : (
-              <TextField
-                value={check.remarks || ""}
-                onChange={handleRemarksChange}
-                disabled={disabled}
-                size="small"
-                fullWidth
-                variant="outlined"
-              />
-          )}
-        </td>
-      </tr>
-    );
-  };
+  const handleSafetyCheckChange = useCallback((id, field, value) => {
+    setFormData(prevState => ({
+      ...prevState,
+      safetyChecks: prevState.safetyChecks.map(check =>
+        check.id === id
+          ? { ...check, [field]: value }
+          : check
+      )
+    }));
+  }, []);
 
-  const handleApplianceCheckChange = (index, field, value) => {
-    setFormData(prev => {
-      const updatedChecks = [...prev.applianceChecks];
-      updatedChecks[index] = {
-        ...updatedChecks[index],
-        [field]: value
-      };
-      return {
-        ...prev,
-        applianceChecks: updatedChecks
-      };
-    });
-  };
-
-  const handleSafetyCheckChange = (index, field, value) => {
-    setFormData(prev => {
-      const updatedChecks = [...prev.safetyChecks];
-      updatedChecks[index] = {
-        ...updatedChecks[index],
-        [field]: value
-      };
-      return {
-        ...prev,
-        safetyChecks: updatedChecks
-      };
-    });
-  };
 
 
   const renderSiteContactField = () => {
@@ -1306,14 +1317,12 @@ const GasBoilerService = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.applianceChecks.map((check, index) => (
-                    <CheckRow
+                  {formData.applianceChecks.map((check) => (
+                    <ApplianceCheckRow
                       key={`appliance-${check.id}`}
                       check={check}
-                      onCheckChange={handleApplianceCheckChange}
                       disabled={isSubmitted}
-                      prefix="appliance"
-                      index={index}
+                      onChange={handleApplianceCheckChange}
                     />
                   ))}
                 </tbody>
@@ -1340,14 +1349,12 @@ const GasBoilerService = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.safetyChecks.map((check, index) => (
-                    <CheckRow
+                  {formData.safetyChecks.map((check) => (
+                    <SafetyCheckRow
                       key={`safety-${check.id}`}
                       check={check}
-                      onCheckChange={handleSafetyCheckChange}
                       disabled={isSubmitted}
-                      prefix="safety"
-                      index={index}
+                      onChange={handleSafetyCheckChange}
                     />
                   ))}
                 </tbody>
