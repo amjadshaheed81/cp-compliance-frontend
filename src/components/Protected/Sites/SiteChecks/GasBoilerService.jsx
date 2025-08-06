@@ -709,18 +709,19 @@ const GasBoilerService = ({
         setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
       });
 
-      // Safety Checks
+      // And replace the safety checks section with:
       formData.safetyChecks.forEach(check => {
         const baseFieldName = `Safety_${check.id}`;
         setCheckbox(`${baseFieldName}_Yes`, check.satisfactory === true);
         setCheckbox(`${baseFieldName}_No`, check.satisfactory === false);
         setCheckbox(`${baseFieldName}_NA`, check.satisfactory === null);
-        if (check.id === 8) {
+        if (check.id === 8) { // Gas tightness test special case
           setTextField(`${baseFieldName}_Result`, check.result || '');
         } else {
           setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
         }
       });
+
 
       // Findings
       setCheckbox('check1', formData.isInstallationSafe === 'Yes');
