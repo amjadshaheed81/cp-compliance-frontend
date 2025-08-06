@@ -208,7 +208,7 @@ const GasBoilerService = ({
     warningNoticeRaised: "",
     installedToStandard: "",
     necessaryRemedialWork: "",
-
+    siteContactUser: null,
     siteContact: "",
     engineerName: loggedInUserData?.name || "",
     dateTimeOfIssue: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
@@ -261,6 +261,10 @@ const GasBoilerService = ({
     const fetchInspectionData = async () => {
       try {
         if (!checkId) return;
+
+        if (isInternalUserTaggedWithSite && users.length === 0) {
+          await getUsers();
+        }
 
         let inspectionData;
         try {
@@ -374,13 +378,16 @@ const GasBoilerService = ({
   }, [license?.companyName, siteSelectedForGlobal?.siteId]);
 
   useEffect(() => {
-    const needsRiskAssessment = formData.isInstallationSafe === "No";
-    setShowRiskAssessment(needsRiskAssessment);
+    const needsRiskAssessment =
+      formData.isInstallationSafe === "No" ||
+      (formData.necessaryRemedialWork && formData.necessaryRemedialWork.trim().length > 0);
 
-    if (!needsRiskAssessment && existingAction) {
-      setShowRiskAssessment(true);
-    }
-  }, [formData.isInstallationSafe, existingAction]);
+    const isActionValid = existingAction &&
+      (Number(existingAction.checkId) === Number(currentCheckId));
+
+    setShowRiskAssessment(needsRiskAssessment);
+    setActionRaised(isActionValid);
+  }, [formData.isInstallationSafe, formData.necessaryRemedialWork, currentCheckId, existingAction]);
 
   useEffect(() => {
     const fetchActions = async () => {
@@ -793,18 +800,19 @@ const GasBoilerService = ({
       setIsGeneratingPDF(false);
     }
   };
-
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
       if (!actionResponse?.actionId) {
         throw new Error("Invalid action response received");
       }
 
+      // First verify the action exists
       const verifiedAction = await fetchActionById(actionResponse.actionId);
       if (!verifiedAction) {
         throw new Error("Failed to verify created action");
       }
 
+      // Update action with checkId if we have one
       if (currentCheckId && !verifiedAction.checkId) {
         await put(`/api/site/actions/${verifiedAction.actionId}`, {
           ...verifiedAction,
@@ -813,6 +821,7 @@ const GasBoilerService = ({
         verifiedAction.checkId = currentCheckId;
       }
 
+      // Update all states
       setExistingAction(verifiedAction);
       setActionRaised(true);
       setFormData(prev => ({
@@ -820,6 +829,7 @@ const GasBoilerService = ({
         actionId: verifiedAction.actionId
       }));
 
+      // Save the inspection data with actionId
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
@@ -830,14 +840,19 @@ const GasBoilerService = ({
         category: 'Gas Boiler Service'
       };
 
-      if (currentCheckId) {
-        await put(`/api/site-check/gas-boiler-inspection/${currentCheckId}`, inspectionPayload);
+      if (formData.id) {
+        await put(`/api/site-check/gas-boiler-inspection/${formData.id}`, inspectionPayload);
+      } else if (currentCheckId) {
+        await post("/api/site-check/gas-boiler-inspection", inspectionPayload);
       }
 
       toast.success(`Action #${verifiedAction.actionId} successfully created and linked`);
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
       toast.error(error.message || "Failed to process action completion");
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
     }
   };
 
@@ -990,7 +1005,7 @@ const GasBoilerService = ({
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.siteContactUser || null}
+          value={formData.siteContact || null}
           onChange={(event, newValue) => {
             setFormData(prev => ({
               ...prev,
@@ -1563,7 +1578,7 @@ const GasBoilerService = ({
                 </div>
               ) : (
                 <RiskScoreCard
-                  desc={`Inspection - Gas Boiler Service`}
+                    desc={`Inspection - Gas - Gas Boiler Service`}
                   siteId={siteSelectedForGlobal?.siteId}
                   checkId={currentCheckId}
                   createdBy={loggedInUserData?.id}
@@ -1587,6 +1602,7 @@ const GasBoilerService = ({
               (showRiskAssessment && !actionRaised) ||
               !isFormEditable ||
               isSubmitted  // Add this
+              || !isgasEngineer
             }
           >
             {isLoading ? 'Submitting...' : 'Submit Report'}
