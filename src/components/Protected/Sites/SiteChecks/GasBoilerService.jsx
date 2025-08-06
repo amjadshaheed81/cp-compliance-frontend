@@ -166,7 +166,6 @@ const GasBoilerService = ({
     installationAddress: "",
     registeredBusinessRegNo: "",
     rentedAccommodation: "",
-    dateTimeOfIssue: new Date().toISOString().split("T")[0],
     workDescription: "",
     engineer: loggedInUserData?.id || "",
     assetId: "",
@@ -175,33 +174,33 @@ const GasBoilerService = ({
     postCode: "",
 
     applianceChecks: [
-      { id: 1, question: "Heat Exchanger", satisfactory: null, remarks: "" },
-      { id: 2, question: "Burner / Injectors", satisfactory: null, remarks: "" },
-      { id: 3, question: "Flame Picture", satisfactory: null, remarks: "" },
-      { id: 4, question: "Ignition", satisfactory: null, remarks: "" },
-      { id: 5, question: "Electrics", satisfactory: null, remarks: "" },
-      { id: 6, question: "Controls", satisfactory: null, remarks: "" },
-      { id: 7, question: "Leaks gas / water", satisfactory: null, remarks: "" },
-      { id: 8, question: "Gas connections", satisfactory: null, remarks: "" },
-      { id: 9, question: "Seals", satisfactory: null, remarks: "" },
-      { id: 10, question: "Pipework", satisfactory: null, remarks: "" },
-      { id: 11, question: "Fans", satisfactory: null, remarks: "" },
-      { id: 12, question: "Fireplace", satisfactory: null, remarks: "" },
-      { id: 13, question: "Closure plate & PBS10 tape", satisfactory: null, remarks: "" },
-      { id: 14, question: "Allowable location", satisfactory: null, remarks: "" },
-      { id: 15, question: "Stability", satisfactory: null, remarks: "" },
-      { id: 16, question: "Return air / Plenum", satisfactory: null, remarks: "" },
+      { id: 1, question: "Heat Exchanger", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 2, question: "Burner / Injectors", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 3, question: "Flame Picture", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 4, question: "Ignition", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 5, question: "Electrics", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 6, question: "Controls", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 7, question: "Leaks gas / water", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 8, question: "Gas connections", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 9, question: "Seals", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 10, question: "Pipework", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 11, question: "Fans", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 12, question: "Fireplace", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 13, question: "Closure plate & PBS10 tape", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 14, question: "Allowable location", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 15, question: "Stability", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 16, question: "Return air / Plenum", satisfactory: null, remarks: "", checkId: checkId || null },
     ],
 
     safetyChecks: [
-      { id: 1, question: "Ventilation", satisfactory: null, remarks: "" },
-      { id: 2, question: "Flue Termination", satisfactory: null, remarks: "" },
-      { id: 3, question: "Smoke pellet flue flow test", satisfactory: null, remarks: "" },
-      { id: 4, question: "Smoke match flue flow test", satisfactory: null, remarks: "" },
-      { id: 5, question: "Working pressure", satisfactory: null, remarks: "" },
-      { id: 6, question: "Safety device", satisfactory: null, remarks: "" },
-      { id: 7, question: "Other (regulations etc)", satisfactory: null, remarks: "" },
-      { id: 8, question: "Gas tightness test performed", satisfactory: null, remarks: "", result: "" },
+      { id: 1, question: "Ventilation", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 2, question: "Flue Termination", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 3, question: "Smoke pellet flue flow test", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 4, question: "Smoke match flue flow test", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 5, question: "Working pressure", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 6, question: "Safety device", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 7, question: "Other (regulations etc)", satisfactory: null, remarks: "", checkId: checkId || null },
+      { id: 8, question: "Gas tightness test performed", satisfactory: null, remarks: "", result: "", checkId: checkId || null },
     ],
     actionId: null,
 
@@ -211,9 +210,10 @@ const GasBoilerService = ({
     necessaryRemedialWork: "",
 
     siteContact: "",
-    customerSignatureDate: new Date().toISOString().split("T")[0],
     engineerName: loggedInUserData?.name || "",
-    engineerSignatureDate: new Date().toISOString().split("T")[0],
+    dateTimeOfIssue: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+    customerSignatureDate: new Date().toISOString().split('T')[0],
+    engineerSignatureDate: new Date().toISOString().split('T')[0]
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -262,55 +262,65 @@ const GasBoilerService = ({
       try {
         if (!checkId) return;
 
-        if (isInternalUserTaggedWithSite && users.length === 0) {
-          await getUsers();
+        let inspectionData;
+        try {
+          inspectionData = await get(`/api/site-check/gas-boiler-inspection/${checkId}`);
+        } catch (error) {
+          if (error.response?.status !== 404) throw error;
         }
 
-        const apiData = await get(`/api/site-check/gas-boiler-inspection/${checkId}`);
-        if (apiData && apiData.length > 0) {
-          const mostRecentItem = apiData[0];
+        const statusResponse = await get(`/api/site-check/check-id/${checkId}`);
+        const isSubmitted = statusResponse?.status === 'Done';
+        setIsSubmitted(isSubmitted);
+        setIsFormEditable(!isSubmitted);
 
+        if (inspectionData) {
+        // Transform the data to match our form structure
           const transformedData = {
-            installationAddress: mostRecentItem.installationAddress,
-            registeredBusinessRegNo: mostRecentItem.registeredBusinessRegNo,
-            rentedAccommodation: mostRecentItem.rentedAccommodation,
-            dateTimeOfIssue: mostRecentItem.dateTimeOfIssue,
-            workDescription: mostRecentItem.workDescription,
-            engineer: mostRecentItem.engineer,
-            assetId: mostRecentItem.assetId,
-            selectedAsset: siteAssets.find(asset => asset.assetId === mostRecentItem.assetId),
-            applianceChecks: mostRecentItem.applianceChecks
-              ? mostRecentItem.applianceChecks.map(check => ({ ...check }))
-              : formData.applianceChecks.map(check => ({
-                ...check,
-                satisfactory: mostRecentItem[`applianceCheck${check.id}`]?.satisfactory,
-                remarks: mostRecentItem[`applianceCheck${check.id}`]?.remarks
-              })),
-            safetyChecks: mostRecentItem.safetyChecks
-              ? mostRecentItem.safetyChecks.map(check => ({ ...check }))
-              : formData.safetyChecks.map(check => ({
-                ...check,
-                satisfactory: mostRecentItem[`safetyCheck${check.id}`]?.satisfactory,
-                remarks: mostRecentItem[`safetyCheck${check.id}`]?.remarks,
-                ...(check.id === 8 && { result: mostRecentItem.gasTightnessTestResult })
-              })),
-            isInstallationSafe: mostRecentItem.isInstallationSafe,
-            warningNoticeRaised: mostRecentItem.warningNoticeRaised,
-            installedToStandard: mostRecentItem.installedToStandard,
-            necessaryRemedialWork: mostRecentItem.necessaryRemedialWork,
-            siteContact: mostRecentItem.siteContact,
-            customerSignatureDate: mostRecentItem.customerSignatureDate,
-            engineerName: mostRecentItem.engineerName,
-            engineerSignatureDate: mostRecentItem.engineerSignatureDate,
-            actionId: mostRecentItem.actionId
+            ...inspectionData,
+            id: inspectionData.id || null,
+            dateTimeOfIssue: inspectionData.dateTimeOfIssue || new Date().toISOString().split('T')[0],
+            customerSignatureDate: inspectionData.customerSignatureDate || new Date().toISOString().split('T')[0],
+            engineerSignatureDate: inspectionData.engineerSignatureDate || new Date().toISOString().split('T')[0],
+            selectedAsset: siteAssets.find(asset => asset.assetId === inspectionData.assetId),
+            applianceChecks: inspectionData.applianceChecks || formData.applianceChecks.map(check => ({
+              ...check,
+              checkId: checkId
+            })),
+            safetyChecks: inspectionData.safetyChecks || formData.safetyChecks.map(check => ({
+              ...check,
+              checkId: checkId,
+              // Special handling for gas tightness test
+              ...(check.id === 8 && { result: inspectionData.gasTightnessTestResult })
+            })),
+            assetId: inspectionData.assetId || "",
+            engineer: inspectionData.engineer || loggedInUserData?.id || "",
+            engineerName: inspectionData.engineerName || loggedInUserData?.name || ""
           };
 
           setFormData(transformedData);
-          if (mostRecentItem.actionId) {
-            const action = await fetchActionById(mostRecentItem.actionId);
+          setCurrentCheckId(checkId);
+
+          if (inspectionData.actionId) {
+            const action = await fetchActionById(inspectionData.actionId);
             setExistingAction(action);
             setActionRaised(true);
           }
+        } else {
+          // Initialize with checkId if no existing data
+          setFormData(prev => ({
+            ...prev,
+            checkId: checkId,
+            applianceChecks: prev.applianceChecks.map(check => ({
+              ...check,
+              checkId: checkId
+            })),
+            safetyChecks: prev.safetyChecks.map(check => ({
+              ...check,
+              checkId: checkId
+            }))
+          }));
+          setCurrentCheckId(checkId);
         }
       } catch (error) {
         console.error("Error fetching inspection data:", error);
@@ -857,14 +867,10 @@ const GasBoilerService = ({
     e.preventDefault();
     if (isLoading || !isFormEditable) return;
 
-    if (formData.isInstallationSafe === "No" && !actionRaised) {
-      toast.error("Please complete the risk assessment before submitting");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
+      // First create/update the site check record
       const statusPayload = {
         siteId: siteSelectedForGlobal?.siteId,
         type: 'Inspection',
@@ -886,17 +892,46 @@ const GasBoilerService = ({
         setCurrentCheckId(checkIdToUse);
       }
 
+      // Prepare inspection payload
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse,
-        actionId: existingAction?.actionId || formData.actionId
+        actionId: existingAction?.actionId || null,
+        // Include all check data
+        ...formData.applianceChecks.reduce((acc, check) => {
+          acc[`applianceCheck${check.id}`] = {
+            satisfactory: check.satisfactory,
+            remarks: check.remarks
+          };
+          return acc;
+        }, {}),
+        ...formData.safetyChecks.reduce((acc, check) => {
+          acc[`safetyCheck${check.id}`] = {
+            satisfactory: check.satisfactory,
+            remarks: check.remarks,
+            ...(check.id === 8 && { result: check.result })
+          };
+          return acc;
+        }, {}),
+        gasTightnessTestResult: formData.safetyChecks.find(c => c.id === 8)?.result || null
       };
 
-      const inspectionResponse = checkIdToUse
-        ? await put(`/api/site-check/gas-boiler-inspection/${checkIdToUse}`, inspectionPayload)
+      // // Check if inspection already exists
+      // let inspectionExists = false;
+      // try {
+      //   await get(`/api/site-check/gas-boiler-inspection/${checkIdToUse}`);
+      //   inspectionExists = true;
+      // } catch (error) {
+      //   if (error.response?.status !== 404) throw error;
+      // }
+
+      // Save inspection data
+      const inspectionResponse = formData.id
+        ? await put(`/api/site-check/gas-boiler-inspection/${formData.id}`, inspectionPayload)
         : await post("/api/site-check/gas-boiler-inspection", inspectionPayload);
 
+      // Generate and upload PDF
       const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         console.error("PDF generation/upload failed");
@@ -985,7 +1020,7 @@ const GasBoilerService = ({
               }}
             />
           )}
-          disabled={isSubmitted}
+          disabled={!isFormEditable || isSubmitted}
         />
       );
     }
@@ -997,7 +1032,7 @@ const GasBoilerService = ({
         value={formData.siteContact}
         onChange={handleInputChange}
         required
-        disabled={isSubmitted}
+        disabled={!isFormEditable || isSubmitted}
       />
     );
   };
@@ -1022,7 +1057,6 @@ const GasBoilerService = ({
           This form is read-only because the check has been marked as completed.
         </div>
       )}
-
       <form onSubmit={handleSubmit}>
         {/* Address and Business Details Section */}
         <div className="card mb-4">
@@ -1068,7 +1102,7 @@ const GasBoilerService = ({
                     className="form-control"
                     value={formData.registeredBusinessRegNo}
                     onChange={(e) => setFormData({ ...formData, registeredBusinessRegNo: e.target.value })}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                   />
                 </div>
                 <div className="mb-3">
@@ -1130,7 +1164,7 @@ const GasBoilerService = ({
                     className="form-control"
                     value={formData.rentedAccommodation}
                     onChange={(e) => setFormData({ ...formData, rentedAccommodation: e.target.value })}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                   />
                 </div>
               </div>
@@ -1142,7 +1176,7 @@ const GasBoilerService = ({
                     className="form-control"
                     value={formData.dateTimeOfIssue}
                     onChange={(e) => setFormData({ ...formData, dateTimeOfIssue: e.target.value })}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                   />
                 </div>
                 <div className="mb-3">
@@ -1166,7 +1200,7 @@ const GasBoilerService = ({
                 rows={5}
                 value={formData.workDescription}
                 onChange={(e) => setFormData({ ...formData, workDescription: e.target.value })}
-                disabled={isSubmitted}
+                disabled={!isFormEditable || isSubmitted}
               />
             </div>
           </div>
@@ -1181,7 +1215,7 @@ const GasBoilerService = ({
             <div className="row mb-4">
               <div className="col-md-12">
                 <Autocomplete
-                  disabled={isSubmitted}
+                  disabled={!isFormEditable || isSubmitted}
                   options={filteredAssets}
                   getOptionLabel={(option) =>
                     `${option.assetId} - ${option.assetName} (${option.position || "NA"
@@ -1291,7 +1325,7 @@ const GasBoilerService = ({
                     rows={4}
                     value={formData.comments}
                     onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                   />
                 </div>
               </div>
@@ -1321,7 +1355,7 @@ const GasBoilerService = ({
                     <ApplianceCheckRow
                       key={`appliance-${check.id}`}
                       check={check}
-                      disabled={isSubmitted}
+                      disabled={!isFormEditable || isSubmitted}
                       onChange={handleApplianceCheckChange}
                     />
                   ))}
@@ -1353,7 +1387,7 @@ const GasBoilerService = ({
                     <SafetyCheckRow
                       key={`safety-${check.id}`}
                       check={check}
-                      disabled={isSubmitted}
+                      disabled={!isFormEditable || isSubmitted}
                       onChange={handleSafetyCheckChange}
                     />
                   ))}
@@ -1379,7 +1413,7 @@ const GasBoilerService = ({
                         type="checkbox"
                         checked={formData.isInstallationSafe === 'Yes'}
                         onChange={() => setFormData({ ...formData, isInstallationSafe: 'Yes' })}
-                        disabled={isSubmitted}
+                        disabled={!isFormEditable || isSubmitted}
                       /> Yes
                     </td>
                     <td>
@@ -1387,7 +1421,7 @@ const GasBoilerService = ({
                         type="checkbox"
                         checked={formData.isInstallationSafe === 'No'}
                         onChange={() => setFormData({ ...formData, isInstallationSafe: 'No' })}
-                        disabled={isSubmitted}
+                        disabled={!isFormEditable || isSubmitted}
                       /> No
                     </td>
                   </tr>
@@ -1398,7 +1432,7 @@ const GasBoilerService = ({
                         type="checkbox"
                         checked={formData.warningNoticeRaised === 'Yes'}
                         onChange={() => setFormData({ ...formData, warningNoticeRaised: 'Yes' })}
-                        disabled={isSubmitted}
+                        disabled={!isFormEditable || isSubmitted}
                       /> Yes
                     </td>
                     <td>
@@ -1406,7 +1440,7 @@ const GasBoilerService = ({
                         type="checkbox"
                         checked={formData.warningNoticeRaised === 'No'}
                         onChange={() => setFormData({ ...formData, warningNoticeRaised: 'No' })}
-                        disabled={isSubmitted}
+                        disabled={!isFormEditable || isSubmitted}
                       /> No
                     </td>
                   </tr>
@@ -1417,7 +1451,7 @@ const GasBoilerService = ({
                         type="checkbox"
                         checked={formData.installedToStandard === 'Yes'}
                         onChange={() => setFormData({ ...formData, installedToStandard: 'Yes' })}
-                        disabled={isSubmitted}
+                        disabled={!isFormEditable || isSubmitted}
                       /> Yes
                     </td>
                     <td>
@@ -1425,7 +1459,7 @@ const GasBoilerService = ({
                         type="checkbox"
                         checked={formData.installedToStandard === 'No'}
                         onChange={() => setFormData({ ...formData, installedToStandard: 'No' })}
-                        disabled={isSubmitted}
+                        disabled={!isFormEditable || isSubmitted}
                       /> No
                     </td>
                   </tr>
@@ -1440,7 +1474,7 @@ const GasBoilerService = ({
                 rows={3}
                 value={formData.necessaryRemedialWork}
                 onChange={(e) => setFormData({ ...formData, necessaryRemedialWork: e.target.value })}
-                disabled={isSubmitted}
+                disabled={!isFormEditable || isSubmitted}
               />
             </div>
           </div>
@@ -1465,7 +1499,7 @@ const GasBoilerService = ({
                     className="form-control"
                     value={formatDate(formData.customerSignatureDate)}
                     onChange={(e) => setFormData({ ...formData, customerSignatureDate: e.target.value })}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                   />
                 </div>
               </div>
@@ -1486,7 +1520,7 @@ const GasBoilerService = ({
                     className="form-control"
                     value={formatDate(formData.engineerSignatureDate)}
                     onChange={(e) => setFormData({ ...formData, engineerSignatureDate: e.target.value })}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                   />
                 </div>
               </div>
@@ -1535,7 +1569,7 @@ const GasBoilerService = ({
                   taggedAsset={formData.selectedAsset?.assetId}
                   onRiskAssessmentComplete={handleRiskAssessmentComplete}
                   actionRaised={actionRaised}
-                    disabled={isSubmitted}
+                    disabled={!isFormEditable || isSubmitted}
                 />
               )}
             </div>
@@ -1543,43 +1577,22 @@ const GasBoilerService = ({
         )}
 
         {!isSubmitted ? (
-          <div className="d-flex justify-content-between mt-3 print-hide">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => window.history.back()}
-            >
-              Back
-            </button>
-            <div>
-              {isFormEditable && (
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={
-                    isLoading ||
-                    isGeneratingPDF ||
-                    (showRiskAssessment && !actionRaised) || !isgasEngineer
-                  }
-                >
-                  {isLoading ? 'Submitting...' : 'Submit Report'}
-                </button>
-              )}
-            </div>
-          </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={
+              isLoading ||
+              isGeneratingPDF ||
+              (showRiskAssessment && !actionRaised) ||
+              !isFormEditable ||
+              isSubmitted  // Add this
+            }
+          >
+            {isLoading ? 'Submitting...' : 'Submit Report'}
+          </button>
         ) : (
-          <div className="text-center print-hide">
-            <div className="alert alert-success mb-4">
-              Report submitted successfully on {new Date().toISOString().split("T")[0]}
-            </div>
-            {showPdfButton && generatedPdfBlob && (
-              <button
-                className="btn btn-success"
-                  onClick={() => savePdfToLocal(generatedPdfBlob, `GasBoilerService_${siteSelectedForGlobal?.siteId}_${new Date().toISOString().split('T')[0]}.pdf`)}
-              >
-                Download PDF
-              </button>
-            )}
+            <div className="alert alert-success">
+              Report submitted successfully on {formatDate(formData.engineerSignatureDate)}
           </div>
         )}
       </form>
