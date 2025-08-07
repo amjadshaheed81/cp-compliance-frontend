@@ -749,7 +749,7 @@ const GasBoilerService = ({
       setTextField('Address', loggedInUserData?.companyAddress || '');
       setTextField('Post Code', formData.postCode || '');
       setTextField('postCode', gasEngineerPostCode || '');
-      setCheckbox('Rented Accommodation', formData.rentedAccommodation);
+      setCheckbox('Rented', formData.rentedAccommodation);
       setTextField('Date  Time of Issue', formatDate(formData.dateTimeOfIssue));
       setTextField('Work Description', formData.workDescription);
 
@@ -787,8 +787,8 @@ const GasBoilerService = ({
 
         // Set checkboxes for Yes/No/NA
         setCheckbox(`${baseName}_Yes`, check.satisfactory === true);
-        setCheckbox(`${baseName}_Noo`, check.satisfactory === false);  // Note the double 'o' in Noo
-        setCheckbox(`${baseName}_N/A`, check.satisfactory === null);   // Note the slash in N/A
+        setCheckbox(`${baseName}_No`, check.satisfactory === false);  // Note the double 'o' in Noo
+        setCheckbox(`${baseName}_NA`, check.satisfactory === null);   // Note the slash in N/A
 
         // Special handling for gas tightness test (id 8)
         if (check.id === 8) {
@@ -980,22 +980,30 @@ const GasBoilerService = ({
         checkId: checkIdToUse,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         actionId: existingAction?.actionId || null,
+        registeredBusinessRegNo: formData.registeredBusinessRegNo,
+        rentedAccommodation: formData.rentedAccommodation,
         // Include all check data
-        ...formData.applianceChecks.reduce((acc, check) => {
-          acc[`applianceCheck${check.id}`] = {
-            satisfactory: check.satisfactory,
-            remarks: check.remarks
-          };
-          return acc;
-        }, {}),
-        ...formData.safetyChecks.reduce((acc, check) => {
-          acc[`safetyCheck${check.id}`] = {
-            satisfactory: check.satisfactory,
-            remarks: check.remarks,
-            ...(check.id === 8 && { result: check.result })
-          };
-          return acc;
-        }, {}),
+        applianceChecks: formData.applianceChecks.map(check => ({
+          id: check.id,
+          checkId: check.checkId || checkIdToUse || 0,
+          question: check.question,
+          satisfactory: check.satisfactory,
+          remarks: check.remarks
+        })),
+        safetyChecks: formData.safetyChecks.map(check => ({
+          id: check.id,
+          checkId: check.checkId || checkIdToUse || 0,
+          question: check.question,
+          satisfactory: check.satisfactory,
+          remarks: check.remarks,
+          result: check.id === 8 ? check.result : undefined
+        })),
+        inspectionByUser: {
+          id: loggedInUserData?.id || 0,
+          name: loggedInUserData?.name || "",
+          // Include other required user fields
+          ...loggedInUserData
+        },
         gasTightnessTestResult: formData.safetyChecks.find(c => c.id === 8)?.result || null
       };
 
