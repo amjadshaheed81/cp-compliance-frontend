@@ -748,38 +748,29 @@ const GasBoilerService = ({
       setTextField('CommentsType', comment[1] || '');
       setTextField('CommentsModel', comment[2] || '');
       setTextField('CommentsLocation', comment[3] || '');
-
-      // Appliance Checks
+      // Appliance Checks - Updated to use checkbox fields with new naming pattern
       formData.applianceChecks.forEach((check) => {
         const baseName = `Appliance_${check.id}`;
-        const value = check.satisfactory === true ? "Yes" :
-          check.satisfactory === false ? "No" : "N/A";
 
-        // Set checkboxes (for form functionality)
+        // Set checkboxes for Yes/No/NA
         setCheckbox(`${baseName}_Yes`, check.satisfactory === true);
-        setCheckbox(`${baseName}_No`, check.satisfactory === false);
-        setCheckbox(`${baseName}_NA`, check.satisfactory === null);
+        setCheckbox(`${baseName}_Noo`, check.satisfactory === false);  // Note the double 'o' in Noo
+        setCheckbox(`${baseName}_N/A`, check.satisfactory === null);   // Note the slash in N/A
 
-        // Set text display (for visible "Yes"/"No"/"N/A")
-        setTextField(`${baseName}_Display`, value); // <-- NEW FIELD
+        // Set remarks text field
         setTextField(`${baseName}_Remarks`, check.remarks || '');
       });
 
-      // --- Safety Checks ---
+      // Safety Checks - Updated to use checkbox fields with new naming pattern
       formData.safetyChecks.forEach((check) => {
         const baseName = `Safety_${check.id}`;
-        const value = check.satisfactory === true ? "Yes" :
-          check.satisfactory === false ? "No" : "N/A";
 
-        // Set checkboxes
+        // Set checkboxes for Yes/No/NA
         setCheckbox(`${baseName}_Yes`, check.satisfactory === true);
-        setCheckbox(`${baseName}_No`, check.satisfactory === false);
-        setCheckbox(`${baseName}_NA`, check.satisfactory === null);
+        setCheckbox(`${baseName}_Noo`, check.satisfactory === false);  // Note the double 'o' in Noo
+        setCheckbox(`${baseName}_N/A`, check.satisfactory === null);   // Note the slash in N/A
 
-        // Set text display
-        setTextField(`${baseName}_Display`, value); // <-- NEW FIELD
-
-        // Special handling for gas tightness test
+        // Special handling for gas tightness test (id 8)
         if (check.id === 8) {
           setTextField(`${baseName}_Result`, check.result || '');
         } else {
