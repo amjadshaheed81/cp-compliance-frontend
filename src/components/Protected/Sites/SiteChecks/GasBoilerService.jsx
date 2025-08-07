@@ -293,7 +293,18 @@ const GasBoilerService = ({
             asset => asset.assetId === inspectionData.assetId
           );
 
-          console.log('Found matching asset:', selectedAsset); // Debug log
+          // Find site contact user - first check if it's already an object
+          let siteContactUser;
+          if (inspectionData.siteContact && typeof inspectionData.siteContact === 'object') {
+            siteContactUser = inspectionData.siteContact;
+          } else if (inspectionData.siteContact) {
+            // If it's just an ID, find in users array
+            siteContactUser = users.find(
+              user => user.id === inspectionData.siteContact
+            );
+          }
+
+          console.log('Found site contact user:', siteContactUser); // Debug log
 
           // Transform safety checks to include gas tightness test result
           const transformedSafetyChecks = inspectionData.safetyChecks?.length
@@ -312,6 +323,8 @@ const GasBoilerService = ({
           const transformedData = {
             ...inspectionData,
             id: inspectionData.id || null,
+            siteContactUser: siteContactUser || null,
+            siteContact: siteContactUser?.id || inspectionData.siteContact || "",
             dateTimeOfIssue: inspectionData.dateTimeOfIssue || new Date().toISOString().split('T')[0],
             customerSignatureDate: inspectionData.customerSignatureDate || new Date().toISOString().split('T')[0],
             engineerSignatureDate: inspectionData.engineerSignatureDate || new Date().toISOString().split('T')[0],
@@ -363,9 +376,8 @@ const GasBoilerService = ({
         setIsLoading(false);
       }
     };
-
     fetchInspectionData();
-  }, [checkId, siteAssets, users, sasToken]);
+  }, [checkId, siteAssets, users, sasToken, isInternalUserTaggedWithSite, siteSelectedForGlobal?.siteId]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -398,6 +410,14 @@ const GasBoilerService = ({
           postCode: fullSiteData.postCode || "",
           installationAddress: fullAddress,
         }));
+
+        if (siteSelectedForGlobal.siteContact) {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: siteSelectedForGlobal.siteContact.name || "",
+            siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+          }));
+        }
 
         await fetchFolderStructure(siteSelectedForGlobal.siteId);
       } catch (error) {
@@ -798,7 +818,7 @@ const GasBoilerService = ({
       setTextField('remedialWork6', remedialWork[5] || '');
 
       // Signatures
-      setTextField('Print Name', formData.siteContact);
+      setTextField('Print Name', formData.siteContactUser?.name);
       setTextField('Date', formatDate(formData.customerSignatureDate));
       setTextField('Print Name_2', formData.engineerName);
       setTextField('Date_2', formatDate(formData.engineerSignatureDate));
@@ -958,6 +978,7 @@ const GasBoilerService = ({
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse,
+        siteContact: formData.siteContactUser?.id || formData.siteContact,
         actionId: existingAction?.actionId || null,
         // Include all check data
         ...formData.applianceChecks.reduce((acc, check) => {
@@ -1038,6 +1059,14 @@ const GasBoilerService = ({
 
 
   const renderSiteContactField = () => {
+    // Get contact name from either siteContactUser object or siteSelectedForGlobal
+    const getContactName = () => {
+      if (formData.siteContactUser?.name) return formData.siteContactUser.name;
+      if (typeof formData.siteContact === 'object') return formData.siteContact.name;
+      if (siteSelectedForGlobal?.siteContact?.name) return siteSelectedForGlobal.siteContact.name;
+      return '';
+    };
+
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
         users?.filter((user) =>
@@ -1046,11 +1075,21 @@ const GasBoilerService = ({
           )
         ) || [];
 
+      // Get current value for Autocomplete
+      const getCurrentValue = () => {
+        if (formData.siteContactUser) return formData.siteContactUser;
+        if (typeof formData.siteContact === 'object') return formData.siteContact;
+        if (formData.siteContact) {
+          return filteredUsers.find(user => user.id === formData.siteContact) || null;
+        }
+        return null;
+      };
+
       return (
         <Autocomplete
           options={filteredUsers}
           getOptionLabel={(user) => user.name}
-          value={formData.siteContact || null}
+          value={getCurrentValue()}
           onChange={(event, newValue) => {
             setFormData(prev => ({
               ...prev,
@@ -1085,13 +1124,20 @@ const GasBoilerService = ({
         />
       );
     }
+
     return (
       <input
         type="text"
         className="form-control"
         name="siteContact"
-        value={formData.siteContact}
-        onChange={handleInputChange}
+        value={getContactName()}
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
         required
         disabled={!isFormEditable || isSubmitted}
       />
