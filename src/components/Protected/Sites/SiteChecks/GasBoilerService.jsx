@@ -379,15 +379,14 @@ const GasBoilerService = ({
 
   useEffect(() => {
     const needsRiskAssessment =
-      formData.isInstallationSafe === "No" ||
-      (formData.necessaryRemedialWork && formData.necessaryRemedialWork.trim().length > 0);
+      formData.isInstallationSafe === "No";
 
     const isActionValid = existingAction &&
       (Number(existingAction.checkId) === Number(currentCheckId));
 
     setShowRiskAssessment(needsRiskAssessment);
     setActionRaised(isActionValid);
-  }, [formData.isInstallationSafe, formData.necessaryRemedialWork, currentCheckId, existingAction]);
+  }, [formData.isInstallationSafe, currentCheckId, existingAction]);
 
   useEffect(() => {
     const fetchActions = async () => {
@@ -637,6 +636,11 @@ const GasBoilerService = ({
     }
   };
 
+  const gasEngineerPostCode = loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0]
+
+  //console.log('user --> details', gasEngineerPostCode);
+
+
   const generatePDF = async (uploadToServer = true) => {
     try {
       setIsGeneratingPDF(true);
@@ -666,27 +670,33 @@ const GasBoilerService = ({
         try {
           const field = form.getCheckBox(fieldName);
           if (field) {
-            isChecked ? field.check() : field.uncheck();
+            if (isChecked) {
+              field.check();
+            } else {
+              field.uncheck();
+            }
+          } else {
+            console.warn(`Checkbox not found: ${fieldName}`);
           }
         } catch (error) {
-          console.warn(`Error setting checkbox ${fieldName}:`, error);
+          console.warn(`Error setting checkbox ${fieldName}:`, error.message);
         }
       };
-
       // Set form data in PDF
+
       const addressLines = (formData.installationAddress || '').split(',');
       setTextField('Address', addressLines[0] || '');
       setTextField('Address_2', addressLines[1] || '');
       setTextField('Address_3', addressLines[2] || '');
 
-      setTextField('Name', license?.name || '');
+      setTextField('Name', license?.companyName || '');
       setTextField('Reg No', formData.registeredBusinessRegNo || '');
       setTextField('Gas Engineer', loggedInUserData?.name || '');
-      setTextField('Gas Safe Registered Engineer No', loggedInUserData?.gasSafeRegNo || '');
+      setTextField('gasSafeNo', loggedInUserData?.gasSafetyRegNo || '');
       setTextField('Company', loggedInUserData.companyName || '');
       setTextField('Address', loggedInUserData?.companyAddress || '');
       setTextField('Post Code', formData.postCode || '');
-      setTextField('postCode', loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0] || '');
+      setTextField('postCode', gasEngineerPostCode || '');
       setCheckbox('Rented Accommodation', formData.rentedAccommodation);
       setTextField('Date  Time of Issue', formatDate(formData.dateTimeOfIssue));
       setTextField('Work Description', formData.workDescription);
@@ -708,35 +718,52 @@ const GasBoilerService = ({
       setTextField('CommentsLocation', comment[3] || '');
 
       // Appliance Checks
-      formData.applianceChecks.forEach(check => {
-        const baseFieldName = `Appliance_${check.id}`;
-        setCheckbox(`${baseFieldName}_Yes`, check.satisfactory === true);
-        setCheckbox(`${baseFieldName}_No`, check.satisfactory === false);
-        setCheckbox(`${baseFieldName}_NA`, check.satisfactory === null);
-        setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
+      formData.applianceChecks.forEach((check) => {
+        const baseName = `Appliance_${check.id}`;
+        const value = check.satisfactory === true ? "Yes" :
+          check.satisfactory === false ? "No" : "N/A";
+
+        // Set checkboxes (for form functionality)
+        setCheckbox(`${baseName}_Yes`, check.satisfactory === true);
+        setCheckbox(`${baseName}_No`, check.satisfactory === false);
+        setCheckbox(`${baseName}_NA`, check.satisfactory === null);
+
+        // Set text display (for visible "Yes"/"No"/"N/A")
+        setTextField(`${baseName}_Display`, value); // <-- NEW FIELD
+        setTextField(`${baseName}_Remarks`, check.remarks || '');
       });
 
-      // And replace the safety checks section with:
-      formData.safetyChecks.forEach(check => {
-        const baseFieldName = `Safety_${check.id}`;
-        setCheckbox(`${baseFieldName}_Yes`, check.satisfactory === true);
-        setCheckbox(`${baseFieldName}_No`, check.satisfactory === false);
-        setCheckbox(`${baseFieldName}_NA`, check.satisfactory === null);
-        if (check.id === 8) { // Gas tightness test special case
-          setTextField(`${baseFieldName}_Result`, check.result || '');
+      // --- Safety Checks ---
+      formData.safetyChecks.forEach((check) => {
+        const baseName = `Safety_${check.id}`;
+        const value = check.satisfactory === true ? "Yes" :
+          check.satisfactory === false ? "No" : "N/A";
+
+        // Set checkboxes
+        setCheckbox(`${baseName}_Yes`, check.satisfactory === true);
+        setCheckbox(`${baseName}_No`, check.satisfactory === false);
+        setCheckbox(`${baseName}_NA`, check.satisfactory === null);
+
+        // Set text display
+        setTextField(`${baseName}_Display`, value); // <-- NEW FIELD
+
+        // Special handling for gas tightness test
+        if (check.id === 8) {
+          setTextField(`${baseName}_Result`, check.result || '');
         } else {
-          setTextField(`${baseFieldName}_Remarks`, check.remarks || '');
+          setTextField(`${baseName}_Remarks`, check.remarks || '');
         }
       });
 
 
+
       // Findings
-      setCheckbox('check1', formData.isInstallationSafe === 'Yes');
-      setCheckbox('check2', formData.isInstallationSafe === 'No');
-      setCheckbox('check3', formData.warningNoticeRaised === 'Yes');
-      setCheckbox('check4', formData.warningNoticeRaised === 'No');
-      setCheckbox('check5', formData.installedToStandard === 'Yes');
-      setCheckbox('check6', formData.installedToStandard === 'No');
+      setCheckbox('Check Box1', formData.isInstallationSafe === 'Yes');
+      setCheckbox('Check Box2', formData.isInstallationSafe === 'No');
+      setCheckbox('Check Box3', formData.warningNoticeRaised === 'Yes');
+      setCheckbox('Check Box4', formData.warningNoticeRaised === 'No');
+      setCheckbox('Check Box5', formData.installedToStandard === 'Yes');
+      setCheckbox('Check Box6', formData.installedToStandard === 'No');
 
       // Remedial Work
       const remedialWork = (formData.necessaryRemedialWork || '').split(',');
