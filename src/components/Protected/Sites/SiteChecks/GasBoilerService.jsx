@@ -262,8 +262,16 @@ const GasBoilerService = ({
       try {
         if (!checkId) return;
 
+        setIsLoading(true);
+
+        // First ensure we have all necessary data loaded
         if (isInternalUserTaggedWithSite && users.length === 0) {
           await getUsers();
+        }
+
+        // Load site assets if not already loaded
+        if (siteAssets.length === 0 && siteSelectedForGlobal?.siteId) {
+          await getSiteAssets(siteSelectedForGlobal.siteId);
         }
 
         let inspectionData;
@@ -273,38 +281,60 @@ const GasBoilerService = ({
           if (error.response?.status !== 404) throw error;
         }
 
+        // Check inspection status
         const statusResponse = await get(`/api/site-check/check-id/${checkId}`);
         const isSubmitted = statusResponse?.status === 'Done';
         setIsSubmitted(isSubmitted);
         setIsFormEditable(!isSubmitted);
 
         if (inspectionData) {
-        // Transform the data to match our form structure
+          // Find the matching asset
+          const selectedAsset = siteAssets.find(
+            asset => asset.assetId === inspectionData.assetId
+          );
+
+          console.log('Found matching asset:', selectedAsset); // Debug log
+
+          // Transform safety checks to include gas tightness test result
+          const transformedSafetyChecks = inspectionData.safetyChecks?.length
+            ? inspectionData.safetyChecks.map(check => ({
+              ...check,
+              ...(check.id === 8 && {
+                result: inspectionData.gasTightnessTestResult
+              })
+            }))
+            : formData.safetyChecks.map(check => ({
+              ...check,
+              checkId: checkId
+            }));
+
+          // Transform the data to match our form structure
           const transformedData = {
             ...inspectionData,
             id: inspectionData.id || null,
             dateTimeOfIssue: inspectionData.dateTimeOfIssue || new Date().toISOString().split('T')[0],
             customerSignatureDate: inspectionData.customerSignatureDate || new Date().toISOString().split('T')[0],
             engineerSignatureDate: inspectionData.engineerSignatureDate || new Date().toISOString().split('T')[0],
-            selectedAsset: siteAssets.find(asset => asset.assetId === inspectionData.assetId),
-            applianceChecks: inspectionData.applianceChecks || formData.applianceChecks.map(check => ({
-              ...check,
-              checkId: checkId
-            })),
-            safetyChecks: inspectionData.safetyChecks || formData.safetyChecks.map(check => ({
-              ...check,
-              checkId: checkId,
-              // Special handling for gas tightness test
-              ...(check.id === 8 && { result: inspectionData.gasTightnessTestResult })
-            })),
-            assetId: inspectionData.assetId || "",
+            selectedAsset: selectedAsset || null,
+            assetId: inspectionData.assetId || (selectedAsset?.assetId || ""),
             engineer: inspectionData.engineer || loggedInUserData?.id || "",
-            engineerName: inspectionData.engineerName || loggedInUserData?.name || ""
+            engineerName: inspectionData.engineerName || loggedInUserData?.name || "",
+            applianceChecks: inspectionData.applianceChecks?.length
+              ? inspectionData.applianceChecks.map(check => ({
+                ...check,
+                checkId: checkId
+              }))
+              : formData.applianceChecks.map(check => ({
+                ...check,
+                checkId: checkId
+              })),
+            safetyChecks: transformedSafetyChecks
           };
 
           setFormData(transformedData);
           setCurrentCheckId(checkId);
 
+          // Check for existing action
           if (inspectionData.actionId) {
             const action = await fetchActionById(inspectionData.actionId);
             setExistingAction(action);
@@ -329,6 +359,8 @@ const GasBoilerService = ({
       } catch (error) {
         console.error("Error fetching inspection data:", error);
         toast.error("Failed to load inspection data");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -895,12 +927,7 @@ const GasBoilerService = ({
     setFormData(prev => ({
       ...prev,
       selectedAsset: newValue || null,
-      manufacturer: newValue?.manufacturer || "",
-      modelNumber: newValue?.model || "",
-      position: newValue?.position || "",
-      floor: newValue?.floor || "",
-      room: newValue?.room || "",
-      assetId: newValue?.assetId || "",
+      assetId: newValue?.assetId || ""
     }));
   };
 
@@ -1190,7 +1217,7 @@ const GasBoilerService = ({
                     type="text"
                     className="form-control"
                     value={
-                      loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0] || ""
+                      gasEngineerPostCode || ""
                     }
                     disabled
                   />
