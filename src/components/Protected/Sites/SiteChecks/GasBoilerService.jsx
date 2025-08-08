@@ -227,6 +227,7 @@ const GasBoilerService = ({
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
@@ -283,6 +284,17 @@ const GasBoilerService = ({
 
         // Check inspection status
         const statusResponse = await get(`/api/site-check/check-id/${checkId}`);
+
+        const inspectionDetails = {
+          checkId: statusResponse.checkId,
+          siteId: statusResponse.siteId,
+          type: statusResponse.type,
+          subType: statusResponse.subType,
+          category: statusResponse.category,
+          dueDate: statusResponse.dueDate,
+          status: statusResponse.status
+        };
+        setInspectionDetails(inspectionDetails);
         const isSubmitted = statusResponse?.status === 'Done';
         setIsSubmitted(isSubmitted);
         setIsFormEditable(!isSubmitted);
@@ -483,6 +495,12 @@ const GasBoilerService = ({
     }
   };
 
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
+
   const fetchFolderStructure = async (siteId) => {
     try {
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -619,7 +637,7 @@ const GasBoilerService = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `GBS-${new Date().getTime()}`
@@ -654,7 +672,7 @@ const GasBoilerService = ({
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `GBS-${new Date().getTime()}`
@@ -951,6 +969,16 @@ const GasBoilerService = ({
     setIsLoading(true);
 
     try {
+
+      let existingInspection = null;
+      if (currentCheckId) {
+        try {
+          const inspections = await get(`/api/site-check/gas-boiler-inspection/${currentCheckId}`);
+          existingInspection = inspections?.length > 0 ? inspections[0] : null;
+        } catch (error) {
+          console.error('Error checking for existing inspection:', error);
+        }
+      }
       // First create/update the site check record
       const statusPayload = {
         siteId: siteSelectedForGlobal?.siteId,
@@ -1017,9 +1045,22 @@ const GasBoilerService = ({
       // }
 
       // Save inspection data
-      const inspectionResponse = formData.id
-        ? await put(`/api/site-check/gas-boiler-inspection/${formData.id}`, inspectionPayload)
-        : await post("/api/site-check/gas-boiler-inspection", inspectionPayload);
+      let saveResponse;
+      if (existingInspection) {
+        saveResponse = await put(
+          `/api/site-check/gas-boiler-inspection/${currentCheckId}`,
+          inspectionPayload
+        );
+      } else {
+        saveResponse = await post(
+          `/api/site-check/gas-boiler-inspection`,
+          inspectionPayload
+        );
+      }
+
+      if (![200, 201, 204].includes(saveResponse?.status)) {
+        throw new Error('Failed to save inspection data');
+      }
 
       // Generate and upload PDF
       const pdfResult = await generatePDF(true);
