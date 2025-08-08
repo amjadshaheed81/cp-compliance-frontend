@@ -853,7 +853,7 @@ const GasBoilerService = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `GasBoilerService_${siteSelectedForGlobal?.siteId || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `GasBoilerService_${selectedAsset.assetName || 'report'}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
