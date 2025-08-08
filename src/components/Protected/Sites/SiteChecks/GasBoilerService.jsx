@@ -749,7 +749,7 @@ const GasBoilerService = ({
       setTextField('Address', loggedInUserData?.companyAddress || '');
       setTextField('Post Code', formData.postCode || '');
       setTextField('postCode', gasEngineerPostCode || '');
-      setCheckbox('Rented', formData.rentedAccommodation);
+      setTextField('Rented', formData.rentedAccommodation);
       setTextField('Date  Time of Issue', formatDate(formData.dateTimeOfIssue));
       setTextField('Work Description', formData.workDescription);
 
@@ -853,7 +853,7 @@ const GasBoilerService = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `GasBoilerService_${siteSelectedForGlobal?.siteId || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `GasBoilerService_${selectedAsset.assetName || 'report'}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);

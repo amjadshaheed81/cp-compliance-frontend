@@ -11,6 +11,7 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
+import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
 import pdfTemplate from './pdf/GasSafety.pdf';
 import RiskScoreCard from "./RiskScoreCard";
@@ -56,32 +57,38 @@ const GasSafetyRecord = ({
   const license = JSON.parse(localStorage.getItem("license"));
   const [sasToken, setSasToken] = useState('');
   const navigate = useNavigate();
+  const gasEngineerPostCode = loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0]
 
+  const adminPostCode = license?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0];
+
+  console.log(license)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     ref: "",
-    gasSafeRegNo: "",
+    gasSafeRegNo: loggedInUserData?.gasSafetyRegNo || "",
     serialNo: "",
 
     // Registered Business Details
-    registeredBusinessName: "",
-    registeredBusinessAddress: "",
-    registeredBusinessPostcode: "",
-    registeredBusinessContact: "",
+    registeredBusinessName: loggedInUserData?.name || "",
+    registeredBusinessAddress: loggedInUserData?.companyAddress || "",
+    registeredBusinessPostcode: gasEngineerPostCode || "",
+    registeredBusinessContact: loggedInUserData?.phone || "",
 
     // Landlord/Homeowner Details
-    landlordName: "",
-    landlordAddress: "",
-    landlordPostcode: "",
-    landlordContact: "",
+    landlordName: `${license?.adminFirstName} ${license?.adminLastName}` || "",
+    landlordAddress: `${license?.companyAddress}` || "",
+    landlordPostcode: adminPostCode || "",
+    landlordContact: `${license?.adminContact}` || "",
 
     // Site Details
     siteName: "",
     siteAddress: "",
     sitePostcode: "",
-    siteContact: "",
+    siteContactNo: "",
 
     // Appliance Details
+    assetId: "",
+    selectedAsset: null,
     applianceLocation: "",
     applianceType: "",
     applianceManufacturer: "",
@@ -116,6 +123,12 @@ const GasSafetyRecord = ({
     combustionHighCO2: "",
     combustionHighRatio: "",
 
+    // Images
+    param2: "", // Image 1
+    param3: "", // Image 2
+    param4: "", // Image 3
+    param5: "", // Image 4
+
     // Signatures
     engineerName: loggedInUserData?.name || "",
     engineerSignatureDate: new Date().toISOString().split("T")[0],
@@ -129,13 +142,17 @@ const GasSafetyRecord = ({
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showPdfButton, setShowPdfButton] = useState(false);
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
   const [isFormEditable, setIsFormEditable] = useState(true);
+  const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [existingAction, setExistingAction] = useState(null);
+  const [actionRaised, setActionRaised] = useState(false);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
 
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
@@ -163,7 +180,7 @@ const GasSafetyRecord = ({
   }, []);
 
   const fetchActionById = async (id) => {
-      try {
+    try {
       if (!id) return null;
       const response = await get(`/api/site/actions/id/${id}`);
       return response;
@@ -182,10 +199,26 @@ const GasSafetyRecord = ({
           await getUsers();
         }
 
-        const apiData = await get(`/api/site-check/gas-safety-record/${checkId}`);
+        const apiData = await get(`/api/site-check/gas-safety-inspection/${checkId}`);
         if (apiData && apiData.length > 0) {
           const mostRecentItem = apiData[0];
+
           setFormData(mostRecentItem);
+
+          // Load photos from parameters
+          const photosFromApi = [];
+          for (let i = 2; i <= 5; i++) {
+            const paramKey = `param${i}`;
+            const photoUrl = mostRecentItem[paramKey];
+            if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
+              photosFromApi.push({
+                url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
+                paramKey
+              });
+            }
+          }
+
+          setUploadedPhotos(photosFromApi);
 
           if (mostRecentItem.actionId) {
             const action = await fetchActionById(mostRecentItem.actionId);
@@ -202,6 +235,46 @@ const GasSafetyRecord = ({
   }, [checkId, users, sasToken]);
 
   useEffect(() => {
+    const hasFailures = [
+      formData.flueVisualCondition,
+      formData.flueOperationChecks,
+      formData.gasTightnessTest,
+      formData.applianceSafeToUse,
+      formData.protectiveBonding,
+      formData.emergencyControlAccessible,
+      formData.pipeworkVisualInspection,
+      formData.coAlarmFitted,
+      formData.fireAlarmFitted,
+      formData.safetyDevicesOperating,
+      formData.ventilationSatisfactory,
+      formData.applianceServiced,
+    ].some(val => val === "Fail" || val === "No");
+
+    setShowRiskAssessment(hasFailures);
+
+    // Update actionRaised state based on existing action
+    const isActionValid = existingAction && existingAction.checkId === currentCheckId;
+    setActionRaised(isActionValid);
+
+
+  }, [
+    formData.flueVisualCondition,
+    formData.flueOperationChecks,
+    formData.gasTightnessTest,
+    formData.applianceSafeToUse,
+    currentCheckId,
+    existingAction,
+    formData.protectiveBonding,
+    formData.emergencyControlAccessible,
+    formData.pipeworkVisualInspection,
+    formData.coAlarmFitted,
+    formData.fireAlarmFitted,
+    formData.safetyDevicesOperating,
+    formData.ventilationSatisfactory,
+    formData.applianceServiced
+  ]);
+
+  useEffect(() => {
     const fetchData = async () => {
       if (!siteSelectedForGlobal?.siteId) {
         return;
@@ -210,6 +283,7 @@ const GasSafetyRecord = ({
       try {
         const fullSiteData = await get(`/api/site/site/${siteSelectedForGlobal.siteId}`);
 
+        console.log('Full site data:', fullSiteData);
         // Set site details in form
         setFormData(prev => ({
           ...prev,
@@ -221,7 +295,6 @@ const GasSafetyRecord = ({
             fullSiteData.area
           ].filter(part => part && part.trim() !== '').join(", "),
           sitePostcode: fullSiteData.postCode || "",
-          siteContact: fullSiteData.siteContact || ""
         }));
 
         // Set engineer details from logged in user
@@ -246,6 +319,90 @@ const GasSafetyRecord = ({
     fetchData();
   }, [siteSelectedForGlobal?.siteId, loggedInUserData]);
 
+  const handleRiskAssessmentComplete = async (actionResponse) => {
+    try {
+      if (!actionResponse?.actionId) {
+        throw new Error("Invalid action response received");
+      }
+
+      const verifiedAction = await fetchActionById(actionResponse.actionId);
+      if (!verifiedAction || verifiedAction.checkId !== currentCheckId) {
+        throw new Error("Action was not properly linked to this inspection");
+      }
+
+      setExistingAction(verifiedAction);
+      setActionRaised(true);
+
+      setFormData(prev => ({
+        ...prev,
+        actionId: verifiedAction.actionId
+      }));
+
+      if (currentCheckId) {
+        const inspectionPayload = {
+          ...formData,
+          actionId: verifiedAction.actionId,
+          checkId: currentCheckId,
+          siteId: siteSelectedForGlobal?.siteId,
+        };
+
+        const existingInspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/gas-safety-inspection/${currentCheckId}`, inspectionPayload);
+        } else {
+          await post(`/api/site-check/gas-safety-inspection`, inspectionPayload);
+        }
+
+        toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
+      }
+    } catch (error) {
+      console.error("Error handling risk assessment completion:", error);
+      toast.error(error.message || "Failed to process action completion");
+      setActionRaised(false);
+      setExistingAction(null);
+      setFormData(prev => ({ ...prev, actionId: null }));
+    }
+  };
+
+
+  const fetchExistingActions = async () => {
+    try {
+      if (formData.actionId) {
+        const action = await fetchActionById(formData.actionId);
+        if (action && action.checkId === currentCheckId) {
+          setExistingAction(action);
+          setActionRaised(true);
+          return;
+        }
+        setFormData(prev => ({ ...prev, actionId: null }));
+      }
+
+      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+
+      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      if (response && response.length > 0) {
+        const relevantActions = response.filter(action =>
+          action.checkId === currentCheckId
+        );
+
+        if (relevantActions.length > 0) {
+          const mostRecentAction = relevantActions.sort((a, b) =>
+            new Date(b.createdAt) - new Date(a.createdAt)
+          )[0];
+
+          setExistingAction(mostRecentAction);
+          setActionRaised(true);
+          setFormData(prev => ({
+            ...prev,
+            actionId: mostRecentAction.actionId
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching existing actions:", error);
+    }
+  };
+
   const fetchFolderStructure = async (siteId) => {
     try {
       const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -260,13 +417,13 @@ const GasSafetyRecord = ({
 
       const logBooksChildren = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
       const gasSafetyFolder = logBooksChildren?.document?.childFolders?.find(
-        f => f.name.trim() === 'Gas Safety'
+        f => f.name.trim() === 'Plant and Equipment'
       );
       if (!gasSafetyFolder) throw new Error('Gas Safety folder not found');
 
       const gasSafetyChildren = await get(`/api/document/parent/${gasSafetyFolder.id}/folders?siteId=${siteId}`);
       const gasRecordsFolder = gasSafetyChildren?.document?.childFolders?.find(
-        f => f.name.trim() === 'Gas Safety Records'
+        f => f.name.trim() === 'Gas Safety Certificate'
       );
 
       const newFolderIds = {
@@ -284,6 +441,7 @@ const GasSafetyRecord = ({
       return null;
     }
   };
+
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
       const url = URL.createObjectURL(pdfBlob);
@@ -302,6 +460,7 @@ const GasSafetyRecord = ({
       return false;
     }
   };
+
   const checkFileExists = async (folderId, fileName) => {
     try {
       const siteId = siteSelectedForGlobal?.siteId;
@@ -352,7 +511,7 @@ const GasSafetyRecord = ({
       setIsUploading(true);
       await savePdfToLocal(pdfBlob, fileName);
 
-      const targetFolderId = folderIds.boilerService || await fetchFolderStructure(siteSelectedForGlobal?.siteId);
+      const targetFolderId = folderIds.gasRecords || await fetchFolderStructure(siteSelectedForGlobal?.siteId);
       if (!targetFolderId) {
         throw new Error('Could not determine target folder for PDF upload');
       }
@@ -442,6 +601,166 @@ const GasSafetyRecord = ({
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingPhotos(true);
+
+    try {
+      // Determine available parameters
+      const availableParams = [];
+      for (let i = 2; i <= 5; i++) {
+        const paramKey = `param${i}`;
+        if (!formData[paramKey]) {
+          availableParams.push(paramKey);
+        }
+      }
+
+      const filesToUpload = files.slice(0, availableParams.length);
+      const token = sasToken || await getSasToken();
+
+      const uploadResults = await Promise.all(
+        filesToUpload.map(async (file, index) => {
+          const response = await uploadSiteCheckDoc({
+            siteId: siteSelectedForGlobal?.siteId || 0,
+            file: file
+          });
+
+          const baseUrl = response?.url ||
+            `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+
+          const imageUrl = `${baseUrl}?${token}`;
+
+          return {
+            url: imageUrl,
+            baseUrl: baseUrl,
+            paramKey: availableParams[index],
+            fileName: file.name,
+            documentId: response?.documentId || uuidv4()
+          };
+        })
+      );
+
+      const formUpdates = uploadResults.reduce((acc, photo) => {
+        acc[photo.paramKey] = photo.baseUrl;
+        return acc;
+      }, {});
+
+      setFormData(prev => ({
+        ...prev,
+        ...formUpdates
+      }));
+
+      setUploadedPhotos(prev => [
+        ...prev,
+        ...uploadResults.map(photo => ({
+          ...photo,
+          url: `${photo.baseUrl}?${token}`
+        }))
+      ].slice(0, 4));
+
+      // Save to API
+      if (currentCheckId) {
+        const payload = {
+          checkId: currentCheckId,
+          siteId: siteSelectedForGlobal?.siteId,
+          type: 'Inspection',
+          subType: 'Gas Safety',
+          category: 'Gas Safety Record',
+          ...formUpdates
+        };
+
+        const existingInspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
+        if (existingInspections?.length > 0) {
+          await put(`/api/site-check/gas-safety-inspection/${currentCheckId}`, payload);
+        } else {
+          await post("/api/site-check/gas-safety-inspection", payload);
+        }
+      }
+
+      toast.success("Photos uploaded successfully!");
+    } catch (error) {
+      console.error("Photo upload error:", error);
+      toast.error(error.message || 'Upload failed');
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const handleRemovePhoto = (index) => {
+    const photoToRemove = uploadedPhotos[index];
+
+    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+
+    if (photoToRemove.paramKey) {
+      setFormData(prev => ({
+        ...prev,
+        [photoToRemove.paramKey]: ""
+      }));
+    }
+
+    if (currentCheckId && photoToRemove.paramKey) {
+      const payload = {
+        checkId: currentCheckId,
+        siteId: siteSelectedForGlobal?.siteId,
+        type: 'Inspection',
+        subType: 'Gas Safety',
+        category: 'Gas Safety Record',
+        [photoToRemove.paramKey]: ""
+      };
+
+      put(`/api/site-check/gas-safety-inspection/${currentCheckId}`, payload)
+        .catch(error => {
+          console.error("Error removing photo from API:", error);
+          toast.error("Failed to update photo in database");
+        });
+    }
+  };
+
+  const selectedAsset = siteAssets.find(
+    (asset) => asset.assetId === formData.assetId
+  );
+
+
+  const getAllImages = () => {
+    return [
+      formData.param2 ? {
+        url: formData.param2.includes('?')
+          ? formData.param2
+          : `${formData.param2}?${sasToken}`,
+        paramKey: 'param2'
+      } : null,
+      formData.param3 ? {
+        url: formData.param3.includes('?')
+          ? formData.param3
+          : `${formData.param3}?${sasToken}`,
+        paramKey: 'param3'
+      } : null,
+      formData.param4 ? {
+        url: formData.param4.includes('?')
+          ? formData.param4
+          : `${formData.param4}?${sasToken}`,
+        paramKey: 'param4'
+      } : null,
+      formData.param5 ? {
+        url: formData.param5.includes('?')
+          ? formData.param5
+          : `${formData.param5}?${sasToken}`,
+        paramKey: 'param5'
+      } : null,
+    ].filter(Boolean);
+  };
+
+
+  const handleAssetSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      assetId: newValue ? newValue.assetId : "",
+      selectedAsset: newValue || null,
+    }));
+  };
+
   const generatePDF = async (uploadToServer = true) => {
     try {
       setIsGeneratingPDF(true);
@@ -452,6 +771,35 @@ const GasSafetyRecord = ({
       const pdfBytes = await fetchPdfTemplate();
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
+
+      const embedUniversalImage = async (imageBytes) => {
+        try {
+          return await pdfDoc.embedPng(imageBytes);
+        } catch (pngError) {
+          console.log('Not a PNG, trying JPEG...');
+          try {
+            return await pdfDoc.embedJpg(imageBytes);
+          } catch (jpgError) {
+            console.log('Not a JPEG, trying fallback methods...');
+            try {
+              const imageBlob = new Blob([imageBytes]);
+              const img = await createImageBitmap(imageBlob);
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              const pngDataUrl = canvas.toDataURL('image/png');
+              const pngResponse = await fetch(pngDataUrl);
+              const pngBytes = await pngResponse.arrayBuffer();
+              return await pdfDoc.embedPng(pngBytes);
+            } catch (finalError) {
+              console.error('All image embedding attempts failed:', finalError);
+              throw new Error('Could not embed image in any supported format');
+            }
+          }
+        }
+      };
 
       const setTextField = (fieldName, value, fontSize = 8) => {
         try {
@@ -506,7 +854,7 @@ const GasSafetyRecord = ({
       setTextField('Address_5', siteAddressLines[0] || '');
       setTextField('Address_6', siteAddressLines[1] || '');
       setTextField('Postcode_3', formData.sitePostcode || '');
-      setTextField('Contact Number_3', formData.siteContact || '');
+      setTextField('Contact Number_3', formData.siteContactNo || '');
 
       // Appliance Details
       setTextField('Location', formData.applianceLocation || '');
@@ -580,6 +928,74 @@ const GasSafetyRecord = ({
         }
       }
 
+      // Handle images on second page
+      if (uploadedPhotos.length > 0) {
+        try {
+          const pages = pdfDoc.getPages();
+          if (pages.length >= 2) {
+            const secondPage = pages[1];
+
+            // Add "Accompanying Images" heading
+            secondPage.drawText("Accompanying Images", {
+              x: 50,
+              y: 700,
+              size: 14,
+            });
+
+            // Define positions for images
+            const imagePositions = [
+              { x: 50, y: 550, width: 200, height: 150 },  // Image 1 position
+              { x: 300, y: 550, width: 200, height: 150 }, // Image 2 position
+              { x: 50, y: 350, width: 200, height: 150 },  // Image 3 position
+              { x: 300, y: 350, width: 200, height: 150 }  // Image 4 position
+            ];
+
+            // Process up to 4 images
+            for (let i = 0; i < Math.min(uploadedPhotos.length, 4); i++) {
+              const photo = uploadedPhotos[i];
+              try {
+                const cleanUrl = photo.url.split('?')[0];
+                const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
+
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+
+                const imageResponse = await fetch(imageUrlWithToken, {
+                  signal: controller.signal
+                });
+                clearTimeout(timeout);
+
+                if (!imageResponse.ok) {
+                  console.error(`HTTP error for image ${i}: ${imageResponse.status}`);
+                  continue;
+                }
+
+                const imageBytes = await imageResponse.arrayBuffer();
+
+                if (imageBytes.byteLength < 100) {
+                  console.error(`Image too small or corrupted for image ${i}`);
+                  continue;
+                }
+
+                const image = await embedUniversalImage(imageBytes);
+                const { x, y, width, height } = imagePositions[i];
+                secondPage.drawImage(image, {
+                  x,
+                  y,
+                  width,
+                  height,
+                });
+
+              } catch (error) {
+                console.error(`Error processing image ${i}:`, error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error adding images to PDF:', error);
+        }
+      }
+
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
@@ -613,6 +1029,27 @@ const GasSafetyRecord = ({
     e.preventDefault();
     if (isLoading || !isFormEditable) return;
 
+    const hasFailures = [
+      formData.flueVisualCondition,
+      formData.flueOperationChecks,
+      formData.gasTightnessTest,
+      formData.applianceSafeToUse,
+      formData.protectiveBonding,
+      formData.emergencyControlAccessible,
+      formData.pipeworkVisualInspection,
+      formData.coAlarmFitted,
+      formData.fireAlarmFitted,
+      formData.safetyDevicesOperating,
+      formData.ventilationSatisfactory,
+      formData.applianceServiced,
+    ].some(val => val === "Fail" || val === "No");
+
+
+    if (hasFailures && !actionRaised) {
+      toast.error("Please complete the risk assessment before submitting");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -639,13 +1076,14 @@ const GasSafetyRecord = ({
 
       const inspectionPayload = {
         ...formData,
+        actionId: formData.actionId,
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse
       };
 
       const inspectionResponse = checkIdToUse
-        ? await put(`/api/site-check/gas-safety-record/${checkIdToUse}`, inspectionPayload)
-        : await post("/api/site-check/gas-safety-record", inspectionPayload);
+        ? await put(`/api/site-check/gas-safety-inspection/${checkIdToUse}`, inspectionPayload)
+        : await post("/api/site-check/gas-safety-inspection", inspectionPayload);
 
       const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
@@ -663,6 +1101,14 @@ const GasSafetyRecord = ({
       setIsLoading(false);
     }
   };
+
+
+  const filteredAssets =
+    siteAssets?.filter(
+      (asset) =>
+        asset.category === "Mechanical" &&
+        asset.subCategory === "Central Heating"
+    ) || [];
 
   return (
     <div className="container mt-4 mb-5">
@@ -698,7 +1144,7 @@ const GasSafetyRecord = ({
                   />
                 </div>
               </div>
-              <div className="col-md-3">
+              {/* <div className="col-md-3">
                 <div className="mb-3">
                   <label className="form-label">Ref</label>
                   <input
@@ -710,7 +1156,7 @@ const GasSafetyRecord = ({
                     disabled={isSubmitted}
                   />
                 </div>
-              </div>
+              </div> */}
               <div className="col-md-3">
                 <div className="mb-3">
                   <label className="form-label">Gas Safe Reg No</label>
@@ -718,13 +1164,13 @@ const GasSafetyRecord = ({
                     type="text"
                     className="form-control"
                     name="gasSafeRegNo"
-                    value={formData.gasSafeRegNo}
+                    value={loggedInUserData?.gasSafetyRegNo}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
-              <div className="col-md-3">
+              {/* <div className="col-md-3">
                 <div className="mb-3">
                   <label className="form-label">Serial No</label>
                   <input
@@ -736,7 +1182,7 @@ const GasSafetyRecord = ({
                     disabled={isSubmitted}
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -757,7 +1203,7 @@ const GasSafetyRecord = ({
                     name="registeredBusinessName"
                     value={formData.registeredBusinessName}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -768,7 +1214,7 @@ const GasSafetyRecord = ({
                     name="registeredBusinessAddress"
                     value={formData.registeredBusinessAddress}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
@@ -779,9 +1225,9 @@ const GasSafetyRecord = ({
                     type="text"
                     className="form-control"
                     name="registeredBusinessPostcode"
-                    value={formData.registeredBusinessPostcode}
+                    value={gasEngineerPostCode}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -792,7 +1238,7 @@ const GasSafetyRecord = ({
                     name="registeredBusinessContact"
                     value={formData.registeredBusinessContact}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
@@ -816,7 +1262,7 @@ const GasSafetyRecord = ({
                     name="landlordName"
                     value={formData.landlordName}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -827,7 +1273,7 @@ const GasSafetyRecord = ({
                     name="landlordAddress"
                     value={formData.landlordAddress}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
@@ -840,7 +1286,7 @@ const GasSafetyRecord = ({
                     name="landlordPostcode"
                     value={formData.landlordPostcode}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -851,7 +1297,7 @@ const GasSafetyRecord = ({
                     name="landlordContact"
                     value={formData.landlordContact}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
@@ -875,7 +1321,7 @@ const GasSafetyRecord = ({
                     name="siteName"
                     value={formData.siteName}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -886,7 +1332,7 @@ const GasSafetyRecord = ({
                     name="siteAddress"
                     value={formData.siteAddress}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
@@ -899,7 +1345,7 @@ const GasSafetyRecord = ({
                     name="sitePostcode"
                     value={formData.sitePostcode}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
                 <div className="mb-3">
@@ -907,10 +1353,10 @@ const GasSafetyRecord = ({
                   <input
                     type="text"
                     className="form-control"
-                    name="siteContact"
-                    value={formData.siteContact}
+                    name="siteContactNo"
+                    value={formData.siteContactNo}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
@@ -918,115 +1364,140 @@ const GasSafetyRecord = ({
           </div>
         </div>
 
-        {/* Appliance Details */}
         <div className="card mb-4">
           <div className="card-header">
             <h5 className="mb-0">Appliance Details</h5>
           </div>
           <div className="card-body">
-            <div className="row">
-              <div className="col-md-4">
-                <div className="mb-3">
-                  <label className="form-label">Location</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="applianceLocation"
-                    value={formData.applianceLocation}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="mb-3">
-                  <label className="form-label">Type</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="applianceType"
-                    value={formData.applianceType}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="mb-3">
-                  <label className="form-label">Manufacturer</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="applianceManufacturer"
-                    value={formData.applianceManufacturer}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col-md-4">
-                <div className="mb-3">
-                  <label className="form-label">Model</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="applianceModel"
-                    value={formData.applianceModel}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  />
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="mb-3">
-                  <label className="form-label">Owned by Landlord</label>
-                  <select
-                    className="form-control"
-                    name="applianceOwnedByLandlord"
-                    value={formData.applianceOwnedByLandlord}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  >
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="mb-3">
-                  <label className="form-label">Appliance Inspected</label>
-                  <select
-                    className="form-control"
-                    name="applianceInspected"
-                    value={formData.applianceInspected}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  >
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div className="row">
+            <div className="row mb-4">
               <div className="col-md-12">
-                <div className="mb-3">
-                  <label className="form-label">Flue Type</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="flueType"
-                    value={formData.flueType}
-                    onChange={handleInputChange}
-                    disabled={isSubmitted}
-                  />
-                </div>
+                <Autocomplete
+                  disabled={isSubmitted}
+                  options={filteredAssets}
+                  getOptionLabel={(option) =>
+                    `${option.assetId} - ${option.assetName} (${option.position || "NA"
+                    } > ${option.floor || "NA"} > ${option.room || "NA"})`
+                  }
+                  value={selectedAsset}
+                  onChange={handleAssetSelect}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select a Disabled WC Alarm Device"
+                      variant="outlined"
+                      placeholder="Search devices..."
+                    />
+                  )}
+                  sx={{ width: "100%" }}
+                />
               </div>
             </div>
+
+            {formData.selectedAsset && (
+              <div className="row">
+                <div className="col-md-12">
+                  <div className="mb-3">
+                    <label className="form-label">Location</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={`${selectedAsset.assetName} - Asset No-${formData.assetId} - ${selectedAsset.manufacturer} ,  - ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}`}
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formData.selectedAsset && (
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Type</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="type"
+                      value={selectedAsset.subCategory}
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Manufacturer</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="manufacturer"
+                      value={selectedAsset.manufacturer}
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Model Number</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="modelNumber"
+                      value={selectedAsset.model}
+                      disabled
+                    />
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Owned by Landlord</label>
+                    <select
+                      className="form-control"
+                      name="applianceOwnedByLandlord"
+                      value={formData.applianceOwnedByLandlord}
+                      onChange={handleInputChange}
+                      disabled={!isFormEditable || isSubmitted}
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="mb-3">
+                    <label className="form-label">Appliance Inspected</label>
+                    <select
+                      className="form-control"
+                      name="applianceInspected"
+                      value={formData.applianceInspected}
+                      onChange={handleInputChange}
+                      disabled={!isFormEditable || isSubmitted}
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="col-md-12">
+                  <div className="mb-3">
+                    <label className="form-label">Flue Type</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="flueType"
+                      value={formData.flueType}
+                      onChange={handleInputChange}
+                      disabled={!isFormEditable || isSubmitted}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+
           </div>
         </div>
+
 
         {/* Inspection Details */}
         <div className="card mb-4">
@@ -1252,6 +1723,60 @@ const GasSafetyRecord = ({
           </div>
         </div>
 
+
+        {/**Risk Score Card */}
+
+        {
+          showRiskAssessment && (
+            <div className="card mb-4">
+              <div className="card-header">
+                <h5 className="mb-0">Risk Assessment</h5>
+                {existingAction?.checkId === currentCheckId && (
+                  <span className="badge bg-success ms-2">
+                    Action #{existingAction.actionId} - {existingAction.status}
+                  </span>
+                )}
+              </div>
+              <div className="card-body">
+                {existingAction?.checkId === currentCheckId ? (
+                  <div className="existing-action">
+                    <div className="row">
+                      <div className="col-md-6">
+                        <p><strong>Observation:</strong> {existingAction.observation}</p>
+                        <p><strong>Required Action:</strong> {existingAction.requiredAction}</p>
+                        <p><strong>Risk Score:</strong> {existingAction.riskScore}</p>
+                      </div>
+                      <div className="col-md-6">
+                        <p><strong>Description: </strong> {existingAction.desc}</p>
+                        <p><strong>Due Date:</strong> {formatDate(existingAction.dueDate)}</p>
+                        <p><strong>Status:</strong> {existingAction.status}</p>
+                      </div>
+                    </div>
+                    {existingAction.comments && (
+                      <div className="mt-3">
+                        <h6>Comments:</h6>
+                        <p>{existingAction.comments}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <RiskScoreCard
+                    desc={`Inspection - Gas Safety - ${formData.applianceType || 'Appliance'} Inspection`}
+                    siteId={siteSelectedForGlobal?.siteId}
+                    checkId={currentCheckId}
+                    createdBy={loggedInUserData?.id}
+                    taggedAsset={formData.assetId}
+                    onRiskAssessmentComplete={handleRiskAssessmentComplete}
+                    actionRaised={actionRaised}
+                    disabled={isSubmitted}
+                    images={getAllImages()}
+                  />
+                )}
+              </div>
+            </div>
+          )
+        }
+
         {/* Combustion Performance Readings */}
         <div className="card mb-4">
           <div className="card-header">
@@ -1371,6 +1896,117 @@ const GasSafetyRecord = ({
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Photo Upload Section */}
+        <div className="card mb-4">
+          <div className="card-header d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Accompanying Images</h5>
+            <div>
+              <input
+                type="file"
+                id="photo-upload"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                style={{ display: "none" }}
+                disabled={isSubmitted || uploadingPhotos || uploadedPhotos.length >= 4 || !isFormEditable}
+              />
+              <label
+                htmlFor="photo-upload"
+                className={`btn btn-sm btn-primary ${(isSubmitted || !isFormEditable || uploadedPhotos.length >= 4) ? 'disabled' : ''}`}
+                style={{
+                  cursor: (isSubmitted || !isFormEditable || uploadedPhotos.length >= 4) ? 'not-allowed' : 'pointer',
+                  opacity: (isSubmitted || !isFormEditable || uploadedPhotos.length >= 4) ? 0.6 : 1
+                }}
+              >
+                {uploadingPhotos ? (
+                  <span>Uploading...</span>
+                ) : (
+                  <>
+                    <InsertPhotoIcon fontSize="small" />
+                    Add Photos ({uploadedPhotos.length}/4)
+                  </>
+                )}
+              </label>
+              {uploadedPhotos.length >= 4 && (
+                <span className="ms-2 text-danger">Maximum photos reached</span>
+              )}
+            </div>
+          </div>
+          <div className="card-body">
+            <div className="d-flex flex-wrap">
+              {uploadedPhotos.map((photo, index) => {
+                const imageUrl = photo.url.includes('?')
+                  ? photo.url
+                  : `${photo.url}?${sasToken}`;
+
+                return (
+                  <div
+                    key={index}
+                    className="position-relative me-3 mb-3"
+                    style={{
+                      width: "150px",
+                      height: "150px",
+                    }}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Preview ${index}`}
+                      className="img-thumbnail"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/placeholder-image.png';
+                      }}
+                      loading="lazy"
+                    />
+
+                    {isFormEditable && !isSubmitted && (
+                      <button
+                        type="button"
+                        className="position-absolute top-0 end-0 btn btn-sm btn-danger"
+                        onClick={() => handleRemovePhoto(index)}
+                        style={{
+                          padding: '0.15rem 0.3rem',
+                          fontSize: '0.7rem',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transform: 'translate(50%, -50%)'
+                        }}
+                        aria-label={`Remove photo ${index + 1}`}
+                      >
+                        ×
+                      </button>
+                    )}
+
+                    {photo.fileName && (
+                      <div
+                        className="position-absolute bottom-0 start-0 w-100 text-truncate px-1 bg-dark text-white"
+                        style={{
+                          fontSize: '10px',
+                          opacity: '0.8',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden'
+                        }}
+                        title={photo.fileName}
+                      >
+                        {photo.fileName}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
