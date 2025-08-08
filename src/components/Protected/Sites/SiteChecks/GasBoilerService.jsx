@@ -163,7 +163,6 @@ const GasBoilerService = ({
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    installationAddress: "",
     registeredBusinessRegNo: "",
     rentedAccommodation: "",
     workDescription: "",
@@ -234,6 +233,7 @@ const GasBoilerService = ({
     gasServices: null,
     boilerService: null
   });
+  const [installationAddress, setInstallationAddress] = useState(null);
 
   const isInternalUserTaggedWithSite = loggedInUserData?.taggedSites?.some(
     (site) => site.id === siteSelectedForGlobal?.siteId
@@ -316,7 +316,7 @@ const GasBoilerService = ({
             );
           }
 
-          console.log('Found site contact user:', siteContactUser); // Debug log
+          //console.log('Found site contact user:', siteContactUser); // Debug log
 
           // Transform safety checks to include gas tightness test result
           const transformedSafetyChecks = inspectionData.safetyChecks?.length
@@ -391,36 +391,38 @@ const GasBoilerService = ({
     fetchInspectionData();
   }, [checkId, siteAssets, users, sasToken, isInternalUserTaggedWithSite, siteSelectedForGlobal?.siteId]);
 
+
+
   useEffect(() => {
     const fetchData = async () => {
-      if (license?.companyName) {
-        setFormData(prev => ({
-          ...prev,
-          installationName: license.companyName,
-        }));
-      }
-
-      if (!siteSelectedForGlobal?.siteId) {
-        return;
-      }
-
       try {
+        if (license?.companyName) {
+          setFormData(prev => ({
+            ...prev,
+            installationName: license.companyName,
+          }));
+        }
+
+        if (!siteSelectedForGlobal?.siteId) {
+          return;
+        }
+
+        setIsLoading(true); // Set loading state when starting data fetch
+
         const fullSiteData = await get(`/api/site/site/${siteSelectedForGlobal.siteId}`);
-        const addressParts = [
+        const fullAddress = [
           fullSiteData.address1,
           fullSiteData.address2,
           fullSiteData.city,
           fullSiteData.area,
           fullSiteData.postCode,
           fullSiteData.country
-        ].filter(part => part && part.trim() !== '');
+        ].filter(Boolean).join(", ");
 
-        const fullAddress = addressParts.join(", ");
-
+        setInstallationAddress(fullAddress);
         setFormData(prev => ({
           ...prev,
-          postCode: fullSiteData.postCode || "",
-          installationAddress: fullAddress,
+          postCode: fullSiteData.postCode || ""
         }));
 
         if (siteSelectedForGlobal.siteContact) {
@@ -435,11 +437,16 @@ const GasBoilerService = ({
       } catch (error) {
         console.error('Error fetching site details:', error);
         toast.error('Failed to load site address details');
+      } finally {
+        setIsLoading(false); // Clear loading state when done
       }
     };
 
     fetchData();
-  }, [license?.companyName, siteSelectedForGlobal?.siteId]);
+  }, [license?.companyName, siteSelectedForGlobal?.siteId, siteSelectedForGlobal?.siteContact]);
+
+
+
 
   useEffect(() => {
     const needsRiskAssessment =
@@ -708,7 +715,6 @@ const GasBoilerService = ({
 
   const gasEngineerPostCode = loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0]
 
-  //console.log('user --> details', gasEngineerPostCode);
 
 
   const generatePDF = async (uploadToServer = true) => {
@@ -754,7 +760,8 @@ const GasBoilerService = ({
       };
       // Set form data in PDF
 
-      const addressLines = (formData.installationAddress || '').split(',');
+      const addressLines = (installationAddress || '').split(',');
+      console.log('Address lines:', addressLines);
       setTextField('Address', addressLines[0] || '');
       setTextField('Address_2', addressLines[1] || '');
       setTextField('Address_3', addressLines[2] || '');
@@ -964,7 +971,26 @@ const GasBoilerService = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLoading || !isFormEditable) return;
+    if (isLoading) {
+      toast.error('Form is currently processing, please wait');
+      return;
+    }
+
+    if (!isFormEditable) {
+      toast.error('This form is not editable');
+      return;
+    }
+
+    if (!installationAddress) {
+      toast.error('Installation address is required');
+      return;
+    }
+
+    // Add validation for required fields
+    if (!formData.selectedAsset) {
+      toast.error('Please select a boiler asset');
+      return;
+    }
 
     setIsLoading(true);
 
@@ -1004,6 +1030,7 @@ const GasBoilerService = ({
       // Prepare inspection payload
       const inspectionPayload = {
         ...formData,
+        installationAddress,
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
@@ -1236,7 +1263,7 @@ const GasBoilerService = ({
                   <textarea
                     className="form-control"
                     rows={3}
-                    value={formData.installationAddress}
+                    value={installationAddress}
                     disabled
                   />
                 </div>
