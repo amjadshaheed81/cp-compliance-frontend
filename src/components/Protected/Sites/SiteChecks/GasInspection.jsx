@@ -1768,7 +1768,7 @@ const GasSafetyRecord = ({
                     taggedAsset={formData.assetId}
                     onRiskAssessmentComplete={handleRiskAssessmentComplete}
                     actionRaised={actionRaised}
-                    disabled={isSubmitted}
+                      disabled={!isFormEditable || isSubmitted}
                     images={getAllImages()}
                   />
                 )}
