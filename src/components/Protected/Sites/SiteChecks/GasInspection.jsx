@@ -60,8 +60,9 @@ const GasSafetyRecord = ({
   const gasEngineerPostCode = loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0]
 
   const adminPostCode = license?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0];
+  const [inspectionDetails, setInspectionDetails] = useState(null);
 
-  console.log(license)
+  //console.log(license)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     ref: "",
@@ -136,7 +137,6 @@ const GasSafetyRecord = ({
     receivedByPosition: "",
     receivedByDate: new Date().toISOString().split("T")[0],
 
-    nextInspectionDue: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0],
     actionId: null
   });
 
@@ -153,6 +153,7 @@ const GasSafetyRecord = ({
   const [existingAction, setExistingAction] = useState(null);
   const [actionRaised, setActionRaised] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [nextInspectionDue, setNextInspectionDue] = useState(null);
 
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
@@ -163,6 +164,11 @@ const GasSafetyRecord = ({
   const isInternalUserTaggedWithSite = loggedInUserData?.taggedSites?.some(
     (site) => site.id === siteSelectedForGlobal?.siteId
   );
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
 
   const isGasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
 
@@ -199,11 +205,42 @@ const GasSafetyRecord = ({
           await getUsers();
         }
 
+        // Load site assets if not already loaded
+        if (siteAssets.length === 0 && siteSelectedForGlobal?.siteId) {
+          await getSiteAssets(siteSelectedForGlobal.siteId);
+        }
+
+        const statusResponse = await get(`/api/site-check/check-id/${checkId}`);
+
+        console.log("Status response:", statusResponse);
+        const inspectionDetails = {
+          checkId: statusResponse.checkId,
+          siteId: statusResponse.siteId,
+          type: statusResponse.type,
+          subType: statusResponse.subType,
+          category: statusResponse.category,
+          dueDate: statusResponse.dueDate,
+          status: statusResponse.status
+        };
+        setInspectionDetails(inspectionDetails);
+        const nextInspection = statusResponse?.dueDate;
+        console.log("Next inspection date:", nextInspection);
+        const isSubmitted = statusResponse?.status === 'Done';
+        setIsSubmitted(isSubmitted);
+        setIsFormEditable(!isSubmitted);
+
+
+        setNextInspectionDue(formatDateForBackend(nextInspection));
+
         const apiData = await get(`/api/site-check/gas-safety-inspection/${checkId}`);
         if (apiData && apiData.length > 0) {
           const mostRecentItem = apiData[0];
 
+
+
           setFormData(mostRecentItem);
+
+
 
           // Load photos from parameters
           const photosFromApi = [];
@@ -232,7 +269,19 @@ const GasSafetyRecord = ({
     };
 
     fetchInspectionData();
-  }, [checkId, users, sasToken]);
+  }, [checkId, users, sasToken, siteSelectedForGlobal.siteId]);
+
+  const formatDateToReadable = (dateString) => {
+    if (!dateString) return 'Not set';
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+  console.log('next inspection due date', formatDateToReadable(nextInspectionDue));
 
   useEffect(() => {
     const hasFailures = [
@@ -283,7 +332,7 @@ const GasSafetyRecord = ({
       try {
         const fullSiteData = await get(`/api/site/site/${siteSelectedForGlobal.siteId}`);
 
-        console.log('Full site data:', fullSiteData);
+        //console.log('Full site data:', fullSiteData);
         // Set site details in form
         setFormData(prev => ({
           ...prev,
@@ -305,11 +354,23 @@ const GasSafetyRecord = ({
             registeredBusinessAddress: loggedInUserData.companyAddress || "",
             registeredBusinessPostcode: loggedInUserData.companyPostcode || "",
             registeredBusinessContact: loggedInUserData.phone || "",
-            gasSafeRegNo: loggedInUserData.gasSafeRegNo || ""
+            gasSafeRegNo: loggedInUserData.gasSafeRegNo || "",
           }));
         }
 
         await fetchFolderStructure(siteSelectedForGlobal.siteId);
+
+        if (formData.actionId) {
+          const action = await fetchActionById(formData.actionId);
+          if (action) {
+            setExistingAction(action);
+            setActionRaised(true);
+          } else {
+            await fetchExistingActions();
+          }
+        } else {
+          await fetchExistingActions();
+        }
       } catch (error) {
         console.error('Error fetching site details:', error);
         toast.error('Failed to load site details');
@@ -892,7 +953,7 @@ const GasSafetyRecord = ({
       setTextField('High_3', formData.combustionHighRatio || '');
 
       // Next Inspection
-      setTextField('Next Inspection Is Due Before', formatDate(formData.nextInspectionDue));
+      setTextField('Next Inspection Is Due Before', formatDateToReadable(nextInspectionDue));
 
       // Signatures
       setTextField('Gas Engineer', formData.engineerName || '');
@@ -1053,6 +1114,16 @@ const GasSafetyRecord = ({
     setIsLoading(true);
 
     try {
+      let existingInspection = null;
+      if (currentCheckId) {
+        try {
+          const inspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
+          existingInspection = inspections?.length > 0 ? inspections[0] : null;
+        } catch (error) {
+          console.error('Error checking for existing inspection:', error);
+        }
+      }
+
       const statusPayload = {
         siteId: siteSelectedForGlobal?.siteId,
         type: 'Inspection',
@@ -1081,9 +1152,22 @@ const GasSafetyRecord = ({
         checkId: checkIdToUse
       };
 
-      const inspectionResponse = checkIdToUse
-        ? await put(`/api/site-check/gas-safety-inspection/${checkIdToUse}`, inspectionPayload)
-        : await post("/api/site-check/gas-safety-inspection", inspectionPayload);
+      let saveResponse;
+      if (existingInspection) {
+        saveResponse = await put(
+          `/api/site-check/gas-safety-inspection/${checkIdToUse}`,
+          inspectionPayload
+        );
+      } else {
+        saveResponse = await post(
+          `/api/site-check/gas-safety-inspection`,
+          inspectionPayload
+        );
+      }
+
+      if (![200, 201, 204].includes(saveResponse?.status)) {
+        throw new Error('Failed to save inspection data');
+      }
 
       const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
@@ -1510,12 +1594,25 @@ const GasSafetyRecord = ({
                 <div className="mb-3">
                   <label className="form-label">Operating Pressure (mbars) or heat input (kW/h)</label>
                   <input
-                    type="text"
+                    type="number"
+                    step="0.0001"
                     className="form-control"
                     name="operatingPressure"
                     value={formData.operatingPressure}
                     onChange={handleInputChange}
                     disabled={isSubmitted}
+                    onBlur={(e) => {
+                      // This ensures the value is rounded to 4 decimal places when focus leaves the field
+                      if (e.target.value) {
+                        const roundedValue = parseFloat(e.target.value).toFixed(4);
+                        handleInputChange({
+                          target: {
+                            name: e.target.name,
+                            value: roundedValue
+                          }
+                        });
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -1585,12 +1682,25 @@ const GasSafetyRecord = ({
                 <div className="mb-3">
                   <label className="form-label">Combustion analyser reading</label>
                   <input
-                    type="text"
+                    type="number"
+                    step="0.0001"
                     className="form-control"
                     name="combustionAnalyserReading"
                     value={formData.combustionAnalyserReading}
                     onChange={handleInputChange}
                     disabled={isSubmitted}
+                    onBlur={(e) => {
+                      // This ensures the value is rounded to 4 decimal places when focus leaves the field
+                      if (e.target.value) {
+                        const roundedValue = parseFloat(e.target.value).toFixed(4);
+                        handleInputChange({
+                          target: {
+                            name: e.target.name,
+                            value: roundedValue
+                          }
+                        });
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -1887,12 +1997,12 @@ const GasSafetyRecord = ({
                 <div className="mb-3">
                   <label className="form-label">Next Inspection Is Due Before</label>
                   <input
-                    type="date"
+                    type="text"
                     className="form-control"
                     name="nextInspectionDue"
-                    value={formData.nextInspectionDue}
+                    value={formatDateToReadable(nextInspectionDue)}
                     onChange={handleInputChange}
-                    disabled={isSubmitted}
+                    disabled
                   />
                 </div>
               </div>
