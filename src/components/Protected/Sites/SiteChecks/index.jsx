@@ -513,7 +513,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setIsLoading(true);
 
     try {
-    // Get all site checks
+      // Get all site checks
       const siteChecks = await get("/api/site-check/site/" + site?.siteId);
 
       // Create a map to store asset IDs
@@ -531,23 +531,32 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
         }
       }));
 
-      // Update the assetIdMap state first
+      // Update the assetIdMap state
       setAssetIdMap(newAssetIdMap);
 
-      // Then sort the site checks using the updated map
+      // Sort the site checks with the following priority:
+      // 1. Checks with asset IDs (sorted numerically)
+      // 2. Checks without asset IDs (sorted by type then subtype)
       const sortedSiteChecks = [...siteChecks].sort((a, b) => {
         const aAssetId = newAssetIdMap[a.checkId];
         const bAssetId = newAssetIdMap[b.checkId];
 
+        // Both have asset IDs - sort numerically
         if (aAssetId && bAssetId) {
           return parseInt(aAssetId) - parseInt(bAssetId);
         }
+
+        // Only one has asset ID - it comes first
         if (aAssetId) return -1;
         if (bAssetId) return 1;
-        return 0;
+
+        // Neither has asset ID - sort by type then subtype
+        const typeCompare = a.type.localeCompare(b.type);
+        if (typeCompare !== 0) return typeCompare;
+        return a.subType.localeCompare(b.subType);
       });
 
-      // Update both states at once
+      // Update both states
       setFilteredSiteChecks(sortedSiteChecks);
       setSiteChecks(sortedSiteChecks);
     } catch (error) {
@@ -558,14 +567,32 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     }
   };
 
+  // Updated fetchInspectionData function
   const fetchInspectionData = async (checkId, type, subType) => {
     try {
-      let apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
+      let apiEndpoint;
+
+      // Determine the endpoint based on subType
+      if (subType === 'Boiler Service / Maintenance Checklist') {
+        apiEndpoint = `/api/site-check/gas-boiler-inspection/${checkId}`;
+      } else if (subType === 'Gas Safety Annual Inspection') {
+        apiEndpoint = `/api/site-check/gas-safety-inspection/${checkId}`;
+      } else {
+        // Default to generic inspection
+        apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
+      }
+
       const inspectionData = await get(apiEndpoint);
 
-      // Generic inspection returns an array
-      const mostRecentItem = inspectionData?.[inspectionData.length - 1];
-      return mostRecentItem?.assetId;
+      // Handle different response structures
+      if (Array.isArray(inspectionData)) {
+        // Generic inspection returns an array - get the most recent item
+        const mostRecentItem = inspectionData[inspectionData.length - 1];
+        return mostRecentItem?.assetId;
+      } else {
+        // Gas boiler and gas safety inspections return single object
+        return inspectionData?.assetId;
+      }
     } catch (error) {
       console.error(`Error fetching inspection for check ${checkId}:`, error);
       return null;
