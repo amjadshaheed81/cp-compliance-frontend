@@ -996,7 +996,7 @@ const GasBoilerService = ({
       let existingInspection = null;
       if (currentCheckId) {
         try {
-          const inspections = await get(`/api/site-check/gas-boiler-inspection/${currentCheckId}`);
+          const inspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
           existingInspection = inspections?.length > 0 ? inspections[0] : null;
         } catch (error) {
           console.error('Error checking for existing inspection:', error);
@@ -1059,16 +1059,7 @@ const GasBoilerService = ({
         gasTightnessTestResult: formData.safetyChecks.find(c => c.id === 8)?.result || null
       };
 
-      // // Check if inspection already exists
-      // let inspectionExists = false;
-      // try {
-      //   await get(`/api/site-check/gas-boiler-inspection/${checkIdToUse}`);
-      //   inspectionExists = true;
-      // } catch (error) {
-      //   if (error.response?.status !== 404) throw error;
-      // }
 
-      // Save inspection data
       let saveResponse;
       if (existingInspection) {
         saveResponse = await put(
