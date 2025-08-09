@@ -170,7 +170,6 @@ const GasBoilerService = ({
     assetId: "",
     selectedAsset: null,
     comments: "",
-    postCode: "",
 
     applianceChecks: [
       { id: 1, question: "Heat Exchanger", satisfactory: null, remarks: "", checkId: checkId || null },
@@ -234,6 +233,7 @@ const GasBoilerService = ({
     boilerService: null
   });
   const [installationAddress, setInstallationAddress] = useState(null);
+  const [postCode, setPostCode] = useState(null);
 
   const isInternalUserTaggedWithSite = loggedInUserData?.taggedSites?.some(
     (site) => site.id === siteSelectedForGlobal?.siteId
@@ -420,10 +420,7 @@ const GasBoilerService = ({
         ].filter(Boolean).join(", ");
 
         setInstallationAddress(fullAddress);
-        setFormData(prev => ({
-          ...prev,
-          postCode: fullSiteData.postCode || ""
-        }));
+        setPostCode(fullSiteData.postCode || "");
 
         if (siteSelectedForGlobal.siteContact) {
           setFormData((prev) => ({
@@ -762,9 +759,9 @@ const GasBoilerService = ({
 
       const addressLines = (installationAddress || '').split(',');
       console.log('Address lines:', addressLines);
-      setTextField('Address', addressLines[0] || '');
-      setTextField('Address_2', addressLines[1] || '');
-      setTextField('Address_3', addressLines[2] || '');
+      setTextField('Address_1', (addressLines[0] + ',' + addressLines[1]).trim() || ''); // Street and house number
+      setTextField('Address_2', (addressLines[2] + ',' + addressLines[3]).trim() || ''); // City and region
+      setTextField('Address_3', (addressLines[4] + ',' + addressLines[5]).trim() || ''); // Postal code and country
 
       setTextField('Name', license?.companyName || '');
       setTextField('Reg No', formData.registeredBusinessRegNo || '');
@@ -772,8 +769,8 @@ const GasBoilerService = ({
       setTextField('gasSafeNo', loggedInUserData?.gasSafetyRegNo || '');
       setTextField('Company', loggedInUserData.companyName || '');
       setTextField('Address', loggedInUserData?.companyAddress || '');
-      setTextField('Post Code', formData.postCode || '');
-      setTextField('postCode', gasEngineerPostCode || '');
+      setTextField('Post Code', postCode || '');
+      setTextField('PostCode', gasEngineerPostCode || '');
       setTextField('Rented', formData.rentedAccommodation);
       setTextField('Date  Time of Issue', formatDate(formData.dateTimeOfIssue));
       setTextField('Work Description', formData.workDescription);
@@ -1272,7 +1269,7 @@ const GasBoilerService = ({
                   <input
                     type="text"
                     className="form-control"
-                    value={formData.postCode}
+                    value={postCode}
                     disabled
                   />
                 </div>
