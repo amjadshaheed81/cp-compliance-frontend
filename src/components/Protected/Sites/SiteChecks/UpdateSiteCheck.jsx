@@ -38,6 +38,7 @@ import StorageTankService from "./StorageTankService";
 import FireDamper from "./FireDamper";
 import WaterHeaterCertificate from "./WaterHeaterCertificate";
 import InspectionFireCertificate from "./InspectionFireCertificate";
+import GasBoilerService from "./GasBoilerService";
 
 
 
