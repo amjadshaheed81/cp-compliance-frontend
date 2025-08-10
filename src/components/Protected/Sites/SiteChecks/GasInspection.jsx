@@ -593,7 +593,7 @@ const GasSafetyRecord = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `GBS-${new Date().getTime()}`
@@ -628,7 +628,7 @@ const GasSafetyRecord = ({
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `GBS-${new Date().getTime()}`
@@ -889,47 +889,53 @@ const GasSafetyRecord = ({
 
       // Set form data in PDF
       setTextField('Date', formatDate(formData.date));
-      setTextField('Ref', formData.ref || '');
-      setTextField('Gas Safe Reg No', formData.gasSafeRegNo || '');
-      setTextField('Serial no', formData.serialNo || '');
+      //setTextField('Ref', formData.ref || '');
+      setTextField('GasSafeRegNo', formData.gasSafeRegNo || '');
+      //setTextField('Serial no', formData.serialNo || '');
 
       // Registered Business Details
       setTextField('Name', formData.registeredBusinessName || '');
       const businessAddressLines = (formData.registeredBusinessAddress || '').split(',');
       setTextField('Address', businessAddressLines[0] || '');
       setTextField('Address_2', businessAddressLines[1] || '');
+      setTextField('Address_3', businessAddressLines[2] || '');
+      setTextField('Address_4', businessAddressLines[3] || '');
       setTextField('Postcode', formData.registeredBusinessPostcode || '');
       setTextField('Contact Number', formData.registeredBusinessContact || '');
 
       // Landlord/Homeowner Details
       setTextField('Name_2', formData.landlordName || '');
       const landlordAddressLines = (formData.landlordAddress || '').split(',');
-      setTextField('Address_3', landlordAddressLines[0] || '');
-      setTextField('Address_4', landlordAddressLines[1] || '');
+      setTextField('Address_1_1', landlordAddressLines[0] || '');
+      setTextField('Address_1_2', landlordAddressLines[1] || '');
+      setTextField('Address_1_3', landlordAddressLines[2] || '');
+      setTextField('Address_1_4', landlordAddressLines[3] || '');
       setTextField('Postcode_2', formData.landlordPostcode || '');
       setTextField('Contact Number_2', formData.landlordContact || '');
 
       // Site Details
       setTextField('Name_3', formData.siteName || '');
       const siteAddressLines = (formData.siteAddress || '').split(',');
-      setTextField('Address_5', siteAddressLines[0] || '');
-      setTextField('Address_6', siteAddressLines[1] || '');
+      setTextField('Address_2_1', siteAddressLines[0] || '');
+      setTextField('Address_2_2', siteAddressLines[1] || '');
+      setTextField('Address_2_3', siteAddressLines[2] || '');
+      setTextField('Address_2_4', siteAddressLines[3] || '');
       setTextField('Postcode_3', formData.sitePostcode || '');
       setTextField('Contact Number_3', formData.siteContactNo || '');
 
       // Appliance Details
-      setTextField('Location', formData.applianceLocation || '');
-      setTextField('Type', formData.applianceType || '');
-      setTextField('Manufacturer', formData.applianceManufacturer || '');
-      setTextField('Model', formData.applianceModel || '');
-      setCheckbox('Yes', formData.applianceOwnedByLandlord === "Yes");
-      setCheckbox('Yes_2', formData.applianceInspected === "Yes");
+      setTextField('Location1', formData.applianceLocation || '');
+      setTextField('Type', selectedAsset?.subCategory || '');
+      setTextField('Manufacturer', selectedAsset?.manufacturer || '');
+      setTextField('Model', selectedAsset?.model || '');
+      setTextField('Owned by Landlord', formData.applianceOwnedByLandlord || '');
+      setTextField('Appliance Inspected', formData.applianceInspected || '');
       setTextField('Flue Type', formData.flueType || '');
 
       // Inspection Details
       setTextField('Operating Pressure', formData.operatingPressure || '');
-      setCheckbox('Yes_3', formData.safetyDevicesOperating === "Yes");
-      setCheckbox('Yes_4', formData.ventilationSatisfactory === "Yes");
+      setTextField('Yes_3', formData.safetyDevicesOperating || '');
+      setTextField('Yes_4', formData.ventilationSatisfactory || '');
       setTextField('Visual condition of flue & termination', formData.flueVisualCondition || '');
       setTextField('Flue operation checks', formData.flueOperationChecks || '');
       setTextField('Combustion analyser reading', formData.combustionAnalyserReading || '');
@@ -938,12 +944,12 @@ const GasSafetyRecord = ({
 
       // Final Check Results
       setTextField('Outcome of gas tightness test', formData.gasTightnessTest || '');
-      setCheckbox('Yes_7', formData.protectiveBonding === "Yes");
-      setCheckbox('Yes_8', formData.emergencyControlAccessible === "Yes");
-      setCheckbox('Yes_9', formData.pipeworkVisualInspection === "Yes");
-      setCheckbox('Yes_10', formData.coAlarmFitted === "Yes");
-      setCheckbox('Yes_11', formData.fireAlarmFitted === "Yes");
-
+      setTextField('Yes_7', formData.protectiveBonding || '');
+      setTextField('Yes_8', formData.emergencyControlAccessible || '');
+      setTextField('Yes_9', formData.pipeworkVisualInspection || '');
+      setTextField('Yes_10', formData.coAlarmFitted || '');
+      setTextField('Yes_11', formData.fireAlarmFitted || '');
+      setTextField('NotesRow', formData.applianceLocation || '');
       // Combustion Performance Readings
       setTextField('Low', formData.combustionLowCO || '');
       setTextField('High', formData.combustionHighCO || '');
@@ -951,6 +957,7 @@ const GasSafetyRecord = ({
       setTextField('High_2', formData.combustionHighCO2 || '');
       setTextField('Low_3', formData.combustionLowRatio || '');
       setTextField('High_3', formData.combustionHighRatio || '');
+      setTextField('Label  Warning Notice', formData.applianceType || '')
 
       // Next Inspection
       setTextField('Next Inspection Is Due Before', formatDateToReadable(nextInspectionDue));
@@ -990,77 +997,67 @@ const GasSafetyRecord = ({
       }
 
       // Handle images on second page
-      if (uploadedPhotos.length > 0) {
+      // Handle image embedding for PDF fields
+      const imageFields = [
+        { pdfField: 'param2_af_image', formField: 'param2' },
+        { pdfField: 'param3_af_image', formField: 'param3' },
+        { pdfField: 'param4_af_image', formField: 'param4' },
+        { pdfField: 'param5_af_image', formField: 'param5' }
+      ];
+
+      for (const { pdfField, formField } of imageFields) {
+        const imageUrl = formData[formField];
+        if (!imageUrl) {
+          console.log(`No image URL found for ${formField}`);
+          continue;
+        }
+
         try {
-          const pages = pdfDoc.getPages();
-          if (pages.length >= 2) {
-            const secondPage = pages[1];
+          const cleanUrl = imageUrl.split('?')[0];
+          const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
+          console.log(`Processing image from: ${imageUrlWithToken}`);
 
-            // Add "Accompanying Images" heading
-            secondPage.drawText("Accompanying Images", {
-              x: 50,
-              y: 700,
-              size: 14,
-            });
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
 
-            // Define positions for images
-            const imagePositions = [
-              { x: 50, y: 550, width: 200, height: 150 },  // Image 1 position
-              { x: 300, y: 550, width: 200, height: 150 }, // Image 2 position
-              { x: 50, y: 350, width: 200, height: 150 },  // Image 3 position
-              { x: 300, y: 350, width: 200, height: 150 }  // Image 4 position
-            ];
+          const imageResponse = await fetch(imageUrlWithToken, {
+            signal: controller.signal
+          });
+          clearTimeout(timeout);
 
-            // Process up to 4 images
-            for (let i = 0; i < Math.min(uploadedPhotos.length, 4); i++) {
-              const photo = uploadedPhotos[i];
-              try {
-                const cleanUrl = photo.url.split('?')[0];
-                const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
-
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 10000);
-
-                const imageResponse = await fetch(imageUrlWithToken, {
-                  signal: controller.signal
-                });
-                clearTimeout(timeout);
-
-                if (!imageResponse.ok) {
-                  console.error(`HTTP error for image ${i}: ${imageResponse.status}`);
-                  continue;
-                }
-
-                const imageBytes = await imageResponse.arrayBuffer();
-
-                if (imageBytes.byteLength < 100) {
-                  console.error(`Image too small or corrupted for image ${i}`);
-                  continue;
-                }
-
-                const image = await embedUniversalImage(imageBytes);
-                const { x, y, width, height } = imagePositions[i];
-                secondPage.drawImage(image, {
-                  x,
-                  y,
-                  width,
-                  height,
-                });
-
-              } catch (error) {
-                console.error(`Error processing image ${i}:`, error);
-              }
-            }
+          if (!imageResponse.ok) {
+            console.error(`HTTP error for ${formField}: ${imageResponse.status}`);
+            continue;
           }
+
+          const imageBytes = await imageResponse.arrayBuffer();
+
+          if (imageBytes.byteLength < 100) {
+            console.error(`Image too small or corrupted for ${formField}`);
+            continue;
+          }
+
+          const image = await embedUniversalImage(imageBytes);
+          console.log(`Successfully embedded image for ${formField}`);
+
+          const imageField = form.getButton(pdfField);
+          if (!imageField) {
+            console.error(`PDF field ${pdfField} not found`);
+            continue;
+          }
+
+          imageField.setImage(image);
+          console.log(`Image set in field ${pdfField}`);
+
         } catch (error) {
-          console.error('Error adding images to PDF:', error);
+          console.error(`Error processing ${formField} image:`, error);
         }
       }
 
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `GasSafetyRecord_${siteSelectedForGlobal?.siteId || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `GasSafetyRecord_${selectedAsset?.assetName || 'report'}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
@@ -1565,10 +1562,10 @@ const GasSafetyRecord = ({
                 <div className="col-md-12">
                   <div className="mb-3">
                     <label className="form-label">Flue Type</label>
-                    <input
-                      type="text"
+                    <textarea
                       className="form-control"
                       name="flueType"
+                      rows={4}
                       value={formData.flueType}
                       onChange={handleInputChange}
                       disabled={!isFormEditable || isSubmitted}
@@ -1829,6 +1826,17 @@ const GasSafetyRecord = ({
                   </select>
                 </div>
               </div>
+              <div className="mb-3">
+                <label className="form-label">Notes</label>
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  name="applianceLocation"
+                  value={formData.applianceLocation}
+                  onChange={handleInputChange}
+                  disabled={isSubmitted}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1980,6 +1988,20 @@ const GasSafetyRecord = ({
                       />
                     </div>
                   </div>
+
+                </div>
+              </div>
+              <div className="col-md-12">
+                <div className="mb-3">
+                  <label className="form-label">Combustion Performance Readings</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="applianceType"
+                    value={formData.applianceType}
+                    onChange={handleInputChange}
+                    disabled={isSubmitted}
+                  />
                 </div>
               </div>
             </div>
@@ -2163,7 +2185,7 @@ const GasSafetyRecord = ({
                   />
                 </div>
               </div>
-              <div className="col-md-6">
+              {/* <div className="col-md-6">
                 <div className="mb-3">
                   <label className="form-label">Received By (Name)</label>
                   <input
@@ -2197,7 +2219,7 @@ const GasSafetyRecord = ({
                     disabled={isSubmitted}
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
