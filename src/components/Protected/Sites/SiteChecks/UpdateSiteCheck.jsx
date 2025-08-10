@@ -246,6 +246,18 @@ else if (
         siteCheck.subType === "Fire Alarm to meet BS5839"
     ) {
       setStep("inspection-fire-alarm");
+    }else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Gas" &&
+        siteCheck.category === "Boiler Service / Maintenance Checklist"
+    ) {
+        setStep("inspection-boiler-service");
+    }else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Gas" &&
+        siteCheck.category === "Gas Safety Annual Inspection"
+    ) {
+        setStep("inspection-gas");
     }
    
     else if (siteCheck.type === "Assessment" ) {
@@ -608,6 +620,17 @@ autoComplete="off"
                   />
                 </Item>
             )}
+              {step === "inspection-boiler-service" && (
+                  <Item>
+                      <GasBoilerService
+                          checkId={checkId}
+                          sasToken={sasToken}
+                          subType={siteCheck?.subType}
+                          category={siteCheck?.category}
+                          leadUserID={siteCheck?.leadUserID}
+                      />
+                  </Item>
+              )}
             {step === "inspection-fan-extract" && (
                 <Item>
                   <FanExtract
