@@ -213,8 +213,6 @@ const StorageTankService = ({
           engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
           user: engineerUser || loggedInUserData || prev.user,
           selectedAsset: selectedAsset || prev.selectedAsset,
-          clientDate: mostRecentItem.clientDate || prev.clientDate,
-          engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
@@ -1647,7 +1645,7 @@ const StorageTankService = ({
             {uploadedPhotos.map((photo, index) => {
               // Ensure URL has SAS token but don't duplicate if already present
               const imageUrl = photo.url.includes('?')
-                ? photo.url
+                ? `${photo.url.split('?')[0]}?${sasToken}`
                 : `${photo.url}?${sasToken}`;
 
               return (
