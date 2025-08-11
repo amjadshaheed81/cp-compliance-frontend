@@ -1270,8 +1270,7 @@ const GasSafetyRecord = ({
         actionId: formData.actionId,
         operatingPressure: formData.operatingPressure ? parseFloat(formData.operatingPressure) : null,
         combustionAnalyserReading: formData.combustionAnalyserReading ? parseFloat(formData.combustionAnalyserReading) : null,
-        engineerSignatureDate: formData.engineerSignatureDate ? formatDateFor(formData.engineerSignatureDate) : null,
-        siteId: siteSelectedForGlobal?.siteId,
+        engineerSignatureDate: formData.engineerSignatureDate,
         checkId: checkIdToUse
       };
 
