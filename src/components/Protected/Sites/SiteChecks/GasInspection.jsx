@@ -132,6 +132,7 @@ const GasSafetyRecord = ({
 
     // Signatures
     engineerName: loggedInUserData?.name || "",
+    engineer: loggedInUserData?.id || "",
     engineerSignatureDate: new Date().toISOString().split("T")[0],
     receivedByName: "",
     receivedByPosition: "",
@@ -155,6 +156,7 @@ const GasSafetyRecord = ({
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [nextInspectionDue, setNextInspectionDue] = useState(null);
 
+
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     gasSafety: null,
@@ -177,6 +179,12 @@ const GasSafetyRecord = ({
       try {
         const token = await getSasToken();
         setSasToken(token);
+
+        // Update any existing photo URLs with new token
+        setUploadedPhotos(prev => prev.map(photo => ({
+          ...photo,
+          url: `${photo.url.split('?')[0]}?${token}`
+        })));
       } catch (error) {
         console.error('Failed to fetch SAS token:', error);
       }
@@ -196,8 +204,9 @@ const GasSafetyRecord = ({
     }
   };
 
+  // First useEffect for loading basic inspection details
   useEffect(() => {
-    const fetchInspectionData = async () => {
+    const fetchInspectionStatus = async () => {
       try {
         if (!checkId) return;
 
@@ -228,19 +237,32 @@ const GasSafetyRecord = ({
         const isSubmitted = statusResponse?.status === 'Done';
         setIsSubmitted(isSubmitted);
         setIsFormEditable(!isSubmitted);
-
-
         setNextInspectionDue(formatDateForBackend(nextInspection));
+      } catch (error) {
+        console.error("Error fetching inspection status:", error);
+        toast.error("Failed to load inspection status");
+      }
+    };
+
+    fetchInspectionStatus();
+  }, [checkId, users.length, siteAssets.length, siteSelectedForGlobal.siteId]);
+
+  // Second useEffect for loading gas safety specific data
+  useEffect(() => {
+    const fetchGasSafetyData = async () => {
+      try {
+        if (!checkId) return;
+
+        if (isInternalUserTaggedWithSite && users.length === 0) {
+          await getUsers();
+        }
 
         const apiData = await get(`/api/site-check/gas-safety-inspection/${checkId}`);
         if (apiData && apiData.length > 0) {
-          const mostRecentItem = apiData[0];
-
-
-
-          setFormData(mostRecentItem);
-
-
+          const mostRecentItem = apiData[apiData.length - 1];
+          const selectedAsset = siteAssets.find(
+            (asset) => asset.assetId === mostRecentItem.assetId
+          );
 
           // Load photos from parameters
           const photosFromApi = [];
@@ -250,26 +272,147 @@ const GasSafetyRecord = ({
             if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
               photosFromApi.push({
                 url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
-                paramKey
+                paramKey,
+                baseUrl: photoUrl.split('?')[0] // Store base URL without token
               });
             }
           }
 
           setUploadedPhotos(photosFromApi);
 
+          // Fetch action data if actionId exists
+          let existingAction = null;
           if (mostRecentItem.actionId) {
-            const action = await fetchActionById(mostRecentItem.actionId);
-            setExistingAction(action);
+            existingAction = await fetchActionById(mostRecentItem.actionId);
+            if (existingAction) {
+              setExistingAction(existingAction);
+              setActionRaised(true);
+            }
           }
+
+          setFormData((prev) => ({
+            ...prev,
+            // Basic fields
+            date: mostRecentItem.date || prev.date,
+            ref: mostRecentItem.ref || prev.ref,
+            gasSafeRegNo: mostRecentItem.gasSafeRegNo || prev.gasSafeRegNo,
+            serialNo: mostRecentItem.serialNo || prev.serialNo,
+
+            // Registered Business Details
+            registeredBusinessName: mostRecentItem.registeredBusinessName || prev.registeredBusinessName,
+            registeredBusinessAddress: mostRecentItem.registeredBusinessAddress || prev.registeredBusinessAddress,
+            registeredBusinessPostcode: mostRecentItem.registeredBusinessPostcode || prev.registeredBusinessPostcode,
+            registeredBusinessContact: mostRecentItem.registeredBusinessContact || prev.registeredBusinessContact,
+
+            // Landlord Details
+            landlordName: mostRecentItem.landlordName || prev.landlordName,
+            landlordAddress: mostRecentItem.landlordAddress || prev.landlordAddress,
+            landlordPostcode: mostRecentItem.landlordPostcode || prev.landlordPostcode,
+            landlordContact: mostRecentItem.landlordContact || prev.landlordContact,
+
+            // Site Details
+            siteName: mostRecentItem.siteName || prev.siteName,
+            siteAddress: mostRecentItem.siteAddress || prev.siteAddress,
+            sitePostcode: mostRecentItem.sitePostcode || prev.sitePostcode,
+            siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+
+            // Appliance Details
+            assetId: mostRecentItem.assetId || prev.assetId,
+            selectedAsset: selectedAsset || prev.selectedAsset,
+            applianceLocation: mostRecentItem.applianceLocation || prev.applianceLocation,
+            applianceType: mostRecentItem.applianceType || prev.applianceType,
+            applianceManufacturer: mostRecentItem.applianceManufacturer || prev.applianceManufacturer,
+            applianceModel: mostRecentItem.applianceModel || prev.applianceModel,
+            applianceOwnedByLandlord: mostRecentItem.applianceOwnedByLandlord !== undefined
+              ? mostRecentItem.applianceOwnedByLandlord
+              : prev.applianceOwnedByLandlord || "Yes",
+            applianceInspected: mostRecentItem.applianceInspected !== undefined
+              ? mostRecentItem.applianceInspected
+              : prev.applianceInspected || "Yes",
+            flueType: mostRecentItem.flueType || prev.flueType,
+
+            // Inspection Details
+            operatingPressure: mostRecentItem.operatingPressure || prev.operatingPressure,
+            safetyDevicesOperating: mostRecentItem.safetyDevicesOperating !== undefined
+              ? mostRecentItem.safetyDevicesOperating
+              : prev.safetyDevicesOperating || "Yes",
+            ventilationSatisfactory: mostRecentItem.ventilationSatisfactory !== undefined
+              ? mostRecentItem.ventilationSatisfactory
+              : prev.ventilationSatisfactory || "Yes",
+            flueVisualCondition: mostRecentItem.flueVisualCondition !== undefined
+              ? mostRecentItem.flueVisualCondition
+              : prev.flueVisualCondition || "Pass",
+            flueOperationChecks: mostRecentItem.flueOperationChecks !== undefined
+              ? mostRecentItem.flueOperationChecks
+              : prev.flueOperationChecks || "Pass",
+            combustionAnalyserReading: mostRecentItem.combustionAnalyserReading || prev.combustionAnalyserReading,
+            applianceServiced: mostRecentItem.applianceServiced !== undefined
+              ? mostRecentItem.applianceServiced
+              : prev.applianceServiced || "Yes",
+            applianceSafeToUse: mostRecentItem.applianceSafeToUse !== undefined
+              ? mostRecentItem.applianceSafeToUse
+              : prev.applianceSafeToUse || "Yes",
+
+            // Final Check Results
+            gasTightnessTest: mostRecentItem.gasTightnessTest !== undefined
+              ? mostRecentItem.gasTightnessTest
+              : prev.gasTightnessTest || "Pass",
+            protectiveBonding: mostRecentItem.protectiveBonding !== undefined
+              ? mostRecentItem.protectiveBonding
+              : prev.protectiveBonding || "Yes",
+            emergencyControlAccessible: mostRecentItem.emergencyControlAccessible !== undefined
+              ? mostRecentItem.emergencyControlAccessible
+              : prev.emergencyControlAccessible || "Yes",
+            pipeworkVisualInspection: mostRecentItem.pipeworkVisualInspection !== undefined
+              ? mostRecentItem.pipeworkVisualInspection
+              : prev.pipeworkVisualInspection || "Yes",
+            coAlarmFitted: mostRecentItem.coAlarmFitted !== undefined
+              ? mostRecentItem.coAlarmFitted
+              : prev.coAlarmFitted || "Yes",
+            fireAlarmFitted: mostRecentItem.fireAlarmFitted !== undefined
+              ? mostRecentItem.fireAlarmFitted
+              : prev.fireAlarmFitted || "Yes",
+
+            // Combustion Readings
+            combustionLowCO: mostRecentItem.combustionLowCO || prev.combustionLowCO,
+            combustionLowCO2: mostRecentItem.combustionLowCO2 || prev.combustionLowCO2,
+            combustionLowRatio: mostRecentItem.combustionLowRatio || prev.combustionLowRatio,
+            combustionHighCO: mostRecentItem.combustionHighCO || prev.combustionHighCO,
+            combustionHighCO2: mostRecentItem.combustionHighCO2 || prev.combustionHighCO2,
+            combustionHighRatio: mostRecentItem.combustionHighRatio || prev.combustionHighRatio,
+
+            // Images (storing base URLs without token)
+            param2: mostRecentItem.param2 ? mostRecentItem.param2.split('?')[0] : prev.param2,
+            param3: mostRecentItem.param3 ? mostRecentItem.param3.split('?')[0] : prev.param3,
+            param4: mostRecentItem.param4 ? mostRecentItem.param4.split('?')[0] : prev.param4,
+            param5: mostRecentItem.param5 ? mostRecentItem.param5.split('?')[0] : prev.param5,
+
+            // Signatures
+            engineerName: mostRecentItem.engineerName || prev.engineerName,
+            engineer: mostRecentItem.engineer || prev.engineer,
+            engineerSignatureDate: mostRecentItem.engineerSignatureDate || prev.engineerSignatureDate,
+            receivedByName: mostRecentItem.receivedByName || prev.receivedByName,
+            receivedByPosition: mostRecentItem.receivedByPosition || prev.receivedByPosition,
+            receivedByDate: mostRecentItem.receivedByDate || prev.receivedByDate,
+
+            actionId: mostRecentItem.actionId || prev.actionId
+          }));
         }
       } catch (error) {
-        console.error("Error fetching inspection data:", error);
-        toast.error("Failed to load inspection data");
+        console.error("Error fetching gas safety data:", error);
+        toast.error("Failed to load gas safety inspection data");
       }
     };
 
-    fetchInspectionData();
-  }, [checkId, users, sasToken, siteSelectedForGlobal.siteId]);
+    fetchGasSafetyData();
+  }, [
+    checkId,
+    siteAssets,
+    sasToken,
+    getUsers,
+    getSiteAssets,
+    siteSelectedForGlobal?.siteId
+  ]);
 
   const formatDateToReadable = (dateString) => {
     if (!dateString) return 'Not set';
@@ -784,34 +927,7 @@ const GasSafetyRecord = ({
   );
 
 
-  const getAllImages = () => {
-    return [
-      formData.param2 ? {
-        url: formData.param2.includes('?')
-          ? formData.param2
-          : `${formData.param2}?${sasToken}`,
-        paramKey: 'param2'
-      } : null,
-      formData.param3 ? {
-        url: formData.param3.includes('?')
-          ? formData.param3
-          : `${formData.param3}?${sasToken}`,
-        paramKey: 'param3'
-      } : null,
-      formData.param4 ? {
-        url: formData.param4.includes('?')
-          ? formData.param4
-          : `${formData.param4}?${sasToken}`,
-        paramKey: 'param4'
-      } : null,
-      formData.param5 ? {
-        url: formData.param5.includes('?')
-          ? formData.param5
-          : `${formData.param5}?${sasToken}`,
-        paramKey: 'param5'
-      } : null,
-    ].filter(Boolean);
-  };
+
 
 
   const handleAssetSelect = (event, newValue) => {
@@ -890,7 +1006,7 @@ const GasSafetyRecord = ({
       // Set form data in PDF
       setTextField('Date', formatDate(formData.date));
       //setTextField('Ref', formData.ref || '');
-      setTextField('GasSafeRegNo', formData.gasSafeRegNo || '');
+      setTextField('GasSafeRegNo', loggedInUserData?.gasSafetyRegNo || '');
       //setTextField('Serial no', formData.serialNo || '');
 
       // Registered Business Details
@@ -939,8 +1055,8 @@ const GasSafetyRecord = ({
       setTextField('Visual condition of flue & termination', formData.flueVisualCondition || '');
       setTextField('Flue operation checks', formData.flueOperationChecks || '');
       setTextField('Combustion analyser reading', formData.combustionAnalyserReading || '');
-      setCheckbox('Yes_5', formData.applianceServiced === "Yes");
-      setCheckbox('Yes_6', formData.applianceSafeToUse === "Yes");
+      setTextField('Yes_5', formData.applianceServiced || "");
+      setTextField('Yes_6', formData.applianceSafeToUse || "");
 
       // Final Check Results
       setTextField('Outcome of gas tightness test', formData.gasTightnessTest || '');
@@ -951,23 +1067,22 @@ const GasSafetyRecord = ({
       setTextField('Yes_11', formData.fireAlarmFitted || '');
       setTextField('NotesRow', formData.applianceLocation || '');
       // Combustion Performance Readings
-      setTextField('Low', formData.combustionLowCO || '');
-      setTextField('High', formData.combustionHighCO || '');
-      setTextField('Low_2', formData.combustionLowCO2 || '');
-      setTextField('High_2', formData.combustionHighCO2 || '');
-      setTextField('Low_3', formData.combustionLowRatio || '');
-      setTextField('High_3', formData.combustionHighRatio || '');
+      setTextField('CO', formData.combustionLowCO || '');
+      setTextField('CO1', formData.combustionHighCO || '');
+      setTextField('CO2', formData.combustionLowCO2 || '');
+      setTextField('CO2_1', formData.combustionHighCO2 || '');
+      setTextField('Ratio', formData.combustionLowRatio || '');
+      setTextField('Ratio1', formData.combustionHighRatio || '');
       setTextField('Label  Warning Notice', formData.applianceType || '')
 
       // Next Inspection
-      setTextField('Next Inspection Is Due Before', formatDateToReadable(nextInspectionDue));
+      setTextField('DueDate', formatDateToReadable(nextInspectionDue));
 
       // Signatures
-      setTextField('Gas Engineer', formData.engineerName || '');
+      setTextField('Gas Engineer Name', formData.engineerName || '');
       setTextField('Date_2', formatDate(formData.engineerSignatureDate));
-      setTextField('Name_4', formData.receivedByName || '');
-      setTextField('Position', formData.receivedByPosition || '');
-      setTextField('Date_3', formatDate(formData.receivedByDate));
+      // setTextField('Name_4', formData.receivedByName || '');
+      setTextField('Gas Safe Licence', formData.gasSafeRegNo || '');
 
       if (loggedInUserData?.signature) {
         try {
@@ -1075,6 +1190,13 @@ const GasSafetyRecord = ({
     }
   };
 
+  const formatDateFor = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    // For LocalDate fields, just return the date part in YYYY-MM-DD format
+    return date.toISOString().split('T')[0];
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -1144,7 +1266,11 @@ const GasSafetyRecord = ({
 
       const inspectionPayload = {
         ...formData,
+        nextInspectionDue: formatDateForBackend(inspectionDetails?.dueDate),
         actionId: formData.actionId,
+        operatingPressure: formData.operatingPressure ? parseFloat(formData.operatingPressure) : null,
+        combustionAnalyserReading: formData.combustionAnalyserReading ? parseFloat(formData.combustionAnalyserReading) : null,
+        engineerSignatureDate: formData.engineerSignatureDate ? formatDateFor(formData.engineerSignatureDate) : null,
         siteId: siteSelectedForGlobal?.siteId,
         checkId: checkIdToUse
       };
@@ -1190,6 +1316,37 @@ const GasSafetyRecord = ({
         asset.category === "Mechanical" &&
         asset.subCategory === "Central Heating"
     ) || [];
+
+  const getAllImages = () => {
+    const images = [
+      formData.param2 ? {
+        url: `${formData.param2.split('?')[0]}?${sasToken}`,
+        paramKey: 'param2',
+        baseUrl: formData.param2.split('?')[0]
+      } : null,
+      formData.param3 ? {
+        url: `${formData.param3.split('?')[0]}?${sasToken}`,
+        paramKey: 'param3',
+        baseUrl: formData.param3.split('?')[0]
+      } : null,
+      formData.param4 ? {
+        url: `${formData.param4.split('?')[0]}?${sasToken}`,
+        paramKey: 'param4',
+        baseUrl: formData.param4.split('?')[0]
+      } : null,
+      formData.param5 ? {
+        url: `${formData.param5.split('?')[0]}?${sasToken}`,
+        paramKey: 'param5',
+        baseUrl: formData.param5.split('?')[0]
+      } : null,
+    ].filter(Boolean);
+
+    console.log('Generated image URLs:', images.map(img => img.url));
+    return images;
+  };
+
+  console.log('getAllImages:', getAllImages());
+
 
   return (
     <div className="container mt-4 mb-5">
@@ -1896,104 +2053,127 @@ const GasSafetyRecord = ({
         }
 
         {/* Combustion Performance Readings */}
+        {/* Combustion Performance Readings */}
         <div className="card mb-4">
           <div className="card-header">
             <h5 className="mb-0">Combustion Performance Readings</h5>
           </div>
           <div className="card-body">
             <div className="row">
+              {/* Low Readings Column */}
               <div className="col-md-6">
-                <h6>Low</h6>
-                <div className="row">
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">CO</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="combustionLowCO"
-                        value={formData.combustionLowCO}
-                        onChange={handleInputChange}
-                        disabled={isSubmitted}
-                      />
-                    </div>
+                <div className="card">
+                  <div className="card-header bg-light">
+                    <h6 className="mb-0">Low Rate Readings</h6>
                   </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">CO2</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="combustionLowCO2"
-                        value={formData.combustionLowCO2}
-                        onChange={handleInputChange}
-                        disabled={isSubmitted}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Ratio</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="combustionLowRatio"
-                        value={formData.combustionLowRatio}
-                        onChange={handleInputChange}
-                        disabled={isSubmitted}
-                      />
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-12">
+                        <div className="mb-3">
+                          <label className="form-label">CO (ppm)</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="combustionLowCO"
+                            value={formData.combustionLowCO}
+                            onChange={handleInputChange}
+                            disabled={isSubmitted}
+                            placeholder="Enter CO reading"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-12">
+                        <div className="mb-3">
+                          <label className="form-label">CO₂ (%)</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="combustionLowCO2"
+                            value={formData.combustionLowCO2}
+                            onChange={handleInputChange}
+                            disabled={isSubmitted}
+                            placeholder="Enter CO₂ reading"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-12">
+                        <div className="mb-3">
+                          <label className="form-label">Ratio</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="combustionLowRatio"
+                            value={formData.combustionLowRatio}
+                            onChange={handleInputChange}
+                            disabled={isSubmitted}
+                            placeholder="Enter ratio"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="col-md-6">
-                <h6>High</h6>
-                <div className="row">
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">CO</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="combustionHighCO"
-                        value={formData.combustionHighCO}
-                        onChange={handleInputChange}
-                        disabled={isSubmitted}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">CO2</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="combustionHighCO2"
-                        value={formData.combustionHighCO2}
-                        onChange={handleInputChange}
-                        disabled={isSubmitted}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="mb-3">
-                      <label className="form-label">Ratio</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="combustionHighRatio"
-                        value={formData.combustionHighRatio}
-                        onChange={handleInputChange}
-                        disabled={isSubmitted}
-                      />
-                    </div>
-                  </div>
 
+              {/* High Readings Column */}
+              <div className="col-md-6">
+                <div className="card">
+                  <div className="card-header bg-light">
+                    <h6 className="mb-0">High Rate Readings</h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-12">
+                        <div className="mb-3">
+                          <label className="form-label">CO (ppm)</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="combustionHighCO"
+                            value={formData.combustionHighCO}
+                            onChange={handleInputChange}
+                            disabled={isSubmitted}
+                            placeholder="Enter CO reading"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-12">
+                        <div className="mb-3">
+                          <label className="form-label">CO₂ (%)</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="combustionHighCO2"
+                            value={formData.combustionHighCO2}
+                            onChange={handleInputChange}
+                            disabled={isSubmitted}
+                            placeholder="Enter CO₂ reading"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-12">
+                        <div className="mb-3">
+                          <label className="form-label">Ratio</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="combustionHighRatio"
+                            value={formData.combustionHighRatio}
+                            onChange={handleInputChange}
+                            disabled={isSubmitted}
+                            placeholder="Enter ratio"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="col-md-12">
+
+              {/* Label & Warning Notice (full width below the columns) */}
+              <div className="col-md-12 mt-3">
                 <div className="mb-3">
-                  <label className="form-label">Combustion Performance Readings</label>
+                  <label className="form-label">Label & Warning Notice</label>
                   <input
                     type="text"
                     className="form-control"
@@ -2001,6 +2181,7 @@ const GasSafetyRecord = ({
                     value={formData.applianceType}
                     onChange={handleInputChange}
                     disabled={isSubmitted}
+                    placeholder="Enter label/warning notice details"
                   />
                 </div>
               </div>
@@ -2070,11 +2251,8 @@ const GasSafetyRecord = ({
           </div>
           <div className="card-body">
             <div className="d-flex flex-wrap">
-              {uploadedPhotos.map((photo, index) => {
-                const imageUrl = photo.url.includes('?')
-                  ? photo.url
-                  : `${photo.url}?${sasToken}`;
-
+              {getAllImages().map((photo, index) => {
+                console.log(`Rendering image ${index}:`, photo.url);
                 return (
                   <div
                     key={index}
@@ -2085,7 +2263,7 @@ const GasSafetyRecord = ({
                     }}
                   >
                     <img
-                      src={imageUrl}
+                      src={photo.url}
                       alt={`Preview ${index}`}
                       className="img-thumbnail"
                       style={{
@@ -2094,12 +2272,12 @@ const GasSafetyRecord = ({
                         objectFit: "cover",
                       }}
                       onError={(e) => {
+                        console.error('Error loading image:', photo.url, e);
                         e.target.onerror = null;
                         e.target.src = '/placeholder-image.png';
                       }}
                       loading="lazy"
                     />
-
                     {isFormEditable && !isSubmitted && (
                       <button
                         type="button"
@@ -2121,24 +2299,28 @@ const GasSafetyRecord = ({
                         ×
                       </button>
                     )}
-
-                    {photo.fileName && (
-                      <div
-                        className="position-absolute bottom-0 start-0 w-100 text-truncate px-1 bg-dark text-white"
-                        style={{
-                          fontSize: '10px',
-                          opacity: '0.8',
-                          textOverflow: 'ellipsis',
-                          overflow: 'hidden'
-                        }}
-                        title={photo.fileName}
-                      >
-                        {photo.fileName}
-                      </div>
-                    )}
+                    <div
+                      className="position-absolute bottom-0 start-0 w-100 text-truncate px-1 bg-dark text-white"
+                      style={{
+                        fontSize: '10px',
+                        opacity: '0.8',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden'
+                      }}
+                      title={photo.baseUrl.split('/').pop() || `Image ${index + 1}`}
+                    >
+                      {photo.baseUrl.split('/').pop() || `Image ${index + 1}`}
+                    </div>
                   </div>
                 );
               })}
+
+              {getAllImages().length === 0 && (
+                <div className="text-center w-100 py-4 text-muted">
+                  <InsertPhotoIcon fontSize="large" />
+                  <p>No photos uploaded yet</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
