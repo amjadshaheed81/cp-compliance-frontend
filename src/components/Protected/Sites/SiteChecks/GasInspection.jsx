@@ -911,8 +911,6 @@ const GasSafetyRecord = ({
         ...prev,
         assetId: newValue.assetId,
         selectedAsset: newValue,
-        applianceLocation: `${newValue.assetName} - Asset No-${newValue.assetId} - ${newValue.manufacturer}, ${newValue.position}, ${newValue.floor}, ${newValue.room}`,
-        applianceType: newValue.subCategory,
         applianceManufacturer: newValue.manufacturer,
         applianceModel: newValue.model
       }));
@@ -1608,7 +1606,7 @@ const GasSafetyRecord = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select a Disabled WC Alarm Device"
+                      label="Selected Appliance"
                       variant="outlined"
                       placeholder="Search devices..."
                     />
@@ -2023,7 +2021,7 @@ const GasSafetyRecord = ({
                   </div>
                 ) : (
                   <RiskScoreCard
-                    desc={`Inspection - Gas Safety - ${formData.applianceType || 'Appliance'} Inspection`}
+                      desc={`Inspection - Gas Safety - Gas Safety Annual Inspection`}
                     siteId={siteSelectedForGlobal?.siteId}
                     checkId={currentCheckId}
                     createdBy={loggedInUserData?.id}
