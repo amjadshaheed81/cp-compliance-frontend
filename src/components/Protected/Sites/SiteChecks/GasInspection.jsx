@@ -179,12 +179,13 @@ const GasSafetyRecord = ({
       try {
         const token = await getSasToken();
         setSasToken(token);
-
-        // Update any existing photo URLs with new token
-        setUploadedPhotos(prev => prev.map(photo => ({
-          ...photo,
-          url: `${photo.url.split('?')[0]}?${token}`
-        })));
+        // Update existing photo URLs with new token
+        setUploadedPhotos(prev =>
+          prev.map(photo => ({
+            ...photo,
+            url: `${photo.baseUrl || photo.url.split('?')[0]}?${token}`
+          }))
+        );
       } catch (error) {
         console.error('Failed to fetch SAS token:', error);
       }
@@ -253,166 +254,140 @@ const GasSafetyRecord = ({
       try {
         if (!checkId) return;
 
-        if (isInternalUserTaggedWithSite && users.length === 0) {
-          await getUsers();
+        // API now returns a single object instead of array
+        const gasSafetyData = await get(`/api/site-check/gas-safety-inspection/${checkId}`);
+
+        if (!gasSafetyData) {
+          console.log("No gas safety data found for this check");
+          return;
         }
 
-        const apiData = await get(`/api/site-check/gas-safety-inspection/${checkId}`);
-        if (apiData && apiData.length > 0) {
-          const mostRecentItem = apiData[apiData.length - 1];
-          const selectedAsset = siteAssets.find(
-            (asset) => asset.assetId === mostRecentItem.assetId
-          );
+        console.log("Fetched gas safety data:", gasSafetyData);
 
-          // Load photos from parameters
-          const photosFromApi = [];
-          for (let i = 2; i <= 5; i++) {
-            const paramKey = `param${i}`;
-            const photoUrl = mostRecentItem[paramKey];
-            if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
-              photosFromApi.push({
-                url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
-                paramKey,
-                baseUrl: photoUrl.split('?')[0] // Store base URL without token
-              });
-            }
+        // Find the selected asset
+        const selectedAsset = siteAssets.find(
+          asset => asset.assetId === gasSafetyData.assetId
+        );
+
+        // Load action if exists
+        let existingAction = null;
+        if (gasSafetyData.actionId) {
+          existingAction = await fetchActionById(gasSafetyData.actionId);
+          if (existingAction) {
+            setExistingAction(existingAction);
+            setActionRaised(true);
           }
-
-          setUploadedPhotos(photosFromApi);
-
-          // Fetch action data if actionId exists
-          let existingAction = null;
-          if (mostRecentItem.actionId) {
-            existingAction = await fetchActionById(mostRecentItem.actionId);
-            if (existingAction) {
-              setExistingAction(existingAction);
-              setActionRaised(true);
-            }
-          }
-
-          setFormData((prev) => ({
-            ...prev,
-            // Basic fields
-            date: mostRecentItem.date || prev.date,
-            ref: mostRecentItem.ref || prev.ref,
-            gasSafeRegNo: mostRecentItem.gasSafeRegNo || prev.gasSafeRegNo,
-            serialNo: mostRecentItem.serialNo || prev.serialNo,
-
-            // Registered Business Details
-            registeredBusinessName: mostRecentItem.registeredBusinessName || prev.registeredBusinessName,
-            registeredBusinessAddress: mostRecentItem.registeredBusinessAddress || prev.registeredBusinessAddress,
-            registeredBusinessPostcode: mostRecentItem.registeredBusinessPostcode || prev.registeredBusinessPostcode,
-            registeredBusinessContact: mostRecentItem.registeredBusinessContact || prev.registeredBusinessContact,
-
-            // Landlord Details
-            landlordName: mostRecentItem.landlordName || prev.landlordName,
-            landlordAddress: mostRecentItem.landlordAddress || prev.landlordAddress,
-            landlordPostcode: mostRecentItem.landlordPostcode || prev.landlordPostcode,
-            landlordContact: mostRecentItem.landlordContact || prev.landlordContact,
-
-            // Site Details
-            siteName: mostRecentItem.siteName || prev.siteName,
-            siteAddress: mostRecentItem.siteAddress || prev.siteAddress,
-            sitePostcode: mostRecentItem.sitePostcode || prev.sitePostcode,
-            siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
-
-            // Appliance Details
-            assetId: mostRecentItem.assetId || prev.assetId,
-            selectedAsset: selectedAsset || prev.selectedAsset,
-            applianceLocation: mostRecentItem.applianceLocation || prev.applianceLocation,
-            applianceType: mostRecentItem.applianceType || prev.applianceType,
-            applianceManufacturer: mostRecentItem.applianceManufacturer || prev.applianceManufacturer,
-            applianceModel: mostRecentItem.applianceModel || prev.applianceModel,
-            applianceOwnedByLandlord: mostRecentItem.applianceOwnedByLandlord !== undefined
-              ? mostRecentItem.applianceOwnedByLandlord
-              : prev.applianceOwnedByLandlord || "Yes",
-            applianceInspected: mostRecentItem.applianceInspected !== undefined
-              ? mostRecentItem.applianceInspected
-              : prev.applianceInspected || "Yes",
-            flueType: mostRecentItem.flueType || prev.flueType,
-
-            // Inspection Details
-            operatingPressure: mostRecentItem.operatingPressure || prev.operatingPressure,
-            safetyDevicesOperating: mostRecentItem.safetyDevicesOperating !== undefined
-              ? mostRecentItem.safetyDevicesOperating
-              : prev.safetyDevicesOperating || "Yes",
-            ventilationSatisfactory: mostRecentItem.ventilationSatisfactory !== undefined
-              ? mostRecentItem.ventilationSatisfactory
-              : prev.ventilationSatisfactory || "Yes",
-            flueVisualCondition: mostRecentItem.flueVisualCondition !== undefined
-              ? mostRecentItem.flueVisualCondition
-              : prev.flueVisualCondition || "Pass",
-            flueOperationChecks: mostRecentItem.flueOperationChecks !== undefined
-              ? mostRecentItem.flueOperationChecks
-              : prev.flueOperationChecks || "Pass",
-            combustionAnalyserReading: mostRecentItem.combustionAnalyserReading || prev.combustionAnalyserReading,
-            applianceServiced: mostRecentItem.applianceServiced !== undefined
-              ? mostRecentItem.applianceServiced
-              : prev.applianceServiced || "Yes",
-            applianceSafeToUse: mostRecentItem.applianceSafeToUse !== undefined
-              ? mostRecentItem.applianceSafeToUse
-              : prev.applianceSafeToUse || "Yes",
-
-            // Final Check Results
-            gasTightnessTest: mostRecentItem.gasTightnessTest !== undefined
-              ? mostRecentItem.gasTightnessTest
-              : prev.gasTightnessTest || "Pass",
-            protectiveBonding: mostRecentItem.protectiveBonding !== undefined
-              ? mostRecentItem.protectiveBonding
-              : prev.protectiveBonding || "Yes",
-            emergencyControlAccessible: mostRecentItem.emergencyControlAccessible !== undefined
-              ? mostRecentItem.emergencyControlAccessible
-              : prev.emergencyControlAccessible || "Yes",
-            pipeworkVisualInspection: mostRecentItem.pipeworkVisualInspection !== undefined
-              ? mostRecentItem.pipeworkVisualInspection
-              : prev.pipeworkVisualInspection || "Yes",
-            coAlarmFitted: mostRecentItem.coAlarmFitted !== undefined
-              ? mostRecentItem.coAlarmFitted
-              : prev.coAlarmFitted || "Yes",
-            fireAlarmFitted: mostRecentItem.fireAlarmFitted !== undefined
-              ? mostRecentItem.fireAlarmFitted
-              : prev.fireAlarmFitted || "Yes",
-
-            // Combustion Readings
-            combustionLowCO: mostRecentItem.combustionLowCO || prev.combustionLowCO,
-            combustionLowCO2: mostRecentItem.combustionLowCO2 || prev.combustionLowCO2,
-            combustionLowRatio: mostRecentItem.combustionLowRatio || prev.combustionLowRatio,
-            combustionHighCO: mostRecentItem.combustionHighCO || prev.combustionHighCO,
-            combustionHighCO2: mostRecentItem.combustionHighCO2 || prev.combustionHighCO2,
-            combustionHighRatio: mostRecentItem.combustionHighRatio || prev.combustionHighRatio,
-
-            // Images (storing base URLs without token)
-            param2: mostRecentItem.param2 ? mostRecentItem.param2.split('?')[0] : prev.param2,
-            param3: mostRecentItem.param3 ? mostRecentItem.param3.split('?')[0] : prev.param3,
-            param4: mostRecentItem.param4 ? mostRecentItem.param4.split('?')[0] : prev.param4,
-            param5: mostRecentItem.param5 ? mostRecentItem.param5.split('?')[0] : prev.param5,
-
-            // Signatures
-            engineerName: mostRecentItem.engineerName || prev.engineerName,
-            engineer: mostRecentItem.engineer || prev.engineer,
-            engineerSignatureDate: mostRecentItem.engineerSignatureDate || prev.engineerSignatureDate,
-            receivedByName: mostRecentItem.receivedByName || prev.receivedByName,
-            receivedByPosition: mostRecentItem.receivedByPosition || prev.receivedByPosition,
-            receivedByDate: mostRecentItem.receivedByDate || prev.receivedByDate,
-
-            actionId: mostRecentItem.actionId || prev.actionId
-          }));
         }
+
+        // Process photos
+        const photosFromApi = [];
+        for (let i = 2; i <= 5; i++) {
+          const paramKey = `param${i}`;
+          const photoUrl = gasSafetyData[paramKey];
+          if (photoUrl) {
+            photosFromApi.push({
+              url: `${photoUrl.split('?')[0]}${sasToken ? `?${sasToken}` : ''}`,
+              paramKey,
+              baseUrl: photoUrl.split('?')[0]
+            });
+          }
+        }
+
+        setUploadedPhotos(photosFromApi);
+
+        // Set form data with proper fallbacks
+        setFormData(prev => ({
+          ...prev,
+          // Basic info
+          date: gasSafetyData.date || prev.date,
+          ref: gasSafetyData.ref || prev.ref,
+          gasSafeRegNo: gasSafetyData.gasSafeRegNo || loggedInUserData?.gasSafetyRegNo || prev.gasSafeRegNo,
+          serialNo: gasSafetyData.serialNo || prev.serialNo,
+
+          // Registered Business
+          registeredBusinessName: gasSafetyData.registeredBusinessName || loggedInUserData?.companyName || prev.registeredBusinessName,
+          registeredBusinessAddress: gasSafetyData.registeredBusinessAddress || loggedInUserData?.companyAddress || prev.registeredBusinessAddress,
+          registeredBusinessPostcode: gasSafetyData.registeredBusinessPostcode || loggedInUserData?.companyPostcode || prev.registeredBusinessPostcode,
+          registeredBusinessContact: gasSafetyData.registeredBusinessContact || loggedInUserData?.phone || prev.registeredBusinessContact,
+
+          // Landlord
+          landlordName: gasSafetyData.landlordName || `${license?.adminFirstName} ${license?.adminLastName}` || prev.landlordName,
+          landlordAddress: gasSafetyData.landlordAddress || license?.companyAddress || prev.landlordAddress,
+          landlordPostcode: gasSafetyData.landlordPostcode || adminPostCode || prev.landlordPostcode,
+          landlordContact: gasSafetyData.landlordContact || license?.adminContact || prev.landlordContact,
+
+          // Site
+          siteName: gasSafetyData.siteName || siteSelectedForGlobal?.siteName || prev.siteName,
+          siteAddress: gasSafetyData.siteAddress || [
+            siteSelectedForGlobal?.address1,
+            siteSelectedForGlobal?.address2,
+            siteSelectedForGlobal?.city,
+            siteSelectedForGlobal?.area
+          ].filter(Boolean).join(", ") || prev.siteAddress,
+          sitePostcode: gasSafetyData.sitePostcode || siteSelectedForGlobal?.postCode || prev.sitePostcode,
+
+          // Appliance
+          assetId: gasSafetyData.assetId || prev.assetId,
+          selectedAsset: selectedAsset || prev.selectedAsset,
+          applianceLocation: gasSafetyData.applianceLocation ||
+            (selectedAsset ? `${selectedAsset.assetName} - Asset No-${selectedAsset.assetId} - ${selectedAsset.manufacturer}, ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}` : prev.applianceLocation),
+          applianceType: selectedAsset?.subCategory || gasSafetyData.applianceType || prev.applianceType,
+          applianceManufacturer: selectedAsset?.manufacturer || gasSafetyData.applianceManufacturer || prev.applianceManufacturer,
+          applianceModel: selectedAsset?.model || gasSafetyData.applianceModel || prev.applianceModel,
+          applianceOwnedByLandlord: gasSafetyData.applianceOwnedByLandlord || "Yes",
+          applianceInspected: gasSafetyData.applianceInspected || "Yes",
+          flueType: gasSafetyData.flueType || prev.flueType,
+
+          // Inspection
+          operatingPressure: gasSafetyData.operatingPressure || prev.operatingPressure,
+          safetyDevicesOperating: gasSafetyData.safetyDevicesOperating || "Yes",
+          ventilationSatisfactory: gasSafetyData.ventilationSatisfactory || "Yes",
+          flueVisualCondition: gasSafetyData.flueVisualCondition || "Pass",
+          flueOperationChecks: gasSafetyData.flueOperationChecks || "Pass",
+          combustionAnalyserReading: gasSafetyData.combustionAnalyserReading || prev.combustionAnalyserReading,
+          applianceServiced: gasSafetyData.applianceServiced || "Yes",
+          applianceSafeToUse: gasSafetyData.applianceSafeToUse || "Yes",
+
+          // Final Checks
+          gasTightnessTest: gasSafetyData.gasTightnessTest || "Pass",
+          protectiveBonding: gasSafetyData.protectiveBonding || "Yes",
+          emergencyControlAccessible: gasSafetyData.emergencyControlAccessible || "Yes",
+          pipeworkVisualInspection: gasSafetyData.pipeworkVisualInspection || "Yes",
+          coAlarmFitted: gasSafetyData.coAlarmFitted || "Yes",
+          fireAlarmFitted: gasSafetyData.fireAlarmFitted || "Yes",
+
+          // Combustion
+          combustionLowCO: gasSafetyData.combustionLowCO || prev.combustionLowCO,
+          combustionLowCO2: gasSafetyData.combustionLowCO2 || prev.combustionLowCO2,
+          combustionLowRatio: gasSafetyData.combustionLowRatio || prev.combustionLowRatio,
+          combustionHighCO: gasSafetyData.combustionHighCO || prev.combustionHighCO,
+          combustionHighCO2: gasSafetyData.combustionHighCO2 || prev.combustionHighCO2,
+          combustionHighRatio: gasSafetyData.combustionHighRatio || prev.combustionHighRatio,
+
+          // Images
+          param2: gasSafetyData.param2 || prev.param2,
+          param3: gasSafetyData.param3 || prev.param3,
+          param4: gasSafetyData.param4 || prev.param4,
+          param5: gasSafetyData.param5 || prev.param5,
+
+          // Signatures
+          engineerName: gasSafetyData.engineerName || loggedInUserData?.name || prev.engineerName,
+          engineer: gasSafetyData.engineer || loggedInUserData?.id || prev.engineer,
+          engineerSignatureDate: gasSafetyData.engineerSignatureDate || prev.engineerSignatureDate,
+          receivedByName: gasSafetyData.receivedByName || prev.receivedByName,
+          receivedByPosition: gasSafetyData.receivedByPosition || prev.receivedByPosition,
+          receivedByDate: gasSafetyData.receivedByDate || prev.receivedByDate,
+
+          actionId: gasSafetyData.actionId || prev.actionId
+        }));
+
       } catch (error) {
-        console.error("Error fetching gas safety data:", error);
-        toast.error("Failed to load gas safety inspection data");
+        console.error("Error loading gas safety data:", error);
+        toast.error("Failed to load inspection details");
       }
     };
-
     fetchGasSafetyData();
-  }, [
-    checkId,
-    siteAssets,
-    sasToken,
-    getUsers,
-    getSiteAssets,
-    siteSelectedForGlobal?.siteId
-  ]);
+  }, [checkId, siteAssets, sasToken, siteSelectedForGlobal, loggedInUserData]);
 
   const formatDateToReadable = (dateString) => {
     if (!dateString) return 'Not set';
@@ -931,11 +906,27 @@ const GasSafetyRecord = ({
 
 
   const handleAssetSelect = (event, newValue) => {
-    setFormData((prev) => ({
-      ...prev,
-      assetId: newValue ? newValue.assetId : "",
-      selectedAsset: newValue || null,
-    }));
+    if (newValue) {
+      setFormData(prev => ({
+        ...prev,
+        assetId: newValue.assetId,
+        selectedAsset: newValue,
+        applianceLocation: `${newValue.assetName} - Asset No-${newValue.assetId} - ${newValue.manufacturer}, ${newValue.position}, ${newValue.floor}, ${newValue.room}`,
+        applianceType: newValue.subCategory,
+        applianceManufacturer: newValue.manufacturer,
+        applianceModel: newValue.model
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        assetId: "",
+        selectedAsset: null,
+        applianceLocation: "",
+        applianceType: "",
+        applianceManufacturer: "",
+        applianceModel: ""
+      }));
+    }
   };
 
   const generatePDF = async (uploadToServer = true) => {
@@ -1317,31 +1308,28 @@ const GasSafetyRecord = ({
     ) || [];
 
   const getAllImages = () => {
-    const images = [
+    return [
       formData.param2 ? {
-        url: `${formData.param2.split('?')[0]}?${sasToken}`,
+        url: `${formData.param2.split('?')[0]}${sasToken ? `?${sasToken}` : ''}`,
         paramKey: 'param2',
         baseUrl: formData.param2.split('?')[0]
       } : null,
       formData.param3 ? {
-        url: `${formData.param3.split('?')[0]}?${sasToken}`,
+        url: `${formData.param3.split('?')[0]}${sasToken ? `?${sasToken}` : ''}`,
         paramKey: 'param3',
         baseUrl: formData.param3.split('?')[0]
       } : null,
       formData.param4 ? {
-        url: `${formData.param4.split('?')[0]}?${sasToken}`,
+        url: `${formData.param4.split('?')[0]}${sasToken ? `?${sasToken}` : ''}`,
         paramKey: 'param4',
         baseUrl: formData.param4.split('?')[0]
       } : null,
       formData.param5 ? {
-        url: `${formData.param5.split('?')[0]}?${sasToken}`,
+        url: `${formData.param5.split('?')[0]}${sasToken ? `?${sasToken}` : ''}`,
         paramKey: 'param5',
         baseUrl: formData.param5.split('?')[0]
       } : null,
     ].filter(Boolean);
-
-    console.log('Generated image URLs:', images.map(img => img.url));
-    return images;
   };
 
   console.log('getAllImages:', getAllImages());
