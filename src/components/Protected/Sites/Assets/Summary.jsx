@@ -268,6 +268,90 @@ const Summary = ({
         }
     };
 
+
+
+    const searchAssets = () => {
+        const {
+            assetName,
+            category,
+            subCategory,
+            subCategory2,
+            subCategory3,
+            position,
+            manufacturer,
+            floor,
+            room,
+            powerOutput
+        } = formData;
+
+        // Start with all assets
+        let filtered = [...siteAssetsList];
+
+        // Apply each filter only if it has a value
+        if (assetName) {
+            filtered = filtered.filter(x =>
+                String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase())
+            );
+        }
+
+        if (category) {
+            filtered = filtered.filter(x =>
+                String(x?.category || '').toLowerCase().includes(category.toLowerCase())
+            );
+        }
+
+        if (subCategory) {
+            filtered = filtered.filter(x =>
+                String(x?.subCategory || '').toLowerCase().includes(subCategory.toLowerCase())
+            );
+        }
+
+        if (subCategory2) {
+            filtered = filtered.filter(x =>
+                String(x?.subCategory2 || '').toLowerCase().includes(subCategory2.toLowerCase())
+            );
+        }
+
+        if (subCategory3) {
+            filtered = filtered.filter(x =>
+                String(x?.subCategory3 || '').toLowerCase().includes(subCategory3.toLowerCase())
+            );
+        }
+
+        if (position) {
+            filtered = filtered.filter(x =>
+                String(x?.position || '').toLowerCase().includes(position.toLowerCase())
+            );
+        }
+
+        if (manufacturer) {
+            filtered = filtered.filter(x =>
+                String(x?.manufacturer || '').toLowerCase().includes(manufacturer.toLowerCase())
+            );
+        }
+
+        if (floor) {
+            filtered = filtered.filter(x =>
+                String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
+            );
+        }
+
+        if (room) {
+            filtered = filtered.filter(x =>
+                String(x?.room || '').toLowerCase().includes(room.toLowerCase())
+            );
+        }
+
+        if (powerOutput) {
+            filtered = filtered.filter(x =>
+                String(x?.powerOutput || '').toLowerCase().includes(powerOutput.toLowerCase())
+            );
+        }
+
+        setCurrentPage(1);
+        setFilteredSiteAssets(filtered);
+    };
+
     useEffect(() => {
         searchAssets();
     }, [
@@ -276,69 +360,14 @@ const Summary = ({
         formData.subCategory,
         formData.subCategory2,
         formData.subCategory3,
-        formData.location,
-        formData.floor,
-        formData.room,
+        formData.position,
         formData.manufacturer,
         formData.floor,
         formData.room,
-        formData.powerOutput,
+        formData.powerOutput
     ]);
-    const searchAssets = () => {
-        const assetName = formData?.assetName;
-        const category = formData?.category;
-        const subCategory = formData?.subCategory;
-        const subCategory2 = formData?.subCategory2;
-        const subCategory3 = formData?.subCategory3;
-        const location = formData?.location;
-        const manufacturer = formData?.manufacturer;
-        const floor = formData?.floor;
-        const room = formData?.room;
-        if (
-            assetName ||
-            category ||
-            subCategory ||
-            subCategory2 ||
-            subCategory3 ||
-            location ||
-            manufacturer ||
-            floor ||
-            room
-        ) {
-            const list = siteAssetsList?.filter(
-                (x) =>
-                    String(x?.assetName)
-                        .toLowerCase()
-                        .includes(String(assetName).toLowerCase()) &&
-                    String(x?.category)
-                        .toLowerCase()
-                        .includes(String(category).toLowerCase()) &&
-                    String(x?.subCategory)
-                        .toLowerCase()
-                        .includes(String(subCategory).toLowerCase()) &&
-                    String(x?.subCategory2)
-                        .toLowerCase()
-                        .includes(String(subCategory2).toLowerCase()) &&
-                    String(x?.subCategory3)
-                        .toLowerCase()
-                        .includes(String(subCategory3).toLowerCase()) &&
-                    String(x?.position)
-                        .toLowerCase()
-                        .includes(String(location).toLowerCase()) &&
-                    String(x?.manufacturer)
-                        .toLowerCase()
-                        .includes(String(manufacturer).toLowerCase()) &&
-                    String(x?.floor)
-                        .toLowerCase()
-                        .includes(String(floor).toLowerCase()) &&
-                    String(x?.room).toLowerCase().includes(String(room).toLowerCase())
-            );
-            setCurrentPage(1); //calculateLastPageIndex(list?.length, preActionsPerPage)
-            setFilteredSiteAssets(list);
-        } else {
-            setFilteredSiteAssets(siteAssetsList);
-        }
-    };
+
+
     const deleteAsset = (itm) => {
         Swal.fire({
             title: `Do you want to delete ${itm?.assetName}`,

@@ -123,6 +123,7 @@ const GasSafetyRecord = ({
     combustionHighCO: "",
     combustionHighCO2: "",
     combustionHighRatio: "",
+    LabelWarningNotice: "",
 
     // Images
     param2: "", // Image 1
@@ -363,6 +364,7 @@ const GasSafetyRecord = ({
           combustionHighCO: gasSafetyData.combustionHighCO || prev.combustionHighCO,
           combustionHighCO2: gasSafetyData.combustionHighCO2 || prev.combustionHighCO2,
           combustionHighRatio: gasSafetyData.combustionHighRatio || prev.combustionHighRatio,
+          LabelWarningNotice: gasSafetyData.LabelWarningNotice || prev.LabelWarningNotice,
 
           // Images
           param2: gasSafetyData.param2 || prev.param2,
@@ -911,6 +913,8 @@ const GasSafetyRecord = ({
         ...prev,
         assetId: newValue.assetId,
         selectedAsset: newValue,
+        applianceLocation: `${newValue.assetName} - Asset No-${newValue.assetId} - ${newValue.manufacturer}, ${newValue.position}, ${newValue.floor}, ${newValue.room}`,
+        applianceType: newValue.subCategory,
         applianceManufacturer: newValue.manufacturer,
         applianceModel: newValue.model
       }));
@@ -1062,7 +1066,7 @@ const GasSafetyRecord = ({
       setTextField('CO2_1', formData.combustionHighCO2 || '');
       setTextField('Ratio', formData.combustionLowRatio || '');
       setTextField('Ratio1', formData.combustionHighRatio || '');
-      setTextField('Label  Warning Notice', formData.applianceType || '')
+      setTextField('Label  Warning Notice', formData.LabelWarningNotice || '')
 
       // Next Inspection
       setTextField('DueDate', formatDateToReadable(nextInspectionDue));
@@ -2162,8 +2166,8 @@ const GasSafetyRecord = ({
                   <input
                     type="text"
                     className="form-control"
-                    name="applianceType"
-                    value={formData.applianceType}
+                    name="LabelWarningNotice"
+                    value={formData.LabelWarningNotice}
                     onChange={handleInputChange}
                     disabled={isSubmitted}
                     placeholder="Enter label/warning notice details"
