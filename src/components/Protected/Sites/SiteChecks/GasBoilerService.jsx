@@ -228,9 +228,8 @@ const GasBoilerService = ({
     const [inspectionDetails, setInspectionDetails] = useState(null);
     const [folderIds, setFolderIds] = useState({
         logBooks: null,
-        plantAndEquipment: null,
-        gasServices: null,
-        boilerService: null
+        gasSafety: null,
+        gasRecords: null
     });
     const [installationAddress, setInstallationAddress] = useState(null);
     const [postCode, setPostCode] = useState(null);
@@ -513,36 +512,29 @@ const GasBoilerService = ({
             }
 
             const logBooksFolder = parentFoldersResponse.parentFolders.find(
-                f => f.name.trim() === 'Log Books'
+                f => f.name.trim() === '6 - Log Books'
             );
             if (!logBooksFolder) throw new Error('Log Books folder not found');
 
             const logBooksChildren = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
-            const plantAndEquipmentFolder = logBooksChildren?.document?.childFolders?.find(
+            const gasSafetyFolder = logBooksChildren?.document?.childFolders?.find(
                 f => f.name.trim() === 'Plant and Equipment'
             );
-            if (!plantAndEquipmentFolder) throw new Error('Plant and Equipment folder not found');
+            if (!gasSafetyFolder) throw new Error('Gas Safety folder not found');
 
-            const plantChildren = await get(`/api/document/parent/${plantAndEquipmentFolder.id}/folders?siteId=${siteId}`);
-            const gasServicesFolder = plantChildren?.document?.childFolders?.find(
+            const gasSafetyChildren = await get(`/api/document/parent/${gasSafetyFolder.id}/folders?siteId=${siteId}`);
+            const gasRecordsFolder = gasSafetyChildren?.document?.childFolders?.find(
                 f => f.name.trim() === 'Miscellaneous Service Documents'
-            );
-            if (!gasServicesFolder) throw new Error('Miscellaneous Service folder not found');
-
-            const gasChildren = await get(`/api/document/parent/${gasServicesFolder.id}/folders?siteId=${siteId}`);
-            const boilerServiceFolder = gasChildren?.document?.childFolders?.find(
-                f => f.name.trim() === 'Documents'
             );
 
             const newFolderIds = {
                 logBooks: logBooksFolder.id,
-                plantAndEquipment: plantAndEquipmentFolder.id,
-                gasServices: gasServicesFolder.id,
-                boilerService: boilerServiceFolder?.id || null
+                gasSafety: gasSafetyFolder.id,
+                gasRecords: gasRecordsFolder?.id || null
             };
 
             setFolderIds(newFolderIds);
-            return newFolderIds.boilerService;
+            return newFolderIds.gasRecords;
 
         } catch (error) {
             console.error('Folder structure error:', error);

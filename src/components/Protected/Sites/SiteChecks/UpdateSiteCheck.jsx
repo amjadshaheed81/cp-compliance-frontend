@@ -39,7 +39,7 @@ import FireDamper from "./FireDamper";
 import WaterHeaterCertificate from "./WaterHeaterCertificate";
 import InspectionFireCertificate from "./InspectionFireCertificate";
 import GasBoilerService from "./GasBoilerService";
-
+import GasInspection from "./GasInspection";
 
 
 
@@ -567,6 +567,15 @@ autoComplete="off"
                   />
                 </Item>
             )}
+              {step === "inspection-gas" && (
+                  <Item>
+                      <GasInspection
+                          checkId={checkId}
+                          sasToken={sasToken}
+                          siteCheck={siteCheck}
+                      />
+                  </Item>
+              )}
             {step === "inspection-electrical-microwave-oven" && (
                 <Item>
                   <MicroWaveOvenCertificate
