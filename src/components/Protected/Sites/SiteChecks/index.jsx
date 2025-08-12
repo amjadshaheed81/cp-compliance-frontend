@@ -520,40 +520,51 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       const newAssetIdMap = {};
 
       // Fetch inspection data for all checks and populate the map
-      await Promise.all(siteChecks.map(async (check) => {
-        try {
-          const assetId = await fetchInspectionData(check.checkId, check.type, check.subType);
-          if (assetId) {
-            newAssetIdMap[check.checkId] = assetId;
+      await Promise.all(
+        siteChecks.map(async (check) => {
+          try {
+            const assetId = await fetchInspectionData(
+              check.checkId,
+              check.type,
+              check.subType,
+              check.category
+            );
+            if (assetId) {
+              newAssetIdMap[check.checkId] = assetId;
+            }
+          } catch (error) {
+            console.error(`Error fetching inspection data for check ${check.checkId}:`, error);
           }
-        } catch (error) {
-          console.error(`Error fetching inspection data for check ${check.checkId}:`, error);
-        }
-      }));
+        })
+      );
 
       // Update the assetIdMap state
       setAssetIdMap(newAssetIdMap);
 
       // Sort the site checks with the following priority:
-      // 1. Checks with asset IDs (sorted numerically)
-      // 2. Checks without asset IDs (sorted by type then subtype)
+      // 1. Checks with asset IDs (sorted numerically in ascending order)
+      // 2. Checks without asset IDs (grouped by subType → category, sorted alphabetically)
       const sortedSiteChecks = [...siteChecks].sort((a, b) => {
         const aAssetId = newAssetIdMap[a.checkId];
         const bAssetId = newAssetIdMap[b.checkId];
 
-        // Both have asset IDs - sort numerically
+        // Case 1: Both have asset IDs → Sort numerically (smallest first)
         if (aAssetId && bAssetId) {
           return parseInt(aAssetId) - parseInt(bAssetId);
         }
 
-        // Only one has asset ID - it comes first
+        // Case 2: Only 'a' has asset ID → 'a' comes first
         if (aAssetId) return -1;
+
+        // Case 3: Only 'b' has asset ID → 'b' comes first
         if (bAssetId) return 1;
 
-        // Neither has asset ID - sort by type then subtype
-        const typeCompare = a.type.localeCompare(b.type);
-        if (typeCompare !== 0) return typeCompare;
-        return a.subType.localeCompare(b.subType);
+        // Case 4: Neither has asset ID → Group by subType → category (alphabetical)
+        const subTypeCompare = a.subType.localeCompare(b.subType);
+        if (subTypeCompare !== 0) return subTypeCompare;
+
+        // If same subType, sort by category
+        return a.category.localeCompare(b.category);
       });
 
       // Update both states
@@ -566,16 +577,15 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       setIsLoading(false);
     }
   };
-
   // Updated fetchInspectionData function
-  const fetchInspectionData = async (checkId, type, subType) => {
+  const fetchInspectionData = async (checkId, type, subType, category) => {
     try {
       let apiEndpoint;
 
-      // Determine the endpoint based on subType
-      if (subType === 'Boiler Service / Maintenance Checklist') {
+      // Determine the endpoint based on category
+      if (category === 'Boiler Service / Maintenance Checklist') {
         apiEndpoint = `/api/site-check/gas-boiler-inspection/${checkId}`;
-      } else if (subType === 'Gas Safety Annual Inspection') {
+      } else if (category === 'Gas Safety Annual Inspection') {
         apiEndpoint = `/api/site-check/gas-safety-inspection/${checkId}`;
       } else {
         // Default to generic inspection
