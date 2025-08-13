@@ -618,7 +618,6 @@ const GasSafetyRecord = ({
 
         } catch (error) {
             console.error('Folder structure error:', error);
-            toast.error('Failed to load document folders');
             return null;
         }
     };
@@ -775,7 +774,6 @@ const GasSafetyRecord = ({
             throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
-            toast.error('Failed to upload PDF: ' + error.message);
             return false;
         } finally {
             setIsUploading(false);

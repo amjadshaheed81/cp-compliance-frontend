@@ -296,25 +296,25 @@ const Summary = ({
 
         if (category) {
             filtered = filtered.filter(x =>
-                String(x?.category || '').toLowerCase().includes(category.toLowerCase())
+                String(x?.category || '') === category
             );
         }
 
         if (subCategory) {
             filtered = filtered.filter(x =>
-                String(x?.subCategory || '').toLowerCase().includes(subCategory.toLowerCase())
+                String(x?.subCategory || '') === subCategory
             );
         }
 
         if (subCategory2) {
             filtered = filtered.filter(x =>
-                String(x?.subCategory2 || '').toLowerCase().includes(subCategory2.toLowerCase())
+                String(x?.subCategory2 || '') === subCategory2
             );
         }
 
         if (subCategory3) {
             filtered = filtered.filter(x =>
-                String(x?.subCategory3 || '').toLowerCase().includes(subCategory3.toLowerCase())
+                String(x?.subCategory3 || '') === subCategory3
             );
         }
 
