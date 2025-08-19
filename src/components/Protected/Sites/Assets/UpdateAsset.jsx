@@ -487,30 +487,37 @@ const UpdateAsset = ({
   const submitSiteAssetPurchaseDetail = async (data) => {
     let form_data = new FormData();
     const { purchaseInvoice, ...formData } = data;
+
     if (purchaseInvoice?.length > 0) {
       form_data.append(
-          "purchaseInvoice",
-          data?.purchaseInvoice?.[0],
-          data?.purchaseInvoice?.[0]?.name
+        "purchaseInvoice",
+        data?.purchaseInvoice?.[0],
+        data?.purchaseInvoice?.[0]?.name
       );
     }
+
+    // Get current asset values from the form
+    const assetValues = getValues();
+
     const submitData = {
       ...formData,
+      powerOutput: assetValues.powerOutput, // Use value from main asset form
+      damperSize: assetValues.damperSize,   // Use value from main asset form
       purchaseDate: formData?.purchaseDate + " 10:00:00",
       assetId: selectedAsset?.assetId,
       position: selectedAsset?.position,
       floor: selectedAsset?.floor,
       room: selectedAsset?.room,
-
       disposalDate: selectedAsset?.disposalDate
-          ? `${formatDate(selectedAsset.disposalDate)} 10:00:00`
-          : null,
+        ? `${formatDate(selectedAsset.disposalDate)} 10:00:00`
+        : null,
       disposalTo: selectedAsset?.disposalTo,
       disposalValue: selectedAsset?.disposalValue,
       valuationBy: selectedAsset?.valuationBy,
       valuation: selectedAsset?.valuation,
       deviceId: selectedAsset?.deviceId,
     };
+
     form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
     setLoader(true);
     await updatePurchaseDetails(form_data, selectedAsset?.assetId);
@@ -518,12 +525,18 @@ const UpdateAsset = ({
     getAssetDetails();
   };
 
+
   const locationForm = useForm({});
   const locationFormValues = locationForm.watch();
   const submitLocationForm = async (data) => {
     let form_data = new FormData();
+
+    const assetValues = getValues();
+
     const submitData = {
       ...data,
+      powerOutput: assetValues.powerOutput,
+      damperSize: assetValues.damperSize,
       assetId: selectedAsset?.assetId,
       purchaseDate: selectedAsset?.purchaseDate
           ? `${formatDate(selectedAsset.purchaseDate)} 10:00:00`
@@ -558,29 +571,7 @@ const UpdateAsset = ({
       disposalTo: "",
     },
   });
-  // const submitValuationForm = async (data) => {
-  //   let form_data = new FormData();
-  //   const submitData = {
-  //     ...data,
-  //     assetId: selectedAsset?.assetId,
-  //     date: data?.date + " 10:00:00",
-  //     disposalDate: data?.disposalDate + " 10:00:00",
-  //     position: selectedAsset?.position,
-  //     floor: selectedAsset?.floor,
-  //     room: selectedAsset?.room,
-  //     purchaseDate: selectedAsset?.purchaseDate
-  //       ? `${selectedAsset?.purchaseDate?.split("T")?.[0]} 10:00:00`
-  //       : null,
-  //     supplier: selectedAsset?.supplier,
-  //     transactionId: selectedAsset?.transactionId,
-  //     cost: selectedAsset?.cost,
-  //   };
-  //   form_data.append("assetDetailsRequestString", JSON.stringify(submitData));
-  //   setLoader(true);
-  //   await updatePurchaseDetails(form_data, selectedAsset?.assetId);
-  //   setLoader(false);
-  //   getAssetDetails();
-  // };
+
   const submitValuationForm = async (data) => {
     setLoader(true);
     try {
@@ -594,9 +585,13 @@ const UpdateAsset = ({
           (v) => !v.delete && v.date && v.valuation && v.valuationBy
       );
 
+      const assetValues = getValues();
+
       const submitData = {
         ...data,
         assetId: selectedAsset?.assetId,
+        powerOutput: assetValues.powerOutput,
+        damperSize: assetValues.damperSize,
         valuations: [
           ...validValuations.map((v) => ({
             id: v.id,
@@ -663,10 +658,15 @@ const UpdateAsset = ({
     }
 
     setLoader(true);
+
+    const assetValues = getValues();
+
     try {
       const submitData = {
         ...data,
         assetId: selectedAsset?.assetId,
+        powerOutput: assetValues.powerOutput,
+        damperSize: assetValues.damperSize,
         disposalDate: data.disposalDate
             ? `${formatDate(data.disposalDate)} 10:00:00`
             : null,
