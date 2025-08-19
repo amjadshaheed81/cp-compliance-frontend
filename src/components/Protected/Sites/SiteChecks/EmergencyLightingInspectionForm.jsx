@@ -92,9 +92,10 @@ const EmergencyLightingInspectionForm = ({
   const [inspectionDetails, setInspectionDetails] = useState(null);
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isNewCheck, setIsNewCheck] = useState(!checkId); // Track if this is a new check
+  const [isNewCheck, setIsNewCheck] = useState(!checkId); // Track if this is a new check\
 
-  // Helper function to fetch PDF as ArrayBuffer
+
+    // Helper function to fetch PDF as ArrayBuffer
   const fetchPdfTemplate = async () => {
     try {
       const response = await fetch(pdfTemplate);
@@ -142,6 +143,9 @@ const EmergencyLightingInspectionForm = ({
       };
 
       console.log('Fetched inspection data:', inspectionDetails);
+      setInspectionDetails(inspectionDetails);
+
+
       return inspectionDetails;
     } catch (error) {
       console.error('Error fetching inspection details:', {
@@ -718,10 +722,13 @@ const EmergencyLightingInspectionForm = ({
       const formData = new FormData();
 
       // Helper function to format date for backend
-      const formatDateForBackend = (date) => {
-        const d = new Date(date);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-      };
+
+
+        const formatDateForBackend = (dateString) => {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            return date.toISOString().replace('T', ' ').split('.')[0];
+        };
 
       // Check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
@@ -739,8 +746,8 @@ const EmergencyLightingInspectionForm = ({
             fileVersion: (existingFile.fileVersion || 1) + 1,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: formatDateForBackend(new Date()),
-            expiryDate: formatDateForBackend(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
-            uploaderUserId: loggedInUserData?.id,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
           }]
@@ -777,8 +784,8 @@ const EmergencyLightingInspectionForm = ({
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: formatDateForBackend(new Date()),
-            expiryDate: formatDateForBackend(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
-            uploaderUserId: loggedInUserData?.id,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
           }]

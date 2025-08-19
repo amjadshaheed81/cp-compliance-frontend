@@ -453,6 +453,12 @@ const StorageTankService = ({
     checkId,
   ]);
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
   useEffect(() => {
     const shouldShowRiskAssessment = formData.param2 === "Pass";
     setShowRiskAssessment(shouldShowRiskAssessment);
@@ -543,6 +549,8 @@ const StorageTankService = ({
 
 
 
+
+
   const dateFormat = (date) => {
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
@@ -577,9 +585,8 @@ const StorageTankService = ({
             fileVersion: existingFile.fileVersion + 1, // Increment version
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
           }]
@@ -610,9 +617,8 @@ const StorageTankService = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toISOString().replace('T', ' ').split('.')[0],
-            note: 'Storage Tank Service Report',
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              note: 'Storage Tank Service Report',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
             originalFileName: fileName,

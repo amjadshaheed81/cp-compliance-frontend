@@ -93,7 +93,9 @@ const CctvAlarmCertificate = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [folderIds, setFolderIds] = useState({
+    const [inspectionDetails, setInspectionDetails] = useState(null);
+
+    const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
     miscellaneousService: null,
@@ -333,6 +335,7 @@ const CctvAlarmCertificate = ({
           if (cctvCheck) {
             setCurrentCheckId(cctvCheck.checkId);
             setCheckStatus(cctvCheck.status);
+            setInspectionDetails(cctvCheck);
 
             const isDone = cctvCheck.status === 'Done';
             setIsFormEditable(!isDone);
@@ -506,6 +509,12 @@ const CctvAlarmCertificate = ({
     }));
   };
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
       const url = URL.createObjectURL(pdfBlob);
@@ -618,9 +627,8 @@ const CctvAlarmCertificate = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `CCTV-${new Date().getTime()}`
           }]
@@ -651,9 +659,8 @@ const CctvAlarmCertificate = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            note: 'CCTV Service Certificate',
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              note: 'CCTV Service Certificate',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
             originalFileName: fileName,

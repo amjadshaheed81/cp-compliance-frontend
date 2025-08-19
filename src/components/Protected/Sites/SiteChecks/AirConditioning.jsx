@@ -110,7 +110,9 @@ const AirConditioning = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [folderIds, setFolderIds] = useState({
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+
+    const [folderIds, setFolderIds] = useState({
     logBooks: null,
     EnvironmentalLogBook: null,
     airConditioning: null
@@ -381,8 +383,10 @@ const AirConditioning = ({
             console.log('Found check:', {
               checkId: airConditioningCheck.checkId,
               requestedCheckId: checkId,
+                dueDate:airConditioningCheck.dueDate,
               matchType: airConditioningCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
             });
+            setInspectionDetails(airConditioningCheck);
 
             setCurrentCheckId(airConditioningCheck.checkId);
             setCheckStatus(airConditioningCheck.status);
@@ -588,6 +592,12 @@ const AirConditioning = ({
     }));
   };
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
       const url = URL.createObjectURL(pdfBlob);
@@ -699,9 +709,8 @@ const AirConditioning = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `AC-${new Date().getTime()}`
           }]
@@ -732,9 +741,8 @@ const AirConditioning = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            note: 'Air Conditioning Certificate',
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              note: 'Air Conditioning Certificate',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
             originalFileName: fileName,
@@ -908,7 +916,7 @@ const AirConditioning = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `AirConditioningReport_${formData.selectedAsset.assetName}.pdf`;
+      const fileName = `AirConditioningReport_${selectedAsset.assetName}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);

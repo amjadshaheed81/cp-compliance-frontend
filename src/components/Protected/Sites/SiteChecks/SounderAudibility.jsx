@@ -110,8 +110,10 @@ const SounderAudibilityForm = ({
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
+    const [inspectionDetails, setInspectionDetails] = useState(null);
 
-  // Check if user is internal and tagged with selected site
+
+    // Check if user is internal and tagged with selected site
   const isInternalUserTaggedWithSite =
       loggedInUserData?.taggedSites?.some(
           (site) => site.id === siteSelectedForGlobal?.siteId
@@ -305,12 +307,13 @@ const SounderAudibilityForm = ({
           if (sounderAudibilityCheck) {
             setCurrentCheckId(sounderAudibilityCheck.checkId);
             setCheckStatus(sounderAudibilityCheck.status);
-
+            setInspectionDetails(sounderAudibilityCheck);
             const isDone = sounderAudibilityCheck.status === 'Done';
             setIsFormEditable(!isDone);
             setIsSubmitted(isDone);
             setShowPdfButton(isDone);
-          } else {
+          }
+          else {
             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
             setIsFormEditable(true);
             setIsSubmitted(false);
@@ -529,6 +532,12 @@ const SounderAudibilityForm = ({
     }
   };
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
@@ -558,9 +567,8 @@ const SounderAudibilityForm = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
           }]
@@ -591,9 +599,8 @@ const SounderAudibilityForm = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            note: 'Sounder Audibility Report',
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              note: 'Sounder Audibility Report',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
             originalFileName: fileName,
