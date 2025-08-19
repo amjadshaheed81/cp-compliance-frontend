@@ -121,6 +121,8 @@ const AirConditioning = ({
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+
   const navigate = useNavigate();
 
   const isInternalUserTaggedWithSite = true;
@@ -382,8 +384,10 @@ const AirConditioning = ({
             console.log('Found check:', {
               checkId: airConditioningCheck.checkId,
               requestedCheckId: checkId,
-              matchType: airConditioningCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
+              matchType: airConditioningCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match',
+              dueDate: airConditioningCheck.dueDate,
             });
+            setInspectionDetails(airConditioningCheck);
 
             setCurrentCheckId(airConditioningCheck.checkId);
             setCheckStatus(airConditioningCheck.status);
@@ -671,6 +675,12 @@ const AirConditioning = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
+
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
@@ -700,8 +710,7 @@ const AirConditioning = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `AC-${new Date().getTime()}`
