@@ -239,7 +239,7 @@ const SounderAudibilityForm = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === '6 - Log Books'
+            folder => folder.name === '6 - Log Books'
         );
 
         if (logBooksFolder) {
@@ -247,7 +247,7 @@ const SounderAudibilityForm = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const plantAndEquipmentFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Fire Log Book'
+                folder => folder.name === 'Fire Log Book'
             );
 
             if (plantAndEquipmentFolder) {
@@ -257,7 +257,7 @@ const SounderAudibilityForm = ({
 
               if (plantAndEquipmentResponse?.document?.childFolders) {
                 const miscellaneousFolder = plantAndEquipmentResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Fire Alarm(BS5839)'
+                    folder => folder.name === 'Fire Alarm (BS5839)'
                 );
 
                 if (miscellaneousFolder) {
@@ -267,7 +267,7 @@ const SounderAudibilityForm = ({
 
                   if (miscResponse?.document?.childFolders) {
                     const sounderAudibilityFolder = miscResponse.document.childFolders.find(
-                        folder => folder.name.trim() === 'Fire Alarm - Sounder Audibility Test'
+                        folder => folder.name === 'Fire Alarm - Sounder Audibility Test'
                     );
 
                     setFolderIds({

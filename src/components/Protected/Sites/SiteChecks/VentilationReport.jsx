@@ -109,7 +109,9 @@ const VentilationReport = ({
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
-  const navigate = useNavigate();
+    const [inspectionDetails, setInspectionDetails] = useState(null);
+
+    const navigate = useNavigate();
 
   const isInternalUserTaggedWithSite = true;
 
@@ -309,6 +311,12 @@ const VentilationReport = ({
     }
   };
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
@@ -331,6 +339,7 @@ const VentilationReport = ({
           if (ventilationCheck) {
             setCurrentCheckId(ventilationCheck.checkId);
             setCheckStatus(ventilationCheck.status);
+            setInspectionDetails(ventilationCheck);
             const isDone = ventilationCheck.status === 'Done';
             setIsFormEditable(!isDone);
             setIsSubmitted(isDone);
@@ -623,9 +632,8 @@ const VentilationReport = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            uploaderUserId: loggedInUserData?.id || 0,
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `VENT-${new Date().getTime()}`
           }]
@@ -656,9 +664,8 @@ const VentilationReport = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
-            note: 'Ventilation System Certificate',
+              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+              note: 'Ventilation System Certificate',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
             originalFileName: fileName,
