@@ -243,6 +243,7 @@ const AirConditioning = ({
     }
   };
 
+
   const fetchExistingActions = async () => {
     try {
       // First check if we have an actionId in form data
@@ -2098,7 +2099,7 @@ const AirConditioning = ({
             ) : (
                 <div className="text-center">
                   <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                  Report submitted successfully on {formatDate(formData.signedDate)}
                   </div>
                 </div>
             )}
