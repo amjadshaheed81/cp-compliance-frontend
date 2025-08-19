@@ -547,7 +547,7 @@ const SounderAudibilityForm = ({
       }
 
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const targetFolderId = folderIds.sounderAudibility || folderIds.logBooks;
+      const targetFolderId = folderIds.sounderAudibility;
 
       if (!targetFolderId) {
         throw new Error('Could not determine target folder for PDF upload');
