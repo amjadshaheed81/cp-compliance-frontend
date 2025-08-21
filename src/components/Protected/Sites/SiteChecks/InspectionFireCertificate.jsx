@@ -181,6 +181,10 @@ const InspectionFireCertificate = ({
         dueDate: response.dueDate,
         status: response.status
       };
+      setInspectionDetails(inspectionDetails);
+      const isSubmitted = inspectionDetails?.status === 'Done';
+      setIsSubmitted(isSubmitted);
+      setIsFormEditable(!isSubmitted);
 
       return inspectionDetails;
     } catch (error) {
@@ -480,11 +484,13 @@ const InspectionFireCertificate = ({
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
 
-      // Generate filename
-      const fileName = `FireAlarmInspection_${inspectionDetails?.category || 'report'}.pdf`;
+      console.log('inspectionDetails:', inspectionDetails);
+      console.log('inspectionDetails?.category:', inspectionDetails?.category);
 
-      // Save locally first
-      //await savePdfToLocal(blob, fileName);
+      const category = inspectionDetails?.category || 'report';
+      const fileName = `FireAlarmInspection_${category}.pdf`;
+
+      console.log('Generated filename:', fileName);
 
       // Upload to server
       await uploadPdfToServer(
@@ -662,7 +668,7 @@ const InspectionFireCertificate = ({
             fileVersion: (existingFile.fileVersion || 1) + 1,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: formatDateForBackend(new Date()),
-            expiryDate: formatDateForBackend(inspectionDetails.dueDate),
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `FA-${new Date().getTime()}`
@@ -700,7 +706,7 @@ const InspectionFireCertificate = ({
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId,
             issueDate: formatDateForBackend(new Date()),
-            expiryDate: formatDateForBackend(inspectionDetails.dueDate),
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `FA-${new Date().getTime()}`
@@ -842,8 +848,7 @@ const InspectionFireCertificate = ({
           user: apiData?.inspectionByUser || prev.user,
         }));
 
-        const details = await fetchInspectionDetails(checkId);
-        setInspectionDetails(details);
+
 
         setCompleted(true);
       }
@@ -853,32 +858,32 @@ const InspectionFireCertificate = ({
     }
   };
 
-  const fetchCheckStatus = async () => {
-    try {
-      if (!checkId) return;
+  // const fetchCheckStatus = async () => {
+  //   try {
+  //     if (!checkId) return;
 
-      const response = await get(`api/site-check/check-id/${checkId}`);
-      if (response) {
-        const isDone = response.status === 'Done';
-        setIsFormEditable(!isDone);
-        setIsSubmitted(isDone);
+  //     const response = await get(`api/site-check/check-id/${checkId}`);
+  //     if (response) {
+  //       const isDone = response.status === 'Done';
+  //       setIsFormEditable(!isDone);
+  //       setIsSubmitted(isDone);
 
-        if (isDone) {
-          setInspectionDetails({
-            type: response.type,
-            subType: response.subType,
-            category: response.category,
-            dueDate: response.dueDate,
-            status: response.status,
-            checkId: response.checkId,
-            siteId: response.siteId,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching check status:', error);
-    }
-  };
+  //       if (isDone) {
+  //         setInspectionDetails({
+  //           type: response.type,
+  //           subType: response.subType,
+  //           category: response.category,
+  //           dueDate: response.dueDate,
+  //           status: response.status,
+  //           checkId: response.checkId,
+  //           siteId: response.siteId,
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching check status:', error);
+  //   }
+  // };
 
   useEffect(() => {
     const syncActionState = async () => {
@@ -902,7 +907,6 @@ const InspectionFireCertificate = ({
 
       if (checkId) {
         await getInspection();
-        await fetchCheckStatus();
       }
 
       await fetchExistingActions();
