@@ -969,7 +969,7 @@ autoComplete="off"
                                 setFormData(uformData);
                               }}
                               options={siteAssets
-                                .filter(s=> s.category === "Mechanical" && s.subCategory === "Water Services" && s.subCategory2 === "Outlet")
+                                .filter(s => s.category === "Mechanical" && s.subCategory === "Water Services" && (s.subCategory2 === "Outlet / Tap" || s.subCategory2 === "Outlet / Shower"))
                                 .filter(s=> !formData?.map(a=> a.assetId).includes(s.assetId) )
                                 .map((option) => ({
                                 key: option.assetId,
