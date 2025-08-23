@@ -1020,7 +1020,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                     (s) =>
                                       s.category === "Mechanical" &&
                                       s.subCategory === "Water Services" &&
-                                      s.subCategory2 === "Outlet"
+                                        (s.subCategory2 === "Outlet / Tap" || s.subCategory2 === "Outlet / Shower")
                                   )
                                   .filter(
                                     (s) =>
