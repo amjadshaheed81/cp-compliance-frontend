@@ -111,6 +111,8 @@ const ExternalLightningCertificate = ({
   const [isFormEditable, setIsFormEditable] = useState(true);
   // Initialize with the checkId prop if available, otherwise null
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+
 
 
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
@@ -367,6 +369,7 @@ const ExternalLightningCertificate = ({
               matchType: externalLightingCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
             });
 
+            setInspectionDetails(externalLightingCheck);
             setCurrentCheckId(externalLightingCheck.checkId);
             setCheckStatus(externalLightingCheck.status);
 
@@ -648,6 +651,12 @@ const ExternalLightningCertificate = ({
     }
   };
 
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
+
   // Helper function to upload PDF to the server
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
@@ -686,8 +695,7 @@ const ExternalLightningCertificate = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `ELC-${new Date().getTime()}`
@@ -722,8 +730,7 @@ const ExternalLightningCertificate = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             note: 'External Lightning Certificate',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
