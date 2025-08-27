@@ -101,6 +101,8 @@ const MicroWaveOvenCertificate = ({
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
   const navigate = useNavigate();
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+
 
   const isInternalUserTaggedWithSite = true;
 
@@ -313,6 +315,7 @@ const MicroWaveOvenCertificate = ({
               requestedCheckId: checkId,
               matchType: microwaveCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
             });
+            setInspectionDetails(microwaveCheck);
 
             setCurrentCheckId(microwaveCheck.checkId);
             setCheckStatus(microwaveCheck.status);
@@ -481,6 +484,12 @@ const MicroWaveOvenCertificate = ({
     }
   };
 
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
+
   const selectedAsset = siteAssets.find(
       (asset) => asset.assetId === formData.assetId
   );
@@ -584,6 +593,8 @@ const MicroWaveOvenCertificate = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
+
+
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
@@ -613,8 +624,7 @@ const MicroWaveOvenCertificate = ({
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `MOTC-${new Date().getTime()}`
@@ -646,8 +656,7 @@ const MicroWaveOvenCertificate = ({
           files: [{
             name: fileName.split('.')[0],
             issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             note: 'Microwave Oven Testing Certificate',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,

@@ -47,6 +47,7 @@ import GasInspection from "./GasInspection";
 import FierDamper from "./FierDamper";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import GasBoilerService from "./GasBoilerService";
+import FireFightingEquipement from "./FireFightingEquipement";
 
 const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -226,8 +227,13 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
         siteCheck.category === "Passive Fire - Fire Damper Inspection"
     ){
       setStep("inspection-fire-damper")
-    }
-    else if (
+    } else if (
+      siteCheck.type === "Inspection" &&
+      siteCheck.subType === "Fire Fighting Equipment" &&
+      siteCheck.category === "Fire Extinguisher Inspection & Service"
+    ) {
+      setStep("inspection-fire-Equipment")
+    } else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Plant and Equipment Inspection" &&
       siteCheck.category === "Air Conditioning Service"
@@ -641,6 +647,18 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                   category={siteCheck.category}
                   leadUserID={siteCheck?.leadUserID}
                   
+                />
+              </Item>
+            )}
+
+            {step === "inspection-fire-Equipment" && (
+              <Item>
+                <FireFightingEquipement
+                  checkId={checkId}
+                  sasToken={sasToken}
+                  subType={siteCheck?.subType}
+                  category={siteCheck.category}
+                  leadUserID={siteCheck?.leadUserID}
                 />
               </Item>
             )}
