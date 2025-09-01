@@ -158,6 +158,8 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
+  //console.log('-->',license)
+
   // const handleRiskAssessmentComplete = async (actionResponse) => {
   //   try {
   //     if (!actionResponse?.actionId) {
