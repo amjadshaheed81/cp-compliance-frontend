@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import "./datepicker.css";
-import { connect } from "react-redux";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import './DatePicker.css';
 import moment from "moment";
 
 const TdkDatePicker = ({
@@ -11,20 +10,17 @@ const TdkDatePicker = ({
   onChange,
   required,
   label,
-  width = "380px",
+  width = "220px",
   disabled,
   minDate,
 }) => {
   const datePickerRef = useRef(null);
-  // Store the actual Date object in state
   const [dateValue, setDateValue] = useState(value ? new Date(value) : null);
-  // Store the display string separately
   const [displayValue, setDisplayValue] = useState(
     value ? moment(value).format("DD/MM/YYYY") : ""
   );
   const [isTyping, setIsTyping] = useState(false);
 
-  // Update display value when dateValue changes
   useEffect(() => {
     if (dateValue) {
       setDisplayValue(moment(dateValue).format("DD/MM/YYYY"));
@@ -33,7 +29,6 @@ const TdkDatePicker = ({
     }
   }, [dateValue]);
 
-  // Format input with slashes automatically
   const formatDateWithSlashes = (input) => {
     const digits = input.replace(/\D/g, "");
     const day = digits?.slice(0, 2);
@@ -47,14 +42,12 @@ const TdkDatePicker = ({
     return formattedDate;
   };
 
-  // Handle manual date input
   const handleInputChange = (e) => {
     let inputValue = e.target.value;
     inputValue = formatDateWithSlashes(inputValue);
     setDisplayValue(inputValue);
     setIsTyping(true);
 
-    // Parse the input as a valid date
     const parsedDate = moment(inputValue, "DD/MM/YYYY", true);
     if (parsedDate.isValid()) {
       const jsDate = new Date(
@@ -63,10 +56,10 @@ const TdkDatePicker = ({
         parsedDate.date(),
         10,
         0,
-        0 // Force local date and time
+        0
       );
       setDateValue(jsDate);
-      onChange(jsDate); // Pass Date object to parent
+      onChange(jsDate);
     } else if (inputValue === "") {
       setDateValue(null);
       onChange(null);
@@ -80,27 +73,26 @@ const TdkDatePicker = ({
   };
 
   return (
-    <div>
-      {label && <label htmlFor="datePicker">{label}</label>}
-      <div style={{ display: "flex", alignItems: "center" }}>
+    <div className="tdk-datepicker-container">
+      {label && <label className="tdk-datepicker-label">{label}</label>}
+      <div className="tdk-datepicker-input-container">
         <input
           required={required}
           type="text"
           autoComplete="off"
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
-          id="datePicker"
+          className="tdk-datepicker-input"
           value={displayValue}
           placeholder="dd/mm/yyyy"
-          className="form-control"
-          disabled={disabled ? true : false}
+          disabled={disabled}
           style={{ width }}
           onChange={handleInputChange}
           onClick={handleInputClick}
           onBlur={() => setIsTyping(false)}
         />
         <CalendarTodayIcon
-          style={{ cursor: "pointer", color: "#aaa" }}
+          className="tdk-datepicker-icon"
           onClick={() => datePickerRef.current.setOpen(true)}
         />
       </div>
@@ -109,16 +101,20 @@ const TdkDatePicker = ({
         selected={dateValue}
         onChange={(date) => {
           setDateValue(date);
-          onChange(date); // Pass Date object to parent
+          onChange(date);
         }}
         dateFormat="dd/MM/yyyy"
         customInput={<div />}
         popperClassName="custom-datepicker-popper"
-        popperPlacement="left-ends"
+        popperPlacement="bottom-start"
         minDate={minDate ? new Date(minDate) : null}
+        fixedHeight
+        showMonthDropdown
+        showYearDropdown
+        dropdownMode="select"
       />
     </div>
   );
 };
 
-export default connect(null, {})(TdkDatePicker);
+export default TdkDatePicker;
