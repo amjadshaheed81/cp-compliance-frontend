@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import './DatePicker.css';
 import moment from "moment";
 
 const TdkDatePicker = ({
