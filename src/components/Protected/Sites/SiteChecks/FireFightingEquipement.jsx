@@ -109,7 +109,8 @@ should be carried out more frequently.`;
             const assetsData = filteredAssets.map(asset => ({
                 id: asset.assetId,
                 location: `${asset.floor || ''} ${asset.room || ''}`.trim(),
-                typeAndSize: asset.subCategory2 || "",
+                // New logic: if subCategory is Fire Blanket, use "Fire Blanket", otherwise use subCategory2
+                typeAndSize: asset.subCategory === "Fire Blanket" ? "Fire Blanket" : asset.subCategory2 || "",
                 s: false,
                 d: false,
                 r: false,
@@ -262,10 +263,16 @@ should be carried out more frequently.`;
                                     if (miscResponse?.document?.childFolders) {
                                         // Look for Fire Equipment folder instead of Disabled WC Alarm
                                         const fireEquipmentFolder = miscResponse.document.childFolders.find(
-                                            folder => folder.name.trim() === 'Fire Extinguisher Inspection & Test'
+                                            folder => folder.name.trim() === 'Extinguisher Inspection & Test'
                                         );
 
                                         setFolderIds({
+                                            logBooks: logBooksFolder.id,
+                                            plantAndEquipment: plantAndEquipmentFolder.id,
+                                            miscellaneousService: miscellaneousFolder.id,
+                                            fireEquipment: fireEquipmentFolder?.id || null
+                                        });
+                                        console.log('Folder IDs set:', {
                                             logBooks: logBooksFolder.id,
                                             plantAndEquipment: plantAndEquipmentFolder.id,
                                             miscellaneousService: miscellaneousFolder.id,
@@ -436,7 +443,9 @@ should be carried out more frequently.`;
                         ? mostRecentItem.assets.map(asset => ({
                             id: asset.id,
                             location: asset.location || "",
-                            typeAndSize: asset.typeAndSize || "",
+                            typeAndSize: asset.typeAndSize ||
+                                (asset.subCategory === "Fire Blanket" ? "Fire Blanket" : asset.subCategory2) ||
+                                "",
                             s: asset.s || false,
                             d: asset.d || false,
                             r: asset.r || false,
@@ -630,7 +639,7 @@ should be carried out more frequently.`;
             throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
-            toast.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
+
             return false;
         } finally {
             setState(prev => ({ ...prev, isUploading: false }));
@@ -704,7 +713,7 @@ should be carried out more frequently.`;
 
 
             formData.assets.slice(0, filteredAssets.length).forEach((asset, index) => {
-                const idx = index + 1;
+                const idx = index;
 
                 setTextField(`location1_${idx}`, asset.location || '', 8);
                 setTextField(`size1_${idx}`, asset.typeAndSize || '', 8);
@@ -1388,7 +1397,7 @@ should be carried out more frequently.`;
                                 <tbody>
                                     {formData.assets.slice(0, filteredAssets.length).map((asset, index) => (
                                         <tr key={index}>
-                                            <td>{index + 1}</td>
+                                            <td>{index}</td>
 
                                             <td>
                                                 <input
@@ -1396,7 +1405,7 @@ should be carried out more frequently.`;
                                                     className="form-control form-control-sm"
                                                     value={asset.location}
                                                     onChange={(e) => handleAssetFieldChange(index, 'location', e.target.value)}
-                                                    disabled={state.isSubmitted}
+                                                    disabled
                                                 />
                                             </td>
                                             <td>
@@ -1405,7 +1414,7 @@ should be carried out more frequently.`;
                                                     className="form-control form-control-sm"
                                                     value={asset.typeAndSize}
                                                     onChange={(e) => handleAssetFieldChange(index, 'typeAndSize', e.target.value)}
-                                                    disabled={state.isSubmitted}
+                                                    disabled
                                                 />
                                             </td>
                                             <td>
