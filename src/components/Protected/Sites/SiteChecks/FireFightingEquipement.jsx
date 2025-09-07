@@ -40,7 +40,6 @@ appliances are in their current positions and have not been discharged, lost pre
 The frequency of inspections by the user should not be less than monthly and, when circumstances require, inspections
 should be carried out more frequently.`;
 
-    // console.log('=-->', license)
     // State initialization
     const [formData, setFormData] = useState({
         address: "",
@@ -86,7 +85,7 @@ should be carried out more frequently.`;
         logBooks: null,
         plantAndEquipment: null,
         miscellaneousService: null,
-        fireEquipment: null  // Changed from disabledWCAlarm to fireEquipment
+        fireEquipment: null
     });
 
     const sites = useSelector((state) => state.site.sites);
@@ -101,15 +100,12 @@ should be carried out more frequently.`;
         ) || [],
         [siteAssets]);
 
-
-
     // Initialize assets data when filteredAssets changes
     useEffect(() => {
         if (filteredAssets.length > 0 && formData.assets.length === 0) {
             const assetsData = filteredAssets.map(asset => ({
                 id: asset.assetId,
                 location: `${asset.floor || ''} ${asset.room || ''}`.trim(),
-                // New logic: if subCategory is Fire Blanket, use "Fire Blanket", otherwise use subCategory2
                 typeAndSize: asset.subCategory === "Fire Blanket" ? "Fire Blanket" : asset.subCategory2 || "",
                 s: false,
                 d: false,
@@ -127,17 +123,17 @@ should be carried out more frequently.`;
                 assets: assetsData
             }));
         }
-    }, []);
+    }, [filteredAssets]);
 
     const categorizeFireEquipment = (assets) => {
         const categories = {
-            foam: 0,    // Foam Extinguishers
-            water: 0,   // Water Extinguishers
-            co2: 0,     // CO2 Extinguishers
-            fb: 0,      // Fire Blankets
-            wc: 0,      // Wet Chemical Extinguishers
-            dp: 0,      // Dry Powder Extinguishers
-            hr: 0       // Hose Reels
+            foam: 0,
+            water: 0,
+            co2: 0,
+            fb: 0,
+            wc: 0,
+            dp: 0,
+            hr: 0
         };
 
         if (!assets || assets.length === 0) return categories;
@@ -146,15 +142,12 @@ should be carried out more frequently.`;
             const subCategory = (asset.subCategory || '');
             const subCategory2 = (asset.subCategory2 || '');
 
-            // Check for Fire Blanket
             if (subCategory === 'Fire Blanket') {
                 categories.fb += 1;
             }
-            // Check for Hose Reel
             else if (subCategory === 'Hose Reel') {
                 categories.hr += 1;
             }
-            // Check for Extinguishers
             else if (subCategory === 'Fire Extinguishers' || subCategory.includes('Fire Extinguisher')) {
                 if (subCategory2.includes('Foam Extinguisher')) {
                     categories.foam += 1;
@@ -181,9 +174,6 @@ should be carried out more frequently.`;
     const autoPopulateEquipmentCounts = () => {
         const counts = categorizeFireEquipment(filteredAssets);
 
-        console.log('Auto-populated equipment counts:', counts);
-        console.log('Filtered assets:', filteredAssets);
-
         setFormData(prev => ({
             ...prev,
             foam: counts.foam,
@@ -202,9 +192,8 @@ should be carried out more frequently.`;
     useEffect(() => {
         if (filteredAssets.length > 0) {
             autoPopulateEquipmentCounts();
-            console.log('Auto-populated equipment counts based on assets:', autoPopulateEquipmentCounts());
         }
-    }, []);
+    }, [filteredAssets]);
 
     // Event handlers
     const handleInputChange = (e) => {
@@ -224,8 +213,6 @@ should be carried out more frequently.`;
             assets: updatedAssets
         }));
     };
-
-
 
     // API functions
     const fetchFolderStructure = async (siteId) => {
@@ -261,18 +248,11 @@ should be carried out more frequently.`;
                                     );
 
                                     if (miscResponse?.document?.childFolders) {
-                                        // Look for Fire Equipment folder instead of Disabled WC Alarm
                                         const fireEquipmentFolder = miscResponse.document.childFolders.find(
                                             folder => folder.name.trim() === 'Extinguisher Inspection & Test'
                                         );
 
                                         setFolderIds({
-                                            logBooks: logBooksFolder.id,
-                                            plantAndEquipment: plantAndEquipmentFolder.id,
-                                            miscellaneousService: miscellaneousFolder.id,
-                                            fireEquipment: fireEquipmentFolder?.id || null
-                                        });
-                                        console.log('Folder IDs set:', {
                                             logBooks: logBooksFolder.id,
                                             plantAndEquipment: plantAndEquipmentFolder.id,
                                             miscellaneousService: miscellaneousFolder.id,
@@ -393,28 +373,23 @@ should be carried out more frequently.`;
         }
     }, [checkId, siteSelectedForGlobal?.siteId]);
 
-
     const fetchInspectionData = useCallback(async () => {
         try {
             if (!state.currentCheckId) return;
 
-            // Fetch inspection data for this checkId
             const apiData = await get(`/api/site-check/fire-fighting-equipment/${state.currentCheckId}`);
 
             if (apiData && apiData.length > 0) {
                 const mostRecentItem = apiData[apiData.length - 1];
 
-                // Find related users
                 const clientUser = users.find(user => user.id === mostRecentItem.client);
                 const siteContactUser = users.find(user => user.id === mostRecentItem.siteContact);
 
-                // Fetch action data if actionId exists
                 let existingAction = null;
                 if (mostRecentItem.actionId) {
                     existingAction = await fetchActionById(mostRecentItem.actionId);
                 }
 
-                // Update form data with fetched values
                 setFormData(prev => ({
                     ...prev,
                     address: mostRecentItem.address || "",
@@ -471,7 +446,6 @@ should be carried out more frequently.`;
 
                 }));
 
-                // Update state with action info
                 setState(prev => ({
                     ...prev,
                     existingAction,
@@ -654,7 +628,6 @@ should be carried out more frequently.`;
         inspectionDetails
     ]);
 
-
     const generatePDF = useCallback(async (uploadToServer = true) => {
         try {
             setState(prev => ({ ...prev, isGeneratingPDF: true }));
@@ -709,8 +682,6 @@ should be carried out more frequently.`;
             setTextField('WC', formData.wc.toString() || '', 8);
             setTextField('DP', formData.dp.toString() || '', 8);
             setTextField('HR', formData.hr.toString() || '', 8);
-
-
 
             formData.assets.slice(0, filteredAssets.length).forEach((asset, index) => {
                 const idx = index;
@@ -904,7 +875,6 @@ should be carried out more frequently.`;
                 }
             } catch (error) {
                 console.error("Error fetching site data:", error);
-                toast.error("Failed to load site details");
             } finally {
                 setState(prev => ({ ...prev, isLoading: false }));
             }
@@ -912,8 +882,8 @@ should be carried out more frequently.`;
 
         fetchData();
     }, [
-        siteSelectedForGlobal?.siteId, // Only depend on siteId
-        state.currentCheckId // Add this dependency
+        siteSelectedForGlobal?.siteId,
+        state.currentCheckId
     ]);
 
     const handleRiskAssessmentComplete = async (actionResponse) => {
@@ -973,7 +943,6 @@ should be carried out more frequently.`;
             toast.error(error.message || "Failed to process action");
         }
     };
-
 
     // Render functions
     const renderClientNameField = () => {
@@ -1271,7 +1240,6 @@ should be carried out more frequently.`;
                     </div>
                     <div className="card-body">
                         <div className="row">
-                            {/* In your Report Summary section */}
                             <div className="col-md-3 mb-3">
                                 <label className="form-label">Foam</label>
                                 <input
@@ -1366,150 +1334,205 @@ should be carried out more frequently.`;
                     <div className="card-header">
                         <h5 className="mb-0">Fire Fighting Equipment Inspection</h5>
                     </div>
-                    <div className="card-body">
-                        <div className="table-responsive">
-                            <table className="table table-bordered">
-                                <thead>
+                    <div className="card-body p-0">
+                        <div className="table-container" style={{
+                            maxHeight: '500px',
+                            overflow: 'auto',
+                            position: 'relative'
+                        }}>
+                            <table className="table table-bordered mb-0" style={{ minWidth: '1200px' }}>
+                                <thead style={{
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 10,
+                                    backgroundColor: 'white'
+                                }}>
                                     <tr>
-                                        <th>EX</th>
-                                        <th>Location</th>
-                                        <th>Type & Size</th>
+                                        <th style={{
+                                            position: 'sticky',
+                                            left: 0,
+                                            zIndex: 11,
+                                            backgroundColor: 'white',
+                                            minWidth: '60px',
+                                            width: '60px'
+                                        }}>EX</th>
+                                        <th style={{
+                                            minWidth: '350px',
+                                            position: 'sticky',
+                                            left: '60px',
+                                            zIndex: 11,
+                                            backgroundColor: 'white',
+                                            width: '350px'
+                                        }}>Location</th>
+                                        <th style={{ minWidth: '350px', width: '350px' }}>Type & Size</th>
                                         <th colSpan="6">Action</th>
-                                        <th>Comment</th>
-                                        <th>LAST</th>
-                                        <th>DUE</th>
+                                        <th style={{ minWidth: '300px', width: '300px' }}>Comment</th>
+                                        <th style={{ minWidth: '120px', width: '120px' }}>LAST</th>
+                                        <th style={{ minWidth: '120px', width: '120px' }}>DUE</th>
                                     </tr>
                                     <tr>
+                                        <th style={{
+                                            position: 'sticky',
+                                            left: 0,
+                                            zIndex: 11,
+                                            backgroundColor: 'white'
+                                        }}></th>
+                                        <th style={{
+                                            position: 'sticky',
+                                            left: '60px',
+                                            zIndex: 11,
+                                            backgroundColor: 'white'
+                                        }}></th>
                                         <th></th>
-                                        <th></th>
-                                        <th></th>
-                                        <th>S</th>
-                                        <th>D</th>
-                                        <th>R</th>
-                                        <th>PF</th>
-                                        <th>C</th>
-                                        <th>R</th>
-                                        <th></th>
-                                        <th></th>
-                                        <th></th>
+                                        <th style={{ minWidth: '100px', width: '100px' }}>S</th>
+                                        <th style={{ minWidth: '100px', width: '100px' }}>D</th>
+                                        <th style={{ minWidth: '100px', width: '100px' }}>R</th>
+                                        <th style={{ minWidth: '100px', width: '100px' }}>PF</th>
+                                        <th style={{ minWidth: '100px', width: '100px' }}>C</th>
+                                        <th style={{ minWidth: '100px', width: '100px' }}>R</th>
+                                        <th style={{ minWidth: '300px' }}></th>
+                                        <th style={{ minWidth: '120px' }}></th>
+                                        <th style={{ minWidth: '120px' }}></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {formData.assets.slice(0, filteredAssets.length).map((asset, index) => (
                                         <tr key={index}>
-                                            <td>{index}</td>
-
-                                            <td>
+                                            <td style={{
+                                                position: 'sticky',
+                                                left: 0,
+                                                zIndex: 1,
+                                                backgroundColor: 'white',
+                                                width: '60px'
+                                            }}>{index}</td>
+                                            <td style={{
+                                                position: 'sticky',
+                                                left: '60px',
+                                                zIndex: 1,
+                                                backgroundColor: 'white',
+                                                width: '250px'
+                                            }}>
                                                 <input
                                                     type="text"
                                                     className="form-control form-control-sm"
                                                     value={asset.location}
                                                     onChange={(e) => handleAssetFieldChange(index, 'location', e.target.value)}
                                                     disabled
+                                                    style={{ width: '100%' }}
                                                 />
                                             </td>
-                                            <td>
+                                            <td style={{ width: '200px' }}>
                                                 <input
                                                     type="text"
                                                     className="form-control form-control-sm"
                                                     value={asset.typeAndSize}
                                                     onChange={(e) => handleAssetFieldChange(index, 'typeAndSize', e.target.value)}
                                                     disabled
+                                                    style={{ width: '100%' }}
                                                 />
                                             </td>
-                                            <td>
+                                            <td style={{ width: '100px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.s ? 'Yes' : 'No'}
                                                     onChange={(e) => handleAssetFieldChange(index, 's', e.target.value === 'Yes')}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     <option value="No">No</option>
                                                     <option value="Yes">Yes</option>
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '100px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.d ? 'Yes' : 'No'}
                                                     onChange={(e) => handleAssetFieldChange(index, 'd', e.target.value === 'Yes')}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     <option value="No">No</option>
                                                     <option value="Yes">Yes</option>
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '100px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.r ? 'Yes' : 'No'}
                                                     onChange={(e) => handleAssetFieldChange(index, 'r', e.target.value === 'Yes')}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     <option value="No">No</option>
                                                     <option value="Yes">Yes</option>
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '100px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.pf ? 'Yes' : 'No'}
                                                     onChange={(e) => handleAssetFieldChange(index, 'pf', e.target.value === 'Yes')}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     <option value="No">No</option>
                                                     <option value="Yes">Yes</option>
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '100px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.c ? 'Yes' : 'No'}
                                                     onChange={(e) => handleAssetFieldChange(index, 'c', e.target.value === 'Yes')}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     <option value="No">No</option>
                                                     <option value="Yes">Yes</option>
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '100px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.r2 ? 'Yes' : 'No'}
                                                     onChange={(e) => handleAssetFieldChange(index, 'r2', e.target.value === 'Yes')}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     <option value="No">No</option>
                                                     <option value="Yes">Yes</option>
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '300px' }}>
                                                 <input
                                                     type="text"
                                                     className="form-control form-control-sm"
                                                     value={asset.comment || ""}
                                                     onChange={(e) => handleAssetFieldChange(index, 'comment', e.target.value)}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 />
                                             </td>
-                                            <td>
+                                            <td style={{ width: '120px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.last}
                                                     onChange={(e) => handleAssetFieldChange(index, 'last', parseInt(e.target.value))}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
                                                         <option key={year} value={year}>{year}</option>
                                                     ))}
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td style={{ width: '120px' }}>
                                                 <select
                                                     className="form-select form-select-sm"
                                                     value={asset.due}
                                                     onChange={(e) => handleAssetFieldChange(index, 'due', parseInt(e.target.value))}
                                                     disabled={state.isSubmitted}
+                                                    style={{ width: '100%' }}
                                                 >
                                                     {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() + i).map(year => (
                                                         <option key={year} value={year}>{year}</option>
@@ -1631,6 +1654,46 @@ should be carried out more frequently.`;
             </form>
 
             <style jsx>{`
+                .table-container {
+                    max-height: 500px;
+                    overflow: auto;
+                    position: relative;
+                }
+                
+                .table-container thead th {
+                    position: sticky;
+                    top: 0;
+                    z-index: 10;
+                    background-color: white;
+                }
+                
+                .table-container tbody td:first-child,
+                .table-container thead th:first-child {
+                    position: sticky;
+                    left: 0;
+                    z-index: 11;
+                    background-color: white;
+                }
+                
+                .table-container tbody td:nth-child(2),
+                .table-container thead th:nth-child(2) {
+                    position: sticky;
+                    left: 60px;
+                    z-index: 11;
+                    background-color: white;
+                }
+                
+                @media (max-width: 768px) {
+                    .table-container {
+                        overflow-x: auto;
+                    }
+                    
+                    .table-container thead th,
+                    .table-container tbody td {
+                        white-space: nowrap;
+                    }
+                }
+                
                 .is-invalid {
                     border-color: #dc3545 !important;
                 }
@@ -1641,33 +1704,6 @@ should be carried out more frequently.`;
                     font-size: .875em;
                     color: #dc3545;
                 }
-                    .table-responsive .table th,
-    .table-responsive .table td {
-        white-space: nowrap; /* Prevents text from wrapping to the next line */
-        vertical-align: middle;
-    }
-
-    .table-responsive .form-control,
-    .table-responsive .form-select {
-        min-width: 100px; /* Gives inputs and dropdowns enough space */
-    }
-
-    .table-responsive td:nth-child(2),
-    .table-responsive td:nth-child(3){
-    min-width: 350px; /* Wider width for location and type/size columns */
-}
-    .table-responsive td:nth-child(10){
-    min-width:300px; /* Wider width for comment column */
-    }
-
-    .table-responsive td:nth-child(4),
-    .table-responsive td:nth-child(5), /* Target action columns S,D,R etc. */
-    .table-responsive td:nth-child(6),
-    .table-responsive td:nth-child(7),
-    .table-responsive td:nth-child(9),
-    .table-responsive td:nth-child(8) {
-        min-width: 80px; /* Shorter width for single-action dropdowns */
-    }
                 @media print {
                     .print-hide {
                         display: none !important;
