@@ -40,6 +40,7 @@ import WaterHeaterCertificate from "./WaterHeaterCertificate";
 import InspectionFireCertificate from "./InspectionFireCertificate";
 import GasBoilerService from "./GasBoilerService";
 import GasInspection from "./GasInspection";
+import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 
 
 
@@ -259,6 +260,12 @@ else if (
         siteCheck.category === "Gas Safety Annual Inspection"
     ) {
         setStep("inspection-gas");
+    }else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Fire Fighting Equipment" &&
+        siteCheck.category === "Fire Extinguisher Inspection & Service"
+    ) {
+        setStep("inspection-fire-Equipment");
     }
    
     else if (siteCheck.type === "Assessment" ) {
@@ -685,6 +692,17 @@ autoComplete="off"
                   />
                 </Item>
             )}
+              {step === "inspection-fire-Equipment" && (
+                  <Item>
+                      <FireFightingEquipmentReport
+                          checkId={checkId}
+                          sasToken={sasToken}
+                          subType={siteCheck?.subType}
+                          category={siteCheck.category}
+                          leadUserID={siteCheck?.leadUserID}
+                      />
+                  </Item>
+              )}
 
             {step === "inspection-storage-tank" && (
               <Item>
