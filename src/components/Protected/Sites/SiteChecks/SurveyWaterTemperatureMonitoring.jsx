@@ -220,39 +220,49 @@ const SurveyWaterTemperatureMonitoring = ({
     //getSurvey();
   };
 
-  const addSiteCheckSurvey2 = async (event) => {
-    event.preventDefault();
-    const form = event.target;
-    if (!form.checkValidity()) {
-      form.reportValidity();
-    }
-    for (const data of formData) {
-      console.log("data", data);
-      if (data.new) {
-        if (isDuplicate(data) && data.new) {
-          toast.error("Duplicate data!!!");
-          return;
+    const addSiteCheckSurvey2 = async (event) => {
+        event.preventDefault();
+        const form = event.target;
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
         }
-        data.checkId = checkId;
-        data.status = "Open";
-        if (data.update) {
-          data.id = undefined;
+
+        try {
+            for (const data of formData) {
+                // Skip if no assetId (incomplete record)
+                if (!data.assetId) continue;
+
+                // Prepare the data to send
+                const payload = {
+                    ...data,
+                    checkId: checkId,
+                    status: "Open",
+                    r2Date: data.r1Date,
+                    r3Date: data.r1Date
+                };
+
+                // Remove unnecessary fields
+                delete payload.new;
+                delete payload.update;
+                delete payload.completed;
+
+                if (data.id) {
+                    // Update existing record
+                    await put("/api/site-check/water-outlet-temp", payload);
+                } else {
+                    // Create new record
+                    await post("/api/site-check/water-outlet-temp", payload);
+                }
+            }
+
+            toast.success("Water outlet temperature data saved.");
+            getSurvey();
+        } catch (error) {
+            console.error("Error saving data:", error);
+            toast.error("Failed to save data. Please try again.");
         }
-        if (data.r1Date) {
-          //data.r1Date = new Date(data.r1Date.toISOString().slice(0, 10));
-          data.r2Date = data.r1Date;
-          data.r3Date = data.r1Date;
-        }
-        if (data.assetId) {
-          await post("/api/site-check/water-outlet-temp", data);
-        }
-      } else if (data.update) {
-        await put("/api/site-check/water-outlet-temp", data);
-      }
-    }
-    toast.success("Water outlet temperature data saved.");
-    getSurvey();
-  };
+    };
 
   const addReadingSave = (event) => {
     event.preventDefault();
@@ -998,6 +1008,7 @@ const SurveyWaterTemperatureMonitoring = ({
                               className="form-control"
                               onChange={(e) => handleInputChange(e, idx)}
                               required
+                              disabled={formData?.[idx]?.completed}
                             />
                             {/* )} */}
                           </td>

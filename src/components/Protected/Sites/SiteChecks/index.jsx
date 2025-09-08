@@ -560,11 +560,18 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 if (bAssetId) return 1;
 
                 // Case 4: Neither has asset ID → Group by subType → category (alphabetical)
-                const subTypeCompare = a.subType.localeCompare(b.subType);
+                // Handle undefined subType values
+                const aSubType = a.subType || '';
+                const bSubType = b.subType || '';
+
+                const subTypeCompare = aSubType.localeCompare(bSubType);
                 if (subTypeCompare !== 0) return subTypeCompare;
 
-                // If same subType, sort by category
-                return a.category.localeCompare(b.category);
+                // If same subType, sort by category (handle undefined values)
+                const aCategory = a.category || '';
+                const bCategory = b.category || '';
+
+                return aCategory.localeCompare(bCategory);
             });
 
             // Update both states
@@ -577,6 +584,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
             setIsLoading(false);
         }
     };
+
     // Updated fetchInspectionData function
     const fetchInspectionData = async (checkId, type, subType, category) => {
         try {
