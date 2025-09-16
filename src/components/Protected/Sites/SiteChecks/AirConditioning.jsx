@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import {get, post, put} from "../../../../api";
+import { get, post, put } from "../../../../api";
 import {
   getSiteAssets,
   getSiteById,
@@ -12,8 +12,7 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
-import { v4 as uuidv4 } from 'uuid';
-import { saveAs } from 'file-saver';
+
 import axios from 'axios';
 import pdfTemplate from './pdf/AirConditioningCertificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
@@ -47,19 +46,37 @@ const fetchPdfTemplate = async () => {
   }
 };
 
+// Helper function to get latest inspection from array
+const getLatestInspection = (inspections) => {
+  if (!inspections || inspections.length === 0) return null;
+
+  // Sort by createdAt descending, then by id descending as fallback
+  return inspections.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+
+    if (dateB.getTime() !== dateA.getTime()) {
+      return dateB - dateA;
+    }
+
+    // Fallback to ID if createdAt is the same or missing
+    return b.id - a.id;
+  })[0];
+};
+
 const AirConditioning = ({
-                           sasToken,
-                           checkId,
-                           subType,
-                           category,
-                           getSiteDetailsById,
-                           siteAssets,
-                           getSiteAssets,
-                           users,
-                           getUsers,
-                           siteSelectedForGlobal,
-                           loggedInUserData,
-                         }) => {
+  sasToken,
+  checkId,
+  subType,
+  category,
+  getSiteDetailsById,
+  siteAssets,
+  getSiteAssets,
+  users,
+  getUsers,
+  siteSelectedForGlobal,
+  loggedInUserData,
+}) => {
   const [formData, setFormData] = useState({
     address: "",
     assetId: "",
@@ -73,7 +90,7 @@ const AirConditioning = ({
     floor: "",
     room: "",
     serialNumber: "",
-    assetName:"",
+    assetName: "",
     report: "",
     param1: "", // jobComplete
     param2: "", // partsRequired
@@ -122,6 +139,7 @@ const AirConditioning = ({
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
   const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [inspectionHistory, setInspectionHistory] = useState([]);
 
   const navigate = useNavigate();
 
@@ -134,8 +152,9 @@ const AirConditioning = ({
   });
 
   const selectedAsset = siteAssets.find(
-      (asset) => asset.assetId === formData.assetId
+    (asset) => asset.assetId === formData.assetId
   );
+
   const handleMouseEnter = (e, content) => {
     if (!content) return;
     setPopup({
@@ -162,19 +181,21 @@ const AirConditioning = ({
 
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
-        const mostRecentItem = apiData[apiData.length - 1];
+        // Get the LATEST version (most recent by createdAt or id)
+        const mostRecentItem = getLatestInspection(apiData);
+
         const selectedAsset = siteAssets.find(
-            (asset) => asset.assetId === mostRecentItem.assetId
+          (asset) => asset.assetId === mostRecentItem.assetId
         );
 
         const clientUser = users.find(
-            (user) => user.id === mostRecentItem.client
+          (user) => user.id === mostRecentItem.client
         );
         const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
+          (user) => user.id === mostRecentItem.engineer
         );
         const siteContactUser = users.find(
-            (user) => user.id === mostRecentItem.siteContact
+          (user) => user.id === mostRecentItem.siteContact
         );
 
         // Fetch action data if actionId exists
@@ -234,6 +255,24 @@ const AirConditioning = ({
       //toast.error("Failed to load inspection data");
     }
   };
+
+  const fetchInspectionHistory = async () => {
+    try {
+      if (!checkId) return;
+
+      const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+      if (apiData && apiData.length > 0) {
+        // Sort by date descending
+        const sortedHistory = apiData.sort((a, b) =>
+          new Date(b.createdAt || b.id) - new Date(a.createdAt || a.id)
+        );
+        setInspectionHistory(sortedHistory);
+      }
+    } catch (error) {
+      console.error("Error fetching inspection history:", error);
+    }
+  };
+
   const fetchActionById = async (id) => {
     try {
       if (!id) return null;
@@ -244,7 +283,6 @@ const AirConditioning = ({
       return null;
     }
   };
-
 
   const fetchExistingActions = async () => {
     try {
@@ -268,13 +306,13 @@ const AirConditioning = ({
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
-            action.checkId === currentCheckId
+          action.checkId === currentCheckId
         );
 
         if (relevantActions.length > 0) {
           // Get the most recent action for this checkId
           const mostRecentAction = relevantActions.sort((a, b) =>
-              new Date(b.createdAt) - new Date(a.createdAt)
+            new Date(b.createdAt) - new Date(a.createdAt)
           )[0];
 
           setExistingAction(mostRecentAction);
@@ -298,7 +336,7 @@ const AirConditioning = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+          folder => folder.name.trim() === 'Log Books'
         );
 
         if (logBooksFolder) {
@@ -306,17 +344,17 @@ const AirConditioning = ({
 
           if (logBooksResponse?.document?.childFolders) {
             const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Environmental Log Book'
+              folder => folder.name.trim() === 'Environmental Log Book'
             );
 
             if (EnvironmentalLogBookFolder) {
               const environmentalResponse = await get(
-                  `/api/document/parent/${EnvironmentalLogBookFolder.id}/folders?siteId=${siteId}`
+                `/api/document/parent/${EnvironmentalLogBookFolder.id}/folders?siteId=${siteId}`
               );
 
               if (environmentalResponse?.document?.childFolders) {
                 const airConditioningFolder = environmentalResponse.document.childFolders.find(
-                    folder => folder.name === 'Air Conditioning Service & Maintenance Records'
+                  folder => folder.name === 'Air Conditioning Service & Maintenance Records'
                 );
 
                 setFolderIds({
@@ -357,7 +395,6 @@ const AirConditioning = ({
     fetchActionData();
   }, [formData.actionId]);
 
-
   useEffect(() => {
     // Enhance the status check in your fetchSiteCheckData function
     const fetchSiteCheckData = async () => {
@@ -368,17 +405,8 @@ const AirConditioning = ({
         if (response && response.length > 0) {
           // First try to find the exact checkId from URL
           let airConditioningCheck = checkId
-              ? response.find(check => check.checkId === parseInt(checkId, 10))
-              : null;
-
-          // If not found by checkId, find first matching type
-          // if (!airConditioningCheck) {
-          //   airConditioningCheck = response.find(check =>
-          //       check.type === 'Inspection' &&
-          //       check.subType === 'Plant and Equipment Inspection' &&
-          //       check.category === 'Air Conditioning Service'
-          //   );
-          // }
+            ? response.find(check => check.checkId === parseInt(checkId, 10))
+            : null;
 
           if (airConditioningCheck) {
             console.log('Found check:', {
@@ -426,6 +454,7 @@ const AirConditioning = ({
           await fetchFolderStructure(siteSelectedForGlobal.siteId);
           await fetchSiteCheckData();
           await fetchInspectionData();
+          await fetchInspectionHistory();
 
           if (formData.actionId) {
             const action = await fetchActionById(formData.actionId);
@@ -440,7 +469,7 @@ const AirConditioning = ({
           }
 
           const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
+            (site) => site.siteId === siteSelectedForGlobal.siteId
           );
           const siteData = currentSite || siteSelectedForGlobal;
 
@@ -484,7 +513,6 @@ const AirConditioning = ({
     checkId,  // Add checkId to dependencies
   ]);
 
-
   useEffect(() => {
     const shouldShowRiskAssessment = formData.param2 === "Pass"
 
@@ -515,7 +543,7 @@ const AirConditioning = ({
         actionId: verifiedAction.actionId
       }));
 
-      // Update inspection record
+      // Update inspection record - CREATE NEW VERSION instead of updating
       if (currentCheckId) {
         const inspectionPayload = {
           address: formData.address,
@@ -561,16 +589,14 @@ const AirConditioning = ({
           type: 'Inspection',
           subType: 'Air Conditioning',
           category: 'Air Conditioning Service',
-          // Include any other relevant fields from your formData
         };
 
-        // Update or create inspection record
-        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-        if (existingInspections?.length > 0) {
-          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
-        } else {
-          await post(`/api/site-check/generic-inspection`, inspectionPayload);
-        }
+        // Always create a NEW record instead of updating
+        await post(`/api/site-check/generic-inspection`, inspectionPayload);
+
+        // Refresh the inspection data to show the latest version
+        await fetchInspectionData();
+        await fetchInspectionHistory();
 
         toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
@@ -626,7 +652,7 @@ const AirConditioning = ({
       if (files.length > 0) {
         const baseName = fileName.split('.')[0];
         const matchingFiles = files.filter(file =>
-            file.name && file.name.startsWith(baseName)
+          file.name && file.name.startsWith(baseName)
         );
 
         if (matchingFiles.length > 0) {
@@ -649,6 +675,7 @@ const AirConditioning = ({
       selectedAsset: newValue || null,
     }));
   };
+
   const checkFileExists = async (folderId, fileName) => {
     try {
       const siteId = siteSelectedForGlobal?.siteId;
@@ -658,7 +685,7 @@ const AirConditioning = ({
       const files = response?.document?.files || [];
       const baseName = fileName.split('.')[0];
       const existingFile = files.find(file =>
-          file.name && file.name.startsWith(baseName)
+        file.name && file.name.startsWith(baseName)
       );
 
       return {
@@ -852,12 +879,10 @@ const AirConditioning = ({
       setTextField('Address_4', addressLines[3] || '', mediumFont);
       setTextField('Address_4', addressLines[4] || '', mediumFont);
 
-
       setTextField('Date', dateFormat(formData.inspectionDate), mediumFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', mediumFont);
       setTextField('Site Contact No', formData.siteContactNo || '', mediumFont);
       setTextField('Job No', formData.job || '', mediumFont);
-
 
       const equipmentDetailsLocation = [
         selectedAsset.floor,
@@ -866,13 +891,12 @@ const AirConditioning = ({
         selectedAsset.assetName
       ].filter(Boolean).join(' - ');
 
-      console.log( "selected asset data",equipmentDetailsLocation);
+      console.log("selected asset data", equipmentDetailsLocation);
       // Equipment information
       setTextField('Manufacturer', selectedAsset.manufacturer || '', mediumFont);
       setTextField('Model Number', selectedAsset.model || '', mediumFont);
       setTextField('Serial Number', selectedAsset.serialNumber || '', mediumFont);
       setTextField('Equipment Details  Location', equipmentDetailsLocation || '', mediumFont);
-
 
       const mapPassFailToYesNo = (value) => {
         if (value === "Pass") return "Yes";
@@ -890,8 +914,6 @@ const AirConditioning = ({
       setTextField('Drain  Pump Test', mapPassFailToYesNo(formData.param8) || '', mediumFont);
       setTextField('Electrical Connections Check', mapPassFailToYesNo(formData.param9) || '', mediumFont);
       setTextField('Temperature Checks', mapPassFailToYesNo(formData.param10) || '', mediumFont);
-
-
 
       // Materials used
       setTextField('OFN', formData.param1Remark || '', mediumFont);
@@ -937,6 +959,7 @@ const AirConditioning = ({
       setIsGeneratingPDF(false);
     }
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted');
@@ -987,14 +1010,13 @@ const AirConditioning = ({
     setIsLoading(true);
 
     try {
-      // First check if we have an existing inspection
-      let existingInspection = null;
+      // First check if we have existing inspections (for history purposes only)
+      let existingInspections = [];
       if (currentCheckId) {
         try {
-          const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-          existingInspection = inspections?.length > 0 ? inspections[0] : null;
+          existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
         } catch (error) {
-          console.error('Error checking for existing inspection:', error);
+          console.error('Error checking for existing inspections:', error);
         }
       }
 
@@ -1015,14 +1037,14 @@ const AirConditioning = ({
         // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
-            statusPayload
+          `/api/site-check/${currentCheckId}`,
+          statusPayload
         );
       } else {
         // Create new check
         statusResponse = await post(
-            `/api/site-check`,
-            statusPayload
+          `/api/site-check`,
+          statusPayload
         );
         if (statusResponse?.checkId) {
           setCurrentCheckId(statusResponse.checkId);
@@ -1037,7 +1059,7 @@ const AirConditioning = ({
       setCheckStatus('Done');
       setIsFormEditable(false);
 
-      // Then update or create the generic inspection record
+      // Then create the generic inspection record (ALWAYS CREATE NEW)
       const inspectionPayload = {
         ...formData,
         siteId: siteSelectedForGlobal?.siteId,
@@ -1052,20 +1074,11 @@ const AirConditioning = ({
         actionId: formData.actionId,
       };
 
-      let saveResponse;
-      if (existingInspection) {
-        // Update existing inspection
-        saveResponse = await put(
-            `/api/site-check/generic-inspection/${currentCheckId}`,
-            inspectionPayload
-        );
-      } else {
-        // Create new inspection
-        saveResponse = await post(
-            `/api/site-check/generic-inspection`,
-            inspectionPayload
-        );
-      }
+      // Always create a NEW record instead of updating
+      const saveResponse = await post(
+        `/api/site-check/generic-inspection`,
+        inspectionPayload
+      );
 
       if (![200, 201, 204].includes(saveResponse?.status)) {
         throw new Error('Failed to save inspection data');
@@ -1079,7 +1092,11 @@ const AirConditioning = ({
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Air Conditioning report saved and PDF generated successfully!");
+      // Refresh inspection data to show the latest version
+      await fetchInspectionData();
+      await fetchInspectionHistory();
+
+      toast.success("Air Conditioning report saved successfully! New version created.");
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -1096,162 +1113,162 @@ const AirConditioning = ({
       setIsLoading(false);
     }
   };
+
   const renderClientNameField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
-          users?.filter((user) =>
-              user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
-              )
-          ) || [];
+        users?.filter((user) =>
+          user.taggedSites?.some(
+            (site) => site.id === siteSelectedForGlobal?.siteId
+          )
+        ) || [];
 
       return (
-          <Autocomplete
-              options={filteredUsers}
-              getOptionLabel={(user) => user.name}
-              value={formData.clientUser || formData.siteContactUser || null}
-              onChange={(event, newValue) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  client: newValue?.id || "",
-                  clientUser: newValue || null,
-                  siteContact: newValue?.id || "",
-                  siteContactNo: newValue?.phone || "",
-                  siteContactUser: newValue || null,
-                }));
-              }}
-              renderInput={(params) => (
-                  <TextField
-                      {...params}
-                      variant="outlined"
-                      required
-                      disabled={isSubmitted}
-                      style={{
-                        height: "40px",
-                        "& .MuiOutlinedInput-root": {
-                          height: "40px",
-                        },
-                        "& .MuiAutocomplete-input": {
-                          padding: "8.5px 4px !important",
-                        },
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          height: "40px",
-                          padding: "0 5px",
-                        },
-                      }}
-                  />
-              )}
+        <Autocomplete
+          options={filteredUsers}
+          getOptionLabel={(user) => user.name}
+          value={formData.clientUser || formData.siteContactUser || null}
+          onChange={(event, newValue) => {
+            setFormData((prev) => ({
+              ...prev,
+              client: newValue?.id || "",
+              clientUser: newValue || null,
+              siteContact: newValue?.id || "",
+              siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
+            }));
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              required
               disabled={isSubmitted}
-          />
+              style={{
+                height: "40px",
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                },
+                "& .MuiAutocomplete-input": {
+                  padding: "8.5px 4px !important",
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                  padding: "0 5px",
+                },
+              }}
+            />
+          )}
+          disabled={isSubmitted}
+        />
       );
     }
     return (
-        <input
-            type="text"
-            className="form-control"
-            name="clientName"
-            value={
-                formData.clientUser?.name || formData.siteContactUser?.name || ""
-            }
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                client: e.target.value,
-                clientNameText: e.target.value,
-                siteContact: e.target.value,
-                siteContactName: e.target.value,
-              }));
-            }}
-            required
-            disabled={isSubmitted}
-        />
+      <input
+        type="text"
+        className="form-control"
+        name="clientName"
+        value={
+          formData.clientUser?.name || formData.siteContactUser?.name || ""
+        }
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            client: e.target.value,
+            clientNameText: e.target.value,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+          }));
+        }}
+        required
+        disabled={isSubmitted}
+      />
     );
   };
 
   const renderSiteContactField = () => {
     if (isInternalUserTaggedWithSite) {
       const filteredUsers =
-          users?.filter((user) =>
-              user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
-              )
-          ) || [];
+        users?.filter((user) =>
+          user.taggedSites?.some(
+            (site) => site.id === siteSelectedForGlobal?.siteId
+          )
+        ) || [];
 
       return (
-          <Autocomplete
-              options={filteredUsers}
-              getOptionLabel={(user) => user.name}
-              value={formData.siteContactUser || formData.clientUser || null}
-              onChange={(event, newValue) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  siteContact: newValue?.id || "",
-                  siteContactNo: newValue?.phone || "",
-                  siteContactUser: newValue || null,
-                  client: newValue?.id || "",
-                  clientUser: newValue || null,
-                }));
-              }}
-              renderInput={(params) => (
-                  <TextField
-                      {...params}
-                      variant="outlined"
-                      required
-                      disabled={isSubmitted}
-                      style={{
-                        height: "40px",
-                        "& .MuiOutlinedInput-root": {
-                          height: "40px",
-                        },
-                        "& .MuiAutocomplete-input": {
-                          padding: "8.5px 4px !important",
-                        },
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          height: "40px",
-                          padding: "0 5px",
-                        },
-                      }}
-                  />
-              )}
+        <Autocomplete
+          options={filteredUsers}
+          getOptionLabel={(user) => user.name}
+          value={formData.siteContactUser || formData.clientUser || null}
+          onChange={(event, newValue) => {
+            setFormData((prev) => ({
+              ...prev,
+              siteContact: newValue?.id || "",
+              siteContactNo: newValue?.phone || "",
+              siteContactUser: newValue || null,
+              client: newValue?.id || "",
+              clientUser: newValue || null,
+            }));
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              required
               disabled={isSubmitted}
-          />
+              style={{
+                height: "40px",
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                },
+                "& .MuiAutocomplete-input": {
+                  padding: "8.5px 4px !important",
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                  padding: "0 5px",
+                },
+              }}
+            />
+          )}
+          disabled={isSubmitted}
+        />
       );
     }
     return (
-        <input
-            type="text"
-            className="form-control"
-            name="siteContact"
-            value={
-                formData.siteContactUser?.name || formData.clientUser?.name || ""
-            }
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                siteContact: e.target.value,
-                siteContactName: e.target.value,
-                client: e.target.value,
-                clientNameText: e.target.value,
-              }));
-            }}
-            required
-            disabled={isSubmitted}
-        />
+      <input
+        type="text"
+        className="form-control"
+        name="siteContact"
+        value={
+          formData.siteContactUser?.name || formData.clientUser?.name || ""
+        }
+        onChange={(e) => {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: e.target.value,
+            siteContactName: e.target.value,
+            client: e.target.value,
+            clientNameText: e.target.value,
+          }));
+        }}
+        required
+        disabled={isSubmitted}
+      />
     );
   };
 
   const filteredAssets =
-      siteAssets?.filter(
-          (asset) =>
-              asset.category === "Mechanical" &&
-              asset.subCategory === "Air Conditioning" &&
-              (asset.subCategory2 === "Air Conditioning Unit (Indoor)" || asset.subCategory2 === "Air Conditioning Unit (Outdoor)")
-      ) || [];
-
+    siteAssets?.filter(
+      (asset) =>
+        asset.category === "Mechanical" &&
+        asset.subCategory === "Air Conditioning" &&
+        (asset.subCategory2 === "Air Conditioning Unit (Indoor)" || asset.subCategory2 === "Air Conditioning Unit (Outdoor)")
+    ) || [];
 
   return (
       <div className="container mt-4 mb-5">
