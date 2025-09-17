@@ -244,7 +244,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
     else if (
       siteCheck.type === "Inspection" &&
       siteCheck.subType === "Plant and Equipment Inspection" &&
-      siteCheck.category === "Air Conditioning Recurrence Report"
+      siteCheck.category === "Air Conditioning F-Gas Report"
     ) {
       setStep("inspection-air-conditioning-report");
     } else if (
