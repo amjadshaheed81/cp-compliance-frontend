@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { connect, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -67,9 +67,14 @@ const AirConditioningRecurrenceCheck = ({
         client: "",
         clientUser: null,
         siteContactUser: null,
+        engineerCertificateNo: "",
         actionId: null,
     });
+    const site = JSON.parse(localStorage.getItem("site"));
     const [siteChecks, setSiteChecks] = useState([]);
+    const [engineerCertMap, setEngineerCertMap] = useState({});
+    // Cache for engineer details to avoid repeated API calls per engineer id
+    const engineerDetailsCache = useRef({});
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -153,6 +158,21 @@ const AirConditioningRecurrenceCheck = ({
         fetchData();
     }, [siteSelectedForGlobal, getSiteAssets, users.length, isInternalUserTaggedWithSite, getUsers, checkId]);
 
+    // Initialize per-row engineer certificate values from fetched site checks (top-level effect)
+    useEffect(() => {
+        if (Array.isArray(siteChecks) && siteChecks.length > 0) {
+            const initialMap = siteChecks.reduce((acc, sc) => {
+                if (sc?.checkId) {
+                    acc[sc.checkId] = sc.engineerCertificateNo || '';
+                }
+                return acc;
+            }, {});
+            setEngineerCertMap(initialMap);
+        } else {
+            setEngineerCertMap({});
+        }
+    }, [siteChecks]);
+
     useEffect(() => {
         // Calculate CO2eq when GWP level or charge weight changes
         if (formData.gwpLevel && formData.chargeWeight) {
@@ -167,32 +187,136 @@ const AirConditioningRecurrenceCheck = ({
         }
     }, [formData.gwpLevel, formData.chargeWeight]);
 
-    useEffect(() => {
-        // When an asset is selected, find related assets
-        if (selectedAsset && siteAssets.length > 0) {
-            const related = siteAssets.filter(asset =>
-                asset.assetId !== selectedAsset.assetId &&
-                asset.assetName === selectedAsset.assetName
-            );
-            setRelatedAssets(related);
-        } else {
-            setRelatedAssets([]);
-        }
-    }, [selectedAsset, siteAssets]);
-
-    const fetchSiteChecks = async () => {
+    // Function to fetch related asset by ID
+    const fetchRelatedAsset = useCallback(async (relatedAssetId) => {
         try {
-            if (!selectedAsset?.assetId) return;
+            if (!relatedAssetId || !siteSelectedForGlobal?.siteId) {
+                return null;
+            }
 
-            // Use the provided get function instead of axios directly
-            const response = await get(`/api/site-check/asset/${selectedAsset.assetId}`);
-            if (response) {
-                setSiteChecks(response);
+            // Use the provided get function to fetch the related asset
+            const response = await get(`/api/site/assets/${relatedAssetId}/details`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching related asset:', error);
+            return null;
+        }
+    }, [siteSelectedForGlobal?.siteId]);
+
+    useEffect(() => {
+        // When an asset is selected, find related assets using relatedAssetId
+        const fetchRelatedAssets = async () => {
+            if (selectedAsset && selectedAsset.relatedAssetId) {
+                try {
+                    // If relatedAssetId is a comma-separated string, split it
+                    const relatedIds = selectedAsset.relatedAssetId.toString().split(',').map(id => id.trim());
+                    const relatedAssetsPromises = relatedIds.map(id => fetchRelatedAsset(id));
+                    const relatedAssetsResults = await Promise.all(relatedAssetsPromises);
+
+                    // Filter out null results and set the related assets
+                    const validRelatedAssets = relatedAssetsResults.filter(asset => asset !== null);
+                    setRelatedAssets(validRelatedAssets);
+                } catch (error) {
+                    console.error('Error processing related assets:', error);
+                    setRelatedAssets([]);
+                }
+            } else {
+                setRelatedAssets([]);
+            }
+        };
+
+        fetchRelatedAssets();
+    }, [selectedAsset, siteSelectedForGlobal?.siteId, fetchRelatedAsset]);
+
+    const fetchSiteChecks = async (assetIdParam) => {
+        try {
+            const assetIdToUse = assetIdParam ?? selectedAsset?.assetId;
+            const siteIdToUse = site?.siteId || siteSelectedForGlobal?.siteId;
+            if (!siteIdToUse || !assetIdToUse) return;
+
+            // Fetch all generic inspections for this site (new endpoint)
+            const response = await get(`/api/site-check/site/${siteIdToUse}/generic-inspections`);
+            if (Array.isArray(response)) {
+                // Filter checks by selected assetId
+                const filtered = response.filter(check => String(check.assetId) === String(assetIdToUse));
+
+                // For each filtered check, fetch extra details: action by actionId, engineer name by engineer user id
+                const enriched = await Promise.all(
+                    filtered.map(async (check) => {
+                        let merged = { ...check };
+                        // Fetch action details if actionId exists
+                        if (check?.actionId) {
+                            try {
+                                const action = await fetchActionById(check.actionId);
+                                merged.action = action;
+                            } catch (e) {
+                                console.warn('Failed to fetch action for actionId', check.actionId, e);
+                            }
+                        }
+                        // Fetch engineer details if engineer id exists
+                        if (check?.engineer) {
+                            try {
+                                let userResp = engineerDetailsCache.current[check.engineer];
+                                if (!userResp) {
+                                    userResp = await get(`/api/user/${check.engineer}/details`);
+                                    engineerDetailsCache.current[check.engineer] = userResp;
+                                }
+                                const engineerName = userResp?.name || userResp?.user?.name || '';
+                                const engineerCompanyName = userResp?.companyName || userResp?.user?.companyName || '';
+                                const engineerCompanyAddress = userResp?.companyAddress || userResp?.user?.companyAddress || '';
+                                const engineerGasSafetyRegNo = userResp?.gasSafetyRegNo || userResp?.user?.gasSafetyRegNo || '';
+                                merged.engineerName = engineerName;
+                                merged.engineerCompanyName = engineerCompanyName;
+                                merged.engineerCompanyAddress = engineerCompanyAddress;
+                                merged.engineerGasSafetyRegNo = engineerGasSafetyRegNo;
+                            } catch (e) {
+                                console.warn('Failed to fetch engineer details for userId', check.engineer, e);
+                            }
+                        }
+                        return merged;
+                    })
+                );
+
+                // Collapse multiple versions for the same inspection (same checkId) and retain the latest by createdAt (fallback to id)
+                const latestByCheckId = new Map();
+                for (const c of enriched) {
+                    const key = c.checkId ?? c.id; // prefer checkId when available
+                    if (key == null) continue;
+                    const prev = latestByCheckId.get(key);
+                    const cCreated = c.createdAt ? new Date(c.createdAt).getTime() : (c.id ?? 0);
+                    const pCreated = prev ? (prev.createdAt ? new Date(prev.createdAt).getTime() : (prev.id ?? 0)) : -Infinity;
+                    if (!prev || cCreated >= pCreated) {
+                        latestByCheckId.set(key, c);
+                    }
+                }
+
+                // Create array and sort by createdAt desc (fallback to id)
+                const dedupedSorted = Array.from(latestByCheckId.values()).sort((a, b) => {
+                    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : (a.id ?? 0);
+                    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : (b.id ?? 0);
+                    return bTime - aTime;
+                });
+
+                setSiteChecks(dedupedSorted);
+                console.debug('fetchSiteChecks: siteId=', siteIdToUse, 'assetId=', assetIdToUse, 'total=', response.length, 'filtered=', filtered.length, 'unique=', dedupedSorted.length);
+            } else {
+                setSiteChecks([]);
+                console.debug('fetchSiteChecks: unexpected response shape', response);
             }
         } catch (error) {
             console.error("Error fetching site checks:", error);
+            setSiteChecks([]);
         }
     };
+
+    // Ensure we fetch when selectedAsset or site changes (covers programmatic selection as well)
+    useEffect(() => {
+        const siteIdToUse = site?.siteId || siteSelectedForGlobal?.siteId;
+        if (selectedAsset?.assetId && siteIdToUse) {
+            fetchSiteChecks(selectedAsset.assetId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedAsset?.assetId, site?.siteId, siteSelectedForGlobal?.siteId]);
 
     const fetchSiteCheckData = async () => {
         try {
@@ -294,6 +418,43 @@ const AirConditioningRecurrenceCheck = ({
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        // Special handling: limit chargeWeight to at most 1 decimal place and non-negative
+        if (name === 'chargeWeight') {
+            // Allow empty value to let user clear the field
+            if (value === '') {
+                setFormData(prev => ({ ...prev, chargeWeight: '' }));
+                return;
+            }
+
+            // Normalize commas to dots, remove invalid characters
+            let normalized = value.replace(',', '.');
+
+            // Match pattern: digits, optional one dot, up to 1 decimal digit
+            const oneDecimalRegex = /^\d*(?:\.(\d{0,1})?)?$/;
+            if (!oneDecimalRegex.test(normalized)) {
+                // If input exceeds one decimal place, trim it
+                const parts = normalized.split('.');
+                if (parts.length > 2) {
+                    normalized = parts[0] + '.' + parts.slice(1).join('');
+                }
+                if (parts[1]?.length > 1) {
+                    normalized = parts[0] + '.' + parts[1].slice(0, 1);
+                }
+                // Remove leading zeros like 00 -> 0
+                if (/^0\d+/.test(parts[0])) {
+                    normalized = String(parseInt(parts[0], 10)) + (parts[1] !== undefined ? '.' + (parts[1] || '') : '');
+                }
+            }
+
+            // Prevent negative
+            if (normalized.startsWith('-')) {
+                normalized = normalized.slice(1);
+            }
+
+            setFormData(prev => ({ ...prev, chargeWeight: normalized }));
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -325,7 +486,7 @@ const AirConditioningRecurrenceCheck = ({
 
         if (newValue) {
             // Fetch site checks for the selected asset
-            fetchSiteChecks();
+            fetchSiteChecks(newValue.assetId);
         } else {
             setSiteChecks([]);
         }
@@ -477,7 +638,7 @@ const AirConditioningRecurrenceCheck = ({
                         name: fileName.split('.')[0],
                         issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
                         expiryDate: formatDateForBackend(new Date()),
-                        note: 'Air Conditioning Recurrence Check',
+                        note: 'Air Conditioning F-Gas Report',
                         fileVersion: fileVersion,
                         siteId: siteSelectedForGlobal?.siteId || 0,
                         originalFileName: fileName,
@@ -594,16 +755,15 @@ const AirConditioningRecurrenceCheck = ({
             setTextField('Charge Weight', formData.chargeWeight || '', mediumFont);
             setTextField('CO2eq', formData.co2eq || '', mediumFont);
 
-            // Report
-            setTextField('Engineers Report', formData.report || '', mediumFont);
+            // Report removed per request; do not populate Engineers Report field
 
-            // Signatures
-            const clientName = formData.clientUser?.name || formData.client || '';
+            // Signatures (Client fields removed per request)
             const engineerName = loggedInUserData?.name || '';
 
-            setTextField('Clients Name', clientName, mediumFont);
+            // Leave client name and client date blank in the PDF
+            setTextField('Clients Name', '', mediumFont);
             setTextField('Engineers Name', engineerName, mediumFont);
-            setTextField('on', dateFormat(formData.signedDate), smallFont);
+            setTextField('on', '', smallFont);
             setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
             // Flatten and save
@@ -732,7 +892,7 @@ const AirConditioningRecurrenceCheck = ({
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
 
-            toast.success("Air Conditioning recurrence check saved successfully!");
+            toast.success("Air Conditioning F-Gas Report saved successfully!");
             setShowPdfButton(true);
             setIsSubmitted(true);
             setSubmissionSuccess(true);
@@ -748,80 +908,6 @@ const AirConditioningRecurrenceCheck = ({
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const renderClientNameField = () => {
-        if (isInternalUserTaggedWithSite) {
-            const filteredUsers =
-                users?.filter((user) =>
-                    user.taggedSites?.some(
-                        (site) => site.id === siteSelectedForGlobal?.siteId
-                    )
-                ) || [];
-
-            return (
-                <Autocomplete
-                    options={filteredUsers}
-                    getOptionLabel={(user) => user.name}
-                    value={formData.clientUser || formData.siteContactUser || null}
-                    onChange={(event, newValue) => {
-                        setFormData((prev) => ({
-                            ...prev,
-                            client: newValue?.id || "",
-                            clientUser: newValue || null,
-                            siteContact: newValue?.id || "",
-                            siteContactNo: newValue?.phone || "",
-                            siteContactUser: newValue || null,
-                        }));
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            variant="outlined"
-                            required
-                            disabled={isSubmitted}
-                            style={{
-                                height: "40px",
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                },
-                                "& .MuiAutocomplete-input": {
-                                    padding: "8.5px 4px !important",
-                                },
-                            }}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                    padding: "0 5px",
-                                },
-                            }}
-                        />
-                    )}
-                    disabled={isSubmitted}
-                />
-            );
-        }
-        return (
-            <input
-                type="text"
-                className="form-control"
-                name="clientName"
-                value={
-                    formData.clientUser?.name || formData.siteContactUser?.name || ""
-                }
-                onChange={(e) => {
-                    setFormData((prev) => ({
-                        ...prev,
-                        client: e.target.value,
-                        clientNameText: e.target.value,
-                        siteContact: e.target.value,
-                        siteContactName: e.target.value,
-                    }));
-                }}
-                required
-                disabled={isSubmitted}
-            />
-        );
     };
 
     const renderSiteContactField = () => {
@@ -909,7 +995,7 @@ const AirConditioningRecurrenceCheck = ({
     return (
         <div className="container mt-4 mb-5">
             <div className="header text-center bg-light p-4 mb-4 rounded">
-                <h4 className="mb-0">Air Conditioning Recurrence Check</h4>
+                <h4 className="mb-0">Air Conditioning F-Gas Report</h4>
             </div>
 
             {!isFormEditable && (
@@ -1099,7 +1185,7 @@ const AirConditioningRecurrenceCheck = ({
                                         onChange={handleInputChange}
                                         step="0.01"
                                         min="0"
-                                        disabled={isSubmitted}
+                                        disabled
                                     />
                                     {validationErrors.gwpLevel && (
                                         <div className="invalid-feedback">
@@ -1117,9 +1203,12 @@ const AirConditioningRecurrenceCheck = ({
                                         name="chargeWeight"
                                         value={formData.chargeWeight}
                                         onChange={handleInputChange}
-                                        step="0.01"
+                                        step="0.1"
                                         min="0"
                                         disabled={isSubmitted}
+                                        inputMode="decimal"
+                                        pattern="^\\d*(?:\\.\\d)?$"
+                                        title="Enter a non-negative number with at most one decimal place"
                                     />
                                     {validationErrors.chargeWeight && (
                                         <div className="invalid-feedback">
@@ -1156,57 +1245,10 @@ const AirConditioningRecurrenceCheck = ({
                     </div>
                 </div>
 
-                <div className="card mb-4">
-                    <div className="card-header">
-                        <h5 className="mb-0">Engineers Report</h5>
-                    </div>
-                    <div className="card-body">
-                        <div className="mb-3">
-                            <TextField
-                                multiline
-                                rows={16}
-                                fullWidth
-                                variant="outlined"
-                                value={formData.report || ""}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        report: e.target.value,
-                                    })
-                                }
-                                style={{ height: "400px" }}
-                                disabled={isSubmitted}
-                            />
-                        </div>
-                    </div>
-                </div>
+
 
                 <div className="row mt-4">
-                    <div className="col-md-6">
-                        <div className="mb-3">
-                            <label className="form-label fw-bold">Client's Name</label>
-                            {renderClientNameField()}
-                        </div>
-
-                        <div className="mb-3">
-                            <label className="form-label">Date</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="signedDate"
-                                value={formData.signedDate}
-                                onChange={handleInputChange}
-                                required
-                                style={{
-                                    height: "40px",
-                                    padding: "0 10px",
-                                    width: "100%",
-                                }}
-                                disabled={isSubmitted}
-                            />
-                        </div>
-                    </div>
-                    <div className="col-md-6">
+                    <div className="col-md-12">
                         <div className="mb-3">
                             <label className="form-label fw-bold">Engineer's Name</label>
                             <input
@@ -1236,11 +1278,12 @@ const AirConditioningRecurrenceCheck = ({
                                 }}
                             />
                         </div>
+
                     </div>
                 </div>
 
-                {siteChecks.length > 0 && (
-                    <div className="card mb-4">
+                {selectedAsset && (
+                    <div className="card mb-4" style={{ width: '1300px' }}>
                         <div className="card-header">
                             <h5 className="mb-0">Maintenance History</h5>
                         </div>
@@ -1251,27 +1294,65 @@ const AirConditioningRecurrenceCheck = ({
                                         <TableRow>
                                             <TableCell>Date</TableCell>
                                             <TableCell>Complaint</TableCell>
-                                            <TableCell>Entered By</TableCell>
+                                            <TableCell>EnteredBy</TableCell>
                                             <TableCell>Action</TableCell>
-                                            <TableCell>Contractor</TableCell>
-                                            <TableCell>Engineer</TableCell>
+                                            <TableCell>Name of Contractor</TableCell>
+                                            <TableCell>Engineers Name</TableCell>
+                                            <TableCell>Engineers Certificate No.</TableCell>
                                             <TableCell>Gas Added</TableCell>
-                                            <TableCell>Comments</TableCell>
+                                            <TableCell>Support Document</TableCell>
+                                            <TableCell>Comment</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {siteChecks.map((check, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>{formatDate(check.date)}</TableCell>
-                                                <TableCell>{check.complaint || "N/A"}</TableCell>
-                                                <TableCell>{check.enteredBy || "N/A"}</TableCell>
-                                                <TableCell>{check.action || "N/A"}</TableCell>
-                                                <TableCell>{check.contractor || "N/A"}</TableCell>
-                                                <TableCell>{check.engineer || "N/A"}</TableCell>
-                                                <TableCell>{check.gasAdded || "N/A"}</TableCell>
-                                                <TableCell>{check.comments || "N/A"}</TableCell>
+                                        {siteChecks.length > 0 ? (
+                                            siteChecks.map((check, index) => (
+                                                <TableRow key={check.checkId ?? check.id ?? index}>
+                                                    {/* Date */}
+                                                    <TableCell>{dateFormat(check.inspectionDate || check.startDate || check.date)}</TableCell>
+                                                    {/* Complaint -> action.observation */}
+                                                    <TableCell>{check.action?.observation || '—'}</TableCell>
+                                                    {/* EnteredBy -> engineer companyName */}
+                                                    <TableCell>{check.engineerCompanyName || '—'}</TableCell>
+                                                    {/* Action -> action.requiredAction */}
+                                                    <TableCell>{check.action?.requiredAction || '—'}</TableCell>
+                                                    {/* Name of Contractor -> engineer companyAddress and gasSafetyRegNo */}
+                                                    <TableCell>{
+                                                        ([check.engineerCompanyName, check.engineerGasSafetyRegNo ? `Registerd Ref no: ${check.engineerGasSafetyRegNo}` : null]
+                                                            .filter(Boolean)
+                                                            .join(" | ")) || '—'
+                                                    }</TableCell>
+                                                    {/* Engineers Name -> from fetched user details */}
+                                                    <TableCell>{check.engineerName || '—'}</TableCell>
+                                                    {/* Engineers Certificate No. input per row */}
+                                                    <TableCell>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={engineerCertMap[check.checkId] ?? ''}
+                                                            onChange={(e) =>
+                                                                setEngineerCertMap((prev) => ({
+                                                                    ...prev,
+                                                                    [check.checkId]: e.target.value,
+                                                                }))
+                                                            }
+                                                            placeholder="Enter certificate number"
+                                                            style={{ height: '36px' }}
+                                                        />
+                                                    </TableCell>
+                                                    {/* Gas Added -> from generic inspection: param3Remark */}
+                                                    <TableCell>{check.param3Remark || '—'}</TableCell>
+                                                    {/* Support Document -> indication if action.files exist */}
+                                                    <TableCell>{Array.isArray(check.action?.files) && check.action.files.length > 0 ? 'Yes' : '—'}</TableCell>
+                                                    {/* Comment -> from generic inspection: report */}
+                                                    <TableCell>{check.report || '—'}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={10} align="center">No history found for this asset.</TableCell>
                                             </TableRow>
-                                        ))}
+                                        )}
                                     </TableBody>
                                 </Table>
                             </TableContainer>

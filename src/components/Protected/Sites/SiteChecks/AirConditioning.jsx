@@ -939,7 +939,7 @@ const AirConditioning = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `AirConditioningReport_${formData.selectedAsset.assetName}.pdf`;
+      const fileName = `AirConditioningReport_${selectedAsset.assetName}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
