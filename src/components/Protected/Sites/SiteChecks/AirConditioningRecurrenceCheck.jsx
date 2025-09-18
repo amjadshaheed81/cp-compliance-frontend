@@ -954,7 +954,35 @@ const AirConditioningRecurrenceCheck = ({
             setTextField('Charge Weight', formData.chargeWeight.toString() || '', mediumFont);
             setTextField('CO2eq', formData.co2eq.toString() || '', mediumFont);
 
+            // Table rows mapping to PDF fields
+            // Fields per row: Date_, Complaint_, Entered_, Action_, Contractor_, Engineer_, No_, Gas_, SD_, comment_
+            // Indexing is 1-based: Date_1, Complaint_1, ...
+            const toYesNo = (v) => (v ? 'Yes' : 'No');
+            const rows = Array.isArray(siteChecks) ? siteChecks : [];
+            rows.forEach((row, index) => {
+                const idx = index + 1;
+                const dateVal = row?.createdAt ? dateFormat(row.createdAt) : (row?.issueDate ? dateFormat(row.issueDate) : '');
+                const complaintVal = row?.complaint || row?.action?.description || row?.description || '';
+                const enteredVal = row?.enteredByName || row?.enteredBy || row?.engineerName || '';
+                const actionVal = row?.action?.action || row?.action?.title || row?.action?.description || '';
+                const contractorVal = row?.contractor || row?.engineerCompanyName || '';
+                const engineerVal = row?.engineerName || '';
+                const noVal = (row?.checkId ?? row?.id ?? '').toString();
+                const gasVal = formData?.refrigerantType ? String(formData.refrigerantType) : (row?.gas ?? '');
+                const sdVal = toYesNo(!!formData?.schematicDrawing);
+                const commentVal = row?.action?.comments || row?.comments || row?.comment || '';
 
+                setTextField(`Date${idx}`, dateVal, mediumFont);
+                setTextField(`Complaint_${idx}`, complaintVal, mediumFont);
+                setTextField(`Entered_${idx}`, enteredVal, mediumFont);
+                setTextField(`Action_${idx}`, actionVal, mediumFont);
+                setTextField(`Contractor_${idx}`, contractorVal, mediumFont);
+                setTextField(`Engineer_${idx}`, engineerVal, mediumFont);
+                setTextField(`No_${idx}`, noVal, mediumFont);
+                setTextField(`Gas_${idx}`, gasVal, mediumFont);
+                setTextField(`SD_${idx}`, sdVal, mediumFont);
+                setTextField(`comment_${idx}`, commentVal, mediumFont);
+            });
 
             // Flatten and save
             form.flatten();
