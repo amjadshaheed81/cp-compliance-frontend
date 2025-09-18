@@ -920,7 +920,7 @@ const AirConditioningRecurrenceCheck = ({
             const mediumFont = 8;
 
             // Address
-            setTextField('System Owner', license?.companyName || '', mediumFont);
+            setTextField('SystemOwner', license?.companyName || '', mediumFont);
 
             setTextField('SiteAddress', license?.companyAddress || '', mediumFont);
 
@@ -962,15 +962,15 @@ const AirConditioningRecurrenceCheck = ({
             rows.forEach((row, index) => {
                 const idx = index + 1;
                 const dateVal = row?.createdAt ? dateFormat(row.createdAt) : (row?.issueDate ? dateFormat(row.issueDate) : '');
-                const complaintVal = row?.complaint || row?.action?.description || row?.description || '';
+                const complaintVal = row?.complaint || '';
                 const enteredVal = row?.enteredByName || row?.enteredBy || row?.engineerName || '';
-                const actionVal = row?.action?.action || row?.action?.title || row?.action?.description || '';
+                const actionVal = row?.action?.action || '';
                 const contractorVal = row?.contractor || row?.engineerCompanyName || '';
                 const engineerVal = row?.engineerName || '';
                 const noVal = (row?.checkId ?? row?.id ?? '').toString();
                 const gasVal = formData?.refrigerantType ? String(formData.refrigerantType) : (row?.gas ?? '');
                 const sdVal = toYesNo(!!formData?.schematicDrawing);
-                const commentVal = row?.action?.comments || row?.comments || row?.comment || '';
+                const commentVal = row?.comment || '';
 
                 setTextField(`Date${idx}`, dateVal, mediumFont);
                 setTextField(`Complaint_${idx}`, complaintVal, mediumFont);
