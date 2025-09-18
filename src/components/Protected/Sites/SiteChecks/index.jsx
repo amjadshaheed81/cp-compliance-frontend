@@ -1051,23 +1051,41 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       />
                     </div> */}
                   </Grid>
-                  <Grid sm={4}>
-                    <div style={{ margin: "10px" }}>
-                      <label htmlFor="lead">Lead</label>
-                      <Autocomplete
-                        id="leadUserID"
-                        onChange={(event, item) => {
-                          const uformData = { ...formData };
-                          uformData.leadUserID = item?.key;
-                          setFormData(uformData);
-                        }}
-                        value={
-                          managerList
-                            .filter(
-                              (o) =>
-                                String(o.id) === String(formData?.leadUserID)
-                            )
-                            .map((option) => {
+                  {formData?.category !== "Air Conditioning F-Gas Report" && (
+                    <>
+                      <Grid sm={4}>
+                        <div style={{ margin: "10px" }}>
+                          <label htmlFor="lead">Lead</label>
+                          <Autocomplete
+                            id="leadUserID"
+                            onChange={(event, item) => {
+                              const uformData = { ...formData };
+                              uformData.leadUserID = item?.key;
+                              setFormData(uformData);
+                            }}
+                            value={
+                              managerList
+                                .filter(
+                                  (o) =>
+                                    String(o.id) === String(formData?.leadUserID)
+                                )
+                                .map((option) => {
+                                  return {
+                                    key: option.id,
+                                    label:
+                                      option.role +
+                                      " - " +
+                                      option.name +
+                                      " (" +
+                                      option.email +
+                                      ")" +
+                                      (option.companyName
+                                        ? " - " + option.companyName
+                                        : ""),
+                                  };
+                                })[0]
+                            }
+                            options={managerList.map((option) => {
                               return {
                                 key: option.id,
                                 label:
@@ -1081,56 +1099,61 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                     ? " - " + option.companyName
                                     : ""),
                               };
-                            })[0]
-                        }
-                        options={managerList.map((option) => {
-                          return {
-                            key: option.id,
-                            label:
-                              option.role +
-                              " - " +
-                              option.name +
-                              " (" +
-                              option.email +
-                              ")" +
-                              (option.companyName
-                                ? " - " + option.companyName
-                                : ""),
-                          };
-                        })}
-                        getOptionLabel={(option) => option.label}
-                        renderInput={(params) => (
-                          <div ref={params.InputProps.ref}>
-                            <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) =>
-                                e.target.removeAttribute("readonly")
-                              }
-                              {...params.inputProps}
-                              required
-                              className="form-control"
-                              placeholder="Select Lead"
-                            />
-                          </div>
-                        )}
-                      />
-                    </div>
-                  </Grid>
-                  <Grid sm={4}>
-                    <div style={{ margin: "10px" }}>
-                      <label htmlFor="assistantUserID">Assistant</label>
-                      <Autocomplete
-                        id="assistantUserID"
-                        value={
-                          managerList
-                            .filter(
-                              (o) =>
-                                String(o.id) ===
-                                String(formData?.assistantUserID)
-                            )
-                            .map((option) => {
+                            })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref}>
+                                <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                    e.target.removeAttribute("readonly")
+                                  }
+                                  {...params.inputProps}
+                                  required
+                                  className="form-control"
+                                  placeholder="Select Lead"
+                                />
+                              </div>
+                            )}
+                          />
+                        </div>
+                      </Grid>
+                      <Grid sm={4}>
+                        <div style={{ margin: "10px" }}>
+                          <label htmlFor="assistantUserID">Assistant</label>
+                          <Autocomplete
+                            id="assistantUserID"
+                            value={
+                              managerList
+                                .filter(
+                                  (o) =>
+                                    String(o.id) ===
+                                    String(formData?.assistantUserID)
+                                )
+                                .map((option) => {
+                                  return {
+                                    key: option.id,
+                                    label:
+                                      option.role +
+                                      " - " +
+                                      option.name +
+                                      " (" +
+                                      option.email +
+                                      ")" +
+                                      (option.companyName
+                                        ? " - " + option.companyName
+                                        : ""),
+                                  };
+                                })[0]
+                            }
+                            onChange={(event, item) => {
+                              const uformData = { ...formData };
+                              uformData.assistantUserID = item?.key;
+                              setFormData(uformData);
+                            }}
+                            options={managerList?.map((option) => {
                               return {
                                 key: option.id,
                                 label:
@@ -1144,48 +1167,29 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                     ? " - " + option.companyName
                                     : ""),
                               };
-                            })[0]
-                        }
-                        onChange={(event, item) => {
-                          const uformData = { ...formData };
-                          uformData.assistantUserID = item?.key;
-                          setFormData(uformData);
-                        }}
-                        options={managerList?.map((option) => {
-                          return {
-                            key: option.id,
-                            label:
-                              option.role +
-                              " - " +
-                              option.name +
-                              " (" +
-                              option.email +
-                              ")" +
-                              (option.companyName
-                                ? " - " + option.companyName
-                                : ""),
-                          };
-                        })}
-                        getOptionLabel={(option) => option.label}
-                        renderInput={(params) => (
-                          <div ref={params.InputProps.ref}>
-                            <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) =>
-                                e.target.removeAttribute("readonly")
-                              }
-                              {...params.inputProps}
-                              required
-                              className="form-control"
-                              placeholder="Select Assistant"
-                            />
-                          </div>
-                        )}
-                      />
-                    </div>
-                  </Grid>
+                            })}
+                            getOptionLabel={(option) => option.label}
+                            renderInput={(params) => (
+                              <div ref={params.InputProps.ref}>
+                                <input
+                                  type="text"
+                                  autoComplete="off"
+                                  readOnly
+                                  onFocus={(e) =>
+                                    e.target.removeAttribute("readonly")
+                                  }
+                                  {...params.inputProps}
+                                  required
+                                  className="form-control"
+                                  placeholder="Select Assistant"
+                                />
+                              </div>
+                            )}
+                          />
+                        </div>
+                      </Grid>
+                    </>
+                  )}
 
                   <Grid sm={4}>
                     {(formData.type === "Audit" ||
