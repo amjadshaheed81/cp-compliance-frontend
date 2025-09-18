@@ -58,7 +58,7 @@ const AirConditioningRecurrenceCheck = ({
         gwpLevel: "",
         chargeWeight: "",
         co2eq: "0",
-        inspectionDate: new Date().toISOString().split("T")[0],
+        schematicDrawing: "",
         siteContact: "",
         siteContactNo: "",
         job: "",
@@ -94,6 +94,13 @@ const AirConditioningRecurrenceCheck = ({
     const [showRiskAssessment, setShowRiskAssessment] = useState(false);
     const [actionRaised, setActionRaised] = useState(false);
     const [existingAction, setExistingAction] = useState(null);
+    const [supportDocsByTimestamp, setSupportDocsByTimestamp] = useState({});
+    const [supportDocsList, setSupportDocsList] = useState([]);
+    const [uploadFolderIds, setUploadFolderIds] = useState({
+        logBooks: null,
+        EnvironmentalLogBook: null,
+        airConditioning: null
+    });
 
     const sites = useSelector((state) => state.site.sites);
     const navigate = useNavigate();
@@ -309,6 +316,141 @@ const AirConditioningRecurrenceCheck = ({
         }
     };
 
+    // Normalize any ISO or SQL-like timestamp to seconds precision: YYYY-MM-DDTHH:mm:ss
+    const normalizeToSeconds = (ts) => {
+        if (!ts) return null;
+        try {
+            // Ensure we have a string and replace space with 'T'
+            const s = String(ts).replace(' ', 'T');
+            // Keep up to seconds
+            const upToSeconds = s.slice(0, 19);
+            // Basic validation
+            return upToSeconds.length === 19 ? upToSeconds : null;
+        } catch {
+            return null;
+        }
+    };
+
+    const toMillis = (ts) => {
+        if (!ts) return null;
+        try {
+            const s = String(ts).replace(' ', 'T');
+            return new Date(s).getTime();
+        } catch {
+            return null;
+        }
+    };
+
+    const findNearestDoc = (targetTs, docs, toleranceSeconds = 10) => {
+        if (!targetTs || !Array.isArray(docs) || docs.length === 0) return null;
+        const targetMs = toMillis(targetTs);
+        if (targetMs == null || isNaN(targetMs)) return null;
+        const tolMs = toleranceSeconds * 1000;
+        let best = null;
+        let bestDiff = Infinity;
+        for (const d of docs) {
+            const ms = toMillis(d?.issueDate);
+            if (ms == null || isNaN(ms)) continue;
+            const diff = Math.abs(ms - targetMs);
+            if (diff <= tolMs && diff < bestDiff) {
+                best = d;
+                bestDiff = diff;
+            }
+        }
+        return best;
+    };
+
+    // Fetch Air Conditioning folder files, filter by assetName, then for each file fetch history
+    // Build a map keyed by issueDate (normalized to seconds) => latest file info for that timestamp
+    const fetchSupportDocuments = useCallback(async () => {
+        try {
+            const siteId = siteSelectedForGlobal?.siteId;
+            const assetName = selectedAsset?.assetName;
+            if (!siteId || !assetName) {
+                setSupportDocsByTimestamp({});
+                return;
+            }
+
+            // Ensure we have the folder id
+            const acFolderId = folderIds.airConditioning || await fetchSupportFolderStructure(siteId);
+            if (!acFolderId) {
+                setSupportDocsByTimestamp({});
+                return;
+            }
+
+            // Get files in AC folder
+            const folderResp = await get(`/api/document/parent/${acFolderId}/folders?siteId=${siteId}`);
+            const files = folderResp?.document?.files || [];
+            if (!Array.isArray(files) || files.length === 0) {
+                setSupportDocsByTimestamp({});
+                return;
+            }
+
+            // Filter by asset name contained in file name (case-insensitive, trim)
+            const needle = (assetName || '').toLowerCase().trim();
+            const matchingFiles = files.filter(f => (f?.name || '').toLowerCase().includes(needle));
+
+            if (matchingFiles.length === 0) {
+                setSupportDocsByTimestamp({});
+                return;
+            }
+
+            // Fetch history for each matching file id
+            const historyPromises = matchingFiles.map(async (file) => {
+                try {
+                    const hist = await get(`/api/document/file/${file.id}/history`);
+                    // Response shape expected: { files: [ ...versions ] }
+                    const versions = hist?.files || [];
+                    return { id: file.id, versions };
+                } catch (e) {
+                    console.warn('Failed to fetch history for file', file?.id, e);
+                    return { id: file?.id, versions: [] };
+                }
+            });
+
+            const histories = await Promise.all(historyPromises);
+
+            // Build map: normalizedIssueDate => latest version info for that issue date
+            const byTs = {};
+            for (const h of histories) {
+                for (const v of (h.versions || [])) {
+                    const normTs = normalizeToSeconds(v?.issueDate);
+                    if (!normTs) continue;
+                    const existing = byTs[normTs];
+                    // Prefer the higher fileVersion as latest
+                    if (!existing || (v.fileVersion || 0) >= (existing.fileVersion || 0)) {
+                        byTs[normTs] = {
+                            id: v.id,
+                            name: v.name,
+                            issueDate: v.issueDate,
+                            fileVersion: v.fileVersion,
+                            fileBlobUrl: v.fileBlobUrl,
+                            folderId: v.folderId,
+                        };
+                    }
+                }
+            }
+
+            setSupportDocsByTimestamp(byTs);
+            setSupportDocsList(Object.values(byTs));
+        } catch (error) {
+            console.error('Error fetching support documents:', error);
+            setSupportDocsByTimestamp({});
+            setSupportDocsList([]);
+        }
+    }, [folderIds.airConditioning, selectedAsset?.assetName, siteSelectedForGlobal?.siteId]);
+
+    // When site checks, asset, or folder changes, fetch support docs
+    useEffect(() => {
+        // Only run if we have at least one siteCheck to match on, to avoid unnecessary calls
+        if (Array.isArray(siteChecks) && siteChecks.length > 0) {
+            fetchSupportDocuments();
+        } else {
+            setSupportDocsByTimestamp({});
+            setSupportDocsList([]);
+        }
+    }, [siteChecks, fetchSupportDocuments]);
+
     // Ensure we fetch when selectedAsset or site changes (covers programmatic selection as well)
     useEffect(() => {
         const siteIdToUse = site?.siteId || siteSelectedForGlobal?.siteId;
@@ -354,7 +496,8 @@ const AirConditioningRecurrenceCheck = ({
         }
     };
 
-    const fetchFolderStructure = async (siteId) => {
+    // Support-docs folder structure (used to read and match support documents)
+    const fetchSupportFolderStructure = async (siteId) => {
         try {
             // Use the provided get function
             const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -400,6 +543,54 @@ const AirConditioningRecurrenceCheck = ({
         } catch (error) {
             console.error('Error fetching folder structure:', error);
             toast.error('Failed to load document folders');
+            return null;
+        }
+    };
+
+    // Upload folder structure (used when saving/uploading generated PDFs)
+    const fetchFolderStructure = async (siteId) => {
+        try {
+            const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+
+            if (parentFoldersResponse?.parentFolders?.length > 0) {
+                const logBooksFolder = parentFoldersResponse.parentFolders.find(
+                    folder => folder.name.trim() === 'Log Books'
+                );
+
+                if (logBooksFolder) {
+                    const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+
+                    if (logBooksResponse?.document?.childFolders) {
+                        const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
+                            folder => folder.name.trim() === 'Environmental Log Book'
+                        );
+
+                        if (EnvironmentalLogBookFolder) {
+                            const environmentalResponse = await get(
+                                `/api/document/parent/${EnvironmentalLogBookFolder.id}/folders?siteId=${siteId}`
+                            );
+
+                            if (environmentalResponse?.document?.childFolders) {
+                                const airConditioningFolder = environmentalResponse.document.childFolders.find(
+                                    folder => folder.name === 'F Gas Register'
+                                );
+
+                                setUploadFolderIds({
+                                    logBooks: logBooksFolder.id,
+                                    EnvironmentalLogBook: EnvironmentalLogBookFolder.id,
+                                    airConditioning: airConditioningFolder?.id || null
+                                });
+
+                                return airConditioningFolder?.id || null;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching upload folder structure:', error);
+            toast.error('Failed to load upload folders');
             return null;
         }
     };
@@ -584,7 +775,8 @@ const AirConditioningRecurrenceCheck = ({
             }
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            const targetFolderId = folderIds.airConditioning || folderIds.logBooks;
+            // Prefer upload-specific folder ids; fallback to support-docs folderIds for safety
+            const targetFolderId = uploadFolderIds.airConditioning || uploadFolderIds.logBooks || folderIds.airConditioning || folderIds.logBooks;
 
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
@@ -676,6 +868,14 @@ const AirConditioningRecurrenceCheck = ({
         }
     };
 
+    // Ensure upload folder structure is available when site changes
+    useEffect(() => {
+        const siteId = siteSelectedForGlobal?.siteId || site?.siteId;
+        if (siteId) {
+            fetchFolderStructure(siteId);
+        }
+    }, [siteSelectedForGlobal?.siteId, site?.siteId]);
+
     const generatePDF = async (uploadToServer = true) => {
         try {
             setIsGeneratingPDF(true);
@@ -717,54 +917,44 @@ const AirConditioningRecurrenceCheck = ({
                 }
             };
 
-            const smallFont = 8;
-            const mediumFont = 10;
+            const mediumFont = 8;
 
-            // Address and contact information
-            const addressLines = (siteSelectedForGlobal?.address1 ?
-                `${siteSelectedForGlobal.address1}, ${siteSelectedForGlobal.address2 || ''}, ${siteSelectedForGlobal.city}, ${siteSelectedForGlobal.postCode}`
-                : '').split(',');
+            // Address
+            setTextField('System Owner', license?.companyName || '', mediumFont);
 
-            setTextField('Address', addressLines[0] || '', mediumFont);
-            setTextField('Address_2', addressLines[1] || '', mediumFont);
-            setTextField('Address_3', addressLines[2] || '', mediumFont);
-            setTextField('Address_4', addressLines[3] || '', mediumFont);
+            setTextField('SiteAddress', license?.companyAddress || '', mediumFont);
 
-            setTextField('Date', dateFormat(formData.inspectionDate), mediumFont);
-            setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', mediumFont);
-            setTextField('Site Contact No', formData.siteContactNo || '', mediumFont);
-            setTextField('Job No', formData.job || '', mediumFont);
+            // Schematic Drawing selection
+            setTextField('SchematicDrawing', (formData.schematicDrawing || '').toString(), mediumFont);
 
             // Equipment information
             setTextField('Manufacturer', selectedAsset?.manufacturer || '', mediumFont);
             setTextField('Model Number', selectedAsset?.model || '', mediumFont);
             setTextField('Serial Number', selectedAsset?.serialNumber || '', mediumFont);
 
-            const equipmentDetailsLocation = [
-                selectedAsset?.floor,
-                selectedAsset?.room,
-                selectedAsset?.position,
-                selectedAsset?.assetName
-            ].filter(Boolean).join(' - ');
+            const equipmentDetails = `${selectedAsset?.assetName || "N/A"} (Model - ${selectedAsset?.model || "N/A"} / Serial - ${selectedAsset?.serialNumber || "N/A"} / Asset No - ${selectedAsset?.assetId || "N/A"}) Located on ${selectedAsset?.position || "N/A"} Floor: ${selectedAsset?.floor || "N/A"} in Room No: ${selectedAsset?.room || "N/A"}`;
 
-            setTextField('Equipment Details  Location', equipmentDetailsLocation || '', mediumFont);
+            // Build related assets details (one or many) in same format, each on its own line
+            if (Array.isArray(relatedAssets) && relatedAssets.length > 0) {
+                const lines = relatedAssets.map(ra => (
+                    `${ra?.assetName || 'N/A'} (Model - ${ra?.model || 'N/A'} / Serial - ${ra?.serialNumber || 'N/A'} / Asset No - ${ra?.assetId || 'N/A'}) Located on ${ra?.position || 'N/A'} Floor: ${ra?.floor || 'N/A'} in Room No: ${ra?.room || 'N/A'}`
+                ));
+                // Also set a dedicated field for related equipment details if present in the PDF
+                const relatedOnly = lines.join('\n');
+                setTextField('RelatedEquipmentDetails', relatedOnly, mediumFont);
+            }
+
+
+            setTextField('EquipmentDetails', equipmentDetails || '', mediumFont);
+
 
             // Refrigerant information
-            setTextField('Refrigerant Type', formData.refrigerantType || '', mediumFont);
-            setTextField('GWP Level', formData.gwpLevel || '', mediumFont);
-            setTextField('Charge Weight', formData.chargeWeight || '', mediumFont);
-            setTextField('CO2eq', formData.co2eq || '', mediumFont);
+            setTextField('Refrigerant Type', formData.refrigerantType.toString() || '', mediumFont);
+            setTextField('GWP Level', formData.gwpLevel.toString() || '', mediumFont);
+            setTextField('Charge Weight', formData.chargeWeight.toString() || '', mediumFont);
+            setTextField('CO2eq', formData.co2eq.toString() || '', mediumFont);
 
-            // Report removed per request; do not populate Engineers Report field
 
-            // Signatures (Client fields removed per request)
-            const engineerName = loggedInUserData?.name || '';
-
-            // Leave client name and client date blank in the PDF
-            setTextField('Clients Name', '', mediumFont);
-            setTextField('Engineers Name', engineerName, mediumFont);
-            setTextField('on', '', smallFont);
-            setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
             // Flatten and save
             form.flatten();
@@ -810,6 +1000,7 @@ const AirConditioningRecurrenceCheck = ({
         if (!formData.refrigerantType) errors.refrigerantType = "Please select refrigerant type";
         if (!formData.gwpLevel) errors.gwpLevel = "Please enter GWP level";
         if (!formData.chargeWeight) errors.chargeWeight = "Please enter charge weight";
+        if (!formData.schematicDrawing) errors.schematicDrawing = "Please select Schematic Drawing";
 
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors);
@@ -910,79 +1101,7 @@ const AirConditioningRecurrenceCheck = ({
         }
     };
 
-    const renderSiteContactField = () => {
-        if (isInternalUserTaggedWithSite) {
-            const filteredUsers =
-                users?.filter((user) =>
-                    user.taggedSites?.some(
-                        (site) => site.id === siteSelectedForGlobal?.siteId
-                    )
-                ) || [];
 
-            return (
-                <Autocomplete
-                    options={filteredUsers}
-                    getOptionLabel={(user) => user.name}
-                    value={formData.siteContactUser || formData.clientUser || null}
-                    onChange={(event, newValue) => {
-                        setFormData((prev) => ({
-                            ...prev,
-                            siteContact: newValue?.id || "",
-                            siteContactNo: newValue?.phone || "",
-                            siteContactUser: newValue || null,
-                            client: newValue?.id || "",
-                            clientUser: newValue || null,
-                        }));
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            variant="outlined"
-                            required
-                            disabled={isSubmitted}
-                            style={{
-                                height: "40px",
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                },
-                                "& .MuiAutocomplete-input": {
-                                    padding: "8.5px 4px !important",
-                                },
-                            }}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    height: "40px",
-                                    padding: "0 5px",
-                                },
-                            }}
-                        />
-                    )}
-                    disabled={isSubmitted}
-                />
-            );
-        }
-        return (
-            <input
-                type="text"
-                className="form-control"
-                name="siteContact"
-                value={
-                    formData.siteContactUser?.name || formData.clientUser?.name || ""
-                }
-                onChange={(e) => {
-                    setFormData((prev) => ({
-                        ...prev,
-                        siteContact: e.target.value,
-                        siteContactName: e.target.value,
-                        client: e.target.value,
-                        clientNameText: e.target.value,
-                    }));
-                }}
-                required
-                disabled={isSubmitted}
-            />
-        );
-    };
 
     const filteredAssets =
         siteAssets?.filter(
@@ -1039,24 +1158,21 @@ const AirConditioningRecurrenceCheck = ({
                 <div className="row mb-4">
                     <div className="col-md-4">
                         <div className="mb-3">
-                            <label className="form-label">Date</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="inspectionDate"
-                                value={formData.inspectionDate}
+                            <label className="form-label">Schematic Drawing</label>
+                            <TextField
+                                select
+                                fullWidth
+                                name="schematicDrawing"
+                                value={formData.schematicDrawing}
                                 onChange={handleInputChange}
                                 required
-                                style={{
-                                    height: "40px",
-                                    padding: "0 10px",
-                                    width: "100%",
-                                }}
                                 disabled={isSubmitted}
-                            />
+                            >
+                                <MenuItem value="Yes">Yes</MenuItem>
+                                <MenuItem value="No">No</MenuItem>
+                            </TextField>
                         </div>
                     </div>
-
                 </div>
 
                 <div className="card mb-4">
@@ -1096,7 +1212,7 @@ const AirConditioningRecurrenceCheck = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`Manufacturer: ${selectedAsset.manufacturer || "N/A"}  |  Model: ${selectedAsset.model || "N/A"}  |  Serial Number: ${selectedAsset.serialNumber || "N/A"}  |  Position: ${selectedAsset.position || "N/A"}  |  Floor: ${selectedAsset.floor || "N/A"}  |  Room: ${selectedAsset.room || "N/A"}`}
+                                            value={`${selectedAsset?.assetName} (Model - ${selectedAsset.model || "N/A"} / Serial - ${selectedAsset.serialNumber || "N/A"} / Asset No - ${selectedAsset.assetId || "N/A"}) Located on ${selectedAsset.position || "N/A"} Floor: ${selectedAsset.floor || "N/A"} in Room No :${selectedAsset.room || "N/A"}`}
                                             disabled
                                             style={{
                                                 backgroundColor: "#f8f9fa",
@@ -1123,17 +1239,8 @@ const AirConditioningRecurrenceCheck = ({
                                     <div key={asset.assetId} className="col-md-6 mb-3">
                                         <Card variant="outlined">
                                             <CardContent>
-                                                <Typography variant="h6" component="div">
-                                                    {asset.assetName}
-                                                </Typography>
-                                                <Typography color="textSecondary">
-                                                    Asset ID: {asset.assetId}
-                                                </Typography>
-                                                <Typography color="textSecondary">
-                                                    Position: {asset.position || "N/A"}
-                                                </Typography>
-                                                <Typography color="textSecondary">
-                                                    Floor: {asset.floor || "N/A"} | Room: {asset.room || "N/A"}
+                                                <Typography variant="body1" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+                                                    {`${asset?.assetName} (Model - ${asset.model || 'N/A'} / Serial - ${asset.serialNumber || 'N/A'} / Asset No - ${asset.assetId || 'N/A'}) Located on ${asset.position || 'N/A'} Floor: ${asset.floor || 'N/A'} in Room No :${asset.room || 'N/A'}`}
                                                 </Typography>
                                             </CardContent>
                                         </Card>
@@ -1342,8 +1449,28 @@ const AirConditioningRecurrenceCheck = ({
                                                     </TableCell>
                                                     {/* Gas Added -> from generic inspection: param3Remark */}
                                                     <TableCell>{check.param3Remark || '—'}</TableCell>
-                                                    {/* Support Document -> indication if action.files exist */}
-                                                    <TableCell>{Array.isArray(check.action?.files) && check.action.files.length > 0 ? 'Yes' : '—'}</TableCell>
+                                                    {/* Support Document -> match by createdAt (to seconds). If no exact match, choose nearest within ±10s. */}
+                                                    <TableCell>
+                                                        {(() => {
+                                                            const norm = normalizeToSeconds(check.createdAt || check.startDate || check.date);
+                                                            let doc = norm ? supportDocsByTimestamp[norm] : null;
+                                                            if (!doc && norm) {
+                                                                doc = findNearestDoc(norm, supportDocsList, 10);
+                                                            }
+                                                            if (doc) {
+                                                                const readableDate = moment(doc.issueDate).format('DD/MM/YYYY HH:mm');
+                                                                if (doc.fileBlobUrl) {
+                                                                    return (
+                                                                        <a href={doc.fileBlobUrl} target="_blank" rel="noreferrer">
+                                                                            {doc.name || 'Document'} ({readableDate})
+                                                                        </a>
+                                                                    );
+                                                                }
+                                                                return `${doc.name || 'Document'} (${readableDate})`;
+                                                            }
+                                                            return '—';
+                                                        })()}
+                                                    </TableCell>
                                                     {/* Comment -> from generic inspection: report */}
                                                     <TableCell>{check.report || '—'}</TableCell>
                                                 </TableRow>
