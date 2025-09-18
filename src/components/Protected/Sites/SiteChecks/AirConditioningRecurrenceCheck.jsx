@@ -962,15 +962,15 @@ const AirConditioningRecurrenceCheck = ({
             rows.forEach((row, index) => {
                 const idx = index + 1;
                 const dateVal = row?.createdAt ? dateFormat(row.createdAt) : (row?.issueDate ? dateFormat(row.issueDate) : '');
-                const complaintVal = row?.complaint || '';
+                const complaintVal = row?.action?.observation || '';
                 const enteredVal = row?.enteredByName || row?.enteredBy || row?.engineerName || '';
-                const actionVal = row?.action?.action || '';
+                const actionVal = row?.action?.requiredAction || '';
                 const contractorVal = row?.contractor || row?.engineerCompanyName || '';
                 const engineerVal = row?.engineerName || '';
-                const noVal = (row?.checkId ?? row?.id ?? '').toString();
+                const noVal = engineerCertMap[row.checkId] || ''; // Changed to use user input
                 const gasVal = formData?.refrigerantType ? String(formData.refrigerantType) : (row?.gas ?? '');
                 const sdVal = toYesNo(!!formData?.schematicDrawing);
-                const commentVal = row?.comment || '';
+                const commentVal = row?.report || '';
 
                 setTextField(`Date${idx}`, dateVal, mediumFont);
                 setTextField(`Complaint_${idx}`, complaintVal, mediumFont);
@@ -1078,6 +1078,21 @@ const AirConditioningRecurrenceCheck = ({
             setCheckStatus('Done');
             setIsFormEditable(false);
 
+            // Prepare table rows to be saved along with the recurrence payload
+            const tableRows = (Array.isArray(siteChecks) ? siteChecks : []).map((row) => ({
+                checkId: row?.checkId ?? row?.id ?? null,
+                createdAt: row?.createdAt ?? row?.issueDate ?? null,
+                complaint: row?.observation ?? '',
+                enteredBy: row?.enteredByName ?? row?.enteredBy ?? row?.engineerName ?? '',
+                action: row?.action?.requiredAction ?? '',
+                contractor: row?.contractor ?? row?.engineerCompanyName ?? '',
+                engineer: row?.engineerName ?? '',
+                gas: formData?.refrigerantType ? String(formData.refrigerantType) : (row?.gas ?? ''),
+                schematicDrawing: !!formData?.schematicDrawing,
+                comment: row?.report ?? '',
+                engineerCertificateNo: engineerCertMap[row.checkId] || '', // Add this line
+            }));
+
             // Then create the recurrence check record using the provided post function
             const recurrencePayload = {
                 ...formData,
@@ -1091,6 +1106,7 @@ const AirConditioningRecurrenceCheck = ({
                 category: 'Air Conditioning',
                 checkId: currentCheckId || statusResponse?.data?.checkId,
                 actionId: formData.actionId,
+                tableRows
             };
 
             // Create a new record using the provided post function
