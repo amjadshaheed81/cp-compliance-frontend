@@ -54,6 +54,7 @@ const AirConditioningRecurrenceCheck = ({
     const [relatedAssets, setRelatedAssets] = useState([]);
     const [formData, setFormData] = useState({
         systemOwner: "",
+        address: "",
         refrigerantType: "",
         gwpLevel: "",
         chargeWeight: "",
@@ -137,6 +138,19 @@ const AirConditioningRecurrenceCheck = ({
                         (site) => site.siteId === siteSelectedForGlobal.siteId
                     );
                     const siteData = currentSite || siteSelectedForGlobal;
+                    if (siteData) {
+                        const addressParts = [
+                            siteData.address1,
+                            siteData.address2,
+                            siteData.city,
+                            siteData.area,
+                            siteData.postCode,
+                            siteData.country,
+                        ].filter((part) => part && part.trim() !== "");
+
+                        const fullAddress = addressParts.join(", ");
+                        setFormData((prev) => ({ ...prev, address: fullAddress }));
+                    }
 
                     // If we have a checkId, fetch the related data
                     if (checkId) {
@@ -922,7 +936,7 @@ const AirConditioningRecurrenceCheck = ({
             // Address
             setTextField('SystemOwner', license?.companyName || '', mediumFont);
 
-            setTextField('SiteAddress', license?.companyAddress || '', mediumFont);
+            setTextField('SiteAddress', formData.address || '', mediumFont);
 
             // Schematic Drawing selection
             setTextField('SchematicDrawing', (formData.schematicDrawing || '').toString(), mediumFont);
@@ -1188,7 +1202,7 @@ const AirConditioningRecurrenceCheck = ({
                             <textarea
                                 className="form-control"
                                 rows={4}
-                                value={license?.companyAddress || ''}
+                                value={formData.address || ''}
                                 disabled
                                 style={{
                                     backgroundColor: "#f8f9fa",
