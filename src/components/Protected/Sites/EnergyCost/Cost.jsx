@@ -183,7 +183,6 @@ const Cost = ({
                     className="form-control"
                     disabled={isView}
                     name="cost"
-                    min="0"
                     onChange={handleInputChange}
                     required
                   />

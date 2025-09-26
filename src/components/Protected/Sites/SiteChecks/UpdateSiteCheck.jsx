@@ -41,6 +41,7 @@ import InspectionFireCertificate from "./InspectionFireCertificate";
 import GasBoilerService from "./GasBoilerService";
 import GasInspection from "./GasInspection";
 import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
+import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 
 
 
@@ -266,6 +267,12 @@ else if (
         siteCheck.category === "Fire Extinguisher Inspection & Service"
     ) {
         setStep("inspection-fire-Equipment");
+    }else if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Air Conditioning F-Gas Report"
+    ) {
+        setStep("inspection-air-conditioning-report");
     }
    
     else if (siteCheck.type === "Assessment" ) {
@@ -447,50 +454,60 @@ autoComplete="off"
                   />
                 </div>
               </Grid>
-              <Grid sm={4}>
-                <div style={{ margin: "10px" }}>
-                  <label htmlFor="folder" name="folder">
-                    Lead
-                  </label>
-                  <select
-                    name="leadUserID"
-                    className="form-control form-select"
-                    id="leadUserID"
-                    disabled
-                    onChange={handleInputChange}
-                    value={siteCheck?.leadUserID}
-                  >
-                    <option value="">Select Lead</option>
-                    {managerList?.map(u => {
-                      return (
-                        <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
-                      )
-                    })}
-                  </select>
-                </div>
-              </Grid>
-              <Grid sm={4}>
-                <div style={{ margin: "10px" }}>
-                  <label htmlFor="folder" name="folder">
-                    Assistant
-                  </label>
-                  <select
-                    name="assistantUserID"
-                    className="form-control form-select"
-                    disabled
-                    id="assistantUserID"
-                    onChange={handleInputChange}
-                    value={siteCheck?.assistantUserID}
-                  >
-                    <option value="">Select Assistant</option>
-                    {managerList?.map(u => {
-                      return (
-                        <option value={u.id}>{u.trade}({u.role}) - {u.name} ({u.email}) - {u.company} </option>
-                      )
-                    })}
-                  </select>
-                </div>
-              </Grid>
+                {siteCheck?.category !== "Air Conditioning F-Gas Report" && (
+                    <>
+                        <Grid sm={4}>
+                            <div style={{ margin: "10px" }}>
+                                <label htmlFor="folder" name="folder">
+                                    Lead
+                                </label>
+                                <select
+                                    name="leadUserID"
+                                    className="form-control form-select"
+                                    id="leadUserID"
+                                    disabled
+                                    onChange={handleInputChange}
+                                    value={siteCheck?.leadUserID}
+                                >
+                                    <option value="">Select Lead</option>
+                                    {managerList?.map((u) => {
+                                        return (
+                                            <option value={u.id}>
+                                                {u.trade}({u.role}) - {u.name} ({u.email}) -{" "}
+                                                {u.company}{" "}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+                        </Grid>
+                        <Grid sm={4}>
+                            <div style={{ margin: "10px" }}>
+                                <label htmlFor="folder" name="folder">
+                                    Assistant
+                                </label>
+                                <select
+                                    name="assistantUserID"
+                                    className="form-control form-select"
+                                    disabled
+                                    id="assistantUserID"
+                                    onChange={handleInputChange}
+                                    value={siteCheck?.assistantUserID}
+                                >
+                                    <option value="">Select Assistant</option>
+                                    {managerList?.map((u) => {
+                                        return (
+                                            <option value={u.id}>
+                                                {u.trade}({u.role}) - {u.name} ({u.email}) -{" "}
+                                                {u.company}{" "}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+                        </Grid>
+                    </>
+                )}
 
               <Grid sm={4}>
                 {(siteCheck?.type === "Audit" || (siteCheck?.type === "Survey" && siteCheck?.subType === "Water")) && <div style={{ margin: "10px" }}>
@@ -580,6 +597,17 @@ autoComplete="off"
                           checkId={checkId}
                           sasToken={sasToken}
                           siteCheck={siteCheck}
+                      />
+                  </Item>
+              )}
+              {step === "inspection-air-conditioning-report" && (
+                  <Item>
+                      <AirConditioningRecurrenceCheck
+                          checkId={checkId}
+                          sasToken={sasToken}
+                          subType={siteCheck?.subType}
+                          category={siteCheck.category}
+                          leadUserID={siteCheck?.leadUserID}
                       />
                   </Item>
               )}
