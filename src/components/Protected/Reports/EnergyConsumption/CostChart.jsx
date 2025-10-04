@@ -304,8 +304,11 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
             <Bar data={chartConfigs.carbonPerM2} options={chartOptions} />
             <div className="mt-4 text-sm text-gray-600">
               <p>
-                Total Carbon: {currentYearData.carbonFootprint.toFixed(2)} kg
-                CO2e
+                Total Carbon: {currentYearData.carbonFootprint.toLocaleString("en-GB", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+                kg CO2e
               </p>
               <p>
                 Carbon per m²: {currentYearData.carbonPerM2.toFixed(2)} kg CO2e
