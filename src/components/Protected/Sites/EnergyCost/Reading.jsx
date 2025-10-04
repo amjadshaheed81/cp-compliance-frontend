@@ -28,6 +28,7 @@ const Reading = ({
 }) => {
   const [formData, setFormData] = useState({});
   const [isView, setIsView] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     setIsView(isViewMode);
@@ -54,16 +55,45 @@ const Reading = ({
       [name]: value,
     };
     setFormData(udata);
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.readingDate) {
+      newErrors.readingDate = "Reading date is required";
+    }
+
+    if (!formData.readingValue) {
+      newErrors.readingValue = "Reading value is required";
+    }
+
+    if (!formData.readingUnit) {
+      newErrors.readingUnit = "Reading unit is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const save = async (event) => {
     event.preventDefault();
-    const form = event.target;
-    if (!form.checkValidity()) {
-      form.reportValidity();
-    }
-    const data = { ...formData };
 
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const data = { ...formData };
     data.readingDate = new Date(data.readingDate);
 
     if (survey?.budgetCategory === "Electricity") {
@@ -73,12 +103,14 @@ const Reading = ({
     data.energyId = survey.energyId;
     saveData(data);
     setOpen(false);
+    setErrors({});
 
     toast.success("Energy reading added successfully");
   };
 
   useEffect(() => {
     setFormData({});
+    setErrors({});
   }, [survey]);
 
   return (
@@ -87,6 +119,7 @@ const Reading = ({
         open={open}
         onClose={() => {
           setOpen(false);
+          setErrors({});
         }}
         maxWidth="lg"
         fullWidth
@@ -118,9 +151,9 @@ const Reading = ({
                     value={
                       formData?.readingValue
                         ? formData?.readingValue -
-                          (survey?.readingList?.length > 0
-                            ? survey?.readingList?.[0]?.readingValue
-                            : 0)
+                        (survey?.readingList?.length > 0
+                          ? survey?.readingList?.[0]?.readingValue
+                          : 0)
                         : 0
                     }
                   />
@@ -156,8 +189,22 @@ const Reading = ({
                             date.getTime() - date.getTimezoneOffset() * 60000
                           ).toISOString(),
                         });
+                        // Clear date error when date is selected
+                        if (errors.readingDate) {
+                          setErrors(prev => ({
+                            ...prev,
+                            readingDate: ''
+                          }));
+                        }
                       }}
+                      error={!!errors.readingDate}
+                      helperText={errors.readingDate}
                     />
+                    {errors.readingDate && (
+                      <div className="text-danger small mt-1">
+                        {errors.readingDate}
+                      </div>
+                    )}
                   </div>
                 </Grid>
 
@@ -168,12 +215,17 @@ const Reading = ({
                     type="number"
                     step={".01"}
                     disabled={isView}
-                    className="form-control"
+                    className={`form-control ${errors.readingValue ? 'is-invalid' : ''}`}
                     name="readingValue"
                     onChange={handleInputChange}
                     required
                     min="0"
                   />
+                  {errors.readingValue && (
+                    <div className="text-danger small mt-1">
+                      {errors.readingValue}
+                    </div>
+                  )}
                 </Grid>
                 <Grid sm={4}>
                   <label for="readingUnit">Unit</label>
@@ -186,26 +238,36 @@ const Reading = ({
                       disabled
                     />
                   ) : (
-                    <select
-                      disabled={isView}
-                      name="readingUnit"
-                      className="form-control form-select"
-                      id="readingUnit"
-                      value={formData?.readingUnit}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Reading Unit</option>
-                      <option value="Kwh">Kwh</option>
-                      <option value="M3">M³</option>
-                      <option value="ltrs">ltrs</option>
-                    </select>
+                      <>
+                        <select
+                          disabled={isView}
+                          name="readingUnit"
+                          className={`form-control form-select ${errors.readingUnit ? 'is-invalid' : ''}`}
+                          id="readingUnit"
+                          value={formData?.readingUnit}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="">Reading Unit</option>
+                          <option value="Kwh">Kwh</option>
+                          <option value="M3">M³</option>
+                          <option value="ltrs">ltrs</option>
+                        </select>
+                        {errors.readingUnit && (
+                          <div className="text-danger small mt-1">
+                            {errors.readingUnit}
+                          </div>
+                        )}
+                      </>
                   )}
                 </Grid>
                 <Grid sm={8}></Grid>
                 <Grid sm={4}>
                   <Button
-                    onClick={(e) => setOpen(false)}
+                    onClick={(e) => {
+                      setOpen(false);
+                      setErrors({});
+                    }}
                     className="bg-light text-primary"
                   >
                     Cancel
@@ -235,12 +297,12 @@ const Reading = ({
                           (a, b) =>
                             new Date(b.readingDate) - new Date(a.readingDate)
                         )?.length === 0 && (
-                          <tr>
-                            <td colSpan={5} align="center">
-                              No record
-                            </td>
-                          </tr>
-                        )}
+                            <tr>
+                              <td colSpan={5} align="center">
+                                No record
+                              </td>
+                            </tr>
+                          )}
                         {survey?.readingList?.map((d, idx) => (
                           <tr>
                             <td>
@@ -255,7 +317,7 @@ const Reading = ({
                               {(idx === survey?.readingList?.length - 1
                                 ? d?.readingValue
                                 : d?.readingValue -
-                                  survey?.readingList?.[idx + 1]?.readingValue
+                                survey?.readingList?.[idx + 1]?.readingValue
                               )?.toFixed(2)}
                               {d.readingUnit}
                             </td>
