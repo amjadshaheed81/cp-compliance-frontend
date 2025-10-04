@@ -166,16 +166,6 @@ const MandatoryFile = ({
                           </span>
                           <span>
                             {folder.name}
-                            <span
-                              className="ms-2 badge"
-                              style={{
-                                backgroundColor: "#cacaca",
-                                color: "#101010",
-                                fontSize: "12px",
-                              }}
-                            >
-                              {folder.fileCount}
-                            </span>
                           </span>
                         </div>
                       </td>
