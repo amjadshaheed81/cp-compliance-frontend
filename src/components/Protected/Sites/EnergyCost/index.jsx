@@ -21,12 +21,8 @@ import {
   Link,
   Dialog,
   CircularProgress,
-  Box,
-  Grid,
-  Divider,
-  Autocomplete,
-  TextField,
   Typography,
+  Button,
 } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
@@ -42,7 +38,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const [actionSurvey, setActionSurvey] = useState();
   const [openReading, setOpenReading] = useState(false);
   const [typeoptions, settypeoptions] = useState([]);
-  // const site = JSON.parse(localStorage.getItem("site"));
+  // Add state for failed records and download functionality
+  const [failedReadingRecords, setFailedReadingRecords] = useState([]);
+  const [showFailedDownload, setShowFailedDownload] = useState(false);
+  const [failedCostRecords, setFailedCostRecords] = useState([]);
+  const [showFailedCostDownload, setShowFailedCostDownload] = useState(false);
+
   const [filteredEnergyCost, setFilteredEnergyCost] = useState([]);
   const [energyCost, setEnergyCost] = useState([]);
   const navigate = useNavigate();
@@ -60,6 +61,23 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     "readingDate",
     "readingValue",
     "readingUnit",
+  ];
+
+  // Add CSV headers for failed records download
+  const failedReadingHeaders = [
+    { label: "Reference", key: "reference" },
+    { label: "Reading Date", key: "readingDate" },
+    { label: "Reading Value", key: "readingValue" },
+    { label: "Reading Unit", key: "readingUnit" },
+    { label: "Error Reason", key: "errorReason" }
+  ];
+
+  const failedCostHeaders = [
+    { label: "Reference", key: "reference" },
+    { label: "From Date", key: "fromDate" },
+    { label: "To Date", key: "toDate" },
+    { label: "Cost", key: "cost" },
+    { label: "Error Reason", key: "errorReason" }
   ];
 
   const [itemsPerPage] = useState(7);
@@ -80,7 +98,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     settypeoptions(lovtypes.map((l) => l.lovValue));
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
   const [formData, setFormData] = useState({
     searchField: "",
   });
@@ -173,6 +191,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
   const handleFileUploadReading = (event) => {
     setbulkUploadReading([]);
+    setFailedReadingRecords([]);
+    setShowFailedDownload(false);
+
     const file = event.target.files[0];
     const reader = new FileReader();
 
@@ -182,12 +203,17 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      const mappedData = json?.map((row) => {
+      const mappedData = [];
+      const failedRecords = [];
+
+      json?.forEach((row, index) => {
         let rowData = {
           submittedUserId: loggedInUserData?.id,
           readingUnit: "kWh",
         };
         const rowValues = Object.values(row)?.slice(0, 4);
+        let isValid = true;
+        let errorReason = "";
 
         if (rowValues.length > 3) {
           customColumnNamesReading.forEach((col, index) => {
@@ -204,20 +230,48 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
               console.log('rowValues[index]', rowValues[index]);
             } else if (index === 2) {
               if (isNaN(rowValues[index])) {
-                toast(
-                  "Invalid reading present in attached file at row no " + index
-                );
-                return;
+                isValid = false;
+                errorReason = "Invalid reading value - must be numeric";
               }
-            } else {
             }
             rowData[col] = rowValues[index] || null;
           });
 
-          return rowData;
+          // Check if reading unit is provided, if not use default
+          if (!rowData.readingUnit) {
+            rowData.readingUnit = "kWh";
+          }
+
+          if (isValid) {
+            mappedData.push(rowData);
+          } else {
+            failedRecords.push({
+              ...rowData,
+              errorReason: errorReason || "Unknown error",
+              originalRow: index + 2 // +2 because Excel rows start at 1 and we have header
+            });
+          }
+        } else {
+          failedRecords.push({
+            reference: rowValues[0] || "",
+            readingDate: rowValues[1] || "",
+            readingValue: rowValues[2] || "",
+            readingUnit: rowValues[3] || "",
+            errorReason: "Insufficient data columns",
+            originalRow: index + 2
+          });
         }
       });
+
       setbulkUploadReading(mappedData);
+      setFailedReadingRecords(failedRecords);
+
+      if (failedRecords.length > 0) {
+        setShowFailedDownload(true);
+        toast.warning(`${failedRecords.length} records failed validation. You can download the failed records to fix them.`);
+      } else {
+        toast.success("All records passed validation!");
+      }
     };
 
     reader.readAsBinaryString(file);
@@ -228,18 +282,21 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const excelEpoch = new Date(1900, 0, 1);
       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
       const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
-      jsDate.setUTCHours(0, 0, 0, 0); 
+      jsDate.setUTCHours(0, 0, 0, 0);
       return jsDate.toISOString();
     } else {
       const [day, month, year] = dateString.split("/")?.map(Number);
       const date = new Date(Date.UTC(year, month - 1, day));
-      date.setUTCHours(0, 0, 0, 0); 
+      date.setUTCHours(0, 0, 0, 0);
       return date.toISOString();
     }
   }
 
   const handleFileUploadCost = (event) => {
     setbulkUploadCost([]);
+    setFailedCostRecords([]);
+    setShowFailedCostDownload(false);
+
     const file = event.target.files[0];
     const reader = new FileReader();
 
@@ -249,11 +306,17 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
-      const mappedData = json?.map((row) => {
+      const mappedData = [];
+      const failedRecords = [];
+
+      json?.forEach((row, index) => {
         let rowData = {
           submittedUserId: loggedInUserData?.id,
         };
         const rowValues = Object.values(row);
+        let isValid = true;
+        let errorReason = "";
+
         customColumnNamesCost.forEach((col, index) => {
           if (index === 0) {
             const dupIdx = energyCost.findIndex(
@@ -266,12 +329,36 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
           } else if (index === 1 || index === 2) {
             rowValues[index] = convertToDate(rowValues[index]);
             console.log(rowValues[index])
+          } else if (index === 3) {
+            // Validate cost is numeric
+            if (isNaN(rowValues[index])) {
+              isValid = false;
+              errorReason = "Invalid cost value - must be numeric";
+            }
           }
           rowData[col] = rowValues[index] || null;
         });
-        return rowData;
+
+        if (isValid) {
+          mappedData.push(rowData);
+        } else {
+          failedRecords.push({
+            ...rowData,
+            errorReason: errorReason || "Unknown error",
+            originalRow: index + 2
+          });
+        }
       });
+
       setbulkUploadCost(mappedData);
+      setFailedCostRecords(failedRecords);
+
+      if (failedRecords.length > 0) {
+        setShowFailedCostDownload(true);
+        toast.warning(`${failedRecords.length} cost records failed validation. You can download the failed records to fix them.`);
+      } else {
+        toast.success("All cost records passed validation!");
+      }
     };
 
     reader.readAsBinaryString(file);
@@ -330,7 +417,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     energyCost.forEach((energy) => {
       const dates = energy.costList.map((c) => new Date(c.fromDate));
       energy.readingList = energy.readingList?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate));
-      
+
       const minDate =
         Math.min(...dates) !== Infinity ? new Date(Math.min(...dates)) : null;
       const dates2 = energy.costList.map((c) => new Date(c.toDate));
@@ -409,12 +496,32 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   className="form-control"
                   onChange={handleFileUploadCost}
                 />
+
+                {/* Failed Cost Records Download */}
+                {showFailedCostDownload && (
+                  <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "#fff3cd", border: "1px solid #ffeaa7", borderRadius: "4px" }}>
+                    <p style={{ color: "#856404", margin: "0 0 10px 0" }}>
+                      {failedCostRecords.length} cost records failed validation.
+                      Download the file to see the errors and fix them:
+                    </p>
+                    <CSVLink
+                      data={failedCostRecords}
+                      headers={failedCostHeaders}
+                      filename={`failed_cost_records_${moment().format('YYYY-MM-DD_HH-mm')}.csv`}
+                      className="btn btn-warning btn-sm"
+                    >
+                      <i className="fas fa-download" /> Download Failed Cost Records
+                    </CSVLink>
+                  </div>
+                )}
+
                 <button
                   style={{ marginTop: "10px" }}
                   className="btn btn-primary text-white pr-2"
                   onClick={(e) => callbulkUploadCost()}
+                  disabled={bulkUploadCost.length === 0}
                 >
-                  Upload Energy Cost
+                  Upload Energy Cost ({bulkUploadCost.length} valid records)
                 </button>
 
                 <br />
@@ -441,12 +548,32 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                   className="form-control"
                   onChange={handleFileUploadReading}
                 />
+
+                {/* Failed Reading Records Download */}
+                {showFailedDownload && (
+                  <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "#fff3cd", border: "1px solid #ffeaa7", borderRadius: "4px" }}>
+                    <p style={{ color: "#856404", margin: "0 0 10px 0" }}>
+                      {failedReadingRecords.length} reading records failed validation.
+                      Download the file to see the errors and fix them:
+                    </p>
+                    <CSVLink
+                      data={failedReadingRecords}
+                      headers={failedReadingHeaders}
+                      filename={`failed_reading_records_${moment().format('YYYY-MM-DD_HH-mm')}.csv`}
+                      className="btn btn-warning btn-sm"
+                    >
+                      <i className="fas fa-download" /> Download Failed Reading Records
+                    </CSVLink>
+                  </div>
+                )}
+
                 <button
                   style={{ marginTop: "10px" }}
                   className="btn btn-primary text-white pr-2"
                   onClick={(e) => callbulkUploadReading()}
+                  disabled={bulkUploadReading.length === 0}
                 >
-                  Upload Energy Reading
+                  Upload Energy Reading ({bulkUploadReading.length} valid records)
                 </button>
 
                 <br />
@@ -456,6 +583,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
           </Fragment>
         </DialogContent>
       </Dialog>
+      {/* Rest of your component remains the same */}
       <Cost
         open={openCost}
         setOpen={setOpenCost}
@@ -485,7 +613,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             page={"Energy"}
           />
 
-          <div className="d-flex bd-highlight" style={{flexWrap: 'wrap'}}>
+          <div className="d-flex bd-highlight" style={{ flexWrap: 'wrap' }}>
             <div className="pt-2 bd-highlight ">
               <div className="row" style={{ height: "auto" }}>
                 <div className="col">
@@ -501,9 +629,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                     ></i>
                     <input
                       type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
+                      autoComplete="off"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute("readonly")}
                       placeholder="Search"
                       name="searchField"
                       style={{ textAlign: "center", width: "250px" }}
@@ -658,7 +786,7 @@ autoComplete="off"
                           }
                         </th>
                         <th scope="col">
-                          
+
                           {formatToCurrency(action?.costList
                             ?.map((c) => c.cost)
                             .reduce((a, b) => {
