@@ -32,10 +32,24 @@ const MandatoryFolders = ({
     height: 400,
     overflow: "scroll",
     bgcolor: "background.paper",
-    border: "2px solid #fff",
+    border: "2px solid #969696ff",
     boxShadow: 24,
     p: 4,
   };
+
+  // Function to determine folder background color based on file count
+  const getFolderBackgroundColor = (folder) => {
+    // Assuming folder has a fileCount property
+    // If fileCount is 0 or undefined, return gray background, otherwise white
+    return !folder.fileCount || folder.fileCount === 0 ? "#959595ff" : "#ffffff";
+  };
+
+  // Function to determine text color based on background
+  const getFolderTextColor = (folder) => {
+    const bgColor = getFolderBackgroundColor(folder);
+    return bgColor === "#f8f9fa" ? "#6c757d" : "#000000";
+  };
+
   return (
     <Fragment>
       <div className="row mb-2" style={{ height: "auto" }}>
@@ -54,8 +68,15 @@ const MandatoryFolders = ({
         </div>
         <div className="mt-2">
           {selectedMandatoryFolder?.map((itm) => (
-            <Fragment>
-              <span className="badge bg-light text-primary cursor">
+            <Fragment key={itm?.id}>
+              <span
+                className="badge cursor"
+                style={{
+                  backgroundColor: getFolderBackgroundColor(itm),
+                  color: getFolderTextColor(itm),
+                  border: `1px solid ${getFolderTextColor(itm)}`
+                }}
+              >
                 {itm?.name}{" "}
                 <i
                   className="fas fa-times"
@@ -63,7 +84,7 @@ const MandatoryFolders = ({
                   onClick={() => {
                     setSelectedMandatoryFolder(
                       selectedMandatoryFolder?.filter(
-                        (value) => value?.id != itm?.id
+                        (value) => value?.id !== itm?.id
                       )
                     );
                   }}
@@ -106,20 +127,38 @@ const MandatoryFolders = ({
                 </thead>
                 <tbody>
                   {rootFolder?.parentFolders?.map((folder, index) => (
-                    <tr>
+                    <tr
+                      key={folder?.id || index}
+                      style={{
+                        backgroundColor: getFolderBackgroundColor(folder)
+                      }}
+                    >
                       <td>
                         <i
-                          style={{ color: "#384BD3" }}
+                          style={{
+                            color: getFolderTextColor(folder) === "#000000" ? "#384BD3" : "#6c757d"
+                          }}
                           className="fas fa-folder fa-2x"
                         ></i>
-                        <span className="p-3">{folder?.name}</span>
+                        <span
+                          className="p-3"
+                          style={{ color: getFolderTextColor(folder) }}
+                        >
+                          {folder?.name}
+                          {folder.fileCount !== undefined && (
+                            <small className="ms-2">
+                              ({folder.fileCount} {folder.fileCount === 1 ? 'file' : 'files'})
+                            </small>
+                          )}
+                        </span>
                       </td>
                       <td>
                         <span
-                          className="text-primary cursor"
+                          className="cursor"
+                          style={{ color: getFolderTextColor(folder) }}
                           onClick={() => {
-                            if(isStatutory) {
-                              if(selectedMandatoryFolder?.length > 0) {
+                            if (isStatutory) {
+                              if (selectedMandatoryFolder?.length > 0) {
                                 toast.warn("You can select only one folder to upload file for statutory.")
                               } else {
                                 setSelectedMandatoryFolder([
@@ -133,7 +172,6 @@ const MandatoryFolders = ({
                                 folder,
                               ]);
                             }
-                            
                           }}
                         >
                           <i className="fas fa-plus" size="sm"></i>
@@ -146,8 +184,15 @@ const MandatoryFolders = ({
             </div>
             <div>
               {selectedMandatoryFolder?.map((itm) => (
-                <Fragment>
-                  <span className="badge bg-light text-primary cursor">
+                <Fragment key={itm?.id}>
+                  <span
+                    className="badge cursor"
+                    style={{
+                      backgroundColor: getFolderBackgroundColor(itm),
+                      color: getFolderTextColor(itm),
+                      border: `1px solid ${getFolderTextColor(itm)}`
+                    }}
+                  >
                     {itm?.name}{" "}
                     <i
                       className="fas fa-times"
@@ -155,7 +200,7 @@ const MandatoryFolders = ({
                       onClick={() => {
                         setSelectedMandatoryFolder(
                           selectedMandatoryFolder?.filter(
-                            (value) => value?.id != itm?.id
+                            (value) => value?.id !== itm?.id
                           )
                         );
                       }}
@@ -194,10 +239,12 @@ const MandatoryFolders = ({
     </Fragment>
   );
 };
+
 const mapStateToProps = (state) => ({
   rootFolder: state.site.rootFolder,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, { getDocumentsRootFolder })(
   MandatoryFolders
 );
