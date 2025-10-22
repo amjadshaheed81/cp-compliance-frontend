@@ -202,64 +202,103 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       const workbook = XLSX.read(binaryStr, { type: "binary" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet);
+
+      // Convert the entire sheet to JSON to see the structure
+      const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      console.log('All data from Excel:', allData); // Debug log
+
       const mappedData = [];
       const failedRecords = [];
 
-      json?.forEach((row, index) => {
+      // Process each row
+      allData.forEach((row, index) => {
+        // Skip header rows (rows 0, 1, 2) and empty rows
+        if (index < 3 || !row || row.length === 0) {
+          return;
+        }
+
+        // Check if this is a valid data row (should have at least 3 columns with data)
+        // In your template, valid data starts at row 3 (index 3) with ELEC-1001
+        const hasValidData = row[0] && typeof row[0] === 'string' && row[0].match(/[A-Z]+-\d+/);
+
+        if (!hasValidData) {
+          // This is likely one of the unit rows in column H - skip it
+          return;
+        }
+
         let rowData = {
           submittedUserId: loggedInUserData?.id,
-          readingUnit: "kWh",
         };
-        const rowValues = Object.values(row)?.slice(0, 4);
+
         let isValid = true;
         let errorReason = "";
 
-        if (rowValues.length > 3) {
-          customColumnNamesReading.forEach((col, index) => {
-            if (index === 0) {
-              const dupIdx = energyCost.findIndex(
-                (e) => e.reference === rowValues[index]
-              );
-              if (dupIdx >= 0) {
-                rowData.energyId = energyCost[dupIdx]?.energyId;
-                rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory;
-              }
-            } else if (index === 1) {
-              rowValues[index] = convertToDate(rowValues[index]);
-              console.log('rowValues[index]', rowValues[index]);
-            } else if (index === 2) {
-              if (isNaN(rowValues[index])) {
-                isValid = false;
-                errorReason = "Invalid reading value - must be numeric";
-              }
+        try {
+          // Process reference (column A)
+          if (row[0]) {
+            const dupIdx = energyCost.findIndex(
+              (e) => e.reference === row[0]
+            );
+            if (dupIdx >= 0) {
+              rowData.energyId = energyCost[dupIdx]?.energyId;
+              rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory;
             }
-            rowData[col] = rowValues[index] || null;
-          });
+            rowData.reference = row[0];
+          } else {
+            isValid = false;
+            errorReason = "Missing meter reference";
+          }
 
-          // Check if reading unit is provided, if not use default
-          if (!rowData.readingUnit) {
+          // Process reading date (column B)
+          if (row[1]) {
+            rowData.readingDate = convertToDate(row[1]);
+            console.log('Processed reading date:', rowData.readingDate);
+          } else {
+            isValid = false;
+            errorReason = errorReason ? errorReason + ", Missing reading date" : "Missing reading date";
+          }
+
+          // Process reading value (column C)
+          if (row[2] !== undefined && row[2] !== null && row[2] !== "") {
+            const readingValue = parseFloat(row[2]);
+            if (isNaN(readingValue)) {
+              isValid = false;
+              errorReason = errorReason ? errorReason + ", Invalid reading value" : "Invalid reading value - must be numeric";
+            } else {
+              rowData.readingValue = readingValue;
+            }
+          } else {
+            isValid = false;
+            errorReason = errorReason ? errorReason + ", Missing reading value" : "Missing reading value";
+          }
+
+          // Process reading unit (column D)
+          if (row[3]) {
+            rowData.readingUnit = row[3];
+          } else {
+          // Use default unit if not provided
             rowData.readingUnit = "kWh";
           }
 
-          if (isValid) {
-            mappedData.push(rowData);
-          } else {
-            failedRecords.push({
-              ...rowData,
-              errorReason: errorReason || "Unknown error",
-              originalRow: index + 2 // +2 because Excel rows start at 1 and we have header
-            });
-          }
+        } catch (error) {
+          isValid = false;
+          errorReason = `Processing error: ${error.message}`;
+        }
+
+        if (isValid) {
+          mappedData.push(rowData);
+          console.log('Valid row processed:', rowData); // Debug log
         } else {
           failedRecords.push({
-            reference: rowValues[0] || "",
-            readingDate: rowValues[1] || "",
-            readingValue: rowValues[2] || "",
-            readingUnit: rowValues[3] || "",
-            errorReason: "Insufficient data columns",
-            originalRow: index + 2
+            reference: row[0] || "",
+            readingDate: row[1] || "",
+            readingValue: row[2] || "",
+            readingUnit: row[3] || "",
+            errorReason: errorReason || "Unknown validation error",
+            originalRow: index + 1 // Excel rows are 1-based
           });
+          console.log('Failed row:', row, 'Reason:', errorReason); // Debug log
         }
       });
 
@@ -272,24 +311,46 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       } else {
         toast.success("All records passed validation!");
       }
+
+      // Debug information
+      // console.log('Total rows processed:', allData.length);
+      // console.log('Valid records:', mappedData.length);
+      // console.log('Failed records:', failedRecords.length);
+      // console.log('Failed records details:', failedRecords);
     };
 
     reader.readAsBinaryString(file);
   };
 
   function convertToDate(dateString) {
+    if (!dateString) {
+      throw new Error("Empty date string");
+    }
+
     if (typeof dateString === "number") {
+      // Excel serial date
       const excelEpoch = new Date(1900, 0, 1);
       const daysOffset = dateString > 59 ? dateString - 1 : dateString;
       const jsDate = new Date(excelEpoch.getTime() + daysOffset * 24 * 60 * 60 * 1000);
       jsDate.setUTCHours(0, 0, 0, 0);
       return jsDate.toISOString();
-    } else {
-      const [day, month, year] = dateString.split("/")?.map(Number);
-      const date = new Date(Date.UTC(year, month - 1, day));
-      date.setUTCHours(0, 0, 0, 0);
-      return date.toISOString();
+    } else if (typeof dateString === "string") {
+      // Try DD/MM/YYYY format
+      if (dateString.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+        const [day, month, year] = dateString.split("/").map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        date.setUTCHours(0, 0, 0, 0);
+        return date.toISOString();
+      }
+      // Try other date formats if needed
+      const parsedDate = new Date(dateString);
+      if (!isNaN(parsedDate.getTime())) {
+        parsedDate.setUTCHours(0, 0, 0, 0);
+        return parsedDate.toISOString();
+      }
     }
+
+    throw new Error(`Invalid date format: ${dateString}`);
   }
 
   const handleFileUploadCost = (event) => {
