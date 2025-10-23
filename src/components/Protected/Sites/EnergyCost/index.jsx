@@ -236,7 +236,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
         try {
           // Process reference (column A)
-          if (row[0]) {
+          if (row[0] && row[0].toString().trim() !== '') {
             const dupIdx = energyCost.findIndex(
               (e) => e.reference === row[0]
             );
@@ -244,14 +244,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
               rowData.energyId = energyCost[dupIdx]?.energyId;
               rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory;
             }
-            rowData.reference = row[0];
+            rowData.reference = row[0].toString().trim();
           } else {
             isValid = false;
             errorReason = "Missing meter reference";
           }
 
           // Process reading date (column B)
-          if (row[1]) {
+          if (row[1] && row[1].toString().trim() !== '') {
             rowData.readingDate = convertToDate(row[1]);
             console.log('Processed reading date:', rowData.readingDate);
           } else {
@@ -260,7 +260,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
           }
 
           // Process reading value (column C)
-          if (row[2] !== undefined && row[2] !== null && row[2] !== "") {
+          if (row[2] !== undefined && row[2] !== null && row[2] !== "" && row[2].toString().trim() !== '') {
             const readingValue = parseFloat(row[2]);
             if (isNaN(readingValue)) {
               isValid = false;
@@ -273,9 +273,9 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             errorReason = errorReason ? errorReason + ", Missing reading value" : "Missing reading value";
           }
 
-          // Process reading unit (column D) - FIXED: Now validates that unit is provided
-          if (row[3]) {
-            rowData.readingUnit = row[3];
+          // Process reading unit (column D) - FIXED: Now properly validates empty cells
+          if (row[3] !== undefined && row[3] !== null && row[3] !== "" && row[3].toString().trim() !== '') {
+            rowData.readingUnit = row[3].toString().trim();
           } else {
             isValid = false;
             errorReason = errorReason ? errorReason + ", Missing reading unit" : "Missing reading unit";
@@ -311,6 +311,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       } else {
         toast.success("All records passed validation!");
       }
+
+      // Debug information
+      console.log('Total valid records:', mappedData.length);
+      console.log('Total failed records:', failedRecords.length);
+      console.log('Failed records details:', failedRecords);
     };
 
     reader.readAsBinaryString(file);
