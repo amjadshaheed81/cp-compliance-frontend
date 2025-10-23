@@ -273,12 +273,12 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             errorReason = errorReason ? errorReason + ", Missing reading value" : "Missing reading value";
           }
 
-          // Process reading unit (column D)
+          // Process reading unit (column D) - FIXED: Now validates that unit is provided
           if (row[3]) {
             rowData.readingUnit = row[3];
           } else {
-          // Use default unit if not provided
-            rowData.readingUnit = "kWh";
+            isValid = false;
+            errorReason = errorReason ? errorReason + ", Missing reading unit" : "Missing reading unit";
           }
 
         } catch (error) {
@@ -311,12 +311,6 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       } else {
         toast.success("All records passed validation!");
       }
-
-      // Debug information
-      // console.log('Total rows processed:', allData.length);
-      // console.log('Valid records:', mappedData.length);
-      // console.log('Failed records:', failedRecords.length);
-      // console.log('Failed records details:', failedRecords);
     };
 
     reader.readAsBinaryString(file);
