@@ -203,27 +203,36 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
 
-            // Convert the entire sheet to JSON to see the structure
-            const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            // Convert the entire sheet to JSON to see the structure - use raw to get exact values
+            const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
 
-            console.log('All data from Excel:', allData); // Debug log
+            console.log('=== RAW EXCEL DATA ===');
+            console.log('All data from Excel:', allData);
+            console.log('Number of rows:', allData.length);
+
+            // Log each row with its index
+            allData.forEach((row, index) => {
+                console.log(`Row ${index}:`, row);
+            });
 
             const mappedData = [];
             const failedRecords = [];
 
-            // Process each row
+            // Process each row starting from row 1 (index 1) where the actual data begins
             allData.forEach((row, index) => {
-                // Skip header rows (rows 0, 1, 2) and empty rows
-                if (index < 3 || !row || row.length === 0) {
+                // Skip header row (row 0) and empty rows
+                if (index < 1 || !row || row.length === 0) {
+                    console.log(`Skipping row ${index} - header or empty`);
                     return;
                 }
 
-                // Check if this is a valid data row (should have at least 3 columns with data)
-                // In your template, valid data starts at row 3 (index 3) with ELEC-1001
-                const hasValidData = row[0] && typeof row[0] === 'string' && row[0].match(/[A-Z]+-\d+/);
+                console.log(`Processing row ${index}:`, row);
 
-                if (!hasValidData) {
-                    // This is likely one of the unit rows in column H - skip it
+                // Check if this is a valid data row - should have ELEC-1001 or similar pattern
+                const hasValidReference = row[0] && typeof row[0] === 'string' && row[0].match(/[A-Z]+-\d+/);
+
+                if (!hasValidReference) {
+                    console.log(`Skipping row ${index} - no valid reference:`, row[0]);
                     return;
                 }
 
@@ -232,11 +241,11 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                 };
 
                 let isValid = true;
-                let errorReason = "";
+                let errorReasons = [];
 
                 try {
                     // Process reference (column A)
-                    if (row[0]) {
+                    if (row[0] && row[0].toString().trim() !== '') {
                         const dupIdx = energyCost.findIndex(
                             (e) => e.reference === row[0]
                         );
@@ -244,61 +253,91 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
                             rowData.energyId = energyCost[dupIdx]?.energyId;
                             rowData.budgetCategory = energyCost[dupIdx]?.budgetCategory;
                         }
-                        rowData.reference = row[0];
+                        rowData.reference = row[0].toString().trim();
+                        console.log(`Row ${index} - Reference:`, rowData.reference);
                     } else {
                         isValid = false;
-                        errorReason = "Missing meter reference";
+                        errorReasons.push("Missing meter reference");
                     }
 
                     // Process reading date (column B)
-                    if (row[1]) {
-                        rowData.readingDate = convertToDate(row[1]);
-                        console.log('Processed reading date:', rowData.readingDate);
-                    } else {
-                        isValid = false;
-                        errorReason = errorReason ? errorReason + ", Missing reading date" : "Missing reading date";
-                    }
-
-                    // Process reading value (column C)
-                    if (row[2] !== undefined && row[2] !== null && row[2] !== "") {
-                        const readingValue = parseFloat(row[2]);
-                        if (isNaN(readingValue)) {
+                    if (row[1] && row[1].toString().trim() !== '') {
+                        try {
+                            rowData.readingDate = convertToDate(row[1]);
+                            console.log(`Row ${index} - Reading Date:`, rowData.readingDate, 'from:', row[1]);
+                        } catch (dateError) {
                             isValid = false;
-                            errorReason = errorReason ? errorReason + ", Invalid reading value" : "Invalid reading value - must be numeric";
-                        } else {
-                            rowData.readingValue = readingValue;
+                            errorReasons.push(`Invalid date format: ${row[1]}`);
                         }
                     } else {
                         isValid = false;
-                        errorReason = errorReason ? errorReason + ", Missing reading value" : "Missing reading value";
+                        errorReasons.push("Missing reading date");
                     }
 
-                    // Process reading unit (column D) - FIXED: Now validates that unit is provided
-                    if (row[3]) {
-                        rowData.readingUnit = row[3];
+                    // Process reading value (column C)
+                    if (row[2] !== undefined && row[2] !== null && row[2] !== "" && row[2].toString().trim() !== '') {
+                        // Remove any trailing tabs or special characters
+                        const cleanValue = row[2].toString().replace(/\t/g, '').trim();
+                        const readingValue = parseFloat(cleanValue);
+                        if (isNaN(readingValue)) {
+                            isValid = false;
+                            errorReasons.push("Invalid reading value - must be numeric");
+                        } else {
+                            rowData.readingValue = readingValue;
+                            console.log(`Row ${index} - Reading Value:`, rowData.readingValue);
+                        }
                     } else {
                         isValid = false;
-                        errorReason = errorReason ? errorReason + ", Missing reading unit" : "Missing reading unit";
+                        errorReasons.push("Missing reading value");
+                    }
+
+                    // Process reading unit (column D) - IGNORE columns E, F, G, H
+                    console.log(`Row ${index} - Column D raw value:`, row[3], 'type:', typeof row[3]);
+
+                    // Check if column D exists and has a valid value (ignore columns E-H)
+                    if (row[3] !== undefined && row[3] !== null && row[3] !== "") {
+                        const unitValue = row[3].toString().trim();
+                        console.log(`Row ${index} - Unit value after trim:`, `"${unitValue}"`, 'length:', unitValue.length);
+
+                        if (unitValue && unitValue.length > 0) {
+                            rowData.readingUnit = unitValue;
+                            console.log(`Row ${index} - Reading Unit:`, rowData.readingUnit);
+                        } else {
+                            isValid = false;
+                            errorReasons.push("Missing reading unit");
+                            console.log(`Row ${index} - Unit validation failed: empty after trim`);
+                        }
+                    } else {
+                        // Column D is undefined, null, or empty string
+                        isValid = false;
+                        errorReasons.push("Missing reading unit");
+                        console.log(`Row ${index} - Unit validation failed: undefined, null or empty`);
+                    }
+
+                    // Log column H for debugging but ignore it
+                    if (row[7]) {
+                        console.log(`Row ${index} - Column H (ignored):`, row[7]);
                     }
 
                 } catch (error) {
                     isValid = false;
-                    errorReason = `Processing error: ${error.message}`;
+                    errorReasons.push(`Processing error: ${error.message}`);
+                    console.log(`Row ${index} - Processing error:`, error);
                 }
 
                 if (isValid) {
                     mappedData.push(rowData);
-                    console.log('Valid row processed:', rowData); // Debug log
+                    console.log(`✅ Row ${index} - VALID:`, rowData);
                 } else {
                     failedRecords.push({
                         reference: row[0] || "",
                         readingDate: row[1] || "",
                         readingValue: row[2] || "",
                         readingUnit: row[3] || "",
-                        errorReason: errorReason || "Unknown validation error",
+                        errorReason: errorReasons.join(", "),
                         originalRow: index + 1 // Excel rows are 1-based
                     });
-                    console.log('Failed row:', row, 'Reason:', errorReason); // Debug log
+                    console.log(`❌ Row ${index} - FAILED:`, errorReasons);
                 }
             });
 
@@ -307,10 +346,19 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
             if (failedRecords.length > 0) {
                 setShowFailedDownload(true);
-                toast.warning(`${failedRecords.length} records failed validation. You can download the failed records to fix them.`);
+                toast.warning(`${failedRecords.length} records failed validation. ${mappedData.length} records are valid. You can download the failed records to fix them.`);
+            } else if (mappedData.length > 0) {
+                toast.success(`All ${mappedData.length} records passed validation!`);
             } else {
-                toast.success("All records passed validation!");
+                toast.error("No valid records found in the file.");
             }
+
+            // Debug information
+            console.log('=== FINAL UPLOAD RESULTS ===');
+            console.log('Total valid records:', mappedData.length);
+            console.log('Total failed records:', failedRecords.length);
+            console.log('Valid records:', mappedData);
+            console.log('Failed records:', failedRecords);
         };
 
         reader.readAsBinaryString(file);
