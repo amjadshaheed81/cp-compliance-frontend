@@ -229,7 +229,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
         console.log(`Processing row ${index}:`, row);
 
         // Check if this is a valid data row - should have ELEC-1001 or similar pattern
-        const hasValidReference = row[0] && typeof row[0] === 'string' && row[0].match(/[A-Z]+-\d+/);
+        const hasValidReference = row[0] && row[0].toString().trim() !== '';
 
         if (!hasValidReference) {
           console.log(`Skipping row ${index} - no valid reference:`, row[0]);
