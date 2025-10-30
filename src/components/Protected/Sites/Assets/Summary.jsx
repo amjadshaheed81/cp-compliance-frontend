@@ -176,18 +176,38 @@ const Summary = ({
     const goTo = (link) => {
         navigate(link);
     };
-    const [formData, setFormData] = useState({
-        assetName: "",
-        manufacturer: "",
-        category: "",
-        subCategory: "",
-        subCategory2: "",
-        subCategory3: "",
-        location: "",
-        floor: "",
-        room: "",
-        powerOutput: "",
+    const [formData, setFormData] = useState(() => {
+        const searchParams = new URLSearchParams(location.search);
+        return {
+            assetName: searchParams.get('assetName') || "",
+            manufacturer: searchParams.get('manufacturer') || "",
+            category: searchParams.get('category') || "",
+            subCategory: searchParams.get('subCategory') || "",
+            subCategory2: searchParams.get('subCategory2') || "",
+            subCategory3: searchParams.get('subCategory3') || "",
+            location: searchParams.get('location') || "",
+            floor: searchParams.get('floor') || "",
+            room: searchParams.get('room') || "",
+            powerOutput: searchParams.get('powerOutput') || "",
+        };
     });
+
+
+    // Update URL when filters change
+    useEffect(() => {
+        const searchParams = new URLSearchParams();
+
+        Object.entries(formData).forEach(([key, value]) => {
+            if (value) {
+                searchParams.set(key, value);
+            }
+        });
+
+        // Replace current URL with updated search params
+        navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+    }, [formData, location.pathname, navigate]);
+
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
@@ -266,6 +286,23 @@ const Summary = ({
                 [name]: value,
             });
         }
+    };
+
+    // Add a clear filters function
+    const clearFilters = () => {
+        setFormData({
+            assetName: "",
+            manufacturer: "",
+            category: "",
+            subCategory: "",
+            subCategory2: "",
+            subCategory3: "",
+            location: "",
+            floor: "",
+            room: "",
+            powerOutput: "",
+        });
+        navigate(location.pathname); // Clear URL params
     };
 
 
@@ -969,6 +1006,7 @@ const Summary = ({
                                 name="assetName"
                                 className="form-control"
                                 placeholder="Asset Name"
+                                value={formData?.assetName}
                                 onChange={handleInputChange}
                             />
                         </div>
@@ -981,6 +1019,7 @@ const Summary = ({
                                 name="manufacturer"
                                 className="form-control"
                                 placeholder="Manufacturer"
+                                value={formData?.manufacturer}
                                 onChange={handleInputChange}
                             />
                         </div>
@@ -990,6 +1029,7 @@ const Summary = ({
                                 className="form-control form-select"
                                 id="category"
                                 onChange={handleInputChange}
+                                value={formData?.category}
                             >
                                 <option value="">Category</option>
                                 {category?.map((itm) => (
@@ -1072,6 +1112,7 @@ const Summary = ({
                                         </option>
                                     ))}
                             </select>
+
                         </div>
                         <div
                             className="col-md-4 col-sm-4 mt-2"
@@ -1118,8 +1159,18 @@ const Summary = ({
                                         </option>
                                     ))}
                             </select>
+
+                        </div>
+                        <div className="col-md-2 col-sm-4 mt-2">
+                            <button
+                                className="btn btn-outline-secondary px-5 py-1"
+                                onClick={clearFilters}
+                            >
+                                Clear Filters
+                            </button>
                         </div>
                     </div>
+
                 </div>
 
                 {isManagerAdminLogin(loggedInUserData) && (
