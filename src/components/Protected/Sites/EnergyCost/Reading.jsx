@@ -26,7 +26,11 @@ const Reading = ({
   deleteEnergyReading,
   isViewMode,
 }) => {
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    readingDate: "",
+    readingValue: "",
+    readingUnit: ""
+  });
   const [isView, setIsView] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -48,7 +52,7 @@ const Reading = ({
     }
   }, [survey]);
 
-  const handleInputChange = (e, idx) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     const udata = {
       ...formData,
@@ -86,6 +90,7 @@ const Reading = ({
 
   const save = async (event) => {
     event.preventDefault();
+    event.stopPropagation(); // Prevent event bubbling
 
     // Validate form before submission
     if (!validateForm()) {
@@ -101,26 +106,44 @@ const Reading = ({
     }
 
     data.energyId = survey.energyId;
-    saveData(data);
-    setOpen(false);
-    setErrors({});
 
+    // Reset form after successful save
+    setFormData({
+      readingDate: "",
+      readingValue: "",
+      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : ""
+    });
+
+    saveData(data);
+    setErrors({});
     toast.success("Energy reading added successfully");
   };
 
   useEffect(() => {
-    setFormData({});
+    // Reset form when survey changes or dialog opens
+    setFormData({
+      readingDate: "",
+      readingValue: "",
+      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : ""
+    });
     setErrors({});
-  }, [survey]);
+  }, [survey, open]);
+
+  const handleClose = () => {
+    setOpen(false);
+    setErrors({});
+    setFormData({
+      readingDate: "",
+      readingValue: "",
+      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : ""
+    });
+  };
 
   return (
     <>
       <Dialog
         open={open}
-        onClose={() => {
-          setOpen(false);
-          setErrors({});
-        }}
+        onClose={handleClose}
         maxWidth="lg"
         fullWidth
       >
@@ -129,59 +152,60 @@ const Reading = ({
           <Fragment>
             <form onSubmit={save}>
               <Grid container spacing={1} rowGap={2}>
-                <Grid sm={4}>
-                  <label for="reference">Meter Reference</label>
+                <Grid item xs={12} sm={4}>
+                  <label htmlFor="reference">Meter Reference</label>
                   <input
                     style={{ maxWidth: "300px" }}
-                    type="reference"
+                    type="text"
                     className="form-control"
                     id="reference"
                     disabled
-                    value={survey?.reference}
+                    value={survey?.reference || ""}
                   />
                 </Grid>
-                <Grid sm={4}>
-                  <label for="reference">Usage</label>
+                <Grid item xs={12} sm={4}>
+                  <label htmlFor="usage">Usage</label>
                   <input
                     style={{ maxWidth: "300px" }}
-                    type="reference"
+                    type="text"
                     className="form-control"
-                    id="reference"
+                    id="usage"
                     disabled
                     value={
                       formData?.readingValue
-                        ? formData?.readingValue -
-                        (survey?.readingList?.length > 0
-                          ? survey?.readingList?.[0]?.readingValue
-                          : 0)
-                        : 0
+                        ? (formData?.readingValue -
+                          (survey?.readingList?.length > 0
+                            ? survey?.readingList?.[0]?.readingValue
+                            : 0)
+                        ).toFixed(2)
+                        : "0"
                     }
                   />
                 </Grid>
-                <Grid sm={4}>
-                  <label for="budgetCategory">Budget Category</label>
+                <Grid item xs={12} sm={4}>
+                  <label htmlFor="budgetCategory">Budget Category</label>
                   <select
                     name="budgetCategory"
                     className="form-control form-select"
                     id="budgetCategory"
-                    value={survey?.budgetCategory}
+                    value={survey?.budgetCategory || ""}
                     onChange={handleInputChange}
                     required
                     disabled
                   >
                     <option value="">Budget Category</option>
-                    {typeoptions?.map((t) => (
-                      <option value={t}>{t}</option>
+                    {typeoptions?.map((t, index) => (
+                      <option key={index} value={t}>{t}</option>
                     ))}
                   </select>
                 </Grid>
-                <Grid sm={4}>
+                <Grid item xs={12} sm={4}>
                   <div>
                     <DatePicker
                       disabled={isView}
                       required
                       label="Reading Date"
-                      value={formData?.readingDate}
+                      value={formData?.readingDate || ""}
                       onChange={(date) => {
                         setFormData({
                           ...formData,
@@ -208,15 +232,17 @@ const Reading = ({
                   </div>
                 </Grid>
 
-                <Grid sm={4}>
-                  <label for="readingValue">Reading</label>
+                <Grid item xs={12} sm={4}>
+                  <label htmlFor="readingValue">Reading</label>
                   <input
                     style={{ maxWidth: "300px" }}
                     type="number"
-                    step={".01"}
+                    step="0.01"
                     disabled={isView}
                     className={`form-control ${errors.readingValue ? 'is-invalid' : ''}`}
-                    name="readingValue"
+                    name="readingValue" // Added name attribute
+                    id="readingValue"
+                    value={formData.readingValue || ""}
                     onChange={handleInputChange}
                     required
                     min="0"
@@ -227,8 +253,8 @@ const Reading = ({
                     </div>
                   )}
                 </Grid>
-                <Grid sm={4}>
-                  <label for="readingUnit">Unit</label>
+                <Grid item xs={12} sm={4}>
+                  <label htmlFor="readingUnit">Unit</label>
                   {survey?.budgetCategory === "Electricity" ? (
                     <input
                       style={{ maxWidth: "300px" }}
@@ -244,7 +270,7 @@ const Reading = ({
                           name="readingUnit"
                           className={`form-control form-select ${errors.readingUnit ? 'is-invalid' : ''}`}
                           id="readingUnit"
-                          value={formData?.readingUnit}
+                          value={formData?.readingUnit || ""}
                           onChange={handleInputChange}
                           required
                         >
@@ -261,24 +287,25 @@ const Reading = ({
                       </>
                   )}
                 </Grid>
-                <Grid sm={8}></Grid>
-                <Grid sm={4}>
+                <Grid item xs={12} sm={8}></Grid>
+                <Grid item xs={12} sm={4}>
                   <Button
-                    onClick={(e) => {
-                      setOpen(false);
-                      setErrors({});
-                    }}
+                    onClick={handleClose}
                     className="bg-light text-primary"
                   >
                     Cancel
                   </Button>
                   {!isView && (
-                    <Button className="bg-primary text-white" type="submit">
+                    <Button
+                      className="bg-primary text-white"
+                      type="submit"
+                      variant="contained"
+                    >
                       Save
                     </Button>
                   )}
                 </Grid>
-                <Grid sm={12}>
+                <Grid item xs={12}>
                   <div
                     className="table-responsive"
                     style={{ marginTop: "30px" }}
@@ -303,39 +330,42 @@ const Reading = ({
                               </td>
                             </tr>
                           )}
-                        {survey?.readingList?.map((d, idx) => (
-                          <tr>
-                            <td>
-                              {d?.readingDate
-                                ? moment(d?.readingDate).format("DD/MM/YYYY")
-                                : "-"}
-                            </td>
-                            <td>
-                              {d.readingValue} {d.readingUnit}
-                            </td>
-                            <td>
-                              {(idx === survey?.readingList?.length - 1
-                                ? d?.readingValue
-                                : d?.readingValue -
-                                survey?.readingList?.[idx + 1]?.readingValue
-                              )?.toFixed(2)}
-                              {d.readingUnit}
-                            </td>
-                            {!isView && (
+                        {survey?.readingList
+                          ?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate))
+                          ?.map((d, idx) => (
+                            <tr key={d.readingId || idx}>
                               <td>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-light text-dark"
-                                  onClick={() =>
-                                    deleteEnergyReading(d?.readingId)
-                                  }
-                                >
-                                  <i className="fas fa-trash"></i>
-                                </button>
+                                {d?.readingDate
+                                  ? moment(d?.readingDate).format("DD/MM/YYYY")
+                                  : "-"}
                               </td>
-                            )}
-                          </tr>
-                        ))}
+                              <td>
+                                {d.readingValue} {d.readingUnit}
+                              </td>
+                              <td>
+                                {(
+                                  idx === survey?.readingList?.length - 1
+                                    ? d?.readingValue
+                                    : d?.readingValue -
+                                    survey?.readingList?.[idx + 1]?.readingValue
+                                )?.toFixed(2)}
+                                {d.readingUnit}
+                              </td>
+                              {!isView && (
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-light text-dark"
+                                    onClick={() =>
+                                      deleteEnergyReading(d?.readingId)
+                                    }
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>
