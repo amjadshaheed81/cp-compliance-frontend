@@ -433,6 +433,7 @@ const handleFileUpload = async (e) => {
       if (response.status === 200 || response.status === 201) {
         toast.success(`Successfully updated ${selectedItems.length} assets`);
         getSitePFPAssets(siteSelectedForGlobal?.siteId); // Changed from getSiteDoorAssets
+        getSitePFPAssets(siteSelectedForGlobal?.siteId);
         setSelectedItems([]);
         setShowMultiEditModal(false);
       } else {
