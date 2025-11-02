@@ -173,11 +173,29 @@ const Summary = ({
     }, [siteAssets]);
 
     const navigate = useNavigate();
+
+
+
     const goTo = (link) => {
         navigate(link);
     };
+
+
     const [formData, setFormData] = useState(() => {
+
+        const savedFilters = localStorage.getItem('assetFilters');
+
+        if (savedFilters) {
+            try {
+                return JSON.parse(savedFilters);
+            } catch (error) {
+                console.error('Error parsing saved filters:', error);
+                localStorage.removeItem('assetFilters');
+            }
+        }
         const searchParams = new URLSearchParams(location.search);
+
+
         return {
             assetName: searchParams.get('assetName') || "",
             manufacturer: searchParams.get('manufacturer') || "",
@@ -288,9 +306,43 @@ const Summary = ({
         }
     };
 
-    // Add a clear filters function
+
+    // Save filters to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem('assetFilters', JSON.stringify(formData));
+    }, [formData]);
+
+    // Load filters when component mounts
+    useEffect(() => {
+        const savedFilters = localStorage.getItem('assetFilters');
+        if (savedFilters) {
+            try {
+                const parsedFilters = JSON.parse(savedFilters);
+                setFormData(parsedFilters);
+
+                // Also update URL to reflect the loaded filters
+                const searchParams = new URLSearchParams();
+                Object.entries(parsedFilters).forEach(([key, value]) => {
+                    if (value) {
+                        searchParams.set(key, value);
+                    }
+                });
+
+                // Only update URL if we have filters to set
+                if (searchParams.toString()) {
+                    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+                }
+            } catch (error) {
+                console.error('Error loading saved filters:', error);
+                // Clear corrupted localStorage data
+                localStorage.removeItem('assetFilters');
+            }
+        }
+    }, []);
+
+
     const clearFilters = () => {
-        setFormData({
+        const emptyFilters = {
             assetName: "",
             manufacturer: "",
             category: "",
@@ -301,8 +353,11 @@ const Summary = ({
             floor: "",
             room: "",
             powerOutput: "",
-        });
-        navigate(location.pathname); // Clear URL params
+        };
+
+        setFormData(emptyFilters);
+        localStorage.setItem('assetFilters', JSON.stringify(emptyFilters));
+        navigate(location.pathname); 
     };
 
 
