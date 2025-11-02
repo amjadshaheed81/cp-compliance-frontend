@@ -1063,7 +1063,7 @@ const Summary = ({
                                 onFocus={(e) => e.target.removeAttribute("readonly")}
                                 name="assetName"
                                 className="form-control"
-                                placeholder="Asset Name"
+                                placeholder="Asset Name | Asset Id"
                                 value={formData?.assetName}
                                 onChange={handleInputChange}
                             />
