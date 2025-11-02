@@ -136,7 +136,7 @@ const PassiveFireProtection = ({
     formData.room,
   ]);
   const searchAssets = () => {
-    const assetName = formData?.assetName;
+    const searchTerm = formData?.assetName; // Using assetName field for combined search
     const category = formData?.category;
     const subCategory = formData?.subCategory;
     const subCategory2 = formData?.subCategory2;
@@ -145,38 +145,29 @@ const PassiveFireProtection = ({
     const manufacturer = formData?.manufacturer;
     const floor = formData?.floor;
     const room = formData?.room;
-    if (assetName || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
-      const list = siteAssetsList?.filter(
-        (x) =>
-          String(x?.assetName)
-            .toLowerCase()
-            .includes(String(assetName).toLowerCase()) &&
-          String(x?.category)
-            .toLowerCase()
-            .includes(String(category).toLowerCase()) &&
-          String(x?.subCategory)
-            .toLowerCase()
-            .includes(String(subCategory).toLowerCase()) &&
-          String(x?.subCategory2)
-            .toLowerCase()
-            .includes(String(subCategory2).toLowerCase()) &&
-          String(x?.subCategory3)
-            .toLowerCase()
-            .includes(String(subCategory3).toLowerCase()) &&
-          String(x?.position)
-            .toLowerCase()
-            .includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer)
-            .toLowerCase()
-            .includes(String(manufacturer).toLowerCase()) &&
-          String(x?.floor)
-            .toLowerCase()
-            .includes(String(floor).toLowerCase()) &&
-          String(x?.room)
-            .toLowerCase()
-            .includes(String(room).toLowerCase())
-      );
-      setCurrentPage(1); //calculateLastPageIndex(list?.length, preActionsPerPage)
+
+    if (searchTerm || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
+      const list = siteAssetsList?.filter((x) => {
+        // Check if search term matches either assetName OR assetId
+        const matchesSearchTerm = searchTerm ? (
+          String(x?.assetName).toLowerCase().includes(String(searchTerm).toLowerCase()) ||
+          String(x?.assetId).toLowerCase().includes(String(searchTerm).toLowerCase())
+        ) : true;
+
+        // Keep all your existing filters
+        const matchesOtherFilters =
+          String(x?.subCategory).toLowerCase().includes(String(subCategory).toLowerCase()) &&
+          String(x?.subCategory2).toLowerCase().includes(String(subCategory2).toLowerCase()) &&
+          String(x?.subCategory3).toLowerCase().includes(String(subCategory3).toLowerCase()) &&
+          String(x?.category).toLowerCase().includes(String(category).toLowerCase()) &&
+          String(x?.position).toLowerCase().includes(String(location).toLowerCase()) &&
+          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase()) &&
+          String(x?.floor).toLowerCase().includes(String(floor).toLowerCase()) &&
+          String(x?.room).toLowerCase().includes(String(room).toLowerCase());
+
+        return matchesSearchTerm && matchesOtherFilters;
+      });
+      setCurrentPage(1);
       setfilteredSitePFPItems(list);
     } else {
       setfilteredSitePFPItems(siteAssetsList);
@@ -488,7 +479,7 @@ const handleFileUpload = async (e) => {
       <div className="d-flex bd-highlight">
         <div className="pt-2 bd-highlight ">
           <div className="row" style={{ height: "auto" }}>
-            <div className="col-md-3 col-sm-4 mt-2">
+            <div className="col-md-4 col-sm-4 mt-2">
               <input
                 type="text"
                 autoComplete="off"
@@ -496,7 +487,7 @@ const handleFileUpload = async (e) => {
                 onFocus={(e) => e.target.removeAttribute("readonly")}
                 name="assetName"
                 className="form-control"
-                placeholder="Asset Name"
+                placeholder="Asset No./ Name"
                 onChange={handleInputChange}
               />
             </div>
