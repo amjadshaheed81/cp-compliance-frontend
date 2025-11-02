@@ -530,7 +530,7 @@ const Summary = ({
                         throw new Error("Failed to delete assets");
                     }
                 } catch (error) {
-                    console.error("Asset delete error:", error);
+                    //console.error("Asset delete error:", error);
                     toast.error(`Error deleting assets: ${error.message}`);
                 } finally {
                     setIsLoading(false);
@@ -547,6 +547,7 @@ const Summary = ({
         } else {
             setSelectedAssetForClone(selectedItems[0]);
             setShowCloneModal(true);
+            getSiteAssets(siteSelectedForGlobal?.siteId);
         }
     };
     const handleCheckboxChange = (e, asset) => {
@@ -641,6 +642,7 @@ const Summary = ({
                 // Reset selection and close modal
                 setSelectedItems([]);
                 setShowMultiEditModal(false);
+                getSiteAssets(siteSelectedForGlobal?.siteId);
             } else {
                 throw new Error("Failed to update assets");
             }
