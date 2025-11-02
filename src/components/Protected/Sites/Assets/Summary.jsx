@@ -530,7 +530,7 @@ const Summary = ({
                         throw new Error("Failed to delete assets");
                     }
                 } catch (error) {
-                    console.error("Asset delete error:", error);
+                    //console.error("Asset delete error:", error);
                     toast.error(`Error deleting assets: ${error.message}`);
                 } finally {
                     setIsLoading(false);
@@ -641,7 +641,7 @@ const Summary = ({
                 // Reset selection and close modal
                 setSelectedItems([]);
                 setShowMultiEditModal(false);
-                window.location.reload();
+                getSiteAssets(siteSelectedForGlobal?.siteId);
             } else {
                 throw new Error("Failed to update assets");
             }
