@@ -327,7 +327,8 @@ const Summary = ({
         // Apply each filter only if it has a value
         if (assetName) {
             filtered = filtered.filter(x =>
-                String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase())
+                String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase()) ||
+                String(x?.assetId || '').toLowerCase().includes(assetName.toLowerCase())
             );
         }
 
