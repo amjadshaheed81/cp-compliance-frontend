@@ -641,6 +641,7 @@ const Summary = ({
                 // Reset selection and close modal
                 setSelectedItems([]);
                 setShowMultiEditModal(false);
+                window.location.reload();
             } else {
                 throw new Error("Failed to update assets");
             }
