@@ -11,7 +11,7 @@ import {
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { get, put } from "../../../../api";
+import { del, get, put } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
@@ -226,6 +226,8 @@ const PassiveFireProtection = ({
     setSubCategory2List(subCategory2List);
     setSubCategory3List(subCategory3List);
   };
+
+
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -250,6 +252,60 @@ const PassiveFireProtection = ({
       }
     });
   };
+
+  // Multi Asset delete handler
+  const handleMultiDelete = async () => {
+    if (selectedItems.length === 0) {
+      toast.warn("Please select at least one asset to delete.");
+      return;
+    }
+
+    Swal.fire({
+      title: `Delete ${selectedItems.length} Assets?`,
+      html: `You are about to delete <strong>${selectedItems.length}</strong> PFP assets. This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          setIsLoading(true);
+
+          // Prepare the delete payload - send array of asset IDs directly
+          const assetIds = selectedItems.map(item => item.assetId);
+
+          // Send the bulk delete request
+          const response = await del(
+            `/api/site/assets/delete-multiple`,
+            assetIds, // Send array directly, not wrapped in object
+            { headers: { "Content-Type": "application/json" } }
+          );
+
+          if (response.status === 200 || response.status === 201) {
+            toast.success(`Successfully deleted ${selectedItems.length} PFP assets`);
+
+            // Refresh the assets list
+            getSitePFPAssets(siteSelectedForGlobal?.siteId);
+            getSitePFPAssets(siteSelectedForGlobal?.siteId);
+
+            // Clear selection
+            setSelectedItems([]);
+          } else {
+            throw new Error("Failed to delete assets");
+          }
+        } catch (error) {
+          console.error("PFP Asset delete error:", error);
+          toast.error(`Error deleting PFP assets: ${error.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    });
+  };
+
+
   const cloneSelectedAsset = () => {
     if (selectedItems?.length === 0) {
       toast.warn("Please select asset to clone.");
@@ -607,6 +663,32 @@ const handleFileUpload = async (e) => {
                   }}
                 >
                   Clone
+                </button>
+              </Tooltip>
+            </div>
+
+            {/* Add Multi-Delete Button Here */}
+            <div className="col-md-3 col-sm-4 mt-2">
+              <Tooltip
+                title={
+                  selectedItems.length === 0
+                    ? "Select at least one asset to delete"
+                    : `Delete ${selectedItems.length} selected assets`
+                }
+                arrow
+              >
+                <button
+                  className={`btn btn-light text-danger pr-2 ${selectedItems.length === 0 ? "disabled" : ""}`}
+                  onClick={handleMultiDelete}
+                  disabled={selectedItems.length === 0 || isLoading}
+                  style={
+                    selectedItems.length === 0
+                      ? { opacity: 0.6, cursor: "not-allowed" }
+                      : {}
+                  }
+                >
+                  <i className="fas fa-trash me-1"></i>
+                  Delete ({selectedItems.length})
                 </button>
               </Tooltip>
             </div>
