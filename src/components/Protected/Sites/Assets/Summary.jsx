@@ -547,6 +547,7 @@ const Summary = ({
         } else {
             setSelectedAssetForClone(selectedItems[0]);
             setShowCloneModal(true);
+            getSiteAssets(siteSelectedForGlobal?.siteId);
         }
     };
     const handleCheckboxChange = (e, asset) => {
