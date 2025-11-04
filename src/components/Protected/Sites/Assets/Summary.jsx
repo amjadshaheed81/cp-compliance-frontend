@@ -12,7 +12,7 @@ import {
     getSiteLayout,
     setLoaderForAssetsLanding,
 } from "../../../../store/thunk/site";
-import { get, put } from "../../../../api";
+import { del, get, put } from "../../../../api";
 import ShowQRCode from "./ShowQRCode";
 import ShowCloneModal from "./ShowCloneModal";
 import Pagination from "../../../common/Pagination/Pagination";
@@ -173,21 +173,59 @@ const Summary = ({
     }, [siteAssets]);
 
     const navigate = useNavigate();
+
+
+
     const goTo = (link) => {
         navigate(link);
     };
-    const [formData, setFormData] = useState({
-        assetName: "",
-        manufacturer: "",
-        category: "",
-        subCategory: "",
-        subCategory2: "",
-        subCategory3: "",
-        location: "",
-        floor: "",
-        room: "",
-        powerOutput: "",
+
+
+    const [formData, setFormData] = useState(() => {
+
+        const savedFilters = localStorage.getItem('assetFilters');
+
+        if (savedFilters) {
+            try {
+                return JSON.parse(savedFilters);
+            } catch (error) {
+                console.error('Error parsing saved filters:', error);
+                localStorage.removeItem('assetFilters');
+            }
+        }
+        const searchParams = new URLSearchParams(location.search);
+
+
+        return {
+            assetName: searchParams.get('assetName') || "",
+            manufacturer: searchParams.get('manufacturer') || "",
+            category: searchParams.get('category') || "",
+            subCategory: searchParams.get('subCategory') || "",
+            subCategory2: searchParams.get('subCategory2') || "",
+            subCategory3: searchParams.get('subCategory3') || "",
+            location: searchParams.get('location') || "",
+            floor: searchParams.get('floor') || "",
+            room: searchParams.get('room') || "",
+            powerOutput: searchParams.get('powerOutput') || "",
+        };
     });
+
+
+    // Update URL when filters change
+    useEffect(() => {
+        const searchParams = new URLSearchParams();
+
+        Object.entries(formData).forEach(([key, value]) => {
+            if (value) {
+                searchParams.set(key, value);
+            }
+        });
+
+        // Replace current URL with updated search params
+        navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+    }, [formData, location.pathname, navigate]);
+
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
@@ -269,6 +307,60 @@ const Summary = ({
     };
 
 
+    // Save filters to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem('assetFilters', JSON.stringify(formData));
+    }, [formData]);
+
+    // Load filters when component mounts
+    useEffect(() => {
+        const savedFilters = localStorage.getItem('assetFilters');
+        if (savedFilters) {
+            try {
+                const parsedFilters = JSON.parse(savedFilters);
+                setFormData(parsedFilters);
+
+                // Also update URL to reflect the loaded filters
+                const searchParams = new URLSearchParams();
+                Object.entries(parsedFilters).forEach(([key, value]) => {
+                    if (value) {
+                        searchParams.set(key, value);
+                    }
+                });
+
+                // Only update URL if we have filters to set
+                if (searchParams.toString()) {
+                    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+                }
+            } catch (error) {
+                console.error('Error loading saved filters:', error);
+                // Clear corrupted localStorage data
+                localStorage.removeItem('assetFilters');
+            }
+        }
+    }, []);
+
+
+    const clearFilters = () => {
+        const emptyFilters = {
+            assetName: "",
+            manufacturer: "",
+            category: "",
+            subCategory: "",
+            subCategory2: "",
+            subCategory3: "",
+            position: "",
+            floor: "",
+            room: "",
+            powerOutput: "",
+        };
+
+        setFormData(emptyFilters);
+        localStorage.setItem('assetFilters', JSON.stringify(emptyFilters));
+        navigate(location.pathname);
+    };
+
+
 
     const searchAssets = () => {
         const {
@@ -290,7 +382,8 @@ const Summary = ({
         // Apply each filter only if it has a value
         if (assetName) {
             filtered = filtered.filter(x =>
-                String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase())
+                String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase()) ||
+                String(x?.assetId || '').toLowerCase().includes(assetName.toLowerCase())
             );
         }
 
@@ -392,6 +485,60 @@ const Summary = ({
             }
         });
     };
+
+    // Multi Asset delete handler
+    // Multi Asset delete handler
+    const handleMultiDelete = async () => {
+        if (selectedItems.length === 0) {
+            toast.warn("Please select at least one asset to delete.");
+            return;
+        }
+
+        Swal.fire({
+            title: `Delete ${selectedItems.length} Assets?`,
+            html: `You are about to delete <strong>${selectedItems.length}</strong> assets. This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#d33",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    setIsLoading(true);
+
+                    // Prepare the delete payload - send array of asset IDs directly
+                    const assetIds = selectedItems.map(item => item.assetId);
+
+                    // Send the bulk delete request
+                    const response = await del(
+                        `/api/site/assets/delete-multiple`,
+                        assetIds, // Send array directly, not wrapped in object
+                        { headers: { "Content-Type": "application/json" } }
+                    );
+
+                    if (response.status === 200 || response.status === 201) {
+                        toast.success(`Successfully deleted ${selectedItems.length} assets`);
+
+                        // Refresh the assets list
+                        getSiteAssets(siteSelectedForGlobal?.siteId);
+                        window.location.reload();
+
+                        // Clear selection
+                        setSelectedItems([]);
+                    } else {
+                        throw new Error("Failed to delete assets");
+                    }
+                } catch (error) {
+                    //console.error("Asset delete error:", error);
+                    toast.error(`Error deleting assets: ${error.message}`);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        });
+    };
+
     const cloneSelectedAsset = () => {
         if (selectedItems?.length === 0) {
             toast.warn("Please select asset to clone.");
@@ -400,6 +547,7 @@ const Summary = ({
         } else {
             setSelectedAssetForClone(selectedItems[0]);
             setShowCloneModal(true);
+            getSiteAssets(siteSelectedForGlobal?.siteId);
         }
     };
     const handleCheckboxChange = (e, asset) => {
@@ -494,6 +642,7 @@ const Summary = ({
                 // Reset selection and close modal
                 setSelectedItems([]);
                 setShowMultiEditModal(false);
+                getSiteAssets(siteSelectedForGlobal?.siteId);
             } else {
                 throw new Error("Failed to update assets");
             }
@@ -914,7 +1063,8 @@ const Summary = ({
                                 onFocus={(e) => e.target.removeAttribute("readonly")}
                                 name="assetName"
                                 className="form-control"
-                                placeholder="Asset Name"
+                                placeholder="Asset Name | Asset Id"
+                                value={formData?.assetName}
                                 onChange={handleInputChange}
                             />
                         </div>
@@ -927,6 +1077,7 @@ const Summary = ({
                                 name="manufacturer"
                                 className="form-control"
                                 placeholder="Manufacturer"
+                                value={formData?.manufacturer}
                                 onChange={handleInputChange}
                             />
                         </div>
@@ -936,6 +1087,7 @@ const Summary = ({
                                 className="form-control form-select"
                                 id="category"
                                 onChange={handleInputChange}
+                                value={formData?.category}
                             >
                                 <option value="">Category</option>
                                 {category?.map((itm) => (
@@ -1018,6 +1170,7 @@ const Summary = ({
                                         </option>
                                     ))}
                             </select>
+
                         </div>
                         <div
                             className="col-md-4 col-sm-4 mt-2"
@@ -1064,8 +1217,18 @@ const Summary = ({
                                         </option>
                                     ))}
                             </select>
+
+                        </div>
+                        <div className="col-md-2 col-sm-4 mt-2">
+                            <button
+                                className="btn btn-outline-secondary px-5 py-1"
+                                onClick={clearFilters}
+                            >
+                                Clear Filters
+                            </button>
                         </div>
                     </div>
+
                 </div>
 
                 {isManagerAdminLogin(loggedInUserData) && (
@@ -1116,6 +1279,30 @@ const Summary = ({
                                         }
                                     >
                                         Multi-Edit
+                                    </button>
+                                </Tooltip>
+                            </div>
+                            <div className="col-md-3 col-sm-4 mt-2">
+                                <Tooltip
+                                    title={
+                                        selectedItems.length === 0
+                                            ? "Select at least one asset to delete"
+                                            : `Delete ${selectedItems.length} selected assets`
+                                    }
+                                    arrow
+                                >
+                                    <button
+                                        className={`btn btn-light text-danger pr-2 ${selectedItems.length === 0 ? "disabled" : ""}`}
+                                        onClick={handleMultiDelete}
+                                        disabled={selectedItems.length === 0 || isLoading}
+                                        style={
+                                            selectedItems.length === 0
+                                                ? { opacity: 0.6, cursor: "not-allowed" }
+                                                : {}
+                                        }
+                                    >
+                                        <i className="fas fa-trash me-1"></i>
+                                        Delete ({selectedItems.length})
                                     </button>
                                 </Tooltip>
                             </div>
