@@ -349,7 +349,7 @@ const Summary = ({
             subCategory: "",
             subCategory2: "",
             subCategory3: "",
-            location: "",
+            position: "",
             floor: "",
             room: "",
             powerOutput: "",
