@@ -555,7 +555,7 @@ const Pat = ({
       if (response.status === 200 || response.status === 201) {
         toast.success(`Successfully updated ${selectedItems.length} assets`);
         getSitePATAssets(siteSelectedForGlobal?.siteId);
-        getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+        getSitePATAssets(siteSelectedForGlobal?.siteId);
         setSelectedItems([]);
         setShowMultiEditModal(false);
       } else {
