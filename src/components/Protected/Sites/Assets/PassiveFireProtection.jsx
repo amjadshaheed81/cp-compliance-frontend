@@ -68,6 +68,11 @@ const PassiveFireProtection = ({
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
+
+  const navigate = useNavigate();
+  const goTo = (link) => {
+    navigate(link);
+  };
   useEffect(() => {
     if (sitePFPItems) {
       const formattedItems = sitePFPItems?.map((itm) => ({
@@ -84,44 +89,233 @@ const PassiveFireProtection = ({
       });
     }
   }, [sitePFPItems]);
-  const [formData, setFormData] = useState({
-    assetName: "",
-    manufacturer: "",
-    category: "",
-    subCategory: "",
-    subCategory2: "",
-    subCategory3: "",
-    location: "",
-    floor: "",
-    room: "", 
+
+
+  const [formData, setFormData] = useState(() => {
+    const savedFilters = localStorage.getItem('PFAssetFilters');
+
+    if (savedFilters) {
+      try {
+        return JSON.parse(savedFilters);
+      } catch (error) {
+        console.error('Error parsing saved filters:', error);
+        localStorage.removeItem('patAssetFilters');
+      }
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    return {
+      assetName: searchParams.get('assetName') || "",
+      manufacturer: searchParams.get('manufacturer') || "",
+      category: searchParams.get('category') || "",
+      subCategory: searchParams.get('subCategory') || "",
+      subCategory2: searchParams.get('subCategory2') || "",
+      subCategory3: searchParams.get('subCategory3') || "",
+      position: searchParams.get('position') || "",
+      floor: searchParams.get('floor') || "",
+      room: searchParams.get('room') || "",
+    };
   });
+
+  // Update URL when filters change
+  useEffect(() => {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value) {
+        searchParams.set(key, value);
+      }
+    });
+
+    // Replace current URL with updated search params
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+  }, [formData, location.pathname, navigate]);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('PFAssetFilters', JSON.stringify(formData));
+  }, [formData]);
+
+
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('PFAssetFilters');
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        setFormData(parsedFilters);
+
+        // Also update URL to reflect the loaded filters
+        const searchParams = new URLSearchParams();
+        Object.entries(parsedFilters).forEach(([key, value]) => {
+          if (value) {
+            searchParams.set(key, value);
+          }
+        });
+
+        if (searchParams.toString()) {
+          navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+        }
+      } catch (error) {
+        console.error('Error loading saved filters:', error);
+        localStorage.removeItem('patAssetFilters');
+      }
+    }
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-    if (name === "category") {
-      console.log("category");
+
+    if (name === "position") {
+      // When position changes, reset floor and room
+      const positionNode = siteLayout.find(node =>
+        node.nodeType === "type" && node.nodeName === value
+      );
+      const floors = siteLayout.filter(
+        node => node.nodeType === "floor" && node.parentNode === positionNode?.id
+      );
+
+      setFormData({
+        ...formData,
+        [name]: value,
+        floor: "",
+        room: ""
+      });
+      setFloorNode(floors);
+      setRoomNode([]);
+    }
+    else if (name === "floor") {
+      // When floor changes, reset room and update available rooms
+      const floor = floorNode.find(f => f.nodeName === value);
+      const rooms = siteLayout.filter(
+        node => node.nodeType === "room" && node.parentNode === floor?.id
+      );
+
+      setFormData({
+        ...formData,
+        [name]: value,
+        room: ""
+      });
+      setRoomNode(rooms);
+    }
+    else if (name === "category") {
       const subCategoryData = subCategory?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategoryList(subCategoryData);
       setSubCategory2List([]);
       setSubCategory3List([]);
-    }else if (name === "subCategory") {
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory: "",
+        subCategory2: "",
+        subCategory3: "",
+      });
+    } else if (name === "subCategory") {
       const subCategoryData = subCategory2?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategory2List(subCategoryData);
       setSubCategory3List([]);
-    }else if (name === "subCategory2") {
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory2: "",
+        subCategory3: "",
+      });
+    } else if (name === "subCategory2") {
       const subCategoryData = subCategory3?.filter(
         (itm) => itm?.attribite1 === value
       );
       setSubCategory3List(subCategoryData);
+      setFormData({
+        ...formData,
+        [name]: value,
+        subCategory3: "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
     }
   };
+  const searchAssets = () => {
+    const {
+      assetName,
+      category,
+      subCategory,
+      subCategory2,
+      subCategory3,
+      position,
+      manufacturer,
+      floor,
+      room
+    } = formData;
+
+    // Start with all assets
+    let filtered = [...siteAssetsList];
+
+    // Apply each filter only if it has a value
+    if (assetName) {
+      filtered = filtered.filter(x =>
+        String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase()) ||
+        String(x?.assetId || '').toLowerCase().includes(assetName.toLowerCase())
+      );
+    }
+
+    if (category) {
+      filtered = filtered.filter(x =>
+        String(x?.category || '') === category
+      );
+    }
+
+    if (subCategory) {
+      filtered = filtered.filter(x =>
+        String(x?.subCategory || '') === subCategory
+      );
+    }
+
+    if (subCategory2) {
+      filtered = filtered.filter(x =>
+        String(x?.subCategory2 || '') === subCategory2
+      );
+    }
+
+    if (subCategory3) {
+      filtered = filtered.filter(x =>
+        String(x?.subCategory3 || '') === subCategory3
+      );
+    }
+
+    if (position) {
+      filtered = filtered.filter(x =>
+        String(x?.position || '').toLowerCase().includes(position.toLowerCase())
+      );
+    }
+
+    if (manufacturer) {
+      filtered = filtered.filter(x =>
+        String(x?.manufacturer || '').toLowerCase().includes(manufacturer.toLowerCase())
+      );
+    }
+
+    if (floor) {
+      filtered = filtered.filter(x =>
+        String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
+      );
+    }
+
+    if (room) {
+      filtered = filtered.filter(x =>
+        String(x?.room || '').toLowerCase().includes(room.toLowerCase())
+      );
+    }
+
+    setCurrentPage(1);
+    setfilteredSitePFPItems(filtered);
+  };
+
   useEffect(() => {
     searchAssets();
   }, [
@@ -130,53 +324,15 @@ const PassiveFireProtection = ({
     formData.subCategory,
     formData.subCategory2,
     formData.subCategory3,
-    formData.location,
+    formData.position,
     formData.manufacturer,
     formData.floor,
     formData.room,
   ]);
-  const searchAssets = () => {
-    const searchTerm = formData?.assetName; // Using assetName field for combined search
-    const category = formData?.category;
-    const subCategory = formData?.subCategory;
-    const subCategory2 = formData?.subCategory2;
-    const subCategory3 = formData?.subCategory3;
-    const location = formData?.location;
-    const manufacturer = formData?.manufacturer;
-    const floor = formData?.floor;
-    const room = formData?.room;
 
-    if (searchTerm || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
-      const list = siteAssetsList?.filter((x) => {
-        // Check if search term matches either assetName OR assetId
-        const matchesSearchTerm = searchTerm ? (
-          String(x?.assetName).toLowerCase().includes(String(searchTerm).toLowerCase()) ||
-          String(x?.assetId).toLowerCase().includes(String(searchTerm).toLowerCase())
-        ) : true;
 
-        // Keep all your existing filters
-        const matchesOtherFilters =
-          String(x?.subCategory).toLowerCase().includes(String(subCategory).toLowerCase()) &&
-          String(x?.subCategory2).toLowerCase().includes(String(subCategory2).toLowerCase()) &&
-          String(x?.subCategory3).toLowerCase().includes(String(subCategory3).toLowerCase()) &&
-          String(x?.category).toLowerCase().includes(String(category).toLowerCase()) &&
-          String(x?.position).toLowerCase().includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase()) &&
-          String(x?.floor).toLowerCase().includes(String(floor).toLowerCase()) &&
-          String(x?.room).toLowerCase().includes(String(room).toLowerCase());
 
-        return matchesSearchTerm && matchesOtherFilters;
-      });
-      setCurrentPage(1);
-      setfilteredSitePFPItems(list);
-    } else {
-      setfilteredSitePFPItems(siteAssetsList);
-    }
-  };
-  const navigate = useNavigate();
-  const goTo = (link) => {
-    navigate(link);
-  };
+
   useEffect(() => {
     getSitePFPAssets(siteSelectedForGlobal?.siteId);
     getCategory();
@@ -438,6 +594,36 @@ const handleFileUpload = async (e) => {
     }
   };
 
+  const clearFilters = () => {
+    const emptyFilters = {
+      assetName: "",
+      manufacturer: "",
+      category: "",
+      subCategory: "",
+      subCategory2: "",
+      subCategory3: "",
+      position: "",
+      floor: "",
+      room: "",
+    };
+
+    setFormData(emptyFilters);
+    localStorage.setItem('PFAssetFilters', JSON.stringify(emptyFilters));
+
+    // Reset cascading dropdown states
+    setSubCategoryList(subCategory);
+    setSubCategory2List(subCategory2);
+    setSubCategory3List(subCategory3);
+
+    // Reset floor and room nodes
+    const allFloors = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+    const allRooms = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+    setFloorNode(allFloors);
+    setRoomNode(allRooms);
+
+    navigate(location.pathname);
+  };
+
   return (
     <Fragment>
       {showAddModal && (
@@ -488,6 +674,7 @@ const handleFileUpload = async (e) => {
                 name="assetName"
                 className="form-control"
                 placeholder="Asset No./ Name"
+                value={formData?.assetName || ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -500,6 +687,7 @@ const handleFileUpload = async (e) => {
                 name="manufacturer"
                 className="form-control"
                 placeholder="Manufacturer"
+                value={formData?.manufacturer || ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -508,6 +696,7 @@ const handleFileUpload = async (e) => {
                 name="category"
                 className="form-control form-select"
                 id="category"
+                value={formData?.category || ""}
                 onChange={handleInputChange}
               >
                 <option value="">Category</option>
@@ -524,6 +713,7 @@ const handleFileUpload = async (e) => {
                 name="subCategory"
                 className="form-control form-select"
                 id="subCategory"
+                value={formData?.subCategory || ""}
                 onChange={handleInputChange}
               >
                 <option value="">Sub Category</option>
@@ -541,6 +731,7 @@ const handleFileUpload = async (e) => {
                 className="form-control form-select"
                 id="subCategory2"
                 onChange={handleInputChange}
+                value={formData?.subCategory2 || ""}
               >
                 <option value="">Sub Category 2</option>
                 {subCategory2List?.map((itm) => (
@@ -557,6 +748,7 @@ const handleFileUpload = async (e) => {
                 className="form-control form-select"
                 id="subCategory3"
                 onChange={handleInputChange}
+                value={formData?.subCategory3 || ""}
               >
                 <option value="">Sub Category 3</option>
                 {subCategory3List?.map((itm) => (
@@ -569,6 +761,7 @@ const handleFileUpload = async (e) => {
                 name="location"
                 className="form-control form-select"
                 id="location"
+                value={formData.position} // Set the selected value dynamically
                 onChange={(e) => {
                   const { name, value } = e.target;
                   setFormData({
@@ -602,6 +795,7 @@ const handleFileUpload = async (e) => {
                 name="floor"
                 className="form-control form-select"
                 id="floor"
+                value={formData.floor} // Set the selected value dynamically
                 onChange={(e) => {
                   const { name, value } = e.target;
                   setFormData({
@@ -641,6 +835,15 @@ const handleFileUpload = async (e) => {
                   <option value={itm?.nodeName}>{itm?.nodeName}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="col-md-2 col-sm-4 mt-2">
+              <button
+                className="btn btn-outline-secondary px-5 py-1"
+                onClick={clearFilters}
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
         </div>
