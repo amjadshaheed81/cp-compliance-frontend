@@ -85,17 +85,78 @@ const Door = ({
     }
   }, [siteDoorItems]);
 
-  const [formData, setFormData] = useState({
-    assetName: "",
-    manufacturer: "",
-    category: "",
-    subCategory: "",
-    subCategory2: "",
-    subCategory3: "",
-    location: "",
-    floor: "",
-    room: "",
+
+
+  const [formData, setFormData] = useState(() => {
+    const savedFilters = localStorage.getItem('doorAssetFilters');
+
+    if (savedFilters) {
+      try {
+        return JSON.parse(savedFilters);
+      } catch (error) {
+        console.error('Error parsing saved filters:', error);
+        localStorage.removeItem('doorAssetFilters');
+      }
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    return {
+      assetName: searchParams.get('assetName') || "",
+      manufacturer: searchParams.get('manufacturer') || "",
+      category: searchParams.get('category') || "",
+      subCategory: searchParams.get('subCategory') || "",
+      subCategory2: searchParams.get('subCategory2') || "",
+      subCategory3: searchParams.get('subCategory3') || "",
+      position: searchParams.get('position') || "",
+      floor: searchParams.get('floor') || "",
+      room: searchParams.get('room') || "",
+    };
   });
+
+  // Update URL when filters change
+  useEffect(() => {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value) {
+        searchParams.set(key, value);
+      }
+    });
+
+    // Replace current URL with updated search params
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+  }, [formData, location.pathname, navigate]);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('patAssetFilters', JSON.stringify(formData));
+  }, [formData]);
+
+
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('doorAssetFilters');
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        setFormData(parsedFilters);
+
+        // Also update URL to reflect the loaded filters
+        const searchParams = new URLSearchParams();
+        Object.entries(parsedFilters).forEach(([key, value]) => {
+          if (value) {
+            searchParams.set(key, value);
+          }
+        });
+
+        if (searchParams.toString()) {
+          navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+        }
+      } catch (error) {
+        console.error('Error loading saved filters:', error);
+        localStorage.removeItem('doorAssetFilters');
+      }
+    }
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -149,6 +210,82 @@ const Door = ({
     }
   };
 
+  const searchAssets = () => {
+    const {
+      assetName,
+      category,
+      subCategory,
+      subCategory2,
+      subCategory3,
+      position,
+      manufacturer,
+      floor,
+      room
+    } = formData;
+
+    // Start with all assets
+    let filtered = [...siteAssetsList];
+
+    // Apply each filter only if it has a value
+    if (assetName) {
+      filtered = filtered.filter(x =>
+        String(x?.assetName || '').toLowerCase().includes(assetName.toLowerCase()) ||
+        String(x?.assetId || '').toLowerCase().includes(assetName.toLowerCase())
+      );
+    }
+
+    if (category) {
+      filtered = filtered.filter(x =>
+        String(x?.category || '') === category
+      );
+    }
+
+    if (subCategory) {
+      filtered = filtered.filter(x =>
+        String(x?.subCategory || '') === subCategory
+      );
+    }
+
+    if (subCategory2) {
+      filtered = filtered.filter(x =>
+        String(x?.subCategory2 || '') === subCategory2
+      );
+    }
+
+    if (subCategory3) {
+      filtered = filtered.filter(x =>
+        String(x?.subCategory3 || '') === subCategory3
+      );
+    }
+
+    if (position) {
+      filtered = filtered.filter(x =>
+        String(x?.position || '').toLowerCase().includes(position.toLowerCase())
+      );
+    }
+
+    if (manufacturer) {
+      filtered = filtered.filter(x =>
+        String(x?.manufacturer || '').toLowerCase().includes(manufacturer.toLowerCase())
+      );
+    }
+
+    if (floor) {
+      filtered = filtered.filter(x =>
+        String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
+      );
+    }
+
+    if (room) {
+      filtered = filtered.filter(x =>
+        String(x?.room || '').toLowerCase().includes(room.toLowerCase())
+      );
+    }
+
+    setCurrentPage(1);
+    setFilteredSiteDoorItems(filtered);
+  };
+
   useEffect(() => {
     searchAssets();
   }, [
@@ -163,44 +300,7 @@ const Door = ({
     formData.room,
   ]);
 
-  const searchAssets = () => {
-    const searchTerm = formData?.assetName; // Using assetName field for combined search
-    const category = formData?.category;
-    const subCategory = formData?.subCategory;
-    const subCategory2 = formData?.subCategory2;
-    const subCategory3 = formData?.subCategory3;
-    const location = formData?.location;
-    const manufacturer = formData?.manufacturer;
-    const floor = formData?.floor;
-    const room = formData?.room;
 
-    if (searchTerm || category || subCategory || subCategory2 || subCategory3 || location || manufacturer || floor || room) {
-      const list = siteAssetsList?.filter((x) => {
-        // Check if search term matches either assetName OR assetId
-        const matchesSearchTerm = searchTerm ? (
-          String(x?.assetName).toLowerCase().includes(String(searchTerm).toLowerCase()) ||
-          String(x?.assetId).toLowerCase().includes(String(searchTerm).toLowerCase())
-        ) : true;
-
-        // Keep all your existing filters
-        const matchesOtherFilters =
-          String(x?.subCategory).toLowerCase().includes(String(subCategory).toLowerCase()) &&
-          String(x?.subCategory2).toLowerCase().includes(String(subCategory2).toLowerCase()) &&
-          String(x?.subCategory3).toLowerCase().includes(String(subCategory3).toLowerCase()) &&
-          String(x?.category).toLowerCase().includes(String(category).toLowerCase()) &&
-          String(x?.position).toLowerCase().includes(String(location).toLowerCase()) &&
-          String(x?.manufacturer).toLowerCase().includes(String(manufacturer).toLowerCase()) &&
-          String(x?.floor).toLowerCase().includes(String(floor).toLowerCase()) &&
-          String(x?.room).toLowerCase().includes(String(room).toLowerCase());
-
-        return matchesSearchTerm && matchesOtherFilters;
-      });
-      setCurrentPage(1);
-      setFilteredSiteDoorItems(list);
-    } else {
-      setFilteredSiteDoorItems(siteAssetsList);
-    }
-  };
 
   useEffect(() => {
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
@@ -526,6 +626,36 @@ const Door = ({
         },
       });
     }
+  };
+
+  const clearFilters = () => {
+    const emptyFilters = {
+      assetName: "",
+      manufacturer: "",
+      category: "",
+      subCategory: "",
+      subCategory2: "",
+      subCategory3: "",
+      position: "",
+      floor: "",
+      room: "",
+    };
+
+    setFormData(emptyFilters);
+    localStorage.setItem('doorAssetFilters', JSON.stringify(emptyFilters));
+
+    // Reset cascading dropdown states to show all options
+    setSubCategoryList(subCategory || []);
+    setSubCategory2List(subCategory2 || []);
+    setSubCategory3List(subCategory3 || []);
+
+    // Reset floor and room nodes to show all options
+    const allFloors = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+    const allRooms = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+    setFloorNode(allFloors);
+    setRoomNode(allRooms);
+
+    navigate(location.pathname);
   };
 
   return (
@@ -936,7 +1066,8 @@ const Door = ({
                     readOnly
                     onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="assetName"
-                    className="form-control"
+                className="form-control"
+                value={formData?.assetName}
                 placeholder="Asset No. \ Name"
                     onChange={handleInputChange}
                 />
@@ -949,7 +1080,8 @@ const Door = ({
                     onFocus={(e) => e.target.removeAttribute("readonly")}
                     name="manufacturer"
                     className="form-control"
-                    placeholder="Manufacturer"
+                placeholder="Manufacturer"
+                value={formData?.manufacturer}
                     onChange={handleInputChange}
                 />
               </div>
@@ -958,7 +1090,7 @@ const Door = ({
                     name="category"
                     value={formData?.category}
                     className="form-control form-select"
-                    id="category"
+                id="category"
                     onChange={handleInputChange}
                 >
                   <option value="">Category</option>
@@ -972,7 +1104,7 @@ const Door = ({
                     name="subCategory"
                     className="form-control form-select"
                     id="subCategory"
-                    onChange={handleInputChange}
+                onChange={handleInputChange}
                     value={formData?.subCategory}
                 >
                   <option value="">Sub Category</option>
@@ -987,6 +1119,7 @@ const Door = ({
                     className="form-control form-select"
                     id="subCategory2"
                     onChange={handleInputChange}
+                value={formData?.subCategory2}
                 >
                   <option value="">Sub Category 2</option>
                   {subCategory2List?.map((itm) => (
@@ -999,7 +1132,8 @@ const Door = ({
                     name="subCategory3"
                     className="form-control form-select"
                     id="subCategory3"
-                    onChange={handleInputChange}
+                onChange={handleInputChange}
+                value={formData?.subCategory3}
                 >
                   <option value="">Sub Category 3</option>
                   {subCategory3List?.map((itm) => (
@@ -1011,7 +1145,8 @@ const Door = ({
                 <select
                     name="location"
                     className="form-control form-select"
-                    id="location"
+                id="location"
+                value={formData.postion}
                     onChange={(e) => {
                       const { name, value } = e.target;
                       setFormData({
@@ -1034,7 +1169,8 @@ const Door = ({
                 <select
                     name="floor"
                     className="form-control form-select"
-                    id="floor"
+                id="floor"
+                value={formData.floor}
                     onChange={(e) => {
                       const { name, value } = e.target;
                       setFormData({
@@ -1057,13 +1193,21 @@ const Door = ({
                     name="room"
                     className="form-control form-select"
                     id="room"
-                    value={formData.room}
+                value={formData.room}
                     onChange={handleInputChange}
                 >
                   <option value="">Room</option>
                   {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
                 </select>
-              </div>
+            </div>
+            <div className="col-md-2 col-sm-4 mt-2">
+              <button
+                className="btn btn-outline-secondary px-5 py-1"
+                onClick={clearFilters}
+              >
+                Clear Filters
+              </button>
+            </div>
             </div>
           </div>
           <div className="ms-auto p-2 bd-highlight w-100">
