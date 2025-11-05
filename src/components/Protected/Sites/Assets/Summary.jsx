@@ -360,6 +360,24 @@ const Summary = ({
         navigate(location.pathname);
     };
 
+    useEffect(() => {
+        return () => {
+            // Clear filters when component unmounts (tab changes)
+            const emptyFilters = {
+                assetName: "",
+                manufacturer: "",
+                category: "",
+                subCategory: "",
+                subCategory2: "",
+                subCategory3: "",
+                position: "",
+                floor: "",
+                room: "",
+            };
+            setFormData(emptyFilters);
+        };
+    }, []);
+
 
 
     const searchAssets = () => {
