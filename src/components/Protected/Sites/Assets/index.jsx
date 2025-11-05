@@ -13,92 +13,108 @@ import Door from "./Door";
 import Pat from "./Pat";
 import PassiveFireProtection from "./PassiveFireProtection";
 import {
-  getSiteAssets,
-  getSiteDoorAssets,
-  getSitePATAssets,
-  getSitePFPAssets,
+    getSiteAssets,
+    getSiteDoorAssets,
+    getSitePATAssets,
+    getSitePFPAssets,
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
+import { useNavigate, useLocation } from "react-router-dom"; // Add these imports
 
 const Assets = ({
-  siteSelectedForGlobal,
-  getSiteAssets,
-  getSitePFPAssets,
-  getSiteDoorAssets,
-  getSitePATAssets,
-}) => {
-  // tab value
-  const [value, setValue] = useState("1");
-  const tabChange = (event, newValue) => {
-    event?.preventDefault();
-    setValue(newValue);
-  };
-  useEffect(() => {
-    if (siteSelectedForGlobal?.siteId) {
-      getSiteAssets(siteSelectedForGlobal?.siteId);
-      getSitePFPAssets(siteSelectedForGlobal?.siteId);
-      getSiteDoorAssets(siteSelectedForGlobal?.siteId);
-      getSitePATAssets(siteSelectedForGlobal?.siteId);
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Please select site from site search and try again.",
-      });
-    }
-  }, []);
-  return (
-    <Fragment>
-      <SidebarNew />
-      <div className="content">
-        <Header />
-        <div className="container-fluid">
-          <BreadCrumHeader header={"Asset Register"} page={"Assets"} />
+                    siteSelectedForGlobal,
+                    getSiteAssets,
+                    getSitePFPAssets,
+                    getSiteDoorAssets,
+                    getSitePATAssets,
+                }) => {
+    // tab value
+    const [value, setValue] = useState("1");
+    const navigate = useNavigate();
+    const location = useLocation();
 
-          <Box sx={{ width: "100%", typography: "body1" }}>
-            <TabContext value={value}>
-              <Box
-                sx={{
-                  "& .MuiTabs-flexContainer": {
-                    flexWrap: "wrap",
-                  },
-                }}
-              >
-                <TabList onChange={tabChange} aria-label="lab API tabs example">
-                  <Tab label="Summary" value="1" />
-                  <Tab label="Doors" value="2" />
-                  <Tab label="PAT" value="3" />
-                  <Tab label="Passive Fire Protection" value="4" />
-                </TabList>
-              </Box>
-              <TabPanel value="1">
-                <Summary />
-              </TabPanel>
-              <TabPanel value="2">
-                <Door />
-              </TabPanel>
-              <TabPanel value="3">
-                <Pat />
-              </TabPanel>
-              <TabPanel value="4">
-                <PassiveFireProtection />
-              </TabPanel>
-            </TabContext>
-          </Box>
-          {/*  */}
-          {/*  */}
-        </div>
-      </div>
-    </Fragment>
-  );
+    const tabChange = (event, newValue) => {
+        event?.preventDefault();
+        setValue(newValue);
+
+        // Clear all filter storages when switching tabs
+        localStorage.removeItem('assetFilters'); // Summary
+        localStorage.removeItem('doorAssetFilters'); // Doors
+        localStorage.removeItem('patAssetFilters'); // PAT
+        localStorage.removeItem('PFAssetFilters'); // PFP
+
+        // Reset URL to base path without any parameters
+        const basePath = location.pathname; // This gives "/assets"
+        navigate(basePath, { replace: true });
+    };
+
+    useEffect(() => {
+        if (siteSelectedForGlobal?.siteId) {
+            getSiteAssets(siteSelectedForGlobal?.siteId);
+            getSitePFPAssets(siteSelectedForGlobal?.siteId);
+            getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+            getSitePATAssets(siteSelectedForGlobal?.siteId);
+        } else {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Please select site from site search and try again.",
+            });
+        }
+    }, []);
+
+    return (
+        <Fragment>
+            <SidebarNew />
+            <div className="content">
+                <Header />
+                <div className="container-fluid">
+                    <BreadCrumHeader header={"Asset Register"} page={"Assets"} />
+
+                    <Box sx={{ width: "100%", typography: "body1" }}>
+                        <TabContext value={value}>
+                            <Box
+                                sx={{
+                                    "& .MuiTabs-flexContainer": {
+                                        flexWrap: "wrap",
+                                    },
+                                }}
+                            >
+                                <TabList onChange={tabChange} aria-label="lab API tabs example">
+                                    <Tab label="Summary" value="1" />
+                                    <Tab label="Doors" value="2" />
+                                    <Tab label="PAT" value="3" />
+                                    <Tab label="Passive Fire Protection" value="4" />
+                                </TabList>
+                            </Box>
+                            <TabPanel value="1">
+                                <Summary />
+                            </TabPanel>
+                            <TabPanel value="2">
+                                <Door />
+                            </TabPanel>
+                            <TabPanel value="3">
+                                <Pat />
+                            </TabPanel>
+                            <TabPanel value="4">
+                                <PassiveFireProtection />
+                            </TabPanel>
+                        </TabContext>
+                    </Box>
+                </div>
+            </div>
+        </Fragment>
+    );
 };
+
 const mapStateToProps = (state) => ({
-  siteAssets: state.site.siteAssets,
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    siteAssets: state.site.siteAssets,
+    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, {
-  getSiteAssets,
-  getSitePFPAssets,
-  getSiteDoorAssets,
-  getSitePATAssets,
+    getSiteAssets,
+    getSitePFPAssets,
+    getSiteDoorAssets,
+    getSitePATAssets,
 })(Assets);
