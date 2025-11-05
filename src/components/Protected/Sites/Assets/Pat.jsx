@@ -4,7 +4,7 @@ import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
 import { QRCodeSVG } from "qrcode.react";
 import {
-  deleteSiteAsset, getSiteDoorAssets,
+  deleteSiteAsset,
   getSiteLayout,
   getSitePATAssets,
 } from "../../../../store/thunk/site";
@@ -89,7 +89,11 @@ const Pat = ({
     .filter(
       (obj1, i, arr) =>
         arr.findIndex((obj2) => obj2.location === obj1.location) === i
-    );
+  );
+
+
+
+
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -156,11 +160,11 @@ const Pat = ({
     navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
   }, [formData, location.pathname, navigate]);
 
-  // Save filters to localStorage whenever they change
+
+
   useEffect(() => {
     localStorage.setItem('patAssetFilters', JSON.stringify(formData));
   }, [formData]);
-
 
   useEffect(() => {
     const savedFilters = localStorage.getItem('patAssetFilters');
@@ -268,9 +272,6 @@ const Pat = ({
     }
   };
 
-
-
-
   const searchAssets = () => {
     const {
       assetName,
@@ -348,8 +349,6 @@ const Pat = ({
   };
 
 
-
-
   useEffect(() => {
     searchAssets();
   }, [
@@ -364,11 +363,14 @@ const Pat = ({
     formData.room,
   ]);
 
+
+
   useEffect(() => {
     getSitePATAssets(siteSelectedForGlobal?.siteId);
     getCategory();
     getSiteLayout(siteSelectedForGlobal?.siteId)
-  }, [siteSelectedForGlobal]);
+  }, [siteSelectedForGlobal?.siteId]);
+
   const getCategory = async () => {
     const categoryList = await get("/api/lov/ASSET_CATEGORY");
     const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
@@ -382,6 +384,7 @@ const Pat = ({
     setSubCategory2List(subCategory2List);
     setSubCategory3List(subCategory3List);
   };
+
   useEffect(() => {
     const floorNodes =
       siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
@@ -418,7 +421,7 @@ const Pat = ({
             `${itm?.assetName} site asset has been deleted successully`
           );
           getSitePATAssets(siteSelectedForGlobal?.siteId);
-          getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+          getSitePATAssets(siteSelectedForGlobal?.siteId);
 
         } else {
           toast.error(
@@ -603,8 +606,8 @@ const Pat = ({
           if (response.status === 200 || response.status === 201) {
             toast.success(`Successfully deleted ${selectedItems.length} assets`);
 
-            getSiteDoorAssets(siteSelectedForGlobal?.siteId);
-            getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+            getSitePATAssets(siteSelectedForGlobal?.siteId);
+            getSitePATAssets(siteSelectedForGlobal?.siteId);
             setSelectedItems([]);
           } else {
             throw new Error("Failed to delete assets");
@@ -636,9 +639,9 @@ const Pat = ({
     localStorage.setItem('patAssetFilters', JSON.stringify(emptyFilters));
 
     // Reset cascading dropdown states
-    setSubCategoryList(subCategory);
-    setSubCategory2List(subCategory2);
-    setSubCategory3List(subCategory3);
+    setSubCategoryList(subCategory || []);
+    setSubCategory2List(subCategory2 || []);
+    setSubCategory3List(subCategory3 || []);
 
     // Reset floor and room nodes
     const allFloors = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
