@@ -157,7 +157,7 @@ const PassiveFireProtection = ({
                 }
             } catch (error) {
                 console.error('Error loading saved filters:', error);
-                localStorage.removeItem('patAssetFilters');
+                localStorage.removeItem('PFAssetFilters');
             }
         }
     }, []);

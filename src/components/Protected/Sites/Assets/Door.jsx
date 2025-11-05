@@ -129,7 +129,7 @@ const Door = ({
 
     // Save filters to localStorage whenever they change
     useEffect(() => {
-        localStorage.setItem('patAssetFilters', JSON.stringify(formData));
+        localStorage.setItem('doorAssetFilters', JSON.stringify(formData));
     }, [formData]);
 
 
