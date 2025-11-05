@@ -415,10 +415,10 @@ const Pat = ({
                 const res = await deleteSiteAsset(itm?.assetId);
                 if (res === "Success") {
                     toast.success(
-                        `${itm?.assetName} site asset has been deleted successully`
+                        `${itm?.assetName} site asset has been deleted successfully`
                     );
                     getSitePATAssets(siteSelectedForGlobal?.siteId);
-                    getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+                    getSitePATAssets(siteSelectedForGlobal?.siteId);
 
                 } else {
                     toast.error(
@@ -603,8 +603,8 @@ const Pat = ({
                     if (response.status === 200 || response.status === 201) {
                         toast.success(`Successfully deleted ${selectedItems.length} assets`);
 
-                        getSiteDoorAssets(siteSelectedForGlobal?.siteId);
-                        getSiteDoorAssets(siteSelectedForGlobal?.siteId);
+                        getSitePATAssets(siteSelectedForGlobal?.siteId);
+                        getSitePATAssets(siteSelectedForGlobal?.siteId);
                         setSelectedItems([]);
                     } else {
                         throw new Error("Failed to delete assets");
