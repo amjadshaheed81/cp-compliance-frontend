@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
 import {
-  Button,
-  Box,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Dialog,
-  Chip,
+    Button,
+    Box,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Dialog,
+    Chip,
+    Typography,
 } from "@mui/material";
-import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import { CloudUpload, Close, Folder } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
-import CircularProgress from "@mui/material/CircularProgress";
 import moment from "moment";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
@@ -18,230 +18,250 @@ import { uploadPhoto, uploadNewVersion, get } from "../../../../api";
 import MandatoryFolders from "../Contracts/MandatoryFolders";
 
 const BulkUpload = ({
-  bulkUploadModal,
-  setBulkUploadModal,
-  folder,
-  siteSelectedForGlobal,
-  loggedInUserData,
-  refresh,
-  folderfiles
-}) => {
-  const handleOpen = () => setBulkUploadModal(true);
-  const handleClose = () => setBulkUploadModal(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([folder] || []);
+                        bulkUploadModal,
+                        setBulkUploadModal,
+                        folder,
+                        siteSelectedForGlobal,
+                        loggedInUserData,
+                        refresh,
+                        folderfiles
+                    }) => {
+    const handleClose = () => setBulkUploadModal(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState([folder] || []);
+    const [files, setFiles] = useState([]);
+    const [issueDate, setIssueDate] = useState("");
+    const [expiryDate, setExpiryDate] = useState("");
 
-  const [files, setFiles] = useState([]);
-  const [selectedFiles, setSelectedFile] = useState([]);
-  useEffect(() => {
-    setFiles(folder?.files || []);
-  }, [folder]);
-  useEffect(() => {
-    if(selectedMandatoryFolder?.length > 0) {
-      getFiles();
-    }
-  }, [selectedMandatoryFolder]);
-  const getFiles = async () => {
-    const url = `/api/document/parent/${selectedMandatoryFolder[0].id}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
-    const res = await get(url);
-    setFiles(res?.document?.files || [])
-  }
-  const { register, handleSubmit, watch } = useForm({});
-  const values = watch() || {};
-  const submitBulkUpload = async (formData) => {
-    setIsLoading(true);
-    const filesToUpload = [];
-    let version = 1;
-    for (const iterator of formData?.bulkUpload) {
-      const existingFile = folderfiles.filter(f=> f.name === iterator?.name);
-      const data = {
-        files: iterator,
-        documentRequestString: {
-          folderId: selectedMandatoryFolder?.[0]?.id,
-          files: [
-            {
-              ...iterator,
-              name: iterator?.name,
-              id: existingFile?.length > 0 ? existingFile?.[0]?.id : undefined,
-              originalFileName: iterator?.name,
-              fileVersion: existingFile?.length > 0 ? existingFile?.[0]?.fileVersion + 1 : version,
-              siteId: siteSelectedForGlobal?.siteId,
-              uploaderUserId: loggedInUserData?.id,
-              reviewerUserId: loggedInUserData?.id,
-              uploadDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
-              issueDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
-              expiryDate: moment(new Date()).add(1, "years").format("YYYY-MM-DD") + " 10:00:00",
-            },
-          ],
-        },
-      };
-      
-      const url = existingFile?.length > 0 ? `/api/document/file/newVersion/upload` : `/api/document/files/upload`;
-      const formDataPayload = new FormData();
-      formDataPayload.append(existingFile?.length > 0 ? "file" : "files", data.files);
-      formDataPayload.append(
-        "documentRequestString",
-        JSON.stringify(data.documentRequestString)
-      );
-      if(existingFile?.length > 0) {
-        await uploadNewVersion(url, formDataPayload)
-      } else {
-        await upload(url, formDataPayload);
-      }
-    }
-    setIsLoading(false);
-        
-    toast.success("Files uploaded successfully");
-    handleClose();
-    refresh();
-  
-  };
+    useEffect(() => {
+        setFiles(folder?.files || []);
+    }, [folder]);
 
-  const upload = async(url, formDataPayload) => {
+    useEffect(() => {
+        if (selectedMandatoryFolder?.length > 0) {
+            getFiles();
+        }
+    }, [selectedMandatoryFolder]);
 
-    await uploadPhoto(url, formDataPayload);
-   
-  }
-  const getSelectedFiles = () => {
-    const data = values?.bulkUpload || [];
-    const names = [];
-    data?.forEach((itm) => names.push(itm?.name));
-    return names?.map((itm) => <Chip label={itm} />);
-  };
-  return (
-    <>
-      <Dialog
-        open={bulkUploadModal}
-        onClose={handleClose}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          component: "form",
-          onSubmit: handleSubmit(submitBulkUpload),
-        }}
-      >
-        <DialogTitle>Bulk Upload Files</DialogTitle>
-        <DialogContent dividers>
-          {isLoading && (
-            <Box sx={{ display: "flex" }}>
-              <CircularProgress />
-            </Box>
-          )}
-          {!isLoading && (
-            <form className="row">
-              <div className="col-md-6 h-50">
-                <label htmlFor="folder" name="folder">
-                  Folder
-                </label>
-                <input
-                  type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  name="folder"
-                  disabled
-                  className="form-control"
-                  value={selectedMandatoryFolder?.[0]?.name}
-                />
-                <div className="mt-2">
-                  {getSelectedFiles()}
-                </div>
-              </div>
-              <div className="col-md-6 h-50">
-                <div style={{ backgroundColor: "#f1f5f9" }}>
-                  <div className="uploadPhotoButton">
-                    <FileUploadOutlinedIcon
-                      style={{
-                        color: "blue",
-                        fontSize: "50px",
-                        marginLeft: "4rem",
-                      }}
-                    />
+    const getFiles = async () => {
+        const url = `/api/document/parent/${selectedMandatoryFolder[0].id}/folders?siteId=${siteSelectedForGlobal?.siteId}`;
+        const res = await get(url);
+        setFiles(res?.document?.files || []);
+    };
+
+    const { register, handleSubmit, watch, reset } = useForm({});
+    const values = watch() || {};
+
+    const submitBulkUpload = async (formData) => {
+        if (!formData?.bulkUpload || formData.bulkUpload.length === 0) {
+            toast.error("Please select files to upload");
+            return;
+        }
+
+        setIsLoading(true);
+
+        for (const iterator of formData.bulkUpload) {
+            const existingFile = folderfiles.filter(f => f.name === iterator?.name);
+
+            const fileData = {
+                ...iterator,
+                name: iterator?.name,
+                id: existingFile?.length > 0 ? existingFile?.[0]?.id : undefined,
+                originalFileName: iterator?.name,
+                fileVersion: existingFile?.length > 0 ? existingFile?.[0]?.fileVersion + 1 : 1,
+                siteId: siteSelectedForGlobal?.siteId,
+                uploaderUserId: loggedInUserData?.id,
+                reviewerUserId: loggedInUserData?.id,
+                uploadDate: `${moment(new Date()).format("YYYY-MM-DD")} 10:00:00`,
+            };
+
+            if (issueDate) fileData.issueDate = issueDate;
+            if (expiryDate) fileData.expiryDate = expiryDate;
+
+            const data = {
+                files: iterator,
+                documentRequestString: {
+                    folderId: selectedMandatoryFolder?.[0]?.id,
+                    files: [fileData],
+                },
+            };
+
+            const url = existingFile?.length > 0 ? `/api/document/file/newVersion/upload` : `/api/document/files/upload`;
+            const formDataPayload = new FormData();
+            formDataPayload.append(existingFile?.length > 0 ? "file" : "files", data.files);
+            formDataPayload.append("documentRequestString", JSON.stringify(data.documentRequestString));
+
+            try {
+                if (existingFile?.length > 0) {
+                    await uploadNewVersion(url, formDataPayload);
+                } else {
+                    await uploadPhoto(url, formDataPayload);
+                }
+            } catch (error) {
+                toast.error(`Failed to upload ${iterator?.name}`);
+            }
+        }
+
+        setIsLoading(false);
+        toast.success("Files uploaded successfully");
+        handleClose();
+        refresh();
+        reset();
+    };
+
+    return (
+        <Dialog
+            open={bulkUploadModal}
+            onClose={handleClose}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+                component: "form",
+                onSubmit: handleSubmit(submitBulkUpload),
+                sx: { borderRadius: 1 }
+            }}
+        >
+            <DialogTitle sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6">Upload Files</Typography>
+                <Button onClick={handleClose} size="small" sx={{ minWidth: 'auto' }}>
+                    <Close />
+                </Button>
+            </DialogTitle>
+
+            <DialogContent sx={{ p: 2 }}>
+                {/* Upload Zone */}
+                <Box
+                    sx={{
+                        border: '1px dashed #ccc',
+                        borderRadius: 1,
+                        p: 3,
+                        textAlign: 'center',
+                        mb: 2,
+                        cursor: 'pointer',
+                        '&:hover': { borderColor: '#666' }
+                    }}
+                    onClick={() => document.getElementById('bulkUpload').click()}
+                >
                     <input
-                      {...register("bulkUpload")}
-                      className="uploadButton-input"
-                      type="file"
-                      name="bulkUpload"
-                      multiple
-                      accept="image/*, application/pdf"
-                      id="bulkUpload"
+                        {...register("bulkUpload")}
+                        type="file"
+                        name="bulkUpload"
+                        multiple
+                        accept="image/*, application/pdf"
+                        id="bulkUpload"
+                        style={{ display: 'none' }}
                     />
-                    <label
-                      htmlFor="bulkUpload"
-                      style={{ color: "blue" }}
-                      className="btn"
-                    >
-                      Click to upload
-                    </label>
-                    <span>or drag and drop</span>
-                    <p>PDF, PNG, JPG or GIF</p>
-                    <p>(max 100 MB each)</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-12 h-50">
-                <MandatoryFolders
-                    isStatutory={false}
-                    isSingleFolderSelect={true}
-                    setFiles={setFiles}
-                    setSelectedMandatoryFolder={setSelectedMandatoryFolder}
-                    selectedMandatoryFolder={selectedMandatoryFolder}
-                  />
-              </div>
-              <div className="table-responsive">
-                <table className="table f-11">
-                  <thead className="table-dark">
-                    <tr>
-                      <th scope="col">Folder</th>
-                      <th scope="col">File Name</th>
-                      <th scope="col">Issue Date</th>
-                      <th scope="col">Expiry Date</th>
-                      <th scope="col">Version</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {files?.length === 0 && (
-                      <tr>
-                        <td colSpan={5}>No Files Found!!</td>
-                      </tr>
-                    )}
-                    {files?.map((file) => (
-                      <tr>
-                        <div>
-                          <i
-                            style={{ color: "#384BD3" }}
-                            className="fas fa-folder fa-2x"
-                          ></i>
-                          <span className="p-3">{file?.folderName}</span>
-                        </div>
-                        <td>{file?.name}</td>
-                        <td>{moment(file?.issueDate).format("DD-MM-YYYY")}</td>
-                        <td>{moment(file?.expiryDate).format("DD-MM-YYYY")}</td>
-                        <td>{file?.fileVersion}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-        {!isLoading && (
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button className="bg-primary text-light" type="submit">
-              Save
-            </Button>
-          </DialogActions>
-        )}
-      </Dialog>
-    </>
-  );
+                    <CloudUpload sx={{ fontSize: 40, color: '#666', mb: 1 }} />
+                    <Typography variant="body1" gutterBottom>
+                        Drop files or click to upload
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        PDF, PNG, JPG, GIF • Max 100MB
+                    </Typography>
+                </Box>
+
+                {/* Selected Files */}
+                {values?.bulkUpload?.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Selected: {values.bulkUpload.length} file(s)
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {Array.from(values.bulkUpload).map((file, index) => (
+                                <Chip key={index} label={file.name} size="small" />
+                            ))}
+                        </Box>
+                    </Box>
+                )}
+
+                {/* Folder Selection */}
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Folder fontSize="small" />
+                        Folder
+                    </Typography>
+                    <MandatoryFolders
+                        isStatutory={false}
+                        isSingleFolderSelect={true}
+                        setFiles={setFiles}
+                        setSelectedMandatoryFolder={setSelectedMandatoryFolder}
+                        selectedMandatoryFolder={selectedMandatoryFolder}
+                    />
+                </Box>
+
+                {/* Dates */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" gutterBottom>
+                            Issue Date
+                        </Typography>
+                        <input
+                            type="date"
+                            value={issueDate}
+                            onChange={(e) => setIssueDate(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '6px 8px',
+                                border: '1px solid #ddd',
+                                borderRadius: 4,
+                                fontSize: '14px'
+                            }}
+                        />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" gutterBottom>
+                            Expiry Date
+                        </Typography>
+                        <input
+                            type="date"
+                            value={expiryDate}
+                            onChange={(e) => setExpiryDate(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '6px 8px',
+                                border: '1px solid #ddd',
+                                borderRadius: 4,
+                                fontSize: '14px'
+                            }}
+                        />
+                    </Box>
+                </Box>
+
+                {/* Existing Files */}
+                {files.length > 0 && (
+                    <Box>
+                        <Typography variant="body2" gutterBottom>
+                            Existing files: {files.length}
+                        </Typography>
+                        <Box sx={{ maxHeight: 120, overflow: 'auto', border: '1px solid #eee', borderRadius: 1, p: 1 }}>
+                            {files.map((file) => (
+                                <Box key={file.id} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, fontSize: '12px' }}>
+                                    <span>{file.name}</span>
+                                    <span>v{file.fileVersion}</span>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Box>
+                )}
+            </DialogContent>
+
+            <DialogActions sx={{ p: 2 }}>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={!values?.bulkUpload || values.bulkUpload.length === 0 || isLoading}
+                >
+                    {isLoading ? 'Uploading...' : 'Upload'}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
 };
 
 const mapStateToProps = (state) => ({
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
-  loggedInUserData: state.site.loggedInUserData,
+    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    loggedInUserData: state.site.loggedInUserData,
 });
 
-export default connect(mapStateToProps, {  })(BulkUpload);
+export default connect(mapStateToProps, {})(BulkUpload);
