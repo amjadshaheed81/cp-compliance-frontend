@@ -19,6 +19,7 @@ import {
   getSitePFPAssets,
 } from "../../../../store/thunk/site";
 import Swal from "sweetalert2";
+import { useNavigate, useLocation } from "react-router-dom"; // Add these imports
 
 const Assets = ({
   siteSelectedForGlobal,
@@ -29,10 +30,24 @@ const Assets = ({
 }) => {
   // tab value
   const [value, setValue] = useState("1");
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const tabChange = (event, newValue) => {
     event?.preventDefault();
     setValue(newValue);
+
+    // Clear all filter storages when switching tabs
+    localStorage.removeItem('assetFilters'); // Summary
+    localStorage.removeItem('doorAssetFilters'); // Doors
+    localStorage.removeItem('patAssetFilters'); // PAT
+    localStorage.removeItem('PFAssetFilters'); // PFP
+
+    // Reset URL to base path without any parameters
+    const basePath = location.pathname; // This gives "/assets"
+    navigate(basePath, { replace: true });
   };
+
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
@@ -47,6 +62,7 @@ const Assets = ({
       });
     }
   }, []);
+
   return (
     <Fragment>
       <SidebarNew />
@@ -85,17 +101,17 @@ const Assets = ({
               </TabPanel>
             </TabContext>
           </Box>
-          {/*  */}
-          {/*  */}
         </div>
       </div>
     </Fragment>
   );
 };
+
 const mapStateToProps = (state) => ({
   siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
+
 export default connect(mapStateToProps, {
   getSiteAssets,
   getSitePFPAssets,
