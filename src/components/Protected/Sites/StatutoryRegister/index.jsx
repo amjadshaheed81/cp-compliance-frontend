@@ -30,7 +30,7 @@ export const findAssetWithNearestPatNextDate = (assets) => {
   assets.forEach((asset) => {
     if (asset.assetPATItems) {
       asset.assetPATItems.forEach((patItem) => {
-        const patNextDate = new Date(patItem.patNextDate);
+        const patNextDate = (patItem.patNextDate);
 
         // Check if it's the first date or closer than the previous nearestDate
         if (!nearestDate || patNextDate < nearestDate) {
@@ -445,6 +445,7 @@ const StatutoryRegister = ({
           matchedCheckReq.patDate,
           matchedCheckReq.patNextDate,
           matchedCheckReq,
+          true,
         );
       } else {
         return getStartAndExpiryDateRow(
@@ -459,7 +460,7 @@ const StatutoryRegister = ({
   };
 
   // Helper function to create table row with start and expiry dates
-  const getStartAndExpiryDateRow = (startDate, dueDate, action) => {
+  const getStartAndExpiryDateRow = (startDate, dueDate, action, isPatItem = false) => {
     return (
       <tr>
         {[...Array(3)].map((_, idx) => (
@@ -472,7 +473,10 @@ const StatutoryRegister = ({
           {startDate ? moment(startDate).format("DD-MM-YYYY") : "--"}
         </th>
         <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
-          {getSiteCheckDueDate(action)}
+          {isPatItem
+            ? (dueDate ? moment(dueDate).format("DD-MM-YYYY") : "--")
+            : getSiteCheckDueDate(action)
+          }
         </th>
         {[...Array(2)].map((_, idx) => (
           <th
