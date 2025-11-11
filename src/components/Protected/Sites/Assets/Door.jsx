@@ -446,6 +446,25 @@ const Door = ({
     );
   };
 
+  // Add this function after the handleFieldUpdate function
+  const handleDoorSpecUpdate = (assetId, field, value) => {
+    setSelectedItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.assetId === assetId) {
+          const updatedItem = {
+            ...item,
+            assetDoorSpecifications: {
+              ...item.assetDoorSpecifications,
+              [field]: value,
+            },
+          };
+          return updatedItem;
+        }
+        return item;
+      })
+    );
+  };
+
   const handleSaveMultiEdit = async () => {
     try {
       setIsLoading(true);
@@ -678,383 +697,530 @@ const Door = ({
             />
         )}
 
-        {showMultiEditModal && (
-            <div
-                className="modal fade show"
-                style={{ display: "block", backgroundColor: "rgba(86, 86, 86, 0.2)" }}
-            >
-              <div
-                  className="modal-dialog modal-dialog-scrollable"
-                  style={{ width: "90vw", maxWidth: "90vw" }}
-              >
-                <div
-                    className="modal-content"
-                    style={{ minHeight: "90vh", minWidth: "90vw" }}
-                >
-                  <div className="modal-header">
-                    <h5 className="modal-title">
-                      Edit Multiple Assets ({selectedItems.length} selected)
-                    </h5>
-                    <button
-                        type="button"
-                        className="btn-close"
-                        onClick={() => setShowMultiEditModal(false)}
-                        disabled={isLoading}
-                    ></button>
-                  </div>
-                  <div className="modal-body p-0">
-                    <div className="table-responsive" style={{ maxHeight: "70vh" }}>
-                      <table className="table table-hover mb-0">
-                        <thead className="sticky-top bg-light">
-                        <tr>
-                          <th style={{ width: "100px", minWidth: "100px" }}>
-                            Asset ID
-                          </th>
-                          <th style={{ width: "400px", minWidth: "400px" }}>
-                            Asset Name
-                          </th>
-                          <th style={{ width: "50px", minWidth: "50px" }}>
-                            Manufacturer
-                          </th>
-                          <th style={{ width: "50px", minWidth: "50px" }}>
-                            Category
-                          </th>
-                          <th style={{ width: "200px", minWidth: "200px" }}>
-                            Sub Category
-                          </th>
-                          <th style={{ width: "200px", minWidth: "200px" }}>
-                            Sub Cat 2
-                          </th>
-                          <th style={{ width: "200px", minWidth: "200px" }}>
-                            Sub Cat 3
-                          </th>
-                          <th style={{ width: "100px", minWidth: "100px" }}>
-                            Position
-                          </th>
-                          <th style={{ width: "200px", minWidth: "200px" }}>
-                            Floor
-                          </th>
-                          <th style={{ width: "200px", minWidth: "200px" }}>
-                            Room
-                          </th>
-                          <th style={{ width: "50px", minWidth: "50px" }}>
-                            Power Output (KW)
-                          </th>
-                        </tr>
-                        </thead>
-                        <tbody style={{ overflowY: "auto" }}>
-                        {selectedItems.map((asset) => {
-                          const subCategoryOptions =
-                              subCategory?.filter(
-                                  (itm) => itm.attribite1 === asset.category
-                              ) || [];
-                          const subCategory2Options =
-                              subCategory2?.filter(
-                                  (itm) => itm.attribite1 === asset.subCategory
-                              ) || [];
-                          const subCategory3Options =
-                              subCategory3?.filter(
-                                  (itm) => itm.attribite1 === asset.subCategory2
-                              ) || [];
-
-                          return (
-                              <tr key={asset.assetId}>
-                                <td style={{ width: "200px", minWidth: "200px" }}>
-                                  {asset.assetId}
-                                </td>
-                                <td style={{ width: "200px", minWidth: "200px" }}>
-                                  <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      value={asset.assetName || ""}
-                                      onChange={(e) =>
-                                          handleFieldUpdate(
-                                              asset.assetId,
-                                              "assetName",
-                                              e.target.value
-                                          )
-                                      }
-                                  />
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      value={asset.manufacturer || ""}
-                                      onChange={(e) =>
-                                          handleFieldUpdate(
-                                              asset.assetId,
-                                              "manufacturer",
-                                              e.target.value
-                                          )
-                                      }
-                                  />
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.category || ""}
-                                      onChange={(e) => {
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "category",
-                                            e.target.value
-                                        );
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory",
-                                            ""
-                                        );
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory2",
-                                            ""
-                                        );
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory3",
-                                            ""
-                                        );
-                                      }}
-                                  >
-                                    <option value="">Select</option>
-                                    {category?.map((opt) => (
-                                        <option
-                                            key={opt.lovValue}
-                                            value={opt.lovValue}
-                                        >
-                                          {opt.lovValue}
-                                        </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.subCategory || ""}
-                                      onChange={(e) => {
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory",
-                                            e.target.value
-                                        );
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory2",
-                                            ""
-                                        );
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory3",
-                                            ""
-                                        );
-                                      }}
-                                      disabled={!asset.category}
-                                  >
-                                    <option value="">Select</option>
-                                    {subCategoryOptions.map((opt) => (
-                                        <option
-                                            key={opt.lovValue}
-                                            value={opt.lovValue}
-                                        >
-                                          {opt.lovValue}
-                                        </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.subCategory2 || ""}
-                                      onChange={(e) => {
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory2",
-                                            e.target.value
-                                        );
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "subCategory3",
-                                            ""
-                                        );
-                                      }}
-                                      disabled={!asset.subCategory}
-                                  >
-                                    <option value="">Select</option>
-                                    {subCategory2Options.map((opt) => (
-                                        <option
-                                            key={opt.lovValue}
-                                            value={opt.lovValue}
-                                        >
-                                          {opt.lovValue}
-                                        </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.subCategory3 || ""}
-                                      onChange={(e) =>
-                                          handleFieldUpdate(
-                                              asset.assetId,
-                                              "subCategory3",
-                                              e.target.value
-                                          )
-                                      }
-                                      disabled={!asset.subCategory2}
-                                  >
-                                    <option value="">Select</option>
-                                    {subCategory3Options.map((opt) => (
-                                        <option
-                                            key={opt.lovValue}
-                                            value={opt.lovValue}
-                                        >
-                                          {opt.lovValue}
-                                        </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.position || ""}
-                                      onChange={(e) => {
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "position",
-                                            e.target.value
-                                        );
-                                        handleFieldUpdate(asset.assetId, "floor", "");
-                                        handleFieldUpdate(asset.assetId, "room", "");
-                                      }}
-                                  >
-                                    <option value="">Select</option>
-                                    <option value="Interior">Interior</option>
-                                    <option value="Exterior">Exterior</option>
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.floor || ""}
-                                      onChange={(e) => {
-                                        handleFieldUpdate(
-                                            asset.assetId,
-                                            "floor",
-                                            e.target.value
-                                        );
-                                        handleFieldUpdate(asset.assetId, "room", "");
-                                      }}
-                                      disabled={!asset.position}
-                                  >
-                                    <option value="">Select</option>
-                                    {floorNode?.map((node) => (
-                                        <option
-                                            key={node.nodeName}
-                                            value={node.nodeName}
-                                        >
-                                          {node.nodeName}
-                                        </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <select
-                                      className="form-select form-select-sm"
-                                      value={asset.room || ""}
-                                      onChange={(e) =>
-                                          handleFieldUpdate(
-                                              asset.assetId,
-                                              "room",
-                                              e.target.value
-                                          )
-                                      }
-                                      disabled={!asset.floor}
-                                  >
-                                    <option value="">Select</option>
-                                    {roomNode
-                                        ?.filter(
-                                            (node) =>
-                                                node.parentNode ===
-                                                floorNode.find(
-                                                    (f) => f.nodeName === asset.floor
-                                                )?.id
-                                        )
-                                        ?.map((node) => (
-                                            <option
-                                                key={node.nodeName}
-                                                value={node.nodeName}
-                                            >
-                                              {node.nodeName}
-                                            </option>
-                                        ))}
-                                  </select>
-                                </td>
-                                <td style={{ width: "300px", minWidth: "300px" }}>
-                                  <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      value={asset.powerOutput || ""}
-                                      onChange={(e) =>
-                                          handleFieldUpdate(
-                                              asset.assetId,
-                                              "powerOutput",
-                                              e.target.value
-                                          )
-                                      }
-                                  />
-                                </td>
-                              </tr>
-                          );
-                        })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <div className="modal-footer d-flex justify-content-between">
-                    <div>
-                      <button
-                          type="button"
-                          className="btn btn-outline-secondary me-2"
-                          onClick={() => {
-                            if (
-                                window.confirm(
-                                    "Are you sure you want to discard all changes?"
+      {showMultiEditModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(86, 86, 86, 0.2)" }}>
+          <div className="modal-dialog modal-dialog-scrollable" style={{ width: "90vw", maxWidth: "90vw" }}>
+            <div className="modal-content" style={{ minHeight: "90vh", minWidth: "90vw" }}>
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Edit Multiple Assets ({selectedItems.length} selected)
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowMultiEditModal(false)}
+                  disabled={isLoading}
+                ></button>
+              </div>
+              <div className="modal-body p-0">
+                <div className="table-responsive" style={{ maxHeight: "70vh" }}>
+                  <table className="table table-hover mb-0">
+                    <thead className="sticky-top bg-light">
+                      <tr>
+                        <th style={{ width: "100px" }}>Asset ID</th>
+                        <th style={{ width: "200px" }}>Asset Name</th>
+                        <th style={{ width: "150px" }}>Manufacturer</th>
+                        {/* Door Specification Fields */}
+                        <th style={{ width: "120px" }}>Door Ref</th>
+                        <th style={{ width: "120px" }}>Door Size</th>
+                        <th style={{ width: "120px" }}>Core Durability</th>
+                        <th style={{ width: "100px" }}>Fire Rating</th>
+                        <th style={{ width: "100px" }}>DB Rating</th>
+                        <th style={{ width: "120px" }}>Door Facing</th>
+                        <th style={{ width: "120px" }}>Door Finish</th>
+                        <th style={{ width: "120px" }}>Vision Panel</th>
+                        <th style={{ width: "120px" }}>Glazing Size</th>
+                        <th style={{ width: "120px" }}>Glass Type</th>
+                        <th style={{ width: "150px" }}>Flush Bolt Cut Out</th>
+                        <th style={{ width: "120px" }}>Lock Cut Out</th>
+                        <th style={{ width: "120px" }}>Rebated MS</th>
+                        <th style={{ width: "120px" }}>CDC Cut Out</th>
+                        <th style={{ width: "120px" }}>Hinge Cut Out</th>
+                        <th style={{ width: "100px" }}>Hinges</th>
+                        <th style={{ width: "120px" }}>Frame Section</th>
+                        <th style={{ width: "100px" }}>Stop Size</th>
+                        <th style={{ width: "100px" }}>Four Sided</th>
+                        <th style={{ width: "100px" }}>Fan Light</th>
+                        <th style={{ width: "100px" }}>Screen</th>
+                        <th style={{ width: "120px" }}>Architraves</th>
+                        <th style={{ width: "120px" }}>Frame Material</th>
+                        <th style={{ width: "120px" }}>Frame Finish</th>
+                        <th style={{ width: "150px" }}>Screen/Fan Light Material</th>
+                        <th style={{ width: "100px" }}>Door Width</th>
+                        <th style={{ width: "100px" }}>Door Height</th>
+                        <th style={{ width: "100px" }}>Door Depth</th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ overflowY: "auto" }}>
+                      {selectedItems.map((asset) => (
+                        <tr key={asset.assetId}>
+                          <td>{asset.assetId}</td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetName || ""}
+                              onChange={(e) =>
+                                handleFieldUpdate(
+                                  asset.assetId,
+                                  "assetName",
+                                  e.target.value
                                 )
-                            ) {
-                              setShowMultiEditModal(false);
-                            }
-                          }}
-                          disabled={isLoading}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={handleSaveMultiEdit}
-                          disabled={isLoading}
-                      >
-                        {isLoading ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2"></span>
-                              Saving...
-                            </>
-                        ) : (
-                            `Save ${selectedItems.length} Assets`
-                        )}
-                      </button>
-                    </div>
-                    <div className="text-muted small">
-                      Showing {selectedItems.length} of {selectedItems.length}{" "}
-                      selected assets
-                    </div>
-                  </div>
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.manufacturer || ""}
+                              onChange={(e) =>
+                                handleFieldUpdate(
+                                  asset.assetId,
+                                  "manufacturer",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+
+                          {/* Door Specification Fields */}
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorRef || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorRef",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorSize || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorSize",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.coreDurability || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "coreDurability",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.fireRating || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "fireRating",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.dbRating || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "dbRating",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorFacing || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorFacing",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorFinish || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorFinish",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.visionPanel || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "visionPanel",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.glazingSize || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "glazingSize",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.glassType || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "glassType",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.flushBoltCutOut || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "flushBoltCutOut",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.lockCutOut || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "lockCutOut",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.rebatedMS || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "rebatedMS",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.cDCCutOut || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "cDCCutOut",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.hingeCutOut || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "hingeCutOut",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.hinges || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "hinges",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.frameSection || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "frameSection",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.stopSize || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "stopSize",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.fourSided || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "fourSided",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.fanLight || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "fanLight",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.screen || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "screen",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.architraves || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "architraves",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.frameMaterial || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "frameMaterial",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.frameFinish || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "frameFinish",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.ScreenFanLightMaterial || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "ScreenFanLightMaterial",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorWidth || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorWidth",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorHeight || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorHeight",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              value={asset.assetDoorSpecifications?.doorDepth || ""}
+                              onChange={(e) =>
+                                handleDoorSpecUpdate(
+                                  asset.assetId,
+                                  "doorDepth",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer d-flex justify-content-between">
+                <div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary me-2"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to discard all changes?")) {
+                        setShowMultiEditModal(false);
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSaveMultiEdit}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Saving...
+                      </>
+                    ) : (
+                      `Save ${selectedItems.length} Assets`
+                    )}
+                  </button>
+                </div>
+                <div className="text-muted small">
+                  Showing {selectedItems.length} of {selectedItems.length} selected assets
                 </div>
               </div>
             </div>
-        )}
+          </div>
+        </div>
+      )}
 
         <div className="d-flex bd-highlight">
           <div className="pt-2 bd-highlight">
@@ -1287,42 +1453,63 @@ const Door = ({
                 </Tooltip>
               </div>
               <div className="col-md-3 col-sm-4 mt-2">
-                <CSVLink
-                    filename={"selected-assets.csv"}
-                    className="btn btn-light bg-white text-primary"
-                    data={selectedItems.map((itm) => {
-                      return {
-                        assetId: itm?.assetId,
-                        assetName: itm?.assetName,
-                        manufacturer: itm?.manufacturer,
-                        category: itm?.category,
-                        subCategory: itm?.subCategory,
-                        subCategory2: itm?.subCategory2,
-                        subCategory3: itm?.subCategory3,
-                        model: itm?.model,
-                        deviceId: itm?.deviceId,
-                        serialNumber: itm?.serialNumber,
-                        relatedAssetId: itm?.relatedAssetId,
-                        folderId: itm?.folderId,
-                        patItem: itm?.patItem,
-                        pfpItem: itm?.pfpItem,
-                        doorItem: itm?.doorItem,
-                        barcode: itm?.barcode,
-                        doorWidth: itm?.assetDoorSpecifications?.width,
-                        doorHeight: itm?.assetDoorSpecifications?.height,
-                        doorDepth: itm?.assetDoorSpecifications?.depth,
-                        doorFireRating: itm?.assetDoorSpecifications?.fireRating,
-                        doorFinish: itm?.assetDoorSpecifications?.finish,
-                        doorVisionPanel: itm?.assetDoorSpecifications?.visionPanel,
-                        doorFrameMaterial: itm?.assetDoorSpecifications?.frameMaterial,
-                        doorFrameFinish: itm?.assetDoorSpecifications?.frameFinish,
-                      };
-                    })}
-                >
-                  <Tooltip title={`Export Selected Assets`} arrow>
-                    <i className="fas fa-download"></i> Export Selected
-                  </Tooltip>
-                </CSVLink>
+              <CSVLink
+                filename={"selected-assets.csv"}
+                className="btn btn-light bg-white text-primary"
+                data={selectedItems.map((itm) => {
+                  return {
+                    assetId: itm?.assetId,
+                    assetName: itm?.assetName,
+                    manufacturer: itm?.manufacturer,
+                    category: itm?.category,
+                    subCategory: itm?.subCategory,
+                    subCategory2: itm?.subCategory2,
+                    subCategory3: itm?.subCategory3,
+                    model: itm?.model,
+                    deviceId: itm?.deviceId,
+                    serialNumber: itm?.serialNumber,
+                    relatedAssetId: itm?.relatedAssetId,
+                    folderId: itm?.folderId,
+                    patItem: itm?.patItem,
+                    pfpItem: itm?.pfpItem,
+                    doorItem: itm?.doorItem,
+                    barcode: itm?.barcode,
+                    // New door specification fields
+                    doorRef: itm?.assetDoorSpecifications?.doorRef,
+                    doorSize: itm?.assetDoorSpecifications?.doorSize,
+                    coreDurability: itm?.assetDoorSpecifications?.coreDurability,
+                    fireRating: itm?.assetDoorSpecifications?.fireRating,
+                    dbRating: itm?.assetDoorSpecifications?.dbRating,
+                    doorFacing: itm?.assetDoorSpecifications?.doorFacing,
+                    doorFinish: itm?.assetDoorSpecifications?.doorFinish,
+                    visionPanel: itm?.assetDoorSpecifications?.visionPanel,
+                    glazingSize: itm?.assetDoorSpecifications?.glazingSize,
+                    glassType: itm?.assetDoorSpecifications?.glassType,
+                    flushBoltCutOut: itm?.assetDoorSpecifications?.flushBoltCutOut,
+                    lockCutOut: itm?.assetDoorSpecifications?.lockCutOut,
+                    rebatedMS: itm?.assetDoorSpecifications?.rebatedMS,
+                    cDCCutOut: itm?.assetDoorSpecifications?.cDCCutOut,
+                    hingeCutOut: itm?.assetDoorSpecifications?.hingeCutOut,
+                    hinges: itm?.assetDoorSpecifications?.hinges,
+                    frameSection: itm?.assetDoorSpecifications?.frameSection,
+                    stopSize: itm?.assetDoorSpecifications?.stopSize,
+                    fourSided: itm?.assetDoorSpecifications?.fourSided,
+                    fanLight: itm?.assetDoorSpecifications?.fanLight,
+                    screen: itm?.assetDoorSpecifications?.screen,
+                    architraves: itm?.assetDoorSpecifications?.architraves,
+                    frameMaterial: itm?.assetDoorSpecifications?.frameMaterial,
+                    frameFinish: itm?.assetDoorSpecifications?.frameFinish,
+                    screenFanLightMaterial: itm?.assetDoorSpecifications?.ScreenFanLightMaterial,
+                    doorWidth: itm?.assetDoorSpecifications?.doorWidth,
+                    doorHeight: itm?.assetDoorSpecifications?.doorHeight,
+                    doorDepth: itm?.assetDoorSpecifications?.doorDepth,
+                  };
+                })}
+              >
+                <Tooltip title={`Export Selected Assets`} arrow>
+                  <i className="fas fa-download"></i> Export Selected
+                </Tooltip>
+              </CSVLink>
               </div>
               <div className="col-md-2 col-sm-4 mt-2">
                 <Tooltip title={`Upload CSV to Update Assets`} arrow>
@@ -1390,122 +1577,112 @@ const Door = ({
         <div className="row p-2">
           <div className="col-md-12 table-responsive">
             <table className="table">
-              <thead className="table-dark">
+            <thead className="table-dark">
               <tr>
                 <th>
                   <input
-                      type="checkbox"
-                      onChange={handleSelectAllChange}
-                      className="form-check-input"
-                      checked={
-                          selectedItems.length === filteredSiteDoorItems.length
-                      }
+                    type="checkbox"
+                    onChange={handleSelectAllChange}
+                    className="form-check-input"
+                    checked={selectedItems.length === filteredSiteDoorItems.length}
                   />
                 </th>
                 <th scope="col">Asset ID</th>
                 <th scope="col">Asset Name</th>
+                <th scope="col">Door Ref</th>
                 <th scope="col">Door Size</th>
                 <th scope="col">Fire Rating</th>
+                <th scope="col">DB Rating</th>
                 <th scope="col">Location</th>
                 <th scope="col">Door Finish</th>
                 <th scope="col">Vision Panel</th>
-                <th scope="col">Frame</th>
+                <th scope="col">Frame Material</th>
                 <th scope="col">Actions</th>
               </tr>
-              </thead>
-              <tbody>
+            </thead>
+
+            <tbody>
               {!isLoading && currentSiteAssets?.length === 0 && (
-                  <tr>
-                    <td>No Result Found !!</td>
-                  </tr>
+                <tr>
+                  <td colSpan="12">No Result Found !!</td>
+                </tr>
               )}
               {isLoading && (
-                  <tr>
-                    <td>Loading...</td>
-                  </tr>
+                <tr>
+                  <td colSpan="12">Loading...</td>
+                </tr>
               )}
               {!isLoading && currentSiteAssets?.map((asset) => (
-                  <tr key={asset?.id}>
-                    <th>
-                      <input
-                          type="checkbox"
-                          className="form-check-input"
-                          onChange={(e) => handleCheckboxChange(e, asset)}
-                          checked={selectedItems.some(
-                              (item) => item.assetId === asset.assetId
-                          )}
-                      />
-                    </th>
-                    <th scope="col">{asset?.assetId}</th>
-                    <th scope="col">{asset?.assetName}</th>
-                    <th scope="col">
-                      {asset?.assetDoorSpecifications?.width} *{" "}
-                      {asset?.assetDoorSpecifications?.height}
-                    </th>
-                    <th scope="col">
-                      {asset?.assetDoorSpecifications?.fireRating}
-                    </th>
-                    <th scope="col">{asset?.location}</th>
-                    <th scope="col">
-                      {asset?.assetDoorSpecifications?.frameFinish}
-                    </th>
-                    <th scope="col">
-                      {asset?.assetDoorSpecifications?.visionPanel}
-                    </th>
-                    <th scope="col">
-                      {asset?.assetDoorSpecifications?.frameMaterial}
-                    </th>
-                    <th scope="col">
-                      <Tooltip title={`View ${asset.assetName}`} arrow>
-                        <button
-                            className="btn btn-sm btn-light"
-                            onClick={() => {
-                              goTo(`/view-asset?assetId=${asset?.assetId}`);
-                            }}
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip title={`Edit ${asset.assetName}`} arrow>
-                        <button
-                            className="btn btn-sm btn-light"
-                            onClick={() => {
-                              goTo(`/update-asset?assetId=${asset?.assetId}`);
-                            }}
-                        >
-                          <i className="fas fa-pen"></i>
-                        </button>{" "}
-                      </Tooltip>
-                      <Tooltip
-                          title={`View QR code for ${asset.assetName}`}
-                          arrow
+                <tr key={asset?.id}>
+                  <th>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      onChange={(e) => handleCheckboxChange(e, asset)}
+                      checked={selectedItems.some(
+                        (item) => item.assetId === asset.assetId
+                      )}
+                    />
+                  </th>
+                  <th scope="col">{asset?.assetId}</th>
+                  <th scope="col">{asset?.assetName}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.doorRef}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.doorSize}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.fireRating}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.dbRating}</th>
+                  <th scope="col">{asset?.location}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.doorFinish}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.visionPanel}</th>
+                  <th scope="col">{asset?.assetDoorSpecifications?.frameMaterial}</th>
+                  <th scope="col">
+                    {/* Actions remain the same */}
+                    <Tooltip title={`View ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/view-asset?assetId=${asset?.assetId}`);
+                        }}
                       >
-                        <QRCodeSVG
-                            onClick={() => {
-                              setShowAddModal(true);
-                              setSelectedAsset(asset);
-                            }}
-                            value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
-                            style={{
-                              height: "30px",
-                              width: "30px",
-                              margin: "0px 6px",
-                              cursor: "pointer",
-                            }}
-                        />
-                      </Tooltip>
-                      <Tooltip title={`Delete ${asset.assetName}`} arrow>
-                        <button
-                            className="btn btn-sm btn-light text-danger"
-                            onClick={() => deleteAsset(asset)}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>{" "}
-                      </Tooltip>
-                    </th>
-                  </tr>
+                        <i className="fas fa-eye"></i>
+                      </button>
+                    </Tooltip>
+                    <Tooltip title={`Edit ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light"
+                        onClick={() => {
+                          goTo(`/update-asset?assetId=${asset?.assetId}`);
+                        }}
+                      >
+                        <i className="fas fa-pen"></i>
+                      </button>
+                    </Tooltip>
+                    <Tooltip title={`View QR code for ${asset.assetName}`} arrow>
+                      <QRCodeSVG
+                        onClick={() => {
+                          setShowAddModal(true);
+                          setSelectedAsset(asset);
+                        }}
+                        value={`${window.location.origin}/#/view-asset?assetId=${asset?.assetId}`}
+                        style={{
+                          height: "30px",
+                          width: "30px",
+                          margin: "0px 6px",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title={`Delete ${asset.assetName}`} arrow>
+                      <button
+                        className="btn btn-sm btn-light text-danger"
+                        onClick={() => deleteAsset(asset)}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </Tooltip>
+                  </th>
+                </tr>
               ))}
-              </tbody>
+            </tbody>
             </table>
           </div>
         </div>

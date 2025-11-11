@@ -336,7 +336,13 @@ const UpdateAsset = ({
       setRoomsData(response?.floor);
     }
     passiveFireProtectionForm.reset(response?.assetPFPItem);
-    doorSpecificationForm.reset(response?.assetDoorSpecifications);
+    // In the getAssetDetails function, update the door specification form reset:
+    doorSpecificationForm.reset({
+      ...response?.assetDoorSpecifications,
+      doorWidth: response?.assetDoorSpecifications?.doorWidth,
+      doorHeight: response?.assetDoorSpecifications?.doorHeight,
+      doorDepth: response?.assetDoorSpecifications?.doorDepth,
+    });
     reset(response);
     initRelatedAssetOptions(response);
   };
@@ -709,16 +715,29 @@ const UpdateAsset = ({
   };
 
   const doorSpecificationForm = useForm({});
+
   const submitDoorSpecificationForm = async (data) => {
     const submitData = {
       ...data,
       assetId: selectedAsset?.assetId,
+      width: data.doorWidth || '',
+      height: data.doorHeight || '',
+      depth: data.doorDepth || '',
     };
+
     setLoader(true);
-    await updateDoorSpecification(submitData, selectedAsset?.assetId);
-    setLoader(false);
-    getAssetDetails();
+    try {
+      await updateDoorSpecification(submitData, selectedAsset?.assetId);
+      toast.success("Door specifications updated successfully");
+      getAssetDetails();
+    } catch (error) {
+      toast.error("Failed to update door specifications");
+      console.error("Door specification update error:", error);
+    } finally {
+      setLoader(false);
+    }
   };
+
   const subCategoryChange = (val) => {
     setValue("subCategory", val);
     const subCategoryData = subCategory2?.filter(
@@ -1503,17 +1522,22 @@ const UpdateAsset = ({
                             value="7"
                         />
                     )}
-                    {selectedAsset?.doorItem && (
-                        <Tab
-                            className={
-                              selectedAsset?.assetDoorSpecifications
-                                  ? "text-success"
-                                  : "text-warning"
-                            }
-                            label="Door Specifications"
-                            value="8"
-                        />
-                    )}
+
+                  {selectedAsset?.doorItem && (
+                    <Tab
+                      className={
+                        selectedAsset?.assetDoorSpecifications &&
+                          (selectedAsset?.assetDoorSpecifications.doorWidth ||
+                            selectedAsset?.assetDoorSpecifications.doorHeight ||
+                            selectedAsset?.assetDoorSpecifications.doorRef ||
+                            selectedAsset?.assetDoorSpecifications.fireRating)
+                          ? "text-success"
+                          : "text-warning"
+                      }
+                      label="Door Specifications"
+                      value="8"
+                    />
+                  )}
                   </TabList>
                 </Box>
                 <TabPanel value="1">
@@ -2573,288 +2597,518 @@ const UpdateAsset = ({
                     </div>
                   </form>
                 </TabPanel>
-                <TabPanel value="8">
-                  <form
-                      onSubmit={doorSpecificationForm.handleSubmit(
-                          submitDoorSpecificationForm
-                      )}
-                  >
-                    <div className="row">
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="width">Door Width (mm)</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="width"
-                              name="width"
-                              placeholder=""
-                              {...doorSpecificationForm.register("width", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter door width (in mm)`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors?.width && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors?.width
-                                        ?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors?.width
-                                        ?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="height">Door Height (mm)</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="height"
-                              name="height"
-                              placeholder=""
-                              {...doorSpecificationForm.register("height", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter door height (in mm)`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors?.height && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors?.height
-                                        ?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors?.height
-                                        ?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="depth">Door Depth (mm)</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="depth"
-                              name="depth"
-                              placeholder=""
-                              {...doorSpecificationForm.register("depth", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter door depth (in mm)`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors?.depth && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors?.depth
-                                        ?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors?.depth
-                                        ?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="finish">Door Finish</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="finish"
-                              name="finish"
-                              placeholder=""
-                              {...doorSpecificationForm.register("finish", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter door finish`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors?.finish && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors?.finish
-                                        ?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors?.finish
-                                        ?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="visionPanel">Vision Panel</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="visionPanel"
-                              name="visionPanel"
-                              placeholder=""
-                              {...doorSpecificationForm.register("visionPanel", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter vision panel`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors
-                              ?.visionPanel && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors
-                                        ?.visionPanel?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors
-                                        ?.visionPanel?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="fireRating">Fire Rating</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="fireRating"
-                              name="fireRating"
-                              placeholder=""
-                              {...doorSpecificationForm.register("fireRating", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter fire rating`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors?.fireRating && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors?.fireRating
-                                        ?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors?.fireRating
-                                        ?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="frameMaterial">Fire Material</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="frameMaterial"
-                              name="frameMaterial"
-                              placeholder=""
-                              {...doorSpecificationForm.register("frameMaterial", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter fire material`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors
-                              ?.frameMaterial && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors
-                                        ?.frameMaterial?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors
-                                        ?.frameMaterial?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group mt-2">
-                          <label for="frameFinish">Frame Finish</label>
-                          <input
-                              type="text"
-                              autoComplete="off"
-                              readOnly
-                              onFocus={(e) => e.target.removeAttribute("readonly")}
-                              className="form-control"
-                              id="frameFinish"
-                              name="frameFinish"
-                              placeholder=""
-                              {...doorSpecificationForm.register("frameFinish", {
-                                required: {
-                                  value: true,
-                                  message: `Please enter frame finish`,
-                                },
-                              })}
-                          />
-                          {doorSpecificationForm.formState.errors
-                              ?.frameFinish && (
-                              <InputError
-                                  message={
-                                    doorSpecificationForm.formState.errors
-                                        ?.frameFinish?.message
-                                  }
-                                  key={
-                                    doorSpecificationForm.formState.errors
-                                        ?.frameFinish?.message
-                                  }
-                              />
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <button type="submit" className="btn btn-primary mt-2">
-                          Save
-                        </button>
+              <TabPanel value="8">
+                <form
+                  onSubmit={doorSpecificationForm.handleSubmit(
+                    submitDoorSpecificationForm
+                  )}
+                >
+                  <div className="row">
+                    {/* Basic Door Dimensions */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorWidth">Door Width (mm)</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="doorWidth"
+                          name="doorWidth"
+                          placeholder=""
+                          {...doorSpecificationForm.register("doorWidth")}
+                        />
                       </div>
                     </div>
-                  </form>
-                </TabPanel>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorHeight">Door Height (mm)</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="doorHeight"
+                          name="doorHeight"
+                          placeholder=""
+                          {...doorSpecificationForm.register("doorHeight")}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorDepth">Door Depth (mm)</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="doorDepth"
+                          name="doorDepth"
+                          placeholder=""
+                          {...doorSpecificationForm.register("doorDepth")}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Door Reference and Size */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorRef">Door Reference</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="doorRef"
+                          name="doorRef"
+                          placeholder=""
+                          {...doorSpecificationForm.register("doorRef")}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorSize">Door Size</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="doorSize"
+                          name="doorSize"
+                          placeholder=""
+                          {...doorSpecificationForm.register("doorSize")}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="coreDurability">Core Durability</label>
+                        <select
+                          className="form-control form-select"
+                          id="coreDurability"
+                          name="coreDurability"
+                          {...doorSpecificationForm.register("coreDurability")}
+                        >
+                          <option value="">Please Select Core Durability</option>
+                          <option value="Specialist">Specialist</option>
+                          <option value="Sever duty">Sever duty</option>
+                        </select>
+                      </div>
+                    </div>
+                    {/* Ratings */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="fireRating">Fire Rating</label>
+                        <select
+                          className="form-control form-select"
+                          id="fireRating"
+                          name="fireRating"
+                          {...doorSpecificationForm.register("fireRating")}
+                        >
+                          <option value="">Please Select Fire Rating</option>
+                          <option value="None">None</option>
+                          <option value="FD30">FD30</option>
+                          <option value="FD60">FD60</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="dbRating">DB Rating</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="dbRating"
+                          name="dbRating"
+                          placeholder=""
+                          {...doorSpecificationForm.register("dbRating")}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Door Facing and Finish */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorFacing">Door Facing</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="doorFacing"
+                          name="doorFacing"
+                          placeholder=""
+                          {...doorSpecificationForm.register("doorFacing")}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="doorFinish">Door Finish</label>
+                        <select
+                          className="form-control form-select"
+                          id="doorFinish"
+                          name="doorFinish"
+                          {...doorSpecificationForm.register("doorFinish")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Primed">Primed</option>
+                          <option value="Lacquered">
+                            Lacquered
+                          </option>
+                          <option value="Oak">
+                            Oak
+                          </option>
+                          <option value="Powder Coating">
+                            Powder Coating
+                          </option>
+                          <option value="Veneered">
+                            Veneered
+                          </option>
+                          <option value="Wallnut">
+                            Wallnut
+                          </option>
+                          <option value="Mahogony">Mahogony</option>
+                          <option value="Beach">Beach</option>
+                          <option value="Papered">Papered</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="finish">Finish</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="finish"
+                          name="finish"
+                          placeholder=""
+                          {...doorSpecificationForm.register("finish")}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Vision Panel and Glazing */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="visionPanel">Vision Panel</label>
+                        <select
+                          className="form-control form-select"
+                          id="visionPanel"
+                          name="visionPanel"
+                          {...doorSpecificationForm.register("visionPanel")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="None">None</option>
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="glazingSize">Glazing Size</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="glazingSize"
+                          name="glazingSize"
+                          placeholder=""
+                          {...doorSpecificationForm.register("glazingSize")}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="glassType">Glass Type</label>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="glassType"
+                          name="glassType"
+                          placeholder=""
+                          {...doorSpecificationForm.register("glassType")}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cut Outs */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="flushBoltCutOut">Flush Bolt Cut Out</label>
+                        <select
+                          className="form-control form-select"
+                          id="flushBoltCutOut"
+                          name="flushBoltCutOut"
+                          {...doorSpecificationForm.register("flushBoltCutOut")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="lockCutOut">Lock Cut Out</label>
+                        <select
+                          className="form-control form-select"
+                          id="lockCutOut"
+                          name="lockCutOut"
+                          {...doorSpecificationForm.register("lockCutOut")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="rebatedMS">Rebated M/S</label>
+                        <select
+                          className="form-control form-select"
+                          id="rebatedMS"
+                          name="rebatedMS"
+                          {...doorSpecificationForm.register("rebatedMS")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Additional Cut Outs */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="cDCCutOut">C.D.C Cut Out</label>
+                        <select
+                          className="form-control form-select"
+                          id="cDCCutOut"
+                          name="cDCCutOut"
+                          {...doorSpecificationForm.register("cDCCutOut")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="hingeCutOut">Hinge Cut Out</label>
+                        <select
+                          className="form-control form-select"
+                          id="hingeCutOut"
+                          name="hingeCutOut"
+                          {...doorSpecificationForm.register("hingeCutOut")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="hinges">Hinges</label>
+                        <select
+                          className="form-control form-select"
+                          id="hinges"
+                          name="hinges"
+                          {...doorSpecificationForm.register("hinges")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Frame Details */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="frameSection">Frame Section</label>
+                        <select
+                          className="form-control form-select"
+                          id="frameSection"
+                          name="frameSection"
+                          {...doorSpecificationForm.register("frameSection")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="120 x 32">120 x 32 mm</option>
+                          <option value="120 x 32/38">120 x 32/38 mm</option>
+                          <option value="85 x 38">85 x 38 mm</option>
+                          <option value="150 x 38">150 x 38 mm</option>
+                          <option value="130 x 38">130 x 38 mm</option>
+                          <option value="110 x 38">110 x 38 mm</option>
+                          <option value="115 x 44">115 x 44 mm</option>
+                          <option value="115 x 32">115 x 32 mm</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="stopSize">Stop Size</label>
+                        <select
+                          className="form-control form-select"
+                          id="stopSize"
+                          name="stopSize"
+                          {...doorSpecificationForm.register("stopSize")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="44 x 19">44 x 19 mm</option>
+                          <option value="D/S">D/S</option>
+                          <option value="32 x 12">32 x 12 mm</option>
+                          <option value="44 x 25">44 x 25 mm</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="fourSided">Four Sided</label>
+                        <select
+                          className="form-control form-select"
+                          id="fourSided"
+                          name="fourSided"
+                          {...doorSpecificationForm.register("fourSided")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Additional Features */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="fanLight">Fan Light</label>
+                        <select
+                          className="form-control form-select"
+                          id="fanLight"
+                          name="fanLight"
+                          {...doorSpecificationForm.register("fanLight")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="screen">Screen</label>
+                        <select
+                          className="form-control form-select"
+                          id="screen"
+                          name="screen"
+                          {...doorSpecificationForm.register("screen")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="architraves">Architraves</label>
+                        <select
+                          className="form-control form-select"
+                          id="architraves"
+                          name="architraves"
+                          {...doorSpecificationForm.register("architraves")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Frame Material and Finish */}
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="frameMaterial">Frame Material</label>
+                        <select
+                          className="form-control form-select"
+                          id="hinges"
+                          name="hinges"
+                          {...doorSpecificationForm.register("hinges")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="Redwood">Redwood</option>
+                          <option value="HardWood">HardWood</option>
+                          <option value="Aliminium">Aliminium</option>
+                          <option value="Unknown">Unknown</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="frameFinish">Frame Finish</label>
+                        <select
+                          className="form-control form-select"
+                          id="frameFinish"
+                          name="frameFinish"
+                          {...doorSpecificationForm.register("frameFinish")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="No">No</option>
+                          <option value="Primmed">Primed</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mt-2">
+                        <label htmlFor="ScreenFanLightMaterial">Screen/Fan Light Material</label>
+                        <select
+                          className="form-control form-select"
+                          id="ScreenFanLightMaterial"
+                          name="ScreenFanLightMaterial"
+                          {...doorSpecificationForm.register("ScreenFanLightMaterial")}
+                        >
+                          <option value="">Please Select</option>
+                          <option value="None">None</option>
+                          <option value="RedWood">Redwood</option>
+                          <option value="HardWood">Hardwood</option>
+                        </select>
+                      </div>
+                    </div>
+
+
+                    <div className="col-12">
+                      <button type="submit" className="btn btn-primary mt-2">
+                        Save Door Specifications
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </TabPanel>
               </TabContext>
             </Box>
             {/*  */}
