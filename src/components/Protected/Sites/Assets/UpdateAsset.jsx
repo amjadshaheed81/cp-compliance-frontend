@@ -2785,22 +2785,7 @@ const UpdateAsset = ({
                         </select>
                       </div>
                     </div>
-                    <div className="col-md-4">
-                      <div className="form-group mt-2">
-                        <label htmlFor="finish">Finish</label>
-                        <input
-                          type="text"
-                          autoComplete="off"
-                          readOnly
-                          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          className="form-control"
-                          id="finish"
-                          name="finish"
-                          placeholder=""
-                          {...doorSpecificationForm.register("finish")}
-                        />
-                      </div>
-                    </div>
+
 
                     {/* Vision Panel and Glazing */}
                     <div className="col-md-4">
