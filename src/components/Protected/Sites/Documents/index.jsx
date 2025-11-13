@@ -16,6 +16,7 @@ import {
   MoveDown,
   Edit,
   NavigateNext as NavigateNextIcon,
+  BackspaceSharp as ClearIcon
 } from "@mui/icons-material";
 import moment from "moment";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
@@ -59,7 +60,7 @@ const Document = ({
   setLoader,
   subfolderFiles,
 }) => {
-  
+
   const [searchParams] = useSearchParams();
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isCreateFileModalOpen, setIsCreateFileModalOpen] = useState(false);
@@ -84,6 +85,7 @@ const Document = ({
   });
   const [currentFolderData, setCurrentFolderData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchValue, setSearchValue] = useState(""); // Add state for search value
 
   // Helper functions for endpoints
   const getFolderEndpoint = (folderId) => {
@@ -161,15 +163,15 @@ const Document = ({
         isRoot: folder.id === "root",
       });
 
-      newColumns.forEach((c,i)=>{
-        if(i < newColumns.length - 1) {
-          c.data.forEach(d=>{
-            d.selected = newColumns[i+1].id === d.id; 
+      newColumns.forEach((c, i) => {
+        if (i < newColumns.length - 1) {
+          c.data.forEach(d => {
+            d.selected = newColumns[i + 1].id === d.id;
           })
         }
-        
+
       })
-      console.log('newColumns',newColumns)
+      console.log('newColumns', newColumns)
       setColumns(newColumns);
       setCurrentFolder(folderData);
 
@@ -194,9 +196,9 @@ const Document = ({
       const endpoint = getFolderEndpoint(folderId);
       const response = await get(endpoint);
       await new Promise((resolve) => setTimeout(resolve, 500));
-      
 
-      
+
+
       newColumns.push({
         id: folderId,
         data: response?.document?.childFolders || [],
@@ -275,8 +277,8 @@ const Document = ({
         });
       } else {
         const newColumns = [];
-        columns.forEach((c,i)=>{
-          if(i <= colIndex) {
+        columns.forEach((c, i) => {
+          if (i <= colIndex) {
             newColumns.push(c);
           }
         })
@@ -304,6 +306,8 @@ const Document = ({
 
   const searchDocument = async (e) => {
     const value = e?.target?.value;
+    setSearchValue(value); // Update search value state
+
     if (value && value.length > 0) {
       const url = `/api/document/file/search?q=${value}&siteId=${siteSelectedForGlobal?.siteId}`;
       try {
@@ -318,6 +322,13 @@ const Document = ({
       setFileList([]);
       setError("");
     }
+  };
+
+  // Add clear search function
+  const clearSearch = () => {
+    setSearchValue("");
+    setFileList([]);
+    setError("");
   };
 
   // Enhanced deleteFileHandler with proper sequencing
@@ -366,20 +377,20 @@ const Document = ({
     newColumns.push(columns[0]);
     const data = item.paths.reverse();
     data.push(item.folderId)
-    for(const i of data) {
+    for (const i of data) {
       await handleFolderClickSearch(i, newColumns);
     }
-    setCurrentFolderData(newColumns[newColumns.length -1]);
-    newColumns.forEach((c,i)=>{
-      if(i < newColumns.length - 1) {
-        c.data.forEach(d=>{
-          d.selected = newColumns[i+1].id === d.id; 
+    setCurrentFolderData(newColumns[newColumns.length - 1]);
+    newColumns.forEach((c, i) => {
+      if (i < newColumns.length - 1) {
+        c.data.forEach(d => {
+          d.selected = newColumns[i + 1].id === d.id;
         })
       }
-      
+
     })
     setColumns(newColumns);
-    setCurrentFolder(newColumns[newColumns.length -1]);
+    setCurrentFolder(newColumns[newColumns.length - 1]);
   }
 
   // Enhanced deleteFolderHandler with proper sequencing
@@ -417,7 +428,7 @@ const Document = ({
           );
         } else {
           // If it was a root folder, refresh root using root endpoint
-         // await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
+          // await getDocumentsRootFolder(siteSelectedForGlobal?.siteId);
         }
 
         toast.success(`${folderName} has been deleted successfully`);
@@ -673,44 +684,66 @@ const Document = ({
         </Breadcrumbs>
 
         <div className="row mt-4 mb-4">
-          <div className="col-md-6 col-sm-12">
-            <i
-              style={{
-                position: "absolute",
-                color: "lightgrey",
-                paddingLeft: "1.5rem",
-              }}
-              className="fas fa-search p-3"
-            ></i>
-            <input
-              type="text"
-              autoComplete="off"
-              readOnly
-              onFocus={(e) => e.target.removeAttribute("readonly")}
-              style={{ textAlign: "justify", paddingLeft: "2rem" }}
-              className="form-control m-2"
-              id="search"
-              name="search"
-              placeholder="Search for Document"
-              onChange={searchDocument}
-              onKeyDown={(event) => {
-                if (event.key === "Tab") {
-                  setFileList([]);
-                }
-              }}
-            />
+          <div className="col-md-6 col-sm-12 position-relative">
+            <div className="d-flex align-items-center">
+              <div className="position-relative flex-grow-1">
+                <i
+                  style={{
+                    position: "absolute",
+                    color: "lightgrey",
+                    paddingLeft: "1.5rem",
+                    zIndex: 10,
+                  }}
+                  className="fas fa-search p-3"
+                ></i>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  readOnly
+                  onFocus={(e) => e.target.removeAttribute("readonly")}
+                  style={{ textAlign: "justify", paddingLeft: "2rem" }}
+                  className="form-control m-2"
+                  id="search"
+                  name="search"
+                  placeholder="Search for Document"
+                  value={searchValue} // Bind value to state
+                  onChange={searchDocument}
+                  onKeyDown={(event) => {
+                    if (event.key === "Tab") {
+                      setFileList([]);
+                    }
+                  }}
+                />
+                {searchValue && (
+                  <Tooltip title="Clear search" arrow>
+                    <ClearIcon
+                      onClick={clearSearch}
+                      style={{
+                        position: "absolute",
+                        right: "25px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#d82727ff",
+                        cursor: "pointer",
+                        zIndex: 10,
+                      }}
+                    />
+                  </Tooltip>
+                )}
+              </div>
+            </div>
             {fileList?.files?.length > 0 && (
-              <ul className="fileSearchResult fileSearchResultSite w-100 bg-secondary" style={{background:'yellow'}}>
+              <ul className="fileSearchResult fileSearchResultSite w-100 bg-secondary" style={{ background: 'yellow' }}>
                 {fileList?.files?.map((itm) => (
 
-                    <span className="badge bg-secondary text-start fw-normal" onClick={()=> openFolder(itm)}>
-                      <i
-                        style={{ color: "#384BD3" }}
-                        className="fas fa-folder fa-1x"
-                      ></i>{" "}
-                      {itm?.folderName}/<b>{itm?.name}</b>
-                    </span>
-                  
+                  <span className="badge bg-secondary text-start fw-normal" onClick={() => openFolder(itm)}>
+                    <i
+                      style={{ color: "#384BD3" }}
+                      className="fas fa-folder fa-1x"
+                    ></i>{" "}
+                    {itm?.folderName}/<b>{itm?.name}</b>
+                  </span>
+
                 ))}
               </ul>
             )}
@@ -720,16 +753,16 @@ const Document = ({
           {/* Action Buttons */}
           {columns.length > 1 && !isManagerAdminLogin(loggedInUserData) && (
             <div className="col-md-6 col-sm-12 text-end">
-            <Tooltip title="Go Back" arrow>
-              <ReplyIcon
-                onClick={() => navigateToParent(columns.length - 1)}
-                style={{
-                  color: "#384BD3",
-                  cursor: "pointer",
-                  marginRight: "15px",
-                }}
-              />
-            </Tooltip> </div>
+              <Tooltip title="Go Back" arrow>
+                <ReplyIcon
+                  onClick={() => navigateToParent(columns.length - 1)}
+                  style={{
+                    color: "#384BD3",
+                    cursor: "pointer",
+                    marginRight: "15px",
+                  }}
+                />
+              </Tooltip> </div>
           )}
           {columns.length > 1 && isManagerAdminLogin(loggedInUserData) && (
             <div className="col-md-6 col-sm-12 text-end">
@@ -850,7 +883,7 @@ const Document = ({
                       {column.data.map((folder) => (
                         <div
                           key={folder.id}
-                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : folder.fileCount === 0 ? 'bg-light':'bg-white' } ${folder.fileCount === 0 ? 'text-muted' : ''}`}
+                          className={`finder-item d-flex justify-content-between align-items-center ${folder?.selected ? 'bg-warning' : folder.fileCount === 0 ? 'bg-light' : 'bg-white'} ${folder.fileCount === 0 ? 'text-muted' : ''}`}
                           role="button"
                           onClick={() => {
                             handleFolderClick(folder, colIdx, true);
