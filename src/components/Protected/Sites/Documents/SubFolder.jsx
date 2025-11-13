@@ -401,7 +401,7 @@ autoComplete="off"
 
 
                     <span className="p-3">
-                      {subfolderFiles?.document?.name }
+                      {subfolderFiles?.document?.name}
                     </span>
                   </div>
                 </td>

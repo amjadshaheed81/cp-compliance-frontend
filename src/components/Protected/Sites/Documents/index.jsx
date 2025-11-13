@@ -920,7 +920,7 @@ const Document = ({
                     column.files?.length > 0 && (
                       <div className="mt-3">
                         <h6 className="text-muted small mb-2">Files</h6>
-                        {column.files.map((file) => (
+                      {column.files.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())).map((file) => (
                           <div
                             key={file.id}
                             className="finder-item d-flex justify-content-between align-items-center bg-white"
