@@ -970,19 +970,27 @@ const Document = ({
                                 style={{ color: "#666", marginRight: "10px" }}
                               ></i>
                               <a
-                                href={file.fileBlobUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              href="#"
                                 style={{
                                   textDecoration: "none",
                                   color: "#333",
                                   cursor: "pointer",
                                 }}
-                                onClick={(e) => {
-                                  if (file.fileBlobUrl.endsWith(".pdf")) {
-                                    e.preventDefault();
+                              onClick={(e) => {
+                                e.preventDefault();
+                                // Use the same logic as version history eye icon
+                                const fileExtension = file.name.split('.').pop().toLowerCase();
+                                const supportedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'dwg'];
+
+                                if (supportedExtensions.includes(fileExtension)) {
                                     setSelectedPdf(file.fileBlobUrl);
                                     setIsPdfViewerOpen(true);
+                                  } else {
+                                    // For unsupported file types, fall back to direct download
+                                    const link = document.createElement("a");
+                                    link.href = file.fileBlobUrl;
+                                    link.download = file.name;
+                                    link.click();
                                   }
                                 }}
                               >
@@ -1087,7 +1095,6 @@ const Document = ({
                         ))}
                       </div>
                     )}
-
                   {/* Empty state */}
                   {column.data.length === 0 && column.files?.length === 0 && (
                     <p className="text-muted">This folder is empty</p>
