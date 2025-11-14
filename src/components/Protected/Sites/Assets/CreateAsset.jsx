@@ -63,6 +63,22 @@ const CreateAsset = ({
     setSubCategory3(subCategory3);
   };
 
+  const orderMap = {
+    Basement: 1,
+    "Ground Floor": 2,
+    "1st Floor": 3,
+    "2nd Floor": 4,
+    "3rd Floor": 5,
+    "4th Floor": 6,
+    "5th Floor": 7,
+    "6th Floor": 8,
+    "7th Floor": 9,
+    "8th Floor": 10,
+    "9th Floor": 11,
+    "10th Floor": 12,
+    Vertical: 13,
+  };
+
   const changePatItem = (e) => {
     const value = e.target.checked;
     setValue("patItem", value);
@@ -577,7 +593,7 @@ const CreateAsset = ({
                         </select>
                       </div>
                       <div className="col-md-4">
-                        <label for="floor">Floor</label>
+                        <label htmlFor="floor">Floor</label>
                         <select
                           name="floor"
                           className="form-control form-select"
@@ -599,11 +615,17 @@ const CreateAsset = ({
                           }}
                         >
                           <option value="">Select Floor</option>
-                          {floors?.map((site) => (
-                            <option value={site.nodeName}>
-                              {site.nodeName}{" "}
-                            </option>
-                          ))}
+                          {floors
+                            ?.sort((a, b) => {
+                              const orderA = orderMap[a.nodeName] || 999;
+                              const orderB = orderMap[b.nodeName] || 999;
+                              return orderA - orderB;
+                            })
+                            ?.map((site) => (
+                              <option key={site.id} value={site.nodeName}>
+                                {site.nodeName}
+                              </option>
+                            ))}
                         </select>
                       </div>
                       <div className="col-md-4">

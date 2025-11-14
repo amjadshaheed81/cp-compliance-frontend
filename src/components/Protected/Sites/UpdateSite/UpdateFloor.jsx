@@ -183,7 +183,10 @@ const UpdateFloor = ({
       "5th Floor": 7,
       "6th Floor": 8,
       "7th Floor": 9,
-      "Vertical": 10,
+      "8th Floor": 10,
+      "9th Floor": 11,
+      "10th Floor": 12,
+      "Vertical": 13,
     };
   
     const list = siteLayout
