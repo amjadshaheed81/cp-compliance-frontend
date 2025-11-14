@@ -347,6 +347,23 @@ const UpdateAsset = ({
         initRelatedAssetOptions(response);
     };
 
+    const orderMap = {
+        Basement: 1,
+        "Ground Floor": 2,
+        "1st Floor": 3,
+        "2nd Floor": 4,
+        "3rd Floor": 5,
+        "4th Floor": 6,
+        "5th Floor": 7,
+        "6th Floor": 8,
+        "7th Floor": 9,
+        "8th Floor": 10,
+        "9th Floor": 11,
+        "10th Floor": 12,
+        Vertical: 13,
+    };
+
+
     const initRelatedAssetOptions = (response) => {
         const selectedAssets = response?.relatedAssetId?.split(",");
         const arr = [];
@@ -1877,17 +1894,18 @@ const UpdateAsset = ({
                                             )}
                                         </div>
                                         <div className="col-md-4">
-                                            <label for="floor">Floor</label>
+                                            <label htmlFor="floor">Floor</label>
                                             <select
                                                 name="floor"
                                                 className="form-control form-select"
                                                 id="floor"
-                                                value={locationFormValues?.floor}
+                                                {...register("floor")}
                                                 onChange={(e) => {
-                                                    const value = e.target.value;
-                                                    locationForm.setValue("floor", value);
+                                                    const val = e.target.value;
+                                                    setValue("floor", val);
+
                                                     const node = siteLayout.filter(
-                                                        (site) => site.nodeName === value
+                                                        (site) => site.nodeName === val
                                                     );
                                                     const data = siteLayout.filter(
                                                         (site) =>
@@ -1898,23 +1916,21 @@ const UpdateAsset = ({
                                                 }}
                                             >
                                                 <option value="">Select Floor</option>
-                                                {floors?.map((site) => (
-                                                    <option value={site.nodeName}>
-                                                        {site.nodeName}{" "}
-                                                    </option>
-                                                ))}
+                                                {floors
+                                                    ?.sort((a, b) => {
+                                                        const orderA = orderMap[a.nodeName] || 999;
+                                                        const orderB = orderMap[b.nodeName] || 999;
+                                                        return orderA - orderB;
+                                                    })
+                                                    ?.map((site) => (
+                                                        <option key={site.id} value={site.nodeName}>
+                                                            {site.nodeName}
+                                                        </option>
+                                                    ))}
                                             </select>
-                                            {locationForm.formState.errors?.floor && (
-                                                <InputError
-                                                    message={
-                                                        locationForm.formState.errors?.floor?.message
-                                                    }
-                                                    key={locationForm.formState.errors?.floor?.message}
-                                                />
-                                            )}
                                         </div>
                                         <div className="col-md-4">
-                                            <label for="room">Room</label>
+                                            <label htmlFor="room">Room</label>
                                             <select
                                                 name="room"
                                                 className="form-control form-select"
