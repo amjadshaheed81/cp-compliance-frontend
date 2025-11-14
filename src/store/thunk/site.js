@@ -909,8 +909,8 @@ export const addSiteLayoutNode = (formData) => {
 export const updateSiteLayoutNode = (formData) => {
   return async () => {
     try {
-      const url = "/api/site/createNode";
-      const siteareainfo = await post(url, formData);
+      const url = "/api/site/updateNode";
+      const siteareainfo = await put(url, formData);
       if (siteareainfo?.status === 200) {
         return "Success";
       } else {
