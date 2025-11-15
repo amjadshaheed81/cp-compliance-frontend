@@ -1494,7 +1494,6 @@ export const addSiteAsset = (data, goTo, siteId) => {
       const url = `/api/site/${siteId}/assets`;
       const userData = await putMultiPartFormData(url, data);
       if (userData?.status === 200) {
-        toast.success("Site asset has been added/updated successully.");
         setTimeout(() => {
           if (typeof goTo === "function") {
             goTo("/assets");
@@ -1516,6 +1515,8 @@ export const addSiteAsset = (data, goTo, siteId) => {
     }
   };
 };
+
+
 
 export const deleteSiteAsset = (id) => {
   return async () => {

@@ -455,17 +455,22 @@ const UpdateAsset = ({
   const goTo = (link) => {
     navigate(link);
   };
+
+
   const submitSiteAsset = async (data) => {
     setLoader(true);
     let form_data = new FormData();
     const { assetImage, ...formData } = data;
+
     if (data?.assetImage?.length > 0) {
       data?.assetImage?.forEach((assetImage) => {
         form_data.append("assetImage", assetImage);
       });
     }
+
+    // ONLY include the fields that the backend expects
     const formDetails = {
-      assetId: formData?.assetId,
+      assetId: assetId,
       assetName: formData?.assetName,
       manufacturer: formData?.manufacturer,
       category: formData?.category,
@@ -478,28 +483,35 @@ const UpdateAsset = ({
       powerOutput: formData?.powerOutput,
       damperSize: formData?.damperSize,
       relatedAssetId: relatedAssetOption?.map((item) => item.key).join(","),
-      folderId: null,
+      folderId: selectedAsset?.folderId || null, // PRESERVE EXISTING FOLDER ID
       patItem: formData?.patItem,
       pfpItem: formData?.pfpItem,
       doorItem: formData?.doorItem,
-      barcode: "code",
+      barcode: selectedAsset?.barcode || "code",
       position: selectedAsset?.position || null,
       floor: selectedAsset?.floor || null,
       room: selectedAsset?.room || null,
     };
 
-    form_data.append("assetRequestString", JSON.stringify(formDetails));
-    try {
-      await addSiteAsset(form_data, null, siteSelectedForGlobal?.siteId);
-      await getAssetDetails();
+    // Remove any undefined or null values that might cause issues
+    Object.keys(formDetails).forEach(key => {
+      if (formDetails[key] === undefined || formDetails[key] === null) {
+        delete formDetails[key];
+      }
+    });
 
+    form_data.append("assetRequestString", JSON.stringify(formDetails));
+
+    try {
+      await addSiteAsset(form_data, assetId, siteSelectedForGlobal?.siteId);
+      await getAssetDetails();
       setLoader(false);
+      toast.success("Asset updated successfully");
     } catch (e) {
-      toast.error("Something went wrong while update asset. Please try again.");
+      toast.error("Something went wrong while updating asset. Please try again.");
       setLoader(false);
     }
   };
-
   const purchaseDetailForm = useForm({
     defaultValues: {
       purchaseDate: "",
