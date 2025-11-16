@@ -1911,10 +1911,10 @@ const UpdateAsset = ({
                                                 name="floor"
                                                 className="form-control form-select"
                                                 id="floor"
-                                                {...register("floor")}
+                                                {...locationForm.register("floor")}  // ← Fixed!
                                                 onChange={(e) => {
                                                     const val = e.target.value;
-                                                    setValue("floor", val);
+                                                    locationForm.setValue("floor", val);  // Also update this!
 
                                                     const node = siteLayout.filter(
                                                         (site) => site.nodeName === val
