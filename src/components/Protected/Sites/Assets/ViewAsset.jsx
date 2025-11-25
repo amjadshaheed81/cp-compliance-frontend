@@ -439,23 +439,27 @@ const UpdateAsset = ({
     setSubCategoryList(subCategoryData);
   };
 
-  const getSelectedValue = () => {
-    const selectedAssets = getValues("relatedAssetId")?.split(",");
-    const arr = [];
-    if (selectedAssets) {
-      for (const iterator of selectedAssets) {
-        const selectedValue =
-          siteAssets.find((itm) => itm.assetId === iterator) || null;
-        if (selectedValue) {
-          arr.push({
-            key: selectedValue?.assetId,
-            label: selectedValue?.assetName,
-          });
+    const getSelectedValue = () => {
+        const relatedAssetIds = selectedAsset?.relatedAssetId; // Get from selectedAsset instead of form
+        if (!relatedAssetIds) return [];
+
+        const selectedAssetIds = relatedAssetIds.split(",").map(id => id.trim()); // Split and trim
+        const arr = [];
+
+        for (const assetIdStr of selectedAssetIds) {
+            const assetIdNum = parseInt(assetIdStr, 10); // Convert to number
+            if (!isNaN(assetIdNum)) {
+                const selectedValue = siteAssets.find((itm) => itm.assetId === assetIdNum);
+                if (selectedValue) {
+                    arr.push({
+                        key: selectedValue.assetId,
+                        label: selectedValue.assetName,
+                    });
+                }
+            }
         }
-      }
-    }
-    return arr;
-  };
+        return arr;
+    };
 
   return (
     <Fragment>
@@ -541,7 +545,7 @@ const UpdateAsset = ({
                           <Autocomplete
                               multiple
                               value={getSelectedValue()}
-                              disabled
+                              readOnly
                               onChange={(event, newValue) => {
                                 setValue("relatedAssetId", newValue?.key);
                               }}
