@@ -117,7 +117,7 @@ const PassiveFireProtection = ({
         };
     });
 
-    // Update URL when filters change
+    // Update URL and save filters to localStorage when they change
     useEffect(() => {
         const searchParams = new URLSearchParams();
 
@@ -127,14 +127,17 @@ const PassiveFireProtection = ({
             }
         });
 
+        // Save filters to localStorage
+        localStorage.setItem('PFAssetFilters', JSON.stringify(formData));
+
         // Replace current URL with updated search params
         navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
-    }, [formData, location.pathname, navigate]);
 
-    // Save filters to localStorage whenever they change
-    useEffect(() => {
-        localStorage.setItem('PFAssetFilters', JSON.stringify(formData));
-    }, [formData]);
+        // Cleanup function to clear filters when component unmounts
+        return () => {
+            localStorage.removeItem('PFAssetFilters');
+        };
+    }, [formData, location.pathname, navigate]);
 
 
     useEffect(() => {
@@ -157,7 +160,7 @@ const PassiveFireProtection = ({
                 }
             } catch (error) {
                 console.error('Error loading saved filters:', error);
-                localStorage.removeItem('PFAssetFilters');
+                localStorage.removeItem('patAssetFilters');
             }
         }
     }, []);
@@ -623,23 +626,6 @@ const PassiveFireProtection = ({
 
         navigate(location.pathname);
     };
-    useEffect(() => {
-        return () => {
-            // Clear filters when component unmounts (tab changes)
-            const emptyFilters = {
-                assetName: "",
-                manufacturer: "",
-                category: "",
-                subCategory: "",
-                subCategory2: "",
-                subCategory3: "",
-                position: "",
-                floor: "",
-                room: "",
-            };
-            setFormData(emptyFilters);
-        };
-    }, []);
 
     return (
         <Fragment>
