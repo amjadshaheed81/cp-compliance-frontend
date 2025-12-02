@@ -212,6 +212,7 @@ const Summary = ({
 
 
     // Update URL when filters change
+    // Save filters to localStorage when they change
     useEffect(() => {
         const searchParams = new URLSearchParams();
 
@@ -221,8 +222,12 @@ const Summary = ({
             }
         });
 
-        // Replace current URL with updated search params
+        // Save filters to localStorage
+        localStorage.setItem('assetFilters', JSON.stringify(formData));
         navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+        return () => {
+            localStorage.removeItem('assetFilters');
+        };
     }, [formData, location.pathname, navigate]);
 
 
