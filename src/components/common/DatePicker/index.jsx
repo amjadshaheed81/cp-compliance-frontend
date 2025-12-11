@@ -503,7 +503,6 @@ const TdkDatePicker = ({
       {label && (
         <label className="tdk-datepicker-label">
           {label}
-          {required && <span className="required-asterisk">*</span>}
         </label>
       )}
 
