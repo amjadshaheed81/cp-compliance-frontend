@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState, useMemo } from "react";
 import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
@@ -56,8 +56,11 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
         title: "Please wait. We are collecting statutory detail...",
       });
       setIsLoading(true);
+      const licenseId =
+        (site && site.licenseId) || loggedInUserData?.licenseId ||
+        siteSelectedForGlobal?.licenseId;
       const getStatutoryDocuments = await get(
-        `/api/document/statutoryRegister/all`
+        `/api/document/statutoryRegister/all?licenseId=${licenseId}`
       );
       setAllStatutory(getStatutoryDocuments);
       setIsLoading(false);
@@ -89,6 +92,12 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
     indexOfLastPreAction
   );
 
+  // API now returns data filtered by licenseId, no need for client-side filtering
+  // but keep the memoization for consistency and safety
+  const filteredAllStatutory = useMemo(() => {
+    return allstatutory;
+  }, [allstatutory]);
+
   return (
     <Fragment>
       <div>
@@ -118,7 +127,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       <div style={{ height: "350px" }} className="mt-4">
                         <TotalRequirements
                           requirement={state.selectedRequirements}
-                          data={allstatutory}
+                          data={filteredAllStatutory}
                         />
                       </div>
                     </div>
