@@ -26,17 +26,26 @@ import { getSiteCheckDueDate, getSiteCheckDueDateForStatus } from "../../../../u
 export const findAssetWithNearestPatNextDate = (assets) => {
   let nearestAsset = null;
   let nearestPatItem = null;
-  let nearestDate = null;
+  let nearestMoment = null;
+  const now = moment();
+  
   assets.forEach((asset) => {
     if (asset.assetPATItems) {
       asset.assetPATItems.forEach((patItem) => {
-        const patNextDate = (patItem.patNextDate);
-
-        // Check if it's the first date or closer than the previous nearestDate
-        if (!nearestDate || patNextDate < nearestDate) {
-          nearestDate = patNextDate;
-          nearestPatItem = patItem;
-          nearestAsset = asset;
+        const patNextDate = patItem.patNextDate;
+        
+        if (patNextDate) {
+          const patNextMoment = moment(patNextDate);
+          
+          // Only consider future dates (matching backend logic)
+          if (patNextMoment.isAfter(now)) {
+            // Check if it's the first date or closer than the previous nearestDate
+            if (!nearestMoment || patNextMoment.isBefore(nearestMoment)) {
+              nearestMoment = patNextMoment;
+              nearestPatItem = patItem;
+              nearestAsset = asset;
+            }
+          }
         }
       });
     }
@@ -154,7 +163,7 @@ const StatutoryRegister = ({
     }
     return dutiesMet;
   };
-  const getStatutory = async (siteId) => {
+  const getStatutory = async (siteId, currentPatItems = patItems) => {
     setIsLoading(true);
     let getStatutoryDocuments = await get(
       `/api/document/${siteId}/statutoryRegister`
@@ -162,10 +171,23 @@ const StatutoryRegister = ({
     getStatutoryDocuments = getStatutoryDocuments.sort(
       (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
     );
+    
+    // Recalculate status for PAT Testing based on current PAT items
+    const updatedStatutoryWithRecalculatedStatus = getStatutoryDocuments.map(item => {
+      if (item?.subType === "PAT / Microwave Testing" && item?.required) {
+        const recalculatedStatus = recalculatePatStatus(item, currentPatItems);
+        return {
+          ...item,
+          status: recalculatedStatus
+        };
+      }
+      return item;
+    });
+
     if (isManagerAdminLogin(loggedInUserData)) {
-      setStatutory(getStatutoryDocuments);
+      setStatutory(updatedStatutoryWithRecalculatedStatus);
     } else {
-      const updatedStatutoryRegister = getStatutoryDocuments?.filter(itm => itm?.required === true);
+      const updatedStatutoryRegister = updatedStatutoryWithRecalculatedStatus?.filter(itm => itm?.required === true);
       setStatutory(updatedStatutoryRegister);
     }
     
@@ -181,6 +203,25 @@ const StatutoryRegister = ({
       return item.status === "Passed";
     });
     setIsLoading(false);
+  };
+
+  const recalculatePatStatus = (item, patItems) => {
+    if (item?.subType === "PAT / Microwave Testing" && item?.required) {
+      const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
+      if (assetWithNearestPatNextDate?.patItem) {
+        const patNextDate = assetWithNearestPatNextDate.patItem.patNextDate;
+        if (patNextDate) {
+          const isPatValid = moment(patNextDate).isAfter(new Date());
+          return isPatValid ? "Passed" : "Fail";
+        } else {
+          return "Fail"; // No expiry date = Fail
+        }
+      } else {
+        return "Fail"; // No PAT items = Fail
+      }
+    }
+    // Return existing status for non-PAT items
+    return item.status;
   };
 
   const getChipStatus = (item) => {
@@ -213,20 +254,19 @@ const StatutoryRegister = ({
           status = isAsbestosRecordAvailable ? "Passed" : "Fail";
         }
 
-        // PAT Check
+        // PAT Check - Use PAT items instead of site checks
         else if (item?.subType === "PAT / Microwave Testing") {
           const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
-          if(assetWithNearestPatNextDate.patItem){
-            const pathNextDate = assetWithNearestPatNextDate.patItem.patNextDate;
-            if(pathNextDate){
-              const isPathVaild = moment(pathNextDate).isAfter(new Date());
-              status = isPathVaild ? "Passed" : "Fail";
-            }
-            else{
-              status = "Fail";
+          if (assetWithNearestPatNextDate?.patItem) {
+            const patNextDate = assetWithNearestPatNextDate.patItem.patNextDate;
+            if (patNextDate) {
+              const isPatValid = moment(patNextDate).isAfter(new Date());
+              status = isPatValid ? "Passed" : "Fail";
+            } else {
+              status = "Fail"; // No expiry date = Fail
             }
           } else {
-            status = "Fail";
+            status = "Fail"; // No PAT items = Fail
           }
         //   const isPAtExpired = siteChecks?.some(
         //     (itm) =>
@@ -318,15 +358,26 @@ const StatutoryRegister = ({
 
     const res = await put("/api/document/statutoryRegister/manage", payload);
     if (res?.status === 200) {
-      getStatutory(siteSelectedForGlobal?.siteId);
+      getStatutory(siteSelectedForGlobal?.siteId, patItems);
     }
   };
+  const getPatItems = async () => {
+    let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
+    const { assets } = await get(url);
+    setPatItems(assets);
+    return assets;
+  };
+
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
       getStatutory(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getSiteChecks();
-      getPatItems();
+      // Load PAT items and recalculate status after they're loaded
+      getPatItems().then((patItemsData) => {
+        // Recalculate status after PAT items load
+        getStatutory(siteSelectedForGlobal?.siteId, patItemsData);
+      });
     } else {
       Swal.fire({
         icon: "error",
@@ -336,11 +387,6 @@ const StatutoryRegister = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteSelectedForGlobal?.siteId]);
-  const getPatItems = async () => {
-    let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
-    const { assets } = await get(url);
-    setPatItems(assets);
-  };
   const getSiteChecks = async () => {
     const siteChecksData = await get(
       `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
@@ -454,15 +500,16 @@ const StatutoryRegister = ({
           matchedCheckReq.dueDate,
           matchedCheckReq,
         );
-      } else if (row?.subType === "PAT / Microwave Testing") {
-        const issueDate = row.patIssueDate || matchedCheckReq?.patIssueDate || matchedCheckReq?.startDate;
-        const expiryDate = row.patNextDate || matchedCheckReq?.patNextDate || matchedCheckReq?.dueDate;
-      return getStartAndExpiryDateRow(
-      issueDate,
-      expiryDate,
-      matchedCheckReq,
-      true,
-  );
+      } else if (row?.subType == "PAT / Microwave Testing") {
+        // Use dates from backend if available, otherwise fallback to PAT items
+        const issueDate = row.patIssueDate || matchedCheckReq?.patDate;
+        const expiryDate = row.patExpiryDate || matchedCheckReq?.patNextDate;
+        return getStartAndExpiryDateRow(
+          issueDate,
+          expiryDate,
+          matchedCheckReq,
+          true,
+        );
       } else {
         return getStartAndExpiryDateRow(
           matchedCheck.startDate,
