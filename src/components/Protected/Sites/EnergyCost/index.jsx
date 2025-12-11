@@ -508,6 +508,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     await post("/api/energy/survey", body);
     setFormData({});
     await getEnergyCost();
+    
   };
 
   const getEnergyCost = async () => {
@@ -535,6 +536,7 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
     setFilteredEnergyCost(energyCost);
     setEnergyCost(energyCost);
     setIsLoading(false);
+    return energyCost;
   };
 
   const saveCost = async (data) => {
@@ -549,7 +551,14 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
       data.submittedUserId = loggedInUserData?.id;
       data.siteId = siteSelectedForGlobal?.siteId;
       await post("/api/energy/reading", data);
-      getEnergyCost();
+      // Refresh list and update the currently selected survey so the Reading modal reflects the new entry immediately
+      const refreshed = await getEnergyCost();
+      try {
+        const updated = refreshed?.find((e) => e.energyId === data.energyId) || null;
+        if (updated) setActionSurvey(updated);
+      } catch (err) {
+        // swallow - non-critical
+      }
     }
   };
 

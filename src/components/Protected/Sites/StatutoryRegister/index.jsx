@@ -277,6 +277,7 @@ const StatutoryRegister = ({
         //   );
         //   status = isPAtExpired ? "Passed" : "Fail";
         }
+ 
 
         // Emergency Check
         else if (item?.subType === "Emergency light and Fire Alarm") {
