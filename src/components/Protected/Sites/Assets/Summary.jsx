@@ -220,12 +220,9 @@ const Summary = ({
             }
         });
 
-        // Save filters to localStorage
+        // Save filters to localStorage and update URL
         localStorage.setItem('assetFilters', JSON.stringify(formData));
         navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
-        return () => {
-            localStorage.removeItem('assetFilters');
-        };
     }, [formData, location.pathname, navigate]);
 
 
