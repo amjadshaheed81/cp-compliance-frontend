@@ -26,7 +26,7 @@ import { Validation } from "../../../../Constant/Validation";
 import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { del, get, put } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
 import moment from "moment";
@@ -452,8 +452,38 @@ const UpdateAsset = ({
   });
   const navigate = useNavigate();
 
+  const location = useLocation();
+
   const goTo = (link) => {
-    navigate(link);
+    try {
+      // If navigating back to assets, restore saved filters from localStorage
+      if (link === "/assets" || link.startsWith("/assets?")) {
+        const saved = localStorage.getItem("assetFilters");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const sp = new URLSearchParams();
+          Object.entries(parsed).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && String(v).trim() !== "") {
+              sp.set(k, v);
+            }
+          });
+          const qs = sp.toString();
+          if (qs) {
+            navigate(`${link}?${qs}`);
+            return;
+          }
+        }
+        navigate(link);
+        return;
+      }
+
+      // For any other page, remove saved asset filters so they don't persist
+      localStorage.removeItem("assetFilters");
+      navigate(link);
+    } catch (e) {
+      console.error("Navigation error:", e);
+      navigate(link);
+    }
   };
 
 

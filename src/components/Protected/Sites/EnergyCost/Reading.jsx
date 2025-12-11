@@ -29,7 +29,7 @@ const Reading = ({
   const [formData, setFormData] = useState({
     readingDate: "",
     readingValue: "",
-    readingUnit: ""
+    readingUnit: "",
   });
   const [isView, setIsView] = useState(false);
   const [errors, setErrors] = useState({});
@@ -62,9 +62,9 @@ const Reading = ({
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -111,7 +111,7 @@ const Reading = ({
     setFormData({
       readingDate: "",
       readingValue: "",
-      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : ""
+      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : "",
     });
 
     saveData(data);
@@ -124,7 +124,7 @@ const Reading = ({
     setFormData({
       readingDate: "",
       readingValue: "",
-      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : ""
+      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : "",
     });
     setErrors({});
   }, [survey, open]);
@@ -135,18 +135,13 @@ const Reading = ({
     setFormData({
       readingDate: "",
       readingValue: "",
-      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : ""
+      readingUnit: survey?.budgetCategory === "Electricity" ? "Kwh" : "",
     });
   };
 
   return (
     <>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
         <DialogTitle>Add Energy Readings</DialogTitle>
         <DialogContent dividers>
           <Fragment>
@@ -173,11 +168,12 @@ const Reading = ({
                     disabled
                     value={
                       formData?.readingValue
-                        ? (formData?.readingValue -
-                          (survey?.readingList?.length > 0
-                            ? survey?.readingList?.[0]?.readingValue
-                            : 0)
-                        ).toFixed(2)
+                        ? (
+                            formData?.readingValue -
+                            (survey?.readingList?.length > 0
+                              ? survey?.readingList?.[0]?.readingValue
+                              : 0)
+                          ).toFixed(2)
                         : "0"
                     }
                   />
@@ -195,7 +191,9 @@ const Reading = ({
                   >
                     <option value="">Budget Category</option>
                     {typeoptions?.map((t, index) => (
-                      <option key={index} value={t}>{t}</option>
+                      <option key={index} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </Grid>
@@ -207,6 +205,23 @@ const Reading = ({
                       label="Reading Date"
                       value={formData?.readingDate || ""}
                       onChange={(date) => {
+                        // Handle null/undefined date
+                        if (!date) {
+                          setFormData({
+                            ...formData,
+                            readingDate: "",
+                          });
+                          // Clear date error when date is cleared
+                          if (errors.readingDate) {
+                            setErrors((prev) => ({
+                              ...prev,
+                              readingDate: "",
+                            }));
+                          }
+                          return;
+                        }
+
+                        // Date is valid, process it
                         setFormData({
                           ...formData,
                           readingDate: new Date(
@@ -215,9 +230,9 @@ const Reading = ({
                         });
                         // Clear date error when date is selected
                         if (errors.readingDate) {
-                          setErrors(prev => ({
+                          setErrors((prev) => ({
                             ...prev,
-                            readingDate: ''
+                            readingDate: "",
                           }));
                         }
                       }}
@@ -239,7 +254,9 @@ const Reading = ({
                     type="number"
                     step="0.01"
                     disabled={isView}
-                    className={`form-control ${errors.readingValue ? 'is-invalid' : ''}`}
+                    className={`form-control ${
+                      errors.readingValue ? "is-invalid" : ""
+                    }`}
                     name="readingValue" // Added name attribute
                     id="readingValue"
                     value={formData.readingValue || ""}
@@ -264,27 +281,29 @@ const Reading = ({
                       disabled
                     />
                   ) : (
-                      <>
-                        <select
-                          disabled={isView}
-                          name="readingUnit"
-                          className={`form-control form-select ${errors.readingUnit ? 'is-invalid' : ''}`}
-                          id="readingUnit"
-                          value={formData?.readingUnit || ""}
-                          onChange={handleInputChange}
-                          required
-                        >
-                          <option value="">Reading Unit</option>
-                          <option value="Kwh">Kwh</option>
-                          <option value="M3">M³</option>
-                          <option value="ltrs">ltrs</option>
-                        </select>
-                        {errors.readingUnit && (
-                          <div className="text-danger small mt-1">
-                            {errors.readingUnit}
-                          </div>
-                        )}
-                      </>
+                    <>
+                      <select
+                        disabled={isView}
+                        name="readingUnit"
+                        className={`form-control form-select ${
+                          errors.readingUnit ? "is-invalid" : ""
+                        }`}
+                        id="readingUnit"
+                        value={formData?.readingUnit || ""}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Reading Unit</option>
+                        <option value="Kwh">Kwh</option>
+                        <option value="M3">M³</option>
+                        <option value="ltrs">ltrs</option>
+                      </select>
+                      {errors.readingUnit && (
+                        <div className="text-danger small mt-1">
+                          {errors.readingUnit}
+                        </div>
+                      )}
+                    </>
                   )}
                 </Grid>
                 <Grid item xs={12} sm={8}></Grid>
@@ -324,14 +343,17 @@ const Reading = ({
                           (a, b) =>
                             new Date(b.readingDate) - new Date(a.readingDate)
                         )?.length === 0 && (
-                            <tr>
-                              <td colSpan={5} align="center">
-                                No record
-                              </td>
-                            </tr>
-                          )}
+                          <tr>
+                            <td colSpan={5} align="center">
+                              No record
+                            </td>
+                          </tr>
+                        )}
                         {survey?.readingList
-                          ?.sort((a, b) => new Date(b.readingDate) - new Date(a.readingDate))
+                          ?.sort(
+                            (a, b) =>
+                              new Date(b.readingDate) - new Date(a.readingDate)
+                          )
                           ?.map((d, idx) => (
                             <tr key={d.readingId || idx}>
                               <td>
@@ -343,10 +365,9 @@ const Reading = ({
                                 {d.readingValue} {d.readingUnit}
                               </td>
                               <td>
-                                {(
-                                  idx === survey?.readingList?.length - 1
-                                    ? d?.readingValue
-                                    : d?.readingValue -
+                                {(idx === survey?.readingList?.length - 1
+                                  ? d?.readingValue
+                                  : d?.readingValue -
                                     survey?.readingList?.[idx + 1]?.readingValue
                                 )?.toFixed(2)}
                                 {d.readingUnit}

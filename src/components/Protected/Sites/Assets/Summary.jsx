@@ -55,6 +55,33 @@ const Summary = ({
     const [showMultiEditModal, setShowMultiEditModal] = useState(false);
 
     const location = useLocation();
+
+    const [formData, setFormData] = useState(() => {
+        const savedFilters = localStorage.getItem('assetFilters');
+
+        if (savedFilters) {
+            try {
+                return JSON.parse(savedFilters);
+            } catch (error) {
+                console.error('Error parsing saved filters:', error);
+                localStorage.removeItem('assetFilters');
+            }
+        }
+        const searchParams = new URLSearchParams(location.search);
+
+        return {
+            assetName: searchParams.get('assetName') || "",
+            manufacturer: searchParams.get('manufacturer') || "",
+            category: searchParams.get('category') || "",
+            subCategory: searchParams.get('subCategory') || "",
+            subCategory2: searchParams.get('subCategory2') || "",
+            subCategory3: searchParams.get('subCategory3') || "",
+            location: searchParams.get('location') || "",
+            floor: searchParams.get('floor') || "",
+            room: searchParams.get('room') || "",
+            powerOutput: searchParams.get('powerOutput') || "",
+        };
+    });
     const indexOfLastPreAction = currentPage * preActionsPerPage;
     const indexOfFirstPreAction = indexOfLastPreAction - preActionsPerPage;
     const currentSiteAssets = filteredSiteAssets
@@ -158,8 +185,9 @@ const Summary = ({
         if (siteAssets) {
             const formattedAssets = siteAssets.map((itm) => ({
                 ...itm,
-                location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"
-                    }`,
+
+   
+                location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
             }));
 
             // Use Promise.all to wait for state updates, then call searchAssets
@@ -181,36 +209,6 @@ const Summary = ({
     };
 
 
-    const [formData, setFormData] = useState(() => {
-
-        const savedFilters = localStorage.getItem('assetFilters');
-
-        if (savedFilters) {
-            try {
-                return JSON.parse(savedFilters);
-            } catch (error) {
-                console.error('Error parsing saved filters:', error);
-                localStorage.removeItem('assetFilters');
-            }
-        }
-        const searchParams = new URLSearchParams(location.search);
-
-
-        return {
-            assetName: searchParams.get('assetName') || "",
-            manufacturer: searchParams.get('manufacturer') || "",
-            category: searchParams.get('category') || "",
-            subCategory: searchParams.get('subCategory') || "",
-            subCategory2: searchParams.get('subCategory2') || "",
-            subCategory3: searchParams.get('subCategory3') || "",
-            location: searchParams.get('location') || "",
-            floor: searchParams.get('floor') || "",
-            room: searchParams.get('room') || "",
-            powerOutput: searchParams.get('powerOutput') || "",
-        };
-    });
-
-
     // Update URL when filters change
     // Save filters to localStorage when they change
     useEffect(() => {
@@ -222,12 +220,9 @@ const Summary = ({
             }
         });
 
-        // Save filters to localStorage
+        // Save filters to localStorage and update URL
         localStorage.setItem('assetFilters', JSON.stringify(formData));
         navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
-        return () => {
-            localStorage.removeItem('assetFilters');
-        };
     }, [formData, location.pathname, navigate]);
 
 
@@ -312,7 +307,6 @@ const Summary = ({
     };
 
 
-    // Save filters to localStorage whenever they change
     useEffect(() => {
         localStorage.setItem('assetFilters', JSON.stringify(formData));
     }, [formData]);
@@ -325,7 +319,6 @@ const Summary = ({
                 const parsedFilters = JSON.parse(savedFilters);
                 setFormData(parsedFilters);
 
-                // Also update URL to reflect the loaded filters
                 const searchParams = new URLSearchParams();
                 Object.entries(parsedFilters).forEach(([key, value]) => {
                     if (value) {
@@ -333,17 +326,46 @@ const Summary = ({
                     }
                 });
 
-                // Only update URL if we have filters to set
                 if (searchParams.toString()) {
                     navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
                 }
             } catch (error) {
                 console.error('Error loading saved filters:', error);
-                // Clear corrupted localStorage data
                 localStorage.removeItem('assetFilters');
             }
         }
     }, []);
+
+  
+    useEffect(() => {
+        if (formData?.category && subCategory?.length > 0) {
+            const filtered = subCategory.filter((itm) => itm?.attribite1 === formData.category);
+            setSubCategoryList(filtered || []);
+        }
+
+        if (formData?.subCategory && subCategory2?.length > 0) {
+            const filtered2 = subCategory2.filter((itm) => itm?.attribite1 === formData.subCategory);
+            setSubCategory2List(filtered2 || []);
+        }
+
+        if (formData?.subCategory2 && subCategory3?.length > 0) {
+            const filtered3 = subCategory3.filter((itm) => itm?.attribite1 === formData.subCategory2);
+            setSubCategory3List(filtered3 || []);
+        }
+
+        // Populate floors/rooms based on selected position/floor and available siteLayout
+        if (formData?.position && siteLayout?.length > 0) {
+            const positionNode = siteLayout.find(node => node.nodeType === "type" && node.nodeName === formData.position);
+            const floors = siteLayout.filter(node => node.nodeType === "floor" && node.parentNode === positionNode?.id);
+            setFloorNode(floors);
+
+            if (formData?.floor) {
+                const floor = floors.find(f => f.nodeName === formData.floor) || siteLayout.find(n => n.nodeType === "floor" && n.nodeName === formData.floor);
+                const rooms = siteLayout.filter(node => node.nodeType === "room" && node.parentNode === floor?.id);
+                setRoomNode(rooms);
+            }
+        }
+    }, [subCategory, subCategory2, subCategory3, siteLayout, formData?.category, formData?.subCategory, formData?.subCategory2, formData?.position, formData?.floor]);
 
 
     const clearFilters = () => {
