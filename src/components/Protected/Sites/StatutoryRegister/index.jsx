@@ -215,15 +215,29 @@ const StatutoryRegister = ({
 
         // PAT Check
         else if (item?.subType === "PAT / Microwave Testing") {
-          const isPAtExpired = siteChecks?.some(
-            (itm) =>
-              itm?.type === "Inspection" &&
-              itm?.subType === "Electrical" &&
-              itm?.category === "WC Alarm Testing" &&
-              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isPAtExpired ? "Passed" : "Fail";
+          const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
+          if(assetWithNearestPatNextDate.patItem){
+            const pathNextDate = assetWithNearestPatNextDate.patItem.patNextDate;
+            if(pathNextDate){
+              const isPathVaild = moment(pathNextDate).isAfter(new Date());
+              status = isPathVaild ? "Passed" : "Fail";
+            }
+            else{
+              status = "Fail";
+            }
+          } else {
+            status = "Fail";
+          }
+        //   const isPAtExpired = siteChecks?.some(
+        //     (itm) =>
+        //       itm?.type === "Inspection" &&
+        //       itm?.subType === "Electrical" &&
+        //       itm?.category === "WC Alarm Testing" &&
+        //       moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        //   );
+        //   status = isPAtExpired ? "Passed" : "Fail";
         }
+ 
 
         // Emergency Check
         else if (item?.subType === "Emergency light and Fire Alarm") {
@@ -440,13 +454,15 @@ const StatutoryRegister = ({
           matchedCheckReq.dueDate,
           matchedCheckReq,
         );
-      } else if (row?.subType == "PAT / Microwave Testing") {
-        return getStartAndExpiryDateRow(
-          matchedCheckReq.patDate,
-          matchedCheckReq.patNextDate,
-          matchedCheckReq,
-          true,
-        );
+      } else if (row?.subType === "PAT / Microwave Testing") {
+        const issueDate = row.patIssueDate || matchedCheckReq?.patIssueDate || matchedCheckReq?.startDate;
+        const expiryDate = row.patNextDate || matchedCheckReq?.patNextDate || matchedCheckReq?.dueDate;
+      return getStartAndExpiryDateRow(
+      issueDate,
+      expiryDate,
+      matchedCheckReq,
+      true,
+  );
       } else {
         return getStartAndExpiryDateRow(
           matchedCheck.startDate,
