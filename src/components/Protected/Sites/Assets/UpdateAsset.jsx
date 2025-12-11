@@ -26,7 +26,7 @@ import { Validation } from "../../../../Constant/Validation";
 import { InputError } from "../../../common/InputError";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { del, get, put } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
 import moment from "moment";
@@ -128,6 +128,23 @@ const UpdateAsset = ({
             setFloors(data || []);
         }
     };
+
+    const orderMap = {
+        Basement: 1,
+        "Ground Floor": 2,
+        "1st Floor": 3,
+        "2nd Floor": 4,
+        "3rd Floor": 5,
+        "4th Floor": 6,
+        "5th Floor": 7,
+        "6th Floor": 8,
+        "7th Floor": 9,
+        "8th Floor": 10,
+        "9th Floor": 11,
+        "10th Floor": 12,
+        Vertical: 13,
+    };
+
 
     const setRoomsData = async (value) => {
         if (siteLayout?.length > 0) {
@@ -347,23 +364,6 @@ const UpdateAsset = ({
         initRelatedAssetOptions(response);
     };
 
-    const orderMap = {
-        Basement: 1,
-        "Ground Floor": 2,
-        "1st Floor": 3,
-        "2nd Floor": 4,
-        "3rd Floor": 5,
-        "4th Floor": 6,
-        "5th Floor": 7,
-        "6th Floor": 8,
-        "7th Floor": 9,
-        "8th Floor": 10,
-        "9th Floor": 11,
-        "10th Floor": 12,
-        Vertical: 13,
-    };
-
-
     const initRelatedAssetOptions = (response) => {
         const selectedAssets = response?.relatedAssetId?.split(",");
         const arr = [];
@@ -452,9 +452,40 @@ const UpdateAsset = ({
     });
     const navigate = useNavigate();
 
+    const location = useLocation();
+
     const goTo = (link) => {
-        navigate(link);
+        try {
+            // If navigating back to assets, restore saved filters from localStorage
+            if (link === "/assets" || link.startsWith("/assets?")) {
+                const saved = localStorage.getItem("assetFilters");
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    const sp = new URLSearchParams();
+                    Object.entries(parsed).forEach(([k, v]) => {
+                        if (v !== undefined && v !== null && String(v).trim() !== "") {
+                            sp.set(k, v);
+                        }
+                    });
+                    const qs = sp.toString();
+                    if (qs) {
+                        navigate(`${link}?${qs}`);
+                        return;
+                    }
+                }
+                navigate(link);
+                return;
+            }
+
+            // For any other page, remove saved asset filters so they don't persist
+            localStorage.removeItem("assetFilters");
+            navigate(link);
+        } catch (e) {
+            console.error("Navigation error:", e);
+            navigate(link);
+        }
     };
+
 
     const submitSiteAsset = async (data) => {
         setLoader(true);
@@ -511,7 +542,6 @@ const UpdateAsset = ({
             setLoader(false);
         }
     };
-
     const purchaseDetailForm = useForm({
         defaultValues: {
             purchaseDate: "",
@@ -1942,7 +1972,7 @@ const UpdateAsset = ({
                                             </select>
                                         </div>
                                         <div className="col-md-4">
-                                            <label htmlFor="room">Room</label>
+                                            <label for="room">Room</label>
                                             <select
                                                 name="room"
                                                 className="form-control form-select"

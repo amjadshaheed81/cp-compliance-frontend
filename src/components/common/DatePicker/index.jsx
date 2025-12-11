@@ -83,7 +83,10 @@ const TdkDatePicker = ({
             onChange(jsDate);
         } else if (formatted === "") {
             setDateValue(null);
-            onChange(null);
+            // only call onChange with null if it's safe
+            if (onChange) {
+                onChange(null);
+            }
         }
     };
 
