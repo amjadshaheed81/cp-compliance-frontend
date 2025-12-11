@@ -14,6 +14,7 @@ const TdkDatePicker = ({
   minDate,
 }) => {
   const datePickerRef = useRef(null);
+  const inputRef = useRef(null);
   const [dateValue, setDateValue] = useState(value ? new Date(value) : null);
   const [displayValue, setDisplayValue] = useState(
     value ? moment(value).format("DD/MM/YYYY") : ""
@@ -41,13 +42,34 @@ const TdkDatePicker = ({
     return formattedDate;
   };
 
+  const getCursorPosFromDigitsCount = (formatted, digitsBefore) => {
+    let digitsSeen = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted[i])) digitsSeen++;
+      if (digitsSeen === digitsBefore) return i + 1;
+    }
+    return formatted.length;
+  };
+
   const handleInputChange = (e) => {
-    let inputValue = e.target.value;
-    inputValue = formatDateWithSlashes(inputValue);
-    setDisplayValue(inputValue);
+    const el = inputRef.current || e.target;
+    const raw = e.target.value;
+    const selectionStart = el.selectionStart || 0;
+    const digitsBefore = raw.slice(0, selectionStart).replace(/\D/g, "").length;
+
+    const formatted = formatDateWithSlashes(raw);
+    setDisplayValue(formatted);
     setIsTyping(true);
 
-    const parsedDate = moment(inputValue, "DD/MM/YYYY", true);
+    // restore caret position based on digit count
+    setTimeout(() => {
+      if (inputRef.current) {
+        const newPos = getCursorPosFromDigitsCount(formatted, digitsBefore);
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+
+    const parsedDate = moment(formatted, "DD/MM/YYYY", true);
     if (parsedDate.isValid()) {
       const jsDate = new Date(
         parsedDate.year(),
@@ -59,10 +81,23 @@ const TdkDatePicker = ({
       );
       setDateValue(jsDate);
       onChange(jsDate);
-    } else if (inputValue === "") {
+    } else if (formatted === "") {
       setDateValue(null);
-      onChange(null);
+      // only call onChange with null if it's safe
+      if (onChange) {
+        onChange(null);
+      }
     }
+  };
+
+  const handleKeyDown = (e) => {
+    // allow control/meta shortcuts
+    if (e.ctrlKey || e.metaKey) return;
+    const allowed = ["Backspace", "ArrowLeft", "ArrowRight", "Delete", "Tab"];
+    if (allowed.includes(e.key)) return;
+    if (/\d/.test(e.key)) return;
+    // prevent any other chars (including letters)
+    e.preventDefault();
   };
 
   const handleInputClick = () => {
@@ -82,11 +117,13 @@ const TdkDatePicker = ({
           readOnly
           onFocus={(e) => e.target.removeAttribute("readonly")}
           className="tdk-datepicker-input"
+          ref={inputRef}
           value={displayValue}
           placeholder="dd/mm/yyyy"
           disabled={disabled}
           style={{ width }}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           onClick={handleInputClick}
           onBlur={() => setIsTyping(false)}
         />

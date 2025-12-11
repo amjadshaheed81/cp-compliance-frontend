@@ -975,6 +975,16 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         label="Start Date"
                         value={formData?.startDate}
                         onChange={(date) => {
+                          // Handle null/undefined date (when cleared)
+                          if (!date) {
+                            setFormData({
+                              ...formData,
+                              startDate: null,
+                              dueDate: null,
+                            });
+                            return;
+                          }
+
                           let dueDateValue = formData?.dueDate;
                           const repeatFrequency = formData?.repeatFrequency;
 
