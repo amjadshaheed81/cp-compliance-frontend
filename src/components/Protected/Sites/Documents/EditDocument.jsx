@@ -33,45 +33,51 @@ const EditDocument = ({
     watch,
     setValue,
   } = useForm({});
-  useEffect(() => {
-    reset({
-      fileName: selectedFile?.name ? selectedFile?.name?.split(".")?.[0] : "",
-      issueDate: selectedFile?.issueDate
-        ? selectedFile?.issueDate?.split("T")?.[0]
-        : "",
-      expiryDate: selectedFile?.expiryDate
-        ? selectedFile?.expiryDate?.split("T")?.[0]
-        : "",
-      note: selectedFile?.note ? selectedFile?.note : "",
-    });
-  }, [selectedFile]);
-  const submitEditDocument = async (data) => {
-    const payload = {
-      ...data,
-      fileName: `${data?.fileName}.${selectedFile?.name?.split(".")?.[1]}`,
-      issueDate: data?.issueDate ? `${data?.issueDate}T10:00:00` : "",
-      expiryDate: data?.expiryDate ? `${data?.expiryDate}T10:00:00` : "",
-    };
-    try {
-      setIsLoading(true);
-      const res = await put(`/api/document/file/${selectedFile?.id}`, payload);
-      if (res?.status === 200) {
-        toast.success("successully file updated.");
-        refresh();
-        handleClose();
-      } else {
-        toast.error(
-          "File is not updated due to technical issue. pleasse try again."
-        );
-      }
-      setIsLoading(false);
-    } catch (e) {
-      setIsLoading(false);
+
+ useEffect(() => {
+  reset({
+    fileName: selectedFile?.name || "", // Show the full name
+    issueDate: selectedFile?.issueDate
+      ? selectedFile?.issueDate?.split("T")?.[0]
+      : "",
+    expiryDate: selectedFile?.expiryDate
+      ? selectedFile?.expiryDate?.split("T")?.[0]
+      : "",
+    note: selectedFile?.note ? selectedFile?.note : "",
+  });
+}, [selectedFile, reset]);
+
+const submitEditDocument = async (data) => {
+  const payload = {
+    ...data,
+    // fileName is already the full name from the form
+    issueDate: data?.issueDate ? `${data?.issueDate}T10:00:00` : "",
+    expiryDate: data?.expiryDate ? `${data?.expiryDate}T10:00:00` : "",
+  };
+  
+  try {
+    setIsLoading(true);
+    const res = await put(`/api/document/file/${selectedFile?.id}`, payload);
+    if (res?.status === 200) {
+      toast.success("successfully file updated.");
+      refresh();
+      handleClose();
+    } else {
       toast.error(
-        "File is not updated due to technical issue. pleasse try again."
+        "File is not updated due to technical issue. Please try again."
       );
     }
-  };
+    setIsLoading(false);
+  } catch (e) {
+    setIsLoading(false);
+    toast.error(
+      "File is not updated due to technical issue. Please try again."
+    );
+  }
+};
+
+
+
   return (
     <>
       <Dialog open={open} maxWidth="lg" fullWidth onClose={handleClose}>

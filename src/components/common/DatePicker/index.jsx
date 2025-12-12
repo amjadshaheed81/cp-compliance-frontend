@@ -29,8 +29,6 @@ const validateDay = (day, month, year) => {
     const maxDays = getDaysInMonth(month, year);
     return { valid: dayNum <= maxDays, maxDays };
   } else if (month) {
-    // If we have month but no year, use a non-leap year (2023) for validation
-    // This ensures February shows 28 days, not 29
     const maxDays = getDaysInMonth(month, 2023);
     return { valid: dayNum <= maxDays, maxDays };
   }
