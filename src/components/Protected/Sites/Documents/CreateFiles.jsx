@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Button, Modal, Typography, Box, Grid } from "@mui/material";
+import { Button, Modal, Typography, Box, Grid, Paper, InputAdornment } from "@mui/material";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { useForm } from "react-hook-form";
 import { uploadDocumentFile } from "../../../../store/thunk/site";
 import { connect } from "react-redux";
@@ -37,7 +38,9 @@ const CreateFiles = ({
   const [expiryDate, setExpiryDate] = useState("");
   const [issueDate, setIssueDate] = useState("");
   const [fileName, setFileName] = useState("");
+  const [fileSize, setFileSize] = useState("");
   const [open, setOpen] = React.useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const handleOpen = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
   const [selectedMandatoryFolder, setSelectedMandatoryFolder] = useState(
@@ -51,8 +54,20 @@ const CreateFiles = ({
     handleSubmit,
     getValues,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({});
+  
+  const fileUploadWatch = watch("fileUpload");
+
+  useEffect(() => {
+    if (fileUploadWatch?.[0]) {
+      const file = fileUploadWatch[0];
+      setFileName(file.name);
+      setFileSize(formatFileSize(file.size));
+    }
+  }, [fileUploadWatch]);
+
   useEffect(() => {
     setValue(
       "name",
@@ -61,6 +76,52 @@ const CreateFiles = ({
         : ""
     );
   }, []);
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      const fileSizeLimit = 100 * 1024 * 1024;
+      
+      if (file.size > fileSizeLimit) {
+        toast.error("File size cannot exceed 100MB");
+        return;
+      }
+      
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      
+      // Create a fake event to set the file input
+      const input = document.querySelector('input[name="fileUpload"]');
+      if (input) {
+        input.files = dataTransfer.files;
+        const event = new Event('change', { bubbles: true });
+        input.dispatchEvent(event);
+      }
+    }
+  };
+
   const submitFile = async (data, fileUpload, formData) => {
     const fileSizeLimit = 100 * 1024 * 1024;
 
@@ -140,49 +201,32 @@ const CreateFiles = ({
     refresh();
   };
 
-  const setExpiry = (e) => {
-    setExpiryDate(e.target.value);
-  };
-
-  const setIssue = (e) => {
-    setIssueDate(e.target.value);
-    const date = moment(e.target.value).add(1, "years").format("YYYY-MM-DD");
-    setExpiryDate(date);
-  };
-
-  const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 700,
-    height: 400,
-    bgcolor: "background.paper",
-    border: "2px solid #fff",
-    boxShadow: 24,
-    p: 4,
-  };
-
-  const handleFileChange = (e) => {
-    setFileName(e?.target?.files?.[0]?.name);
-  };
-
   const checkAndAddExpiryCalenderEvent = async (data, folderId) => {
-    const body = {
-      siteId: siteSelectedForGlobal?.siteId,
-      startDate: moment(data.expiryDate),
-      endDate: moment(data.expiryDate),
-      shortText: "Document Expiring : " + data.name,
-      eventType: "Document Expring",
-      userId: loggedInUserData?.id,
-      section: `/subfolder/?id=${folderId}`,
-    };
-    await put("/api/user/calendar", body);
+    try {
+      // FIX: Ensure startDate and endDate are properly formatted
+      const body = {
+        siteId: siteSelectedForGlobal?.siteId,
+        startDate: data.expiryDate ? moment(data.expiryDate).format("YYYY-MM-DDTHH:mm:ss") : null,
+        endDate: data.expiryDate ? moment(data.expiryDate).format("YYYY-MM-DDTHH:mm:ss") : null,
+        shortText: "Document Expiring: " + (data.name || "Unnamed Document"),
+        eventType: "Document Expiring", // Fixed typo: "Expring" to "Expiring"
+        userId: loggedInUserData?.id,
+        section: `/subfolder/?id=${folderId}`,
+      };
+      
+      const response = await put("/api/user/calendar", body);
+      if (response?.status === 200) {
+        toast.success("Calendar event created successfully");
+      }
+    } catch (error) {
+      console.error("Failed to create calendar event:", error);
+      toast.warning("File uploaded but calendar event creation failed");
+    }
   };
 
   return (
     <React.Fragment>
-      <Button variant="outlined" onClick={handleOpen}>
+      <Button variant="outlined" onClick={handleOpen} startIcon={<FileUploadOutlinedIcon />}>
         Select or Upload New Files
       </Button>
       <Dialog
@@ -205,6 +249,7 @@ const CreateFiles = ({
                 selectedMandatoryFile?.length > 0 && isStatutory
               );
               let fileExtensionValue = "";
+              
               if (isStautoryFolderSelected && !isStautoryFileSelected) {
                 const res = await get(
                   `/api/document/parent/${selectedMandatoryFolder?.[0]?.id}/folders?siteId=${siteSelectedForGlobal?.siteId}`
@@ -220,7 +265,7 @@ const CreateFiles = ({
                   const res = await put(url, data);
                   if (res?.status === 200) {
                     setIsLoading(false);
-                    toast.success("Files tags successfully.");
+                    toast.success("Files tagged successfully.");
                     handleClose();
                     refresh();
                   } else {
@@ -231,10 +276,9 @@ const CreateFiles = ({
                 } else {
                   setIsLoading(false);
                   toast.warning(
-                    "There is no files available in this document to tag."
+                    "There are no files available in this document to tag."
                   );
                 }
-                // const
               } else if (isStautoryFileSelected && !isStautoryFolderSelected) {
                 const fileId = selectedMandatoryFile[0]?.id;
                 const url = `/api/document/tag-file`;
@@ -245,7 +289,7 @@ const CreateFiles = ({
                 const res = await put(url, data);
                 if (res?.status === 200) {
                   setIsLoading(false);
-                  toast.success("File tag successfully.");
+                  toast.success("File tagged successfully.");
                   handleClose();
                   refresh();
                 } else {
@@ -261,7 +305,7 @@ const CreateFiles = ({
                   ) {
                     setIsLoading(false);
                     toast.warn(
-                      "Please select folder to Upload file in Statuary"
+                      "Please select folder to upload file in Statutory"
                     );
                     return;
                   } else {
@@ -270,23 +314,22 @@ const CreateFiles = ({
                     }
                   }
                 }
+                
                 const data = {
                   folderId: folderIdForUpload,
                   files: [],
                 };
+                
                 if (isStatutory) {
                   if (selectedMandatoryFile?.length > 0) {
-                    // Fetch the file from the provided URL
+                    // Handle mandatory file selection
                     data.folderId = selectedMandatoryFile[0].folderId;
                     const response = await fetch(
                       selectedMandatoryFile[0].fileBlobUrl
                     );
-
-                    // Convert the response to a Blob
                     const fileBlob = await response.blob();
                     fileExtensionValue =
                       selectedMandatoryFile[0]?.name?.split(".")?.[1];
-                    // Create a File object from the Blob
                     const file = new File(
                       [fileBlob],
                       selectedMandatoryFile[0].fileName,
@@ -294,34 +337,25 @@ const CreateFiles = ({
                         type: fileBlob.type,
                       }
                     );
-
-                    // Create a DataTransfer object to manipulate the FileList
                     const dataTransfer = new DataTransfer();
-
-                    // Add existing files from the FileList to the DataTransfer object
-                    for (let i = 0; i < formData.fileUpload.length; i++) {
+                    for (let i = 0; i < formData.fileUpload?.length || 0; i++) {
                       dataTransfer.items.add(formData.fileUpload[i]);
                     }
-
-                    // Add the new file
                     dataTransfer.items.add(file);
-
-                    // Assign the new FileList back to formData.fileUpload
                     formData.fileUpload = dataTransfer.files;
+                    
                     data.files.push({
                       ...formData,
-                      name: formData?.name
-                        ? formData?.name
-                        : selectedMandatoryFile[0].fileName,
+                      name: formData?.name || selectedMandatoryFile[0].fileName,
                       fileVersion: selectedMandatoryFolder?.[0]?.fileVersion
                         ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                         : 1,
                       siteId: siteSelectedForGlobal?.siteId,
                       issueDate: formData?.issueDate
-                        ? `${formData?.issueDate} 10:00:00`
+                        ? `${formData?.issueDate}T10:00:00`
                         : "",
                       expiryDate: formData?.expiryDate
-                        ? `${formData?.expiryDate} 10:00:00`
+                        ? `${formData?.expiryDate}T10:00:00`
                         : "",
                     });
                   } else if (formData?.fileUpload?.length > 0) {
@@ -333,10 +367,10 @@ const CreateFiles = ({
                         : 1,
                       siteId: siteSelectedForGlobal?.siteId,
                       issueDate: formData?.issueDate
-                        ? `${formData?.issueDate} 10:00:00`
+                        ? `${formData?.issueDate}T10:00:00`
                         : "",
                       expiryDate: formData?.expiryDate
-                        ? `${formData?.expiryDate} 10:00:00`
+                        ? `${formData?.expiryDate}T10:00:00`
                         : "",
                     });
                   } else {
@@ -347,6 +381,13 @@ const CreateFiles = ({
                     return;
                   }
                 } else {
+                  // Non-statutory upload
+                  if (!formData?.fileUpload?.[0]) {
+                    setIsLoading(false);
+                    toast.error("Please select a file to upload");
+                    return;
+                  }
+                  
                   data.files.push({
                     ...formData,
                     name: formData?.name,
@@ -355,13 +396,14 @@ const CreateFiles = ({
                       : 1,
                     siteId: siteSelectedForGlobal?.siteId,
                     issueDate: formData?.issueDate
-                      ? `${formData?.issueDate} 10:00:00`
+                      ? `${formData?.issueDate}T10:00:00`
                       : "",
                     expiryDate: formData?.expiryDate
-                      ? `${formData?.expiryDate} 10:00:00`
+                      ? `${formData?.expiryDate}T10:00:00`
                       : "",
                   });
                 }
+                
                 const fileExtension = isStatutory
                   ? fileExtensionValue
                   : formData.fileUpload[0].name?.split(".")?.pop()?.toLowerCase();
@@ -370,17 +412,22 @@ const CreateFiles = ({
                 const fileNameWithoutExt = lastDotIndex >= 0 
                    ? originalFileName.substring(0, lastDotIndex) 
                    : originalFileName;
+                
                 data.files[0].name =
                   formData?.name?.length > 0
                     ? `${formData?.name}.${fileExtension}`
-                    : `${fileNameWithoutExt}`;
+                    : `${fileNameWithoutExt}.${fileExtension}`;
+                
                 await submitFile(data, formData.fileUpload[0], formData);
-                if (!isStatutory) {
-                  checkAndAddExpiryCalenderEvent(data.files[0], data.folderId);
+                
+                if (!isStatutory && data.files[0].expiryDate) {
+                  await checkAndAddExpiryCalenderEvent(data.files[0], data.folderId);
                 }
+                
                 setIsLoading(false);
               }
             } catch (e) {
+              console.error("Upload error:", e);
               toast.error(
                 "Something went wrong while adding new file. Please try again!!"
               );
@@ -389,192 +436,215 @@ const CreateFiles = ({
           }),
         }}
       >
-        <DialogTitle>Select or Upload New Files</DialogTitle>
-        <DialogContent dividers>
-          <Grid container>
-            <Grid sm={8}>
-              <Grid container>
-                <Grid sm={6}>
-                  <div style={{ margin: "10px" }}>
-                    {isStatutory ? (
-                      <label htmlFor="folder">Requirement</label>
-                    ) : (
-                      <label htmlFor="folder">Folder</label>
-                    )}
-                    {isStatutory ? (
-                      <input
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        disabled
-                        value={
-                          folderData?.requirement
-                            ? folderData?.requirement
-                            : folderData?.subType
-                        }
-                        className="form-control"
-                        {...register("folderName")}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        disabled
-                        value={
-                          selectedMandatoryFolder?.[0]?.folderName
-                            ? selectedMandatoryFolder?.[0]?.folderName
-                            : selectedMandatoryFolder?.[0]?.name
-                        }
-                        className="form-control"
-                        {...register("folderName")}
-                      />
-                    )}
-                  </div>
-                </Grid>
-                <Grid sm={6}>
-                  <div style={{ margin: "10px" }}>
-                    <label htmlFor="fileName">File Name</label>
-                    <input
-                      type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                      className="form-control"
-                      {...register("name")}
-                    />
-                  </div>
-                </Grid>
-                <Grid sm={4}>
-                  <div style={{ margin: "10px" }}>
-                    <label htmlFor="version">Version</label>
-                    <input
-                      type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                      disabled
-                      value={
-                        selectedMandatoryFolder?.[0]?.fileVersion
-                          ? Number(selectedMandatoryFolder?.[0]?.fileVersion) +
-                            1
-                          : 1
-                      }
-                      className="form-control"
-                      {...register("version")}
-                    />
-                  </div>
-                </Grid>
-                <Grid sm={4}>
-                  <div style={{ margin: "10px" }}>
-                    <label htmlFor="issueDate">Issue Date</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      {...register("issueDate")}
-                      onChange={(e) => {
-                        e?.preventDefault();
-                        setValue("issueDate", e?.target?.value);
-                        setValue(
-                          "expiryDate",
-                          moment(new Date(e?.target?.value))
-                            .add(1, "years")
-                            .format("YYYY-MM-DD")
-                        );
-                      }}
-                    />
-                  </div>
-                </Grid>
-                <Grid sm={4}>
-                  <div style={{ margin: "10px" }}>
-                    <label htmlFor="expiryDate">Expiry Date</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      {...register("expiryDate")}
-                    />
-                  </div>
-                </Grid>
-                <Grid sm={isStatutory ? 8 : 12}>
-                  <div style={{ margin: "10px" }}>
-                    <input
-                      type={isStatutory ? "input" : "textarea"}
-                      name="note"
-                      placeholder={
-                        isStatutory ? "Reference Number" : "Enter notes..."
-                      }
-                      className="form-control w-75"
-                      {...register("note")}
-                    />
-                  </div>
-                </Grid>
-                {!isStatutory && <Grid sm={6}>
-                  <MandatoryFolders
-                    isStatutory={isStatutory}
-                    isSingleFolderSelect={isStatutory ? false : true}
-                    setSelectedMandatoryFolder={setSelectedMandatoryFolder}
-                    selectedMandatoryFolder={selectedMandatoryFolder}
+        <DialogTitle sx={{ borderBottom: 1, borderColor: 'divider', pb: 2 }}>
+          Select or Upload New Files
+        </DialogTitle>
+        <DialogContent dividers sx={{ pt: 3 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label={isStatutory ? "Requirement" : "Folder"}
+                    fullWidth
+                    disabled
+                    value={
+                      isStatutory
+                        ? folderData?.requirement || folderData?.subType || ""
+                        : selectedMandatoryFolder?.[0]?.folderName || 
+                          selectedMandatoryFolder?.[0]?.name || ""
+                    }
+                    variant="outlined"
+                    size="small"
+                    {...register("folderName")}
                   />
-                </Grid>}
-              </Grid>
-            </Grid>
-            <Grid sm={4}>
-              <div
-                style={{
-                  backgroundColor: "#f1f5f9",
-                  margin: "10px",
-                  display: selectedMandatoryFile?.length > 0 || !!(
-                    !selectedMandatoryFolder?.[0]?.requirement &&
-                    selectedMandatoryFolder?.[0]?.id &&
-                    isStatutory
-                  ) ? "none" : "",
-                }}
-              >
-                <div className="uploadPhotoButton">
-                  <FileUploadOutlinedIcon
-                    style={{
-                      color: "blue",
-                      fontSize: "50px",
-                      marginLeft: "4rem",
-                    }}
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="File Name"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    {...register("name")}
+                    helperText="Leave empty to use original file name"
                   />
-                  <label htmlFor="fileUpload">Select New File</label>
-                  <input
-                    type="file"
-                    name="fileUpload"
-                    className="form-control"
-                    {...register("fileUpload", {
-                      required: isStatutory ? false : "A file is required",
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Version"
+                    fullWidth
+                    disabled
+                    value={
+                      selectedMandatoryFolder?.[0]?.fileVersion
+                        ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
+                        : 1
+                    }
+                    variant="outlined"
+                    size="small"
+                    {...register("version")}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Issue Date"
+                    type="date"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                    {...register("issueDate", {
+                      onChange: (e) => {
+                        if (e.target.value) {
+                          setValue("issueDate", e.target.value);
+                          const expiryDate = moment(e.target.value)
+                            .add(1, 'years')
+                            .format('YYYY-MM-DD');
+                          setValue("expiryDate", expiryDate);
+                        }
+                      }
                     })}
                   />
-                  {errors.fileUpload && (
-                    <InputError
-                      message={errors?.fileUpload?.message}
-                      key={errors?.fileUpload?.message}
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Expiry Date"
+                    type="date"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                    {...register("expiryDate")}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label={isStatutory ? "Reference Number" : "Notes"}
+                    fullWidth
+                    multiline={!isStatutory}
+                    rows={isStatutory ? 1 : 3}
+                    variant="outlined"
+                    size="small"
+                    placeholder={isStatutory ? "Enter reference number..." : "Enter notes..."}
+                    {...register("note")}
+                  />
+                </Grid>
+                {!isStatutory && (
+                  <Grid item xs={12}>
+                    <MandatoryFolders
+                      isStatutory={isStatutory}
+                      isSingleFolderSelect={isStatutory ? false : true}
+                      setSelectedMandatoryFolder={setSelectedMandatoryFolder}
+                      selectedMandatoryFolder={selectedMandatoryFolder}
                     />
-                  )}
-                  <span>or drag and drop</span>
-                  {/* <p>SVG, PNG, JPG or GIF</p> */}
-                  <p>(max 100 MB)</p>
-                </div>
-              </div>
+                  </Grid>
+                )}
+              </Grid>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  border: '2px dashed',
+                  borderColor: dragOver ? 'primary.main' : 'grey.300',
+                  backgroundColor: dragOver ? 'action.hover' : 'grey.50',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                }}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.querySelector('input[name="fileUpload"]')?.click()}
+              >
+                <CloudUploadIcon 
+                  sx={{ 
+                    fontSize: 48, 
+                    color: 'primary.main', 
+                    mb: 2 
+                  }} 
+                />
+                
+                <Typography variant="h6" gutterBottom>
+                  Drag & Drop or Click to Upload
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Supports all file types
+                </Typography>
+                
+                <Typography variant="caption" color="text.secondary" gutterBottom>
+                  Maximum file size: 100MB
+                </Typography>
+                
+                <input
+                  type="file"
+                  name="fileUpload"
+                  id="fileUpload"
+                  style={{ display: 'none' }}
+                  {...register("fileUpload", {
+                    required: !isStatutory || (!selectedMandatoryFile?.length && !selectedMandatoryFolder?.[0]?.requirement),
+                  })}
+                />
+                
+                {fileName && (
+                  <Box sx={{ mt: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1, width: '100%' }}>
+                    <Typography variant="body2" noWrap>
+                      📎 {fileName}
+                    </Typography>
+                    {fileSize && (
+                      <Typography variant="caption" color="text.secondary">
+                        Size: {fileSize}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+                
+                {errors.fileUpload && (
+                  <Typography color="error" variant="caption" sx={{ mt: 1 }}>
+                    {errors.fileUpload.message}
+                  </Typography>
+                )}
+                
+                <Button
+                  variant="contained"
+                  component="span"
+                  startIcon={<FileUploadOutlinedIcon />}
+                  sx={{ mt: 2 }}
+                >
+                  Browse Files
+                </Button>
+              </Paper>
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          {isLoading && (
-            <Box sx={{ display: "flex" }}>
-              <CircularProgress />
-            </Box>
-          )}
-          {!isLoading && (
-            <>
-              <Button onClick={handleClose}>Cancel</Button>
-              <Button type="submit">Save</Button>
-            </>
-          )}
+        <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            {isLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Uploading...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <Button onClick={handleClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            disabled={isLoading}
+          >
+            {isLoading ? 'Uploading...' : 'Upload File'}
+          </Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>
