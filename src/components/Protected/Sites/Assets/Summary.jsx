@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { CSVLink } from "react-csv";
@@ -55,6 +55,7 @@ const Summary = ({
     const [showMultiEditModal, setShowMultiEditModal] = useState(false);
 
     const location = useLocation();
+    const prevSiteIdRef = useRef(siteSelectedForGlobal?.siteId || null);
 
     const [formData, setFormData] = useState(() => {
         const savedFilters = localStorage.getItem('assetFilters');
@@ -110,19 +111,55 @@ const Summary = ({
                 }, 3000);
             }
         };
+
         getDetails();
-    }, [siteSelectedForGlobal]);
+    }, [siteSelectedForGlobal?.siteId]);
+
+
+    useEffect(() => {
+        const currentSiteId = siteSelectedForGlobal?.siteId;
+        const previousSiteId = prevSiteIdRef.current;
+        if (currentSiteId && previousSiteId !== null && previousSiteId !== undefined) {
+            const siteIdChanged = String(previousSiteId) !== String(currentSiteId);
+
+            if (siteIdChanged) {
+                const emptyFilters = {
+                    assetName: "",
+                    manufacturer: "",
+                    category: "",
+                    subCategory: "",
+                    subCategory2: "",
+                    subCategory3: "",
+                    location: "",
+                    floor: "",
+                    room: "",
+                    powerOutput: "",
+                };
+
+                setFormData(emptyFilters);
+
+                localStorage.removeItem('assetFilters');
+
+                window.history.replaceState({}, '', window.location.pathname);
+
+                setCurrentPage(1);
+            }
+        }
+
+        if (currentSiteId) {
+            prevSiteIdRef.current = currentSiteId;
+        }
+    }, [siteSelectedForGlobal?.siteId]);
+
+
 
     useEffect(() => {
         if (!siteLayout) return;
 
-        // Get all floors (both interior and exterior)
         const allFloors = siteLayout.filter((itm) => itm?.nodeType === "floor");
 
-        // Get all rooms
         const allRooms = siteLayout.filter((itm) => itm?.nodeType === "room");
 
-        // Organize rooms by their parent floor
         const organizedRooms = {};
         allRooms.forEach(room => {
             const parentFloorId = room.parentNode;
@@ -132,7 +169,6 @@ const Summary = ({
             organizedRooms[parentFloorId].push(room);
         });
 
-        // Attach rooms to their respective floors
         const floorsWithRooms = allFloors.map(floor => ({
             ...floor,
             rooms: organizedRooms[floor.id] || []

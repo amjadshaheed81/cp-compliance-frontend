@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useRef } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
@@ -51,6 +51,7 @@ const Door = ({
   const [roomNode, setRoomNode] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
+  const prevSiteIdRef = useRef(siteSelectedForGlobal?.siteId || null);
   const currentSiteAssets = filteredSiteDoorItems?.slice(
       indexOfFirstPreAction,
       indexOfLastPreAction
@@ -309,6 +310,39 @@ const Door = ({
     getSiteDoorAssets(siteSelectedForGlobal?.siteId);
     getCategory();
     getSiteLayout(siteSelectedForGlobal?.siteId)
+  }, [siteSelectedForGlobal?.siteId]);
+
+  // Clear saved asset filters when the active site changes
+  useEffect(() => {
+    const currentSiteId = siteSelectedForGlobal?.siteId;
+    const previousSiteId = prevSiteIdRef.current;
+
+
+    if (currentSiteId && previousSiteId !== null && previousSiteId !== undefined) {
+      const siteIdChanged = String(previousSiteId) !== String(currentSiteId);
+
+      if (siteIdChanged) {
+        const emptyFilters = {
+          assetName: "",
+          manufacturer: "",
+          category: "",
+          subCategory: "",
+          subCategory2: "",
+          subCategory3: "",
+          position: "",
+          floor: "",
+          room: "",
+        };
+
+        setFormData(emptyFilters);
+        localStorage.setItem('doorAssetFilters', JSON.stringify(emptyFilters));
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+    // Update the ref with the current siteId AFTER checking
+    if (currentSiteId) {
+      prevSiteIdRef.current = currentSiteId;
+    }
   }, [siteSelectedForGlobal]);
 
   useEffect(() => {
