@@ -421,6 +421,40 @@ const UpdateAsset = ({
   const getTesterName = (id) => {
     return tester?.filter((itm) => itm.id === id)?.[0]?.name;
   };
+
+  // Helper function to format date for date input (YYYY-MM-DD)
+  const formatDateForInput = (date) => {
+    if (!date) return "";
+    if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    if (typeof date === "string" && (date.includes("T") || date.includes(" "))) {
+      return date.split("T")[0].split(" ")[0];
+    }
+    try {
+      return moment(date).format("YYYY-MM-DD");
+    } catch (e) {
+      return "";
+    }
+  };
+
+  // Helper function to get tester option for Autocomplete
+  const getTesterOption = (patUserId) => {
+    if (!patUserId) return null;
+    const testerOptions = tester.map((option) => ({
+      key: option.id,
+      label:
+        option.role +
+        " - " +
+        option.name +
+        " (" +
+        option.email +
+        ")" +
+        (option.companyName ? " - " + option.companyName : ""),
+    }));
+    return testerOptions.find((opt) => opt.key === patUserId) || null;
+  };
+
   const defaultValues = {
     assetId: null,
     assetName: "",
@@ -2262,6 +2296,7 @@ const UpdateAsset = ({
                                   {itm?.isEditing ? (
                                       <Autocomplete
                                           id="stakeholder"
+                                          value={getTesterOption(itm?.patUserId)}
                                           onChange={(event, item) => {
                                             handleInputpATChange(
                                                 index,
@@ -2311,7 +2346,7 @@ const UpdateAsset = ({
                                       <input
                                           type="date"
                                           className="form-control"
-                                          value={itm?.patDate || ""}
+                                          value={formatDateForInput(itm?.patDate)}
                                           onChange={(e) =>
                                               handleInputpATChange(
                                                   index,
@@ -2329,7 +2364,7 @@ const UpdateAsset = ({
                                       <input
                                           type="date"
                                           className="form-control"
-                                          value={itm?.patNextDate || ""}
+                                          value={formatDateForInput(itm?.patNextDate)}
                                           onChange={(e) =>
                                               handleInputpATChange(
                                                   index,
