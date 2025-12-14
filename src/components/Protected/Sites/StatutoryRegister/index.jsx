@@ -24,9 +24,16 @@ import TagStatutory from "./TagStatutory";
 import { getSiteCheckDueDate, getSiteCheckDueDateForStatus } from "../../../../utils/getSiteCheckDueDate";
 
 export const findAssetWithNearestPatNextDate = (assets) => {
+  // Variables for expired PAT items (prioritize failed items)
+  let expiredAsset = null;
+  let expiredPatItem = null;
+  let mostRecentExpiredMoment = null;
+  
+  // Variables for future PAT items (fallback if no expired items)
   let nearestAsset = null;
   let nearestPatItem = null;
   let nearestMoment = null;
+  
   const now = moment();
   
   assets.forEach((asset) => {
@@ -37,13 +44,24 @@ export const findAssetWithNearestPatNextDate = (assets) => {
         if (patNextDate) {
           const patNextMoment = moment(patNextDate);
           
-          // Only consider future dates (matching backend logic)
-          if (patNextMoment.isAfter(now)) {
-            // Check if it's the first date or closer than the previous nearestDate
-            if (!nearestMoment || patNextMoment.isBefore(nearestMoment)) {
-              nearestMoment = patNextMoment;
-              nearestPatItem = patItem;
-              nearestAsset = asset;
+          // First, check for expired PAT items (prioritize failed items)
+          // isSameOrBefore includes items that expired today
+          if (patNextMoment.isSameOrBefore(now)) {
+            // Find the most recently expired PAT item (latest expiry date that's still in the past)
+            if (!mostRecentExpiredMoment || patNextMoment.isAfter(mostRecentExpiredMoment)) {
+              mostRecentExpiredMoment = patNextMoment;
+              expiredPatItem = patItem;
+              expiredAsset = asset;
+            }
+          } else if (patNextMoment.isAfter(now)) {
+            // Only look for future dates if no expired items exist
+            if (!expiredPatItem) {
+              // Only consider PAT items with future expiry dates
+              if (!nearestMoment || patNextMoment.isBefore(nearestMoment)) {
+                nearestMoment = patNextMoment;
+                nearestPatItem = patItem;
+                nearestAsset = asset;
+              }
             }
           }
         }
@@ -51,9 +69,14 @@ export const findAssetWithNearestPatNextDate = (assets) => {
     }
   });
 
-  return nearestAsset && nearestPatItem
-    ? { asset: nearestAsset, patItem: nearestPatItem }
-    : null;
+  // Prioritize expired PAT item if it exists, otherwise use nearest future
+  if (expiredAsset && expiredPatItem) {
+    return { asset: expiredAsset, patItem: expiredPatItem };
+  } else if (nearestAsset && nearestPatItem) {
+    return { asset: nearestAsset, patItem: nearestPatItem };
+  }
+  
+  return null;
 };
 
 // New function to check if ALL PAT items are valid
