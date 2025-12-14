@@ -85,6 +85,21 @@ const CreateFiles = ({
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     };
 
+    // Helper function to format dates for API
+    const formatDateForAPI = (dateString, defaultTime = "10:00:00") => {
+        if (!dateString) return "";
+        // If date already has time (ISO format), convert it
+        if (dateString.includes('T')) {
+            return moment(dateString).format("YYYY-MM-DD HH:mm:ss");
+        }
+        // If it's already in the correct format, return as-is
+        if (dateString.includes(' ')) {
+            return dateString;
+        }
+        // If just date (YYYY-MM-DD), add default time
+        return `${dateString} ${defaultTime}`;
+    };
+
     const handleDragOver = (e) => {
         e.preventDefault();
         setDragOver(true);
@@ -162,9 +177,9 @@ const CreateFiles = ({
                 reqData.documentRequestString.files[0].name =
                     selectedMandatoryFile[0].name;
                 reqData.documentRequestString.files[0].issueDate =
-                    selectedMandatoryFile[0].issueDate?.replace("T", " ");
-                reqData.documentRequestString.files[0].issueDate =
-                    selectedMandatoryFile[0].expiryDate?.replace("T", " ");
+                    selectedMandatoryFile[0].issueDate?.replace("T", " ") || "";
+                reqData.documentRequestString.files[0].expiryDate =  // Fixed: changed from issueDate to expiryDate
+                    selectedMandatoryFile[0].expiryDate?.replace("T", " ") || "";
             }
             reqData.documentRequestString.files[0].statutoryCategoryId =
                 selectedMandatoryFolder?.[0]?.id;
@@ -203,13 +218,22 @@ const CreateFiles = ({
 
     const checkAndAddExpiryCalenderEvent = async (data, folderId) => {
         try {
-            // FIX: Ensure startDate and endDate are properly formatted
+            // Parse the date if it's in "YYYY-MM-DD HH:mm:ss" format
+            let expiryDateForCalendar = data.expiryDate;
+
+            // If date is in "YYYY-MM-DD HH:mm:ss" format, convert to ISO for moment
+            if (expiryDateForCalendar && expiryDateForCalendar.includes(' ')) {
+                expiryDateForCalendar = expiryDateForCalendar.replace(' ', 'T');
+            }
+
             const body = {
                 siteId: siteSelectedForGlobal?.siteId,
-                startDate: data.expiryDate ? moment(data.expiryDate).format("YYYY-MM-DDTHH:mm:ss") : null,
-                endDate: data.expiryDate ? moment(data.expiryDate).format("YYYY-MM-DDTHH:mm:ss") : null,
+                startDate: expiryDateForCalendar ?
+                    moment(expiryDateForCalendar).format("YYYY-MM-DDTHH:mm:ss") : null,
+                endDate: expiryDateForCalendar ?
+                    moment(expiryDateForCalendar).format("YYYY-MM-DDTHH:mm:ss") : null,
                 shortText: "Document Expiring: " + (data.name || "Unnamed Document"),
-                eventType: "Document Expiring", // Fixed typo: "Expring" to "Expiring"
+                eventType: "Document Expiring",
                 userId: loggedInUserData?.id,
                 section: `/subfolder/?id=${folderId}`,
             };
@@ -351,8 +375,8 @@ const CreateFiles = ({
                                                 ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                                                 : 1,
                                             siteId: siteSelectedForGlobal?.siteId,
-                                            issueDate: formData?.issueDate ? `${formData?.issueDate}T10:00:00Z` : "",
-                                            expiryDate: formData?.expiryDate ? `${formData?.expiryDate}T10:00:00Z` : "",
+                                            issueDate: formatDateForAPI(formData?.issueDate),
+                                            expiryDate: formatDateForAPI(formData?.expiryDate),
                                         });
                                     } else if (formData?.fileUpload?.length > 0) {
                                         data.files.push({
@@ -362,8 +386,8 @@ const CreateFiles = ({
                                                 ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                                                 : 1,
                                             siteId: siteSelectedForGlobal?.siteId,
-                                            issueDate: formData?.issueDate ? `${formData?.issueDate}T10:00:00Z` : "",
-                                            expiryDate: formData?.expiryDate ? `${formData?.expiryDate}T10:00:00Z` : "",
+                                            issueDate: formatDateForAPI(formData?.issueDate),
+                                            expiryDate: formatDateForAPI(formData?.expiryDate),
                                         });
                                     } else {
                                         setIsLoading(false);
@@ -387,8 +411,8 @@ const CreateFiles = ({
                                             ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                                             : 1,
                                         siteId: siteSelectedForGlobal?.siteId,
-                                        issueDate: formData?.issueDate ? `${formData?.issueDate}T10:00:00Z` : "",
-                                        expiryDate: formData?.expiryDate ? `${formData?.expiryDate}T10:00:00Z` : "",
+                                        issueDate: formatDateForAPI(formData?.issueDate),
+                                        expiryDate: formatDateForAPI(formData?.expiryDate),
                                     });
                                 }
 
