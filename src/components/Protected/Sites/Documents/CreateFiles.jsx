@@ -351,12 +351,8 @@ const CreateFiles = ({
                                                 ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                                                 : 1,
                                             siteId: siteSelectedForGlobal?.siteId,
-                                            issueDate: formData?.issueDate
-                                                ? `${formData?.issueDate}T10:00:00`
-                                                : "",
-                                            expiryDate: formData?.expiryDate
-                                                ? `${formData?.expiryDate}T10:00:00`
-                                                : "",
+                                            issueDate: formData?.issueDate ? `${formData?.issueDate}T10:00:00Z` : "",
+                                            expiryDate: formData?.expiryDate ? `${formData?.expiryDate}T10:00:00Z` : "",
                                         });
                                     } else if (formData?.fileUpload?.length > 0) {
                                         data.files.push({
@@ -366,12 +362,8 @@ const CreateFiles = ({
                                                 ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                                                 : 1,
                                             siteId: siteSelectedForGlobal?.siteId,
-                                            issueDate: formData?.issueDate
-                                                ? `${formData?.issueDate}T10:00:00`
-                                                : "",
-                                            expiryDate: formData?.expiryDate
-                                                ? `${formData?.expiryDate}T10:00:00`
-                                                : "",
+                                            issueDate: formData?.issueDate ? `${formData?.issueDate}T10:00:00Z` : "",
+                                            expiryDate: formData?.expiryDate ? `${formData?.expiryDate}T10:00:00Z` : "",
                                         });
                                     } else {
                                         setIsLoading(false);
@@ -395,12 +387,8 @@ const CreateFiles = ({
                                             ? Number(selectedMandatoryFolder?.[0]?.fileVersion) + 1
                                             : 1,
                                         siteId: siteSelectedForGlobal?.siteId,
-                                        issueDate: formData?.issueDate
-                                            ? `${formData?.issueDate}T10:00:00`
-                                            : "",
-                                        expiryDate: formData?.expiryDate
-                                            ? `${formData?.expiryDate}T10:00:00`
-                                            : "",
+                                        issueDate: formData?.issueDate ? `${formData?.issueDate}T10:00:00Z` : "",
+                                        expiryDate: formData?.expiryDate ? `${formData?.expiryDate}T10:00:00Z` : "",
                                     });
                                 }
 
