@@ -55,6 +55,36 @@ export const findAssetWithNearestPatNextDate = (assets) => {
         ? { asset: nearestAsset, patItem: nearestPatItem }
         : null;
 };
+
+// New function to check if ALL PAT items are valid
+export const checkAllPatItemsValid = (assets) => {
+    const now = moment();
+    let hasAnyPatItems = false;
+    let allPatItemsValid = true;
+
+    assets.forEach((asset) => {
+        if (asset.assetPATItems && asset.assetPATItems.length > 0) {
+            asset.assetPATItems.forEach((patItem) => {
+                hasAnyPatItems = true;
+                const patNextDate = patItem.patNextDate;
+
+                // If no expiry date or date is in the past, mark as invalid
+                if (!patNextDate || !moment(patNextDate).isAfter(now)) {
+                    allPatItemsValid = false;
+                }
+            });
+        }
+    });
+
+    // If no PAT items exist, return false (Fail)
+    if (!hasAnyPatItems) {
+        return false;
+    }
+
+    // Return true only if ALL PAT items are valid
+    return allPatItemsValid;
+};
+
 export const requirementsNotRequiredForFileCheck = [
     "Asbestos Surveys",
     "Fire Emergency Plan",
@@ -207,18 +237,9 @@ const StatutoryRegister = ({
 
     const recalculatePatStatus = (item, patItems) => {
         if (item?.subType === "PAT / Microwave Testing" && item?.required) {
-            const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
-            if (assetWithNearestPatNextDate?.patItem) {
-                const patNextDate = assetWithNearestPatNextDate.patItem.patNextDate;
-                if (patNextDate) {
-                    const isPatValid = moment(patNextDate).isAfter(new Date());
-                    return isPatValid ? "Passed" : "Fail";
-                } else {
-                    return "Fail"; // No expiry date = Fail
-                }
-            } else {
-                return "Fail"; // No PAT items = Fail
-            }
+            // Check ALL PAT items - Pass only if ALL are valid
+            const allPatItemsValid = checkAllPatItemsValid(patItems);
+            return allPatItemsValid ? "Passed" : "Fail";
         }
         // Return existing status for non-PAT items
         return item.status;
@@ -254,28 +275,11 @@ const StatutoryRegister = ({
                     status = isAsbestosRecordAvailable ? "Passed" : "Fail";
                 }
 
-                // PAT Check - Use PAT items instead of site checks
+                // PAT Check - Check ALL PAT items instead of just nearest
                 else if (item?.subType === "PAT / Microwave Testing") {
-                    const assetWithNearestPatNextDate = findAssetWithNearestPatNextDate(patItems);
-                    if (assetWithNearestPatNextDate?.patItem) {
-                        const patNextDate = assetWithNearestPatNextDate.patItem.patNextDate;
-                        if (patNextDate) {
-                            const isPatValid = moment(patNextDate).isAfter(new Date());
-                            status = isPatValid ? "Passed" : "Fail";
-                        } else {
-                            status = "Fail"; // No expiry date = Fail
-                        }
-                    } else {
-                        status = "Fail"; // No PAT items = Fail
-                    }
-                    //   const isPAtExpired = siteChecks?.some(
-                    //     (itm) =>
-                    //       itm?.type === "Inspection" &&
-                    //       itm?.subType === "Electrical" &&
-                    //       itm?.category === "WC Alarm Testing" &&
-                    //       moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                    //   );
-                    //   status = isPAtExpired ? "Passed" : "Fail";
+                    // Check ALL PAT items - Pass only if ALL are valid
+                    const allPatItemsValid = checkAllPatItemsValid(patItems);
+                    status = allPatItemsValid ? "Passed" : "Fail";
                 }
 
 
