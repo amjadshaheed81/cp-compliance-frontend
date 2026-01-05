@@ -121,14 +121,23 @@ const Cost = ({
                       //value={formData?.fromDate || ""}
                       disabled={isView}
                       required
-                     name="fromDate"
+                      name="fromDate"
                       onChange={(date) => {
+                        if (!date) {
+                          setFormData({
+                            ...formData,
+                            fromDate: null,
+                          });
+                          return;
+                        }
+
+                        const fromDateValue = new Date(
+                          date.getTime() - date.getTimezoneOffset() * 60000
+                        ).toISOString();
+
                         setFormData({
                           ...formData,
-                          //dueDate: new Date(date),
-                          fromDate: new Date(
-                            date.getTime() - date.getTimezoneOffset() * 60000
-                          ).toISOString(),
+                          fromDate: fromDateValue,
                         });
                       }}
                     />
@@ -154,12 +163,21 @@ const Cost = ({
                       disabled={isView}
                       required
                       onChange={(date) => {
+                        if (!date) {
+                          setFormData({
+                            ...formData,
+                            toDate: null,
+                          });
+                          return;
+                        }
+
+                        const toDateValue = new Date(
+                          date.getTime() - date.getTimezoneOffset() * 60000
+                        ).toISOString();
+
                         setFormData({
                           ...formData,
-                          //dueDate: new Date(date),
-                          toDate: new Date(
-                            date.getTime() - date.getTimezoneOffset() * 60000
-                          ).toISOString(),
+                          toDate: toDateValue,
                         });
                       }}
                     />
