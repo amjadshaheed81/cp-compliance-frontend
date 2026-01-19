@@ -204,8 +204,10 @@ const Pat = ({
       const positionNode = siteLayout.find(node =>
         node.nodeType === "type" && node.nodeName === value
       );
-      const floors = siteLayout.filter(
-        node => node.nodeType === "floor" && node.parentNode === positionNode?.id
+      
+      // Filter floors based on the selected position
+      const floors = siteLayout.filter(node => 
+        node.nodeType === "floor" && node.parentNode === positionNode?.id
       );
 
       setFormData({
@@ -214,14 +216,14 @@ const Pat = ({
         floor: "",
         room: ""
       });
-      setFloorNode(floors);
+      setFloorNode(floors);  // Set only floors belonging to this position
       setRoomNode([]);
     }
     else if (name === "floor") {
       // When floor changes, reset room and update available rooms
-      const floor = floorNode.find(f => f.nodeName === value);
+      const selectedFloor = floorNode.find(f => f.nodeName === value);
       const rooms = siteLayout.filter(
-        node => node.nodeType === "room" && node.parentNode === floor?.id
+        node => node.nodeType === "room" && node.parentNode === selectedFloor?.id
       );
 
       setFormData({
@@ -325,7 +327,7 @@ const Pat = ({
 
     if (position) {
       filtered = filtered.filter(x =>
-        String(x?.position || '').toLowerCase().includes(position.toLowerCase())
+        String(x?.position || '').toLowerCase() === position.toLowerCase()
       );
     }
 
@@ -337,13 +339,13 @@ const Pat = ({
 
     if (floor) {
       filtered = filtered.filter(x =>
-        String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
+        String(x?.floor || '').toLowerCase() === floor.toLowerCase()
       );
     }
 
     if (room) {
       filtered = filtered.filter(x =>
-        String(x?.room || '').toLowerCase().includes(room.toLowerCase())
+        String(x?.room || '').toLowerCase() === room.toLowerCase()
       );
     }
 
@@ -379,7 +381,6 @@ const Pat = ({
     const currentSiteId = siteSelectedForGlobal?.siteId;
     const previousSiteId = prevSiteIdRef.current;
 
-
     if (currentSiteId && previousSiteId !== null && previousSiteId !== undefined) {
       const siteIdChanged = String(previousSiteId) !== String(currentSiteId);
 
@@ -397,6 +398,8 @@ const Pat = ({
         };
 
         setFormData(emptyFilters);
+        setFloorNode([]);  // Clear floors
+        setRoomNode([]);   // Clear rooms
         localStorage.setItem('patAssetFilters', JSON.stringify(emptyFilters));
         window.history.replaceState({}, '', window.location.pathname);
       }
@@ -422,27 +425,58 @@ const Pat = ({
   };
 
   useEffect(() => {
-    const floorNodes =
-      siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
-    const roomNodes =
-      siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
-    setFloorNode(floorNodes);
-    setRoomNode(roomNodes);
-    // Check if there is a label parameter in the URL
+    // Handle URL parameter for room selection
     const queryParams = new URLSearchParams(location.search);
     const label = queryParams.get("roomLabel");
 
     if (label) {
-      const roomNumber = label; // Extract the part after '-'
-      const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
+      const roomNumber = label;
+      // Find room by matching the exact name part after splitting
+      const matchedRoom = siteLayout.find(
+        (room) => room.nodeType === "room" && room.nodeName?.split(" ")[1] === roomNumber
+      );
       if (matchedRoom) {
-        setFormData((prevFormData) => ({
-          ...prevFormData,
-          room: matchedRoom?.nodeName,
-        }));
+        // Find the floor for this room
+        const parentFloor = siteLayout.find(f => f.id === matchedRoom.parentNode);
+        // Find the position (type) for this floor
+        const parentPosition = siteLayout.find(p => p.id === parentFloor?.parentNode);
+        
+        if (parentPosition && parentFloor) {
+          setFormData((prevFormData) => ({
+            ...prevFormData,
+            position: parentPosition.nodeName,
+            floor: parentFloor.nodeName,
+            room: matchedRoom?.nodeName,
+          }));
+        }
       }
     }
-  }, [siteLayout, location.search]);
+
+    // Populate floors/rooms based on selected position/floor
+    if (formData?.position && siteLayout?.length > 0) {
+      const positionNode = siteLayout.find(node => 
+        node.nodeType === "type" && node.nodeName === formData.position
+      );
+      const floors = siteLayout.filter(node => 
+        node.nodeType === "floor" && node.parentNode === positionNode?.id
+      );
+      setFloorNode(floors);
+
+      if (formData?.floor) {
+        const floor = floors.find(f => f.nodeName === formData.floor);
+        const rooms = siteLayout.filter(node => 
+          node.nodeType === "room" && node.parentNode === floor?.id
+        );
+        setRoomNode(rooms);
+      } else {
+        setRoomNode([]);
+      }
+    } else {
+      setFloorNode([]);
+      setRoomNode([]);
+    }
+  }, [siteLayout, location.search, formData?.position, formData?.floor]);
+
   const deleteAsset = (itm) => {
     Swal.fire({
       title: `Do you want to delete ${itm?.assetName}`,
@@ -672,18 +706,14 @@ const Pat = ({
     };
 
     setFormData(emptyFilters);
+    setFloorNode([]);  // Clear floors
+    setRoomNode([]);   // Clear rooms
     localStorage.setItem('patAssetFilters', JSON.stringify(emptyFilters));
 
     // Reset cascading dropdown states
     setSubCategoryList(subCategory || []);
     setSubCategory2List(subCategory2 || []);
     setSubCategory3List(subCategory3 || []);
-
-    // Reset floor and room nodes
-    const allFloors = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
-    const allRooms = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
-    setFloorNode(allFloors);
-    setRoomNode(allRooms);
 
     navigate(location.pathname);
   };
@@ -831,64 +861,41 @@ const Pat = ({
             </div>
             <div className="col-md-3 col-sm-4 mt-2">
               <select
-                name="location"
+                name="position"
                 className="form-control form-select"
-                id="location"
-                onChange={(e) => {
-                  const { name, value } = e.target;
-                  setFormData({
-                    ...formData,
-                    [name]: value,
-                  });
-                  const node = siteLayout.filter(
-                    (site) => site.nodeName === value
-                  );
-                  const data = siteLayout.filter(
-                    (site) =>
-                      site.nodeType === "floor" &&
-                      site.parentNode === node?.[0]?.id
-                  );
-                  setFloorNode(data || []);
-                }}
-                value={formData?.position || ""}
+                id="position"
+                value={formData.position || ""}
+                onChange={handleInputChange}
               >
                 <option value="">Location</option>
-                <option value="Interior">Interior</option>
-                <option value="Exterior">Exterior</option>
-                {/* {locationFilter.map((site) => (
-                  <option value={site.location}>{site.location}</option>
-                ))} */}
+                {siteLayout
+                  ?.filter(node =>
+                    node.nodeType === "type" &&
+                    (node.nodeName === "Interior" || node.nodeName === "Exterior")
+                  )
+                  ?.map((node) => (
+                    <option key={node.id} value={node.nodeName}>
+                      {node.nodeName}
+                    </option>
+                  ))}
               </select>
             </div>
             <div
               className="col-md-3 col-sm-4 mt-2"
-              style={{ display: formData.location ? "" : "none" }}
+              style={{ display: formData.position ? "" : "none" }}
             >
               <select
                 name="floor"
                 className="form-control form-select"
                 id="floor"
-                value={formData.floor} // Set the selected value dynamically
-                onChange={(e) => {
-                  const { name, value } = e.target;
-                  setFormData({
-                    ...formData,
-                    [name]: value,
-                  });
-                  const node = siteLayout.filter(
-                    (site) => site.nodeName === value
-                  );
-                  const data = siteLayout.filter(
-                    (site) =>
-                      site.nodeType === "room" &&
-                      site.parentNode === node?.[0]?.id
-                  );
-                  setRoomNode(data || []);
-                }}
+                value={formData.floor || ""}
+                onChange={handleInputChange}
               >
                 <option value="">Floor</option>
-                {floorNode?.map((itm) => (
-                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                {floorNode?.map((floor) => (
+                  <option key={floor.id} value={floor.nodeName}>
+                    {floor.nodeName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -900,13 +907,22 @@ const Pat = ({
                 name="room"
                 className="form-control form-select"
                 id="room"
-                value={formData.room} // Set the selected value dynamically
+                value={formData.room || ""}
                 onChange={handleInputChange}
               >
                 <option value="">Room</option>
-                {roomNode?.map((itm) => (
-                  <option value={itm?.nodeName}>{itm?.nodeName}</option>
-                ))}
+                {roomNode
+                  .filter(room => {
+                    // Find the selected floor from the filtered floorNode
+                    const selectedFloor = floorNode.find(f => f.nodeName === formData.floor);
+                    // Only show rooms that belong to the selected floor
+                    return selectedFloor ? room.parentNode === selectedFloor.id : false;
+                  })
+                  .map((room) => (
+                    <option key={room.id} value={room.nodeName}>
+                      {room.nodeName}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="col-md-2 col-sm-4 mt-2">

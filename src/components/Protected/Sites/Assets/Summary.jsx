@@ -156,27 +156,6 @@ const Summary = ({
     useEffect(() => {
         if (!siteLayout) return;
 
-        const allFloors = siteLayout.filter((itm) => itm?.nodeType === "floor");
-
-        const allRooms = siteLayout.filter((itm) => itm?.nodeType === "room");
-
-        const organizedRooms = {};
-        allRooms.forEach(room => {
-            const parentFloorId = room.parentNode;
-            if (!organizedRooms[parentFloorId]) {
-                organizedRooms[parentFloorId] = [];
-            }
-            organizedRooms[parentFloorId].push(room);
-        });
-
-        const floorsWithRooms = allFloors.map(floor => ({
-            ...floor,
-            rooms: organizedRooms[floor.id] || []
-        }));
-
-        setFloorNode(floorsWithRooms);
-        setRoomNode(allRooms);
-
         // Handle URL parameter for room selection
         const queryParams = new URLSearchParams(location.search);
         const label = queryParams.get("roomLabel");
@@ -184,26 +163,27 @@ const Summary = ({
         if (label) {
             const roomNumber = label; // Extract the part after '-'
             // Find room by matching the exact name part after splitting
-            const matchedRoom = allRooms.find(
-                (room) => room.nodeName?.split(" ")[1] === roomNumber
+            const matchedRoom = siteLayout.find(
+                (room) => room.nodeType === "room" && room.nodeName?.split(" ")[1] === roomNumber
             );
             if (matchedRoom) {
-                setFormData((prevFormData) => ({
-                    ...prevFormData,
-                    room: matchedRoom?.nodeName,
-                }));
-
-                // If you want to also set the correct floor based on the room's parent
-                const parentFloor = allFloors.find(f => f.id === matchedRoom.parentNode);
-                if (parentFloor) {
+                // Find the floor for this room
+                const parentFloor = siteLayout.find(f => f.id === matchedRoom.parentNode);
+                // Find the position (type) for this floor
+                const parentPosition = siteLayout.find(p => p.id === parentFloor?.parentNode);
+                
+                if (parentPosition && parentFloor) {
                     setFormData((prevFormData) => ({
                         ...prevFormData,
+                        position: parentPosition.nodeName,
                         floor: parentFloor.nodeName,
+                        room: matchedRoom?.nodeName,
                     }));
                 }
             }
         }
     }, [siteLayout, location.search]);
+    
     const getCategory = async () => {
         const categoryList = await get("/api/lov/ASSET_CATEGORY");
         const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
@@ -217,12 +197,11 @@ const Summary = ({
         setSubCategory2List(subCategory2List);
         setSubCategory3List(subCategory3List);
     };
+    
     useEffect(() => {
         if (siteAssets) {
             const formattedAssets = siteAssets.map((itm) => ({
                 ...itm,
-
-   
                 location: `${itm?.position || "NA"} > ${itm?.floor || "NA"} > ${itm?.room || "NA"}`,
             }));
 
@@ -270,8 +249,10 @@ const Summary = ({
             const positionNode = siteLayout.find(node =>
                 node.nodeType === "type" && node.nodeName === value
             );
-            const floors = siteLayout.filter(
-                node => node.nodeType === "floor" && node.parentNode === positionNode?.id
+            
+            // Filter floors based on the selected position
+            const floors = siteLayout.filter(node => 
+                node.nodeType === "floor" && node.parentNode === positionNode?.id
             );
 
             setFormData({
@@ -280,14 +261,14 @@ const Summary = ({
                 floor: "",
                 room: ""
             });
-            setFloorNode(floors);
+            setFloorNode(floors);  // Set only floors belonging to this position
             setRoomNode([]);
         }
         else if (name === "floor") {
             // When floor changes, reset room and update available rooms
-            const floor = floorNode.find(f => f.nodeName === value);
+            const selectedFloor = floorNode.find(f => f.nodeName === value);
             const rooms = siteLayout.filter(
-                node => node.nodeType === "room" && node.parentNode === floor?.id
+                node => node.nodeType === "room" && node.parentNode === selectedFloor?.id
             );
 
             setFormData({
@@ -391,15 +372,26 @@ const Summary = ({
 
         // Populate floors/rooms based on selected position/floor and available siteLayout
         if (formData?.position && siteLayout?.length > 0) {
-            const positionNode = siteLayout.find(node => node.nodeType === "type" && node.nodeName === formData.position);
-            const floors = siteLayout.filter(node => node.nodeType === "floor" && node.parentNode === positionNode?.id);
+            const positionNode = siteLayout.find(node => 
+                node.nodeType === "type" && node.nodeName === formData.position
+            );
+            const floors = siteLayout.filter(node => 
+                node.nodeType === "floor" && node.parentNode === positionNode?.id
+            );
             setFloorNode(floors);
 
             if (formData?.floor) {
-                const floor = floors.find(f => f.nodeName === formData.floor) || siteLayout.find(n => n.nodeType === "floor" && n.nodeName === formData.floor);
-                const rooms = siteLayout.filter(node => node.nodeType === "room" && node.parentNode === floor?.id);
+                const floor = floors.find(f => f.nodeName === formData.floor);
+                const rooms = siteLayout.filter(node => 
+                    node.nodeType === "room" && node.parentNode === floor?.id
+                );
                 setRoomNode(rooms);
+            } else {
+                setRoomNode([]);
             }
+        } else {
+            setFloorNode([]);
+            setRoomNode([]);
         }
     }, [subCategory, subCategory2, subCategory3, siteLayout, formData?.category, formData?.subCategory, formData?.subCategory2, formData?.position, formData?.floor]);
 
@@ -419,6 +411,8 @@ const Summary = ({
         };
 
         setFormData(emptyFilters);
+        setFloorNode([]);  // Clear floors
+        setRoomNode([]);   // Clear rooms
         localStorage.setItem('assetFilters', JSON.stringify(emptyFilters));
         navigate(location.pathname); 
     };
@@ -476,7 +470,7 @@ const Summary = ({
 
         if (position) {
             filtered = filtered.filter(x =>
-                String(x?.position || '').toLowerCase().includes(position.toLowerCase())
+                String(x?.position || '').toLowerCase() === position.toLowerCase()
             );
         }
 
@@ -488,13 +482,13 @@ const Summary = ({
 
         if (floor) {
             filtered = filtered.filter(x =>
-                String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
+                String(x?.floor || '').toLowerCase() === floor.toLowerCase()
             );
         }
 
         if (room) {
             filtered = filtered.filter(x =>
-                String(x?.room || '').toLowerCase().includes(room.toLowerCase())
+                String(x?.room || '').toLowerCase() === room.toLowerCase()
             );
         }
 
@@ -549,7 +543,6 @@ const Summary = ({
         });
     };
 
-    // Multi Asset delete handler
     // Multi Asset delete handler
     const handleMultiDelete = async () => {
         if (selectedItems.length === 0) {
@@ -639,7 +632,6 @@ const Summary = ({
 
 
     //Multi Asset edit handlers
-    // Add this helper function outside your component
     const handleFieldUpdate = (assetId, field, value) => {
         setSelectedItems((prevItems) =>
             prevItems.map((item) => {
@@ -1269,7 +1261,7 @@ const Summary = ({
                                 <option value="">Room</option>
                                 {roomNode
                                     .filter(room => {
-                                        // Find the selected floor
+                                        // Find the selected floor from the filtered floorNode
                                         const selectedFloor = floorNode.find(f => f.nodeName === formData.floor);
                                         // Only show rooms that belong to the selected floor
                                         return selectedFloor ? room.parentNode === selectedFloor.id : false;
@@ -1399,34 +1391,6 @@ const Summary = ({
                                                 Location: itm?.location,
                                                 Model: itm?.model,
                                                 "Serial Number": itm?.serialNumber,
-
-                                                // ...itm,
-                                                // assetDoorSpecifications: Array.isArray(
-                                                //   itm?.assetDoorSpecifications
-                                                // )
-                                                //   ? itm.assetDoorSpecifications
-                                                //       .map(
-                                                //         (asset) =>
-                                                //           `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                                                //       )
-                                                //       .join("; ")
-                                                //   : "", // Provide empty string if not an array
-                                                // assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                                                //   ? itm.assetPFPItem
-                                                //       .map(
-                                                //         (asset) =>
-                                                //           `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                                                //       )
-                                                //       .join("; ")
-                                                //   : "", // Provide empty string if not an array
-                                                // assetPATItems: Array.isArray(itm?.assetPATItems)
-                                                //   ? itm.assetPATItems
-                                                //       .map(
-                                                //         (asset) =>
-                                                //           `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                                                //       )
-                                                //       .join("; ")
-                                                //   : "", // Provide empty string if not an array
                                             };
                                         })}
                                 >
