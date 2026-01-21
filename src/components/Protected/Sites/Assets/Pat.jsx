@@ -979,6 +979,8 @@ const Pat = ({
                 filename={"selected-assets.csv"}
                 className="btn btn-light bg-white text-primary"
                 data={selectedItems.map((itm) => {
+                  const nearestPat = findAssetWithNearestPatNextDate(itm);
+                  
                   return {
                     assetId: itm?.assetId,
                     assetName: itm?.assetName,
@@ -990,12 +992,27 @@ const Pat = ({
                     model: itm?.model,
                     deviceId: itm?.deviceId,
                     serialNumber: itm?.serialNumber,
-                    relatedAssetId: itm?.relatedAssetId,
-                    folderId: itm?.folderId,
-                    patItem: itm?.patItem,
-                    pfpItem: itm?.pfpItem,
-                    doorItem: itm?.doorItem,
-                    barcode: itm?.barcode,
+                    position: itm?.position || "",
+                    floor: itm?.floor || "",
+                    room: itm?.room || "",
+                    purchaseDate: itm?.purchaseDate 
+                      ? moment(itm.purchaseDate).format("DD-MM-YYYY") 
+                      : "",
+                    supplier: itm?.supplier || "",
+                    cost: itm?.cost || "",
+                    dateTested: nearestPat?.patItem?.patDate 
+                      ? moment(nearestPat.patItem.patDate).format("DD-MM-YYYY") 
+                      : "",
+                    nextTest: nearestPat?.patItem?.patNextDate 
+                      ? moment(nearestPat.patItem.patNextDate).format("DD-MM-YYYY") 
+                      : "",
+                    status: nearestPat?.patItem?.patStatus || itm?.status || "",
+                    // relatedAssetId: itm?.relatedAssetId,
+                    // folderId: itm?.folderId,
+                    // patItem: itm?.patItem,
+                    // pfpItem: itm?.pfpItem,
+                    // doorItem: itm?.doorItem,
+                    // barcode: itm?.barcode,
                   };
                 })}
               >
