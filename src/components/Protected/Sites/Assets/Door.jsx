@@ -18,6 +18,7 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { useLocation } from "react-router-dom";
 import Papa from "papaparse";
+import moment from "moment";
 
 const Door = ({
                 siteDoorItems,
@@ -1503,14 +1504,22 @@ const Door = ({
                     subCategory2: itm?.subCategory2,
                     subCategory3: itm?.subCategory3,
                     model: itm?.model,
-                    deviceId: itm?.deviceId,
+                    // deviceId: itm?.deviceId,
                     serialNumber: itm?.serialNumber,
-                    relatedAssetId: itm?.relatedAssetId,
-                    folderId: itm?.folderId,
-                    patItem: itm?.patItem,
-                    pfpItem: itm?.pfpItem,
-                    doorItem: itm?.doorItem,
-                    barcode: itm?.barcode,
+                    position: itm?.position || "",
+                    floor: itm?.floor || "",
+                    room: itm?.room || "",
+                    purchaseDate: itm?.purchaseDate 
+                      ? moment(itm.purchaseDate).format("DD-MM-YYYY") 
+                      : "",
+                    supplier: itm?.supplier || "",
+                    cost: itm?.cost || "",
+                    // relatedAssetId: itm?.relatedAssetId,
+                    // folderId: itm?.folderId,
+                    // patItem: itm?.patItem,
+                    // pfpItem: itm?.pfpItem,
+                    // doorItem: itm?.doorItem,
+                    // barcode: itm?.barcode,
                     // New door specification fields
                     doorRef: itm?.assetDoorSpecifications?.doorRef,
                     doorSize: itm?.assetDoorSpecifications?.doorSize,
