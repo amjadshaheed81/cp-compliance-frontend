@@ -932,6 +932,7 @@ const handleFileUpload = async (e) => {
                 data={selectedItems.map((itm) => {
                   return {
                     assetId: itm?.assetId,
+                    siteName: itm?.siteName,
                     assetName: itm?.assetName,
                     manufacturer: itm?.manufacturer,
                     category: itm?.category,
@@ -1019,33 +1020,39 @@ const handleFileUpload = async (e) => {
                 className="btn btn-light bg-white text-primary"
                 data={sitePFPItems.map((itm) => {
                   return {
-                    ...itm,
-                    assetDoorSpecifications: Array.isArray(
-                      itm?.assetDoorSpecifications
-                    )
-                      ? itm.assetDoorSpecifications
-                          .map(
-                            (asset) =>
-                              `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                          )
-                          .join("; ")
-                      : "", // Provide empty string if not an array
-                    assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                      ? itm.assetPFPItem
-                          .map(
-                            (asset) =>
-                              `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                          )
-                          .join("; ")
-                      : "", // Provide empty string if not an array
-                    assetPATItems: Array.isArray(itm?.assetPATItems)
-                      ? itm.assetPATItems
-                          .map(
-                            (asset) =>
-                              `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                          )
-                          .join("; ")
-                      : "", // Provide empty string if not an array
+                    assetId: itm?.assetId,
+                    siteName: itm?.siteName,
+                    assetName: itm?.assetName,
+                    manufacturer: itm?.manufacturer,
+                    category: itm?.category,
+                    subCategory: itm?.subCategory,
+                    subCategory2: itm?.subCategory2,
+                    subCategory3: itm?.subCategory3,
+                    model: itm?.model,
+                    // deviceId: itm?.deviceId,
+                    serialNumber: itm?.serialNumber,
+                    position: itm?.position || "",
+                    floor: itm?.floor || "",
+                    room: itm?.room || "",
+                    purchaseDate: itm?.purchaseDate 
+                      ? moment(itm.purchaseDate).format("DD-MM-YYYY") 
+                      : "",
+                    supplier: itm?.supplier || "",
+                    cost: itm?.cost || "",
+                    productName: itm?.assetPFPItem?.product || "",
+                    accessPosition: itm?.assetPFPItem?.access || "",
+                    material: itm?.assetPFPItem?.material || "",
+                    service: itm?.assetPFPItem?.service || "",
+                    dimension: itm?.assetPFPItem?.dimension || "",
+                    quantity: itm?.assetPFPItem?.quantity || "",
+                    areaInSqM: itm?.assetPFPItem?.area || "",
+                    
+                    // relatedAssetId: itm?.relatedAssetId,
+                    // folderId: itm?.folderId,
+                    // patItem: itm?.patItem,
+                    // pfpItem: itm?.pfpItem,
+                    // doorItem: itm?.doorItem,
+                    // barcode: itm?.barcode,
                   };
                 })}
               >
