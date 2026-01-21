@@ -1577,25 +1577,59 @@ const Door = ({
                     className="btn btn-light bg-white text-primary"
                     data={siteDoorItems.map((itm) => {
                       return {
-                        ...itm,
-                        assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
-                            ? itm.assetDoorSpecifications.map(
-                                (asset) =>
-                                    `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                            ).join("; ")
-                            : '', // Provide empty string if not an array
-                        assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                            ? itm.assetPFPItem.map(
-                                (asset) =>
-                                    `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                            ).join("; ")
-                            : '', // Provide empty string if not an array
-                        assetPATItems: Array.isArray(itm?.assetPATItems)
-                            ? itm.assetPATItems.map(
-                                (asset) =>
-                                    `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                            ).join("; ")
-                            : '', // Provide empty string if not an array
+                        assetId: itm?.assetId,
+                        assetName: itm?.assetName,
+                        manufacturer: itm?.manufacturer,
+                        category: itm?.category,
+                        subCategory: itm?.subCategory,
+                        subCategory2: itm?.subCategory2,
+                        subCategory3: itm?.subCategory3,
+                        model: itm?.model,
+                        // deviceId: itm?.deviceId,
+                        serialNumber: itm?.serialNumber,
+                        position: itm?.position || "",
+                        floor: itm?.floor || "",
+                        room: itm?.room || "",
+                        purchaseDate: itm?.purchaseDate 
+                          ? moment(itm.purchaseDate).format("DD-MM-YYYY") 
+                          : "",
+                        supplier: itm?.supplier || "",
+                        cost: itm?.cost || "",
+                        // relatedAssetId: itm?.relatedAssetId,
+                        // folderId: itm?.folderId,
+                        // patItem: itm?.patItem,
+                        // pfpItem: itm?.pfpItem,
+                        // doorItem: itm?.doorItem,
+                        // barcode: itm?.barcode,
+                        // New door specification fields
+                        doorRef: itm?.assetDoorSpecifications?.doorRef,
+                        doorSize: itm?.assetDoorSpecifications?.doorSize,
+                        coreDurability: itm?.assetDoorSpecifications?.coreDurability,
+                        fireRating: itm?.assetDoorSpecifications?.fireRating,
+                        dbRating: itm?.assetDoorSpecifications?.dbRating,
+                        doorFacing: itm?.assetDoorSpecifications?.doorFacing,
+                        doorFinish: itm?.assetDoorSpecifications?.doorFinish,
+                        visionPanel: itm?.assetDoorSpecifications?.visionPanel,
+                        glazingSize: itm?.assetDoorSpecifications?.glazingSize,
+                        glassType: itm?.assetDoorSpecifications?.glassType,
+                        flushBoltCutOut: itm?.assetDoorSpecifications?.flushBoltCutOut,
+                        lockCutOut: itm?.assetDoorSpecifications?.lockCutOut,
+                        rebatedMS: itm?.assetDoorSpecifications?.rebatedMS,
+                        cDCCutOut: itm?.assetDoorSpecifications?.cDCCutOut,
+                        hingeCutOut: itm?.assetDoorSpecifications?.hingeCutOut,
+                        hinges: itm?.assetDoorSpecifications?.hinges,
+                        frameSection: itm?.assetDoorSpecifications?.frameSection,
+                        stopSize: itm?.assetDoorSpecifications?.stopSize,
+                        fourSided: itm?.assetDoorSpecifications?.fourSided,
+                        fanLight: itm?.assetDoorSpecifications?.fanLight,
+                        screen: itm?.assetDoorSpecifications?.screen,
+                        architraves: itm?.assetDoorSpecifications?.architraves,
+                        frameMaterial: itm?.assetDoorSpecifications?.frameMaterial,
+                        frameFinish: itm?.assetDoorSpecifications?.frameFinish,
+                        screenFanLightMaterial: itm?.assetDoorSpecifications?.ScreenFanLightMaterial,
+                        doorWidth: itm?.assetDoorSpecifications?.doorWidth,
+                        doorHeight: itm?.assetDoorSpecifications?.doorHeight,
+                        doorDepth: itm?.assetDoorSpecifications?.doorDepth,
                       };
                     })}
                 >

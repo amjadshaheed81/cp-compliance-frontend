@@ -736,7 +736,7 @@ const Document = ({
                         boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
                       }}
                     >
-                      Click to Clear
+                      Clear
                     </button>
                   </Tooltip>
                 )}
