@@ -736,7 +736,7 @@ const AirConditioning = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            issueDate: formatDateForBackend(formData.inspectionDate),
             expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -768,7 +768,7 @@ const AirConditioning = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
+            issueDate: formatDateForBackend(formData.inspectionDate),
             expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
             note: 'Air Conditioning Certificate',
             fileVersion: fileVersion,
