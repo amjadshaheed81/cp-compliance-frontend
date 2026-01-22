@@ -724,10 +724,10 @@ const AirConditioning = ({
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const uploadFormData = new FormData();
+      const formData = new FormData();
 
       if (exists && existingFile) {
-        uploadFormData.append('file', pdfFile);
+        formData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -744,7 +744,7 @@ const AirConditioning = ({
           }]
         };
 
-        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
@@ -761,7 +761,7 @@ const AirConditioning = ({
           return true;
         }
       } else {
-        uploadFormData.append('files', pdfFile);
+        formData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
@@ -780,11 +780,11 @@ const AirConditioning = ({
           }]
         };
 
-        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+        formData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: uploadFormData,
+          data: formData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
