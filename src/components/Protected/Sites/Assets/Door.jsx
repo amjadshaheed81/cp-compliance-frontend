@@ -18,6 +18,7 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { useLocation } from "react-router-dom";
 import Papa from "papaparse";
+import moment from "moment";
 
 const Door = ({
                   siteDoorItems,
@@ -164,42 +165,7 @@ const Door = ({
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-
-        if (name === "position") {
-            // When position changes, reset floor and room
-            const positionNode = siteLayout.find(node =>
-                node.nodeType === "type" && node.nodeName === value
-            );
-
-            // Filter floors based on the selected position
-            const floors = siteLayout.filter(node =>
-                node.nodeType === "floor" && node.parentNode === positionNode?.id
-            );
-
-            setFormData({
-                ...formData,
-                [name]: value,
-                floor: "",
-                room: ""
-            });
-            setFloorNode(floors);  // Set only floors belonging to this position
-            setRoomNode([]);
-        }
-        else if (name === "floor") {
-            // When floor changes, reset room and update available rooms
-            const selectedFloor = floorNode.find(f => f.nodeName === value);
-            const rooms = siteLayout.filter(
-                node => node.nodeType === "room" && node.parentNode === selectedFloor?.id
-            );
-
-            setFormData({
-                ...formData,
-                [name]: value,
-                room: ""
-            });
-            setRoomNode(rooms);
-        }
-        else if (name === "category") {
+        if (name === "category") {
             setFormData({
                 ...formData,
                 [name]: value,
@@ -299,7 +265,7 @@ const Door = ({
 
         if (position) {
             filtered = filtered.filter(x =>
-                String(x?.position || '').toLowerCase() === position.toLowerCase()
+                String(x?.position || '').toLowerCase().includes(position.toLowerCase())
             );
         }
 
@@ -311,13 +277,13 @@ const Door = ({
 
         if (floor) {
             filtered = filtered.filter(x =>
-                String(x?.floor || '').toLowerCase() === floor.toLowerCase()
+                String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
             );
         }
 
         if (room) {
             filtered = filtered.filter(x =>
-                String(x?.room || '').toLowerCase() === room.toLowerCase()
+                String(x?.room || '').toLowerCase().includes(room.toLowerCase())
             );
         }
 
@@ -333,7 +299,7 @@ const Door = ({
         formData.subCategory,
         formData.subCategory2,
         formData.subCategory3,
-        formData.position,
+        formData.location,
         formData.manufacturer,
         formData.floor,
         formData.room,
@@ -370,8 +336,6 @@ const Door = ({
                 };
 
                 setFormData(emptyFilters);
-                setFloorNode([]);  // Clear floors
-                setRoomNode([]);   // Clear rooms
                 localStorage.setItem('doorAssetFilters', JSON.stringify(emptyFilters));
                 window.history.replaceState({}, '', window.location.pathname);
             }
@@ -383,57 +347,26 @@ const Door = ({
     }, [siteSelectedForGlobal]);
 
     useEffect(() => {
-        // Handle URL parameter for room selection
+        const floorNodes =
+            siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+        const roomNodes =
+            siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+        setFloorNode(floorNodes);
+        setRoomNode(roomNodes);
         const queryParams = new URLSearchParams(location.search);
         const label = queryParams.get("roomLabel");
 
         if (label) {
             const roomNumber = label;
-            // Find room by matching the exact name part after splitting
-            const matchedRoom = siteLayout.find(
-                (room) => room.nodeType === "room" && room.nodeName?.split(" ")[1] === roomNumber
-            );
+            const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
             if (matchedRoom) {
-                // Find the floor for this room
-                const parentFloor = siteLayout.find(f => f.id === matchedRoom.parentNode);
-                // Find the position (type) for this floor
-                const parentPosition = siteLayout.find(p => p.id === parentFloor?.parentNode);
-
-                if (parentPosition && parentFloor) {
-                    setFormData((prevFormData) => ({
-                        ...prevFormData,
-                        position: parentPosition.nodeName,
-                        floor: parentFloor.nodeName,
-                        room: matchedRoom?.nodeName,
-                    }));
-                }
+                setFormData((prevFormData) => ({
+                    ...prevFormData,
+                    room: matchedRoom?.nodeName,
+                }));
             }
         }
-
-        // Populate floors/rooms based on selected position/floor
-        if (formData?.position && siteLayout?.length > 0) {
-            const positionNode = siteLayout.find(node =>
-                node.nodeType === "type" && node.nodeName === formData.position
-            );
-            const floors = siteLayout.filter(node =>
-                node.nodeType === "floor" && node.parentNode === positionNode?.id
-            );
-            setFloorNode(floors);
-
-            if (formData?.floor) {
-                const floor = floors.find(f => f.nodeName === formData.floor);
-                const rooms = siteLayout.filter(node =>
-                    node.nodeType === "room" && node.parentNode === floor?.id
-                );
-                setRoomNode(rooms);
-            } else {
-                setRoomNode([]);
-            }
-        } else {
-            setFloorNode([]);
-            setRoomNode([]);
-        }
-    }, [siteLayout, location.search, formData?.position, formData?.floor]);
+    }, [siteLayout, location.search]);
 
     const getCategory = async () => {
         const categoryList = await get("/api/lov/ASSET_CATEGORY");
@@ -766,14 +699,18 @@ const Door = ({
         };
 
         setFormData(emptyFilters);
-        setFloorNode([]);  // Clear floors
-        setRoomNode([]);   // Clear rooms
         localStorage.setItem('doorAssetFilters', JSON.stringify(emptyFilters));
 
         // Reset cascading dropdown states to show all options
         setSubCategoryList(subCategory || []);
         setSubCategory2List(subCategory2 || []);
         setSubCategory3List(subCategory3 || []);
+
+        // Reset floor and room nodes to show all options
+        const allFloors = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+        const allRooms = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+        setFloorNode(allFloors);
+        setRoomNode(allRooms);
 
         navigate(location.pathname);
     };
@@ -1410,39 +1347,49 @@ const Door = ({
                         </div>
                         <div className="col-md-3 col-sm-4 mt-2">
                             <select
-                                name="position"
+                                name="location"
                                 className="form-control form-select"
-                                id="position"
-                                value={formData.position}
-                                onChange={handleInputChange}
+                                id="location"
+                                value={formData.postion}
+                                onChange={(e) => {
+                                    const { name, value } = e.target;
+                                    setFormData({
+                                        ...formData,
+                                        [name]: value,
+                                    });
+                                    const node = siteLayout
+                                        .filter((site) => site.nodeName === value);
+                                    const data = siteLayout
+                                        .filter((site) => site.nodeType === "floor" && site.parentNode === node?.[0]?.id);
+                                    setFloorNode(data || []);
+                                }}
                             >
                                 <option value="">Location</option>
-                                {siteLayout
-                                    ?.filter(node =>
-                                        node.nodeType === "type" &&
-                                        (node.nodeName === "Interior" || node.nodeName === "Exterior")
-                                    )
-                                    ?.map((node) => (
-                                        <option key={node.id} value={node.nodeName}>
-                                            {node.nodeName}
-                                        </option>
-                                    ))}
+                                <option value="Interior">Interior</option>
+                                <option value="Exterior">Exterior</option>
                             </select>
                         </div>
-                        <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.position ? "" : "none"}}>
+                        <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.location ? "" : "none"}}>
                             <select
                                 name="floor"
                                 className="form-control form-select"
                                 id="floor"
                                 value={formData.floor}
-                                onChange={handleInputChange}
+                                onChange={(e) => {
+                                    const { name, value } = e.target;
+                                    setFormData({
+                                        ...formData,
+                                        [name]: value,
+                                    });
+                                    const node = siteLayout
+                                        .filter((site) => site.nodeName === value);
+                                    const data = siteLayout
+                                        .filter((site) => site.nodeType === "room" && site.parentNode === node?.[0]?.id);
+                                    setRoomNode(data || []);
+                                }}
                             >
                                 <option value="">Floor</option>
-                                {floorNode?.map(floor => (
-                                    <option key={floor.id} value={floor.nodeName}>
-                                        {floor.nodeName}
-                                    </option>
-                                ))}
+                                {floorNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
                             </select>
                         </div>
                         <div className="col-md-3 col-sm-4 mt-2" style={{ display: formData.floor ? "" : "none"}}>
@@ -1454,18 +1401,7 @@ const Door = ({
                                 onChange={handleInputChange}
                             >
                                 <option value="">Room</option>
-                                {roomNode
-                                    .filter(room => {
-                                        // Find the selected floor from the filtered floorNode
-                                        const selectedFloor = floorNode.find(f => f.nodeName === formData.floor);
-                                        // Only show rooms that belong to the selected floor
-                                        return selectedFloor ? room.parentNode === selectedFloor.id : false;
-                                    })
-                                    .map((room) => (
-                                        <option key={room.id} value={room.nodeName}>
-                                            {room.nodeName}
-                                        </option>
-                                    ))}
+                                {roomNode?.map(itm=><option value={itm?.nodeName}>{itm?.nodeName}</option>)}
                             </select>
                         </div>
                         <div className="col-md-2 col-sm-4 mt-2">
@@ -1568,14 +1504,22 @@ const Door = ({
                                         subCategory2: itm?.subCategory2,
                                         subCategory3: itm?.subCategory3,
                                         model: itm?.model,
-                                        deviceId: itm?.deviceId,
+                                        // deviceId: itm?.deviceId,
                                         serialNumber: itm?.serialNumber,
-                                        relatedAssetId: itm?.relatedAssetId,
-                                        folderId: itm?.folderId,
-                                        patItem: itm?.patItem,
-                                        pfpItem: itm?.pfpItem,
-                                        doorItem: itm?.doorItem,
-                                        barcode: itm?.barcode,
+                                        position: itm?.position || "",
+                                        floor: itm?.floor || "",
+                                        room: itm?.room || "",
+                                        purchaseDate: itm?.purchaseDate
+                                            ? moment(itm.purchaseDate).format("DD-MM-YYYY")
+                                            : "",
+                                        supplier: itm?.supplier || "",
+                                        cost: itm?.cost || "",
+                                        // relatedAssetId: itm?.relatedAssetId,
+                                        // folderId: itm?.folderId,
+                                        // patItem: itm?.patItem,
+                                        // pfpItem: itm?.pfpItem,
+                                        // doorItem: itm?.doorItem,
+                                        // barcode: itm?.barcode,
                                         // New door specification fields
                                         doorRef: itm?.assetDoorSpecifications?.doorRef,
                                         doorSize: itm?.assetDoorSpecifications?.doorSize,
@@ -1633,25 +1577,59 @@ const Door = ({
                                 className="btn btn-light bg-white text-primary"
                                 data={siteDoorItems.map((itm) => {
                                     return {
-                                        ...itm,
-                                        assetDoorSpecifications: Array.isArray(itm?.assetDoorSpecifications)
-                                            ? itm.assetDoorSpecifications.map(
-                                                (asset) =>
-                                                    `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                                            ).join("; ")
-                                            : '', // Provide empty string if not an array
-                                        assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                                            ? itm.assetPFPItem.map(
-                                                (asset) =>
-                                                    `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                                            ).join("; ")
-                                            : '', // Provide empty string if not an array
-                                        assetPATItems: Array.isArray(itm?.assetPATItems)
-                                            ? itm.assetPATItems.map(
-                                                (asset) =>
-                                                    `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                                            ).join("; ")
-                                            : '', // Provide empty string if not an array
+                                        assetId: itm?.assetId,
+                                        assetName: itm?.assetName,
+                                        manufacturer: itm?.manufacturer,
+                                        category: itm?.category,
+                                        subCategory: itm?.subCategory,
+                                        subCategory2: itm?.subCategory2,
+                                        subCategory3: itm?.subCategory3,
+                                        model: itm?.model,
+                                        // deviceId: itm?.deviceId,
+                                        serialNumber: itm?.serialNumber,
+                                        position: itm?.position || "",
+                                        floor: itm?.floor || "",
+                                        room: itm?.room || "",
+                                        purchaseDate: itm?.purchaseDate
+                                            ? moment(itm.purchaseDate).format("DD-MM-YYYY")
+                                            : "",
+                                        supplier: itm?.supplier || "",
+                                        cost: itm?.cost || "",
+                                        // relatedAssetId: itm?.relatedAssetId,
+                                        // folderId: itm?.folderId,
+                                        // patItem: itm?.patItem,
+                                        // pfpItem: itm?.pfpItem,
+                                        // doorItem: itm?.doorItem,
+                                        // barcode: itm?.barcode,
+                                        // New door specification fields
+                                        doorRef: itm?.assetDoorSpecifications?.doorRef,
+                                        doorSize: itm?.assetDoorSpecifications?.doorSize,
+                                        coreDurability: itm?.assetDoorSpecifications?.coreDurability,
+                                        fireRating: itm?.assetDoorSpecifications?.fireRating,
+                                        dbRating: itm?.assetDoorSpecifications?.dbRating,
+                                        doorFacing: itm?.assetDoorSpecifications?.doorFacing,
+                                        doorFinish: itm?.assetDoorSpecifications?.doorFinish,
+                                        visionPanel: itm?.assetDoorSpecifications?.visionPanel,
+                                        glazingSize: itm?.assetDoorSpecifications?.glazingSize,
+                                        glassType: itm?.assetDoorSpecifications?.glassType,
+                                        flushBoltCutOut: itm?.assetDoorSpecifications?.flushBoltCutOut,
+                                        lockCutOut: itm?.assetDoorSpecifications?.lockCutOut,
+                                        rebatedMS: itm?.assetDoorSpecifications?.rebatedMS,
+                                        cDCCutOut: itm?.assetDoorSpecifications?.cDCCutOut,
+                                        hingeCutOut: itm?.assetDoorSpecifications?.hingeCutOut,
+                                        hinges: itm?.assetDoorSpecifications?.hinges,
+                                        frameSection: itm?.assetDoorSpecifications?.frameSection,
+                                        stopSize: itm?.assetDoorSpecifications?.stopSize,
+                                        fourSided: itm?.assetDoorSpecifications?.fourSided,
+                                        fanLight: itm?.assetDoorSpecifications?.fanLight,
+                                        screen: itm?.assetDoorSpecifications?.screen,
+                                        architraves: itm?.assetDoorSpecifications?.architraves,
+                                        frameMaterial: itm?.assetDoorSpecifications?.frameMaterial,
+                                        frameFinish: itm?.assetDoorSpecifications?.frameFinish,
+                                        screenFanLightMaterial: itm?.assetDoorSpecifications?.ScreenFanLightMaterial,
+                                        doorWidth: itm?.assetDoorSpecifications?.doorWidth,
+                                        doorHeight: itm?.assetDoorSpecifications?.doorHeight,
+                                        doorDepth: itm?.assetDoorSpecifications?.doorDepth,
                                     };
                                 })}
                             >

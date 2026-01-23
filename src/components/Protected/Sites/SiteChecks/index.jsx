@@ -36,6 +36,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const [subtypeoptions, setsubtypeoptions] = useState([]);
     const [subtypeoptions2, setsubtypeoptions2] = useState([]);
     const [catoptions, setcatoptions] = useState([]);
+    const [filterCatOptions, setFilterCatOptions] = useState([]);
     const site = JSON.parse(localStorage.getItem("site"));
     const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
     const [siteChecks, setSiteChecks] = useState([]);
@@ -117,6 +118,33 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 )
                 : lovtypes;
         setcatoptions(
+            filteredCategories
+                ?.map((l) => l.lovValue)
+                ?.sort((a, b) => {
+                    if (a < b) {
+                        return -1; // a comes before b
+                    }
+                    if (a > b) {
+                        return 1; // b comes before a
+                    }
+                    return 0; // type are equal
+                })
+        );
+    };
+
+    const getFilterCatOptions = async () => {
+        const lovtypes = await get(
+            "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData2.subType
+        );
+        const filteredCategories =
+            formData2.subType === "Emergency Lighting to meet BS5266"
+                ? lovtypes?.filter(
+                    (l) =>
+                        l.lovValue !==
+                        "Emergency Lighting (systems less than 3 years old) 6 monthly 1 hour discharge testing"
+                )
+                : lovtypes;
+        setFilterCatOptions(
             filteredCategories
                 ?.map((l) => l.lovValue)
                 ?.sort((a, b) => {
@@ -233,11 +261,13 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
         if (formData2.type?.length > 0) {
             getsubtypeoptions();
         } else {
+            setFilterCatOptions([]);
             setcatoptions([]);
             setsubtypeoptions([]);
             setFormData2({
                 ...formData2,
                 subType: "",
+                category: "",
             });
         }
     }, [
@@ -245,21 +275,21 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
         formData2.searchField,
         formData2.subType,
         formData2.status,
+        formData2.category,
     ]);
 
     useEffect(() => {
         searchSiteCheck();
-        if (formData2.type?.length > 0) {
-            getsubtypeoptions();
+        if (formData2.subType?.length > 0) {
+            getFilterCatOptions();
         } else {
-            setcatoptions([]);
-            setsubtypeoptions([]);
+            setFilterCatOptions([]);
+            setFormData2({
+                ...formData2,
+                category: "",
+            });
         }
-        setFormData2({
-            ...formData2,
-            subType: "",
-        });
-    }, [formData2.type]);
+    }, [formData2.subType]);
 
     useEffect(() => {
         searchSiteCheck();
@@ -295,6 +325,11 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
         if (formData2?.subType?.length > 0) {
             filteredSiteChecks2 = filteredSiteChecks2.filter(
                 (sc) => sc.subType === formData2.subType
+            );
+        }
+        if (formData2?.category?.length > 0) {
+            filteredSiteChecks2 = filteredSiteChecks2.filter(
+                (sc) => sc.category === formData2.category
             );
         }
         if (formData2?.status?.length > 0) {
@@ -560,18 +595,11 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                 if (bAssetId) return 1;
 
                 // Case 4: Neither has asset ID → Group by subType → category (alphabetical)
-                // Handle undefined subType values
-                const aSubType = a.subType || '';
-                const bSubType = b.subType || '';
-
-                const subTypeCompare = aSubType.localeCompare(bSubType);
+                const subTypeCompare = a.subType.localeCompare(b.subType);
                 if (subTypeCompare !== 0) return subTypeCompare;
 
-                // If same subType, sort by category (handle undefined values)
-                const aCategory = a.category || '';
-                const bCategory = b.category || '';
-
-                return aCategory.localeCompare(bCategory);
+                // If same subType, sort by category
+                return a.category.localeCompare(b.category);
             });
 
             // Update both states
@@ -584,7 +612,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
             setIsLoading(false);
         }
     };
-
     // Updated fetchInspectionData function
     const fetchInspectionData = async (checkId, type, subType, category) => {
         try {
@@ -616,6 +643,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
             return null;
         }
     };
+
 
     return (
         <Fragment>
@@ -679,6 +707,21 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                             >
                                                 <option value="">Sub Type</option>
                                                 {subtypeoptions?.map((t) => (
+                                                    <option value={t}>{t}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-md-2 col-sm-4 mt-2">
+                                            <select
+                                                name="category"
+                                                className="form-control form-select"
+                                                id="category"
+                                                disabled={formData2?.subType?.length === 0}
+                                                onChange={handleInputChange2}
+                                                value={formData2?.category}
+                                            >
+                                                <option value="">Category</option>
+                                                {filterCatOptions?.map((t) => (
                                                     <option value={t}>{t}</option>
                                                 ))}
                                             </select>
@@ -982,6 +1025,16 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                                 label="Start Date"
                                                 value={formData?.startDate}
                                                 onChange={(date) => {
+                                                    // Handle null/undefined date (when cleared)
+                                                    if (!date) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            startDate: null,
+                                                            dueDate: null,
+                                                        });
+                                                        return;
+                                                    }
+
                                                     let dueDateValue = formData?.dueDate;
                                                     const repeatFrequency = formData?.repeatFrequency;
 

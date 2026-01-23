@@ -680,103 +680,108 @@ const AirConditioning = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
-    try {
-      setIsUploading(true);
-      const savedLocally = await savePdfToLocal(pdfBlob, fileName);
-      if (!savedLocally) {
-        throw new Error('Failed to save PDF locally');
-      }
 
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const targetFolderId = folderIds.airConditioning || folderIds.logBooks;
 
-      if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
-      }
+    const uploadPdfToServer = async (pdfBlob, fileName) => {
+        try {
+            setIsUploading(true);
 
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+            const inspectionDateForUpload = formData.inspectionDate;
 
-      if (exists && existingFile) {
-        formData.append('file', pdfFile);
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            id: existingFile.id,
-            name: fileName,
-            originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
-              uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `AC-${new Date().getTime()}`
-          }]
-        };
+            const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+            if (!savedLocally) {
+                throw new Error('Failed to save PDF locally');
+            }
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        const response = await axios({
-          method: 'put',
-          url: '/api/document/file/newVersion/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
-        });
+            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            const targetFolderId = folderIds.airConditioning || folderIds.logBooks;
 
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-          return true;
+            if (!targetFolderId) {
+                throw new Error('Could not determine target folder for PDF upload');
+            }
+
+            const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+            const uploadFormData = new FormData();
+
+            if (exists && existingFile) {
+                uploadFormData.append('file', pdfFile);
+                const documentRequestString = {
+                    folderId: targetFolderId,
+                    files: [{
+                        id: existingFile.id,
+                        name: fileName,
+                        originalFileName: fileName,
+                        fileVersion: existingFile.fileVersion + 1,
+                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        issueDate: formatDateForBackend(inspectionDateForUpload),
+                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        uploaderUserId: loggedInUserData?.id || 0,
+                        reviewerUserId: loggedInUserData?.id || 0,
+                        referenceNumber: `AC-${new Date().getTime()}`
+                    }]
+                };
+
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+                const response = await axios({
+                    method: 'put',
+                    url: '/api/document/file/newVersion/upload',
+                    data: uploadFormData,
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.data) {
+                    toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+                    return true;
+                }
+            } else {
+                uploadFormData.append('files', pdfFile);
+                const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+
+                const documentRequestString = {
+                    folderId: targetFolderId,
+                    files: [{
+                        name: fileName.split('.')[0],
+                        issueDate: formatDateForBackend(inspectionDateForUpload),
+                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        note: 'Air Conditioning Certificate',
+                        fileVersion: fileVersion,
+                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        originalFileName: fileName,
+                        uploaderUserId: loggedInUserData?.id || 0,
+                        reviewerUserId: loggedInUserData?.id || 0,
+                        referenceNumber: `AC-${new Date().getTime()}`
+                    }]
+                };
+
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+                const response = await axios({
+                    method: 'post',
+                    url: '/api/document/files/upload',
+                    data: uploadFormData,
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.data) {
+                    toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+                    return true;
+                }
+            }
+
+            throw new Error('Upload failed: No response data');
+        } catch (error) {
+            console.error('Error uploading PDF:', error);
+            return false;
+        } finally {
+            setIsUploading(false);
         }
-      } else {
-        formData.append('files', pdfFile);
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
-
-        const documentRequestString = {
-          folderId: targetFolderId,
-          files: [{
-            name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
-              note: 'Air Conditioning Certificate',
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            originalFileName: fileName,
-            uploaderUserId: loggedInUserData?.id || 0,
-            reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `AC-${new Date().getTime()}`
-          }]
-        };
-
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
-        const response = await axios({
-          method: 'post',
-          url: '/api/document/files/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
-        }
-      }
-
-      throw new Error('Upload failed: No response data');
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
-    } finally {
-      setIsUploading(false);
-    }
-  };
+    };
 
   const savePdfToPublic = async (pdfBlob, fileName) => {
     try {

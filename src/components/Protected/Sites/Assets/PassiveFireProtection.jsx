@@ -18,6 +18,7 @@ import Pagination from "../../../common/Pagination/Pagination";
 import { printMultipleSelectedAsset } from "../../../../utils/export-qr-code";
 import { useLocation } from "react-router-dom";
 import Papa from "papaparse";
+import moment from "moment";
 import MultiEditModal from './MultiEdit';
 
 
@@ -174,10 +175,8 @@ const PassiveFireProtection = ({
             const positionNode = siteLayout.find(node =>
                 node.nodeType === "type" && node.nodeName === value
             );
-
-            // Filter floors based on the selected position
-            const floors = siteLayout.filter(node =>
-                node.nodeType === "floor" && node.parentNode === positionNode?.id
+            const floors = siteLayout.filter(
+                node => node.nodeType === "floor" && node.parentNode === positionNode?.id
             );
 
             setFormData({
@@ -186,14 +185,14 @@ const PassiveFireProtection = ({
                 floor: "",
                 room: ""
             });
-            setFloorNode(floors);  // Set only floors belonging to this position
+            setFloorNode(floors);
             setRoomNode([]);
         }
         else if (name === "floor") {
             // When floor changes, reset room and update available rooms
-            const selectedFloor = floorNode.find(f => f.nodeName === value);
+            const floor = floorNode.find(f => f.nodeName === value);
             const rooms = siteLayout.filter(
-                node => node.nodeType === "room" && node.parentNode === selectedFloor?.id
+                node => node.nodeType === "room" && node.parentNode === floor?.id
             );
 
             setFormData({
@@ -296,7 +295,7 @@ const PassiveFireProtection = ({
 
         if (position) {
             filtered = filtered.filter(x =>
-                String(x?.position || '').toLowerCase() === position.toLowerCase()
+                String(x?.position || '').toLowerCase().includes(position.toLowerCase())
             );
         }
 
@@ -308,13 +307,13 @@ const PassiveFireProtection = ({
 
         if (floor) {
             filtered = filtered.filter(x =>
-                String(x?.floor || '').toLowerCase() === floor.toLowerCase()
+                String(x?.floor || '').toLowerCase().includes(floor.toLowerCase())
             );
         }
 
         if (room) {
             filtered = filtered.filter(x =>
-                String(x?.room || '').toLowerCase() === room.toLowerCase()
+                String(x?.room || '').toLowerCase().includes(room.toLowerCase())
             );
         }
 
@@ -350,6 +349,7 @@ const PassiveFireProtection = ({
         const currentSiteId = siteSelectedForGlobal?.siteId;
         const previousSiteId = prevSiteIdRef.current;
 
+
         if (currentSiteId && previousSiteId !== null && previousSiteId !== undefined) {
             const siteIdChanged = String(previousSiteId) !== String(currentSiteId);
 
@@ -367,8 +367,6 @@ const PassiveFireProtection = ({
                 };
 
                 setFormData(emptyFilters);
-                setFloorNode([]);  // Clear floors
-                setRoomNode([]);   // Clear rooms
                 localStorage.setItem('PFAssetFilters', JSON.stringify(emptyFilters));
                 window.history.replaceState({}, '', window.location.pathname);
             }
@@ -378,60 +376,28 @@ const PassiveFireProtection = ({
             prevSiteIdRef.current = currentSiteId;
         }
     }, [siteSelectedForGlobal]);
-
     useEffect(() => {
-        // Handle URL parameter for room selection
+        const floorNodes =
+            siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+        const roomNodes =
+            siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+        setFloorNode(floorNodes);
+        setRoomNode(roomNodes);
+        // Check if there is a label parameter in the URL
         const queryParams = new URLSearchParams(location.search);
         const label = queryParams.get("roomLabel");
 
         if (label) {
-            const roomNumber = label;
-            // Find room by matching the exact name part after splitting
-            const matchedRoom = siteLayout.find(
-                (room) => room.nodeType === "room" && room.nodeName?.split(" ")[1] === roomNumber
-            );
+            const roomNumber = label; // Extract the part after '-'
+            const matchedRoom = roomNodes.find((room) => room.nodeName?.split(" ")[1] === roomNumber);
             if (matchedRoom) {
-                // Find the floor for this room
-                const parentFloor = siteLayout.find(f => f.id === matchedRoom.parentNode);
-                // Find the position (type) for this floor
-                const parentPosition = siteLayout.find(p => p.id === parentFloor?.parentNode);
-
-                if (parentPosition && parentFloor) {
-                    setFormData((prevFormData) => ({
-                        ...prevFormData,
-                        position: parentPosition.nodeName,
-                        floor: parentFloor.nodeName,
-                        room: matchedRoom?.nodeName,
-                    }));
-                }
+                setFormData((prevFormData) => ({
+                    ...prevFormData,
+                    room: matchedRoom?.nodeName,
+                }));
             }
         }
-
-        // Populate floors/rooms based on selected position/floor
-        if (formData?.position && siteLayout?.length > 0) {
-            const positionNode = siteLayout.find(node =>
-                node.nodeType === "type" && node.nodeName === formData.position
-            );
-            const floors = siteLayout.filter(node =>
-                node.nodeType === "floor" && node.parentNode === positionNode?.id
-            );
-            setFloorNode(floors);
-
-            if (formData?.floor) {
-                const floor = floors.find(f => f.nodeName === formData.floor);
-                const rooms = siteLayout.filter(node =>
-                    node.nodeType === "room" && node.parentNode === floor?.id
-                );
-                setRoomNode(rooms);
-            } else {
-                setRoomNode([]);
-            }
-        } else {
-            setFloorNode([]);
-            setRoomNode([]);
-        }
-    }, [siteLayout, location.search, formData?.position, formData?.floor]);
-
+    }, [siteLayout, location.search]);
     const getCategory = async () => {
         const categoryList = await get("/api/lov/ASSET_CATEGORY");
         const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
@@ -680,14 +646,18 @@ const PassiveFireProtection = ({
         };
 
         setFormData(emptyFilters);
-        setFloorNode([]);  // Clear floors
-        setRoomNode([]);   // Clear rooms
         localStorage.setItem('PFAssetFilters', JSON.stringify(emptyFilters));
 
         // Reset cascading dropdown states
         setSubCategoryList(subCategory);
         setSubCategory2List(subCategory2);
         setSubCategory3List(subCategory3);
+
+        // Reset floor and room nodes
+        const allFloors = siteLayout?.filter((itm) => itm?.nodeType === "floor") || [];
+        const allRooms = siteLayout?.filter((itm) => itm?.nodeType === "room") || [];
+        setFloorNode(allFloors);
+        setRoomNode(allRooms);
 
         navigate(location.pathname);
     };
@@ -826,41 +796,64 @@ const PassiveFireProtection = ({
                         </div>
                         <div className="col-md-3 col-sm-4 mt-2">
                             <select
-                                name="position"
+                                name="location"
                                 className="form-control form-select"
-                                id="position"
-                                value={formData.position || ""}
-                                onChange={handleInputChange}
+                                id="location"
+                                value={formData.position} // Set the selected value dynamically
+                                onChange={(e) => {
+                                    const { name, value } = e.target;
+                                    setFormData({
+                                        ...formData,
+                                        [name]: value,
+                                    });
+                                    const node = siteLayout.filter(
+                                        (site) => site.nodeName === value
+                                    );
+                                    const data = siteLayout.filter(
+                                        (site) =>
+                                            site.nodeType === "floor" &&
+                                            site.parentNode === node?.[0]?.id
+                                    );
+                                    setFloorNode(data || []);
+                                }}
                             >
                                 <option value="">Location</option>
-                                {siteLayout
-                                    ?.filter(node =>
-                                        node.nodeType === "type" &&
-                                        (node.nodeName === "Interior" || node.nodeName === "Exterior")
-                                    )
-                                    ?.map((node) => (
-                                        <option key={node.id} value={node.nodeName}>
-                                            {node.nodeName}
-                                        </option>
-                                    ))}
+                                <option value="Interior">Interior</option>
+                                <option value="Exterior">Exterior</option>
+                                {/* {locationFilter.map((site) => (
+                  <option value={site.location}>{site.location}</option>
+                ))} */}
                             </select>
                         </div>
                         <div
                             className="col-md-3 col-sm-4 mt-2"
-                            style={{ display: formData.position ? "" : "none" }}
+                            style={{ display: formData.location ? "" : "none" }}
                         >
                             <select
                                 name="floor"
                                 className="form-control form-select"
                                 id="floor"
-                                value={formData.floor || ""}
-                                onChange={handleInputChange}
+                                value={formData.floor} // Set the selected value dynamically
+                                onChange={(e) => {
+                                    const { name, value } = e.target;
+                                    setFormData({
+                                        ...formData,
+                                        [name]: value,
+                                    });
+                                    const node = siteLayout.filter(
+                                        (site) => site.nodeName === value
+                                    );
+                                    const data = siteLayout.filter(
+                                        (site) =>
+                                            site.nodeType === "room" &&
+                                            site.parentNode === node?.[0]?.id
+                                    );
+                                    setRoomNode(data || []);
+                                }}
                             >
                                 <option value="">Floor</option>
-                                {floorNode?.map((floor) => (
-                                    <option key={floor.id} value={floor.nodeName}>
-                                        {floor.nodeName}
-                                    </option>
+                                {floorNode?.map((itm) => (
+                                    <option value={itm?.nodeName}>{itm?.nodeName}</option>
                                 ))}
                             </select>
                         </div>
@@ -872,22 +865,13 @@ const PassiveFireProtection = ({
                                 name="room"
                                 className="form-control form-select"
                                 id="room"
-                                value={formData.room || ""}
+                                value={formData.room} // Set the selected value dynamically
                                 onChange={handleInputChange}
                             >
                                 <option value="">Room</option>
-                                {roomNode
-                                    .filter(room => {
-                                        // Find the selected floor from the filtered floorNode
-                                        const selectedFloor = floorNode.find(f => f.nodeName === formData.floor);
-                                        // Only show rooms that belong to the selected floor
-                                        return selectedFloor ? room.parentNode === selectedFloor.id : false;
-                                    })
-                                    .map((room) => (
-                                        <option key={room.id} value={room.nodeName}>
-                                            {room.nodeName}
-                                        </option>
-                                    ))}
+                                {roomNode?.map((itm) => (
+                                    <option value={itm?.nodeName}>{itm?.nodeName}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -948,6 +932,7 @@ const PassiveFireProtection = ({
                                 data={selectedItems.map((itm) => {
                                     return {
                                         assetId: itm?.assetId,
+                                        siteName: itm?.siteName,
                                         assetName: itm?.assetName,
                                         manufacturer: itm?.manufacturer,
                                         category: itm?.category,
@@ -955,14 +940,30 @@ const PassiveFireProtection = ({
                                         subCategory2: itm?.subCategory2,
                                         subCategory3: itm?.subCategory3,
                                         model: itm?.model,
-                                        deviceId: itm?.deviceId,
+                                        // deviceId: itm?.deviceId,
                                         serialNumber: itm?.serialNumber,
-                                        relatedAssetId: itm?.relatedAssetId,
-                                        folderId: itm?.folderId,
-                                        patItem: itm?.patItem,
-                                        pfpItem: itm?.pfpItem,
-                                        doorItem: itm?.doorItem,
-                                        barcode: itm?.barcode,
+                                        position: itm?.position || "",
+                                        floor: itm?.floor || "",
+                                        room: itm?.room || "",
+                                        purchaseDate: itm?.purchaseDate
+                                            ? moment(itm.purchaseDate).format("DD-MM-YYYY")
+                                            : "",
+                                        supplier: itm?.supplier || "",
+                                        cost: itm?.cost || "",
+                                        productName: itm?.assetPFPItem?.product || "",
+                                        accessPosition: itm?.assetPFPItem?.access || "",
+                                        material: itm?.assetPFPItem?.material || "",
+                                        service: itm?.assetPFPItem?.service || "",
+                                        dimension: itm?.assetPFPItem?.dimension || "",
+                                        quantity: itm?.assetPFPItem?.quantity || "",
+                                        areaInSqM: itm?.assetPFPItem?.area || "",
+
+                                        // relatedAssetId: itm?.relatedAssetId,
+                                        // folderId: itm?.folderId,
+                                        // patItem: itm?.patItem,
+                                        // pfpItem: itm?.pfpItem,
+                                        // doorItem: itm?.doorItem,
+                                        // barcode: itm?.barcode,
                                     };
                                 })}
                             >
@@ -1019,33 +1020,39 @@ const PassiveFireProtection = ({
                                 className="btn btn-light bg-white text-primary"
                                 data={sitePFPItems.map((itm) => {
                                     return {
-                                        ...itm,
-                                        assetDoorSpecifications: Array.isArray(
-                                            itm?.assetDoorSpecifications
-                                        )
-                                            ? itm.assetDoorSpecifications
-                                                .map(
-                                                    (asset) =>
-                                                        `assetId: ${asset?.assetId}, depth: ${asset?.depth}, finish: ${asset?.finish}, fireRating: ${asset?.fireRating}, frameFinish: ${asset?.frameFinish}, frameMaterial: ${asset?.frameMaterial}, height: ${asset?.height}, visionPanel: ${asset?.visionPanel}, width: ${asset?.width}`
-                                                )
-                                                .join("; ")
-                                            : "", // Provide empty string if not an array
-                                        assetPFPItem: Array.isArray(itm?.assetPFPItem)
-                                            ? itm.assetPFPItem
-                                                .map(
-                                                    (asset) =>
-                                                        `assetId: ${asset?.assetId}, product: ${asset?.product}, quantity: ${asset?.quantity}, material: ${asset?.material}, dimension: ${asset?.dimension}, service: ${asset?.service}`
-                                                )
-                                                .join("; ")
-                                            : "", // Provide empty string if not an array
-                                        assetPATItems: Array.isArray(itm?.assetPATItems)
-                                            ? itm.assetPATItems
-                                                .map(
-                                                    (asset) =>
-                                                        `patId: ${asset?.patId}, patDate: ${asset?.patDate}, patNextDate: ${asset?.patNextDate}, patUserName: ${asset?.patUserName}`
-                                                )
-                                                .join("; ")
-                                            : "", // Provide empty string if not an array
+                                        assetId: itm?.assetId,
+                                        siteName: itm?.siteName,
+                                        assetName: itm?.assetName,
+                                        manufacturer: itm?.manufacturer,
+                                        category: itm?.category,
+                                        subCategory: itm?.subCategory,
+                                        subCategory2: itm?.subCategory2,
+                                        subCategory3: itm?.subCategory3,
+                                        model: itm?.model,
+                                        // deviceId: itm?.deviceId,
+                                        serialNumber: itm?.serialNumber,
+                                        position: itm?.position || "",
+                                        floor: itm?.floor || "",
+                                        room: itm?.room || "",
+                                        purchaseDate: itm?.purchaseDate
+                                            ? moment(itm.purchaseDate).format("DD-MM-YYYY")
+                                            : "",
+                                        supplier: itm?.supplier || "",
+                                        cost: itm?.cost || "",
+                                        productName: itm?.assetPFPItem?.product || "",
+                                        accessPosition: itm?.assetPFPItem?.access || "",
+                                        material: itm?.assetPFPItem?.material || "",
+                                        service: itm?.assetPFPItem?.service || "",
+                                        dimension: itm?.assetPFPItem?.dimension || "",
+                                        quantity: itm?.assetPFPItem?.quantity || "",
+                                        areaInSqM: itm?.assetPFPItem?.area || "",
+
+                                        // relatedAssetId: itm?.relatedAssetId,
+                                        // folderId: itm?.folderId,
+                                        // patItem: itm?.patItem,
+                                        // pfpItem: itm?.pfpItem,
+                                        // doorItem: itm?.doorItem,
+                                        // barcode: itm?.barcode,
                                     };
                                 })}
                             >

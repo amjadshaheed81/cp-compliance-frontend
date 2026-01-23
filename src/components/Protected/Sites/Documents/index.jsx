@@ -16,7 +16,6 @@ import {
     MoveDown,
     Edit,
     NavigateNext as NavigateNextIcon,
-    BackspaceSharp as ClearIcon
 } from "@mui/icons-material";
 import moment from "moment";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
@@ -716,18 +715,29 @@ const Document = ({
                                 />
                                 {searchValue && (
                                     <Tooltip title="Clear search" arrow>
-                                        <ClearIcon
+                                        <button
+                                            type="button"
                                             onClick={clearSearch}
                                             style={{
                                                 position: "absolute",
-                                                right: "25px",
+                                                right: "16px",
                                                 top: "50%",
                                                 transform: "translateY(-50%)",
-                                                color: "#d82727ff",
                                                 cursor: "pointer",
                                                 zIndex: 10,
+                                                backgroundColor: "#ffffff",
+                                                border: "1px solid #d82727ff",
+                                                color: "#d82727ff",
+                                                padding: "2px 8px",
+                                                borderRadius: "999px",
+                                                fontSize: "0.7rem",
+                                                fontWeight: 600,
+                                                lineHeight: 1.2,
+                                                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
                                             }}
-                                        />
+                                        >
+                                            Clear
+                                        </button>
                                     </Tooltip>
                                 )}
                             </div>
