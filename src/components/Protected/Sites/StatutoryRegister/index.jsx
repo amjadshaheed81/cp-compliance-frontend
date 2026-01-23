@@ -120,6 +120,118 @@ export const requirementsNotRequiredForFileCheck = [
   "Water Schematic Drawing",
   "Water Legionella Samples"
 ];
+
+// Centralized status calculator function
+export const calculateStatutoryStatus = (item, siteChecks = [], patItems = []) => {
+  // If not required, return empty status
+  if (!item.required) {
+    return "";
+  }
+
+  // Auto-pass items that don't require file checks
+  if (requirementsNotRequiredForFileCheck.includes(item?.requirement)) {
+    return "Passed";
+  }
+
+  let status = "Fail"; // Default status
+
+  // PDF Type validation
+  if (String(item?.type).toLowerCase() === "pdf") {
+    if (item?.files?.length > 0) {
+      const isExpiryDateValid = item.files.every((file) =>
+        moment(file.expiryDate).isAfter(new Date())
+      );
+      status = isExpiryDateValid ? "Passed" : "Fail";
+    } else {
+      status = "Fail";
+    }
+    return status;
+  }
+
+  // Link Type validation
+  if (String(item?.type).toLowerCase() === "link") {
+    try {
+      // Asbestos Check
+      if (item?.subType === "Asbestos Management Plan") {
+        const isAsbestosRecordAvailable = siteChecks?.some(
+          (itm) => itm?.subType === "Asbestos"
+        );
+        status = isAsbestosRecordAvailable ? "Passed" : "Fail";
+      }
+
+      // PAT Check - Check ALL PAT items instead of just nearest
+      else if (item?.subType === "PAT / Microwave Testing") {
+        // Check ALL PAT items - Pass only if ALL are valid
+        const allPatItemsValid = checkAllPatItemsValid(patItems);
+        status = allPatItemsValid ? "Passed" : "Fail";
+      }
+
+      // Emergency Check
+      else if (item?.subType === "Emergency light and Fire Alarm") {
+        const isEmergencyAvailable = siteChecks?.some(
+          (itm) =>
+            itm?.type === "Audit" && moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isEmergencyAvailable ? "Passed" : "Fail";
+      }
+
+      // Water Risk Assessment Check
+      else if (item?.requirement === "Water Risk Assessment" && item?.subType === "Water") {
+        const isWaterAvailable = siteChecks?.some(
+          (itm) =>
+            itm?.subType === "Water Risk Assessment" && itm?.category === "Water" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isWaterAvailable ? "Passed" : "Fail";
+      }
+      // Water Risk Assessment Check
+      else if (item?.subType === "Water Risk Assessment" && item?.requirement === "Water Risk Assessment") {
+        const isWaterAvailable = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Water Risk Assessment" &&
+            itm?.subType === "Water" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isWaterAvailable ? "Passed" : "Fail";
+      }
+      // Fire Alarm Weekly Call Point Test Check
+      else if (item?.requirement === "Fire Alarm Weekly Call Point Test" && item?.subType === "Fire Alarm Weekly In House Testing") {
+        const isFireAlarm = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Fire Alarm - Weekly Call Point testing to meet BS5839" &&
+            itm?.subType === "Fire Alarm to meet BS5839" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isFireAlarm ? "Passed" : "Fail";
+      }
+      // Water Temperature Monitoring Check
+      else if (item?.requirement === "Water Temperature Monitoring" && item?.subType === "Water Systems Service & Test Records") {
+        const isWaterTempMonitor = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Water Temperature Monitoring" &&
+            itm?.subType === "Water" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isWaterTempMonitor ? "Passed" : "Fail";
+      }
+      // Shower Head Cleaning Check
+      else if (item?.requirement === "Shower Head Cleaning" && item?.subType === " Water Systems Service & Test Records") {
+        const isShowerCleaning = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Periodic Shower Head Cleaning" &&
+            itm?.subType === "Legionella" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isShowerCleaning ? "Passed" : "Fail";
+      }
+    } catch (error) {
+      console.error("Error calculating status:", error);
+      status = "Fail";
+    }
+  }
+
+  return status;
+};
 const StatutoryRegister = ({
   loggedInUserData,
   siteSelectedForGlobal,
@@ -185,7 +297,7 @@ const StatutoryRegister = ({
       );
       if (res?.status === 200) {
         hideLoader();
-        getStatutory(siteSelectedForGlobal?.siteId);
+        loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
       } else {
         hideLoader();
         toast.error(
@@ -216,57 +328,75 @@ const StatutoryRegister = ({
     }
     return dutiesMet;
   };
-  const getStatutory = async (siteId, currentPatItems = patItems) => {
+  // Load all data and calculate statuses
+  const loadAllDataAndCalculateStatus = async (siteId) => {
     setIsLoading(true);
-    let getStatutoryDocuments = await get(
-      `/api/document/${siteId}/statutoryRegister`
-    );
-    getStatutoryDocuments = getStatutoryDocuments.sort(
-      (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
-    );
-    
-    // Recalculate status for PAT Testing based on current PAT items
-    const updatedStatutoryWithRecalculatedStatus = getStatutoryDocuments.map(item => {
-      if (item?.subType === "PAT / Microwave Testing" && item?.required) {
-        const recalculatedStatus = recalculatePatStatus(item, currentPatItems);
-        return {
-          ...item,
-          status: recalculatedStatus
-        };
+    try {
+      // Load all data in parallel
+      const [statutoryData, siteChecksData, patItemsResponse] = await Promise.all([
+        get(`/api/document/${siteId}/statutoryRegister`).catch(err => {
+          console.error("Error loading statutory data:", err);
+          throw err; // Re-throw to be caught by outer try-catch
+        }),
+        get(`/api/site-check/site/${siteId}`).catch(err => {
+          console.error("Error loading site checks:", err);
+          return []; // Fallback to empty array
+        }),
+        get(`/api/site/${siteId}/assets?patItem=true`).catch(err => {
+          console.error("Error loading PAT items:", err);
+          return { assets: [] }; // Fallback to empty assets
+        })
+      ]);
+
+      // Extract assets from PAT items response
+      const patItemsData = patItemsResponse?.assets || [];
+
+      // Update state with loaded data
+      setSiteChecks(siteChecksData);
+      setPatItems(patItemsData);
+
+      // Sort statutory documents
+      const sortedStatutory = statutoryData.sort(
+        (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
+      );
+
+      // Recalculate status for ALL items using centralized calculator
+      const updatedStatutoryWithRecalculatedStatus = sortedStatutory.map(item => ({
+        ...item,
+        status: calculateStatutoryStatus(item, siteChecksData, patItemsData)
+      }));
+
+      // Filter based on user role
+      if (isManagerAdminLogin(loggedInUserData)) {
+        setStatutory(updatedStatutoryWithRecalculatedStatus);
+      } else {
+        const updatedStatutoryRegister = updatedStatutoryWithRecalculatedStatus?.filter(
+          itm => itm?.required === true
+        );
+        setStatutory(updatedStatutoryRegister);
       }
-      return item;
-    });
 
-    if (isManagerAdminLogin(loggedInUserData)) {
-      setStatutory(updatedStatutoryWithRecalculatedStatus);
-    } else {
-      const updatedStatutoryRegister = updatedStatutoryWithRecalculatedStatus?.filter(itm => itm?.required === true);
-      setStatutory(updatedStatutoryRegister);
+      // Set initial values for residence fields
+      const newResponsibleTexts = {};
+      sortedStatutory.forEach((item) => {
+        newResponsibleTexts[item.id] = item.residence || "";
+        setValue(`residence-${item.id}`, item.residence || "");
+      });
+      setResponsibleTexts(newResponsibleTexts);
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error loading statutory register:", error);
+      setIsLoading(false);
+      toast.error("Failed to load statutory register. Please try again.");
     }
-    
-    // Set initial values for residence fields using setValue
-    const newResponsibleTexts = {};
-
-    getStatutoryDocuments.forEach((item) => {
-      newResponsibleTexts[item.id] = item.residence || "";
-      setValue(`residence-${item.id}`, item.residence || ""); // Prepopulate with existing residence value if available
-    });
-    setResponsibleTexts(newResponsibleTexts);
-    chipColor = statutory.filter((item) => {
-      return item.status === "Passed";
-    });
-    setIsLoading(false);
   };
 
-  const recalculatePatStatus = (item, patItems) => {
-    if (item?.subType === "PAT / Microwave Testing" && item?.required) {
-      // Check ALL PAT items - Pass only if ALL are valid
-      const allPatItemsValid = checkAllPatItemsValid(patItems);
-      return allPatItemsValid ? "Passed" : "Fail";
-    }
-    // Return existing status for non-PAT items
-    return item.status;
+  const getStatutory = async (siteId) => {
+    // Delegate to the main loader function
+    await loadAllDataAndCalculateStatus(siteId);
   };
+
 
   const getChipStatus = (item) => {
     return item.status === "Passed"
@@ -276,135 +406,44 @@ const StatutoryRegister = ({
       : "";
   };
   const handleCheckboxField = async (e, item, idx) => {
-    const isChecked = e.target.checked; // Directly using checked value
-    setIsChecked(isChecked); // Update local state, if used for other purposes
-    let status = "Fail"; // Default status
+    const isChecked = e.target.checked;
+    setIsChecked(isChecked);
 
-    // Checking conditions based on item type and subType
-    if (isChecked && String(item?.type).toLowerCase() === "pdf") {
-      if (item?.files?.length > 0) {
-        const isExpiryDateValid = item.files.every((file) =>
-          moment(file.expiryDate).isAfter(new Date())
-        );
-        status = isExpiryDateValid ? "Passed" : "Fail";
-      }
-    } else if (String(item?.type).toLowerCase() === "link" && isChecked) {
-      try {
-        // Asbestos Check
-        if (item?.subType === "Asbestos Management Plan") {
-          const isAsbestosRecordAvailable = siteChecks?.some(
-            (itm) => itm?.subType === "Asbestos"
-          );
-          status = isAsbestosRecordAvailable ? "Passed" : "Fail";
-        }
+    // Create updated item with new required state
+    const updatedItem = {
+      ...item,
+      required: isChecked,
+    };
 
-        // PAT Check - Check ALL PAT items instead of just nearest
-        else if (item?.subType === "PAT / Microwave Testing") {
-          // Check ALL PAT items - Pass only if ALL are valid
-          const allPatItemsValid = checkAllPatItemsValid(patItems);
-          status = allPatItemsValid ? "Passed" : "Fail";
-        }
- 
+    // Use centralized calculator to determine status
+    const status = calculateStatutoryStatus(updatedItem, siteChecks, patItems);
 
-        // Emergency Check
-        else if (item?.subType === "Emergency light and Fire Alarm") {
-          const isEmergencyAvailable = siteChecks?.some(
-            (itm) =>
-              itm?.type === "Audit" && moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isEmergencyAvailable ? "Passed" : "Fail";
-        }
-
-        // Water Risk Assessment Check
-        else if (item?.requirement === "Water Risk Assessment" && item?.subType === "Water") {
-          const isWaterAvailable = siteChecks?.some(
-            (itm) =>
-              itm?.subType === "Water Risk Assessment" && itm?.category === "Water" &&
-              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isWaterAvailable ? "Passed" : "Fail";
-        }
-        // Water Risk Assessment Check
-        else if (item?.subType === "Water Risk Assessment" && item?.requirement === "Water Risk Assessment") {
-          const isWaterAvailable = siteChecks?.some(
-            (itm) =>
-              itm?.category === "Water Risk Assessment" &&
-              itm?.subType === "Water" &&
-              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isWaterAvailable ? "Passed" : "Fail";
-        }
-        // Water Risk Assessment Check
-        else if (item?.requirement === "Fire Alarm Weekly Call Point Test" && item?.subType === "Fire Alarm Weekly In House Testing") {
-          const isFireAlarm = siteChecks?.some(
-            (itm) =>
-              itm?.category === "Fire Alarm - Weekly Call Point testing to meet BS5839" &&
-              itm?.subType === "Fire Alarm to meet BS5839" &&
-              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isFireAlarm ? "Passed" : "Fail";
-        }
-        // Water Risk Assessment Check
-        else if (item?.requirement === "Water Temperature Monitoring" && item?.subType === "Water Systems Service & Test Records") {
-          const isWaterTempMonitor = siteChecks?.some(
-            (itm) =>
-              itm?.category === "Water Temperature Monitoring" &&
-              itm?.subType === "Water" &&
-              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isWaterTempMonitor ? "Passed" : "Fail";
-        }
-        // Water Risk Assessment Check
-        else if (item?.requirement === "Shower Head Cleaning" && item?.subType === " Water Systems Service & Test Records") {
-          const isShowerClaeaning = siteChecks?.some(
-            (itm) =>
-              itm?.category === "Periodic Shower Head Cleaning" &&
-              itm?.subType === "Legionella" &&
-              moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-          );
-          status = isShowerClaeaning ? "Passed" : "Fail";
-        }
-      } catch (error) {
-        console.error("Error fetching site data:", error);
-      }
-    }
-
-    // Update payload and possibly update state/props
+    // Prepare payload for API
     const payload = {
       ...item,
       status: status,
       required: isChecked,
     };
-    if (!isChecked) {
-      payload.status = "";
-    }
 
-    if (isChecked && requirementsNotRequiredForFileCheck.includes(item?.requirement)) {
-      payload.status = "Passed";
+    try {
+      const res = await put("/api/document/statutoryRegister/manage", payload);
+      if (res?.status === 200) {
+        // Reload all data to ensure consistency
+        await loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+      } else {
+        toast.error("Failed to update statutory register. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating statutory register:", error);
+      toast.error("Failed to update statutory register. Please try again.");
     }
-
-    const res = await put("/api/document/statutoryRegister/manage", payload);
-    if (res?.status === 200) {
-      getStatutory(siteSelectedForGlobal?.siteId, patItems);
-    }
-  };
-  const getPatItems = async () => {
-    let url = `/api/site/${siteSelectedForGlobal?.siteId}/assets?patItem=true`;
-    const { assets } = await get(url);
-    setPatItems(assets);
-    return assets;
   };
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
-      getStatutory(siteSelectedForGlobal?.siteId);
+      // Load all data and calculate statuses in one go
+      loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
       getSiteAssets(siteSelectedForGlobal?.siteId);
-      getSiteChecks();
-      // Load PAT items and recalculate status after they're loaded
-      getPatItems().then((patItemsData) => {
-        // Recalculate status after PAT items load
-        getStatutory(siteSelectedForGlobal?.siteId, patItemsData);
-      });
     } else {
       Swal.fire({
         icon: "error",
@@ -414,12 +453,6 @@ const StatutoryRegister = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteSelectedForGlobal?.siteId]);
-  const getSiteChecks = async () => {
-    const siteChecksData = await get(
-      `/api/site-check/site/${siteSelectedForGlobal?.siteId}`
-    );
-    setSiteChecks(siteChecksData);
-  };
 
   const getViewEvidenceExpiryDate = (row) => {
     // Group siteChecks by types to avoid multiple filtering
@@ -588,7 +621,7 @@ const StatutoryRegister = ({
     const res = await put(url, data);
     if (res?.status === 200) {
       toast.success("Files un tagged successfully.");
-      getStatutory(siteSelectedForGlobal?.siteId);
+      loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
     } else {
       toast.error("Something went wrong while un tagging files.");
     }
@@ -603,7 +636,7 @@ const StatutoryRegister = ({
           statutoryCategory={folder}
           siteId={siteSelectedForGlobal?.siteId}
           refresh={() => {
-            getStatutory(siteSelectedForGlobal?.siteId);
+            loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
           }}
         />
       )}
@@ -1083,7 +1116,7 @@ autoComplete="off"
               uploaderUserId={loggedInUserData?.id}
               reviewerUserId={loggedInUserData?.id}
               refresh={() => {
-                getStatutory(siteSelectedForGlobal?.siteId);
+                loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
               }}
             />
           )}
