@@ -313,7 +313,7 @@ const EnergyMetricsReport = ({ energyData, floorArea, currentYear }) => {
               <p>
                 Carbon per m²: {currentYearData.carbonPerM2.toFixed(2)} kg CO2e
               </p>
-              <p>
+              <p className="p-2 rounded" style={{ backgroundColor: '#d3d3d3' }}>
                 Based upon Electricity: 0.35 kg/kWh, Gas: 0.19 kg/kWh
               </p>
             </div>
