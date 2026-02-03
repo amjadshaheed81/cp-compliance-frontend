@@ -2,78 +2,80 @@ import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import moment from "moment";
 import {
-  getSiteContracts,
-  getSiteContractDetails,
-  updateContractDetail,
-  setLoader,
+    getSiteContracts,
+    getSiteContractDetails,
+    updateContractDetail,
+    setLoader,
 } from "../../../store/thunk/contracts";
 import { get } from "../../../api";
 import { useNavigate } from "react-router-dom";
 const DashboardNotification = ({siteSelectedForGlobal, loggedInUserData}) => {
-  const [notification, setNotification] = useState([]);
-  const navigate = useNavigate();
+    const [notification, setNotification] = useState([]);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    getNotifications();
-  }, [siteSelectedForGlobal]);
+    useEffect(() => {
+        getNotifications();
+    }, [siteSelectedForGlobal]);
 
-  const getNotifications = async () => {
-    if (loggedInUserData?.id) {
-      const actions = await get(
-        `/api/user/notification/${loggedInUserData?.id}/site/${siteSelectedForGlobal?.siteId}`
-      );
-      setNotification(actions);
-    }
-  };
+    const getNotifications = async () => {
+        if (loggedInUserData?.id) {
+            const actions = await get(
+                `/api/user/notification/${loggedInUserData?.id}/site/${siteSelectedForGlobal?.siteId}`
+            );
+            setNotification(actions);
+        }
+    };
 
-  const dateFormat = (date) => {
-    return moment(date, "YYYY-MM-DD").format("DD/MM/YYYY");
-  };
+    const dateFormat = (date) => {
+        return moment(date, "YYYY-MM-DD").format("DD/MM/YYYY");
+    };
 
-  return (
-    <Fragment>
-      <div className="card">
-        <div className="card-body p-2">
-         
+    return (
+        <Fragment>
+            <div className="card">
+                <div className="card-body p-2">
 
-          <table className="table table-bordered f-11">
-            <thead className="table-dark">
-              <tr>
-                <th scope="col">Notification</th>
-                <th scope="col">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {notification?.length === 0 && (
-                <tr>
-                  <td colSpan={2} align="center">
-                    No records!
-                  </td>
-                </tr>
-              )}
-              {notification?.map((i) => (
-                <tr>
-                   <td><b>{i.title}</b> &nbsp;
-                   {i.body}</td>
-                  <td>{dateFormat(i?.createdAt?.split("T")?.[0])}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </Fragment>
-  );
+
+                    <table className="table table-bordered f-11">
+                        <thead className="table-dark">
+                        <tr>
+                            <th scope="col">Type</th>
+                            <th scope="col">Notification</th>
+                            <th scope="col">Date</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {notification?.length === 0 && (
+                            <tr>
+                                <td colSpan={3} align="center">
+                                    No records!
+                                </td>
+                            </tr>
+                        )}
+                        {notification?.map((i) => (
+                            <tr key={i.id}>
+                                <td className="text-nowrap">{i.type || i.title}</td>
+                                <td><b>{i.title}</b> &nbsp;
+                                    {i.body}</td>
+                                <td>{dateFormat(i?.createdAt?.split("T")?.[0])}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </Fragment>
+    );
 };
 
 const mapStateToProps = (state) => ({
-  loggedInUserData: state.site.loggedInUserData,
+    loggedInUserData: state.site.loggedInUserData,
 
-  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
-  getSiteContracts,
-  getSiteContractDetails,
-  updateContractDetail,
-  setLoader,
+    getSiteContracts,
+    getSiteContractDetails,
+    updateContractDetail,
+    setLoader,
 })(DashboardNotification);
