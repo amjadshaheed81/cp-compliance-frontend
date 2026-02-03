@@ -44,10 +44,10 @@ import AirConditioning from "./AirConditioning";
 import VentilationReport from "./VentilationReport";
 import WaterChlorination from "./WaterChlorination";
 import GasInspection from "./GasInspection";
-import FierDamper from "./FierDamper";
+import FireDamper from "./FireDamper";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import GasBoilerService from "./GasBoilerService";
-import FireFightingEquipement from "./FireFightingEquipement";
+import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 
 const Item = styled(Paper)(({ theme }) => ({
