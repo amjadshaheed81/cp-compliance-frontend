@@ -609,7 +609,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                         )}
                         {step === "inspection-fire-damper" && (
                             <Item>
-                                <FierDamper
+                                <FireDamper
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
@@ -664,7 +664,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
                         {step === "inspection-fire-Equipment" && (
                             <Item>
-                                <FireFightingEquipement
+                                <FireFightingEquipmentReport
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
