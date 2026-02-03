@@ -198,7 +198,7 @@ const AssessmentFireRisk = ({
             const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
             if (!parentFoldersResponse?.parentFolders?.length) return;
             const logBooksFolder = parentFoldersResponse.parentFolders.find(
-                (folder) => folder.name?.trim() === "Log Books"
+                (folder) => folder.name?.trim() === "6 - Log Books"
             );
             if (!logBooksFolder) return;
             const logBooksResponse = await get(
