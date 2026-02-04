@@ -155,7 +155,7 @@ should be carried out more frequently.`;
                 else if ((subCategory2.includes('Water Extinguisher'))) {
                     categories.water += 1;
                 }
-                else if (subCategory2.includes('C02 Extinguisher')) {
+                else if (subCategory2.includes('CO2 Extinguisher')) {
                     categories.co2 += 1;
                 }
                 else if (subCategory2.includes('Wet Chemical Extinguisher')) {

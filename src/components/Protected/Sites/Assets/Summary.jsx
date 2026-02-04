@@ -189,13 +189,26 @@ const Summary = ({
         const subCategoryList = await get("/api/lov/ASSET_SUB_CATEGORY");
         const subCategory2List = await get("/api/lov/ASSET_SUB_CATEGORY_2");
         const subCategory3List = await get("/api/lov/ASSET_SUB_CATEGORY_3");
-        setCategory(categoryList);
-        setSubCategory(subCategoryList);
-        setSubCategory2(subCategory2List);
-        setSubCategory3(subCategory3List);
-        setSubCategoryList(subCategoryList);
-        setSubCategory2List(subCategory2List);
-        setSubCategory3List(subCategory3List);
+        const sortLov = (arr) =>
+            (arr || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+
+        const sortedCategory = sortLov(categoryList);
+        const sortedSubCategory = sortLov(subCategoryList);
+        const sortedSubCategory2 = sortLov(subCategory2List);
+        const sortedSubCategory3 = sortLov(subCategory3List);
+
+        setCategory(sortedCategory);
+        setSubCategory(sortedSubCategory);
+        setSubCategory2(sortedSubCategory2);
+        setSubCategory3(sortedSubCategory3);
+
+        setSubCategoryList(sortedSubCategory);
+        setSubCategory2List(sortedSubCategory2);
+        setSubCategory3List(sortedSubCategory3);
     };
 
     useEffect(() => {
@@ -283,7 +296,12 @@ const Summary = ({
             const subCategoryData = subCategory?.filter(
                 (itm) => itm?.attribite1 === value
             );
-            setSubCategoryList(subCategoryData);
+            const sorted = (subCategoryData || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+            setSubCategoryList(sorted);
             setSubCategory2List([]);
             setSubCategory3List([]);
             setFormData({
@@ -297,7 +315,12 @@ const Summary = ({
             const subCategoryData = subCategory2?.filter(
                 (itm) => itm?.attribite1 === value
             );
-            setSubCategory2List(subCategoryData);
+            const sorted = (subCategoryData || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+            setSubCategory2List(sorted);
             setSubCategory3List([]);
             setFormData({
                 ...formData,
@@ -309,7 +332,12 @@ const Summary = ({
             const subCategoryData = subCategory3?.filter(
                 (itm) => itm?.attribite1 === value
             );
-            setSubCategory3List(subCategoryData);
+            const sorted = (subCategoryData || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+            setSubCategory3List(sorted);
             setFormData({
                 ...formData,
                 [name]: value,
@@ -357,17 +385,32 @@ const Summary = ({
     useEffect(() => {
         if (formData?.category && subCategory?.length > 0) {
             const filtered = subCategory.filter((itm) => itm?.attribite1 === formData.category);
-            setSubCategoryList(filtered || []);
+            const sorted = (filtered || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+            setSubCategoryList(sorted);
         }
 
         if (formData?.subCategory && subCategory2?.length > 0) {
             const filtered2 = subCategory2.filter((itm) => itm?.attribite1 === formData.subCategory);
-            setSubCategory2List(filtered2 || []);
+            const sorted = (filtered2 || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+            setSubCategory2List(sorted);
         }
 
         if (formData?.subCategory2 && subCategory3?.length > 0) {
             const filtered3 = subCategory3.filter((itm) => itm?.attribite1 === formData.subCategory2);
-            setSubCategory3List(filtered3 || []);
+            const sorted = (filtered3 || []).slice().sort((a, b) =>
+                String(a?.lovValue || "").localeCompare(String(b?.lovValue || ""), undefined, {
+                    sensitivity: "base",
+                })
+            );
+            setSubCategory3List(sorted);
         }
 
         // Populate floors/rooms based on selected position/floor and available siteLayout
