@@ -16,11 +16,17 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification.title;
+  // When payload has a notification block, FCM/browser already shows one notification.
+  // Do not call showNotification again or we get 2 notifications from 1 message.
+  if (payload.notification) {
+    return;
+  }
+  // Data-only message: we show it ourselves.
+  const notificationTitle = payload.data?.title || 'Notification';
+  const notificationBody = payload.data?.body || '';
   const notificationOptions = {
-    body: payload.notification.body,
+    body: notificationBody,
     icon: '/logo192.png'
   };
-
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
