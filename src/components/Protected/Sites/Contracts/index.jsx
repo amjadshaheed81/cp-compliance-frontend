@@ -15,7 +15,7 @@ import {
   setLoader,
 } from "../../../../store/thunk/contracts";
 import { toast } from "react-toastify";
-import { get } from "../../../../api";
+import { get, del } from "../../../../api";
 import AddContracts from "./AddContracts";
 import moment from "moment";
 import { ROLE } from "../../../../Constant/Role";
@@ -28,9 +28,9 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
 const Contracts = ({
-  loggedInUserData,
-  siteSelectedForGlobal,
-}) => {
+                     loggedInUserData,
+                     siteSelectedForGlobal,
+                   }) => {
   const [searchParams] = useSearchParams();
   const paramContractId = searchParams.get("projectContractId");
 
@@ -57,8 +57,8 @@ const Contracts = ({
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
   const currentContracts = filteredContractList?.slice(
-    indexOfFirstContract,
-    indexOfLastContract
+      indexOfFirstContract,
+      indexOfLastContract
   );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -105,15 +105,15 @@ const Contracts = ({
     setIsLoading(true);
     if (isManagerAdminLogin(loggedInUserData)) {
       const projects = await get(
-        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+          `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
       );
       setFilteredContractList(projects?.projectContracts || []);
       setContractList(projects?.projectContracts || []);
     } else if (loggedInUserData?.role === ROLE.CONTRACTOR) {
       try {
         let url = isSiteSelectedForContractor
-          ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorCompanyId=${loggedInUserData?.companyId}`
-          : `/api/project/contracts?contractorCompanyId=${loggedInUserData?.companyId}`;
+            ? `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}&contractorCompanyId=${loggedInUserData?.companyId}`
+            : `/api/project/contracts?contractorCompanyId=${loggedInUserData?.companyId}`;
         const projects = await get(url);
         setFilteredContractList(projects?.projectContracts || []);
         setContractList(projects?.projectContracts || []);
@@ -142,17 +142,17 @@ const Contracts = ({
     const status = formData?.status;
     if (searchField || category || subCategory || status) {
       const list = contractList?.filter(
-        (x) =>
-          String(x?.summary)
-            .toLowerCase()
-            .includes(String(searchField).toLowerCase()) &&
-          String(x?.category)
-            .toLowerCase()
-            .includes(String(category).toLowerCase()) &&
-          String(x?.subCategory)
-            .toLowerCase()
-            .includes(String(subCategory).toLowerCase()) &&
-          String(x?.status).toLowerCase().includes(String(status).toLowerCase())
+          (x) =>
+              String(x?.summary)
+                  .toLowerCase()
+                  .includes(String(searchField).toLowerCase()) &&
+              String(x?.category)
+                  .toLowerCase()
+                  .includes(String(category).toLowerCase()) &&
+              String(x?.subCategory)
+                  .toLowerCase()
+                  .includes(String(subCategory).toLowerCase()) &&
+              String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
       setCurrentPage(1); //calculateLastPageIndex(list?.length, contractsPerPage)
       setFilteredContractList(list);
@@ -167,13 +167,13 @@ const Contracts = ({
       if(searchContracts.length > 0) {
         openContractDetail(searchContracts[0]);
       }
-      
+
     }
   },[contractList])
   const categoryChange = (value) => {
     const val = value;
     const subCategoryData = subCategory?.filter(
-      (itm) => itm?.attribite1 === val
+        (itm) => itm?.attribite1 === val
     );
     setSubCategoryList(subCategoryData);
   };
@@ -190,247 +190,278 @@ const Contracts = ({
       setEditContractViewType("");
     }
   };
+
+  const handleDeleteContract = async (contract) => {
+    const result = await Swal.fire({
+      title: "Delete contract?",
+      text: `This will permanently delete "${contract?.summary}". This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await del(`/api/project/${contract?.projectContractId}`);
+      toast.success("Contract deleted successfully.");
+      getProjectList();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete contract.");
+    }
+  };
+
   return (
-    <Fragment>
-      <SidebarNew />
-      <div className="content">
-        <Header />
-        <div className="container-fluid">
-          <BreadCrumHeader header={"Site Contracts"} page={"Contracts"} />
-          {/*  */}
-          {/*  */}
-          {showAddModal && (
-            <AddContracts
-              showAddModal={showAddModal}
-              setShowAddModal={setShowAddModal}
-              category={category}
-              subCategory={subCategory}
-              refresh={() => {
-                getProjectList();
-              }}
-            />
-          )}
-          {editContractViewType === ROLE.MANAGER && (
-            <ManagerContractView
-              selectedContract={selectedContract}
-              showAddModal={showUpdateModal}
-              setShowAddModal={setShowUpdateModal}
-              category={category}
-              subCategory={subCategory}
-              refresh={() => {
-                getProjectList();
-              }}
-            />
-          )}
-          {editContractViewType === ROLE.CONTRACTOR && (
-            <ContractorContractView
-              selectedContract={selectedContract}
-              showAddModal={showUpdateModal}
-              setShowAddModal={setShowUpdateModal}
-              category={category}
-              subCategory={subCategory}
-              refresh={() => {
-                getProjectList();
-              }}
-            />
-          )}
-          <div className="d-flex bd-highlight">
-            <div className="pt-2 bd-highlight">
-              <div className="row">
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <input
-                    type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                    className="form-control"
-                    placeholder="Search"
-                    name="searchField"
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    className="form-control form-select"
-                    id="startMonth"
-                    name="category"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Category</option>
-                    {category?.map((itm) => (
-                      <option value={itm?.lovValue}>{itm?.lovValue}</option>
-                    ))}
-                  </select>
-                </div>
-                {subCategoryList?.length > 0 && (
+      <Fragment>
+        <SidebarNew />
+        <div className="content">
+          <Header />
+          <div className="container-fluid">
+            <BreadCrumHeader header={"Site Contracts"} page={"Contracts"} />
+            {/*  */}
+            {/*  */}
+            {showAddModal && (
+                <AddContracts
+                    showAddModal={showAddModal}
+                    setShowAddModal={setShowAddModal}
+                    category={category}
+                    subCategory={subCategory}
+                    refresh={() => {
+                      getProjectList();
+                    }}
+                />
+            )}
+            {editContractViewType === ROLE.MANAGER && (
+                <ManagerContractView
+                    selectedContract={selectedContract}
+                    showAddModal={showUpdateModal}
+                    setShowAddModal={setShowUpdateModal}
+                    category={category}
+                    subCategory={subCategory}
+                    refresh={() => {
+                      getProjectList();
+                    }}
+                />
+            )}
+            {editContractViewType === ROLE.CONTRACTOR && (
+                <ContractorContractView
+                    selectedContract={selectedContract}
+                    showAddModal={showUpdateModal}
+                    setShowAddModal={setShowUpdateModal}
+                    category={category}
+                    subCategory={subCategory}
+                    refresh={() => {
+                      getProjectList();
+                    }}
+                />
+            )}
+            <div className="d-flex bd-highlight">
+              <div className="pt-2 bd-highlight">
+                <div className="row">
+                  <div className="col-md-4 col-sm-4 mt-2">
+                    <input
+                        type="text"
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.target.removeAttribute("readonly")}
+                        className="form-control"
+                        placeholder="Search"
+                        name="searchField"
+                        onChange={handleInputChange}
+                    />
+                  </div>
                   <div className="col-md-4 col-sm-4 mt-2">
                     <select
-                      name="subCategory"
-                      className="form-control form-select"
-                      id="subCategory"
-                      onChange={handleInputChange}
+                        className="form-control form-select"
+                        id="startMonth"
+                        name="category"
+                        onChange={handleInputChange}
                     >
-                      <option value="">Sub Category</option>
-                      {subCategoryList?.map((itm) => (
-                        <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                      <option value="">Category</option>
+                      {category?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
                       ))}
                     </select>
                   </div>
-                )}
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    name="status"
-                    className="form-control form-select"
-                    id="status"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Status</option>
-                    <option value="Active">Active</option>
-                    <option value="Expired">Expired</option>
-                    <option value="Terminated">Terminated</option>
-                  </select>
-                </div>
-                {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                  <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                    <label>All</label>
-                    <Switch
-                      checked={checked}
-                      onChange={handleChange}
-                      inputProps={{ "aria-label": "controlled" }}
-                    />
-                    <label>Selected Site</label>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="ms-auto p-2 bd-highlight">
-              <div className="row" style={{ height: "auto" }}>
-                {isManagerAdminLogin(loggedInUserData) && (
-                  <>
-                    <div className="col-md-6 col-sm-4 mt-2 pr-2">
-                        <Tooltip title={`Create New`} arrow>
-                          <button
-                            className="btn btn-primary text-white pr-2"
-                            onClick={() => {
-                              setShowAddModal(true);
-                            }}
-                          >
-                            <i className="fas fa-plus"></i>
-                          </button>
-                        </Tooltip>
-                    </div>
-                    <div className="col-md-6 col-sm-4 mt-2">
-                        <CSVLink
-                          filename={"contracts-lists.csv"}
-                          className="btn btn-light bg-white text-primary"
-                          data={filteredContractList}
+                  {subCategoryList?.length > 0 && (
+                      <div className="col-md-4 col-sm-4 mt-2">
+                        <select
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            onChange={handleInputChange}
                         >
-                          {" "}
-                          <Tooltip title={`Export`} arrow>
-                            <i className="fas fa-download"></i>
+                          <option value="">Sub Category</option>
+                          {subCategoryList?.map((itm) => (
+                              <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          ))}
+                        </select>
+                      </div>
+                  )}
+                  <div className="col-md-4 col-sm-4 mt-2">
+                    <select
+                        name="status"
+                        className="form-control form-select"
+                        id="status"
+                        onChange={handleInputChange}
+                    >
+                      <option value="">Status</option>
+                      <option value="Active">Active</option>
+                      <option value="Expired">Expired</option>
+                      <option value="Terminated">Terminated</option>
+                    </select>
+                  </div>
+                  {loggedInUserData?.role === ROLE.CONTRACTOR && (
+                      <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
+                        <label>All</label>
+                        <Switch
+                            checked={checked}
+                            onChange={handleChange}
+                            inputProps={{ "aria-label": "controlled" }}
+                        />
+                        <label>Selected Site</label>
+                      </div>
+                  )}
+                </div>
+              </div>
+              <div className="ms-auto p-2 bd-highlight">
+                <div className="row" style={{ height: "auto" }}>
+                  {isManagerAdminLogin(loggedInUserData) && (
+                      <>
+                        <div className="col-md-6 col-sm-4 mt-2 pr-2">
+                          <Tooltip title={`Create New`} arrow>
+                            <button
+                                className="btn btn-primary text-white pr-2"
+                                onClick={() => {
+                                  setShowAddModal(true);
+                                }}
+                            >
+                              <i className="fas fa-plus"></i>
+                            </button>
                           </Tooltip>
-                        </CSVLink>
-                    </div>
-                  </>
-                )}
+                        </div>
+                        <div className="col-md-6 col-sm-4 mt-2">
+                          <CSVLink
+                              filename={"contracts-lists.csv"}
+                              className="btn btn-light bg-white text-primary"
+                              data={filteredContractList}
+                          >
+                            {" "}
+                            <Tooltip title={`Export`} arrow>
+                              <i className="fas fa-download"></i>
+                            </Tooltip>
+                          </CSVLink>
+                        </div>
+                      </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          {/* row start*/}
-          <div className="row p-2"></div>
-          <div className="col-md-12 table-responsive">
-            <table className="table">
-              <thead className="table-dark">
+            {/* row start*/}
+            <div className="row p-2"></div>
+            <div className="col-md-12 table-responsive">
+              <table className="table">
+                <thead className="table-dark">
                 <tr>
                   <th scope="col">Summary</th>
                   <th scope="col">Category</th>
                   <th scope="col">SubCategory</th>
                   {isManagerAdminLogin(loggedInUserData) && (
-                    <th scope="col">Company</th>
+                      <th scope="col">Company</th>
                   )}
                   {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                    <th scope="col">Site</th>
+                      <th scope="col">Site</th>
                   )}
                   <th scope="col">Start Date</th>
                   <th scope="col">End date</th>
                   <th scope="col">Status</th>
                   <th scope="col">Action</th>
                 </tr>
-              </thead>
-              <tbody>
+                </thead>
+                <tbody>
                 {!isLoading && currentContracts?.length === 0 && (
-                  <tr>
-                    <td>No Contracts Found</td>
-                  </tr>
+                    <tr>
+                      <td>No Contracts Found</td>
+                    </tr>
                 )}
                 {isLoading && (
-                  <tr>
-                    <td colSpan={8} align="center">
-                      <CircularProgress />
-                    </td>
-                  </tr>
+                    <tr>
+                      <td colSpan={8} align="center">
+                        <CircularProgress />
+                      </td>
+                    </tr>
                 )}
                 {currentContracts?.map((itm) => (
-                  <tr key={itm?.projectContractId}>
-                    <td>
+                    <tr key={itm?.projectContractId}>
+                      <td>
                       <span
-                        onClick={() => openContractDetail(itm)}
-                        className="text-primary cursor"
+                          onClick={() => openContractDetail(itm)}
+                          className="text-primary cursor"
                       >
                         {itm?.summary}
                       </span>
-                    </td>
-                    <td>{itm?.category}</td>
-                    <td>{itm?.subCategory}</td>
-                    {isManagerAdminLogin(loggedInUserData) && (
-                      <td>{itm?.contractorCompanyName}</td>
-                    )}
-                    {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                      <td>{itm?.siteName}</td>
-                    )}
-                    <td>
-                      {itm?.startDate
-                        ? moment(itm?.startDate).format("DD-MM-YYYY")
-                        : "-"}
-                    </td>
-                    <td>
-                      {itm?.endDate
-                        ? moment(itm?.endDate).format("DD-MM-YYYY")
-                        : "-"}
-                    </td>
-                    <td>
-                      <ChipComponent status={itm?.status} />
-                    </td>
-                    <td>
-                      <Tooltip title={`View ${itm?.summary}`} arrow>
-                        <button
-                          className="btn btn-sm btn-light"
-                          onClick={() => {
-                            openContractDetail(itm);
-                          }}
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>{" "}
-                      </Tooltip>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>{itm?.category}</td>
+                      <td>{itm?.subCategory}</td>
+                      {isManagerAdminLogin(loggedInUserData) && (
+                          <td>{itm?.contractorCompanyName}</td>
+                      )}
+                      {loggedInUserData?.role === ROLE.CONTRACTOR && (
+                          <td>{itm?.siteName}</td>
+                      )}
+                      <td>
+                        {itm?.startDate
+                            ? moment(itm?.startDate).format("DD-MM-YYYY")
+                            : "-"}
+                      </td>
+                      <td>
+                        {itm?.endDate
+                            ? moment(itm?.endDate).format("DD-MM-YYYY")
+                            : "-"}
+                      </td>
+                      <td>
+                        <ChipComponent status={itm?.status} />
+                      </td>
+                      <td>
+                        <Tooltip title={`View ${itm?.summary}`} arrow>
+                          <button
+                              className="btn btn-sm btn-light"
+                              onClick={() => {
+                                openContractDetail(itm);
+                              }}
+                          >
+                            <i className="fas fa-eye"></i>
+                          </button>
+                        </Tooltip>
+                        {isManagerAdminLogin(loggedInUserData) && (
+                            <Tooltip title="Delete" arrow>
+                              <button
+                                  className="btn btn-sm btn-light text-danger ms-1"
+                                  onClick={() => handleDeleteContract(itm)}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </Tooltip>
+                        )}
+                      </td>
+                    </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          {/* row end*/}
-          <div className="row">
-            <Pagination
-              totalPages={Math.ceil(
-                filteredContractList.length / contractsPerPage
-              )}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
+                </tbody>
+              </table>
+            </div>
+            {/* row end*/}
+            <div className="row">
+              <Pagination
+                  totalPages={Math.ceil(
+                      filteredContractList.length / contractsPerPage
+                  )}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </Fragment>
+      </Fragment>
   );
 };
 const mapStateToProps = (state) => ({

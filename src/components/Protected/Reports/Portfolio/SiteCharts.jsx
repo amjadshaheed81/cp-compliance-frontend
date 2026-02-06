@@ -17,11 +17,12 @@ import { formatToNumber } from "../../../../utils/formatToCurrency";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const SiteCharts = ({
-  siteChart,
-  sites,
-  setSiteChart,
-  siteSelectedForGlobal,
-}) => {
+                      siteChart,
+                      sites,
+                      setSiteChart,
+                      siteSelectedForGlobal,
+                      loggedInUserData,
+                    }) => {
   const [state, setState] = useState({
     selectedArea: "",
     isIndividual: false,
@@ -56,49 +57,66 @@ const SiteCharts = ({
     getUsers();
   }, []);
   const areaOption = sites.filter(
-    (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
+      (obj1, i, arr) => arr.findIndex((obj2) => obj2.area === obj1.area) === i
   );
   const getUsers = async () => {
     const url = `/api/user/all`;
     const data = await get(url);
     setUsers(data?.users);
     setUsersChart(
-      getUniqueSitesWithUserCount(
-        data?.users,
-        sites,
-        state.selectedArea,
-        true,
-        siteSelectedForGlobal
-      )
+        getUniqueSitesWithUserCount(
+            data?.users,
+            sites,
+            state.selectedArea,
+            true,
+            siteSelectedForGlobal
+        )
     );
   };
   useEffect(() => {
     setUsersChart(
-      getUniqueSitesWithUserCount(
-        users,
-        sites,
-        state.isIndividual ? "" : state.selectedArea,
-        state.isIndividual ? false : true,
-        siteSelectedForGlobal
-      )
+        getUniqueSitesWithUserCount(
+            users,
+            sites,
+            state.isIndividual ? "" : state.selectedArea,
+            state.isIndividual ? false : true,
+            siteSelectedForGlobal
+        )
     );
   }, [state.selectedArea, state.isIndividual]);
   useEffect(() => {
-    if (sites) {
-      setSiteChart({
-        totalSites: sites?.length,
-        openSites: sites?.filter(
-          (itm) => String(itm.status).toLowerCase() === "open"
-        )?.length,
-        soldSites: sites?.filter(
-          (itm) => String(itm.status).toLowerCase() === "sold"
-        )?.length,
-        closedSites: sites?.filter(
-          (itm) => String(itm.status).toLowerCase() === "closed"
-        )?.length,
-      });
-    }
-  }, [sites]);
+    if (!sites) return;
+    const taggedIds = loggedInUserData?.taggedSites?.map((itm) =>
+        Number(itm?.id ?? itm?.siteId)
+    ).filter((id) => !Number.isNaN(id));
+    const sitesForUser =
+        taggedIds?.length > 0
+            ? sites.filter((s) => taggedIds.includes(Number(s?.siteId)))
+            : sites;
+    const filteredSites = sitesForUser.filter(
+        (site) =>
+            (!state.selectedArea || site.area === state.selectedArea) &&
+            (!state.isIndividual ||
+                (siteSelectedForGlobal &&
+                    (site.siteId === siteSelectedForGlobal.siteId ||
+                        site.siteName === siteSelectedForGlobal.siteName)))
+    );
+    setSiteChart({
+      totalSites: filteredSites?.length ?? 0,
+      openSites:
+          filteredSites?.filter(
+              (itm) => String(itm.status).toLowerCase() === "open"
+          )?.length ?? 0,
+      soldSites:
+          filteredSites?.filter(
+              (itm) => String(itm.status).toLowerCase() === "sold"
+          )?.length ?? 0,
+      closedSites:
+          filteredSites?.filter(
+              (itm) => String(itm.status).toLowerCase() === "closed"
+          )?.length ?? 0,
+    });
+  }, [sites, state.selectedArea, state.isIndividual, siteSelectedForGlobal, loggedInUserData?.taggedSites]);
   useEffect(() => {
     setChartData({
       labels: ["Open", "Closed", "Sold"],
@@ -117,65 +135,65 @@ const SiteCharts = ({
     });
   }, [siteChart]);
   return (
-    <div className="row pt-4 pb-4">
-      <div className="col-md-4 fs-5">
-        Sites By Status{" "}
-        {/* <span class="badge bg-light text-primary">
+      <div className="row pt-4 pb-4">
+        <div className="col-md-4 fs-5">
+          Sites By Status{" "}
+          {/* <span class="badge bg-light text-primary">
           Total Sites: {siteChart?.totalSites}
         </span> */}
-        <div>
-          <TotalSites
-            open={siteChart?.openSites || 0}
-            close={siteChart?.closedSites || 0}
-            sold={siteChart?.soldSites || 0}
-          />
-        </div>
-      </div>
-      <div className="col-md-8 fs-5">
-        <div className="row" style={{ height: "auto" }}>
-          <div className="col-md-4 col-sm-4 mt-2">
-            <select
-              name="area"
-              className="form-control form-select"
-              id="area"
-              disabled={state.isIndividual}
-              onChange={handleAreaChange}
-              value={state.selectedArea}
-            >
-              <option value="">All Sites</option>
-              {SiteArea?.map((itm) => (
-                <option value={itm}>{itm}</option>
-              ))}
-            </select>
+          <div>
+            <TotalSites
+                open={siteChart?.openSites || 0}
+                close={siteChart?.closedSites || 0}
+                sold={siteChart?.soldSites || 0}
+            />
           </div>
-          <div className="col-md-4 col-sm-4 mt-2">
-            <div className="form-check form-switch">
-              <label
-                className="form-check-label"
-                htmlFor="flexSwitchCheckChecked"
+        </div>
+        <div className="col-md-8 fs-5">
+          <div className="row" style={{ height: "auto" }}>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <select
+                  name="area"
+                  className="form-control form-select"
+                  id="area"
+                  disabled={state.isIndividual}
+                  onChange={handleAreaChange}
+                  value={state.selectedArea}
               >
-                {"Individual"}
-              </label>
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="flexSwitchCheckChecked"
-                checked={state.isIndividual}
-                onChange={handleAllSitesToggle}
-              />
+                <option value="">All Sites</option>
+                {SiteArea?.map((itm) => (
+                    <option value={itm}>{itm}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4 col-sm-4 mt-2">
+              <div className="form-check form-switch">
+                <label
+                    className="form-check-label"
+                    htmlFor="flexSwitchCheckChecked"
+                >
+                  {"Individual"}
+                </label>
+                <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="flexSwitchCheckChecked"
+                    checked={state.isIndividual}
+                    onChange={handleAllSitesToggle}
+                />
+              </div>
             </div>
           </div>
-        </div>
-        Users Per Active Site &nbsp;
-        <span class="badge bg-light text-primary">
+          Users Per Active Site &nbsp;
+          <span class="badge bg-light text-primary">
           Total Users:{" "}
-          {state?.allSites ? formatToNumber(users?.length) : formatToNumber(userschart?.[0]?.totalUsers)}
+            {state?.allSites ? formatToNumber(users?.length) : formatToNumber(userschart?.[0]?.totalUsers)}
         </span>
-        <div>
-          <BarChart data={userschart} />
+          <div>
+            <BarChart data={userschart} />
+          </div>
         </div>
       </div>
-    </div>
   );
 };
 

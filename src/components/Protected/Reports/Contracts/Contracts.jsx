@@ -45,8 +45,8 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
   const currentContracts = filteredContractList?.slice(
-    indexOfFirstContract,
-    indexOfLastContract
+      indexOfFirstContract,
+      indexOfLastContract
   );
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -76,12 +76,18 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     }));
     getContractsByArea(e.target.value);
   };
+  const excludeTerminated = (list) =>
+      (list || []).filter(
+          (c) => String(c?.status).toLowerCase() !== "terminated"
+      );
+
   const getContractsByArea = async (area) => {
     showLoader("Please wait. we are collecting contracts details.");
     if (area) {
       const projects = await get(`/api/project/contracts?userId=${loggedInUserData?.id}&area=${area}`);
-      setFilteredContractList(projects?.projectContracts || []);
-      setContractList(projects?.projectContracts || []);
+      const list = excludeTerminated(projects?.projectContracts);
+      setFilteredContractList(list);
+      setContractList(list);
       hideLoader();
     } else {
       hideLoader();
@@ -116,14 +122,16 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     showLoader("Please wait. we are collecting contracts details.");
     if (isAllSites) {
       const projects = await get(`/api/project/contracts?userId=${loggedInUserData?.id}`);
-      setFilteredContractList(projects?.projectContracts || []);
-      setContractList(projects?.projectContracts || []);
+      const list = excludeTerminated(projects?.projectContracts);
+      setFilteredContractList(list);
+      setContractList(list);
     } else {
       const projects = await get(
-        `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
+          `/api/project/contracts?siteId=${siteSelectedForGlobal?.siteId}`
       );
-      setFilteredContractList(projects?.projectContracts || []);
-      setContractList(projects?.projectContracts || []);
+      const list = excludeTerminated(projects?.projectContracts);
+      setFilteredContractList(list);
+      setContractList(list);
     }
     hideLoader();
     setIsLoading(false);
@@ -146,17 +154,17 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
     const status = formData?.status;
     if (searchField || category || subCategory || status) {
       const list = contractList?.filter(
-        (x) =>
-          String(x?.summary)
-            .toLowerCase()
-            .includes(String(searchField).toLowerCase()) &&
-          String(x?.category)
-            .toLowerCase()
-            .includes(String(category).toLowerCase()) &&
-          String(x?.subCategory)
-            .toLowerCase()
-            .includes(String(subCategory).toLowerCase()) &&
-          String(x?.status).toLowerCase().includes(String(status).toLowerCase())
+          (x) =>
+              String(x?.summary)
+                  .toLowerCase()
+                  .includes(String(searchField).toLowerCase()) &&
+              String(x?.category)
+                  .toLowerCase()
+                  .includes(String(category).toLowerCase()) &&
+              String(x?.subCategory)
+                  .toLowerCase()
+                  .includes(String(subCategory).toLowerCase()) &&
+              String(x?.status).toLowerCase().includes(String(status).toLowerCase())
       );
       setCurrentPage(1); //calculateLastPageIndex(list?.length, contractsPerPage)
       setFilteredContractList(list);
@@ -167,18 +175,18 @@ const Contracts = ({ loggedInUserData, siteSelectedForGlobal }) => {
   const categoryChange = (value) => {
     const val = value;
     const subCategoryData = subCategory?.filter(
-      (itm) => itm?.attribite1 === val
+        (itm) => itm?.attribite1 === val
     );
     setSubCategoryList(subCategoryData);
   };
   return (
-    <Fragment>
-      <div className="">
+      <Fragment>
         <div className="">
-          <div className="d-flex bd-highlight">
-            <div className="pt-2 bd-highlight">
-              <div className="row">
-                {/* <div className="col-md-4 col-sm-4 mt-2">
+          <div className="">
+            <div className="d-flex bd-highlight">
+              <div className="pt-2 bd-highlight">
+                <div className="row">
+                  {/* <div className="col-md-4 col-sm-4 mt-2">
                   <input
                     type="text"
 autoComplete="off"
@@ -190,35 +198,35 @@ autoComplete="off"
                     onChange={handleInputChange}
                   />
                 </div> */}
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    className="form-control form-select"
-                    id="startMonth"
-                    name="category"
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Category</option>
-                    {category?.map((itm) => (
-                      <option value={itm?.lovValue}>{itm?.lovValue}</option>
-                    ))}
-                  </select>
-                </div>
-                {subCategoryList?.length > 0 && (
                   <div className="col-md-4 col-sm-4 mt-2">
                     <select
-                      name="subCategory"
-                      className="form-control form-select"
-                      id="subCategory"
-                      onChange={handleInputChange}
+                        className="form-control form-select"
+                        id="startMonth"
+                        name="category"
+                        onChange={handleInputChange}
                     >
-                      <option value="">Sub Category</option>
-                      {subCategoryList?.map((itm) => (
-                        <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                      <option value="">Category</option>
+                      {category?.map((itm) => (
+                          <option value={itm?.lovValue}>{itm?.lovValue}</option>
                       ))}
                     </select>
                   </div>
-                )}
-                {/* <div className="col-md-4 col-sm-4 mt-2">
+                  {subCategoryList?.length > 0 && (
+                      <div className="col-md-4 col-sm-4 mt-2">
+                        <select
+                            name="subCategory"
+                            className="form-control form-select"
+                            id="subCategory"
+                            onChange={handleInputChange}
+                        >
+                          <option value="">Sub Category</option>
+                          {subCategoryList?.map((itm) => (
+                              <option value={itm?.lovValue}>{itm?.lovValue}</option>
+                          ))}
+                        </select>
+                      </div>
+                  )}
+                  {/* <div className="col-md-4 col-sm-4 mt-2">
                   <select
                     name="status"
                     className="form-control form-select"
@@ -231,119 +239,119 @@ autoComplete="off"
                     <option value="Terminated">Terminated</option>
                   </select>
                 </div> */}
-                <div className="col-md-4 col-sm-4 mt-2">
-                  <select
-                    name="area"
-                    className="form-control form-select"
-                    id="area"
-                    disabled={state.isIndividual}
-                    value={state.selectedArea}
-                    onChange={handleAreaChange}
-                  >
-                    <option value="">All Sites</option>
-                    {SiteArea?.map((itm) => (
-                      <option value={itm.replace('&','%26')}>{itm}</option>
-                    ))}
-                  </select>
+                  <div className="col-md-4 col-sm-4 mt-2">
+                    <select
+                        name="area"
+                        className="form-control form-select"
+                        id="area"
+                        disabled={state.isIndividual}
+                        value={state.selectedArea}
+                        onChange={handleAreaChange}
+                    >
+                      <option value="">All Sites</option>
+                      {SiteArea?.map((itm) => (
+                          <option value={itm.replace('&','%26')}>{itm}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
+                  <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
+                    <Switch
+                        checked={state.isIndividual}
+                        onChange={handleChange}
+                        inputProps={{ "aria-label": "controlled" }}
+                    />
+                    <label>Individual Site</label>
+                  </div>
+                  {/* )} */}
                 </div>
-                {/* {loggedInUserData?.role === ROLE.CONTRACTOR && ( */}
-                <div className="col-md-4 col-sm-4 mt-2 p-0 m-0">
-                  <Switch
-                    checked={state.isIndividual}
-                    onChange={handleChange}
-                    inputProps={{ "aria-label": "controlled" }}
-                  />
-                  <label>Individual Site</label>
-                </div>
-                {/* )} */}
               </div>
             </div>
-          </div>
-          {/* row start*/}
-          <div className="row p-2 text-center" style={{ maxHeight: "400px" }}>
-            <PieChartContracts data={filteredContractList} />
-          </div>
-          <div className="col-md-12 table-responsive">
-            <table className="table">
-              <thead className="table-dark">
+            {/* row start*/}
+            <div className="row p-2 text-center" style={{ maxHeight: "400px" }}>
+              <PieChartContracts data={filteredContractList} />
+            </div>
+            <div className="col-md-12 table-responsive">
+              <table className="table">
+                <thead className="table-dark">
                 <tr>
                   <th scope="col">Summary</th>
                   <th scope="col">Site Name</th>
                   <th scope="col">Category</th>
                   <th scope="col">SubCategory</th>
                   {isManagerAdminLogin(loggedInUserData) && (
-                    <th scope="col">Company</th>
+                      <th scope="col">Company</th>
                   )}
                   {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                    <th scope="col">Site</th>
+                      <th scope="col">Site</th>
                   )}
                   <th scope="col">Start Date</th>
                   <th scope="col">End date</th>
                   <th scope="col">Cost</th>
                   <th scope="col">Status</th>
                 </tr>
-              </thead>
-              <tbody>
+                </thead>
+                <tbody>
                 {!isLoading && currentContracts?.length === 0 && (
-                  <tr>
-                    <td>No Contracts Found</td>
-                  </tr>
+                    <tr>
+                      <td>No Contracts Found</td>
+                    </tr>
                 )}
                 {isLoading && (
-                  <tr>
-                    <td colSpan={8} align="center">
-                      <CircularProgress />
-                    </td>
-                  </tr>
+                    <tr>
+                      <td colSpan={8} align="center">
+                        <CircularProgress />
+                      </td>
+                    </tr>
                 )}
                 {currentContracts?.map((itm) => (
-                  <tr key={itm?.projectContractId}>
-                    <td>
-                      <span>{itm?.summary}</span>
-                    </td>
-                    <td>
-                      <span>{itm?.siteName}</span>
-                    </td>
-                    <td>{itm?.category}</td>
-                    <td>{itm?.subCategory}</td>
-                    {isManagerAdminLogin(loggedInUserData) && (
-                      <td>{itm?.contractorCompanyName}</td>
-                    )}
-                    {loggedInUserData?.role === ROLE.CONTRACTOR && (
-                      <td>{itm?.siteName}</td>
-                    )}
-                    <td>
-                      {itm?.startDate
-                        ? moment(itm?.startDate).format("DD-MM-YYYY")
-                        : "-"}
-                    </td>
-                    <td>
-                      {itm?.endDate
-                        ? moment(itm?.endDate).format("DD-MM-YYYY")
-                        : "-"}
-                    </td>
-                    <td>{formatToCurrency(itm?.budget)}</td>
-                    <td>
-                      <ChipComponent status={itm?.status} />
-                    </td>
-                  </tr>
+                    <tr key={itm?.projectContractId}>
+                      <td>
+                        <span>{itm?.summary}</span>
+                      </td>
+                      <td>
+                        <span>{itm?.siteName}</span>
+                      </td>
+                      <td>{itm?.category}</td>
+                      <td>{itm?.subCategory}</td>
+                      {isManagerAdminLogin(loggedInUserData) && (
+                          <td>{itm?.contractorCompanyName}</td>
+                      )}
+                      {loggedInUserData?.role === ROLE.CONTRACTOR && (
+                          <td>{itm?.siteName}</td>
+                      )}
+                      <td>
+                        {itm?.startDate
+                            ? moment(itm?.startDate).format("DD-MM-YYYY")
+                            : "-"}
+                      </td>
+                      <td>
+                        {itm?.endDate
+                            ? moment(itm?.endDate).format("DD-MM-YYYY")
+                            : "-"}
+                      </td>
+                      <td>{formatToCurrency(itm?.budget)}</td>
+                      <td>
+                        <ChipComponent status={itm?.status} />
+                      </td>
+                    </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          {/* row end*/}
-          <div className="row">
-            <Pagination
-              totalPages={Math.ceil(
-                filteredContractList.length / contractsPerPage
-              )}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
+                </tbody>
+              </table>
+            </div>
+            {/* row end*/}
+            <div className="row">
+              <Pagination
+                  totalPages={Math.ceil(
+                      filteredContractList.length / contractsPerPage
+                  )}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </Fragment>
+      </Fragment>
   );
 };
 const mapStateToProps = (state) => ({
