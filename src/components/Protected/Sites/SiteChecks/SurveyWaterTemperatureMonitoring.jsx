@@ -22,16 +22,16 @@ import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
 
 const SurveyWaterTemperatureMonitoring = ({
-  checkId,
-  siteAssets,
-  siteLayout,
-  getSiteAssets,
-  siteSelectedForGlobal,
-  getSiteLayout,
-  loggedInUserData,
-  repeatFrequency,
-  leadUserID
-}) => {
+                                            checkId,
+                                            siteAssets,
+                                            siteLayout,
+                                            getSiteAssets,
+                                            siteSelectedForGlobal,
+                                            getSiteLayout,
+                                            loggedInUserData,
+                                            repeatFrequency,
+                                            leadUserID
+                                          }) => {
   const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
   const [tempratureoptions, settempratureoptions] = useState([]);
@@ -44,6 +44,7 @@ const SurveyWaterTemperatureMonitoring = ({
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -58,15 +59,15 @@ const SurveyWaterTemperatureMonitoring = ({
     const outlettypes = await get("/api/lov/SITE_CHECK_SURVEY_OUTLET_TYPE");
     setoutletoptions(outlettypes?.map((l) => l.lovValue));
     const tempratureoptionstypes = await get(
-      "/api/lov/SITE_CHECK_SURVEY_TEMPRATURE"
+        "/api/lov/SITE_CHECK_SURVEY_TEMPRATURE"
     );
     settempratureoptions(tempratureoptionstypes?.map((l) => l.lovValue));
     const normruntimetypes = await get(
-      "/api/lov/SITE_CHECK_SURVEY_NORM_RUN_TIME"
+        "/api/lov/SITE_CHECK_SURVEY_NORM_RUN_TIME"
     );
     setnormruntime(normruntimetypes?.map((l) => l.lovValue));
     let data = await get("/api/site-check/water-outlet-temp/" + checkId);
-    data = data.filter((d) => d.assetId);
+    data = data.filter(d=> d.assetId);
     if (data.length > 0) {
       data.forEach((_) => {
         _.completed = true;
@@ -82,21 +83,19 @@ const SurveyWaterTemperatureMonitoring = ({
   };
 
   const removeduplciate = (array) => {
+
     const latestRecordsMap = {};
 
-    array.forEach((item) => {
-      if (
-        !latestRecordsMap[item.assetId] ||
-        new Date(item.r1Date) > new Date(latestRecordsMap[item.assetId].r1Date)
-      ) {
+    array.forEach(item => {
+      if (!latestRecordsMap[item.assetId] || new Date(item.r1Date) > new Date(latestRecordsMap[item.assetId].r1Date)) {
         latestRecordsMap[item.assetId] = item;
       }
     });
 
     const latestRecords = Object.values(latestRecordsMap);
 
-    latestRecords.sort((a, b) => Number(a.sortOrder) - Number(b.sortOrder));
-    return latestRecords;
+    latestRecords.sort((a, b) =>  Number(a.sortOrder) - Number(b.sortOrder));
+    return  latestRecords;
 
     const seen = new Map();
 
@@ -114,15 +113,15 @@ const SurveyWaterTemperatureMonitoring = ({
   const isDuplicate = (newItem) => {
     const completedItems = formData.filter((item) => item.completed);
     return (
-      completedItems.filter(
-        (i) =>
-          newItem?.assetId === i?.assetId &&
-          newItem?.floor === i?.floor &&
-          newItem?.normalRunTime === i?.normalRunTime &&
-          newItem?.outletType === i?.outletType &&
-          newItem?.temperature === i?.temperature &&
-          newItem?.room === i?.room
-      )?.length > 0
+        completedItems.filter(
+            (i) =>
+                newItem?.assetId === i?.assetId &&
+                newItem?.floor === i?.floor &&
+                newItem?.normalRunTime === i?.normalRunTime &&
+                newItem?.outletType === i?.outletType &&
+                newItem?.temperature === i?.temperature &&
+                newItem?.room === i?.room
+        )?.length > 0
     );
   };
 
@@ -139,10 +138,10 @@ const SurveyWaterTemperatureMonitoring = ({
   const getName = (idx) => {
     let res = "";
     const floor = siteLayout.filter(
-      (s) => String(s.id) === String(formData[idx]?.floor)
+        (s) => String(s.id) === String(formData[idx]?.floor)
     );
     const room = siteLayout.filter(
-      (s) => String(s.id) === String(formData[idx]?.room)
+        (s) => String(s.id) === String(formData[idx]?.room)
     );
     if (floor.length > 0) {
       res = res + floor[0].nodeName;
@@ -159,9 +158,11 @@ const SurveyWaterTemperatureMonitoring = ({
 
   const getNodeName = (id) => {
     let res = "";
-    const node = siteLayout.filter((s) => String(s.id) === String(id));
+    const node = siteLayout.filter(
+        (s) => String(s.id) === String(id)
+    );
 
-    return node?.[0]?.nodeName ?? id;
+    return node?.[0]?.nodeName??id ;
   };
 
   const handleInputChange = (e, idx) => {
@@ -180,7 +181,7 @@ const SurveyWaterTemperatureMonitoring = ({
     const { name, value } = e.target;
     const udata = {
       ...formData2,
-      [name]: value,
+      [name]: value
     };
     setFormData2(udata);
   };
@@ -191,9 +192,9 @@ const SurveyWaterTemperatureMonitoring = ({
     if (!form.checkValidity()) {
       form.reportValidity();
     }
-    let i = 0;
+    let i =0;
     for (const data of formData) {
-      i = i + 1;
+      i=i+1;
       if (!data.completed || data.update) {
         if (isDuplicate(data) && !data.update) {
           toast.error("Duplicate data!!!");
@@ -209,60 +210,50 @@ const SurveyWaterTemperatureMonitoring = ({
           data.r2Date = data.r1Date;
           data.r3Date = data.r1Date;
         }
-        if (data.assetId && data.reading1 && data.reading2 && data.reading3) {
+        if(data.assetId && data.reading1 && data.reading2 && data.reading3) {
           await post("/api/site-check/water-outlet-temp", data);
 
           break;
         }
+
+
       }
     }
     toast.success("Water outlet temperature data saved.");
     //getSurvey();
   };
 
-    const addSiteCheckSurvey2 = async (event) => {
-        event.preventDefault();
-        const form = event.target;
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+  const addSiteCheckSurvey2 = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+    }
+    for (const data of formData) {
+      if (!data.completed && (data.update || data.new )) {
+        if (isDuplicate(data) && data.new) {
+          toast.error("Duplicate data!!!");
+          return;
+        }
+        data.checkId = checkId;
+        data.status = "Open";
+        if (data.update) {
+          data.id = undefined;
+        }
+        if (data.r1Date) {
+          //data.r1Date = new Date(data.r1Date.toISOString().slice(0, 10));
+          data.r2Date = data.r1Date;
+          data.r3Date = data.r1Date;
+        }
+        if(data.assetId) {
+          await post("/api/site-check/water-outlet-temp", data);
         }
 
-        try {
-            for (const data of formData) {
-                // Skip if no assetId (incomplete record)
-                if (!data.assetId) continue;
-
-                // Prepare the data to send
-                const payload = {
-                    ...data,
-                    checkId: checkId,
-                    status: "Open",
-                    r2Date: data.r1Date,
-                    r3Date: data.r1Date
-                };
-
-                // Remove unnecessary fields
-                delete payload.new;
-                delete payload.update;
-                delete payload.completed;
-
-                if (data.id) {
-                    // Update existing record
-                    await put("/api/site-check/water-outlet-temp", payload);
-                } else {
-                    // Create new record
-                    await post("/api/site-check/water-outlet-temp", payload);
-                }
-            }
-
-            toast.success("Water outlet temperature data saved.");
-            getSurvey();
-        } catch (error) {
-            console.error("Error saving data:", error);
-            toast.error("Failed to save data. Please try again.");
-        }
-    };
+      }
+    }
+    toast.success("Water outlet temperature data saved.");
+    getSurvey();
+  };
 
   const addReadingSave = (event) => {
     event.preventDefault();
@@ -272,31 +263,30 @@ const SurveyWaterTemperatureMonitoring = ({
       form.reportValidity();
     }
     const isReading1ok =
-      (formData?.[readingPop]?.temperature === "Hot" &&
-        Number(formData[readingPop]?.reading1) < 50) ||
-      (formData?.[readingPop]?.temperature === "Cold" &&
-        Number(formData[readingPop]?.reading1) > 20);
+        (formData?.[readingPop]?.temperature === "Hot" &&
+            Number(formData[readingPop]?.reading1) < 50) ||
+        (formData?.[readingPop]?.temperature === "Cold" &&
+            Number(formData[readingPop]?.reading1) > 20);
     const isReading2ok =
-      (formData?.[readingPop]?.temperature === "Hot" &&
-        Number(formData[readingPop]?.reading2) < 50) ||
-      (formData?.[readingPop]?.temperature === "Cold" &&
-        Number(formData[readingPop]?.reading2) > 20);
+        (formData?.[readingPop]?.temperature === "Hot" &&
+            Number(formData[readingPop]?.reading2) < 50) ||
+        (formData?.[readingPop]?.temperature === "Cold" &&
+            Number(formData[readingPop]?.reading2) > 20);
     const isReading3ok =
-      (formData?.[readingPop]?.temperature === "Hot" &&
-        Number(formData[readingPop]?.reading3) < 50) ||
-      (formData?.[readingPop]?.temperature === "Cold" &&
-        Number(formData[readingPop]?.reading3) > 20);
+        (formData?.[readingPop]?.temperature === "Hot" &&
+            Number(formData[readingPop]?.reading3) < 50) ||
+        (formData?.[readingPop]?.temperature === "Cold" &&
+            Number(formData[readingPop]?.reading3) > 20);
     if (!isReading1ok && !isReading2ok && !isReading3ok) {
       addSiteCheckSurvey(event);
+
     } else {
       addSiteCheckSurvey(event);
       const body = {
         type: "Survey",
         status: "Reported",
         observation: formData2.observation,
-        desc: `Surevy Water - Outlet Temprature - ${moment(new Date()).format(
-          "DD/MM/YYYY"
-        )}`,
+        desc: `Surevy Water - Outlet Temprature - ${moment(new Date()).format("DD/MM/YYYY")}`,
         requiredAction: formData2.requiredAction,
         riskScore: Number(formData2.likelihood) * Number(formData2.consequence),
         dueDate: new Date(),
@@ -304,11 +294,11 @@ const SurveyWaterTemperatureMonitoring = ({
         userId: loggedInUserData?.id,
         assignedTo: leadUserID,
       }
-    put("/api/site/actions", body);
-    } 
+      put("/api/site/actions", body);
+    }
     setReadingPop((prev) => {
       const nextIndex = prev < formData.length - 1 ? prev + 1 : null;
-      if (nextIndex === null) {
+      if(nextIndex === null) {
         setReadingPop(null);
         setReadingPopShow(false);
         getSurvey();
@@ -317,14 +307,7 @@ const SurveyWaterTemperatureMonitoring = ({
       setFormData((prevData) => {
         const updatedData = [...prevData];
         updatedData[prev].update = false;
-        updatedData[nextIndex] = {
-          ...updatedData[nextIndex],
-          reading1: "",
-          reading2: "",
-          reading3: "",
-          r1Date: new Date().toISOString(),
-          update: true,
-        };
+        updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: new Date().toISOString(), update: true };
         return updatedData;
       });
       return nextIndex;
@@ -337,165 +320,144 @@ const SurveyWaterTemperatureMonitoring = ({
 
   const dateFormatFromFrequency = (date) => {
     let daysToAdd = 0;
-    if (repeatFrequency === "Daily") {
-      daysToAdd = 1;
-    } else if (repeatFrequency === "Weekly") {
-      daysToAdd = 7;
-    } else if (repeatFrequency === "Monthly") {
-      daysToAdd = 30;
-    } else if (repeatFrequency === "Yearly") {
-      daysToAdd = 365;
+    if(repeatFrequency === "Daily") {
+      daysToAdd = 1
+    } else  if(repeatFrequency === "Weekly") {
+      daysToAdd = 7
+    } else if(repeatFrequency === "Monthly") {
+      daysToAdd = 30
+    } else if(repeatFrequency === "Yearly") {
+      daysToAdd = 365
     }
-    return moment(date, "YYYY-MM-DD")
-      .add("days", daysToAdd)
-      .format("DD/MM/YYYY");
+    return moment(date, "YYYY-MM-DD").add('days', daysToAdd).format("DD/MM/YYYY");
   };
 
-  const isRed1 =
-    formData[readingPop]?.reading1?.length === 0
-      ? false
-      : (formData?.[readingPop]?.temperature === "Hot" &&
-          Number(formData[readingPop]?.reading1) < 50) ||
-        (formData?.[readingPop]?.temperature === "Cold" &&
-          Number(formData[readingPop]?.reading1) > 20);
+  const isRed1 = formData[readingPop]?.reading1?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading1) <50) ||
+      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading1) > 20);
 
-  const isRed2 =
-    formData[readingPop]?.reading2?.length === 0
-      ? false
-      : (formData?.[readingPop]?.temperature === "Hot" &&
-          Number(formData[readingPop]?.reading2) < 50) ||
-        (formData?.[readingPop]?.temperature === "Cold" &&
-          Number(formData[readingPop]?.reading2) > 20);
+  const isRed2 = formData[readingPop]?.reading2?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading2) <50) ||
+      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading2) > 20);
 
-  const isRed3 =
-    formData[readingPop]?.reading3?.length === 0
-      ? false
-      : (formData?.[readingPop]?.temperature === "Hot" &&
-          Number(formData[readingPop]?.reading3) < 50) ||
-        (formData?.[readingPop]?.temperature === "Cold" &&
-          Number(formData[readingPop]?.reading3) > 20);
+  const isRed3 = formData[readingPop]?.reading3?.length === 0 ? false : (formData?.[readingPop]?.temperature === "Hot" && Number(formData[readingPop]?.reading3) <50) ||
+      (formData?.[readingPop]?.temperature === "Cold" && Number(formData[readingPop]?.reading3) > 20);
 
-  const isRed =
-    (isRed1 || isRed2 || isRed3) &&
-    formData[readingPop]?.reading1?.length > 0 &&
-    formData[readingPop]?.reading2?.length > 0 &&
-    formData[readingPop]?.reading3?.length > 0;
+  const isRed =  (isRed1 || isRed2 || isRed3) && formData[readingPop]?.reading1?.length > 0 && formData[readingPop]?.reading2?.length > 0
+      && formData[readingPop]?.reading3?.length > 0
+
 
   return (
-    <>
-      <Dialog
-        open={readingPopShow}
-        onClose={() => {
-          setReadingPop(null);
-          setReadingPopShow(false);
-          getSurvey();
-        }}
-        maxWidth="lg"
-        fullWidth
-      >
-        <form onSubmit={addReadingSave}>
-          <DialogTitle>
-            Add Reading{" "}
-            {formData[readingPop]?.assetId
-              ? "(" +
-                siteAssets
-                  .filter((a) => a.assetId == formData[readingPop]?.assetId)
-                  .map(
-                    (option) =>
-                      option.assetId +
-                      " " +
-                      option.assetName +
-                      " - " +
-                      option.category
-                  )[0] +
-                ")"
-              : ""}
-          </DialogTitle>
-          <DialogContent dividers>
-            <Fragment>
-              <Grid container>
-                <>
-                  <Grid sm={4}>
-                    <label htmlFor="outletType">Outlet Type</label>
-                    <input
-                      style={{ maxWidth: "300px" }}
-                      type="text"
-                      autoComplete="off"
-                      readOnly
-                      onFocus={(e) => e.target.removeAttribute("readonly")}
-                      className="form-control"
-                      id="outletType"
-                      disabled
-                      value={formData?.[readingPop]?.outletType}
-                    />
-                  </Grid>
-                  <Grid sm={4}>
-                    <label htmlFor="outletType">Temperature</label>
-                    <input
-                      style={{ maxWidth: "300px" }}
-                      type="text"
-                      autoComplete="off"
-                      readOnly
-                      onFocus={(e) => e.target.removeAttribute("readonly")}
-                      className="form-control"
-                      id="outletType"
-                      disabled
-                      value={formData?.[readingPop]?.temperature}
-                    />
-                  </Grid>
-                  <Grid sm={4}>
-                    <label htmlFor="outletType">Location</label>
-                    <input
-                      style={{ maxWidth: "300px" }}
-                      type="text"
-                      autoComplete="off"
-                      readOnly
-                      onFocus={(e) => e.target.removeAttribute("readonly")}
-                      className="form-control"
-                      id="outletType"
-                      disabled
-                      value={getName(readingPop)}
-                    />
-                  </Grid>
-                  <Grid sm={12}>
-                    <div
-                      className="table-responsive"
-                      style={{ marginTop: "30px" }}
-                    >
-                      <table className="table table-bordered f-11">
-                        <thead className="table-dark">
+      <>
+        <Dialog
+            open={readingPopShow}
+            onClose={() => {
+              setReadingPop(null);
+              setReadingPopShow(false)
+              getSurvey()
+            }}
+            maxWidth="lg"
+            fullWidth
+        >
+          <form onSubmit={addReadingSave}>
+            <DialogTitle>
+              Add Reading{" "}
+              {formData[readingPop]?.assetId
+                  ? "(" +
+                  siteAssets
+                      .filter((a) => a.assetId == formData[readingPop]?.assetId)
+                      .map(
+                          (option) => option.assetId + " "+ option.assetName + " - " + option.category
+                      )[0] +
+                  ")"
+                  : ""}
+            </DialogTitle>
+            <DialogContent dividers>
+              <Fragment>
+                <Grid container>
+                  <>
+                    <Grid sm={4}>
+                      <label htmlFor="outletType">Outlet Type</label>
+                      <input
+                          style={{ maxWidth: "300px" }}
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="outletType"
+                          disabled
+                          value={formData?.[readingPop]?.outletType}
+                      />
+                    </Grid>
+                    <Grid sm={4}>
+                      <label htmlFor="outletType">Temperature</label>
+                      <input
+                          style={{ maxWidth: "300px" }}
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="outletType"
+                          disabled
+                          value={formData?.[readingPop]?.temperature}
+                      />
+                    </Grid>
+                    <Grid sm={4}>
+                      <label htmlFor="outletType">Location</label>
+                      <input
+                          style={{ maxWidth: "300px" }}
+                          type="text"
+                          autoComplete="off"
+                          readOnly
+                          onFocus={(e) => e.target.removeAttribute("readonly")}
+                          className="form-control"
+                          id="outletType"
+                          disabled
+                          value={getName(readingPop)}
+                      />
+                    </Grid>
+                    <Grid sm={12}>
+                      <div
+                          className="table-responsive"
+                          style={{ marginTop: "30px" }}
+                      >
+                        <table className="table table-bordered f-11">
+                          <thead className="table-dark">
                           <tr>
                             <th></th>
                             <th>Test Date</th>
                             <th>Reading</th>
                           </tr>
-                        </thead>
-                        <tbody>
+                          </thead>
+                          <tbody>
                           <tr>
                             <td>
                               Reading 1{" "}
                               <b style={{ color: "red" }}> 30 seconds </b>
                             </td>
-                            <td rowSpan={3} style={{ verticalAlign: "middle" }}>
+                            <td
+                                rowSpan={3}
+                                style={{ verticalAlign: "middle" }}
+                            >
                               <DatePicker
-                                value={
-                                  formData?.[readingPop]?.update
-                                    ? formData?.[readingPop]?.r1Date
-                                    : moment()
-                                }
-                                onChange={(date) => {
-                                  const uformData = [...formData];
-                                  const udata = {
-                                    ...formData[readingPop],
-                                    r1Date: new Date(
-                                      date.getTime() -
-                                        date.getTimezoneOffset() * 60000
-                                    ).toISOString(),
-                                    update: true,
-                                  };
-                                  uformData[readingPop] = udata;
-                                  setFormData(uformData);
-                                }}
+                                  value={
+                                    formData?.[readingPop]?.update
+                                        ? formData?.[readingPop]?.r1Date
+                                        : moment()
+                                  }
+                                  onChange={(date) => {
+                                    const uformData = [...formData];
+                                    const udata = {
+                                      ...formData[readingPop],
+                                      r1Date: new Date(
+                                          date.getTime() -
+                                          date.getTimezoneOffset() * 60000
+                                      ).toISOString(),
+                                      update: true,
+                                    };
+                                    uformData[readingPop] = udata;
+                                    setFormData(uformData);
+                                  }}
                               />
                               {/* // <input
                               //   type="date"
@@ -507,42 +469,44 @@ const SurveyWaterTemperatureMonitoring = ({
                             </td>
                             <td>
                               <input
-                                type="number"
-                                onWheel={(e) => e.target.blur()}
-                                className="form-control"
-                                name="reading1"
-                                value={formData?.[readingPop]?.reading1 || ""}
-                                required
-                                style={{
-                                  color: isRed1 ? "red" : "green",
-                                  fontWeight: "600",
-                                }}
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                  type="number"
+                                  onWheel={(e) => e.target.blur()}
+                                  className="form-control"
+                                  name="reading1"
+                                  value={formData?.[readingPop]?.reading1 || ""}
+                                  required
+                                  style={{
+                                    color:
+                                        isRed1 ? "red" : "green",
+                                    fontWeight: "600",
+                                  }}
+                                  onChange={(e) =>
+                                      handleInputChange(e, readingPop)
+                                  }
                               />
                             </td>
                           </tr>
                           <tr>
                             <td>
                               Reading 2{" "}
+
                               <b style={{ color: "red" }}> 60 seconds </b>
                             </td>
                             <td>
                               <input
-                                type="number"
-                                onWheel={(e) => e.target.blur()}
-                                className="form-control"
-                                name="reading2"
-                                required
-                                value={formData?.[readingPop]?.reading2 || ""}
-                                style={{
-                                  color: isRed2 ? "red" : "green",
-                                  fontWeight: "600",
-                                }}
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                  type="number"
+                                  onWheel={(e) => e.target.blur()}
+                                  className="form-control"
+                                  name="reading2"
+                                  required
+                                  value={formData?.[readingPop]?.reading2 || ""}
+                                  style={{
+                                    color:isRed2 ? "red" : "green",
+                                    fontWeight: "600",
+                                  }}
+                                  onChange={(e) =>
+                                      handleInputChange(e, readingPop)
+                                  }
                               />
                             </td>
                           </tr>
@@ -553,29 +517,29 @@ const SurveyWaterTemperatureMonitoring = ({
                             </td>
                             <td>
                               <input
-                                type="number"
-                                onWheel={(e) => e.target.blur()}
-                                required
-                                className="form-control"
-                                name="reading3"
-                                value={formData?.[readingPop]?.reading3 || ""}
-                                style={{
-                                  color: isRed3 ? "red" : "green",
-                                  fontWeight: "600",
-                                }}
-                                onChange={(e) =>
-                                  handleInputChange(e, readingPop)
-                                }
+                                  type="number"
+                                  onWheel={(e) => e.target.blur()}
+                                  required
+                                  className="form-control"
+                                  name="reading3"
+                                  value={formData?.[readingPop]?.reading3 || ""}
+                                  style={{
+                                    color:isRed3 ? "red" : "green",
+                                    fontWeight: "600",
+                                  }}
+                                  onChange={(e) =>
+                                      handleInputChange(e, readingPop)
+                                  }
                               />
                             </td>
                           </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </Grid>
-                </>
+                          </tbody>
+                        </table>
+                      </div>
+                    </Grid>
+                  </>
 
-                {/* {action && (
+                  {/* {action && (
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
                       Action
@@ -596,143 +560,142 @@ const SurveyWaterTemperatureMonitoring = ({
                     </Grid>
                   </Grid>
                 )} */}
-                {isRed && (
-                  <Grid item xs={12}>
-                    <Typography variant="h6" gutterBottom>
-                      Action
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={4}>
-                        <Grid item xs={12} sm={12}>
-                          <label htmlFor="consequence" name="consequence">
-                            Consequence
-                          </label>
-                          <select
-                            required
-                            className="form-control form-select"
-                            value={formData?.[readingPop]?.consequence}
-                            name="consequence"
-                            onChange={(e) => handleInputChange2(e)}
-                          >
-                            <option value="">Select </option>
-                            {[1, 2, 3, 4, 5].map((num) => (
-                              <option value={num}>{num} </option>
-                            ))}
-                          </select>
+                  {isRed && (
+                      <Grid item xs={12}>
+                        <Typography variant="h6" gutterBottom>
+                          Action
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={4}>
+                            <Grid item xs={12} sm={12}>
+                              <label htmlFor="consequence" name="consequence">
+                                Consequence
+                              </label>
+                              <select
+                                  required
+                                  className="form-control form-select"
+                                  value={formData?.[readingPop]?.consequence}
+                                  name="consequence"
+                                  onChange={(e) => handleInputChange2(e)}
+                              >
+                                <option value="">Select </option>
+                                {[1, 2, 3, 4, 5].map((num) => (
+                                    <option value={num}>{num} </option>
+                                ))}
+                              </select>
+                            </Grid>
+                            <Grid item xs={12} sm={12}>
+                              <label htmlFor="likelihood" name="likelihood">
+                                Likelihood
+                              </label>
+                              <select
+                                  required
+                                  className="form-control form-select"
+                                  name="likelihood"
+                                  value={formData?.[readingPop]?.likelihood}
+                                  onChange={(e) => handleInputChange2(e)}
+                              >
+                                <option value="">Select </option>
+                                {[1, 2, 3, 4, 5].map((num) => (
+                                    <option value={num}>{num} </option>
+                                ))}
+                              </select>
+                            </Grid>
+                          </Grid>
+                          <Grid item xs={12} sm={8}>
+                            <Box
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                p={2}
+                                mb={2}
+                                style={{
+                                  height: "290px",
+                                  marginTop: "-20px",
+                                }}
+                            >
+                              <img
+                                  src="/RiskScore.png"
+                                  alt="Risk Score Matrix"
+                                  style={{ width: "100%", height: "100%" }}
+                              />
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <label htmlFor="observation" name="observation">
+                              Observation
+                            </label>
+                            <textarea
+                                //disabled={quest[idx]?.completed}
+                                value={formData?.[readingPop]?.observation}
+                                name="observation"
+                                className="form-control"
+                                id="observation"
+                                rows="2"
+                                required
+                                onChange={(e) => handleInputChange2(e)}
+                                style={{
+                                  width: "100%",
+                                  padding: "10px",
+                                  margin: "8px 0",
+                                  borderRadius: "4px",
+                                  border: "1px solid #ccc",
+                                }}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <label htmlFor="requiredAction" name="requiredAction">
+                              Required Action
+                            </label>
+                            <textarea
+                                name="requiredAction"
+                                className="form-control"
+                                id="requiredAction"
+                                rows="2"
+                                value={formData?.[readingPop]?.requiredAction}
+                                required
+                                onChange={(e) => handleInputChange2(e)}
+                                style={{
+                                  width: "100%",
+                                  padding: "10px",
+                                  margin: "8px 0",
+                                  borderRadius: "4px",
+                                  border: "1px solid #ccc",
+                                }}
+                            />
+                          </Grid>
                         </Grid>
-                        <Grid item xs={12} sm={12}>
-                          <label htmlFor="likelihood" name="likelihood">
-                            Likelihood
-                          </label>
-                          <select
-                            required
-                            className="form-control form-select"
-                            name="likelihood"
-                            value={formData?.[readingPop]?.likelihood}
-                            onChange={(e) => handleInputChange2(e)}
-                          >
-                            <option value="">Select </option>
-                            {[1, 2, 3, 4, 5].map((num) => (
-                              <option value={num}>{num} </option>
-                            ))}
-                          </select>
-                        </Grid>
                       </Grid>
-                      <Grid item xs={12} sm={8}>
-                        <Box
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="center"
-                          p={2}
-                          mb={2}
-                          style={{
-                            height: "290px",
-                            marginTop: "-20px",
-                          }}
-                        >
-                          <img
-                            src="/RiskScore.png"
-                            alt="Risk Score Matrix"
-                            style={{ width: "100%", height: "100%" }}
-                          />
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <label htmlFor="observation" name="observation">
-                          Observation
-                        </label>
-                        <textarea
-                          //disabled={quest[idx]?.completed}
-                          value={formData?.[readingPop]?.observation}
-                          name="observation"
-                          className="form-control"
-                          id="observation"
-                          rows="2"
-                          required
-                          onChange={(e) => handleInputChange2(e)}
-                          style={{
-                            width: "100%",
-                            padding: "10px",
-                            margin: "8px 0",
-                            borderRadius: "4px",
-                            border: "1px solid #ccc",
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <label htmlFor="requiredAction" name="requiredAction">
-                          Required Action
-                        </label>
-                        <textarea
-                          name="requiredAction"
-                          className="form-control"
-                          id="requiredAction"
-                          rows="2"
-                          value={formData?.[readingPop]?.requiredAction}
-                          required
-                          onChange={(e) => handleInputChange2(e)}
-                          style={{
-                            width: "100%",
-                            padding: "10px",
-                            margin: "8px 0",
-                            borderRadius: "4px",
-                            border: "1px solid #ccc",
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                )}
-              </Grid>
-              {/* <div className="float-end"><small className="alert alert-info p-2">Please click on Save before proceeding to the next Asset</small></div> */}
-            </Fragment>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              type="button"
-              onClick={() => {
-                setReadingPop(null);
-                setReadingPopShow(false);
-                getSurvey();
-              }}
-              className="bg-light text-primary"
-            >
-              Cancel
-            </Button>
-            <button
-              type="submit"
-              //onClick={addReadingSave}
-              style={{
-                width: "150px",
-                marginBottom: "20px",
-                margin: "10px",
-                float: "right",
-              }}
-              className="btn btn-primary text-white pr-2"
-            >
-              {readingPop === formData?.length - 1 ? "Save & Close" : "Next"}
-            </button>
-            {/* <button
+                  )}
+                </Grid>
+                {/* <div className="float-end"><small className="alert alert-info p-2">Please click on Save before proceeding to the next Asset</small></div> */}
+              </Fragment>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                  type="button"
+                  onClick={() => { setReadingPop(null);
+                    setReadingPopShow(false);
+                    getSurvey();
+                  }}
+                  className="bg-light text-primary"
+              >
+                Cancel
+              </Button>
+              <button
+                  type="submit"
+                  //onClick={addReadingSave}
+                  style={{
+                    width: "150px",
+                    marginBottom: "20px",
+                    margin: "10px",
+                    float: "right",
+                  }}
+                  className="btn btn-primary text-white pr-2"
+              >
+                {readingPop === (formData?.length -1)? 'Save & Close' : 'Next'}
+              </button>
+              {/* <button
               type="button"
               onClick={(e) => {
                 if(!action) {
@@ -760,43 +723,36 @@ const SurveyWaterTemperatureMonitoring = ({
             >
               Next
             </button> */}
-          </DialogActions>
-        </form>
-      </Dialog>
 
-      <Dialog
-        open={showHistory !== null}
-        onClose={() => {
-          setShowHistory(null);
-        }}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>
-          Reading History{" "}
-          {formData[showHistory]?.assetId
-            ? "(" +
-              siteAssets
-                .filter((a) => a.assetId == formData[showHistory]?.assetId)
-                .map(
-                  (option) =>
-                    option.assetId +
-                    " " +
-                    option.assetName +
-                    " - " +
-                    option.category
-                )[0] +
-              ")"
-            : ""}{" "}
-          {" - "} {getName(showHistory)}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Fragment>
-            <Grid container>
-              <Grid sm={12}>
-                <div className="table-responsive" style={{ marginTop: "30px" }}>
-                  <table className="table table-bordered f-11">
-                    <thead className="table-dark">
+            </DialogActions>
+          </form>
+        </Dialog>
+
+        <Dialog
+            open={showHistory !== null}
+            onClose={() => {
+              setShowHistory(null);
+            }}
+            maxWidth="lg"
+            fullWidth
+        >
+          <DialogTitle>Reading History {" "}
+            {formData[showHistory]?.assetId
+                ? "(" +
+                siteAssets
+                    .filter((a) => a.assetId == formData[showHistory]?.assetId)
+                    .map(
+                        (option) => option.assetId + " "+ option.assetName + " - " + option.category
+                    )[0] +
+                ")"
+                : ""} {" - "} {getName(showHistory)}</DialogTitle>
+          <DialogContent dividers>
+            <Fragment>
+              <Grid container>
+                <Grid sm={12}>
+                  <div className="table-responsive" style={{ marginTop: "30px" }}>
+                    <table className="table table-bordered f-11">
+                      <thead className="table-dark">
                       <tr>
                         <th>Test Date</th>
                         <th>Expiry Date</th>
@@ -804,152 +760,149 @@ const SurveyWaterTemperatureMonitoring = ({
                         <th>Reading 2</th>
                         <th>Reading 3</th>
                       </tr>
-                    </thead>
-                    <tbody>
+                      </thead>
+                      <tbody>
                       {alldata
-                        ?.filter(
-                          (a) =>
-                            a.reading1 &&
-                            a.reading2 &&
-                            a.reading3 &&
-                            a.assetId === formData[showHistory]?.assetId &&
-                            a.temperature ===
-                              formData[showHistory]?.temperature &&
-                            a.normalRunTime ===
-                              formData[showHistory]?.normalRunTime &&
-                            a.outletType ===
-                              formData[showHistory]?.outletType &&
-                            a.usageFrequency ===
-                              formData[showHistory]?.usageFrequency &&
-                            a.floor === formData[showHistory]?.floor &&
-                            a.room === formData[showHistory]?.room
-                        )
-                        ?.map((i) => (
-                          <tr>
-                            <td>
-                              {i?.r1Date
-                                ? moment(i?.r1Date).format("DD/MM/YYYY")
-                                : ""}
-                            </td>
-                            <td>
-                              {i?.r1Date
-                                ? dateFormatFromFrequency(
-                                    i?.r1Date?.split("T")?.[0]
-                                  )
-                                : ""}
-                            </td>
-                            <td
-                              style={{
-                                color:
-                                  (i?.temperature === "Hot" &&
-                                    Number(i?.reading1) < 50) ||
-                                  (i?.temperature === "Cold" &&
-                                    Number(i?.reading1) > 20)
-                                    ? "red"
-                                    : "green",
-                                fontWeight: "600",
-                              }}
-                            >
-                              {i?.reading1}
-                            </td>
-                            <td
-                              style={{
-                                color:
-                                  (i?.temperature === "Hot" &&
-                                    Number(i?.reading1) < 50) ||
-                                  (i?.temperature === "Cold" &&
-                                    Number(i?.reading1) > 20)
-                                    ? "red"
-                                    : "green",
-                                fontWeight: "600",
-                              }}
-                            >
-                              {i?.reading2}
-                            </td>
-                            <td
-                              style={{
-                                color:
-                                  (i?.temperature === "Hot" &&
-                                    Number(i?.reading1) < 50) ||
-                                  (i?.temperature === "Cold" &&
-                                    Number(i?.reading1) > 20)
-                                    ? "red"
-                                    : "green",
-                                fontWeight: "600",
-                              }}
-                            >
-                              {i?.reading3}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+                          ?.filter(
+                              (a) =>
+                                  a.reading1 && a.reading2 && a.reading3 &&
+                                  a.assetId === formData[showHistory]?.assetId &&
+                                  a.temperature ===
+                                  formData[showHistory]?.temperature &&
+                                  a.normalRunTime ===
+                                  formData[showHistory]?.normalRunTime &&
+                                  a.outletType ===
+                                  formData[showHistory]?.outletType &&
+                                  a.usageFrequency ===
+                                  formData[showHistory]?.usageFrequency &&
+                                  a.floor === formData[showHistory]?.floor &&
+                                  a.room === formData[showHistory]?.room
+                          )
+                          ?.map((i) => (
+                              <tr>
+                                <td>
+                                  {i?.r1Date
+                                      ? moment(i?.r1Date).format("DD/MM/YYYY")
+                                      : ""}
+                                </td>
+                                <td>
+                                  {i?.r1Date
+                                      ? dateFormatFromFrequency(
+                                          i?.r1Date?.split("T")?.[0]
+                                      )
+                                      : ""}
+                                </td>
+                                <td
+                                    style={{
+                                      color:
+                                          (i?.temperature === "Hot" &&
+                                              Number(i?.reading1) < 50) ||
+                                          (i?.temperature === "Cold" &&
+                                              Number(i?.reading1) > 20)
+                                              ? "red"
+                                              : "green",
+                                      fontWeight: "600",
+                                    }}
+                                >
+                                  {i?.reading1}
+                                </td>
+                                <td
+                                    style={{
+                                      color:
+                                          (i?.temperature === "Hot" &&
+                                              Number(i?.reading1) < 50) ||
+                                          (i?.temperature === "Cold" &&
+                                              Number(i?.reading1) > 20)
+                                              ? "red"
+                                              : "green",
+                                      fontWeight: "600",
+                                    }}
+                                >
+                                  {i?.reading2}
+                                </td>
+                                <td
+                                    style={{
+                                      color:
+                                          (i?.temperature === "Hot" &&
+                                              Number(i?.reading1) < 50) ||
+                                          (i?.temperature === "Cold" &&
+                                              Number(i?.reading1) > 20)
+                                              ? "red"
+                                              : "green",
+                                      fontWeight: "600",
+                                    }}
+                                >
+                                  {i?.reading3}
+                                </td>
+                              </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Grid>
               </Grid>
-            </Grid>
-          </Fragment>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            className="bg-primary text-white"
-            onClick={() => {
-              setShowHistory(null);
-            }}
-          >
-            Close
-          </Button>
-          {showHistory < formData.length - 1 && (
+            </Fragment>
+          </DialogContent>
+          <DialogActions>
+
             <Button
-              className="bg-primary text-white"
-              onClick={() => {
-                setShowHistory((prev) =>
-                  prev < formData.length - 1 ? prev + 1 : prev
-                );
-              }}
+                className="bg-primary text-white"
+                onClick={() => {
+                  setShowHistory(null);
+                }}
             >
-              Next
+              Close
             </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+            {showHistory < (formData.length - 1) &&
+                <Button
+                    className="bg-primary text-white"
+                    onClick={() => {
+                      setShowHistory((prev) => (prev < formData.length - 1 ? prev + 1 : prev));
+                    }}
+                >
+                  Next
+                </Button>
+            }
+          </DialogActions>
+        </Dialog>
 
-      <form onSubmit={addSiteCheckSurvey2}>
-        <Grid container>
-          <Grid sm={4}>
-            <Typography variant="h6" gutterBottom>
-              Water - Outlet Temperature - Tests{" "}
-              <Chip
-                color={completed ? "success" : "warning"}
-                label={"In progress"}
-              />
-            </Typography>
-          </Grid>
-          <Grid sm={4}></Grid>
-          <Grid sm={4}>
-            <button
-              type="button"
-              style={{
-                width: "150px",
-                marginBottom: "20px",
-                margin: "10px",
-                float: "right",
-              }}
-              className="btn btn-primary btn-light"
-              onClick={(e) => {
-                e.preventDefault();
-                const uformData = [...formData];
-                uformData.push({ new: true });
-                setFormData(uformData);
-              }}
-            >
-              Add outlet
-            </button>
-          </Grid>
+        <form onSubmit={addSiteCheckSurvey2}>
+          <Grid container>
+            <Grid sm={4}>
+              <Typography variant="h6" gutterBottom>
+                Water - Outlet Temperature - Tests{" "}
+                <Chip
+                    color={completed ? "success" : "warning"}
+                    label={"In progress"}
+                />
+              </Typography>
+            </Grid>
+            <Grid sm={4}></Grid>
+            <Grid sm={4}>
+              <button
+                  type="button"
+                  style={{
+                    width: "150px",
+                    marginBottom: "20px",
+                    margin: "10px",
+                    float: "right",
+                  }}
+                  className="btn btn-primary btn-light"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const uformData = [...formData];
+                    uformData.push({new: true});
+                    setFormData(uformData);
+                  }}
+              >
+                Add outlet
+              </button>
+            </Grid>
 
-          <Grid sm={12}>
-            <div className="table-responsive">
-              <table className="table table-bordered f-11">
-                <thead className="table-dark">
+            <Grid sm={12}>
+              <div className="table-responsive">
+                <table className="table table-bordered f-11">
+                  <thead className="table-dark">
                   <tr>
                     <th scope="col">Order</th>
                     <th scope="col">Asset</th>
@@ -962,310 +915,312 @@ const SurveyWaterTemperatureMonitoring = ({
                     <th scope="col">Readings</th>
                     <th scope="col"></th>
                   </tr>
-                </thead>
-                <tbody>
+                  </thead>
+                  <tbody>
                   {isLoading && (
-                    <tr>
-                      <td colSpan={9} align="center">
-                        <CircularProgress />
-                      </td>
-                    </tr>
+                      <tr>
+                        <td colSpan={9} align="center"><CircularProgress /></td>
+                      </tr>
                   )}
                   {!isLoading &&
-                    formData?.map((d, idx) => {
-                      const isAllFilled =
-                        formData[idx].assetId &&
-                        formData?.[idx]?.outletType &&
-                        formData?.[idx]?.temperature &&
-                        formData?.[idx]?.normalRunTime &&
-                        formData?.[idx]?.usageFrequency &&
-                        formData?.[idx]?.floor &&
-                        formData?.[idx]?.room;
-                      const assetName = siteAssets
-                        .filter((a) => a.assetId == formData[idx].assetId)
-                        .map(
-                          (option) =>
-                            option.assetId +
-                            " - " +
-                            option.assetName +
-                            " - " +
-                            option.category
-                        )?.[0];
-                      formData[idx].completed =
-                        formData?.[idx]?.completed && isAllFilled;
-                      return (
-                        <tr key={idx}>
-                          <td>
-                            {/* {formData?.[idx]?.completed ? (
-                            <p>{formData?.[idx]?.sortOrder}</p>
-                          ) : ( */}
-                            <input
-                              value={formData?.[idx]?.sortOrder}
-                              type="number"
-                              min="1"
-                              name="sortOrder"
-                              id="sortOrder"
-                              className="form-control"
-                              onChange={(e) => handleInputChange(e, idx)}
-                              required
-                              disabled={formData?.[idx]?.completed}
-                            />
-                            {/* )} */}
-                          </td>
-                          <td>
-                            {formData?.[idx]?.completed ? (
-                              <p>{assetName}</p>
-                            ) : (
-                              <Autocomplete
-                                id="assetId"
-                                disabled={formData?.[idx]?.completed}
-                                onChange={(event, item) => {
-                                  const uformData = [...formData];
-                                  uformData[idx].assetId = item?.key;
-                                  uformData[idx].room = item?.room;
-                                  uformData[idx].floor = item?.floor;
-                                  setFormData(uformData);
-                                }}
-                                options={siteAssets
-                                  .filter(
-                                    (s) =>
-                                      s.category === "Mechanical" &&
-                                      s.subCategory === "Water Services" &&
-                                        (s.subCategory2 === "Outlet / Tap" || s.subCategory2 === "Outlet / Shower")
-                                  )
-                                  .filter(
-                                    (s) =>
-                                      !formData
-                                        ?.map((a) => a.assetId)
-                                        .includes(s.assetId)
-                                  )
-                                  .map((option) => ({
-                                    key: option.assetId,
-                                    label:
-                                      option.assetId +
-                                      " - " +
-                                      option.assetName +
-                                      " - " +
-                                      option.category,
-                                    room: option.room,
-                                    floor: option.floor,
-                                  }))}
-                                getOptionLabel={(option) => option.label}
-                                renderInput={(params) => (
-                                  <div ref={params.InputProps.ref}>
+                      formData?.map((d, idx) => {
+                        const isAllFilled =
+                            formData[idx].assetId &&
+                            formData?.[idx]?.outletType &&
+                            formData?.[idx]?.temperature &&
+                            formData?.[idx]?.normalRunTime &&
+                            formData?.[idx]?.usageFrequency &&
+                            formData?.[idx]?.floor &&
+                            formData?.[idx]?.room;
+                        const assetName = siteAssets
+                            .filter((a) => a.assetId == formData[idx].assetId)
+                            .map(
+                                (option) => option.assetId + " - "+ option.assetName + " - " + option.category
+                            )?.[0];
+                        formData[idx].completed = formData?.[idx]?.completed && isAllFilled;
+                        // Asset options: exclude only other rows' assets so current row's selection stays visible
+                        // Assets must have category=Mechanical, subCategory=Water Services, subCategory2=Outlet, subCategory3=Tap or Shower (add via Site > Assets)
+                        const assetOptions = siteAssets
+                            .filter(s => s.category === "Mechanical" && s.subCategory === "Water Services" && s.subCategory2 === "Outlet" && (s.subCategory3 === "Tap" || s.subCategory3 === "Shower"))
+                            .filter(s => !formData?.filter((_, i) => i !== idx).map(a => a.assetId).includes(s.assetId))
+                            .map((option) => ({
+                              key: option.assetId,
+                              label: option.assetId + " - " + option.assetName + " - " + option.category,
+                            }));
+                        const selectedAssetOption = assetOptions.find(o => o.key == formData[idx]?.assetId) || null;
+                        console.log("[SurveyWaterTemp] row", idx, "assetId", formData[idx]?.assetId, "assetOptions", assetOptions?.length, "selected", selectedAssetOption, "siteAssets", siteAssets?.length);
+                        return (
+                            <tr key={idx}>
+                              <td>
+                                {formData?.[idx]?.completed ? (
+                                    <p>{formData?.[idx]?.sortOrder}</p>
+                                ) : (
                                     <input
-                                      type="text"
-                                      autoComplete="off"
-                                      readOnly
-                                      onFocus={(e) =>
-                                        e.target.removeAttribute("readonly")
-                                      }
-                                      {...params.inputProps}
-                                      required
-                                      disabled={formData?.[idx]?.completed}
-                                      className="form-control"
+                                        value={formData?.[idx]?.sortOrder}
+                                        type="number"
+                                        min="1"
+                                        name="sortOrder"
+                                        id="sortOrder"
+                                        className="form-control"
+                                        onChange={(e) => handleInputChange(e, idx)}
+                                        required
+                                    /> )}
+                              </td>
+                              <td>
+                                {formData?.[idx]?.completed ? (
+                                    <p>{assetName}</p>
+                                ) : (
+                                    <Autocomplete
+                                        id={`assetId-${idx}`}
+                                        disabled={formData?.[idx]?.completed}
+                                        value={selectedAssetOption}
+                                        onChange={(event, item) => {
+                                          const uformData = [...formData];
+                                          uformData[idx].assetId = item?.key;
+                                          setFormData(uformData);
+                                        }}
+                                        options={assetOptions}
+                                        getOptionLabel={(option) => option?.label ?? ""}
+                                        renderInput={(params) => (
+                                            <div ref={params.InputProps.ref}>
+                                              <input
+                                                  type="text"
+                                                  autoComplete="off"
+                                                  readOnly
+                                                  onFocus={(e) => e.target.removeAttribute("readonly")}
+                                                  {...params.inputProps}
+                                                  required
+                                                  disabled={formData?.[idx]?.completed}
+                                                  className="form-control"
+                                              />
+                                            </div>
+                                        )}
                                     />
-                                  </div>
                                 )}
-                              />
-                            )}
-                          </td>
-                          <td>
-                            <select
-                              disabled={formData?.[idx]?.completed}
-                              name="outletType"
-                              className="form-control form-select"
-                              id="outletType"
-                              value={formData?.[idx]?.outletType}
-                              required
-                              onChange={(e) => handleInputChange(e, idx)}
-                            >
-                              <option value="">Select Outlet Type</option>
-                              {outletoptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td>
-                            <select
-                              disabled={formData?.[idx]?.completed}
-                              name="temperature"
-                              className="form-control form-select"
-                              id="temperature"
-                              required
-                              value={formData?.[idx]?.temperature}
-                              onChange={(e) => handleInputChange(e, idx)}
-                            >
-                              <option value="">Select temperature</option>
-                              {tempratureoptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
+                              </td>
+                              <td>
+                                <select
+                                    disabled={formData?.[idx]?.completed}
+                                    name="outletType"
+                                    className="form-control form-select"
+                                    id="outletType"
+                                    value={formData?.[idx]?.outletType}
+                                    required
+                                    onChange={(e) => handleInputChange(e, idx)}
+                                >
+                                  <option value="">Select Outlet Type</option>
+                                  {outletoptions.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <select
+                                    disabled={formData?.[idx]?.completed}
+                                    name="temperature"
+                                    className="form-control form-select"
+                                    id="temperature"
+                                    required
+                                    value={formData?.[idx]?.temperature}
+                                    onChange={(e) => handleInputChange(e, idx)}
+                                >
+                                  <option value="">Select temperature</option>
+                                  {tempratureoptions.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                  ))}
+                                </select>
+                              </td>
 
-                          <td style={{ width: "150px" }}>
-                            <select
-                              disabled={formData?.[idx]?.completed}
-                              name="normalRunTime"
-                              className="form-control form-select"
-                              id="normalRunTime"
-                              required
-                              value={formData?.[idx]?.normalRunTime}
-                              onChange={(e) => handleInputChange(e, idx)}
-                            >
-                              <option value="">Select</option>
-                              {normruntime.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td>
-                            <select
-                              disabled={formData?.[idx]?.completed}
-                              name="usageFrequency"
-                              className="form-control form-select"
-                              id="usageFrequency"
-                              required
-                              value={formData?.[idx]?.usageFrequency}
-                              onChange={(e) => handleInputChange(e, idx)}
-                            >
-                              <option value="">Select frequency</option>
-                              <option value="None">None</option>
-                              <option value="Daily">Daily</option>
-                              <option value="Weekly">Weekly</option>
-                              <option value="Monthly">Monthly</option>
-                              <option value="Yearly">Yearly</option>
-                            </select>
-                          </td>
-                          <td>
-                            {formData?.[idx]?.floor != "null"
-                              ? getNodeName(formData?.[idx]?.floor)
-                              : "--"}
-                          </td>
-                          <td>
-                            {formData?.[idx]?.room != "null"
-                              ? getNodeName(formData?.[idx]?.room)
-                              : "--"}
-                          </td>
-                          <td style={{ width: "200px" }}>
-                            <p>
-                              1st : {formData?.[idx]?.reading1 ?? ""}{" "}
-                              {formData?.[idx]?.r1Date
-                                ? "(" +
-                                  moment(
-                                    String(formData?.[idx]?.r1Date)
-                                  ).format("DD-MM-YYYY") +
-                                  ")"
-                                : "N/A"}
-                            </p>
-                            <p>
-                              2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
-                              {formData?.[idx]?.r1Date
-                                ? "(" +
-                                  moment(formData?.[idx]?.r1Date).format(
-                                    "DD-MM-YYYY"
-                                  ) +
-                                  ")"
-                                : "N/A"}
-                            </p>
-                            <p>
-                              3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
-                              {formData?.[idx]?.r1Date
-                                ? "(" +
-                                  moment(formData?.[idx]?.r1Date).format(
-                                    "DD-MM-YYYY"
-                                  ) +
-                                  ")"
-                                : "N/A"}
-                            </p>
-                          </td>
+                              <td style={{ width: "150px" }}>
+                                <select
+                                    disabled={formData?.[idx]?.completed}
+                                    name="normalRunTime"
+                                    className="form-control form-select"
+                                    id="normalRunTime"
+                                    required
+                                    value={formData?.[idx]?.normalRunTime}
+                                    onChange={(e) => handleInputChange(e, idx)}
+                                >
+                                  <option value="">Select</option>
+                                  {normruntime.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <select
+                                    disabled={formData?.[idx]?.completed}
+                                    name="usageFrequency"
+                                    className="form-control form-select"
+                                    id="usageFrequency"
+                                    required
+                                    value={formData?.[idx]?.usageFrequency}
+                                    onChange={(e) => handleInputChange(e, idx)}
+                                >
+                                  <option value="">Select frequency</option>
+                                  <option value="None">None</option>
+                                  <option value="Daily">Daily</option>
+                                  <option value="Weekly">Weekly</option>
+                                  <option value="Monthly">Monthly</option>
+                                  <option value="Yearly">Yearly</option>
+                                </select>
+                              </td>
+                              <td>
+                                {formData?.[idx]?.completed ? (
+                                    formData?.[idx]?.floor != 'null' ? getNodeName(formData?.[idx]?.floor) : '--'
+                                ) : (
+                                    <select
+                                        disabled={formData?.[idx]?.completed}
+                                        className="form-control form-select"
+                                        name="floor"
+                                        value={formData?.[idx]?.floor}
+                                        required
+                                        onChange={(e) => handleInputChange(e, idx)}
+                                    >
+                                      <option value="">Select </option>
+                                      {siteLayout
+                                          .filter((site) => site.nodeType === "floor")
+                                          .map((site) => (
+                                              <option key={site.id} value={site.nodeName}>
+                                                {site.nodeName}{" "}
+                                              </option>
+                                          ))}
+                                    </select>)}
+                              </td>
+                              <td>
+                                {formData?.[idx]?.completed ? (
+                                    formData?.[idx]?.room != 'null' ? getNodeName(formData?.[idx]?.room) : '--'
+                                ) : (
+                                    <select
+                                        disabled={formData?.[idx]?.completed}
+                                        className="form-control form-select"
+                                        name="room"
+                                        value={formData?.[idx]?.room}
+                                        required
+                                        onChange={(e) => handleInputChange(e, idx)}
+                                    >
+                                      <option value="">Select </option>
+                                      {siteLayout
+                                          //.filter((site) => site.nodeType === "room")
+                                          .filter(
+                                              (site) =>
+                                                  site.nodeType === "room" &&
+                                                  site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && s.nodeType === "floor")[0]?.id
+                                          )
+                                          .map((site) => (
+                                              <option key={site.id} value={site.nodeName}>
+                                                {site.nodeName}{" "}
+                                              </option>
+                                          ))}
+                                    </select>
+                                )}
+                              </td>
+                              <td style={{ width: "200px" }}>
+                                <p>
+                                  1st : {formData?.[idx]?.reading1 ?? ""}{" "}
+                                  {formData?.[idx]?.r1Date
+                                      ? "(" +
+                                      moment(String(formData?.[idx]?.r1Date)).format("DD-MM-YYYY")+
+                                      ")"
+                                      : "N/A"}
+                                </p>
+                                <p>
+                                  2nd : {formData?.[idx]?.reading2 ?? ""}{" "}
+                                  {formData?.[idx]?.r1Date
+                                      ? "(" +
+                                      moment(formData?.[idx]?.r1Date).format("DD-MM-YYYY")+
+                                      ")"
+                                      : "N/A"}
+                                </p>
+                                <p>
+                                  3rd : {formData?.[idx]?.reading3 ?? ""}{" "}
+                                  {formData?.[idx]?.r1Date
+                                      ? "(" +
+                                      moment(formData?.[idx]?.r1Date).format("DD-MM-YYYY")+
+                                      ")"
+                                      : "N/A"}
+                                </p>
+                              </td>
 
-                          <td style={{ width: "120px" }}>
-                            {isAllFilled && (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-light text-dark"
-                                onClick={() => {
-                                  setReadingPopShow(true);
-                                  setReadingPop(() => {
-                                    const nextIndex = idx;
-                                    // Ensure the next index has default/blank values
-                                    setFormData((prevData) => {
-                                      const updatedData = [...prevData];
-                                      updatedData[nextIndex] = {
-                                        ...updatedData[nextIndex],
-                                        reading1: "",
-                                        reading2: "",
-                                        reading3: "",
-                                        r1Date: new Date().toISOString(),
-                                        update: true,
-                                      };
-                                      return updatedData;
-                                    });
-                                    return nextIndex;
-                                  });
-                                }}
-                              >
-                                <i className="fas fa-chart-line"></i>
-                              </button>
-                            )}
-                            &nbsp;
-                            {isAllFilled && (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-light text-dark"
-                                onClick={() => {
-                                  setShowHistory(idx);
-                                }}
-                              >
-                                <i className="fas fa-clock"></i>
-                              </button>
-                            )}
-                            &nbsp;
-                            {!formData?.[idx]?.completed && (
-                              <button
-                                disabled={formData?.[idx]?.completed}
-                                className="btn btn-sm btn-light text-dark"
-                                onClick={() => {
-                                  const uformData = [...formData];
-                                  uformData.splice(idx, 1);
-                                  setFormData(uformData);
-                                }}
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
+                              <td style={{ width: "120px" }}>
+                                {isAllFilled && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-light text-dark"
+                                        onClick={() => {
+                                          setReadingPopShow(true)
+                                          setReadingPop(() => {
+                                            const nextIndex = idx;
+                                            // Ensure the next index has default/blank values
+                                            setFormData((prevData) => {
+                                              const updatedData = [...prevData];
+                                              updatedData[nextIndex] = { ...updatedData[nextIndex], reading1: "", reading2: "", reading3: "", r1Date: new Date().toISOString(), update: true };
+                                              return updatedData;
+                                            });
+                                            return nextIndex;
+                                          });
+                                        }}
+                                    >
+                                      <i className="fas fa-chart-line"></i>
+                                    </button>
+                                )}
+                                &nbsp;
+                                {isAllFilled && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-light text-dark"
+                                        onClick={() => {
+                                          setShowHistory(idx);
+                                        }}
+                                    >
+                                      <i className="fas fa-clock"></i>
+                                    </button>
+                                )}
+                                &nbsp;
+                                {!formData?.[idx]?.completed &&
+                                    <button
+                                        disabled={formData?.[idx]?.completed}
+                                        className="btn btn-sm btn-light text-dark"
+                                        onClick={() => {
+                                          const uformData = [...formData];
+                                          uformData.splice(idx, 1);
+                                          setFormData(uformData);
+                                        }}
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </button>
+                                }
+                              </td>
+                            </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </Grid>
+            <Grid sm={12}>
+              <button
+                  style={{
+                    width: "150px",
+                    marginBottom: "20px",
+                    margin: "10px",
+                    float: "right",
+                  }}
+                  className="btn btn-primary text-white pr-2"
+                  type="submit"
+              >
+                Save
+              </button>
+            </Grid>
           </Grid>
-          <Grid sm={12}>
-            <button
-              style={{
-                width: "150px",
-                marginBottom: "20px",
-                margin: "10px",
-                float: "right",
-              }}
-              className="btn btn-primary text-white pr-2"
-              type="submit"
-            >
-              Save
-            </button>
-          </Grid>
-        </Grid>
-      </form>
-    </>
+        </form>
+      </>
   );
 };
 
@@ -1277,5 +1232,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default connect(mapStateToProps, { getSiteAssets, getSiteLayout })(
-  SurveyWaterTemperatureMonitoring
+    SurveyWaterTemperatureMonitoring
 );

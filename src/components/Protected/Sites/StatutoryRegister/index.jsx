@@ -113,7 +113,7 @@ export const requirementsNotRequiredForFileCheck = [
     "Fire Emergency Plan",
     "Fire alarm Commissioning Certificate",
     "Fire Alarm Commissioning Certificate (BS5839)",
-    "Fire Log Book Hard Copy",
+    "Fire Log Book - Hard Copy",
     "Health and Safety Law Poster",
     "Health and Certificate Accident Book",
     "Health and Safety Accident Book",
