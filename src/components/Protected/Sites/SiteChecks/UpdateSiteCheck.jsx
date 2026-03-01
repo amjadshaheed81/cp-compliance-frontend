@@ -18,7 +18,7 @@ import Audit from "./Audit";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, getSasToken, getPdf, getPdfFromUrl } from "../../../../api";
+import { get, getSasToken, getPdf, getPdfFromUrl, put } from "../../../../api";
 import { Grid, Stack, Paper, styled } from "@mui/material";
 import {
     deleteUser,
@@ -30,6 +30,7 @@ import html2pdf from "html2pdf.js";
 import "./Print.css";
 import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
+import { ROLE } from "../../../../Constant/Role";
 import SounderAudibilty from "./SounderAudibility";
 import RefugeIntercomTesting from "./RefugeIntercomTesting";
 import ExternalLightningCertificate from "./ExternalLightningCertificate";
@@ -44,17 +45,17 @@ import AirConditioning from "./AirConditioning";
 import VentilationReport from "./VentilationReport";
 import WaterChlorination from "./WaterChlorination";
 import GasInspection from "./GasInspection";
-import FireDamper from "./FireDamper";
+import FierDamper from "./FierDamper";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import GasBoilerService from "./GasBoilerService";
-import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
+import FireFightingEquipement from "./FireFightingEquipement";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 
 const Item = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(1),
 }));
 
-const SiteChecks = ({ siteSelectedForGlobal }) => {
+const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     const printRef = useRef();
 
     const params = useParams();
@@ -129,12 +130,22 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
         status: "Open",
     });
 
+    const [savingAssignees, setSavingAssignees] = useState(false);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({
             ...formData,
             [name]: value,
         });
+    };
+
+    const handleAssigneeChange = (e) => {
+        const { name, value } = e.target;
+        setSiteCheck((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
     };
 
     const getSiteChecks = async () => {
@@ -304,6 +315,26 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
             setStep("survey-water-tank");
         }
         setSiteCheck(siteCheck);
+    };
+
+    const handleSaveAssignees = async () => {
+        if (!siteCheck) return;
+        try {
+            setSavingAssignees(true);
+            const res = await put(`/api/site-check/${checkId}/assignees`, {
+                leadUserID: siteCheck.leadUserID,
+                assistantUserID: siteCheck.assistantUserID,
+            });
+            if (res?.status === 200) {
+                toast.success("Site check assignees updated successfully.");
+            } else {
+                toast.error("Failed to update site check assignees.");
+            }
+        } catch (error) {
+            toast.error("Error while updating site check assignees.");
+        } finally {
+            setSavingAssignees(false);
+        }
     };
 
     const handlePrint = async () => {
@@ -494,8 +525,11 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                                                     name="leadUserID"
                                                     className="form-control form-select"
                                                     id="leadUserID"
-                                                    disabled
-                                                    onChange={handleInputChange}
+                                                    disabled={
+                                                        loggedInUserData?.role !== ROLE.ADMIN ||
+                                                        siteCheck?.status !== "Open"
+                                                    }
+                                                    onChange={handleAssigneeChange}
                                                     value={siteCheck?.leadUserID}
                                                 >
                                                     <option value="">Select Lead</option>
@@ -518,9 +552,12 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                                                 <select
                                                     name="assistantUserID"
                                                     className="form-control form-select"
-                                                    disabled
+                                                    disabled={
+                                                        loggedInUserData?.role !== ROLE.ADMIN ||
+                                                        siteCheck?.status !== "Open"
+                                                    }
                                                     id="assistantUserID"
-                                                    onChange={handleInputChange}
+                                                    onChange={handleAssigneeChange}
                                                     value={siteCheck?.assistantUserID}
                                                 >
                                                     <option value="">Select Assistant</option>
@@ -534,6 +571,21 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                                                     })}
                                                 </select>
                                             </div>
+                                        </Grid>
+                                        <Grid sm={4}>
+                                            {loggedInUserData?.role === ROLE.ADMIN &&
+                                                siteCheck?.status === "Open" && (
+                                                    <div style={{ margin: "10px", marginTop: "32px" }}>
+                                                        <button
+                                                            style={{ width: "100%" }}
+                                                            className="btn btn-primary"
+                                                            onClick={handleSaveAssignees}
+                                                            disabled={savingAssignees}
+                                                        >
+                                                            {savingAssignees ? "Saving..." : "Click to update Assigned Users"}
+                                                        </button>
+                                                    </div>
+                                                )}
                                         </Grid>
                                     </>
                                 )}
@@ -609,7 +661,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
                         )}
                         {step === "inspection-fire-damper" && (
                             <Item>
-                                <FireDamper
+                                <FierDamper
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
@@ -664,7 +716,7 @@ const SiteChecks = ({ siteSelectedForGlobal }) => {
 
                         {step === "inspection-fire-Equipment" && (
                             <Item>
-                                <FireFightingEquipmentReport
+                                <FireFightingEquipement
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
@@ -911,6 +963,7 @@ const mapStateToProps = (state) => ({
     sites: state.site.sites,
     externalusers: state.site.externalusers,
     siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
     getExternalUsers,
