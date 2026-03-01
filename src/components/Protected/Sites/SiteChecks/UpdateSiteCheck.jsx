@@ -45,17 +45,17 @@ import AirConditioning from "./AirConditioning";
 import VentilationReport from "./VentilationReport";
 import WaterChlorination from "./WaterChlorination";
 import GasInspection from "./GasInspection";
-import FierDamper from "./FierDamper";
+import FireDamper from "./FireDamper";
 import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import GasBoilerService from "./GasBoilerService";
-import FireFightingEquipement from "./FireFightingEquipement";
+import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 
 const Item = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(1),
 }));
 
-const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
+const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
     const printRef = useRef();
 
     const params = useParams();
@@ -147,6 +147,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
             [name]: value,
         }));
     };
+
+
 
     const getSiteChecks = async () => {
         const siteCheck = await get("/api/site-check/check-id/" + checkId);
@@ -661,7 +663,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                         )}
                         {step === "inspection-fire-damper" && (
                             <Item>
-                                <FierDamper
+                                <FireDamper
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
@@ -716,7 +718,7 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
                         {step === "inspection-fire-Equipment" && (
                             <Item>
-                                <FireFightingEquipement
+                                <FireFightingEquipmentReport
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
@@ -962,8 +964,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
 const mapStateToProps = (state) => ({
     sites: state.site.sites,
     externalusers: state.site.externalusers,
-    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
     loggedInUserData: state.site.loggedInUserData,
+    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
 });
 export default connect(mapStateToProps, {
     getExternalUsers,
