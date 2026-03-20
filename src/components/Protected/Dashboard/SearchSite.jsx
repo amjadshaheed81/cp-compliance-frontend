@@ -178,7 +178,7 @@ function SearchSite({
         {Array.isArray(allSites2) && allSites2
           .filter((s) => favorites.includes(String(s?.siteId)))
           .map((site) => (
-            <ListItem key={site?.id} disablePadding>
+              <ListItem key={site?.id} disablePadding>
               <ListItemButton>
                 <ListItemIcon>
                   <StarIcon
@@ -190,7 +190,13 @@ function SearchSite({
                   primary={site?.siteName}
                   onClick={() => {
                     selectGlobalSite(site);
-                    localStorage.setItem("site", JSON.stringify(site));
+                    try {
+                      localStorage.setItem("site", JSON.stringify(site));
+                    } catch (e) {
+                      // Ignore storage errors (e.g., Safari private mode)
+                      // eslint-disable-next-line no-console
+                      console.error("Failed to persist selected site", e);
+                    }
                     setState({ ...state, [anchor]: false });
                     goTo("/dashboard");
                   }}
@@ -201,7 +207,7 @@ function SearchSite({
         {Array.isArray(allSites) && allSites
           .filter((s) => !favorites.includes(String(s?.siteId)))
           .map((site) => (
-            <ListItem key={site?.id} disablePadding>
+              <ListItem key={site?.id} disablePadding>
               <ListItemButton>
                 <ListItemIcon>
                   <StarBorderRoundedIcon
@@ -213,7 +219,13 @@ function SearchSite({
                   primary={site?.siteName}
                   onClick={() => {
                     selectGlobalSite(site);
-                    localStorage.setItem("site", JSON.stringify(site));
+                    try {
+                      localStorage.setItem("site", JSON.stringify(site));
+                    } catch (e) {
+                      // Ignore storage errors (e.g., Safari private mode)
+                      // eslint-disable-next-line no-console
+                      console.error("Failed to persist selected site", e);
+                    }
                     setState({ ...state, [anchor]: false });
                     goTo("/dashboard");
                   }}

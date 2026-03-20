@@ -9,7 +9,6 @@ import { showLoader, hideLoader } from "js-loader-fn";
 const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [create, setCreate] = useState(false);
-  const site = JSON.parse(localStorage.getItem("site"));
   const [actions, setActions] = useState([]);
   const [state, setState] = useState({
     selectedArea: "",
@@ -29,7 +28,12 @@ const Actions = ({ siteSelectedForGlobal, loggedInUserData }) => {
         res = await get(`/api/site/actions/all`);
       }
     } else {
-      res = await get(`api/site/actions/${siteSelectedForGlobal?.siteId}`);
+      if (!siteSelectedForGlobal?.siteId) {
+        hideLoader();
+        setIsLoading(false);
+        return;
+      }
+      res = await get(`api/site/actions/${siteSelectedForGlobal.siteId}`);
     }
 
     // Filter actions by createdAt date range

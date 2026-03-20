@@ -30,7 +30,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [subtypeoptions, setsubtypeoptions] = useState([]);
   const [subtypeoptions2, setsubtypeoptions2] = useState([]);
   const [catoptions, setcatoptions] = useState([]);
-  const site = JSON.parse(localStorage.getItem("site"));
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
   const [managerList, setManagerList] = useState([]);
@@ -256,7 +255,12 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       form.reportValidity();
     }
     const body = formData;
-    body.siteId = site.siteId;
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select site from site search to proceed....");
+      setIsLoading(false);
+      return;
+    }
+    body.siteId = siteSelectedForGlobal.siteId;
     body.dueDate = new Date(body.dueDate);
     body.startDate = new Date(body.startDate);
     const sitecheckres = await post("/api/site-check/", body);
@@ -322,14 +326,14 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
 
   const getSiteChecks = async (isAll) => {
-    if (!site?.siteId) {
+    if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed....");
       return;
     }
     setIsLoading(true);
     const siteChecks = isAll
       ? await get("/api/site-check/all")
-      : await get("/api/site-check/site/" + site?.siteId);
+      : await get("/api/site-check/site/" + siteSelectedForGlobal.siteId);
     setFilteredSiteChecks(siteChecks);
     setSiteChecks(siteChecks);
     setIsLoading(false);

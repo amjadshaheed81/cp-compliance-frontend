@@ -38,18 +38,18 @@ const fetchPdfTemplate = async () => {
 };
 
 const AirConditioningRecurrenceCheck = ({
-                                            sasToken,
-                                            checkId,
-                                            subType,
-                                            category,
-                                            getSiteDetailsById,
-                                            siteAssets,
-                                            getSiteAssets,
-                                            users,
-                                            getUsers,
-                                            siteSelectedForGlobal,
-                                            loggedInUserData,
-                                        }) => {
+    sasToken,
+    checkId,
+    subType,
+    category,
+    getSiteDetailsById,
+    siteAssets,
+    getSiteAssets,
+    users,
+    getUsers,
+    siteSelectedForGlobal,
+    loggedInUserData,
+}) => {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [relatedAssets, setRelatedAssets] = useState([]);
     const [formData, setFormData] = useState({
@@ -71,7 +71,6 @@ const AirConditioningRecurrenceCheck = ({
         engineerCertificateNo: "",
         actionId: null,
     });
-    const site = JSON.parse(localStorage.getItem("site"));
     const [siteChecks, setSiteChecks] = useState([]);
     const [engineerCertMap, setEngineerCertMap] = useState({});
     // Cache for engineer details to avoid repeated API calls per engineer id
@@ -252,7 +251,7 @@ const AirConditioningRecurrenceCheck = ({
     const fetchSiteChecks = async (assetIdParam) => {
         try {
             const assetIdToUse = assetIdParam ?? selectedAsset?.assetId;
-            const siteIdToUse = site?.siteId || siteSelectedForGlobal?.siteId;
+            const siteIdToUse = siteSelectedForGlobal?.siteId;
             if (!siteIdToUse || !assetIdToUse) return;
 
             // Fetch all generic inspections for this site (new endpoint)
@@ -467,12 +466,12 @@ const AirConditioningRecurrenceCheck = ({
 
     // Ensure we fetch when selectedAsset or site changes (covers programmatic selection as well)
     useEffect(() => {
-        const siteIdToUse = site?.siteId || siteSelectedForGlobal?.siteId;
+        const siteIdToUse = siteSelectedForGlobal?.siteId;
         if (selectedAsset?.assetId && siteIdToUse) {
             fetchSiteChecks(selectedAsset.assetId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedAsset?.assetId, site?.siteId, siteSelectedForGlobal?.siteId]);
+    }, [selectedAsset?.assetId, siteSelectedForGlobal?.siteId]);
 
     const fetchSiteCheckData = async () => {
         try {
@@ -518,7 +517,7 @@ const AirConditioningRecurrenceCheck = ({
 
             if (parentFoldersResponse?.parentFolders?.length > 0) {
                 const logBooksFolder = parentFoldersResponse.parentFolders.find(
-                    folder => folder.name.trim() === '6 - Log Books'
+                    folder => folder.name.trim() === 'Log Books'
                 );
 
                 if (logBooksFolder) {
@@ -884,11 +883,11 @@ const AirConditioningRecurrenceCheck = ({
 
     // Ensure upload folder structure is available when site changes
     useEffect(() => {
-        const siteId = siteSelectedForGlobal?.siteId || site?.siteId;
+        const siteId = siteSelectedForGlobal?.siteId;
         if (siteId) {
             fetchFolderStructure(siteId);
         }
-    }, [siteSelectedForGlobal?.siteId, site?.siteId]);
+    }, [siteSelectedForGlobal?.siteId]);
 
     const generatePDF = async (uploadToServer = true) => {
         try {
@@ -1399,10 +1398,10 @@ const AirConditioningRecurrenceCheck = ({
                                 <div className="col-md-12">
                                     <div className="alert alert-info">
                                         <strong>Notes:</strong> {
-                                        refrigerantOptions.find(
-                                            (option) => option.name === formData.refrigerantType
-                                        )?.notes || "No additional information available."
-                                    }
+                                            refrigerantOptions.find(
+                                                (option) => option.name === formData.refrigerantType
+                                            )?.notes || "No additional information available."
+                                        }
                                     </div>
                                 </div>
                             </div>
