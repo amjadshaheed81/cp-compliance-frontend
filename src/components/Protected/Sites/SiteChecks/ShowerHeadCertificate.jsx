@@ -87,13 +87,29 @@ const ShowerHeadCertificate = ({
         [siteAssets, formData.assetId]
     );
 
-    const filteredAssets = React.useMemo(() =>
-            siteAssets?.filter(asset =>
-                asset.category === "Mechanical" &&
-                asset.subCategory === "Water Services" &&
-                asset.subCategory2 === "Outlet / Shower"
-            ) || [],
-        [siteAssets]
+    const filteredAssets = React.useMemo(() => {
+            // Support both legacy + new asset categorisation:
+            // - Legacy: subCategory2 === "Outlet / Shower"
+            // - New:    subCategory2 === "Outlet" && subCategory3 === "Shower"
+            return (
+                siteAssets?.filter((asset) => {
+                    if (
+                        asset.category !== "Mechanical" ||
+                        asset.subCategory !== "Water Services"
+                    ) {
+                        return false;
+                    }
+
+                    const sub2 = (asset.subCategory2 || "").trim();
+                    const sub3 = (asset.subCategory3 || "").trim();
+
+                    return (
+                        sub2 === "Outlet / Shower" ||
+                        (sub2 === "Outlet" && sub3 === "Shower")
+                    );
+                }) || []
+            );
+        }, [siteAssets]
     );
 
     // Event handlers

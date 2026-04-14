@@ -23,6 +23,54 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
     }
   }, []);
 
+  const applyQuestionResponse = (idx, nextResponse) => {
+    const uquest = [...quest];
+    uquest[idx].response = nextResponse;
+    setquest(uquest);
+  };
+
+  const clearNoDetails = (existing = {}) => ({
+    ...existing,
+    riskType: "",
+    floor: "",
+    room: "",
+    position: "",
+    assets: "",
+    action: "",
+    file: null,
+    consequence: "",
+    likelihood: "",
+  });
+
+  const getTypeNodeForRiskType = (riskType) => {
+    const normalized = String(riskType || "").trim().toLowerCase();
+    const targetName =
+      normalized === "external" ? "exterior" :
+      normalized === "internal" ? "interior" :
+      normalized;
+
+    return (siteLayout || []).find((n) => {
+      if (String(n?.nodeType || "").toLowerCase() !== "type") return false;
+      const name = String(n?.nodeName || "").trim().toLowerCase();
+      return name === targetName;
+    });
+  };
+
+  const getFloorsForRiskType = (riskType) => {
+    const typeNode = getTypeNodeForRiskType(riskType);
+    if (!typeNode) return [];
+    return (siteLayout || []).filter(
+      (n) => String(n?.nodeType || "").toLowerCase() === "floor" && String(n?.parentNode) === String(typeNode?.id)
+    );
+  };
+
+  const getRoomsForFloorId = (floorId) => {
+    if (!floorId) return [];
+    return (siteLayout || []).filter(
+      (n) => String(n?.nodeType || "").toLowerCase() === "room" && String(n?.parentNode) === String(floorId)
+    );
+  };
+
   // const defaultQuestions = [
   //   {
   //     q: "Are all means of escape free from combustible and other storage?",
@@ -128,26 +176,56 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
   };
 
   const setResponseCheck = (e, idx) => {
-    if (e.target.checked) {
-      const uquest = [...quest]
-      const udata = {
-        ...quest[idx].response,
-        response: "Yes"
-      }
-      uquest[idx].response = udata
-      setquest(uquest);
+    if (quest[idx]?.completed) return;
+    e.stopPropagation();
+    setOpenIndex(idx);
+    const checked = e.target.checked;
+    const current = quest[idx]?.response?.response;
+
+    if (checked) {
+      applyQuestionResponse(idx, {
+        ...clearNoDetails({ ...(quest[idx].response || {}) }),
+        response: "Yes",
+      });
+      return;
+    }
+    if (current === "Yes") {
+      applyQuestionResponse(idx, clearNoDetails({ ...(quest[idx].response || {}), response: "" }));
     }
   };
 
   const setResponseCheck2 = (e, idx) => {
-    if (e.target.checked) {
-      const uquest = [...quest]
-      const udata = {
-        ...quest[idx].response,
-        response: "No"
-      }
-      uquest[idx].response = udata
-      setquest(uquest);
+    if (quest[idx]?.completed) return;
+    e.stopPropagation();
+    setOpenIndex(idx);
+    const checked = e.target.checked;
+    const current = quest[idx]?.response?.response;
+
+    if (checked) {
+      const existing = quest[idx].response || {};
+      applyQuestionResponse(idx, {
+        ...existing,
+        response: "No",
+        riskType: existing.riskType || "",
+        floor: existing.floor || "",
+        room: existing.room || "",
+        position: existing.position || "",
+        assets: existing.assets || "",
+        action: existing.action || "",
+        file: existing.file || null,
+        consequence: existing.consequence || "",
+        likelihood: existing.likelihood || "",
+      });
+      setTimeout(() => {
+        const el = document.getElementById(`assessment-q-${idx}`);
+        if (el && typeof el.scrollIntoView === "function") {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 0);
+      return;
+    }
+    if (current === "No") {
+      applyQuestionResponse(idx, clearNoDetails({ ...(quest[idx].response || {}), response: "" }));
     }
   };
 
@@ -163,13 +241,42 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
     setquest(uquest);
   };
 
+  const validateNoResponse = (data) => {
+    const missing = [];
+    if (!String(data?.riskType || "").trim()) missing.push("Internal/External");
+    if (!String(data?.floor || "").trim()) missing.push("Floor");
+    if (!String(data?.room || "").trim()) missing.push("Room");
+    if (!String(data?.position || "").trim()) missing.push("Observation");
+    if (!String(data?.consequence || "").trim()) missing.push("Consequence");
+    if (!String(data?.likelihood || "").trim()) missing.push("Likelihood");
+    return missing;
+  };
+
   const saveAssessmentResponse = async (event, index) => {
     event.preventDefault();
-    const form = event.target;
-    if (!form.checkValidity()) {
-      form.reportValidity();
+    const dataToSave = { ...quest[index].response };
+
+    if (dataToSave?.response === "No") {
+      const missing = validateNoResponse(dataToSave);
+      if (missing.length > 0) {
+        toast.error(`Please complete: ${missing.join(", ")}. Asset and Suggested Action are optional.`);
+        setOpenIndex(index);
+        setTimeout(() => {
+          const el = document.getElementById(`assessment-q-${index}`);
+          if (el && typeof el.scrollIntoView === "function") {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 0);
+        return;
+      }
     }
-    const dataToSave = quest[index].response;
+
+    if (dataToSave.assets === undefined || dataToSave.assets === null) {
+      dataToSave.assets = "";
+    }
+    if (dataToSave.action === undefined || dataToSave.action === null) {
+      dataToSave.action = "";
+    }
     if (dataToSave?.file?.name) {
       dataToSave.siteId = siteSelectedForGlobal?.siteId;
       dataToSave.file = await uploadSiteCheckDoc(dataToSave);
@@ -233,19 +340,40 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
           </Grid>
 
           {quest?.map((q, idx) =>
-            <Accordion defaultExpanded={idx === openIndex} >
+            <Accordion
+              id={`assessment-q-${idx}`}
+              expanded={idx === openIndex}
+              onChange={(event, expanded) => setOpenIndex(expanded ? idx : -1)}
+            >
               <AccordionSummary expandIcon={<ExpandMore />} >
                 <Typography>Q{idx + 1}. {q.question}
-                  <Checkbox disabled={quest[idx]?.completed} checked={quest[idx]?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
-                  <Checkbox disabled={quest[idx]?.completed} checked={quest[idx]?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No
+                  <Checkbox
+                    disabled={quest[idx]?.completed}
+                    checked={quest[idx]?.response?.response === "Yes"}
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.stopPropagation()}
+                    onChange={(e) => setResponseCheck(e, idx)}
+                  />{" "}
+                  Yes
+                  <Checkbox
+                    disabled={quest[idx]?.completed}
+                    checked={quest[idx]?.response?.response === "No"}
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.stopPropagation()}
+                    onChange={(e) => setResponseCheck2(e, idx)}
+                  />{" "}
+                  No
                 </Typography> 
                 &nbsp;&nbsp;&nbsp;&nbsp;<Chip style={{ margin: '5px', marginLeft: '30px'}} color={q.status === "Closed" ? "success" : "primary"} label={q.status} />
               </AccordionSummary>
               {quest[idx]?.response?.response === "No" && <AccordionDetails>
-                <form onSubmit={(e) => {
-                  setOpenIndex(idx + 1);
-                  saveAssessmentResponse(e, idx);
-                }}>
+                <form
+                  noValidate
+                  onSubmit={(e) => {
+                    setOpenIndex(idx + 1);
+                    saveAssessmentResponse(e, idx);
+                  }}
+                >
                   <Grid container spacing={2}>
                     {/* <Grid item xs={6}>
                       <label htmlFor="response" name="response">
@@ -274,10 +402,17 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                         disabled={quest[idx]?.completed}
                         className="form-control form-select"
                         name="riskType"
-                        required
-
-                        onChange={(e) => handleInputChange(e, idx)}
-                        value={quest[idx]?.response?.riskType}
+                        onChange={(e) => {
+                          const nextRiskType = e.target.value;
+                          const existing = quest[idx].response || {};
+                          applyQuestionResponse(idx, {
+                            ...existing,
+                            riskType: nextRiskType,
+                            floor: "",
+                            room: "",
+                          });
+                        }}
+                        value={quest[idx]?.response?.riskType || ""}
                       >
                         <option value="">Select </option>
                         {["Internal", "External"].map((num) => (
@@ -292,20 +427,24 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                         Floor
                       </label>
                       <select
-                        disabled={quest[idx]?.completed}
+                        disabled={quest[idx]?.completed || !quest[idx]?.response?.riskType}
                         className="form-control form-select"
                         name="floor"
-                        required
-                        value={quest[idx]?.response?.floor}
-
-                        onChange={(e) => handleInputChange(e, idx)}
+                        value={quest[idx]?.response?.floor || ""}
+                        onChange={(e) => {
+                          const nextFloor = e.target.value;
+                          const existing = quest[idx].response || {};
+                          applyQuestionResponse(idx, {
+                            ...existing,
+                            floor: nextFloor,
+                            room: "",
+                          });
+                        }}
                       >
                         <option value="">Select </option>
-                        {siteLayout.filter(site => site.nodeType === "floor").map(site =>
-                        (
+                        {getFloorsForRiskType(quest[idx]?.response?.riskType).map((site) => (
                           <option value={site.id}>{site.nodeName} </option>
-                        ))
-                        }
+                        ))}
                       </select>
 
                     </Grid>
@@ -314,19 +453,16 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                         Room
                       </label>
                       <select
-                        disabled={quest[idx]?.completed}
+                        disabled={quest[idx]?.completed || !quest[idx]?.response?.floor}
                         className="form-control form-select"
                         name="room"
-                        required
-                        value={quest[idx]?.response?.room}
+                        value={quest[idx]?.response?.room || ""}
                         onChange={(e) => handleInputChange(e, idx)}
                       >
                         <option value="">Select </option>
-                        {siteLayout.filter(site => site.nodeType === "room").map(site =>
-                        (
+                        {getRoomsForFloorId(quest[idx]?.response?.floor).map((site) => (
                           <option value={site.id}>{site.nodeName}</option>
-                        ))
-                        }
+                        ))}
                       </select>
 
                     </Grid>
@@ -340,9 +476,8 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                         className="form-control"
                         id="position"
                         rows="4"
-                        required
                         placeholder="Enter notes..."
-                        value={quest[idx]?.response?.position}
+                        value={quest[idx]?.response?.position || ""}
                         onChange={(e) => handleInputChange(e, idx)}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
@@ -355,7 +490,7 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                           const uquest = [...quest]
                           uquest[idx].response = {
                             ...uquest[idx].response,
-                            assets: item?.map(i => i.key).join(",")
+                            assets: item?.length ? item.map((i) => i.key).join(",") : "",
                           }
                           setquest(uquest);
                         }}
@@ -365,12 +500,15 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                         getOptionLabel={(option) => option.label}
 
                         renderInput={(params) => (
-                        
                           <TextField
-                            //required
                             {...params}
                             variant="outlined"
-                            label="Search Asset"
+                            label="Search Asset (optional)"
+                            required={false}
+                            inputProps={{
+                              ...params.inputProps,
+                              required: false,
+                            }}
                           />
                         )}
                       />
@@ -378,17 +516,16 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
 
                     <Grid item xs={12}>
                       <label htmlFor="action" name="action">
-                        Suggested Action
+                        Suggested Action (optional)
                       </label>
                       <textarea
                         disabled={quest[idx]?.completed}
                         name="action"
-                        required
                         className="form-control"
                         id="action"
                         rows="4"
-                        placeholder="Enter notes..."
-                        value={quest[idx]?.response?.action}
+                        placeholder="Optional — enter suggested action if applicable"
+                        value={quest[idx]?.response?.action || ""}
                         onChange={(e) => handleInputChange(e, idx)}
                         style={{ width: '100%', padding: '10px', margin: '8px 0', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
@@ -442,11 +579,10 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                               Consequence
                             </label>
                             <select
-                              required
                               disabled={quest[idx]?.completed}
                               className="form-control form-select"
                               name="consequence"
-                              value={quest[idx]?.response?.consequence}
+                              value={quest[idx]?.response?.consequence || ""}
                               onChange={(e) => handleInputChange(e, idx)}
                             >
                               <option value="">Select </option>
@@ -462,11 +598,10 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                               Likelihood
                             </label>
                             <select
-                              required
                               disabled={quest[idx]?.completed}
                               className="form-control form-select"
                               name="likelihood"
-                              value={quest[idx]?.response?.likelihood}
+                              value={quest[idx]?.response?.likelihood || ""}
                               onChange={(e) => handleInputChange(e, idx)}
                             >
                               <option value="">Select </option>
@@ -511,6 +646,7 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
                         <button
                           style={{ width: "150px", marginBottom: '20px', margin: '10px', float: 'right' }}
                           className="btn btn-primary btn-light"
+                          type="button"
                         >
                           Cancel
                         </button>

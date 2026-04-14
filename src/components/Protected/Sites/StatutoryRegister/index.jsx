@@ -24,1113 +24,1132 @@ import TagStatutory from "./TagStatutory";
 import { getSiteCheckDueDate, getSiteCheckDueDateForStatus } from "../../../../utils/getSiteCheckDueDate";
 
 export const findAssetWithNearestPatNextDate = (assets) => {
-    // Variables for expired PAT items (prioritize failed items)
-    let expiredAsset = null;
-    let expiredPatItem = null;
-    let mostRecentExpiredMoment = null;
-
-    // Variables for future PAT items (fallback if no expired items)
-    let nearestAsset = null;
-    let nearestPatItem = null;
-    let nearestMoment = null;
-
-    const now = moment();
-
-    assets.forEach((asset) => {
-        if (asset.assetPATItems) {
-            asset.assetPATItems.forEach((patItem) => {
-                const patNextDate = patItem.patNextDate;
-
-                if (patNextDate) {
-                    const patNextMoment = moment(patNextDate);
-
-                    // First, check for expired PAT items (prioritize failed items)
-                    // isSameOrBefore includes items that expired today
-                    if (patNextMoment.isSameOrBefore(now)) {
-                        // Find the most recently expired PAT item (latest expiry date that's still in the past)
-                        if (!mostRecentExpiredMoment || patNextMoment.isAfter(mostRecentExpiredMoment)) {
-                            mostRecentExpiredMoment = patNextMoment;
-                            expiredPatItem = patItem;
-                            expiredAsset = asset;
-                        }
-                    } else if (patNextMoment.isAfter(now)) {
-                        // Only look for future dates if no expired items exist
-                        if (!expiredPatItem) {
-                            // Only consider PAT items with future expiry dates
-                            if (!nearestMoment || patNextMoment.isBefore(nearestMoment)) {
-                                nearestMoment = patNextMoment;
-                                nearestPatItem = patItem;
-                                nearestAsset = asset;
-                            }
-                        }
-                    }
-                }
-            });
+  // Variables for expired PAT items (prioritize failed items)
+  let expiredAsset = null;
+  let expiredPatItem = null;
+  let mostRecentExpiredMoment = null;
+  
+  // Variables for future PAT items (fallback if no expired items)
+  let nearestAsset = null;
+  let nearestPatItem = null;
+  let nearestMoment = null;
+  
+  const now = moment();
+  
+  assets.forEach((asset) => {
+    if (asset.assetPATItems) {
+      asset.assetPATItems.forEach((patItem) => {
+        const patNextDate = patItem.patNextDate;
+        
+        if (patNextDate) {
+          const patNextMoment = moment(patNextDate);
+          
+          // First, check for expired PAT items (prioritize failed items)
+          // isSameOrBefore includes items that expired today
+          if (patNextMoment.isSameOrBefore(now)) {
+            // Find the most recently expired PAT item (latest expiry date that's still in the past)
+            if (!mostRecentExpiredMoment || patNextMoment.isAfter(mostRecentExpiredMoment)) {
+              mostRecentExpiredMoment = patNextMoment;
+              expiredPatItem = patItem;
+              expiredAsset = asset;
+            }
+          } else if (patNextMoment.isAfter(now)) {
+            // Only look for future dates if no expired items exist
+            if (!expiredPatItem) {
+              // Only consider PAT items with future expiry dates
+              if (!nearestMoment || patNextMoment.isBefore(nearestMoment)) {
+                nearestMoment = patNextMoment;
+                nearestPatItem = patItem;
+                nearestAsset = asset;
+              }
+            }
+          }
         }
-    });
-
-    // Prioritize expired PAT item if it exists, otherwise use nearest future
-    if (expiredAsset && expiredPatItem) {
-        return { asset: expiredAsset, patItem: expiredPatItem };
-    } else if (nearestAsset && nearestPatItem) {
-        return { asset: nearestAsset, patItem: nearestPatItem };
+      });
     }
+  });
 
-    return null;
+  // Prioritize expired PAT item if it exists, otherwise use nearest future
+  if (expiredAsset && expiredPatItem) {
+    return { asset: expiredAsset, patItem: expiredPatItem };
+  } else if (nearestAsset && nearestPatItem) {
+    return { asset: nearestAsset, patItem: nearestPatItem };
+  }
+  
+  return null;
 };
 
 // New function to check if ALL PAT items are valid
 export const checkAllPatItemsValid = (assets) => {
-    const now = moment();
-    let hasAnyPatItems = false;
-    let allPatItemsValid = true;
-
-    assets.forEach((asset) => {
-        if (asset.assetPATItems && asset.assetPATItems.length > 0) {
-            asset.assetPATItems.forEach((patItem) => {
-                hasAnyPatItems = true;
-                const patNextDate = patItem.patNextDate;
-
-                // If no expiry date or date is in the past, mark as invalid
-                if (!patNextDate || !moment(patNextDate).isAfter(now)) {
-                    allPatItemsValid = false;
-                }
-            });
+  const now = moment();
+  let hasAnyPatItems = false;
+  let allPatItemsValid = true;
+  
+  assets.forEach((asset) => {
+    if (asset.assetPATItems && asset.assetPATItems.length > 0) {
+      asset.assetPATItems.forEach((patItem) => {
+        hasAnyPatItems = true;
+        const patNextDate = patItem.patNextDate;
+        
+        // If no expiry date or date is in the past, mark as invalid
+        if (!patNextDate || !moment(patNextDate).isAfter(now)) {
+          allPatItemsValid = false;
         }
-    });
-
-    // If no PAT items exist, return false (Fail)
-    if (!hasAnyPatItems) {
-        return false;
+      });
     }
-
-    // Return true only if ALL PAT items are valid
-    return allPatItemsValid;
+  });
+  
+  // If no PAT items exist, return false (Fail)
+  if (!hasAnyPatItems) {
+    return false;
+  }
+  
+  // Return true only if ALL PAT items are valid
+  return allPatItemsValid;
 };
 
 export const requirementsNotRequiredForFileCheck = [
-    "Asbestos Surveys",
-    "Fire Emergency Plan",
-    "Fire alarm Commissioning Certificate",
-    "Fire Alarm Commissioning Certificate (BS5839)",
-    "Fire Log Book - Hard Copy",
-    "Health and Safety Law Poster",
-    "Health and Certificate Accident Book",
-    "Health and Safety Accident Book",
-    "Water Schematic Drawing",
-    "Water Legionella Samples"
+  "Asbestos Surveys",
+  "Fire Emergency Plan",
+  "Fire alarm Commissioning Certificate",
+  "Fire Alarm Commissioning Certificate (BS5839)",
+  "Fire Log Book - Hard Copy",
+  "Health and Safety Law Poster",
+  "Health and Certificate Accident Book",
+  "Health and Safety Accident Book",
+  "Water Schematic Drawing",
+  "Water Legionella Samples"
 ];
+
+export const isShowerHeadCleaningStatutoryRow = (item) =>
+  (item?.requirement || "").trim() === "Shower Head Cleaning" &&
+  (item?.subType || "").trim() === "Water Systems Service & Test Records";
 
 // Centralized status calculator function
 export const calculateStatutoryStatus = (item, siteChecks = [], patItems = []) => {
-    // If not required, return empty status
-    if (!item.required) {
-        return "";
+  // If not required, return empty status
+  if (!item.required) {
+    return "";
+  }
+
+  // Auto-pass items that don't require file checks
+  if (requirementsNotRequiredForFileCheck.includes(item?.requirement)) {
+    return "Passed";
+  }
+
+  let status = "Fail"; // Default status
+
+  const isShowerHeadCleaningRequirement = isShowerHeadCleaningStatutoryRow(item);
+
+  const hasTaggedFiles = Array.isArray(item?.files) && item.files.length > 0;
+
+  // PDF Type validation
+  if (String(item?.type).toLowerCase() === "pdf") {
+    if (item?.files?.length > 0) {
+      const isExpiryDateValid = item.files.every((file) =>
+        moment(file.expiryDate).isAfter(new Date())
+      );
+      status = isExpiryDateValid ? "Passed" : "Fail";
+    } else {
+      status = "Fail";
     }
-
-    // Auto-pass items that don't require file checks
-    if (requirementsNotRequiredForFileCheck.includes(item?.requirement)) {
-        return "Passed";
-    }
-
-    let status = "Fail"; // Default status
-
-    // PDF Type validation
-    if (String(item?.type).toLowerCase() === "pdf") {
-        if (item?.files?.length > 0) {
-            const isExpiryDateValid = item.files.every((file) =>
-                moment(file.expiryDate).isAfter(new Date())
-            );
-            status = isExpiryDateValid ? "Passed" : "Fail";
-        } else {
-            status = "Fail";
-        }
-        return status;
-    }
-
-    // Link Type validation
-    if (String(item?.type).toLowerCase() === "link") {
-        try {
-            // Asbestos Check
-            if (item?.subType === "Asbestos Management Plan") {
-                const isAsbestosRecordAvailable = siteChecks?.some(
-                    (itm) => itm?.subType === "Asbestos"
-                );
-                status = isAsbestosRecordAvailable ? "Passed" : "Fail";
-            }
-
-            // PAT Check - Check ALL PAT items instead of just nearest
-            else if (item?.subType === "PAT / Microwave Testing") {
-                // Check ALL PAT items - Pass only if ALL are valid
-                const allPatItemsValid = checkAllPatItemsValid(patItems);
-                status = allPatItemsValid ? "Passed" : "Fail";
-            }
-
-            // Emergency Check
-            else if (item?.subType === "Emergency light and Fire Alarm") {
-                const isEmergencyAvailable = siteChecks?.some(
-                    (itm) =>
-                        itm?.type === "Audit" && moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                );
-                status = isEmergencyAvailable ? "Passed" : "Fail";
-            }
-
-            // Water Risk Assessment Check
-            else if (item?.requirement === "Water Risk Assessment" && item?.subType === "Water") {
-                const isWaterAvailable = siteChecks?.some(
-                    (itm) =>
-                        itm?.subType === "Water Risk Assessment" && itm?.category === "Water" &&
-                        moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                );
-                status = isWaterAvailable ? "Passed" : "Fail";
-            }
-            // Water Risk Assessment Check
-            else if (item?.subType === "Water Risk Assessment" && item?.requirement === "Water Risk Assessment") {
-                const isWaterAvailable = siteChecks?.some(
-                    (itm) =>
-                        itm?.category === "Water Risk Assessment" &&
-                        itm?.subType === "Water" &&
-                        moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                );
-                status = isWaterAvailable ? "Passed" : "Fail";
-            }
-            // Fire Alarm Weekly Call Point Test Check
-            else if (item?.requirement === "Fire Alarm Weekly Call Point Test" && item?.subType === "Fire Alarm Weekly In House Testing") {
-                const isFireAlarm = siteChecks?.some(
-                    (itm) =>
-                        itm?.category === "Fire Alarm - Weekly Call Point testing to meet BS5839" &&
-                        itm?.subType === "Fire Alarm to meet BS5839" &&
-                        moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                );
-                status = isFireAlarm ? "Passed" : "Fail";
-            }
-            // Water Temperature Monitoring Check
-            else if (item?.requirement === "Water Temperature Monitoring" && item?.subType === "Water Systems Service & Test Records") {
-                const isWaterTempMonitor = siteChecks?.some(
-                    (itm) =>
-                        itm?.category === "Water Temperature Monitoring" &&
-                        itm?.subType === "Water" &&
-                        moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                );
-                status = isWaterTempMonitor ? "Passed" : "Fail";
-            }
-            // Shower Head Cleaning Check
-            else if (item?.requirement === "Shower Head Cleaning" && item?.subType === " Water Systems Service & Test Records") {
-                const isShowerCleaning = siteChecks?.some(
-                    (itm) =>
-                        itm?.category === "Periodic Shower Head Cleaning" &&
-                        itm?.subType === "Legionella" &&
-                        moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
-                );
-                status = isShowerCleaning ? "Passed" : "Fail";
-            }
-        } catch (error) {
-            console.error("Error calculating status:", error);
-            status = "Fail";
-        }
-    }
-
     return status;
+  }
+
+  // Link Type validation
+  if (String(item?.type).toLowerCase() === "link") {
+    try {
+      if (isShowerHeadCleaningRequirement && hasTaggedFiles) {
+        const isExpiryDateValid = item.files.every((file) =>
+          moment(file.expiryDate).isAfter(new Date())
+        );
+        return isExpiryDateValid ? "Passed" : "Fail";
+      }
+
+      // Asbestos Check
+      if (item?.subType === "Asbestos Management Plan") {
+        const isAsbestosRecordAvailable = siteChecks?.some(
+          (itm) => itm?.subType === "Asbestos"
+        );
+        status = isAsbestosRecordAvailable ? "Passed" : "Fail";
+      }
+
+      // PAT Check - Check ALL PAT items instead of just nearest
+      else if (item?.subType === "PAT / Microwave Testing") {
+        // Check ALL PAT items - Pass only if ALL are valid
+        const allPatItemsValid = checkAllPatItemsValid(patItems);
+        status = allPatItemsValid ? "Passed" : "Fail";
+      }
+
+      // Emergency Check
+      else if (item?.subType === "Emergency light and Fire Alarm") {
+        const isEmergencyAvailable = siteChecks?.some(
+          (itm) =>
+            itm?.type === "Audit" && moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isEmergencyAvailable ? "Passed" : "Fail";
+      }
+
+      // Water Risk Assessment Check
+      else if (item?.requirement === "Water Risk Assessment" && item?.subType === "Water") {
+        const isWaterAvailable = siteChecks?.some(
+          (itm) =>
+            itm?.subType === "Water Risk Assessment" && itm?.category === "Water" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isWaterAvailable ? "Passed" : "Fail";
+      }
+      // Water Risk Assessment Check
+      else if (item?.subType === "Water Risk Assessment" && item?.requirement === "Water Risk Assessment") {
+        const isWaterAvailable = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Water Risk Assessment" &&
+            itm?.subType === "Water" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isWaterAvailable ? "Passed" : "Fail";
+      }
+      // Fire Alarm Weekly Call Point Test Check
+      else if (item?.requirement === "Fire Alarm Weekly Call Point Test" && item?.subType === "Fire Alarm Weekly In House Testing") {
+        const isFireAlarm = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Fire Alarm - Weekly Call Point testing to meet BS5839" &&
+            itm?.subType === "Fire Alarm to meet BS5839" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isFireAlarm ? "Passed" : "Fail";
+      }
+      // Water Temperature Monitoring Check
+      else if (item?.requirement === "Water Temperature Monitoring" && item?.subType === "Water Systems Service & Test Records") {
+        const isWaterTempMonitor = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Water Temperature Monitoring" &&
+            itm?.subType === "Water" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isWaterTempMonitor ? "Passed" : "Fail";
+      }
+      // Shower Head Cleaning Check
+      else if (isShowerHeadCleaningRequirement) {
+        const isShowerCleaning = siteChecks?.some(
+          (itm) =>
+            itm?.category === "Periodic Shower Head Cleaning" &&
+            itm?.subType === "Legionella" &&
+            moment(getSiteCheckDueDateForStatus(itm)).isAfter(new Date())
+        );
+        status = isShowerCleaning ? "Passed" : "Fail";
+      }
+    } catch (error) {
+      console.error("Error calculating status:", error);
+      status = "Fail";
+    }
+  }
+
+  return status;
 };
 const StatutoryRegister = ({
-                               loggedInUserData,
-                               siteSelectedForGlobal,
-                               getSiteAssets,
-                               siteAssets,
-                           }) => {
-    let chipColor;
-    const [showModal, setShowModal] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isChecked, setIsChecked] = useState(true);
-    const [showPdfModal, setShowPdfModal] = useState(false);
-    const [selectedPdf, setSelectedPdf] = useState("");
-    const [statutory, setStatutory] = useState([]);
-    const [siteChecks, setSiteChecks] = useState([]);
-    const [patItems, setPatItems] = useState([]);
-    const [folder, setFolder] = useState({});
-    const [responsibleTexts, setResponsibleTexts] = useState({});
-    const [showSaveIcon, setShowSaveIcon] = useState({});
-    const [showTagDocumentModal, setShowTagDocumentModal] = useState(false);
+  loggedInUserData,
+  siteSelectedForGlobal,
+  getSiteAssets,
+  siteAssets,
+}) => {
+  let chipColor;
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isChecked, setIsChecked] = useState(true);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState("");
+  const [statutory, setStatutory] = useState([]);
+  const [siteChecks, setSiteChecks] = useState([]);
+  const [patItems, setPatItems] = useState([]);
+  const [folder, setFolder] = useState({});
+  const [responsibleTexts, setResponsibleTexts] = useState({});
+  const [showSaveIcon, setShowSaveIcon] = useState({});
+  const [showTagDocumentModal, setShowTagDocumentModal] = useState(false);
+  
 
+  const handleTextChange = (e, item) => {
+    const { value } = e.target;
+    setResponsibleTexts({
+      ...responsibleTexts,
+      [item.id]: value,
+    });
+    setShowSaveIcon({
+      ...showSaveIcon,
+      [item.id]: true, // Show save icon when text changes
+    });
+  };
 
-    const handleTextChange = (e, item) => {
-        const { value } = e.target;
-        setResponsibleTexts({
-            ...responsibleTexts,
-            [item.id]: value,
-        });
-        setShowSaveIcon({
-            ...showSaveIcon,
-            [item.id]: true, // Show save icon when text changes
-        });
-    };
+  const handleSaveClick = (item) => {
+    // Only update setValue and setSearchTerm on save
+    setValue(`residence-${item.id}`, responsibleTexts[item.id]);
+    setSearchTerm({
+      ...item,
+      residence: responsibleTexts[item.id],
+    });
 
-    const handleSaveClick = (item) => {
-        // Only update setValue and setSearchTerm on save
-        setValue(`residence-${item.id}`, responsibleTexts[item.id]);
-        setSearchTerm({
-            ...item,
-            residence: responsibleTexts[item.id],
-        });
-
-        // Hide save icon after saving
-        setShowSaveIcon({
-            ...showSaveIcon,
-            [item.id]: false,
-        });
-    };
-    const {
-        register,
-        formState: { errors },
-        setValue,
-    } = useForm({});
-    const [searchTerm, setSearchTerm] = useState({});
-    useEffect(() => {
-        updateResidence();
-    }, [searchTerm]);
-    const updateResidence = async () => {
-        try {
-            showLoader({ title: "Please wait..." });
-            const res = await put(
-                "/api/document/statutoryRegister/manage",
-                searchTerm
-            );
-            if (res?.status === 200) {
-                hideLoader();
-                loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
-            } else {
-                hideLoader();
-                toast.error(
-                    "Responsible text is not updated due to some technical issue. Please try again."
-                );
-            }
-        } catch (e) {
-            hideLoader();
-        }
-    };
-    const navigate = useNavigate();
-    let dutiesIdentified = 0;
-    let dutiesMet = 0;
-    const getDutiesIdentified = (item) => {
-        for (let i = 0; i < item.length; i++) {
-            if (item[i].required === true) {
-                dutiesIdentified++;
-            }
-        }
-        return dutiesIdentified;
-    };
-
-    const getDutiesMet = (item) => {
-        for (let i = 0; i < item.length; i++) {
-            if (item[i].files !== null && item[i].status === "Passed") {
-                dutiesMet++;
-            }
-        }
-        return dutiesMet;
-    };
-    // Load all data and calculate statuses
-    const loadAllDataAndCalculateStatus = async (siteId) => {
-        setIsLoading(true);
-        try {
-            // Load all data in parallel
-            const [statutoryData, siteChecksData, patItemsResponse] = await Promise.all([
-                get(`/api/document/${siteId}/statutoryRegister`).catch(err => {
-                    console.error("Error loading statutory data:", err);
-                    throw err; // Re-throw to be caught by outer try-catch
-                }),
-                get(`/api/site-check/site/${siteId}`).catch(err => {
-                    console.error("Error loading site checks:", err);
-                    return []; // Fallback to empty array
-                }),
-                get(`/api/site/${siteId}/assets?patItem=true`).catch(err => {
-                    console.error("Error loading PAT items:", err);
-                    return { assets: [] }; // Fallback to empty assets
-                })
-            ]);
-
-            // Extract assets from PAT items response
-            const patItemsData = patItemsResponse?.assets || [];
-
-            // Update state with loaded data
-            setSiteChecks(siteChecksData);
-            setPatItems(patItemsData);
-
-            // Sort statutory documents
-            const sortedStatutory = statutoryData.sort(
-                (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
-            );
-
-            // Recalculate status for ALL items using centralized calculator
-            const updatedStatutoryWithRecalculatedStatus = sortedStatutory.map(item => ({
-                ...item,
-                status: calculateStatutoryStatus(item, siteChecksData, patItemsData)
-            }));
-
-            // Filter based on user role
-            if (isManagerAdminLogin(loggedInUserData)) {
-                setStatutory(updatedStatutoryWithRecalculatedStatus);
-            } else {
-                const updatedStatutoryRegister = updatedStatutoryWithRecalculatedStatus?.filter(
-                    itm => itm?.required === true
-                );
-                setStatutory(updatedStatutoryRegister);
-            }
-
-            // Set initial values for residence fields
-            const newResponsibleTexts = {};
-            sortedStatutory.forEach((item) => {
-                newResponsibleTexts[item.id] = item.residence || "";
-                setValue(`residence-${item.id}`, item.residence || "");
-            });
-            setResponsibleTexts(newResponsibleTexts);
-
-            setIsLoading(false);
-        } catch (error) {
-            console.error("Error loading statutory register:", error);
-            setIsLoading(false);
-            toast.error("Failed to load statutory register. Please try again.");
-        }
-    };
-
-    const getStatutory = async (siteId) => {
-        // Delegate to the main loader function
-        await loadAllDataAndCalculateStatus(siteId);
-    };
-
-
-    const getChipStatus = (item) => {
-        return item.status === "Passed"
-            ? "Passed"
-            : item.status === "Open"
-                ? "Open"
-                : "";
-    };
-    const handleCheckboxField = async (e, item, idx) => {
-        const isChecked = e.target.checked;
-        setIsChecked(isChecked);
-
-        // Create updated item with new required state
-        const updatedItem = {
-            ...item,
-            required: isChecked,
-        };
-
-        // Use centralized calculator to determine status
-        const status = calculateStatutoryStatus(updatedItem, siteChecks, patItems);
-
-        // Prepare payload for API
-        const payload = {
-            ...item,
-            status: status,
-            required: isChecked,
-        };
-
-        try {
-            const res = await put("/api/document/statutoryRegister/manage", payload);
-            if (res?.status === 200) {
-                // Reload all data to ensure consistency
-                await loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
-            } else {
-                toast.error("Failed to update statutory register. Please try again.");
-            }
-        } catch (error) {
-            console.error("Error updating statutory register:", error);
-            toast.error("Failed to update statutory register. Please try again.");
-        }
-    };
-
-    useEffect(() => {
-        if (siteSelectedForGlobal?.siteId) {
-            // Load all data and calculate statuses in one go
-            loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
-            getSiteAssets(siteSelectedForGlobal?.siteId);
-        } else {
-            Swal.fire({
-                icon: "error",
-                title: "Oops...",
-                text: "Please select site from site search and try again.",
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [siteSelectedForGlobal?.siteId]);
-
-    const getViewEvidenceExpiryDate = (row) => {
-        // Group siteChecks by types to avoid multiple filtering
-        const surveys = siteChecks?.filter((itm) => itm?.type === "Survey");
-        const inspections = siteChecks?.filter((itm) => itm?.type === "Inspection");
-        const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
-        const assetWithNearestPatNextDate =
-            findAssetWithNearestPatNextDate(patItems);
-        // Pre-filter categories and subTypes for easier lookups
-        const filteredSiteChecks = {
-            asbestosManagementPlan: surveys?.find(
-                (itm) => itm?.category === "Asbestos Management Plan"
-            ),
-            patItems: assetWithNearestPatNextDate?.patItem,
-            fireAlarmsWeekly: inspections?.find(
-                (itm) =>
-                    itm?.subType === "Fire Alarm to meet BS5839" &&
-                    itm?.category ===
-                    "Fire Alarm - Weekly Call Point testing to meet BS5839"
-            ),
-            emergencyLightWeekly: inspections?.find(
-                (itm) =>
-                    itm?.subType === "Emergency Lighting to meet BS5266" &&
-                    itm?.category === "Emergency Lighting - weekly testing to meet BS5266"
-            ),
-            waterSafetyRiskAssessment: inspections?.find(
-                (itm) =>
-                    itm?.subType === "Legionella" &&
-                    (itm?.category === "Domestic RA" || "Water Safety Annual Inspection")
-            ),
-            waterOutletTemperature: inspections?.find(
-                (itm) =>
-                    itm?.subType === "Legionella" &&
-                    (itm?.category === "Outlet Temperature" ||
-                        itm?.category === "Water Temperature Monitoring")
-            ),
-            waterStorage: inspections?.find(
-                (itm) =>
-                    itm?.subType === "Legionella" &&
-                    itm?.category === "Water - Storage System Chlorination"
-            ),
-            showerHeadCleaning: inspections?.find(
-                (itm) =>
-                    itm?.subType === "Legionella" &&
-                    itm?.category === "Periodic Shower Head Cleaning"
-            ),
-            fireRiskAssessment: assessments?.find(
-                (itm) => itm?.subType === "Fire Risk Assessment"
-            ),
-            waterTemprature: surveys?.find(
-                (itm) =>
-                    itm?.subType === "Water" &&
-                    itm?.category === "Water Temperature Monitoring"
-            ),
-            waterRiskAssessment: surveys?.find(
-                (itm) =>
-                    itm?.subType === "Water" && itm?.category === "Water Risk Assessment"
-            ),
-        };
-        // Define a mapping of row subTypes to filteredSiteChecks
-        const checkMappings = {
-            "Asbestos Management Plan": filteredSiteChecks.asbestosManagementPlan,
-            "PAT / Microwave Testing": filteredSiteChecks.patItems,
-            "Fire Alarm Weekly In House Testing": filteredSiteChecks.fireAlarmsWeekly,
-            "Emergency Lighting Weekly In House Testing":
-            filteredSiteChecks.emergencyLightWeekly,
-            "Water Systems Service & Test Records":
-            filteredSiteChecks.waterOutletTemperature,
-            " Water Systems Service & Test Records":
-            filteredSiteChecks.showerHeadCleaning,
-            "Shower Head Cleaning": filteredSiteChecks.waterStorage,
-            "Fire Evacuation Drill": filteredSiteChecks.fireRiskAssessment,
-        };
-
-        const checkMappingsReq = {
-            "PAT / Microwave Testing": filteredSiteChecks.patItems,
-            "Shower Head Cleaning": filteredSiteChecks.waterStorage,
-            "Water Temperature Monitoring": filteredSiteChecks.waterTemprature,
-            "Water Risk Assessment": filteredSiteChecks.waterRiskAssessment,
-        };
-
-        const matchedCheck =
-            checkMappings[row?.subType] || checkMappings[row?.requirement];
-        const matchedCheckReq =
-            checkMappingsReq[row?.requirement] || checkMappings[row?.subType];
-
-        // If a matching check exists, return the expiry date row
-        // console.log("row", row);
-        if (matchedCheck || matchedCheckReq) {
-            if (row?.requirement == "Water Risk Assessment") {
-                return getStartAndExpiryDateRow(
-                    matchedCheckReq.startDate,
-                    matchedCheckReq.dueDate,
-                    matchedCheckReq,
-                );
-            } else if (row?.requirement == "Water Temperature Monitoring") {
-                return getStartAndExpiryDateRow(
-                    matchedCheckReq.startDate,
-                    matchedCheckReq.dueDate,
-                    matchedCheckReq,
-                );
-            } else if (row?.requirement == "Shower Head Cleaning") {
-                return getStartAndExpiryDateRow(
-                    matchedCheckReq.startDate,
-                    matchedCheckReq.dueDate,
-                    matchedCheckReq,
-                );
-            } else if (row?.subType == "PAT / Microwave Testing") {
-                // Use dates from backend if available, otherwise fallback to PAT items
-                const issueDate = row.patIssueDate || matchedCheckReq?.patDate;
-                const expiryDate = row.patExpiryDate || matchedCheckReq?.patNextDate;
-                return getStartAndExpiryDateRow(
-                    issueDate,
-                    expiryDate,
-                    matchedCheckReq,
-                    true,
-                );
-            } else {
-                return getStartAndExpiryDateRow(
-                    matchedCheck.startDate,
-                    matchedCheck.dueDate,
-                    matchedCheckReq,
-                );
-            }
-        }
-
-        return null;
-    };
-
-    // Helper function to create table row with start and expiry dates
-    const getStartAndExpiryDateRow = (startDate, dueDate, action, isPatItem = false) => {
-        return (
-            <tr>
-                {[...Array(3)].map((_, idx) => (
-                    <th
-                        key={`empty-${idx}`}
-                        style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}
-                    />
-                ))}
-                <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
-                    {startDate ? moment(startDate).format("DD-MM-YYYY") : "--"}
-                </th>
-                <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
-                    {isPatItem
-                        ? (dueDate ? moment(dueDate).format("DD-MM-YYYY") : "--")
-                        : getSiteCheckDueDate(action)
-                    }
-                </th>
-                {[...Array(2)].map((_, idx) => (
-                    <th
-                        key={`empty2-${idx}`}
-                        style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}
-                    />
-                ))}
-            </tr>
+    // Hide save icon after saving
+    setShowSaveIcon({
+      ...showSaveIcon,
+      [item.id]: false,
+    });
+  };
+  const {
+    register,
+    formState: { errors },
+    setValue,
+  } = useForm({});
+  const [searchTerm, setSearchTerm] = useState({});
+  useEffect(() => {
+    updateResidence();
+  }, [searchTerm]);
+  const updateResidence = async () => {
+    try {
+      showLoader({ title: "Please wait..." });
+      const res = await put(
+        "/api/document/statutoryRegister/manage",
+        searchTerm
+      );
+      if (res?.status === 200) {
+        hideLoader();
+        loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+      } else {
+        hideLoader();
+        toast.error(
+          "Responsible text is not updated due to some technical issue. Please try again."
         );
+      }
+    } catch (e) {
+      hideLoader();
+    }
+  };
+  const navigate = useNavigate();
+  let dutiesIdentified = 0;
+  let dutiesMet = 0;
+  const getDutiesIdentified = (item) => {
+    for (let i = 0; i < item.length; i++) {
+      if (item[i].required === true) {
+        dutiesIdentified++;
+      }
+    }
+    return dutiesIdentified;
+  };
+
+  const getDutiesMet = (item) => {
+    for (let i = 0; i < item.length; i++) {
+      if (item[i].files !== null && item[i].status === "Passed") {
+        dutiesMet++;
+      }
+    }
+    return dutiesMet;
+  };
+  // Load all data and calculate statuses
+  const loadAllDataAndCalculateStatus = async (siteId) => {
+    setIsLoading(true);
+    try {
+      // Load all data in parallel
+      const [statutoryData, siteChecksData, patItemsResponse] = await Promise.all([
+        get(`/api/document/${siteId}/statutoryRegister`).catch(err => {
+          console.error("Error loading statutory data:", err);
+          throw err; // Re-throw to be caught by outer try-catch
+        }),
+        get(`/api/site-check/site/${siteId}`).catch(err => {
+          console.error("Error loading site checks:", err);
+          return []; // Fallback to empty array
+        }),
+        get(`/api/site/${siteId}/assets?patItem=true`).catch(err => {
+          console.error("Error loading PAT items:", err);
+          return { assets: [] }; // Fallback to empty assets
+        })
+      ]);
+
+      // Extract assets from PAT items response
+      const patItemsData = patItemsResponse?.assets || [];
+
+      // Update state with loaded data
+      setSiteChecks(siteChecksData);
+      setPatItems(patItemsData);
+
+      // Sort statutory documents
+      const sortedStatutory = statutoryData.sort(
+        (a, b) => parseInt(a.sortOrder) - parseInt(b.sortOrder)
+      );
+
+      // Recalculate status for ALL items using centralized calculator
+      const updatedStatutoryWithRecalculatedStatus = sortedStatutory.map(item => ({
+        ...item,
+        status: calculateStatutoryStatus(item, siteChecksData, patItemsData)
+      }));
+
+      // Filter based on user role
+      if (isManagerAdminLogin(loggedInUserData)) {
+        setStatutory(updatedStatutoryWithRecalculatedStatus);
+      } else {
+        const updatedStatutoryRegister = updatedStatutoryWithRecalculatedStatus?.filter(
+          itm => itm?.required === true
+        );
+        setStatutory(updatedStatutoryRegister);
+      }
+
+      // Set initial values for residence fields
+      const newResponsibleTexts = {};
+      sortedStatutory.forEach((item) => {
+        newResponsibleTexts[item.id] = item.residence || "";
+        setValue(`residence-${item.id}`, item.residence || "");
+      });
+      setResponsibleTexts(newResponsibleTexts);
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error loading statutory register:", error);
+      setIsLoading(false);
+      toast.error("Failed to load statutory register. Please try again.");
+    }
+  };
+
+  const getStatutory = async (siteId) => {
+    // Delegate to the main loader function
+    await loadAllDataAndCalculateStatus(siteId);
+  };
+
+
+  const getChipStatus = (item) => {
+    return item.status === "Passed"
+      ? "Passed"
+      : item.status === "Open"
+      ? "Open"
+      : "";
+  };
+  const handleCheckboxField = async (e, item, idx) => {
+    const isChecked = e.target.checked;
+    setIsChecked(isChecked);
+
+    // Create updated item with new required state
+    const updatedItem = {
+      ...item,
+      required: isChecked,
     };
 
-    const untagAsset = async (selectedRow, statutory) => {
-        const fileIds = [selectedRow]?.map((item) => item.id);
-        const url = `/api/document/untag-file`;
-        const data = {
-            fileIds: fileIds,
-            statutoryCategoryId: statutory?.id,
-        };
-        const res = await put(url, data);
-        if (res?.status === 200) {
-            toast.success("Files un tagged successfully.");
-            loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
-        } else {
-            toast.error("Something went wrong while un tagging files.");
-        }
+    // Use centralized calculator to determine status
+    const status = calculateStatutoryStatus(updatedItem, siteChecks, patItems);
+
+    // Prepare payload for API
+    const payload = {
+      ...item,
+      status: status,
+      required: isChecked,
     };
 
+    try {
+      const res = await put("/api/document/statutoryRegister/manage", payload);
+      if (res?.status === 200) {
+        // Reload all data to ensure consistency
+        await loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+      } else {
+        toast.error("Failed to update statutory register. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating statutory register:", error);
+      toast.error("Failed to update statutory register. Please try again.");
+    }
+  };
+
+  useEffect(() => {
+    if (siteSelectedForGlobal?.siteId) {
+      // Load all data and calculate statuses in one go
+      loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+      getSiteAssets(siteSelectedForGlobal?.siteId);
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Please select site from site search and try again.",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteSelectedForGlobal?.siteId]);
+
+  const getViewEvidenceExpiryDate = (row) => {
+    // Group siteChecks by types to avoid multiple filtering
+    const surveys = siteChecks?.filter((itm) => itm?.type === "Survey");
+    const inspections = siteChecks?.filter((itm) => itm?.type === "Inspection");
+    const assessments = siteChecks?.filter((itm) => itm?.type === "Assessment");
+    const assetWithNearestPatNextDate =
+      findAssetWithNearestPatNextDate(patItems);
+    // Pre-filter categories and subTypes for easier lookups
+    const filteredSiteChecks = {
+      asbestosManagementPlan: surveys?.find(
+        (itm) => itm?.category === "Asbestos Management Plan"
+      ),
+      patItems: assetWithNearestPatNextDate?.patItem,
+      fireAlarmsWeekly: inspections?.find(
+        (itm) =>
+          itm?.subType === "Fire Alarm to meet BS5839" &&
+          itm?.category ===
+            "Fire Alarm - Weekly Call Point testing to meet BS5839"
+      ),
+      emergencyLightWeekly: inspections?.find(
+        (itm) =>
+          itm?.subType === "Emergency Lighting to meet BS5266" &&
+          itm?.category === "Emergency Lighting - weekly testing to meet BS5266"
+      ),
+      waterSafetyRiskAssessment: inspections?.find(
+        (itm) =>
+          itm?.subType === "Legionella" &&
+          (itm?.category === "Domestic RA" || "Water Safety Annual Inspection")
+      ),
+      waterOutletTemperature: inspections?.find(
+        (itm) =>
+          itm?.subType === "Legionella" &&
+          (itm?.category === "Outlet Temperature" ||
+            itm?.category === "Water Temperature Monitoring")
+      ),
+      waterStorage: inspections?.find(
+        (itm) =>
+          itm?.subType === "Legionella" &&
+          itm?.category === "Water - Storage System Chlorination"
+      ),
+      showerHeadCleaning: inspections?.find(
+        (itm) =>
+          itm?.subType === "Legionella" &&
+          itm?.category === "Periodic Shower Head Cleaning"
+      ),
+      fireRiskAssessment: assessments?.find(
+        (itm) => itm?.subType === "Fire Risk Assessment"
+      ),
+      waterTemprature: surveys?.find(
+        (itm) =>
+          itm?.subType === "Water" &&
+          itm?.category === "Water Temperature Monitoring"
+      ),
+      waterRiskAssessment: surveys?.find(
+        (itm) =>
+          itm?.subType === "Water" && itm?.category === "Water Risk Assessment"
+      ),
+    };
+    // Define a mapping of row subTypes to filteredSiteChecks
+    const checkMappings = {
+      "Asbestos Management Plan": filteredSiteChecks.asbestosManagementPlan,
+      "PAT / Microwave Testing": filteredSiteChecks.patItems,
+      "Fire Alarm Weekly In House Testing": filteredSiteChecks.fireAlarmsWeekly,
+      "Emergency Lighting Weekly In House Testing":
+        filteredSiteChecks.emergencyLightWeekly,
+      "Water Systems Service & Test Records":
+        filteredSiteChecks.waterOutletTemperature,
+      " Water Systems Service & Test Records":
+        filteredSiteChecks.showerHeadCleaning,
+      "Shower Head Cleaning": filteredSiteChecks.waterStorage,
+      "Fire Evacuation Drill": filteredSiteChecks.fireRiskAssessment,
+    };
+
+    const checkMappingsReq = {
+      "PAT / Microwave Testing": filteredSiteChecks.patItems,
+      "Shower Head Cleaning": filteredSiteChecks.waterStorage,
+      "Water Temperature Monitoring": filteredSiteChecks.waterTemprature,
+      "Water Risk Assessment": filteredSiteChecks.waterRiskAssessment,
+    };
+
+    const matchedCheck =
+      checkMappings[row?.subType] || checkMappings[row?.requirement];
+    const matchedCheckReq =
+      checkMappingsReq[row?.requirement] || checkMappings[row?.subType];
+
+    // If a matching check exists, return the expiry date row
+    // console.log("row", row);
+    if (matchedCheck || matchedCheckReq) {
+      if (row?.requirement == "Water Risk Assessment") {
+        return getStartAndExpiryDateRow(
+          matchedCheckReq.startDate,
+          matchedCheckReq.dueDate,
+          matchedCheckReq,
+        );
+      } else if (row?.requirement == "Water Temperature Monitoring") {
+        return getStartAndExpiryDateRow(
+          matchedCheckReq.startDate,
+          matchedCheckReq.dueDate,
+          matchedCheckReq,
+        );
+      } else if (row?.requirement == "Shower Head Cleaning") {
+        return getStartAndExpiryDateRow(
+          matchedCheckReq.startDate,
+          matchedCheckReq.dueDate,
+          matchedCheckReq,
+        );
+      } else if (row?.subType == "PAT / Microwave Testing") {
+        // Use dates from backend if available, otherwise fallback to PAT items
+        const issueDate = row.patIssueDate || matchedCheckReq?.patDate;
+        const expiryDate = row.patExpiryDate || matchedCheckReq?.patNextDate;
+        return getStartAndExpiryDateRow(
+          issueDate,
+          expiryDate,
+          matchedCheckReq,
+          true,
+        );
+      } else {
+        return getStartAndExpiryDateRow(
+          matchedCheck.startDate,
+          matchedCheck.dueDate,
+          matchedCheckReq,
+        );
+      }
+    }
+
+    return null;
+  };
+
+  // Helper function to create table row with start and expiry dates
+  const getStartAndExpiryDateRow = (startDate, dueDate, action, isPatItem = false) => {
     return (
-        <>
-            {showTagDocumentModal && (
-                <TagStatutory
-                    showModal={showTagDocumentModal}
-                    setShowModal={setShowTagDocumentModal}
-                    statutoryCategory={folder}
-                    siteId={siteSelectedForGlobal?.siteId}
-                    refresh={() => {
-                        loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
-                    }}
-                />
-            )}
-            <SidebarNew />
+      <tr>
+        {[...Array(3)].map((_, idx) => (
+          <th
+            key={`empty-${idx}`}
+            style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}
+          />
+        ))}
+        <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
+          {startDate ? moment(startDate).format("DD-MM-YYYY") : "--"}
+        </th>
+        <th style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}>
+          {isPatItem
+            ? (dueDate ? moment(dueDate).format("DD-MM-YYYY") : "--")
+            : getSiteCheckDueDate(action)
+          }
+        </th>
+        {[...Array(2)].map((_, idx) => (
+          <th
+            key={`empty2-${idx}`}
+            style={{ backgroundColor: "#DEE3E9", color: "#5A6371" }}
+          />
+        ))}
+      </tr>
+    );
+  };
 
-            <div className="content">
-                <Header />
-                <div className="container-fluid">
-                    <BreadCrumHeader
-                        header={"Statutory Register"}
-                        page={"Statutory Register"}
-                    />
-                    <div class="card card-body">
-                        <div className="pt-2 bd-highlight ">
-                            <div className="row" style={{ height: "auto" }}>
-                                <div className="col border-end">
-                                    <div className="row">
-                                        <div className="col-md-4 border-right">
-                                            <img src={DutiesIdentifiedLogo} height={"40px"} />
-                                        </div>
-                                        <div className="col-md-8">
-                                            <span>Duties Identified</span>
-                                            <p class="fw-bold fs-3">
-                                                {getDutiesIdentified(statutory)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col border-end">
-                                    <div className="row">
-                                        <div className="col-md-4">
-                                            <img src={DutiesMetLogo} height={"40px"} />
-                                        </div>
-                                        <div className="col-md-8">
-                                            <span>Duties Met</span>
-                                            <p class="fw-bold fs-3">{getDutiesMet(statutory)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col border-end">
-                                    <div className="row">
-                                        <div className="col-md-4">
-                                            <img src={DutiesNotMetLogo} height={"40px"} />
-                                        </div>
-                                        <div className="col-md-8">
-                                            <span>Duties Not Met</span>
-                                            <p class="fw-bold fs-3">{dutiesIdentified - dutiesMet}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col text-center">
-                                    <CSVLink
-                                        filename={"statutory-documents.csv"}
-                                        className="btn btn-light bg-white text-primary"
-                                        data={statutory?.map((item) => {
-                                            // Use destructuring to exclude the 'files' field while copying the rest
-                                            const { files, ...rest } = item;
-                                            return rest;
-                                        })}
-                                    >
-                                        <i className="fas fa-download"></i>&nbsp;Export
-                                    </CSVLink>
-                                </div>
-                            </div>
-                        </div>
+  const untagAsset = async (selectedRow, statutory) => {
+    const fileIds = [selectedRow]?.map((item) => item.id);
+    const url = `/api/document/untag-file`;
+    const data = {
+      fileIds: fileIds,
+      statutoryCategoryId: statutory?.id,
+    };
+    const res = await put(url, data);
+    if (res?.status === 200) {
+      toast.success("Files un tagged successfully.");
+      loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+    } else {
+      toast.error("Something went wrong while un tagging files.");
+    }
+  };
+
+  return (
+    <>
+    {showTagDocumentModal && (
+        <TagStatutory
+          showModal={showTagDocumentModal}
+          setShowModal={setShowTagDocumentModal}
+          statutoryCategory={folder}
+          siteId={siteSelectedForGlobal?.siteId}
+          refresh={() => {
+            loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+          }}
+        />
+      )}
+      <SidebarNew />
+
+      <div className="content">
+        <Header />
+        <div className="container-fluid">
+          <BreadCrumHeader
+            header={"Statutory Register"}
+            page={"Statutory Register"}
+          />
+          <div class="card card-body">
+            <div className="pt-2 bd-highlight ">
+              <div className="row" style={{ height: "auto" }}>
+                <div className="col border-end">
+                  <div className="row">
+                    <div className="col-md-4 border-right">
+                      <img src={DutiesIdentifiedLogo} height={"40px"} />
                     </div>
-                    <div className="col-md-12 pt-4 table-responsive">
-                        <table className="table">
-                            <thead className="table-dark">
-                            <tr>
-                                <th scope="col">Id</th>
-                                <th scope="col">Requirement</th>
-                                <th scope="col">Required</th>
-                                <th scope="col">Responsible</th>
-                                <th scope="col">Document</th>
-                                <th scope="col">Status</th>
-                            </tr>
-                            </thead>
-                            {showPdfModal && (
-                                <PdfViewer
-                                    showPdfModal={showPdfModal}
-                                    setShowPdfModal={setShowPdfModal}
-                                    selectedPdf={selectedPdf}
-                                />
-                            )}
-                            <tbody>
-                            {!isLoading && statutory.length === 0 && (
-                                <tr>
-                                    <td colSpan={4} align="center">
-                                        No result found!!
-                                    </td>
-                                </tr>
-                            )}
-                            {statutory?.map((item, index) => {
-                                return (
-                                    <tr>
-                                        <th scope="col">
+                    <div className="col-md-8">
+                      <span>Duties Identified</span>
+                      <p class="fw-bold fs-3">
+                        {getDutiesIdentified(statutory)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="col border-end">
+                  <div className="row">
+                    <div className="col-md-4">
+                      <img src={DutiesMetLogo} height={"40px"} />
+                    </div>
+                    <div className="col-md-8">
+                      <span>Duties Met</span>
+                      <p class="fw-bold fs-3">{getDutiesMet(statutory)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="col border-end">
+                  <div className="row">
+                    <div className="col-md-4">
+                      <img src={DutiesNotMetLogo} height={"40px"} />
+                    </div>
+                    <div className="col-md-8">
+                      <span>Duties Not Met</span>
+                      <p class="fw-bold fs-3">{dutiesIdentified - dutiesMet}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="col text-center">
+                  <CSVLink
+                    filename={"statutory-documents.csv"}
+                    className="btn btn-light bg-white text-primary"
+                    data={statutory?.map((item) => {
+                      // Use destructuring to exclude the 'files' field while copying the rest
+                      const { files, ...rest } = item;
+                      return rest;
+                    })}
+                  >
+                    <i className="fas fa-download"></i>&nbsp;Export
+                  </CSVLink>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-12 pt-4 table-responsive">
+            <table className="table">
+              <thead className="table-dark">
+                <tr>
+                  <th scope="col">Id</th>
+                  <th scope="col">Requirement</th>
+                  <th scope="col">Required</th>
+                  <th scope="col">Responsible</th>
+                  <th scope="col">Document</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              {showPdfModal && (
+                <PdfViewer
+                  showPdfModal={showPdfModal}
+                  setShowPdfModal={setShowPdfModal}
+                  selectedPdf={selectedPdf}
+                />
+              )}
+              <tbody>
+                {!isLoading && statutory.length === 0 && (
+                  <tr>
+                    <td colSpan={4} align="center">
+                      No result found!!
+                    </td>
+                  </tr>
+                )}
+                {statutory?.map((item, index) => {
+                  return (
+                    <tr>
+                      <th scope="col">
                         <span
-                            className="text-primary cursor"
-                            onClick={() => {}}
+                          className="text-primary cursor"
+                          onClick={() => {}}
                         >
                           {item.sortOrder}
                         </span>
-                                        </th>
-                                        <th scope="col">
-                                            {item.subType ? `(${item.subType}) ` : ""}
-                                            {item.requirement}
-                                            <div
-                                                style={{
-                                                    display:
-                                                        String(item?.type).toLowerCase() === "link"
-                                                            ? ""
-                                                            : "none",
-                                                }}
-                                            >
-                                                {item.subType === "PAT / Microwave Testing" ? (
-                                                    <a
-                                                        href="/#/assets"
-                                                        className="btn btn-primary mt-3 text-bg-primary"
-                                                    >
-                                                        View Evidence
-                                                    </a>
-                                                ) : (
-                                                    <a
-                                                        href="/#/site-checks"
-                                                        className="btn btn-primary mt-3 text-bg-primary"
-                                                    >
-                                                        View Evidence
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th scope="col">
-                                            <input
-                                                type="checkbox"
-                                                id="chkbox"
-                                                checked={item.required}
-                                                disabled={!isManagerAdminLogin(loggedInUserData)}
-                                                onChange={(e) => {
-                                                    handleCheckboxField(e, item, index);
-                                                }}
-                                            />
-                                        </th>
-                                        <th scope="col">
-                                            <div style={{ display: "flex", alignItems: "center" }}>
-                                                <input
-                                                    type="text"
-                                                    autoComplete="off"
-                                                    readOnly
-                                                    onFocus={(e) => e.target.removeAttribute("readonly")}
-                                                    id="chkbox"
-                                                    style={{ width: "120px" }}
-                                                    className="form-control"
-                                                    value={responsibleTexts[item.id] || ""}
-                                                    {...register(`residence-${item.id}`)}
-                                                    disabled={!isManagerAdminLogin(loggedInUserData)}
-                                                    onChange={(e) => handleTextChange(e, item)}
-                                                />
-                                                {showSaveIcon[item.id] && (
-                                                    <FaSave
-                                                        style={{
-                                                            color: "green",
-                                                            cursor: "pointer",
-                                                            marginLeft: "5px",
-                                                        }}
-                                                        onClick={() => handleSaveClick(item)}
-                                                    />
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th scope="col">
-                                            <table
-                                                className="table"
-                                                style={{ border: "1px solid #5A6371" }}
-                                            >
-                                                <thead className="table-active">
-                                                <tr>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        File
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        Folder
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        Version
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        Date
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        Expiry
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        Author
-                                                    </th>
-                                                    <th
-                                                        scope="col"
-                                                        style={{
-                                                            backgroundColor: "#7D8793",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                    >
-                                                        Ref No.
-                                                    </th>
-                                                    {String(item?.type).toLowerCase() === "pdf" && (
-                                                        <th
-                                                            scope="col"
-                                                            style={{
-                                                                backgroundColor: "#7D8793",
-                                                                color: "#FFFFFF",
-                                                            }}
-                                                        >
-                                                            Action
-                                                        </th>
-                                                    )}
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                {String(item?.type).toLowerCase() === "link"
-                                                    ? getViewEvidenceExpiryDate(item)
-                                                    : null}
-                                                {item?.files?.map((itm, index) => {
-                                                    return (
-                                                        <tr>
-                                                            <th
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                }}
-                                                            >
-                                                                <button
-                                                                    style={{
-                                                                        border: "none",
-                                                                        cursor: "pointer",
-                                                                        color: "blue",
-                                                                    }}
-                                                                    onClick={(e) => {
-                                                                        e?.preventDefault();
-                                                                        setShowPdfModal(true);
-                                                                        setSelectedPdf(itm?.fileBlobUrl);
-                                                                    }}
-                                                                >
-                                                                    {itm.name === "undefined"
-                                                                        ? "--"
-                                                                        : itm.name}
-                                                                </button>
-                                                            </th>
-                                                            {/* <th scope="col">{itm.name}</th> */}
-                                                            <th
-                                                                scope="col"
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                    border: "1px solid #5A6371",
-                                                                }}
-                                                            >
-                                                                {itm.folderName}
-                                                            </th>
-                                                            <th
-                                                                scope="col"
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                    border: "1px solid #5A6371",
-                                                                }}
-                                                            >
-                                                                {itm.fileVersion}
-                                                            </th>
-                                                            <th
-                                                                scope="col"
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                    border: "1px solid #5A6371",
-                                                                }}
-                                                            >
-                                                                {itm.issueDate
-                                                                    ? moment(itm.issueDate).format(
-                                                                        "DD-MM-YYYY"
-                                                                    )
-                                                                    : "-"}
-                                                            </th>
-                                                            <th
-                                                                scope="col"
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                    border: "1px solid #5A6371",
-                                                                }}
-                                                            >
-                                                                {itm.expiryDate
-                                                                    ? moment(itm.expiryDate).format(
-                                                                        "DD-MM-YYYY"
-                                                                    )
-                                                                    : "-"}
-                                                            </th>
-                                                            <th
-                                                                scope="col"
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                    border: "1px solid #5A6371",
-                                                                }}
-                                                            >
-                                                                {itm.uploaderUserName}
-                                                            </th>
-                                                            <th
-                                                                scope="col"
-                                                                style={{
-                                                                    backgroundColor: "#DEE3E9",
-                                                                    color: "#5A6371",
-                                                                    border: "1px solid #5A6371",
-                                                                }}
-                                                            >
-                                                                {itm.uploaderUserId}
-                                                            </th>
-                                                            {String(item?.type).toLowerCase() ===
-                                                                "pdf" && (
-                                                                    <th
-                                                                        scope="col"
-                                                                        style={{
-                                                                            backgroundColor: "#DEE3E9",
-                                                                            color: "#5A6371",
-                                                                            border: "1px solid #5A6371",
-                                                                        }}
-                                                                    >
-                                                                        <button
-                                                                            className="btn btn-sm btn-danger"
-                                                                            onClick={() => {
-                                                                                untagAsset(itm, item);
-                                                                            }}
-                                                                            style={{fontSize: '10px', display:
-                                                                                    (!isManagerAdminLogin(
-                                                                                        loggedInUserData
-                                                                                    ))
-                                                                                        ? "none"
-                                                                                        : "",}}
-                                                                        >
-                                                                            Untag Document
-                                                                        </button>
-                                                                    </th>
-                                                                )}
-                                                        </tr>
-                                                    );
-                                                })}
-
-                                                <tr>
-                                                    <td colspan={2} style={{
-                                                        backgroundColor: "#5A6371",
-                                                        color: "#FFFFFF",
-                                                    }}>
-                                                        <label
-                                                            id="upload-file"
-                                                            class="text-decoration-underline"
-                                                            onClick={() => {
-                                                                setFolder(item);
-                                                                setShowTagDocumentModal(true);
-                                                            }}
-                                                            style={{
-                                                                display:
-                                                                    (String(item?.type).toLowerCase() ===
-                                                                        "link" || !isManagerAdminLogin(
-                                                                            loggedInUserData
-                                                                        ))
-                                                                        ? "none"
-                                                                        : "",
-                                                                color: "384bd3",
-                                                                cursor: "pointer",
-                                                            }}
-                                                        >
-                                                            Tag Documents
-                                                        </label>
-                                                    </td>
-                                                    <td
-                                                        colspan={
-                                                            String(item?.type).toLowerCase() === "pdf"
-                                                                ? 6
-                                                                : 5
-                                                        }
-                                                        style={{
-                                                            backgroundColor: "#5A6371",
-                                                            color: "#FFFFFF",
-                                                        }}
-                                                        align="center"
-                                                    >
-                                                        <div
-                                                            className="upload-file"
-                                                            style={{
-                                                                display: isManagerAdminLogin(
-                                                                    loggedInUserData
-                                                                )
-                                                                    ? ""
-                                                                    : "none",
-                                                            }}
-                                                        >
-                                                            <label
-                                                                id="upload-file"
-                                                                class="text-decoration-underline"
-                                                                onClick={() => {
-                                                                    setFolder(item);
-                                                                    setShowModal(true);
-                                                                }}
-                                                                style={{
-                                                                    display:
-                                                                        String(item?.type).toLowerCase() ===
-                                                                        "link"
-                                                                            ? "none"
-                                                                            : "",
-                                                                    color: "384bd3",
-                                                                    cursor: "pointer",
-                                                                }}
-                                                            >
-                                                                Select or Upload New File
-                                                            </label>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                </tbody>
-                                            </table>
-                                        </th>
-                                        <th scope="col">
-                                            {item?.status ? (
-                                                <StatuaryStatus status={item?.status} />
-                                            ) : (
-                                                "--"
-                                            )}
-                                        </th>
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
-                    </div>
-                    {showModal && (
-                        <CreateFiles
-                            showModal={showModal}
-                            setShowModal={setShowModal}
-                            isStatutory={true}
-                            folderData={folder}
-                            setFolder={setFolder}
-                            uploaderUserId={loggedInUserData?.id}
-                            reviewerUserId={loggedInUserData?.id}
-                            refresh={() => {
-                                loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
-                            }}
+                      </th>
+                      <th scope="col">
+                        {item.subType ? `(${item.subType}) ` : ""}
+                        {item.requirement}
+                        <div
+                          style={{
+                            display:
+                              String(item?.type).toLowerCase() === "link"
+                                ? ""
+                                : "none",
+                          }}
+                        >
+                          {item.subType === "PAT / Microwave Testing" ? (
+                            <a
+                              href="/#/assets"
+                              className="btn btn-primary mt-3 text-bg-primary"
+                            >
+                              View Evidence
+                            </a>
+                          ) : (
+                            <a
+                              href="/#/site-checks"
+                              className="btn btn-primary mt-3 text-bg-primary"
+                            >
+                              View Evidence
+                            </a>
+                          )}
+                        </div>
+                      </th>
+                      <th scope="col">
+                        <input
+                          type="checkbox"
+                          id="chkbox"
+                          checked={item.required}
+                          disabled={!isManagerAdminLogin(loggedInUserData)}
+                          onChange={(e) => {
+                            handleCheckboxField(e, item, index);
+                          }}
                         />
-                    )}
-                </div>
-            </div>
-        </>
-    );
+                      </th>
+                      <th scope="col">
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <input
+                            type="text"
+autoComplete="off"
+          readOnly
+          onFocus={(e) => e.target.removeAttribute("readonly")}
+                            id="chkbox"
+                            style={{ width: "120px" }}
+                            className="form-control"
+                            value={responsibleTexts[item.id] || ""}
+                            {...register(`residence-${item.id}`)}
+                            disabled={!isManagerAdminLogin(loggedInUserData)}
+                            onChange={(e) => handleTextChange(e, item)}
+                          />
+                          {showSaveIcon[item.id] && (
+                            <FaSave
+                              style={{
+                                color: "green",
+                                cursor: "pointer",
+                                marginLeft: "5px",
+                              }}
+                              onClick={() => handleSaveClick(item)}
+                            />
+                          )}
+                        </div>
+                      </th>
+                      <th scope="col">
+                        <table
+                          className="table"
+                          style={{ border: "1px solid #5A6371" }}
+                        >
+                          <thead className="table-active">
+                            <tr>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                File
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Folder
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Version
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Date
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Expiry
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Author
+                              </th>
+                              <th
+                                scope="col"
+                                style={{
+                                  backgroundColor: "#7D8793",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Ref No.
+                              </th>
+                              {String(item?.type).toLowerCase() === "pdf" && (
+                                <th
+                                  scope="col"
+                                  style={{
+                                    backgroundColor: "#7D8793",
+                                    color: "#FFFFFF",
+                                  }}
+                                >
+                                  Action
+                                </th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {String(item?.type).toLowerCase() === "link"
+                              ? getViewEvidenceExpiryDate(item)
+                              : null}
+                            {item?.files?.map((itm, index) => {
+                              return (
+                                <tr>
+                                  <th
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                    }}
+                                  >
+                                    <button
+                                      style={{
+                                        border: "none",
+                                        cursor: "pointer",
+                                        color: "blue",
+                                      }}
+                                      onClick={(e) => {
+                                        e?.preventDefault();
+                                        setShowPdfModal(true);
+                                        setSelectedPdf(itm?.fileBlobUrl);
+                                      }}
+                                    >
+                                      {itm.name === "undefined"
+                                        ? "--"
+                                        : itm.name}
+                                    </button>
+                                  </th>
+                                  {/* <th scope="col">{itm.name}</th> */}
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
+                                    {itm.folderName}
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
+                                    {itm.fileVersion}
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
+                                    {itm.issueDate
+                                      ? moment(itm.issueDate).format(
+                                          "DD-MM-YYYY"
+                                        )
+                                      : "-"}
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
+                                    {itm.expiryDate
+                                      ? moment(itm.expiryDate).format(
+                                          "DD-MM-YYYY"
+                                        )
+                                      : "-"}
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
+                                    {itm.uploaderUserName}
+                                  </th>
+                                  <th
+                                    scope="col"
+                                    style={{
+                                      backgroundColor: "#DEE3E9",
+                                      color: "#5A6371",
+                                      border: "1px solid #5A6371",
+                                    }}
+                                  >
+                                    {itm.uploaderUserId}
+                                  </th>
+                                  {String(item?.type).toLowerCase() ===
+                                    "pdf" && (
+                                    <th
+                                      scope="col"
+                                      style={{
+                                        backgroundColor: "#DEE3E9",
+                                        color: "#5A6371",
+                                        border: "1px solid #5A6371",
+                                      }}
+                                    >
+                                      <button
+                                        className="btn btn-sm btn-danger"
+                                        onClick={() => {
+                                          untagAsset(itm, item);
+                                        }}
+                                        style={{fontSize: '10px', display:
+                                          (!isManagerAdminLogin(
+                                            loggedInUserData
+                                          ))
+                                            ? "none"
+                                            : "",}}
+                                      >
+                                        Untag Document
+                                      </button>
+                                    </th>
+                                  )}
+                                </tr>
+                              );
+                            })}
+
+                            <tr>
+                              <td colspan={2} style={{
+                                  backgroundColor: "#5A6371",
+                                  color: "#FFFFFF",
+                                }}>
+                              <label
+                                    id="upload-file"
+                                    class="text-decoration-underline"
+                                    onClick={() => {
+                                      setFolder(item);
+                                      setShowTagDocumentModal(true);
+                                    }}
+                                    style={{
+                                      display:
+                                        ((String(item?.type).toLowerCase() ===
+                                          "link" &&
+                                          !isShowerHeadCleaningStatutoryRow(
+                                            item
+                                          )) ||
+                                          !isManagerAdminLogin(
+                                            loggedInUserData
+                                          ))
+                                          ? "none"
+                                          : "",
+                                      color: "384bd3",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Tag Documents
+                                  </label>
+                              </td>
+                              <td
+                                colspan={
+                                  String(item?.type).toLowerCase() === "pdf"
+                                    ? 6
+                                    : 5
+                                }
+                                style={{
+                                  backgroundColor: "#5A6371",
+                                  color: "#FFFFFF",
+                                }}
+                                align="center"
+                              >
+                                <div
+                                  className="upload-file"
+                                  style={{
+                                    display: isManagerAdminLogin(
+                                      loggedInUserData
+                                    )
+                                      ? ""
+                                      : "none",
+                                  }}
+                                >
+                                  <label
+                                    id="upload-file"
+                                    class="text-decoration-underline"
+                                    onClick={() => {
+                                      setFolder(item);
+                                      setShowModal(true);
+                                    }}
+                                    style={{
+                                      display:
+                                        String(item?.type).toLowerCase() ===
+                                        "link"
+                                          ? "none"
+                                          : "",
+                                      color: "384bd3",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Select or Upload New File
+                                  </label>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </th>
+                      <th scope="col">
+                        {item?.status ? (
+                          <StatuaryStatus status={item?.status} />
+                        ) : (
+                          "--"
+                        )}
+                      </th>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {showModal && (
+            <CreateFiles
+              showModal={showModal}
+              setShowModal={setShowModal}
+              isStatutory={true}
+              folderData={folder}
+              setFolder={setFolder}
+              uploaderUserId={loggedInUserData?.id}
+              reviewerUserId={loggedInUserData?.id}
+              refresh={() => {
+                loadAllDataAndCalculateStatus(siteSelectedForGlobal?.siteId);
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </>
+  );
 };
 
 const mapStateToProps = (state) => ({
-    loggedInUserData: state.site.loggedInUserData,
-    siteSelectedForGlobal: state.site.siteSelectedForGlobal,
-    siteAssets: state.site.siteAssets,
+  loggedInUserData: state.site.loggedInUserData,
+  siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+  siteAssets: state.site.siteAssets,
 });
 export default connect(mapStateToProps, {
-    getSiteAssets,
+  getSiteAssets,
 })(StatutoryRegister);
