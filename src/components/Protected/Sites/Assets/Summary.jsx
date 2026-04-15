@@ -57,6 +57,44 @@ const Summary = ({
     const location = useLocation();
     const prevSiteIdRef = useRef(siteSelectedForGlobal?.siteId || null);
 
+    const orderMap = {
+        Basement: 1,
+        "Ground Floor": 2,
+        "1st Floor": 3,
+        "2nd Floor": 4,
+        "3rd Floor": 5,
+        "4th Floor": 6,
+        "5th Floor": 7,
+        "6th Floor": 8,
+        "7th Floor": 9,
+        "8th Floor": 10,
+        "9th Floor": 11,
+        "10th Floor": 12,
+        Vertical: 13,
+    };
+
+    const getFloorsForAsset = (asset) => {
+        if (!asset?.position || !Array.isArray(siteLayout) || siteLayout.length === 0) return [];
+        const positionNode = siteLayout.find((node) => node?.nodeName === asset.position);
+        if (!positionNode?.id) return [];
+        return siteLayout
+            .filter((node) => node?.nodeType === "floor" && node?.parentNode === positionNode.id)
+            .sort((a, b) => {
+                const orderA = orderMap[a?.nodeName] || 999;
+                const orderB = orderMap[b?.nodeName] || 999;
+                return orderA - orderB;
+            });
+    };
+
+    const getRoomsForAsset = (asset, floorsForAsset) => {
+        if (!asset?.floor || !Array.isArray(siteLayout) || siteLayout.length === 0) return [];
+        const selectedFloor = (floorsForAsset || []).find((f) => f?.nodeName === asset.floor);
+        if (!selectedFloor?.id) return [];
+        return siteLayout.filter(
+            (node) => node?.nodeType === "room" && node?.parentNode === selectedFloor.id
+        );
+    };
+
     const [formData, setFormData] = useState(() => {
         const savedFilters = localStorage.getItem('assetFilters');
 
@@ -839,6 +877,8 @@ const Summary = ({
                                         </thead>
                                         <tbody style={{ overflowY: "auto" }}>
                                             {selectedItems.map((asset) => {
+                                                const floorsForAsset = getFloorsForAsset(asset);
+                                                const roomsForAsset = getRoomsForAsset(asset, floorsForAsset);
                                                 const subCategoryOptions =
                                                     subCategory?.filter(
                                                         (itm) => itm.attribite1 === asset.category
@@ -1044,7 +1084,7 @@ const Summary = ({
                                                                 disabled={!asset.position}
                                                             >
                                                                 <option value="">Select</option>
-                                                                {floorNode?.map((node) => (
+                                                                {floorsForAsset?.map((node) => (
                                                                     <option
                                                                         key={node.nodeName}
                                                                         value={node.nodeName}
@@ -1068,15 +1108,7 @@ const Summary = ({
                                                                 disabled={!asset.floor}
                                                             >
                                                                 <option value="">Select</option>
-                                                                {roomNode
-                                                                    ?.filter(
-                                                                        (node) =>
-                                                                            node.parentNode ===
-                                                                            floorNode.find(
-                                                                                (f) => f.nodeName === asset.floor
-                                                                            )?.id
-                                                                    )
-                                                                    ?.map((node) => (
+                                                                {roomsForAsset?.map((node) => (
                                                                         <option
                                                                             key={node.nodeName}
                                                                             value={node.nodeName}

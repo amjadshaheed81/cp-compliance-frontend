@@ -761,6 +761,7 @@ const Pat = ({
               subCategory3Options={subCategory3}
               floorOptions={floorNode}
               roomOptions={roomNode}
+              siteLayout={siteLayout}
               onSave={handleSaveMultiEdit}
               isLoading={isLoading}
               title="Edit Multiple PAT Assets"

@@ -726,6 +726,7 @@ const handleFileUpload = async (e) => {
               subCategory3Options={subCategory3}
               floorOptions={floorNode}
               roomOptions={roomNode}
+              siteLayout={siteLayout}
               onSave={handleSaveMultiEdit}
               isLoading={isLoading}
               title="Edit Multiple PFP Assets"

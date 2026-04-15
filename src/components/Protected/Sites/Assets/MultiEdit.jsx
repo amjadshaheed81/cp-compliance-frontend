@@ -1,5 +1,4 @@
 import React from 'react';
-import { toast } from 'react-toastify';
 
 const MultiEditModal = ({
                             showModal,
@@ -12,6 +11,7 @@ const MultiEditModal = ({
                             subCategory3Options,
                             floorOptions,
                             roomOptions,
+                            siteLayout,
                             onSave,
                             isLoading,
                             title = "Edit Multiple Assets"
@@ -43,6 +43,55 @@ const MultiEditModal = ({
                 }
                 return item;
             })
+        );
+    };
+
+    const orderMap = {
+        Basement: 1,
+        "Ground Floor": 2,
+        "1st Floor": 3,
+        "2nd Floor": 4,
+        "3rd Floor": 5,
+        "4th Floor": 6,
+        "5th Floor": 7,
+        "6th Floor": 8,
+        "7th Floor": 9,
+        "8th Floor": 10,
+        "9th Floor": 11,
+        "10th Floor": 12,
+        Vertical: 13,
+    };
+
+    const getFloorsForAsset = (asset) => {
+        if (!asset?.position) return [];
+        if (Array.isArray(siteLayout) && siteLayout.length > 0) {
+            const positionNode = siteLayout.find((node) => node?.nodeName === asset.position);
+            if (!positionNode?.id) return [];
+            return siteLayout
+                .filter((node) => node?.nodeType === "floor" && node?.parentNode === positionNode.id)
+                .sort((a, b) => {
+                    const orderA = orderMap[a?.nodeName] || 999;
+                    const orderB = orderMap[b?.nodeName] || 999;
+                    return orderA - orderB;
+                });
+        }
+        return Array.isArray(floorOptions) ? floorOptions : [];
+    };
+
+    const getRoomsForAsset = (asset, floorsForAsset) => {
+        if (!asset?.floor) return [];
+        if (Array.isArray(siteLayout) && siteLayout.length > 0) {
+            const selectedFloor = (floorsForAsset || []).find((f) => f?.nodeName === asset.floor);
+            if (!selectedFloor?.id) return [];
+            return siteLayout.filter(
+                (node) => node?.nodeType === "room" && node?.parentNode === selectedFloor.id
+            );
+        }
+
+        const selectedFloor = (floorsForAsset || []).find((f) => f?.nodeName === asset.floor);
+        if (!selectedFloor?.id) return [];
+        return (Array.isArray(roomOptions) ? roomOptions : []).filter(
+            (node) => node?.parentNode === selectedFloor.id
         );
     };
 
@@ -112,6 +161,9 @@ const MultiEditModal = ({
                                 </thead>
                                 <tbody style={{ overflowY: "auto" }}>
                                 {selectedItems.map((asset) => {
+                                    const floorsForAsset = getFloorsForAsset(asset);
+                                    const roomsForAsset = getRoomsForAsset(asset, floorsForAsset);
+
                                     const subCategoryList = subCategoryOptions?.filter(
                                         (itm) => itm.attribite1 === asset.category
                                     ) || [];
@@ -314,7 +366,7 @@ const MultiEditModal = ({
                                                     disabled={!asset.position}
                                                 >
                                                     <option value="">Select</option>
-                                                    {floorOptions?.map((node) => (
+                                                    {floorsForAsset?.map((node) => (
                                                         <option
                                                             key={node.nodeName}
                                                             value={node.nodeName}
@@ -338,15 +390,7 @@ const MultiEditModal = ({
                                                     disabled={!asset.floor}
                                                 >
                                                     <option value="">Select</option>
-                                                    {roomOptions
-                                                        ?.filter(
-                                                            (node) =>
-                                                                node.parentNode ===
-                                                                floorOptions.find(
-                                                                    (f) => f.nodeName === asset.floor
-                                                                )?.id
-                                                        )
-                                                        ?.map((node) => (
+                                                    {roomsForAsset?.map((node) => (
                                                             <option
                                                                 key={node.nodeName}
                                                                 value={node.nodeName}
