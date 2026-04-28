@@ -57,8 +57,7 @@ const EditDocument = ({
 
         try {
             setIsLoading(true);
-            const res = await put(`/api/document/file/${selectedFile?.id}`, payload);
-            if (res?.status === 200) {
+            const res = await put(`/api/document/file/${selectedFile?.id}?fileVersion=${selectedFile?.fileVersion}`, payload);            if (res?.status === 200) {
                 toast.success("successfully file updated.");
                 refresh();
                 handleClose();
