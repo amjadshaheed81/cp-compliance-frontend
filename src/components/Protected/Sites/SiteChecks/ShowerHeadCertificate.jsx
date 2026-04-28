@@ -162,7 +162,7 @@ const ShowerHeadCertificate = ({
                 `/api/document/parent/${waterServicesFolder.id}/folders?siteId=${siteId}`
             );
             const storageTankFolder = waterResponse?.document?.childFolders?.find(
-                folder => folder.name.trim() === 'Water : Periodic Shower Head Cleaning'
+                folder => folder.name.trim() === 'Water: Periodic Shower Head Cleaning'
             );
 
             setState(prev => ({
@@ -332,6 +332,18 @@ const ShowerHeadCertificate = ({
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
     };
 
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
+    };
+
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
         try {
             const siteId = siteSelectedForGlobal?.siteId;
@@ -407,8 +419,8 @@ const ShowerHeadCertificate = ({
                 originalFileName: fileName,
                 fileVersion,
                 siteId: siteSelectedForGlobal?.siteId || 0,
-                issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                expiryDate: formatDateForBackend(inspectionDetails.dueDate),
+                issueDate: formatDateForBackend(formData.inspectionDate),
+                expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 uploaderUserId: loggedInUserData?.id || 0,
                 reviewerUserId: loggedInUserData?.id || 0,
                 referenceNumber: `SHC-${new Date().getTime()}`

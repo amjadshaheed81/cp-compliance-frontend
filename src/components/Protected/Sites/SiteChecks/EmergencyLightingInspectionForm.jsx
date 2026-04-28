@@ -639,6 +639,18 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
+  const calculateExpiryDate = (visitDate, repeatFrequency) => {
+    const date = new Date(visitDate);
+    switch (repeatFrequency) {
+      case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+      case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+      case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+      case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+      default:          date.setFullYear(date.getFullYear() + 1);  break;
+    }
+    return date;
+  };
+
   // Function to check if a file exists in the folder
   const checkFileExists = async (folderId, fileName) => {
     try {
@@ -747,8 +759,8 @@ const EmergencyLightingInspectionForm = ({
             originalFileName: fileName,
             fileVersion: (existingFile.fileVersion || 1) + 1,
             siteId: siteSelectedForGlobal?.siteId,
-            issueDate: formatDateForBackend(new Date()),
-              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+            issueDate: formatDateForBackend(formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
@@ -785,8 +797,8 @@ const EmergencyLightingInspectionForm = ({
             originalFileName: fileName,
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId,
-            issueDate: formatDateForBackend(new Date()),
-              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+            issueDate: formatDateForBackend(formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`

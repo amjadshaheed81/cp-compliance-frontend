@@ -173,6 +173,18 @@ const GasSafetyRecord = ({
         return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
+    };
+
     const isGasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
 
     useEffect(() => {
@@ -231,7 +243,8 @@ const GasSafetyRecord = ({
                     subType: statusResponse.subType,
                     category: statusResponse.category,
                     dueDate: statusResponse.dueDate,
-                    status: statusResponse.status
+                    status: statusResponse.status,
+                    repeatFrequency: statusResponse.repeatFrequency,
                 };
                 setInspectionDetails(inspectionDetails);
                 const nextInspection = statusResponse?.dueDate;
@@ -711,8 +724,8 @@ const GasSafetyRecord = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        issueDate: formatDateForBackend(formData.date),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -746,8 +759,8 @@ const GasSafetyRecord = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        issueDate: formatDateForBackend(formData.date),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`

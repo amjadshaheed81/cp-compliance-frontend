@@ -625,6 +625,18 @@ const InspectionFireCertificate = ({
         }
     };
 
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
+    };
+
     const uploadPdfToServer = async (pdfBlob, fileName, category) => {
         try {
             setIsUploading(true);
@@ -667,8 +679,8 @@ const InspectionFireCertificate = ({
                         originalFileName: fileName,
                         fileVersion: (existingFile.fileVersion || 1) + 1,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(new Date()),
-                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        issueDate: formatDateForBackend(formData.inspectionDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `FA-${new Date().getTime()}`
@@ -705,8 +717,8 @@ const InspectionFireCertificate = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(new Date()),
-                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        issueDate: formatDateForBackend(formData.inspectionDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `FA-${new Date().getTime()}`

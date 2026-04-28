@@ -541,6 +541,18 @@ const WaterHeaterCertificate = ({
     return date.toISOString().replace('T', ' ').split('.')[0];
   };
 
+  const calculateExpiryDate = (visitDate, repeatFrequency) => {
+    const date = new Date(visitDate);
+    switch (repeatFrequency) {
+      case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+      case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+      case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+      case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+      default:          date.setFullYear(date.getFullYear() + 1);  break;
+    }
+    return date;
+  };
+
   const getAllImages = () => {
     return [
       formData.param2Remark ? {
@@ -603,8 +615,8 @@ const WaterHeaterCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+            issueDate: formatDateForBackend(formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `WHR-${new Date().getTime()}`
@@ -635,8 +647,8 @@ const WaterHeaterCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+            issueDate: formatDateForBackend(formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
             note: 'Water Heater Service Report',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,

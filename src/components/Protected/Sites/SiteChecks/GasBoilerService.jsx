@@ -504,6 +504,18 @@ const GasBoilerService = ({
         return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
+    };
+
     const fetchFolderStructure = async (siteId) => {
         try {
             const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
@@ -632,8 +644,8 @@ const GasBoilerService = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        issueDate: formatDateForBackend(formData.inspectionDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -667,8 +679,8 @@ const GasBoilerService = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                        expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+                        issueDate: formatDateForBackend(formData.inspectionDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`

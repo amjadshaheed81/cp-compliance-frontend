@@ -439,6 +439,18 @@ The capacity of the tank is ${capacity} litres`;
     [siteSelectedForGlobal]
   );
 
+  const calculateExpiryDate = (visitDate, repeatFrequency) => {
+    const date = new Date(visitDate);
+    switch (repeatFrequency) {
+      case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+      case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+      case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+      case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+      default:          date.setFullYear(date.getFullYear() + 1);  break;
+    }
+    return date;
+  };
+
   const uploadPdfToServer = useCallback(
     async (pdfBlob, fileName) => {
       let exists;
@@ -485,8 +497,8 @@ The capacity of the tank is ${capacity} litres`;
             originalFileName: fileName,
             fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace("T", " ").split(".")[0],
-            expiryDate: formatDateForBackend(inspectionDetails.dueDate),
+            issueDate: formatDateForBackend(formData.date),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SHC-${new Date().getTime()}`

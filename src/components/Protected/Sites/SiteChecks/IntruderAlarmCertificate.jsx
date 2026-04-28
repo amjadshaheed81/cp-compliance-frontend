@@ -105,6 +105,7 @@ const IntruderAlarmCertificate = ({
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [siteCheckDetails, setSiteCheckDetails] = useState(null);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
@@ -336,6 +337,7 @@ const IntruderAlarmCertificate = ({
           if (intruderAlarmCheck) {
             setCurrentCheckId(intruderAlarmCheck.checkId);
             setCheckStatus(intruderAlarmCheck.status);
+            setSiteCheckDetails(intruderAlarmCheck);
 
             const isDone = intruderAlarmCheck.status === 'Done';
             setIsFormEditable(!isDone);
@@ -511,6 +513,24 @@ const IntruderAlarmCertificate = ({
     }));
   };
 
+  const formatDateForBackend = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toISOString().replace('T', ' ').split('.')[0];
+  };
+
+  const calculateExpiryDate = (visitDate, repeatFrequency) => {
+    const date = new Date(visitDate);
+    switch (repeatFrequency) {
+      case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+      case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+      case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+      case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+      default:          date.setFullYear(date.getFullYear() + 1);  break;
+    }
+    return date;
+  };
+
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
       const url = URL.createObjectURL(pdfBlob);
@@ -622,9 +642,8 @@ const IntruderAlarmCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            issueDate: formatDateForBackend(formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `IntruderAlarm-${new Date().getTime()}`
@@ -655,9 +674,8 @@ const IntruderAlarmCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-            expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                .toISOString().replace('T', ' ').split('.')[0],
+            issueDate: formatDateForBackend(formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
             note: 'Intruder Alarm Service Certificate',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,

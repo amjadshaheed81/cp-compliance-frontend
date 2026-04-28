@@ -538,6 +538,18 @@ const SounderAudibilityForm = ({
         return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
+    };
+
   const uploadPdfToServer = async (pdfBlob, fileName) => {
     try {
       setIsUploading(true);
@@ -566,8 +578,8 @@ const SounderAudibilityForm = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+            issueDate: formatDateForBackend(formData.date),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
@@ -598,8 +610,8 @@ const SounderAudibilityForm = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-              expiryDate: formatDateForBackend(inspectionDetails?.dueDate),
+            issueDate: formatDateForBackend(formData.date),
+            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
               note: 'Sounder Audibility Report',
             fileVersion: fileVersion,
             siteId: siteSelectedForGlobal?.siteId || 0,
