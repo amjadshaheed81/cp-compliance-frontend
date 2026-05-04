@@ -222,6 +222,18 @@ const AssessmentFireRisk = ({
         return d.toISOString().replace("T", " ").split(".")[0];
     };
 
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
+    };
+
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
             const siteId = siteSelectedForGlobal?.siteId;
@@ -270,8 +282,8 @@ const AssessmentFireRisk = ({
                         originalFileName: fileName,
                         fileVersion: (existingFile.fileVersion ?? 1) + 1,
                         siteId: siteSelectedForGlobal?.siteId || 0,
-                        issueDate: formatDateForBackend(new Date()),
-                        expiryDate: formatDateForBackend(siteCheck?.dueDate),
+                        issueDate: formatDateForBackend(siteCheck?.startDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(siteCheck?.startDate, siteCheck?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `Audit-${checkId}-${Date.now()}`,
@@ -293,8 +305,8 @@ const AssessmentFireRisk = ({
                     folderId: auditFolderId,
                     files: [{
                         name: fileName.split(".")[0],
-                        issueDate: formatDateForBackend(new Date()),
-                        expiryDate: formatDateForBackend(siteCheck?.dueDate),
+                        issueDate: formatDateForBackend(siteCheck?.startDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(siteCheck?.startDate, siteCheck?.repeatFrequency)),
                         note: "Monthly Audit Report",
                         fileVersion,
                         siteId: siteSelectedForGlobal?.siteId || 0,

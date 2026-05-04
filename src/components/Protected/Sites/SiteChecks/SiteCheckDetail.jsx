@@ -264,6 +264,7 @@ const ShowerHeadCertificate = ({
                     subType: showerHeadCheck.subType,
                     category: showerHeadCheck.category,
                     dueDate: showerHeadCheck.dueDate,
+                    repeatFrequency: showerHeadCheck.repeatFrequency,
                     status: showerHeadCheck.status
                 };
                 console.log('Setting inspection details:', inspectionDetails);
@@ -328,13 +329,21 @@ const ShowerHeadCertificate = ({
 
     
     const formatDateForBackend = (dateString) => {
-        if (!dateString) return null; // Handle missing date
-
-        // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
+        if (!dateString) return null;
         const date = new Date(dateString);
-
-        // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
         return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
+    const calculateExpiryDate = (visitDate, repeatFrequency) => {
+        const date = new Date(visitDate);
+        switch (repeatFrequency) {
+            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
+            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
+            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
+            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
+            default:          date.setFullYear(date.getFullYear() + 1);  break;
+        }
+        return date;
     };
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
@@ -412,8 +421,8 @@ const ShowerHeadCertificate = ({
                 originalFileName: fileName,
                 fileVersion,
                 siteId: siteSelectedForGlobal?.siteId || 0,
-                issueDate: new Date().toISOString().replace('T', ' ').split('.')[0],
-                expiryDate: formatDateForBackend(inspectionDetails.dueDate),
+                issueDate: formatDateForBackend(formData.inspectionDate),
+                expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 uploaderUserId: loggedInUserData?.id || 0,
                 reviewerUserId: loggedInUserData?.id || 0,
                 referenceNumber: `SHC-${new Date().getTime()}`

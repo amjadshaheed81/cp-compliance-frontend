@@ -291,6 +291,7 @@ const GasBoilerService = ({
                     subType: statusResponse.subType,
                     category: statusResponse.category,
                     dueDate: statusResponse.dueDate,
+                    repeatFrequency: statusResponse.repeatFrequency,
                     status: statusResponse.status
                 };
                 setInspectionDetails(inspectionDetails);
@@ -644,8 +645,8 @@ const GasBoilerService = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        issueDate: formatDateForBackend(formData.dateTimeOfIssue),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -679,8 +680,8 @@ const GasBoilerService = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        issueDate: formatDateForBackend(formData.dateTimeOfIssue),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`

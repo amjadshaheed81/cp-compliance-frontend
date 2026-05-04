@@ -501,7 +501,7 @@ The capacity of the tank is ${capacity} litres`;
             expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `SHC-${new Date().getTime()}`
+            referenceNumber: `WTC-${new Date().getTime()}`
           }]
         };
         formData.append("documentRequestString", JSON.stringify(documentRequest));
