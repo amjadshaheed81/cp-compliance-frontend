@@ -1018,6 +1018,7 @@ const InspectionFireCertificate = ({
                 category: 'Fire Alarm',
                 status: 'Done',
                 startDate: new Date().toISOString(),
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };

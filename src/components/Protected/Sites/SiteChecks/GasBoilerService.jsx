@@ -1015,6 +1015,7 @@ const GasBoilerService = ({
                 category: 'Gas Boiler Service',
                 status: 'Done',
                 startDate: new Date().toISOString(),
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };

@@ -1254,6 +1254,7 @@ const GasSafetyRecord = ({
                 category: 'Gas Safety Record',
                 status: 'Done',
                 startDate: new Date().toISOString(),
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };

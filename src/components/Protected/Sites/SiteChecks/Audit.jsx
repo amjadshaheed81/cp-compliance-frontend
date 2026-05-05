@@ -590,6 +590,7 @@ const AssessmentFireRisk = ({
             await put("/api/site-check/" + checkId, {
                 ...siteCheckData,
                 status: "Done",
+                dueDate: formatDateForBackend(calculateExpiryDate(siteCheckData.startDate, siteCheckData.repeatFrequency)),
             });
             await getQuestions();
             onAuditSubmitted?.();

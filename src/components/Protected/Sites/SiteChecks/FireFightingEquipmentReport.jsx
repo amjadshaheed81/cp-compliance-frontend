@@ -763,6 +763,7 @@ should be carried out more frequently.`;
                 category: 'Fire Fighting Equipment',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };

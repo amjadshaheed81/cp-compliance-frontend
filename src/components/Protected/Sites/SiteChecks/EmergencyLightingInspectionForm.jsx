@@ -1164,6 +1164,7 @@ const EmergencyLightingInspectionForm = ({
         category: category,
         status: 'Done',
         startDate: new Date().toISOString(),
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id,
         assistantUserID: loggedInUserData?.id
       };

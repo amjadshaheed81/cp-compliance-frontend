@@ -1102,6 +1102,7 @@ const StorageTankService = ({
         category: 'Storage Tank Service',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
