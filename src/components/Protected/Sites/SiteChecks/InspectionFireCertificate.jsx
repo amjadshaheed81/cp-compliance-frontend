@@ -637,6 +637,12 @@ const InspectionFireCertificate = ({
         return date;
     };
 
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
+    };
+
     const uploadPdfToServer = async (pdfBlob, fileName, category) => {
         try {
             setIsUploading(true);
@@ -651,25 +657,14 @@ const InspectionFireCertificate = ({
             }
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            const formData = new FormData();
-
-            // Helper function to format date for backend
-            const formatDateForBackend = (dateString) => {
-                if (!dateString) return null; // Handle missing date
-
-                // Convert to Date object (works for ISO strings like "2025-08-23T00:00:00")
-                const date = new Date(dateString);
-
-                // Format as "YYYY-MM-DD HH:MM:SS" (same as issueDate)
-                return date.toISOString().replace('T', ' ').split('.')[0];
-            };
+            const uploadFormData = new FormData();
 
             // Check if file exists
             const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
 
             if (exists && existingFile) {
                 // Update existing file
-                formData.append('file', pdfFile);
+                uploadFormData.append('file', pdfFile);
 
                 const documentRequest = {
                     folderId: targetFolderId,
@@ -687,11 +682,11 @@ const InspectionFireCertificate = ({
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequest));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
 
                 const response = await axios.put(
                     '/api/document/file/newVersion/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -706,7 +701,7 @@ const InspectionFireCertificate = ({
                 }
             } else {
                 // Create new file
-                formData.append('files', pdfFile);
+                uploadFormData.append('files', pdfFile);
 
                 const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
@@ -725,11 +720,11 @@ const InspectionFireCertificate = ({
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequest));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
 
                 const response = await axios.post(
                     '/api/document/files/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',

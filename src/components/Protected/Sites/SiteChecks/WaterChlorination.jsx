@@ -451,6 +451,12 @@ The capacity of the tank is ${capacity} litres`;
     return date;
   };
 
+  const formatDateForBackend = (dateVal) => {
+    if (!dateVal) return null;
+    const d = new Date(dateVal);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+  };
+
   const uploadPdfToServer = useCallback(
     async (pdfBlob, fileName) => {
       let exists;
@@ -478,15 +484,11 @@ The capacity of the tank is ${capacity} litres`;
           : await getHighestFileVersion(targetFolderId, fileName);
 
         // Prepare form data with comprehensive metadata
-        const formData = new FormData();
-        formData.append(
+        const uploadFormData = new FormData();
+        uploadFormData.append(
           exists ? "file" : "files",
           new File([pdfBlob], fileName, { type: "application/pdf" })
         );
-        const formatDateForBackend = (date) => {
-          const d = new Date(date);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-        };
 
         // Add document metadata as JSON string
         const documentRequest = {
@@ -504,7 +506,7 @@ The capacity of the tank is ${capacity} litres`;
             referenceNumber: `WTC-${new Date().getTime()}`
           }]
         };
-        formData.append("documentRequestString", JSON.stringify(documentRequest));
+        uploadFormData.append("documentRequestString", JSON.stringify(documentRequest));
 
         // Make API request
         const method = exists ? "put" : "post";
@@ -515,7 +517,7 @@ The capacity of the tank is ${capacity} litres`;
         const response = await axios({
           method,
           url,
-          data: formData,
+          data: uploadFormData,
           headers: {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${localStorage.getItem("token")}`
