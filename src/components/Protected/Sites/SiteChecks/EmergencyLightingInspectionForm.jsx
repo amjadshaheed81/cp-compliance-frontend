@@ -554,18 +554,20 @@ const EmergencyLightingInspectionForm = ({
 
   // Preserve exact folder names but make matching more robust
   const getFolderNameFromCategory = (category) => {
-    // Keep original folder names exactly as they appear in the system
     switch(category) {
       case 'Emergency Lighting - weekly testing to meet BS5266':
-        return 'Emergency Lighting - Weekly (Flick) Testing'; // Exact match
+        return 'Emergency Lighting - Weekly (Flick) Testing';
       case 'Emergency Lighting - monthly testing to meet BS5266':
-        return ' Emergency Lighting - Monthly Testing'; // Note: Keep leading space
+        return 'Emergency Lighting - Monthly Testing'; 
+      case 'Emergency Lighting - 6 monthly testing to meet BS5266':
+        return 'Emergency Lighting - 6 Monthly Testing'; 
       case 'Emergency Lighting (systems more than 3 years old) 12 monthly Full discharge testing':
         return 'Emergency Lighting - 12 Monthly Testing';
       default:
-        return 'Emergency Lighting - Monthly Testing'; // Default fallback
+        return 'Emergency Lighting - Monthly Testing';
     }
   };
+  
 
   const fetchFolderStructure = async (siteId, category) => {
     try {
@@ -591,7 +593,7 @@ const EmergencyLightingInspectionForm = ({
       // 4. Get Emergency Lighting children
       const fireLogChildren = await get(`/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`);
       const emergencyLightingFolder = fireLogChildren?.document?.childFolders?.find(
-          f => f.name === 'Emergency Lighting to meet BS5266'
+          f => f.name === 'Emergency Lighting to meet BS5266' || f.name === 'Emergency Lighting (BS5266)'
       );
       if (!emergencyLightingFolder) throw new Error('Emergency Lighting folder not found');
 
