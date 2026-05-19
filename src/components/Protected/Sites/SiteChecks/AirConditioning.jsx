@@ -42,7 +42,6 @@ const fetchPdfTemplate = async () => {
     }
     return arrayBuffer;
   } catch (error) {
-    console.error('Error loading PDF template:', error);
     throw new Error('Failed to load PDF template: ' + error.message);
   }
 };
@@ -229,9 +228,8 @@ const AirConditioning = ({
           actionId: mostRecentItem.actionId || null,
         }));
       }
-    } catch (error) {
-      console.error("Error fetching inspection data:", error);
-      //toast.error("Failed to load inspection data");
+    } catch {
+      // Failed to load inspection data — form remains editable with defaults
     }
   };
   const fetchActionById = async (id) => {
@@ -239,8 +237,7 @@ const AirConditioning = ({
       if (!id) return null;
       const response = await get(`/api/site/actions/id/${id}`);
       return response;
-    } catch (error) {
-      console.error("Error fetching action:", error);
+    } catch {
       return null;
     }
   };
@@ -286,8 +283,8 @@ const AirConditioning = ({
           }));
         }
       }
-    } catch (error) {
-      console.error("Error fetching existing actions:", error);
+    } catch {
+      // Non-blocking — form can still be submitted without linked action
     }
   };
 
@@ -331,8 +328,7 @@ const AirConditioning = ({
         }
       }
       return null;
-    } catch (error) {
-      console.error('Error fetching folder structure:', error);
+    } catch {
       toast.error('Failed to load document folders');
       return null;
     }
@@ -342,7 +338,6 @@ const AirConditioning = ({
     // This effect ensures we have the latest action data when formData.actionId changes
     const fetchActionData = async () => {
       if (formData.actionId) {
-        console.log('Action ID changed, fetching action:', formData.actionId);
         const action = await fetchActionById(formData.actionId);
         if (action) {
           setExistingAction(action);
@@ -380,12 +375,6 @@ const AirConditioning = ({
           // }
 
           if (airConditioningCheck) {
-            console.log('Found check:', {
-              checkId: airConditioningCheck.checkId,
-              requestedCheckId: checkId,
-                dueDate:airConditioningCheck.dueDate,
-              matchType: airConditioningCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
-            });
             setInspectionDetails(airConditioningCheck);
 
             setCurrentCheckId(airConditioningCheck.checkId);
@@ -397,16 +386,13 @@ const AirConditioning = ({
             setIsSubmitted(isDone);
             setShowPdfButton(isDone);
           } else {
-            // If no matching check found, default to editable
-            console.log('No matching check found, using checkId from URL:', checkId);
             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
             setIsFormEditable(true);
             setIsSubmitted(false);
             setShowPdfButton(false);
           }
         }
-      } catch (error) {
-        console.error('Error fetching site check data:', error);
+      } catch {
         toast.error('Failed to load site check status');
         setIsFormEditable(true);
       }
@@ -465,8 +451,7 @@ const AirConditioning = ({
             }));
           }
         }
-      } catch (error) {
-        console.error("Error fetching site data:", error);
+      } catch {
         toast.error("Failed to load site details");
       } finally {
         setIsLoading(false);
@@ -514,67 +499,15 @@ const AirConditioning = ({
         actionId: verifiedAction.actionId
       }));
 
-      // Update inspection record
       if (currentCheckId) {
-        const inspectionPayload = {
-          address: formData.address,
-          assetId: formData.selectedAsset?.assetId || formData.assetId,
-          siteContact: formData.siteContactUser?.id || formData.siteContact,
-          inspectionDate: formData.inspectionDate,
-          siteContactNo: formData.siteContactNo,
-          job: formData.job,
-          manufacturer: formData.manufacturer,
-          modelNumber: formData.modelNumber,
-          position: formData.position,
-          floor: formData.floor,
-          room: formData.room,
-          assetName: formData.assetName,
-          serialNumber: formData.serialNumber,
-          report: formData.report,
-          param1: formData.param1,
-          param2: formData.param2,
-          param3: formData.param3,
-          param4: formData.param4,
-          param5: formData.param5,
-          param6: formData.param6,
-          param7: formData.param7,
-          param8: formData.param8,
-          param9: formData.param9,
-          param10: formData.param10,
-          param1Remark: formData.param1Remark,
-          param2Remark: formData.param2Remark,
-          param3Remark: formData.param3Remark,
-          param4Remark: formData.param4Remark,
-          param5Remark: formData.param5Remark,
-          param6Remark: formData.param6Remark,
-          client: formData.clientUser?.id || formData.client,
-          engineer: formData.engineer,
-          user: formData.user,
-          selectedAsset: formData.selectedAsset,
-          signedDate: formData.signedDate,
-          clientUser: formData.clientUser,
-          siteContactUser: formData.siteContactUser,
-          actionId: verifiedAction.actionId,
-          checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
-          type: 'Inspection',
-          subType: 'Air Conditioning',
-          category: 'Air Conditioning Service',
-          // Include any other relevant fields from your formData
-        };
-
-        // Update or create inspection record
-        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-        if (existingInspections?.length > 0) {
-          await put(`/api/site-check/generic-inspection/${currentCheckId}`, inspectionPayload);
-        } else {
-          await post(`/api/site-check/generic-inspection`, inspectionPayload);
-        }
-
+        await post(
+          `/api/site-check/generic-inspection`,
+          buildInspectionPayload(currentCheckId, verifiedAction.actionId)
+        );
+        await fetchInspectionData();
         toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
     } catch (error) {
-      console.error("Error handling risk assessment completion:", error);
       toast.error(error.message || "Failed to process action completion");
 
       // Rollback state changes if the operation failed
@@ -610,6 +543,53 @@ const AirConditioning = ({
         return date;
     };
 
+  const formatSiteCheckDueDate = (visitDate, repeatFrequency) => {
+    const expiry = calculateExpiryDate(visitDate, repeatFrequency);
+    return `${expiry.toISOString().split('T')[0]}T00:00:00`;
+  };
+
+  const buildInspectionPayload = (checkIdOverride, actionIdOverride) => ({
+    address: formData.address,
+    assetId: formData.selectedAsset?.assetId || formData.assetId,
+    siteContact: formData.siteContactUser?.id || formData.siteContact,
+    inspectionDate: formData.inspectionDate,
+    siteContactNo: formData.siteContactNo,
+    job: formData.job,
+    manufacturer: formData.manufacturer || formData.selectedAsset?.manufacturer,
+    modelNumber: formData.modelNumber || formData.selectedAsset?.model,
+    position: formData.position || formData.selectedAsset?.position,
+    floor: formData.floor || formData.selectedAsset?.floor,
+    room: formData.room || formData.selectedAsset?.room,
+    assetName: formData.assetName || formData.selectedAsset?.assetName,
+    serialNumber: formData.serialNumber || formData.selectedAsset?.serialNumber,
+    report: formData.report,
+    param1: formData.param1,
+    param2: formData.param2,
+    param3: formData.param3,
+    param4: formData.param4,
+    param5: formData.param5,
+    param6: formData.param6,
+    param7: formData.param7,
+    param8: formData.param8,
+    param9: formData.param9,
+    param10: formData.param10,
+    param1Remark: formData.param1Remark,
+    param2Remark: formData.param2Remark,
+    param3Remark: formData.param3Remark,
+    param4Remark: formData.param4Remark,
+    param5Remark: formData.param5Remark,
+    param6Remark: formData.param6Remark,
+    client: formData.clientUser?.id || formData.client,
+    engineer: formData.engineer,
+    signedDate: formData.signedDate,
+    actionId: actionIdOverride ?? formData.actionId,
+    siteId: siteSelectedForGlobal?.siteId,
+    type: 'Inspection',
+    subType: 'Air Conditioning',
+    category: 'Air Conditioning Service',
+    checkId: checkIdOverride ?? currentCheckId,
+  });
+
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
       const url = URL.createObjectURL(pdfBlob);
@@ -623,8 +603,7 @@ const AirConditioning = ({
         URL.revokeObjectURL(url);
       }, 100);
       return true;
-    } catch (error) {
-      console.error('Error saving PDF locally:', error);
+    } catch {
       return false;
     }
   };
@@ -633,7 +612,6 @@ const AirConditioning = ({
     try {
       const siteId = siteSelectedForGlobal?.siteId;
       if (!siteId) {
-        console.warn('No site ID available for file version check');
         return 1;
       }
 
@@ -653,8 +631,7 @@ const AirConditioning = ({
         }
       }
       return 1;
-    } catch (error) {
-      console.error('Error checking file versions:', error);
+    } catch {
       return 1;
     }
   };
@@ -682,8 +659,7 @@ const AirConditioning = ({
         exists: !!existingFile,
         file: existingFile || null
       };
-    } catch (error) {
-      console.error('Error checking file existence:', error);
+    } catch {
       return { exists: false, file: null };
     }
   };
@@ -787,8 +763,7 @@ const AirConditioning = ({
             }
 
             throw new Error('Upload failed: No response data');
-        } catch (error) {
-            console.error('Error uploading PDF:', error);
+        } catch {
             return false;
         } finally {
             setIsUploading(false);
@@ -798,8 +773,7 @@ const AirConditioning = ({
   const savePdfToPublic = async (pdfBlob, fileName) => {
     try {
       return true;
-    } catch (error) {
-      console.error('Error preparing PDF:', error);
+    } catch {
       return false;
     }
   };
@@ -816,18 +790,6 @@ const AirConditioning = ({
       const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
 
-      // Debug: Log all field names
-      console.log('PDF Form Fields:');
-      form.getFields().forEach((field, i) => {
-        try {
-          const name = field.getName();
-          const type = field.constructor.name;
-          console.log(`${i + 1}. ${name} (${type})`);
-        } catch (error) {
-          console.warn('Error getting field info:', error);
-        }
-      });
-
       const setTextField = (fieldName, value, fontSize = 10) => {
         try {
           const field = form.getTextField(fieldName);
@@ -837,12 +799,12 @@ const AirConditioning = ({
               if (field.setFontSize) {
                 field.setFontSize(fontSize);
               }
-            } catch (e) {
-              console.warn(`Could not set font size for ${fieldName}:`, e);
+            } catch {
+              // Font size not supported for this field
             }
           }
-        } catch (error) {
-          console.warn(`Error setting text field ${fieldName}:`, error);
+        } catch {
+          // Field missing or incompatible in template
         }
       };
 
@@ -852,8 +814,8 @@ const AirConditioning = ({
           if (field) {
             field.check(isChecked);
           }
-        } catch (error) {
-          console.warn(`Error setting checkbox ${fieldName}:`, error);
+        } catch {
+          // Field missing or incompatible in template
         }
       };
 
@@ -882,7 +844,6 @@ const AirConditioning = ({
         selectedAsset.assetName
       ].filter(Boolean).join(' - ');
 
-      console.log( "selected asset data",equipmentDetailsLocation);
       // Equipment information
       setTextField('Manufacturer', selectedAsset.manufacturer || '', mediumFont);
       setTextField('Model Number', selectedAsset.model || '', mediumFont);
@@ -946,7 +907,6 @@ const AirConditioning = ({
       return { success: true, fileName };
 
     } catch (error) {
-      console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
       return { success: false, error: error.message };
     } finally {
@@ -955,10 +915,8 @@ const AirConditioning = ({
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted');
 
     if (isLoading) {
-      console.log('Submit prevented: Already loading');
       return;
     }
 
@@ -977,7 +935,6 @@ const AirConditioning = ({
     }
 
     if (!isFormEditable) {
-      console.log('Submit prevented: Form is not editable');
       return;
     }
 
@@ -1003,18 +960,6 @@ const AirConditioning = ({
     setIsLoading(true);
 
     try {
-      // First check if we have an existing inspection
-      let existingInspection = null;
-      if (currentCheckId) {
-        try {
-          const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-          existingInspection = inspections?.length > 0 ? inspections[0] : null;
-        } catch (error) {
-          console.error('Error checking for existing inspection:', error);
-        }
-      }
-
-      // First update or create the site check status
       const statusPayload = {
         siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
         type: 'Inspection',
@@ -1022,27 +967,27 @@ const AirConditioning = ({
         category: 'Air Conditioning Service',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: formatSiteCheckDueDate(formData.inspectionDate, inspectionDetails?.repeatFrequency),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
 
       let statusResponse;
+      let checkIdForSave = currentCheckId;
       if (currentCheckId) {
-        // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
             `/api/site-check/${currentCheckId}`,
             statusPayload
         );
       } else {
-        // Create new check
         statusResponse = await post(
             `/api/site-check`,
             statusPayload
         );
-        if (statusResponse?.checkId) {
-          setCurrentCheckId(statusResponse.checkId);
+        checkIdForSave = statusResponse?.data?.checkId;
+        if (checkIdForSave) {
+          setCurrentCheckId(checkIdForSave);
         }
       }
 
@@ -1050,45 +995,17 @@ const AirConditioning = ({
         throw new Error('Failed to update site check status');
       }
 
-      console.log('Site check status updated successfully:', statusResponse.data);
       setCheckStatus('Done');
       setIsFormEditable(false);
 
-      // Then update or create the generic inspection record
-      const inspectionPayload = {
-        ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
-        assetId: formData.selectedAsset?.assetId || formData.assetId,
-        client: formData.clientUser?.id || formData.client,
-        engineer: formData.engineer,
-        siteContact: formData.siteContactUser?.id || formData.siteContact,
-        type: 'Inspection',
-        subType: 'Air Conditioning',
-        category: 'Air Conditioning Service',
-        checkId: currentCheckId || statusResponse?.checkId,
-        actionId: formData.actionId,
-      };
-
-      let saveResponse;
-      if (existingInspection) {
-        // Update existing inspection
-        saveResponse = await put(
-            `/api/site-check/generic-inspection/${currentCheckId}`,
-            inspectionPayload
-        );
-      } else {
-        // Create new inspection
-        saveResponse = await post(
-            `/api/site-check/generic-inspection`,
-            inspectionPayload
-        );
-      }
+      const saveResponse = await post(
+        `/api/site-check/generic-inspection`,
+        buildInspectionPayload(checkIdForSave || statusResponse?.data?.checkId)
+      );
 
       if (![200, 201, 204].includes(saveResponse?.status)) {
         throw new Error('Failed to save inspection data');
       }
-
-      console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
       const pdfResult = await generatePDF(true);
@@ -1106,9 +1023,12 @@ const AirConditioning = ({
       }, 1500);
 
     } catch (error) {
-      console.error('Error in form submission:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      toast.error(error.message || 'Failed to submit form');
+      const apiMessage = error.response?.data?.message || error.response?.data;
+      toast.error(
+        apiMessage
+          ? (typeof apiMessage === 'string' ? apiMessage : JSON.stringify(apiMessage))
+          : (error.message || 'Failed to submit form')
+      );
     } finally {
       setIsLoading(false);
     }
