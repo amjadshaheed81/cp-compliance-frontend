@@ -162,7 +162,7 @@ const ShowerHeadCertificate = ({
                 `/api/document/parent/${waterServicesFolder.id}/folders?siteId=${siteId}`
             );
             const storageTankFolder = waterResponse?.document?.childFolders?.find(
-                folder => folder.name.trim() === 'Water: Periodic Shower Head Cleaning'
+                folder => folder.name.trim() === 'Water : Periodic Shower Head Cleaning'
             );
 
             setState(prev => ({
@@ -264,6 +264,7 @@ const ShowerHeadCertificate = ({
                     subType: showerHeadCheck.subType,
                     category: showerHeadCheck.category,
                     dueDate: showerHeadCheck.dueDate,
+                    repeatFrequency: showerHeadCheck.repeatFrequency,
                     status: showerHeadCheck.status
                 };
                 console.log('Setting inspection details:', inspectionDetails);
@@ -327,9 +328,10 @@ const ShowerHeadCertificate = ({
     }, []);
 
     
-    const formatDateForBackend = (date) => {
-        const d = new Date(date);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+    const formatDateForBackend = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
@@ -405,12 +407,13 @@ const ShowerHeadCertificate = ({
         const fileCheck = await checkFileExists(targetFolderId, fileName);
         exists = fileCheck.exists;
         const existingFile = fileCheck.file;
-        const formData = new FormData();
+        const multipartData = new FormData();
 
         const fileVersion = exists && existingFile
             ? existingFile.fileVersion + 1
             : await getHighestFileVersion(targetFolderId, fileName);
 
+        const issueDate = new Date(formData.inspectionDate || new Date());
         const documentRequest = {
             folderId: targetFolderId,
             files: [{
@@ -419,8 +422,8 @@ const ShowerHeadCertificate = ({
                 originalFileName: fileName,
                 fileVersion,
                 siteId: siteSelectedForGlobal?.siteId || 0,
-                issueDate: formatDateForBackend(formData.inspectionDate),
-                expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                issueDate: issueDate.toISOString().replace('T', ' ').split('.')[0],
+                expiryDate: formatDateForBackend(calculateExpiryDate(issueDate, inspectionDetails?.repeatFrequency)),
                 uploaderUserId: loggedInUserData?.id || 0,
                 reviewerUserId: loggedInUserData?.id || 0,
                 referenceNumber: `SHC-${new Date().getTime()}`
@@ -429,12 +432,12 @@ const ShowerHeadCertificate = ({
 
         // KEY FIX: Use 'files' for POST and 'file' for PUT
         if (exists) {
-            formData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+            multipartData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
         } else {
-            formData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+            multipartData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
         }
         
-        formData.append('documentRequestString', JSON.stringify(documentRequest));
+        multipartData.append('documentRequestString', JSON.stringify(documentRequest));
 
         const method = exists ? 'put' : 'post';
         const url = exists
@@ -444,7 +447,7 @@ const ShowerHeadCertificate = ({
         const response = await axios({
             method,
             url,
-            data: formData,
+            data: multipartData,
             headers: {
                 'Content-Type': 'multipart/form-data',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -582,7 +585,6 @@ const ShowerHeadCertificate = ({
                 category: 'Shower Head Cleaning',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
