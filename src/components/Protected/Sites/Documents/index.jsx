@@ -990,8 +990,8 @@ const Document = ({
                                                                     e.preventDefault();
                                                                     // Use the same logic as version history eye icon
                                                                     const fileExtension = file.name.split('.').pop().toLowerCase();
-                                                                    const supportedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'dwg'];
-
+                                                                    //const supportedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'dwg'];
+                                                                    const supportedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
                                                                     if (supportedExtensions.includes(fileExtension)) {
                                                                         setSelectedPdf(file.fileBlobUrl);
                                                                         setIsPdfViewerOpen(true);

@@ -40,22 +40,40 @@ const PdfViewer = ({ showPdfModal, setShowPdfModal, selectedPdf }) => {
             return <FileViewer fileUrl={selectedPdf} />;
         }
 
-        if (extension === ".dwg") {
-            return (
-                <iframe
-                    src={`https://sharecad.org/cadframe/load?url=${encodeURIComponent(
-                        selectedPdf
-                    )}`}
-                    width="100%"
-                    height="600px"
-                    title="DWG Viewer"
-                    frameBorder="0"
-                    allowFullScreen
-                    style={{ border: "none" }}
-                ></iframe>
-            );
-        }
+        // if (extension === ".dwg") {
+        //     return (
+        //         <iframe
+        //             src={`https://sharecad.org/cadframe/load?url=${encodeURIComponent(
+        //                 selectedPdf
+        //             )}`}
+        //             width="100%"
+        //             height="600px"
+        //             title="DWG Viewer"
+        //             frameBorder="0"
+        //             allowFullScreen
+        //             style={{ border: "none" }}
+        //         ></iframe>
+        //     );
+        // }
+if (extension === ".dwg") {
+    return (
+        <div className="text-center p-4">
+            <p className="text-muted">
+                DWG preview has been disabled for security reasons.
+            </p>
 
+            <a
+                className="btn btn-primary"
+                href={selectedPdf}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Download DWG File
+            </a>
+        </div>
+    );
+}
         return (
             <p className="text-center text-danger">
                 Unsupported file type: <b>{extension || "Unknown"}</b>
