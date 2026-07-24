@@ -1,6 +1,7 @@
 {
   "name": "cp-compliance",
   "version": "0.1.0",
+  "proxy": "http://localhost:8080",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -62,8 +63,11 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
+    "prestart": "node scripts/generate-build-info.js --environment=development",
     "start": "react-scripts start",
+    "prebuild": "node scripts/generate-build-info.js --increment --environment=production",
     "build": "react-scripts build",
+    "pretest": "node scripts/generate-build-info.js --environment=test",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

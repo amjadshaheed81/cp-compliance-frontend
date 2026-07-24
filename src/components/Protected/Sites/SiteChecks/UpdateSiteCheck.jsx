@@ -801,6 +801,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}

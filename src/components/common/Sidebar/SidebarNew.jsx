@@ -1,6 +1,6 @@
 import * as React from "react";
 import { styled, useTheme } from "@mui/material/styles";
-import { useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
 import MuiAppBar from "@mui/material/AppBar";
@@ -39,6 +39,7 @@ import { ROLE } from "../../../Constant/Role";
 import { filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
 import { setSideBarView, updateSite } from "../../../store/thunk/site";
 import CloseIcon from "@mui/icons-material/Close";
+import BuildNumber from "../BuildNumber/BuildNumber";
 
 const drawerWidth = 240;
 
@@ -147,80 +148,44 @@ const getImage = () => {
  return license?.logo;
 }
 
+const menuRoutes = {
+  Dashboard: "/dashboard",
+  Portfolio: "/sites",
+  Users: "/user-management",
+  Notifications: "/notifications",
+  Actions: "/actions",
+  "Create Site": "/add-site",
+  "Site Documents": "/documents",
+  "Statutory Register": "/statutory-register",
+  "Site Assets": "/assets",
+  "Site Contracts": "/site-contracts",
+  "Pre-Action": "/pre-actions",
+  "Site Checks": "/site-checks",
+  "Energy Cost": "/energy-cost",
+  "Site Calendar": "/site-calendar",
+  Categories: "/admin/categories",
+  Dropdowns: "/admin/dropdowns",
+  Company: "/admin/company",
+  Folders: "/admin/folders",
+  "Edit Profile": "/edit-profile",
+  Reports: "/reports",
+  "Onboard Client": "/onboard-client",
+};
+
+const getMenuRoute = (text, siteId) => {
+  if (text === "Site Details") {
+    return `/update-site?siteId=${siteId ?? ""}&isViewMode=edit`;
+  }
+
+  return menuRoutes[text] || "/dashboard";
+};
+
 const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpen, siteSelectedForGlobal }) => {
   const theme = useTheme();
-  const navigate = useNavigate();
-  const goTo = (text) => {
-    switch (text) {
-      case "Dashboard":
-        navigate("/dashboard");
-        break;
-      case "Portfolio":
-        navigate("/sites");
-        break;
-      case "Users":
-        navigate("/user-management");
-        break;
-      case "Notifications":
-        navigate("/notifications");
-        break;
-      case "Actions":
-        navigate("/actions");
-        break;
-      case "Create Site":
-        navigate("/add-site");
-        break;
-      case "Site Details":
-        updateSite({ ...siteSelectedForGlobal })
-        navigate(`/update-site?siteId=${siteSelectedForGlobal?.siteId}&isViewMode=edit`);        break;
-      case "Site Documents":
-        navigate("/documents");
-        break;
-      case "Statutory Register":
-        navigate("/statutory-register");
-        break;
-      case "Site Assets":
-        navigate("/assets");
-        break;
-      case "Site Contracts":
-        navigate("/site-contracts");
-        break;
-      case "Pre-Action":
-        navigate("/pre-actions");
-        break;
-      case "Site Checks":
-        navigate("/site-checks");
-        break;
-      case "Energy Cost":
-        navigate("/energy-cost");
-        break;
-      case "Site Calendar":
-        navigate("/site-calendar");
-        break;
-      case "Categories":
-        navigate("/admin/categories");
-        break;
-      case "Dropdowns":
-        navigate("/admin/dropdowns");
-        break;
-      case "Company":
-        navigate("/admin/company");
-        break;
-      case "Folders":
-        navigate("/admin/folders");
-        break;
-      case "Edit Profile":
-        navigate("/edit-profile");
-        break;
-      case "Reports":
-        navigate("/reports");
-        break;
 
-      case "Onboard Client":
-          navigate("/onboard-client");
-          break;
-      default:
-        navigate("/dashboard");
+  const handleMenuClick = (text) => {
+    if (text === "Site Details" && siteSelectedForGlobal) {
+      updateSite({ ...siteSelectedForGlobal });
     }
   };
   const sideBarOpenClose = (status) => {
@@ -279,12 +244,17 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
           {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
+                component={NavLink}
+                to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                onClick={() => handleMenuClick(text)}
                 sx={{
                   minHeight: 48,
                   justifyContent: isSideBarOpen ? "initial" : "center",
                   px: 2.5,
+                  "&.active": {
+                    backgroundColor: "rgba(255, 255, 255, 0.16)",
+                  },
                 }}
-                onClick={() => goTo(text)}
               >
                 <ListItemIcon
                   sx={{
@@ -292,7 +262,6 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                     mr: isSideBarOpen ? 3 : "auto",
                     justifyContent: "center",
                   }}
-                  onClick={() => goTo(text)}
                 >
                   {iconComponents[index]}
                 </ListItemIcon>
@@ -312,12 +281,17 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
           {filterSiteMenuItems(loggedInUserData?.role)?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
+                component={NavLink}
+                to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                onClick={() => handleMenuClick(text)}
                 sx={{
                   minHeight: 48,
                   justifyContent: isSideBarOpen ? "initial" : "center",
                   px: 2.5,
+                  "&.active": {
+                    backgroundColor: "rgba(255, 255, 255, 0.16)",
+                  },
                 }}
-                onClick={() => goTo(text)}
               >
                 <ListItemIcon
                   sx={{
@@ -325,7 +299,6 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                     mr: isSideBarOpen ? 3 : "auto",
                     justifyContent: "center",
                   }}
-                  onClick={() => goTo(text)}
                 >
                   {siteIconComponents[index]}
                 </ListItemIcon>
@@ -346,12 +319,17 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
               {["Categories", "Dropdowns", "Company", "Folders"].map((text, index) => (
                 <ListItem key={text} disablePadding sx={{ display: "block" }}>
                   <ListItemButton
+                    component={NavLink}
+                    to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                    onClick={() => handleMenuClick(text)}
                     sx={{
                       minHeight: 48,
                       justifyContent: isSideBarOpen ? "initial" : "center",
                       px: 2.5,
+                      "&.active": {
+                        backgroundColor: "rgba(255, 255, 255, 0.16)",
+                      },
                     }}
-                    onClick={() => goTo(text)}
                   >
                     <ListItemIcon
                       sx={{
@@ -359,7 +337,6 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                         mr: isSideBarOpen ? 3 : "auto",
                         justifyContent: "center",
                       }}
-                      onClick={() => goTo(text)}
                     >
                       {adminIconComponents[index]}
                     </ListItemIcon>
@@ -383,12 +360,17 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
               {["Onboard Client"].map((text, index) => (
                 <ListItem key={text} disablePadding sx={{ display: "block" }}>
                   <ListItemButton
+                    component={NavLink}
+                    to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                    onClick={() => handleMenuClick(text)}
                     sx={{
                       minHeight: 48,
                       justifyContent: isSideBarOpen ? "initial" : "center",
                       px: 2.5,
+                      "&.active": {
+                        backgroundColor: "rgba(255, 255, 255, 0.16)",
+                      },
                     }}
-                    onClick={() => goTo(text)}
                   >
                     <ListItemIcon
                       sx={{
@@ -396,7 +378,6 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                         mr: isSideBarOpen ? 3 : "auto",
                         justifyContent: "center",
                       }}
-                      onClick={() => goTo(text)}
                     >
                       {superAdminIconComponents[index]}
                     </ListItemIcon>
@@ -409,6 +390,16 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
               ))}
             </List>
           </>
+        )}
+        {isSideBarOpen && (
+          <BuildNumber
+            sx={{
+              color: "white",
+              backgroundColor: "black",
+              padding: "0.75rem 0.5rem 1rem",
+              marginTop: "auto",
+            }}
+          />
         )}
       </Drawer>
     </Box>

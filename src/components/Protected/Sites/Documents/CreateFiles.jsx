@@ -177,9 +177,9 @@ const CreateFiles = ({
                 reqData.documentRequestString.files[0].name =
                     selectedMandatoryFile[0].name;
                 reqData.documentRequestString.files[0].issueDate =
-                    selectedMandatoryFile[0].issueDate?.replace("T", " ") || "";
-                reqData.documentRequestString.files[0].expiryDate =  // Fixed: changed from issueDate to expiryDate
-                    selectedMandatoryFile[0].expiryDate?.replace("T", " ") || "";
+                    formatDateForAPI(selectedMandatoryFile[0].issueDate);
+                reqData.documentRequestString.files[0].expiryDate =
+                    formatDateForAPI(selectedMandatoryFile[0].expiryDate);
             }
             reqData.documentRequestString.files[0].statutoryCategoryId =
                 selectedMandatoryFolder?.[0]?.id;

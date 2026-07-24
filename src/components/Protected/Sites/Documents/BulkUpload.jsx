@@ -147,7 +147,6 @@ const BulkUpload = ({
                         type="file"
                         name="bulkUpload"
                         multiple
-                        accept="image/*, application/pdf"
                         id="bulkUpload"
                         style={{ display: 'none' }}
                     />
@@ -156,7 +155,7 @@ const BulkUpload = ({
                         Drop files or click to upload
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                        PDF, PNG, JPG, GIF • Max 100MB
+                        Supports all file types • Max 100MB
                     </Typography>
                 </Box>
 

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {get, post, put} from "../../../../api";
 import {
-  getSiteAssets,
   getSiteById,
   getSiteDetailsById,
   getSites,
@@ -18,6 +17,58 @@ import axios from 'axios';
 import pdfTemplate from './pdf/AirConditioningCertificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
+
+const getUkLocalDate = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value])
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
+const getUserLabel = (user) => user?.name || user?.email || "";
+
+const isActiveUser = (user) =>
+  Boolean(user?.id) &&
+  (!user?.status || String(user.status).toLowerCase() === "active");
+
+const userBelongsToSite = (user, siteId) => {
+  if (!user?.id || !siteId) return false;
+
+  if (Number(user.defaultSiteId) === Number(siteId)) {
+    return true;
+  }
+
+  return Boolean(
+    user.taggedSites?.some(
+      (site) => Number(site.id ?? site.siteId) === Number(siteId)
+    )
+  );
+};
+
+const uniqueUsersById = (userList) => {
+  const uniqueUsers = new Map();
+
+  userList.filter(Boolean).forEach((user) => {
+    if (user?.id && !uniqueUsers.has(String(user.id))) {
+      uniqueUsers.set(String(user.id), user);
+    }
+  });
+
+  return Array.from(uniqueUsers.values());
+};
+
+const sortUsersByName = (userList) =>
+  [...userList].sort((a, b) =>
+    getUserLabel(a).localeCompare(getUserLabel(b), undefined, { sensitivity: "base" })
+  );
 
 let PDFLib;
 
@@ -51,9 +102,8 @@ const AirConditioning = ({
                            checkId,
                            subType,
                            category,
+                           siteCheck,
                            getSiteDetailsById,
-                           siteAssets,
-                           getSiteAssets,
                            users,
                            getUsers,
                            siteSelectedForGlobal,
@@ -63,7 +113,7 @@ const AirConditioning = ({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     manufacturer: "",
@@ -94,13 +144,28 @@ const AirConditioning = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
   });
 
   const sites = useSelector((state) => state.site.sites);
+  const [siteCheckAssets, setSiteCheckAssets] = useState([]);
+  const [siteCheckSite, setSiteCheckSite] = useState(null);
+  const authoritativeSiteId = siteCheck?.siteId ? Number(siteCheck.siteId) : null;
+  const authoritativeSite =
+      siteCheckSite ||
+      sites.find((site) => Number(site.siteId ?? site.id) === authoritativeSiteId) ||
+      (Number(siteSelectedForGlobal?.siteId ?? siteSelectedForGlobal?.id) === authoritativeSiteId
+          ? siteSelectedForGlobal
+          : null);
+  const authoritativeSiteName =
+      authoritativeSite?.siteName || authoritativeSite?.name ||
+      (authoritativeSiteId ? `site ${authoritativeSiteId}` : "the Site Check site");
+  const wrongSiteAssetMessage =
+      `The selected asset does not belong to ${authoritativeSiteName}. Please select an asset from the correct site.`;
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -110,6 +175,7 @@ const AirConditioning = ({
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
 
     const [folderIds, setFolderIds] = useState({
     logBooks: null,
@@ -132,8 +198,40 @@ const AirConditioning = ({
     position: { x: 0, y: 0 },
   });
 
-  const selectedAsset = siteAssets.find(
-      (asset) => asset.assetId === formData.assetId
+  const selectableEngineers = sortUsersByName(uniqueUsersById([
+    ...(users || []).filter(
+      (user) =>
+        isActiveUser(user) && userBelongsToSite(user, authoritativeSiteId)
+    ),
+    ...(isActiveUser(loggedInUserData) ? [loggedInUserData] : []),
+  ]));
+
+  const loggedInEngineerOption = selectableEngineers.find(
+    (user) => String(user.id) === String(loggedInUserData?.id)
+  );
+  const lastEngineerOption = selectableEngineers.find(
+    (user) =>
+      String(user.id) === String(lastEngineerId) &&
+      String(user.id) !== String(loggedInUserData?.id)
+  );
+
+  const engineerOptions = checkStatus === "Open"
+    ? uniqueUsersById([
+        loggedInEngineerOption,
+        lastEngineerOption,
+        ...selectableEngineers,
+      ])
+    : uniqueUsersById([
+        ...(formData.user?.id ? [formData.user] : []),
+        ...selectableEngineers,
+      ]);
+
+  const selectedEngineer = engineerOptions.find(
+    (user) => String(user.id) === String(formData.engineer)
+  ) || null;
+
+  const selectedAsset = siteCheckAssets.find(
+      (asset) => Number(asset.assetId) === Number(formData.assetId)
   );
   const handleMouseEnter = (e, content) => {
     if (!content) return;
@@ -151,7 +249,75 @@ const AirConditioning = ({
     setPopup((prev) => ({ ...prev, show: false }));
   };
 
-  const fetchInspectionData = async () => {
+  useEffect(() => {
+    setSiteCheckAssets([]);
+    setSiteCheckSite(null);
+    setLastEngineerId(null);
+    setFormData((prev) => ({
+      ...prev,
+      assetId: "",
+      selectedAsset: null,
+      manufacturer: "",
+      modelNumber: "",
+      position: "",
+      floor: "",
+      room: "",
+      serialNumber: "",
+      assetName: "",
+      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
+      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
+    }));
+  }, [
+    checkId,
+    authoritativeSiteId,
+    siteCheck?.status,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+  ]);
+
+  useEffect(() => {
+    if (checkStatus !== "Open" || !loggedInUserData?.id) {
+      return;
+    }
+
+    setFormData((prev) => {
+      if (
+        prev.engineer &&
+        String(prev.engineer) !== String(loggedInUserData.id)
+      ) {
+        return prev;
+      }
+
+      const loggedInEngineer =
+        selectableEngineers.find(
+          (user) => String(user.id) === String(loggedInUserData.id)
+        ) || loggedInUserData;
+
+      if (
+        String(prev.engineer || "") === String(loggedInEngineer.id) &&
+        prev.user?.name === loggedInEngineer.name
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        engineer: loggedInEngineer.id,
+        user: loggedInEngineer,
+      };
+    });
+  }, [
+    checkId,
+    checkStatus,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+    users.length,
+  ]);
+
+  const fetchInspectionData = async (
+      siteCheckStatus = checkStatus,
+      assetsForSite = siteCheckAssets
+  ) => {
     try {
       if (!checkId) return;
 
@@ -162,19 +328,29 @@ const AirConditioning = ({
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
-        const selectedAsset = siteAssets.find(
-            (asset) => asset.assetId === mostRecentItem.assetId
+        setLastEngineerId(mostRecentItem.engineer || null);
+        const restoredAsset = assetsForSite.find(
+            (asset) =>
+                Number(asset.assetId) === Number(mostRecentItem.assetId) &&
+                Number(asset.siteId) === authoritativeSiteId
         );
 
         const clientUser = users.find(
             (user) => user.id === mostRecentItem.client
         );
         const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
+            (user) => String(user.id) === String(mostRecentItem.engineer)
         );
         const siteContactUser = users.find(
             (user) => user.id === mostRecentItem.siteContact
         );
+        const currentOpenDate = getUkLocalDate();
+        const isCurrentOpenInspection =
+            siteCheckStatus === "Open" &&
+            String(mostRecentItem.inspectionDate || "").slice(0, 10) === currentOpenDate;
+        const openInspectionEngineer = isCurrentOpenInspection
+            ? (engineerUser || loggedInUserData || {})
+            : (loggedInUserData || {});
 
         // Fetch action data if actionId exists
         let existingAction = null;
@@ -189,18 +365,20 @@ const AirConditioning = ({
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
-          assetId: mostRecentItem.assetId || prev.assetId,
+          assetId: restoredAsset?.assetId || "",
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          inspectionDate: siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
-          manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
-          modelNumber: mostRecentItem.modelNumber || prev.modelNumber,
-          position: mostRecentItem.position || prev.position,
-          floor: mostRecentItem.floor || prev.floor,
-          room: mostRecentItem.room || prev.room,
-          assetName: mostRecentItem.assetName || prev.assetName,
-          serialNumber: mostRecentItem.serialNumber || prev.serialNumber,
+          manufacturer: restoredAsset ? (mostRecentItem.manufacturer || restoredAsset.manufacturer || "") : "",
+          modelNumber: restoredAsset ? (mostRecentItem.modelNumber || restoredAsset.model || "") : "",
+          position: restoredAsset ? (mostRecentItem.position || restoredAsset.position || "") : "",
+          floor: restoredAsset ? (mostRecentItem.floor || restoredAsset.floor || "") : "",
+          room: restoredAsset ? (mostRecentItem.room || restoredAsset.room || "") : "",
+          assetName: restoredAsset ? (mostRecentItem.assetName || restoredAsset.assetName || "") : "",
+          serialNumber: restoredAsset ? (mostRecentItem.serialNumber || restoredAsset.serialNumber || "") : "",
           report: mostRecentItem.report || prev.report,
           param1: mostRecentItem.param1 || prev.param1,
           param2: mostRecentItem.param2 || prev.param2,
@@ -219,14 +397,24 @@ const AirConditioning = ({
           param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
           param6Remark: mostRecentItem.param6Remark || prev.param6Remark,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
-          selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          engineer: siteCheckStatus === "Open"
+              ? (isCurrentOpenInspection
+                  ? (mostRecentItem.engineer || loggedInUserData?.id || "")
+                  : (loggedInUserData?.id || ""))
+              : (mostRecentItem.engineer || prev.engineer || ""),
+          user: siteCheckStatus === "Open"
+              ? openInspectionEngineer
+              : (engineerUser || prev.user || {}),
+          selectedAsset: restoredAsset || null,
+          signedDate: siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
         }));
+      } else {
+        setLastEngineerId(null);
       }
     } catch {
       // Failed to load inspection data — form remains editable with defaults
@@ -258,9 +446,9 @@ const AirConditioning = ({
       }
 
       // Now look for other actions specifically for this checkId
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
@@ -353,49 +541,20 @@ const AirConditioning = ({
   }, [formData.actionId]);
 
   useEffect(() => {
-    // Enhance the status check in your fetchSiteCheckData function
-    const fetchSiteCheckData = async () => {
-      try {
-        if (!siteSelectedForGlobal?.siteId) return;
-
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
-        if (response && response.length > 0) {
-          // First try to find the exact checkId from URL
-          let airConditioningCheck = checkId
-              ? response.find(check => check.checkId === parseInt(checkId, 10))
-              : null;
-
-          // If not found by checkId, find first matching type
-          // if (!airConditioningCheck) {
-          //   airConditioningCheck = response.find(check =>
-          //       check.type === 'Inspection' &&
-          //       check.subType === 'Plant and Equipment Inspection' &&
-          //       check.category === 'Air Conditioning Service'
-          //   );
-          // }
-
-          if (airConditioningCheck) {
-            setInspectionDetails(airConditioningCheck);
-
-            setCurrentCheckId(airConditioningCheck.checkId);
-            setCheckStatus(airConditioningCheck.status);
-
-            // Set form editability based on status
-            const isDone = airConditioningCheck.status === 'Done';
-            setIsFormEditable(!isDone);
-            setIsSubmitted(isDone);
-            setShowPdfButton(isDone);
-          } else {
-            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
-            setIsFormEditable(true);
-            setIsSubmitted(false);
-            setShowPdfButton(false);
-          }
-        }
-      } catch {
-        toast.error('Failed to load site check status');
-        setIsFormEditable(true);
+    const applySiteCheckState = () => {
+      if (!siteCheck || Number(siteCheck.checkId) !== Number(checkId)) {
+        return null;
       }
+
+      setInspectionDetails(siteCheck);
+      setCurrentCheckId(siteCheck.checkId);
+      setCheckStatus(siteCheck.status);
+
+      const isDone = siteCheck.status === 'Done';
+      setIsFormEditable(!isDone);
+      setIsSubmitted(isDone);
+      setShowPdfButton(isDone);
+      return siteCheck;
     };
 
     if (isInternalUserTaggedWithSite && users.length === 0) {
@@ -405,54 +564,65 @@ const AirConditioning = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
+        const loadedSiteCheck = applySiteCheckState();
+        if (!loadedSiteCheck || !authoritativeSiteId) {
+          return;
+        }
 
-          if (formData.actionId) {
-            const action = await fetchActionById(formData.actionId);
-            if (action) {
-              setExistingAction(action);
-              setActionRaised(true);
-            } else {
-              await fetchExistingActions();
-            }
+        const [assetResponse, loadedSiteDetails] = await Promise.all([
+          get(`/api/site/${authoritativeSiteId}/assets`),
+          get(`/api/site/site/${authoritativeSiteId}`),
+        ]);
+        const loadedAssets = (assetResponse?.assets || []).filter(
+            (asset) => Number(asset.siteId) === authoritativeSiteId
+        );
+        setSiteCheckAssets(loadedAssets);
+        setSiteCheckSite(loadedSiteDetails || null);
+
+        await getSiteDetailsById(authoritativeSiteId);
+        await fetchFolderStructure(authoritativeSiteId);
+        await fetchInspectionData(loadedSiteCheck.status, loadedAssets);
+
+        if (formData.actionId) {
+          const action = await fetchActionById(formData.actionId);
+          if (action) {
+            setExistingAction(action);
+            setActionRaised(true);
           } else {
             await fetchExistingActions();
           }
+        } else {
+          await fetchExistingActions();
+        }
 
-          const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
-          );
-          const siteData = currentSite || siteSelectedForGlobal;
+        const currentSite = sites.find(
+            (site) => Number(site.siteId ?? site.id) === authoritativeSiteId
+        );
+        const siteData = loadedSiteDetails || currentSite || authoritativeSite;
 
-          if (siteData) {
-            const addressParts = [
-              siteData.address1,
-              siteData.address2,
-              siteData.city,
-              siteData.area,
-              siteData.postCode,
-              siteData.country,
-            ].filter((part) => part && part.trim() !== "");
+        if (siteData) {
+          const addressParts = [
+            siteData.address1,
+            siteData.address2,
+            siteData.city,
+            siteData.area,
+            siteData.postCode,
+            siteData.country,
+          ].filter((part) => part && part.trim() !== "");
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({ ...prev, address: fullAddress }));
 
-          if (siteSelectedForGlobal.siteContact) {
+          if (siteData.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
         }
       } catch {
-        toast.error("Failed to load site details");
+        toast.error("Failed to load Site Check details and assets");
       } finally {
         setIsLoading(false);
       }
@@ -460,12 +630,13 @@ const AirConditioning = ({
 
     fetchData();
   }, [
-    siteSelectedForGlobal,
-    getSiteAssets,
+    siteCheck,
+    checkId,
+    authoritativeSiteId,
+    getSiteDetailsById,
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
-    checkId,  // Add checkId to dependencies
   ]);
 
 
@@ -548,11 +719,11 @@ const AirConditioning = ({
     return `${expiry.toISOString().split('T')[0]}T00:00:00`;
   };
 
-  const buildInspectionPayload = (checkIdOverride, actionIdOverride) => ({
+  const buildInspectionPayload = (checkIdOverride, actionIdOverride, inspectionDateOverride) => ({
     address: formData.address,
     assetId: formData.selectedAsset?.assetId || formData.assetId,
     siteContact: formData.siteContactUser?.id || formData.siteContact,
-    inspectionDate: formData.inspectionDate,
+    inspectionDate: inspectionDateOverride || formData.inspectionDate,
     siteContactNo: formData.siteContactNo,
     job: formData.job,
     manufacturer: formData.manufacturer || formData.selectedAsset?.manufacturer,
@@ -581,9 +752,9 @@ const AirConditioning = ({
     param6Remark: formData.param6Remark,
     client: formData.clientUser?.id || formData.client,
     engineer: formData.engineer,
-    signedDate: formData.signedDate,
+    signedDate: inspectionDateOverride || formData.signedDate,
     actionId: actionIdOverride ?? formData.actionId,
-    siteId: siteSelectedForGlobal?.siteId,
+    siteId: authoritativeSiteId,
     type: 'Inspection',
     subType: 'Air Conditioning',
     category: 'Air Conditioning Service',
@@ -610,7 +781,7 @@ const AirConditioning = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         return 1;
       }
@@ -636,7 +807,26 @@ const AirConditioning = ({
     }
   };
 
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+
+    setValidationErrors((prev) => ({
+      ...prev,
+      engineer: "",
+    }));
+  };
+
   const handleAssetSelect = (event, newValue) => {
+    if (newValue && Number(newValue.siteId) !== authoritativeSiteId) {
+      toast.error(wrongSiteAssetMessage);
+      setFormData((prev) => ({ ...prev, assetId: "", selectedAsset: null }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       assetId: newValue ? newValue.assetId : "",
@@ -645,7 +835,7 @@ const AirConditioning = ({
   };
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -670,11 +860,11 @@ const AirConditioning = ({
 
 
 
-    const uploadPdfToServer = async (pdfBlob, fileName) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
         try {
             setIsUploading(true);
 
-            const inspectionDateForUpload = formData.inspectionDate;
+            const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
 
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
             if (!savedLocally) {
@@ -700,7 +890,7 @@ const AirConditioning = ({
                         name: fileName,
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         issueDate: formatDateForBackend(inspectionDateForUpload),
                         expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
@@ -737,7 +927,7 @@ const AirConditioning = ({
                         expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         note: 'Air Conditioning Certificate',
                         fileVersion: fileVersion,
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
@@ -778,7 +968,7 @@ const AirConditioning = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -821,6 +1011,7 @@ const AirConditioning = ({
 
       const smallFont = 8;
       const mediumFont = 10;
+      const effectiveInspectionDate = inspectionDateOverride || formData.inspectionDate;
 
       // Address and contact information
       const addressLines = (formData.address || '').split(',');
@@ -831,7 +1022,7 @@ const AirConditioning = ({
       setTextField('Address_4', addressLines[4] || '', mediumFont);
 
 
-      setTextField('Date', dateFormat(formData.inspectionDate), mediumFont);
+      setTextField('Date', dateFormat(effectiveInspectionDate), mediumFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', mediumFont);
       setTextField('Site Contact No', formData.siteContactNo || '', mediumFont);
       setTextField('Job No', formData.job || '', mediumFont);
@@ -883,12 +1074,12 @@ const AirConditioning = ({
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
-      const engineerName = formData.user?.name || '';
+      const engineerName = selectedEngineer?.name || formData.user?.name || '';
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -900,7 +1091,7 @@ const AirConditioning = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -940,6 +1131,22 @@ const AirConditioning = ({
 
     // Form validation
     const errors = {};
+    const assetForSubmission = siteCheckAssets.find(
+        (asset) => Number(asset.assetId) === Number(formData.assetId)
+    );
+
+    if (!assetForSubmission) {
+      errors.assetId = formData.assetId
+          ? wrongSiteAssetMessage
+          : "Please select an Air Conditioning Unit from the Site Check site.";
+    } else if (Number(assetForSubmission.siteId) !== authoritativeSiteId) {
+      errors.assetId = wrongSiteAssetMessage;
+    }
+
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
+
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -953,6 +1160,11 @@ const AirConditioning = ({
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.assetId) {
+        toast.error(errors.assetId);
+      } else if (errors.engineer) {
+        toast.error(errors.engineer);
+      }
       return;
     }
 
@@ -960,14 +1172,26 @@ const AirConditioning = ({
     setIsLoading(true);
 
     try {
+      const submissionInspectionDate = checkStatus === 'Open'
+        ? getUkLocalDate()
+        : formData.inspectionDate;
+
+      if (checkStatus === 'Open') {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        siteId: parseInt(authoritativeSiteId, 10),
         type: 'Inspection',
         subType: 'Plant and Equipment Inspection',
         category: 'Air Conditioning Service',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatSiteCheckDueDate(formData.inspectionDate, inspectionDetails?.repeatFrequency),
+        startDate: submissionInspectionDate + 'T00:00:00',
+        dueDate: formatSiteCheckDueDate(submissionInspectionDate, inspectionDetails?.repeatFrequency),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1000,7 +1224,11 @@ const AirConditioning = ({
 
       const saveResponse = await post(
         `/api/site-check/generic-inspection`,
-        buildInspectionPayload(checkIdForSave || statusResponse?.data?.checkId)
+        buildInspectionPayload(
+            checkIdForSave || statusResponse?.data?.checkId,
+            undefined,
+            submissionInspectionDate
+        )
       );
 
       if (![200, 201, 204].includes(saveResponse?.status)) {
@@ -1008,7 +1236,7 @@ const AirConditioning = ({
       }
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1038,7 +1266,7 @@ const AirConditioning = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1112,7 +1340,7 @@ const AirConditioning = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1182,8 +1410,9 @@ const AirConditioning = ({
   };
 
   const filteredAssets =
-      siteAssets?.filter(
+      siteCheckAssets?.filter(
           (asset) =>
+              Number(asset.siteId) === authoritativeSiteId &&
               asset.category === "Mechanical" &&
               asset.subCategory === "Air Conditioning" &&
               (asset.subCategory2 === "Air Conditioning Unit (Indoor)" || asset.subCategory2 === "Air Conditioning Unit (Outdoor)")
@@ -1303,6 +1532,8 @@ const AirConditioning = ({
                               label="Select an Air Conditioning Unit"
                               variant="outlined"
                               placeholder="Search devices..."
+                              error={Boolean(validationErrors.assetId)}
+                              helperText={validationErrors.assetId || ""}
                           />
                       )}
                       sx={{ width: "100%" }}
@@ -1942,7 +2173,7 @@ const AirConditioning = ({
                     ) : (
                         <RiskScoreCard
                             desc={`Inspection - Plant and Equipment Inspection - Air Conditioning Service`}
-                            siteId={siteSelectedForGlobal?.siteId}
+                            siteId={authoritativeSiteId}
                             checkId={currentCheckId}
                             createdBy={loggedInUserData?.id}
                             taggedAsset={selectedAsset?.assetId}
@@ -1984,14 +2215,33 @@ const AirConditioning = ({
             <div className="col-md-6">
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
-                <input
-                    type="text"
-                    className="form-control"
-                    name="engineer name"
-                    readOnly
-                    value={formData.user.name}
-                    required
-                    disabled
+                <Autocomplete
+                    options={engineerOptions}
+                    value={selectedEngineer}
+                    getOptionLabel={getUserLabel}
+                    isOptionEqualToValue={(option, value) =>
+                      String(option.id) === String(value?.id)
+                    }
+                    onChange={handleEngineerSelect}
+                    disableClearable={checkStatus === "Open"}
+                    noOptionsText="No active users are assigned to this site"
+                    disabled={isSubmitted || !isFormEditable}
+                    renderInput={(params) => (
+                      <TextField
+                          {...params}
+                          required
+                          variant="outlined"
+                          placeholder="Select engineer"
+                          error={Boolean(validationErrors.engineer)}
+                          helperText={validationErrors.engineer || ""}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              minHeight: "40px",
+                              padding: "0 8px",
+                            },
+                          }}
+                      />
+                    )}
                 />
               </div>
               <div className="mb-3">
@@ -2044,7 +2294,7 @@ const AirConditioning = ({
             ) : (
                 <div className="text-center">
                   <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                    Report submitted successfully on {getUkLocalDate()}
                   </div>
                 </div>
             )}
@@ -2083,7 +2333,6 @@ const AirConditioning = ({
 const mapStateToProps = (state) => ({
   sites: state.site.sites,
   users: state.site.users,
-  siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
@@ -2091,7 +2340,6 @@ const mapStateToProps = (state) => ({
 export default connect(mapStateToProps, {
   getSiteDetailsById,
   getSiteById,
-  getSiteAssets,
   getSites,
   getUsers,
 })(AirConditioning);

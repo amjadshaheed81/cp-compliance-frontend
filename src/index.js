@@ -5,6 +5,9 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { isBrowserSupported } from "./utils/browserCheck";
 import UnsupportedBrowserModal from "./UnsupportedBrowserModal";
+import { logBuildInfo } from "./utils/buildInfo";
+
+logBuildInfo();
 
 const Root = () => {
   const [showModal, setShowModal] = React.useState(!isBrowserSupported());

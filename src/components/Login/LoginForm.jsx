@@ -12,6 +12,7 @@ import { InputError } from "../common/InputError";
 import { useForm } from "react-hook-form";
 import { loginUser } from "../../store/thunk/site";
 import CircularProgress from "@mui/material/CircularProgress";
+import BuildNumber from "../common/BuildNumber/BuildNumber";
 
 const LoginForm = ({ login, loginUser }) => {
   const navigate = useNavigate();
@@ -136,6 +137,12 @@ const LoginForm = ({ login, loginUser }) => {
                   </small>
                 </p>
               </div>
+              <BuildNumber
+                sx={{
+                  color: "#637381",
+                  marginTop: "0.75rem",
+                }}
+              />
             </form>
           </div>
         </div>
