@@ -1,0 +1,53 @@
+name: Deploy CAFM Test - Frontend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cafm-test-frontend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy frontend edge
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Configure restricted SSH key
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.CAFM_TEST_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.CAFM_TEST_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/cafm-test
+          chmod 600 ~/.ssh/cafm-test
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy exact main commit
+        shell: bash
+        env:
+          TEST_HOST: ${{ vars.CAFM_TEST_HOST }}
+          TEST_USER: ${{ vars.CAFM_TEST_USER }}
+          TEST_PORT: ${{ vars.CAFM_TEST_PORT }}
+        run: |
+          set -euo pipefail
+          : "${TEST_HOST:?Set the CAFM_TEST_HOST repository variable}"
+          TEST_USER="${TEST_USER:-ubuntu}"
+          TEST_PORT="${TEST_PORT:-22}"
+          ssh \
+            -i ~/.ssh/cafm-test \
+            -p "$TEST_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            "$TEST_USER@$TEST_HOST" \
+            "deploy edge $GITHUB_SHA"

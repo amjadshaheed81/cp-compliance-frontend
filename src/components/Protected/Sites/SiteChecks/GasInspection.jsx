@@ -10,7 +10,7 @@ import {
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
 import pdfTemplate from './pdf/GasSafety.pdf';
@@ -1254,7 +1254,7 @@ const GasSafetyRecord = ({
                 category: 'Gas Safety Record',
                 status: 'Done',
                 startDate: new Date().toISOString(),
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+                dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };

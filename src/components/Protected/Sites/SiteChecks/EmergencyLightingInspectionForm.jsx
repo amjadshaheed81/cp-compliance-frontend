@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/EmergencyLighting.pdf';
 import RiskScoreCard from "./RiskScoreCard";
-import {formatDate} from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import {Autocomplete, Chip, TextField} from "@mui/material";
 
 const EmergencyLightingInspectionForm = ({
@@ -1163,7 +1163,7 @@ const EmergencyLightingInspectionForm = ({
         category: category,
         status: 'Done',
         startDate: new Date().toISOString(),
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id,
         assistantUserID: loggedInUserData?.id
       };

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { get, post, put } from "../../../../api"; // Using the provided API functions
 import { getSiteAssets, getSiteDetailsById, getUsers } from "../../../../store/thunk/site";
 import { Autocomplete, TextField, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, MenuItem } from "@mui/material";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import moment from "moment";
 import pdfTemplate from './pdf/airConditionRecurrencCheck.pdf';
 
@@ -1075,7 +1075,7 @@ const AirConditioningRecurrenceCheck = ({
                 category: 'Air Conditioning',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                dueDate: formatLocalDateTime(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };

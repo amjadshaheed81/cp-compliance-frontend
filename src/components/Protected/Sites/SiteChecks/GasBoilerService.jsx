@@ -10,7 +10,7 @@ import {
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, FormControlLabel, MenuItem, Radio, Select, TextField } from "@mui/material";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import pdfTemplate from './pdf/GasBoilerService.pdf';
 import RiskScoreCard from "./RiskScoreCard";
@@ -1015,7 +1015,7 @@ const GasBoilerService = ({
                 category: 'Gas Boiler Service',
                 status: 'Done',
                 startDate: new Date().toISOString(),
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                dueDate: formatLocalDateTime(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };

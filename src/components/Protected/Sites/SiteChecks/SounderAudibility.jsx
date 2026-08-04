@@ -11,7 +11,7 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { DeleteForever } from "@mui/icons-material";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/Sounder Audibilty Certificate.pdf';
@@ -863,7 +863,7 @@ const SounderAudibilityForm = ({
         category: 'Sounder Audibility Report',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+        dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };

@@ -8,7 +8,7 @@ import { get, post, put } from "../../../../api";
 import axios from 'axios';
 import pdfTemplate from './pdf/Fire Alarm.pdf';
 import RiskScoreCard from "./RiskScoreCard";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 
 const InspectionFireCertificate = ({
                                        checkId,
@@ -1013,7 +1013,7 @@ const InspectionFireCertificate = ({
                 category: 'Fire Alarm',
                 status: 'Done',
                 startDate: new Date().toISOString(),
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };

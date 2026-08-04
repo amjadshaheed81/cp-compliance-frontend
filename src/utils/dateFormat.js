@@ -17,3 +17,14 @@ export const formatDate = (dateInput) => {
 
   return `${year}-${month}-${day}`;
 };
+
+// Formats Java LocalDateTime values using ISO-8601 without milliseconds.
+// Example: 2027-07-30T00:00:00
+export const formatLocalDateTime = (dateInput) => {
+  if (!dateInput) return null;
+
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toISOString().split(".")[0];
+};

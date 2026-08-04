@@ -11,7 +11,7 @@ import {
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField, CircularProgress, Button } from "@mui/material";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import { saveAs } from 'file-saver';
 import axios from 'axios';
 import { PDFDocument } from 'pdf-lib';
@@ -763,7 +763,7 @@ should be carried out more frequently.`;
                 category: 'Fire Fighting Equipment',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };

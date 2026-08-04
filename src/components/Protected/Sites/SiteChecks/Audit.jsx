@@ -15,6 +15,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { jsPDF } from "jspdf";
+import { formatLocalDateTime } from "../../../../utils/dateFormat";
 
 import Swal from "sweetalert2";
 
@@ -590,7 +591,7 @@ const AssessmentFireRisk = ({
             await put("/api/site-check/" + checkId, {
                 ...siteCheckData,
                 status: "Done",
-                dueDate: formatDateForBackend(calculateExpiryDate(siteCheckData.startDate, siteCheckData.repeatFrequency)),
+                dueDate: formatLocalDateTime(calculateExpiryDate(siteCheckData.startDate, siteCheckData.repeatFrequency)),
             });
             await getQuestions();
             onAuditSubmitted?.();

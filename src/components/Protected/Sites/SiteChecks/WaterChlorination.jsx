@@ -16,7 +16,7 @@ import {
   CircularProgress,
   Button,
 } from "@mui/material";
-import { formatDate } from "../../../../utils/dateFormat";
+import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import { saveAs } from "file-saver";
 import axios from "axios";
 import pdfTemplate from "./pdf/Chlorination Certificate.pdf";
@@ -716,7 +716,7 @@ The capacity of the tank is ${capacity} litres`;
         category: "Water Chlorination",
         status: "Done",
         startDate: new Date().toISOString().split("T")[0] + "T00:00:00",
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+        dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
         leadUserID: String(loggedInUserData?.id || "0"),
         assistantUserID: String(loggedInUserData?.id || "0"),
       };
