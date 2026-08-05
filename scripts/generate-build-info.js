@@ -13,6 +13,7 @@ const publicBuildInfoPath = path.join(publicDir, "build-info.json");
 
 const args = new Set(process.argv.slice(2));
 const shouldIncrement = args.has("--increment");
+const externalBuildRaw = process.env.CAFM_BUILD_NUMBER;
 const environmentArg = process.argv.find((arg) =>
   arg.startsWith("--environment=")
 );
@@ -43,6 +44,11 @@ const reactVersion = normaliseVersion(packageJson.dependencies?.react);
 const reactMajor = Number.parseInt(reactVersion.split(".")[0], 10);
 const applicationMajor = Number.parseInt(versionState.applicationMajor, 10);
 let build = Number.parseInt(versionState.build, 10);
+const hasExternalBuild =
+  externalBuildRaw !== undefined && String(externalBuildRaw).trim() !== "";
+const externalBuild = hasExternalBuild
+  ? Number.parseInt(String(externalBuildRaw).trim(), 10)
+  : null;
 
 if (!Number.isInteger(reactMajor) || reactMajor < 1) {
   throw new Error(`Invalid React version in package.json: ${reactVersion}`);
@@ -54,7 +60,14 @@ if (!Number.isInteger(build) || build < 0) {
   throw new Error("build-version.json build must be zero or a positive integer.");
 }
 
-if (shouldIncrement) {
+if (hasExternalBuild) {
+  if (!Number.isInteger(externalBuild) || externalBuild < 0) {
+    throw new Error(
+      "CAFM_BUILD_NUMBER must be zero or a positive integer when supplied."
+    );
+  }
+  build = externalBuild;
+} else if (shouldIncrement) {
   build += 1;
   writeJson(versionPath, { applicationMajor, build });
 }
